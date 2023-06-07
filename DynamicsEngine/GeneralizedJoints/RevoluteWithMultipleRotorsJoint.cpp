@@ -23,9 +23,8 @@ RevoluteWithMultipleRotorsJoint::RevoluteWithMultipleRotorsJoint(
         rotor_joints_.push_back(rotor);
     }
 
-    gamma_ = [gear_ratios](const DVec<double> &y)
+    gamma_ = [gear_ratios, num_rotors](const DVec<double> &y)
     {
-        const size_t num_rotors = gear_ratios.size();
         DVec<double> q = DVec<double>::Zero(1 + num_rotors);
         q[0] = y[0];
         for (size_t j(0); j < num_rotors; j++)
@@ -44,9 +43,8 @@ RevoluteWithMultipleRotorsJoint::RevoluteWithMultipleRotorsJoint(
 
     g_ = DVec<double>::Zero(1 + num_rotors);
 
-    phi_ = [gear_ratios](const DVec<double> &q)
+    phi_ = [gear_ratios, num_rotors](const DVec<double> &q)
     {
-        const size_t num_rotors = gear_ratios.size();
         DVec<double> out = DVec<double>::Zero(num_rotors);
         for (size_t j(0); j < num_rotors; j++)
         {
