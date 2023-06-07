@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.2)
 
-project(Dynamics_Engine)
+project(generalized_rbda)
 
 set(CMAKE_DISABLE_IN_SOURCE_BUILD ON)
 set(CMAKE_DISABLE_SOURCE_CHANGES  ON)
@@ -23,10 +23,6 @@ set(CMAKE_BUILD_TYPE Debug)
 
 option(CMAKE_BUILD_TYPE "compile type. default: Debug" Debug)
 option(M1_BUILD "set compile options for Mac M1 chip" OFF)
-
-set(THIS_COM "${PROJECT_SOURCE_DIR}/" )
-configure_file(${CMAKE_CURRENT_SOURCE_DIR}/config.h.cmake
-  ${CMAKE_BINARY_DIR}/Configuration.h)
 
 if(CMAKE_SYSTEM_NAME MATCHES Linux)
   set(CMAKE_CXX_FLAGS "-O3 -no-pie -march=native -ggdb -Wall \
@@ -53,15 +49,15 @@ set(CMAKE_C_FLAGS "-O3  -ggdb  -march=native -std=gnu99 -I.")
 #------------------------------------------------------------------------
 # Directory setup
 #------------------------------------------------------------------------
-include_directories(${CMAKE_SOURCE_DIR})
-include_directories(${CMAKE_SOURCE_DIR}/Utils)
-include_directories(${CMAKE_SOURCE_DIR}/Systems)
-include_directories(${CMAKE_SOURCE_DIR}/LCM-Types/cpp)
-include_directories(${CMAKE_SOURCE_DIR}/3rd-parties)
-include_directories(${CMAKE_SOURCE_DIR}/3rd-parties/ParamHandler)
-include_directories(${CMAKE_SOURCE_DIR}/3rd-parties/URDF)
-include_directories(${CMAKE_SOURCE_DIR}/3rd-parties/CasadiGen)
-include_directories(${CMAKE_SOURCE_DIR}/DynamicsEngine)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR})
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/Utils)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/Systems)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/LCM-Types/cpp)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/3rd-parties)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/3rd-parties/ParamHandler)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/3rd-parties/URDF)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/3rd-parties/CasadiGen)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/DynamicsEngine)
 include_directories("/usr/local/include/eigen3")
 include_directories("/usr/local/include/lcm/")   # lcm includes
 include_directories(${CMAKE_BINARY_DIR})
@@ -77,7 +73,22 @@ add_subdirectory(DynamicsEngine)
 add_subdirectory(Robots)
 add_subdirectory(3rd-parties)
 add_subdirectory(Benchmarking)
-add_subdirectory(UnitTests)
+
+# Check if the project is being built as a subdirectory
+if (${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_CURRENT_SOURCE_DIR})
+    # This is the main project
+
+    # Your main project code here
+    set(THIS_COM "${PROJECT_SOURCE_DIR}/" )
+    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/config.h.cmake
+      ${CMAKE_BINARY_DIR}/Configuration.h)
+
+    add_subdirectory(UnitTests)
+else()
+    # This is a subdirectory
+
+    # Your subdirectory-specific code here
+endif()
 
 #------------------------------------------------------------------------
 # Printout
