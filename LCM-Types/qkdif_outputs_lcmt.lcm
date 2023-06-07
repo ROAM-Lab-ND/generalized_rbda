@@ -1,0 +1,12 @@
+struct qkdif_outputs_lcmt
+{
+  int32_t NUM_OPT_VAR_TRAJ;
+  double Xopt[NUM_OPT_VAR_TRAJ];
+
+  double obj_val;
+  double t_solve;
+  double t_NN_eval;
+  int32_t opt_solved;
+  int32_t iter;
+
+}

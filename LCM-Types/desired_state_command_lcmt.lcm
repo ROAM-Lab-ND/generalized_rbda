@@ -1,0 +1,11 @@
+struct desired_state_command_lcmt
+{
+    double next_point[2];
+    double cur_pos[2];
+    double cur_yaw;
+    double pos_error_world[2];
+    double pos_error_body[2];
+    double heading_direction;
+    double yaw_error;
+    double des_vel[3];
+}

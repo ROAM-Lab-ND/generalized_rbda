@@ -1,0 +1,51 @@
+struct jto_inputs_casadi_lcmt
+{
+
+    int32_t NUM_X_VAR;
+    int32_t NUM_U_VAR;
+    int32_t NUM_TIMESTEPS;
+    int32_t NUM_U_TIMESTEPS;
+    int32_t NUM_X_VAR_TRAJ;
+    int32_t NUM_U_VAR_TRAJ;
+    int32_t NUM_OPT_VAR_TRAJ;
+    int32_t NUM_LEGS;
+    int32_t NUM_LEGS_x3;
+    int32_t NUM_GAIT_TABLE;
+
+    double Xref[NUM_X_VAR_TRAJ];
+    double Uref[NUM_U_VAR_TRAJ];
+    double x0[NUM_OPT_VAR_TRAJ];
+
+    double gait_schedule[NUM_GAIT_TABLE];
+    double gait_schedule_TD[NUM_GAIT_TABLE];
+    double dt_opt[NUM_U_TIMESTEPS];
+
+    double q_min[6];
+    double q_max[6];
+    double qd_min[6];
+    double qd_max[6];
+
+    double q_init[6];
+    double qd_init[6];
+    double c_init[NUM_LEGS_x3];
+
+    double q_term_min[6];
+    double q_term_max[6];
+    double qd_term_min[6];
+    double qd_term_max[6];
+
+    double QX[12];
+    double QN[12];
+    double Qc[3];
+    double Qf[3];
+
+    double mu_ground;
+    double l_leg_max;
+    double f_max;
+    double mass;
+    double Ib[3];
+    double Ib_inv[3];
+
+    double flight_duration;
+
+}

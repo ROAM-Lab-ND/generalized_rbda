@@ -1,0 +1,5 @@
+add_executable(time_benchmark timeBenchmarkForwardDynamics.cpp)
+target_link_libraries(time_benchmark dyna-utils robots)
+
+add_executable(accuracy_benchmark accuracyBenchmarkForwardDynamics.cpp)
+target_link_libraries(accuracy_benchmark dyna-utils robots)

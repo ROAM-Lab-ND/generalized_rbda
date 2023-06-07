@@ -1,0 +1,19 @@
+struct rpc_biped_inputs_lcmt
+{
+    double current_state[12];
+    double p_foot0[6];
+    double r_hip[6];
+    double x_desired[72];
+    double gait_enabled[2];
+    double phase_variable[2];
+    double period_time[2];
+    double time_swing[2];
+    double mass;
+    double inertia[3];
+    double gravity[3];
+    double mu[2];
+    double z_g[2];
+    double Q[12];
+    double R[12];
+    double K_HX[30];
+}

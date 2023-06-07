@@ -1,0 +1,12 @@
+prefix=/Users/runner/work/casadi/casadi/build/external_projects
+exec_prefix=${prefix}
+libdir=${exec_prefix}/lib
+includedir=${prefix}/include/coin
+
+Name: CBC
+Description: COIN-OR Branch and Cut
+URL: https://projects.coin-or.org/Cbc
+Version: 2.10.6
+Libs: -L${libdir} -lCbcSolver -lCbc 
+Cflags: -I${includedir}
+Requires: clp osi-clp cgl osi coinutils 

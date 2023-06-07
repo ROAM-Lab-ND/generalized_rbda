@@ -1,0 +1,60 @@
+<?xml version="1.0" ?>
+<robot name="Openchain">
+  <link name="world"/>
+
+  <joint name="q1" type="continuous">
+    <axis xyz="1 0 0"/>
+    <origin rpy="0 0 0" xyz="0.0 0.0 0.0"/>
+    <parent link="world"/>
+    <child link="link1"/>
+    <actuator gear_ratio="6" voltage="24" parent_link="world">
+      <friction damping="0.01" dry_friction="0.2"/>
+      <motor Kt="0.05" R="0.173" TauMax="3"/>
+      <rotor_inertia ixx="33.0e-6" iyy="0.000033" izz="63e-6" iyz="0.0" ixy="0" ixz="0" />
+    </actuator>
+  </joint>
+  <link name="link1">
+    <inertial>
+      <mass value="2.1656"/>
+      <origin xyz="-0.03416 -0.00075 0.04293"/>
+      <inertia ixx="0.003735" ixy="0.0" ixz="0.0" iyy="0.01391" iyz="0.0" izz="0.01355"/>
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <box size="0.6 0.1 0.2"/>
+      </geometry>
+      <material name="">
+        <color rgba="0.752941176470588 0.752941176470588 0.752941176470588 1" />
+      </material>
+    </visual>
+  </link>
+
+  <joint name="q2" type="continuous">
+    <axis xyz="1 0 0"/>
+    <origin rpy="0 0 0" xyz="0.0 0.0 -0.3"/>
+    <parent link="link1"/>
+    <child link="link2"/>
+    <actuator gear_ratio="6" voltage="24" parent_link="link1">
+      <friction damping="0.01" dry_friction="0.2"/>
+      <motor Kt="0.05" R="0.173" TauMax="3"/>
+      <rotor_inertia ixx="33.0e-6" iyy="0.000033" izz="63e-6" iyz="0.0" ixy="0" ixz="0" />
+    </actuator>
+  </joint>
+  <link name="link2">
+    <inertial>
+      <mass value="2.1656"/>
+      <origin xyz="-0.03416 -0.00075 0.04293"/>
+      <inertia ixx="0.003735" ixy="0.0" ixz="0.0" iyy="0.01391" iyz="0.0" izz="0.01355"/>
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <box size = "0.26 0.1 0.2" />
+      </geometry>
+      <material name="">
+        <color rgba="0.752941176470588 0.752941176470588 0.752941176470588 1" />
+      </material>
+    </visual>  
+  </link>
+</robot>

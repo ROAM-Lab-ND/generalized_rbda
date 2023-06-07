@@ -1,0 +1,10 @@
+struct rpc_biped_outputs_lcmt
+{
+    double cpu_opt_time_microseconds;
+    double t_sent;
+    double time_start;
+    double dt_pred[5];
+    double x_opt[60];
+    double u_opt[60];
+    double p_opt[6];
+}

@@ -1,0 +1,19 @@
+struct quadruped_parameters_lcmt
+{
+  int64_t control_mode;
+  boolean display_heightmap;  
+  boolean cheater_mode;
+
+  float key_vertical;
+  float key_horizontal;
+  float key_turn;
+  float key_pitch;
+
+  float stick_right_vertical;
+  float stick_right_horizontal;
+  float stick_left_vertical;
+  float stick_left_horizontal;
+  boolean jump_trigger;
+
+  boolean xbox_ctrl;
+}

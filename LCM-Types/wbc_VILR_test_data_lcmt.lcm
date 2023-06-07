@@ -1,0 +1,46 @@
+struct wbc_VILR_test_data_lcmt
+{
+    int32_t contact_est[4];
+
+    float Wr_des[10];
+    float Wr[10];
+    float Wr_est[10];
+    float deltas[16];
+
+    float body_ori_cmd[4];
+    float L_cmd[3];
+    float Ld_cmd[3];
+    float com_vel_cmd[3];
+    float com_pos_cmd[3];
+    float com_acc_cmd[3];
+
+    float com_pos[3];
+    float com_vel[3];
+    float body_ori[4];
+    float L[3];
+
+    float body_ang_vel[3];
+
+    float foot_pos_cmd[12];
+    float foot_vel_cmd[12];
+    float foot_acc_cmd[12];
+    float foot_acc_numeric[12];
+    
+    float foot_pos[12];
+    float foot_vel[12];
+
+    float foot_local_pos[12];
+    float foot_local_vel[12];
+
+    float jpos_cmd[16];
+    float jvel_cmd[16];
+    float jacc_cmd[16];
+
+    float jpos[16];
+    float jvel[16];
+
+    float rpy[3];
+    float v_des_robot[3];
+    float yaw_des;
+    float yaw_turn_rate;
+}

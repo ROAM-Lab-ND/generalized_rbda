@@ -1,0 +1,62 @@
+struct qkdif_inputs_lcmt
+{
+  	int32_t NUM_TIMESTEPS;
+  	int32_t NUM_U_TIMESTEPS;
+    int32_t NUM_X_VAR_TRAJ;
+    int32_t NUM_U_VAR_TRAJ;
+    int32_t NUM_OPT_VAR_TRAJ;
+    int32_t NUM_GC;
+    int32_t NUM_GC_x3;
+    int32_t NUM_GAIT_TABLE;
+    int32_t NUM_FB_DOF;
+
+	double Xref[NUM_X_VAR_TRAJ];
+	double Uref[NUM_U_VAR_TRAJ];
+	double tf_ref;
+	double gait_schedule[NUM_GAIT_TABLE];
+	double dt_opt[NUM_U_TIMESTEPS];
+
+	double q_min[NUM_FB_DOF];
+	double q_max[NUM_FB_DOF];
+	double qd_min[NUM_FB_DOF];
+	double qd_max[NUM_FB_DOF];
+
+	double q_init[6];
+	double qd_init[6];
+	double c_init[NUM_GC_x3];
+
+	double r_land_height;
+	double dist_past_obs[2];
+	double rpy_land_min[3];
+	double rpy_land_max[3];
+
+	double obs_height_actual;
+	double obs_height;
+	double dist_to_obs_actual;
+	double dist_to_obs;
+	double terrain_steepness;
+
+	double Qq[NUM_FB_DOF];
+	double Qv[NUM_FB_DOF];
+	double Qr[6];
+	double Qc[NUM_GC_x3];
+	double Qh[3];
+
+	double Qf[NUM_GC_x3];
+	double Qtau[NUM_GC_x3];
+	double Qrdd[3];
+	double Qhd[3];
+
+	double QNq[NUM_FB_DOF];
+	double QNv[NUM_FB_DOF];
+	double QNr[6];
+	double QNc[NUM_GC_x3];
+	double QNh[3];
+	double Qflight;
+
+	double mu;
+	double f_max[NUM_GC];	
+
+	double init_guess[NUM_OPT_VAR_TRAJ];
+	
+}

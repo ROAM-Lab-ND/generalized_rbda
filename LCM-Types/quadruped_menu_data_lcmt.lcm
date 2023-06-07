@@ -1,0 +1,76 @@
+struct quadruped_menu_data_lcmt
+{
+  boolean cheater_mode;
+  int64_t control_mode;
+ 
+  boolean use_wbc;
+  boolean use_rc;
+
+  boolean display_heightmap;  
+  boolean display_path_planning;
+  boolean display_potential_field;
+  boolean display_traverability;
+
+  double Kd_body[3];
+  double Kd_cam[3];
+  double Kd_clm[3];
+  double Kd_foot[3];
+  double Kd_joint[3];
+  double Kd_ori[3];
+  double Kp_body[3];
+  double Kp_cam[3];
+  double Kp_clm[3];
+  double Kp_foot[3];
+  double Kp_joint[3];
+  double Kp_ori[3];
+  double Q_ang[3];
+  double Q_ori[3];
+  double Q_pos[3];
+  double Q_vel[3];
+  double RPC_H_phi0[3];
+  double RPC_H_r_rot[3];
+  double RPC_H_r_trans[3];
+  double RPC_H_theta0[3];
+  double RPC_Q_dp[3];
+  double RPC_Q_dtheta[3];
+  double RPC_Q_p[3];
+  double RPC_Q_theta[3];
+  double RPC_R_f[3];
+  double RPC_R_r[3];
+  double RPC_filter[3];
+  double RPC_gravity[3];
+  double RPC_inertia[3];
+  double RPC_interface_type;
+  double RPC_mass;
+  double RPC_mu;
+  double RPC_use_async_filt;
+  double RPC_use_pred_comp;
+  double RPC_visualize_pred;
+  double R_control;
+  double R_prev;
+  double Swing_Kd_cartesian[3];
+  double Swing_Kd_joint[3];
+  double Swing_Kp_cartesian[3];
+  double Swing_Kp_joint[3];
+  double Swing_step_offset[3];
+  double Swing_traj_height;
+  double Swing_use_tau_ff;
+  double acro_task;
+  double des_dp[3];
+  double des_dp_max[3];
+  double des_dtheta[3];
+  double des_dtheta_max[3];
+  double des_p[3];
+  double des_theta[3];
+  double des_theta_max[3];
+  double gait_disturbance[3];
+  double gait_max_leg_angle;
+  double gait_max_stance_time;
+  double gait_min_stance_time;
+  double gait_override;
+  double gait_period_time;
+  double gait_recovery[3];
+  double gait_switching_phase;
+  double gait_type;
+  double stance_legs;  
+}

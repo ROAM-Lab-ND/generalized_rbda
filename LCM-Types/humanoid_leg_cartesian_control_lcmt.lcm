@@ -1,0 +1,21 @@
+struct humanoid_leg_cartesian_control_lcmt
+{
+    float pcom[3];
+
+    float pFootRightCurr[3];
+    float pFootLeftCurr[3];
+
+    float vFootRightCurr[3];
+    float vFootLeftCurr[3];
+
+    float pFootRightLand[3];
+    float pFootLeftLand[3];
+
+    float footForceRight[3];
+    float footForceLeft[3];
+
+    float legTorqueRight[5];
+    float legTorqueLeft[5];
+
+
+}

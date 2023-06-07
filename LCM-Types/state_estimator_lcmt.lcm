@@ -1,0 +1,16 @@
+struct state_estimator_lcmt
+{
+    float p[3];
+    float vWorld[3];
+    float vBody[3];
+    float rpy[3];
+    float omegaBody[3];
+    float omegaWorld[3];
+    float quat[4];
+    float contact_estimate[4];
+    float aBody[3];
+    float aWorld[3];
+    int64_t lcm_published_timestamp;
+    float pfoot_rel_body[12];
+    float vfoot[12];
+}

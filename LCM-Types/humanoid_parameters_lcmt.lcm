@@ -1,0 +1,20 @@
+struct humanoid_parameters_lcmt
+{
+  int64_t control_mode;
+  boolean cheater_mode;
+  boolean display_heightmap;
+
+  float key_up;
+  float key_down;
+  float key_left;
+  float key_right;
+  float turn_right;
+
+  float stick_right_vertical;
+  float stick_right_horizontal;
+  float stick_left_vertical;
+  float stick_left_horizontal;
+  boolean jump_trigger;
+
+  boolean xbox_ctrl;
+}

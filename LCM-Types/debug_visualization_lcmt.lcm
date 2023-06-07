@@ -1,0 +1,41 @@
+struct debug_visualization_lcmt
+{
+    int32_t sphere_count;
+    int32_t sphere_elements;
+    int32_t sphere_position_elements; //sphere_elements*3
+    int32_t sphere_color_elements; //sphere_elements*4
+    float sphere_positions[sphere_position_elements];
+    float sphere_radii[sphere_elements];
+    float sphere_colors[sphere_color_elements];
+
+    int32_t obst_count;
+    int32_t obst_elements;
+    int32_t obst_position_elements; // obst_elements*3
+    int32_t obst_dim_elements; // obst_elements*3
+    int32_t obst_rpy_elements; // obst_elements*3
+    int32_t obst_color_elements; // obst_elements*4
+    float obst_positions[obst_position_elements];
+    float obst_oris[obst_rpy_elements];
+    float obst_dims[obst_position_elements];
+    float obst_colors[obst_color_elements];
+
+    int32_t path_count;
+    int32_t path_elements;
+    int32_t path_position_elements; //Sum(path_lengths[i]*3)
+    int32_t path_color_elements; //path_elements*4
+    int32_t path_lengths[path_elements]; //array for lengths of each path
+    int32_t path_start_idxs[path_elements];
+    float path_widths[path_elements];
+    float path_positions[path_position_elements];
+    float path_colors[path_color_elements];
+
+    int32_t arrow_count;
+    int32_t arrow_elements;
+    int32_t arrow_position_elements;
+    int32_t arrow_color_elements;
+    string arrow_ids[arrow_elements];
+    float arrow_nom[arrow_elements];
+    float arrow_base_positions[arrow_position_elements];
+    float arrow_directions[arrow_position_elements];
+    float arrow_colors[arrow_color_elements];
+}

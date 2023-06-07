@@ -1,0 +1,16 @@
+struct full_body_opt_lcmt 
+{
+    float qfb_des[6];
+    float vfb_des[6];
+    float q_des[12];
+    float qd_des[12];
+    float tau_ff[12];
+
+    float qfb[6];
+    float vfb[6];
+    float q[12];
+    float qd[12];
+    float tauEst[12];
+    float tauAct[12];
+
+}

@@ -1,0 +1,24 @@
+struct humanoid_gait_lcmt
+{
+
+    double contactStateScheduled[4];
+    double contactStatePrev[4];
+    double touchdownScheduled[4];
+    double liftoffScheduled[4];
+
+    double phaseVariable[4];
+    double phaseStance[4];
+    double phaseSwing[4];
+
+    double timeStanceRemaining[4];
+    double timeSwingRemaining[4];
+
+    double periodTime[4];
+    double timeStance[4];
+    double timeSwing[4];
+    double switchingPhase[4];
+    double phaseOffset[4];
+    double phaseScale[4];
+
+
+}

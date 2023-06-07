@@ -1,0 +1,49 @@
+struct wbc_test_data_lcmt
+{
+    int32_t contact_est[4];
+
+    float Fr_des[12];
+    float Fr[12];
+
+    float tau_tot[18];
+
+    float body_ori_cmd[4];
+    float body_pos_cmd[3];
+    float body_vel_cmd[3];
+    float body_ang_vel_cmd[3];
+    float body_rpy_cmd[3];
+    float com_pos_cmd[3];
+    float vG_cmd[6];
+    float vGdot_cmd[6];
+    float h_cmd[3];
+
+    float body_pos[3];
+    float body_vel[3];
+    float body_ori[4];
+    float body_ang_vel[3];
+    float body_rpy[3];
+    float com_pos[3];
+    float vG[6];
+    float vGdot[6];
+    float h[3];
+
+    float foot_pos_cmd[12];
+    float foot_vel_cmd[12];
+    float foot_acc_cmd[12];
+    float foot_acc_numeric[12];
+    
+    float foot_pos[12];
+    float foot_vel[12];
+
+    float foot_local_pos[12];
+    float foot_local_vel[12];
+
+    float jpos_cmd[18];
+    float jvel_cmd[18];
+    float jacc_cmd[18];
+
+    float jpos[18];
+    float jvel[18];
+
+    float vision_loc[3];
+}

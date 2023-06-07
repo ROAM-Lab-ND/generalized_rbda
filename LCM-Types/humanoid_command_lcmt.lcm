@@ -1,0 +1,54 @@
+struct humanoid_command_lcmt
+{
+    float q_des_hipz[2];
+    float q_des_hipx[2];
+    float q_des_hipy[2];
+    float q_des_knee[2];
+    float q_des_ankle[2];
+    float q_des_shouldery[2];
+    float q_des_shoulderx[2];
+    float q_des_shoulderz[2];
+    float q_des_elbow[2];
+    
+    float qd_des_hipz[2];
+    float qd_des_hipx[2];
+    float qd_des_hipy[2];
+    float qd_des_knee[2];
+    float qd_des_ankle[2];
+    float qd_des_shouldery[2];
+    float qd_des_shoulderx[2];
+    float qd_des_shoulderz[2];
+    float qd_des_elbow[2];
+
+    float kp_hipz[2];
+    float kp_hipx[2];
+    float kp_hipy[2];
+    float kp_knee[2];
+    float kp_ankle[2];
+    float kp_shouldery[2];
+    float kp_shoulderx[2];
+    float kp_shoulderz[2];
+    float kp_elbow[2];
+
+    float kd_hipz[2];
+    float kd_hipx[2];
+    float kd_hipy[2];
+    float kd_knee[2];
+    float kd_ankle[2];
+    float kd_shouldery[2];
+    float kd_shoulderx[2];
+    float kd_shoulderz[2];
+    float kd_elbow[2];
+
+    float tau_hipz_ff[2];
+    float tau_hipx_ff[2];
+    float tau_hipy_ff[2];
+    float tau_knee_ff[2];
+    float tau_ankle_ff[2];
+    float tau_shouldery_ff[2];
+    float tau_shoulderx_ff[2];
+    float tau_shoulderz_ff[2];
+    float tau_elbow_ff[2];
+    
+    int32_t flags[6];
+}

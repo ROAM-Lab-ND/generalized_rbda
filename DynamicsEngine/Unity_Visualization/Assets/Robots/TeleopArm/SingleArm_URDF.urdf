@@ -1,0 +1,506 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- This URDF was automatically created by SolidWorks to URDF Exporter! Originally created by Stephen Brawner (brawner@gmail.com) 
+     Commit Version: 1.5.1-0-g916b5db  Build Version: 1.5.7152.31018
+     For more information, please see http://wiki.ros.org/sw_urdf_exporter -->
+<robot
+  name="SingleArm_URDF">
+  <link
+    name="Link0_BaseLink">
+    <inertial>
+      <origin
+        xyz="0.000236312135479688 1.14065631409593E-08 0.0341211319831382"
+        rpy="0 0 0" />
+      <mass
+        value="0.631312182805385" />
+      <inertia
+        ixx="0.00186338400030991"
+        ixy="-1.86296521619092E-09"
+        ixz="4.03468218167914E-06"
+        iyy="0.00185361293973409"
+        iyz="5.83345655861606E-11"
+        izz="0.00330417877845109" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="TeleopArm_meshes/Link0_BaseLink.dae" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.752941176470588 0.752941176470588 0.752941176470588 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="TeleopArm_meshes/Link0_BaseLink.dae" />
+      </geometry>
+    </collision>
+  </link>
+  <link
+    name="Link1_ShoulderYaw">
+    <inertial>
+      <origin
+        xyz="-1.3203781724825E-07 -0.0019918581900264 0.042209331985419"
+        rpy="0 0 0" />
+      <mass
+        value="0.996728195674388" />
+      <inertia
+        ixx="0.00341172050969273"
+        ixy="-2.78245254570465E-09"
+        ixz="-1.44612985349395E-09"
+        iyy="0.00304715909842922"
+        iyz="-0.000609865865680097"
+        izz="0.00341296361416896" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="TeleopArm_meshes/Link1_ShoulderYaw.dae" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.752941176470588 0.752941176470588 0.752941176470588 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="TeleopArm_meshes/Link1_ShoulderYaw.dae" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="ShoulderYaw"
+    type="revolute">
+    <origin
+      xyz="0 0 0.051"
+      rpy="0 0 0" />
+    <parent
+      link="Link0_BaseLink" />
+    <child
+      link="Link1_ShoulderYaw" />
+    <axis
+      xyz="0 0 1" />
+    <limit
+      lower="-12.5"
+      upper="12.5"
+      effort="60"
+      velocity="35" />
+  </joint>
+  <link
+    name="Link2_ShoulderPitch">
+    <inertial>
+      <origin
+        xyz="-4.95607872522998E-10 -0.00454681681697164 0.0456909674828196"
+        rpy="0 0 0" />
+      <mass
+        value="0.479602860554892" />
+      <inertia
+        ixx="0.00119077708454517"
+        ixy="3.20506869810284E-12"
+        ixz="2.07221875551103E-11"
+        iyy="0.00102840133364928"
+        iyz="0.000224409914636484"
+        izz="0.00145942133972374" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="TeleopArm_meshes/Link2_ShoulderPitch.dae" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.752941176470588 0.752941176470588 0.752941176470588 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="TeleopArm_meshes/Link2_ShoulderPitch.dae" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="ShoulderPitch"
+    type="revolute">
+    <origin
+      xyz="0 0 0.106"
+      rpy="0 0 0" />
+    <parent
+      link="Link1_ShoulderYaw" />
+    <child
+      link="Link2_ShoulderPitch" />
+    <axis
+      xyz="0 -1 0" />
+    <limit
+      lower="-1.57"
+      upper="1.57"
+      effort="60"
+      velocity="30" />
+  </joint>
+  <link
+    name="Link3_ShoulderRoll">
+    <inertial>
+      <origin
+        xyz="0.00048246532032385 -0.000659856563869998 0.168192061455123"
+        rpy="0 0 0" />
+      <mass
+        value="1.67098008249488" />
+      <inertia
+        ixx="0.0164969342066054"
+        ixy="2.22671854661266E-07"
+        ixz="7.78508829161495E-05"
+        iyy="0.0187576854742122"
+        iyz="0.000273552507165142"
+        izz="0.00322421432233753" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="TeleopArm_meshes/Link3_ShoulderRoll.dae" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.752941176470588 0.752941176470588 0.752941176470588 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="TeleopArm_meshes/Link3_ShoulderRoll.dae" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="ShoulderRoll"
+    type="revolute">
+    <origin
+      xyz="0 0 0.071"
+      rpy="0 0 0" />
+    <parent
+      link="Link2_ShoulderPitch" />
+    <child
+      link="Link3_ShoulderRoll" />
+    <axis
+      xyz="0 0 1" />
+    <limit
+      lower="-12.5"
+      upper="12.5"
+      effort="60"
+      velocity="30" />
+  </joint>
+  <link
+    name="Link4_Elbow">
+    <inertial>
+      <origin
+        xyz="3.98923238531593E-08 0.00353191606527069 0.130185500662236"
+        rpy="0 0 0" />
+      <mass
+        value="0.461724699996623" />
+      <inertia
+        ixx="0.00628602900904115"
+        ixy="-1.38996588100235E-10"
+        ixz="-3.24823830742634E-09"
+        iyy="0.0064370349388827"
+        iyz="6.24479685712567E-06"
+        izz="0.000204549643686512" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="TeleopArm_meshes/Link4_Elbow.dae" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.752941176470588 0.752941176470588 0.752941176470588 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="TeleopArm_meshes/Link4_Elbow.dae" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="Elbow"
+    type="revolute">
+    <origin
+      xyz="0 -0.00950000000000005 0.3855"
+      rpy="0 0 0" />
+    <parent
+      link="Link3_ShoulderRoll" />
+    <child
+      link="Link4_Elbow" />
+    <axis
+      xyz="0 1 0" />
+    <limit
+      lower="-2.72"
+      upper="2.72"
+      effort="60"
+      velocity="30" />
+  </joint>
+  <link
+    name="Link5_WristPitch">
+    <inertial>
+      <origin
+        xyz="-1.70086494398405E-09 0.00416746571603919 0.0168380602022274"
+        rpy="0 0 0" />
+      <mass
+        value="0.0636032585380904" />
+      <inertia
+        ixx="1.7327372261767E-05"
+        ixy="-2.12620172625841E-12"
+        ixz="-3.10801796423998E-13"
+        iyy="1.41615592033973E-05"
+        iyz="-4.98372954083481E-07"
+        izz="2.03484235290124E-05" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="TeleopArm_meshes/Link5_WristPitch.dae" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.752941176470588 0.752941176470588 0.752941176470588 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="TeleopArm_meshes/Link5_WristPitch.dae" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="WristPitch"
+    type="revolute">
+    <origin
+      xyz="0 0 0.362"
+      rpy="0 0 0" />
+    <parent
+      link="Link4_Elbow" />
+    <child
+      link="Link5_WristPitch" />
+    <axis
+      xyz="0 1 0" />
+    <limit
+      lower="-1.57"
+      upper="1.57"
+      effort="35"
+      velocity="40" />
+  </joint>
+  <link
+    name="Link6_WristRoll">
+    <inertial>
+      <origin
+        xyz="-0.00117717664185982 0.00469784867710138 0.0406640761294568"
+        rpy="0 0 0" />
+      <mass
+        value="0.167365855253795" />
+      <inertia
+        ixx="0.000182126939883238"
+        ixy="2.14780304746852E-06"
+        ixz="-1.5746872991487E-06"
+        iyy="8.27773754747766E-05"
+        iyz="-9.43679063268306E-06"
+        izz="0.000114519938074832" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="TeleopArm_meshes/Link6_WristRoll.dae" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.752941176470588 0.752941176470588 0.752941176470588 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="TeleopArm_meshes/Link6_WristRoll.dae" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="WristRoll"
+    type="revolute">
+    <origin
+      xyz="0 0.00400000000000001 0.0357399999999999"
+      rpy="0 0 0" />
+    <parent
+      link="Link5_WristPitch" />
+    <child
+      link="Link6_WristRoll" />
+    <axis
+      xyz="0 0 -1" />
+    <limit
+      lower="-12.5"
+      upper="12.5"
+      effort="35"
+      velocity="40" />
+  </joint>
+  <link
+    name="Link7_FixedFinger">
+    <inertial>
+      <origin
+        xyz="-1.8483711821391E-07 -0.00711335157375612 0.122402115070574"
+        rpy="0 0 0" />
+      <mass
+        value="0.161392567203828" />
+      <inertia
+        ixx="0.000124651989675325"
+        ixy="5.264005621175E-09"
+        ixz="9.21933674622143E-09"
+        iyy="0.000128369006588519"
+        iyz="-7.82482773485745E-07"
+        izz="1.74229590287227E-05" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="TeleopArm_meshes/Link7_FixedFinger.dae" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.752941176470588 0.752941176470588 0.752941176470588 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="TeleopArm_meshes/Link7_FixedFinger.dae" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="FixedFinger"
+    type="fixed">
+    <origin
+      xyz="0.000399999999999994 -0.0421556871225551 0.0585"
+      rpy="0 0 0" />
+    <parent
+      link="Link6_WristRoll" />
+    <child
+      link="Link7_FixedFinger" />
+    <axis
+      xyz="0 0 0" />
+  </joint>
+  <link
+    name="Link8_DynFinger">
+    <inertial>
+      <origin
+        xyz="0.000564354893831316 -0.00323855510592773 0.105873754164059"
+        rpy="0 0 0" />
+      <mass
+        value="0.170943071240299" />
+      <inertia
+        ixx="6.20218628889652E-05"
+        ixy="5.25878124304324E-09"
+        ixz="1.04227625027733E-06"
+        iyy="6.63711197742052E-05"
+        iyz="8.68522287138568E-07"
+        izz="1.80699970079646E-05" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="TeleopArm_meshes/Link8_DynFinger.dae" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.752941176470588 0.752941176470588 0.752941176470588 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="TeleopArm_meshes/Link8_DynFinger.dae" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="DynamicFinger"
+    type="revolute">
+    <origin
+      xyz="0.0004 0.0375 0.070995"
+      rpy="0 0 0" />
+    <parent
+      link="Link6_WristRoll" />
+    <child
+      link="Link8_DynFinger" />
+    <axis
+      xyz="-1 0 0" />
+    <limit
+      lower="-0.43"
+      upper="1.57"
+      effort="4.6"
+      velocity="200" />
+  </joint>
+</robot>

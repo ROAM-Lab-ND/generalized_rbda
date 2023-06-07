@@ -1,0 +1,40 @@
+struct quadruped_visualization_info_lcmt
+{
+  /*float body_pos[3];*/
+  /*float body_rpy[3];*/
+
+  /*float right_front_abd_pos[3];*/
+  /*float right_front_abd_rpy[3];*/
+  /*float right_front_upper_leg_pos[3];*/
+  /*float right_front_upper_leg_rpy[3];*/
+  /*float right_front_lower_leg_pos[3];*/
+  /*float right_front_lower_leg_rpy[3];*/
+
+  /*float left_front_abd_pos[3];*/
+  /*float left_front_abd_rpy[3];*/
+  /*float left_front_upper_leg_pos[3];*/
+  /*float left_front_upper_leg_rpy[3];*/
+  /*float left_front_lower_leg_pos[3];*/
+  /*float left_front_lower_leg_rpy[3];*/
+
+  /*float right_hind_abd_pos[3];*/
+  /*float right_hind_abd_rpy[3];*/
+  /*float right_hind_upper_leg_pos[3];*/
+  /*float right_hind_upper_leg_rpy[3];*/
+  /*float right_hind_lower_leg_pos[3];*/
+  /*float right_hind_lower_leg_rpy[3];*/
+
+  /*float left_hind_abd_pos[3];*/
+  /*float left_hind_abd_rpy[3];*/
+  /*float left_hind_upper_leg_pos[3];*/
+  /*float left_hind_upper_leg_rpy[3];*/
+  /*float left_hind_lower_leg_pos[3];*/
+  /*float left_hind_lower_leg_rpy[3];*/
+
+  float link_ori_quat[13][4];
+  float link_pos[13][3];
+
+  float body_pos[3];
+  float body_ori_quat[4];
+  float jpos[12];
+}

@@ -1,0 +1,6 @@
+struct vel_cmd_lcmt
+{
+  double v_x;
+  double v_y;
+  double v_psi;
+}

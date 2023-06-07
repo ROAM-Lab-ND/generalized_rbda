@@ -1,0 +1,7 @@
+struct kmpc_inputs_lcmt
+{
+    double current_state[22];
+    double gait_schedule[44];
+    double desired_state[4];
+    double initial_guess[506];
+}

@@ -1,0 +1,10 @@
+struct grid_map_lcmt
+{
+    int32_t rows;
+    int32_t cols;
+    int32_t totalCells;
+    float resolution;
+    float center[2];
+    float heightmap[totalCells];
+    int32_t indexmap[totalCells];
+}

@@ -1,0 +1,5 @@
+struct humanoid_visualization_info_lcmt
+{
+  float link_ori_quat[17][4];
+  float link_pos[17][3];
+}

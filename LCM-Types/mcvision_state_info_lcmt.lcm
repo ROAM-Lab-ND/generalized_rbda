@@ -1,0 +1,7 @@
+struct mcvision_state_info_lcmt
+{
+  float body_pos[3];
+  float body_ori_quat_visual[4];
+  float body_ori_quat_est[4];
+  float jpos[12];
+}

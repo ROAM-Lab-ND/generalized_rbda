@@ -1,0 +1,8 @@
+struct control_parameter_response_lcmt
+{
+    int8_t name[64];
+    int64_t requestNumber;
+    int8_t value[64]; // note: maximum size currently 64 bytes
+    int8_t parameterKind;
+    int8_t requestKind;
+}

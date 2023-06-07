@@ -1,0 +1,45 @@
+struct teleop_command_lcmt
+{
+    float q_des_base[1];
+    float q_des_shoulderx[1];
+    float q_des_shouldery[1];
+    float q_des_elbow[1];
+    float q_des_wristpitch[1];
+    float q_des_wristroll[1];
+    float q_des_gripper[1];
+    
+    float qd_des_base[1];
+    float qd_des_shoulderx[1];
+    float qd_des_shouldery[1];
+    float qd_des_elbow[1];
+    float qd_des_wristpitch[1];
+    float qd_des_wristroll[1];
+    float qd_des_gripper[1];
+
+
+    float kp_base[1];
+    float kp_shoulderx[1];
+    float kp_shouldery[1];
+    float kp_elbow[1];
+    float kp_wristpitch[1];
+    float kp_wristroll[1];
+    float kp_gripper[1];
+
+    float kd_base[1];
+    float kd_shoulderx[1];
+    float kd_shouldery[1];
+    float kd_elbow[1];
+    float kd_wristpitch[1];
+    float kd_wristroll[1];
+    float kd_gripper[1];
+
+    float tau_base[1];
+    float tau_shoulderx[1];
+    float tau_shouldery[1];
+    float tau_elbow[1];
+    float tau_wristpitch[1];
+    float tau_wristroll[1];
+    float tau_gripper[1];
+
+    int32_t flags[4];
+}

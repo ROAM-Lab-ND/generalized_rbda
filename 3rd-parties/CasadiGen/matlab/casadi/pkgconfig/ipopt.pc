@@ -1,0 +1,15 @@
+prefix=/Users/runner/work/casadi/casadi/build/external_projects
+#prefix=${pcfiledir}/../..
+exec_prefix=${prefix}
+libdir=${exec_prefix}/lib
+includedir=${prefix}/include/coin-or
+
+Name: Ipopt
+Description: Interior Point Optimizer
+URL: https://github.com/coin-or/Ipopt
+Version: 3.14.11
+Cflags: -I${includedir}
+Libs: -L${libdir} -lipopt
+Requires.private:  
+#Libs: -L${libdir} -lipopt -L/Users/runner/work/casadi/casadi/build/external_projects/lib -Wl,-all_load -lcoinmumps -Wl,-noall_load    -framework Accelerate -lm -ldl  -ldl
+#Requires:  

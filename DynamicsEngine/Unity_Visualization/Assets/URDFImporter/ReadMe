@@ -1,0 +1,31 @@
+========================================================================================================================
+---------------------------------------------------- URDF Importer -----------------------------------------------------
+========================================================================================================================
+This is a clean and simple editor extension for Unity3D which lets you import robot models that are specified as URDF 
+(Unified Robot Description Format) files. The importer loads the visual geometry including meshes and materials of the 
+robots, so you can use them for your work or games in Unity3D. All you need to provide is a .urdf file (not .xacro), 
+the meshes in .dae, .obj or .fbx format, and the materials if they are not contained in the mesh files. The full 
+hierarchical kinematic structure with single game objects for each joint and link is loaded. The importer is platform-
+independent, and works on Windows, Linux and Mac.
+
+If you are interested in an inverse kinematics (IK) solver which works on all these robots and with multiple goals, 
+check out the Bio IK asset. In addition, the importer will then also automatically add the joints of Bio IK to create 
+the motion of the segments, as shown in the available videos.
+
+https://www.assetstore.unity3d.com/en/#!/content/67819 
+
+=== Usage ===
+#1 Navigate to the navigation bar of Unity, and go to "Addons/URDF Importer"
+#2 Enter or search the path to your .urdf file, which must be stored within the Assets/ database of Unity3D along with the meshes and materials
+#3 Set the Mesh Export Orientation (Usually Y or Z worked for all my cases, otherwise use 'Custom' and set the correct orientation)
+#4 Hit "Import Model"
+
+=== Requirements ===
+Make sure that all meshes are available as importable formats by Unity3D, e.g. .fbx / .dae / .obj. Then, simply specify 
+all paths of the meshes and materials inside the .urdf file relative to it, so the importer can find them.
+
+=== Demo ===
+In case you encounter some problems, you might want to check out the demo with the Nao robot. This can be done by opening the importer
+and searching for the Assets/Demo/nao.urdf file.
+
+If you have any questions or would like me to test a particular robot in advance, just let me know.

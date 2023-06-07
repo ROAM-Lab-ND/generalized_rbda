@@ -1,0 +1,11 @@
+struct humanoid_arm_recovery_inputs_lcmt
+{
+    int32_t RS_optim_iter; // nb of times the optimization was called from robot software
+    int32_t fsm_iter; // iteration nb of the fsm to keep track of simulation time
+    double ctrl_dt; //controlle dt usually 0.002 s to keep track of simulation time
+    double current_state[48];
+    double desired_state[4];
+    double gait_phase; // phase variable from gait scheduler
+}
+
+

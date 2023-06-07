@@ -1,0 +1,6 @@
+struct cart_pole_lcmt
+{
+    float link1_pos[3]; // (x,z, theta)
+    float link2_pos[3];
+}
+

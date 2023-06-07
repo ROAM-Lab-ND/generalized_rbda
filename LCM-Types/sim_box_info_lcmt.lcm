@@ -1,0 +1,6 @@
+struct sim_box_info_lcmt
+{
+    float position[3];
+    float scale[3];
+}
+

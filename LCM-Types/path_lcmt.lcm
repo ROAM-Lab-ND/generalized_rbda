@@ -1,0 +1,5 @@
+struct path_lcmt
+{
+    int32_t pathLength;
+    double path[pathLength];
+}

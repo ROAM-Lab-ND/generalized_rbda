@@ -1,0 +1,35 @@
+struct landingTO_input_lcmt
+{
+    double falling_conditions[9]; // [ori; omega; vel;]
+
+    double Xref[252];
+    double Uref[480];
+    double dt_opt[20];
+
+    double q_min[6];
+    double q_max[6];
+    double qd_min[6];
+    double qd_max[6];
+
+    double q_init[6];
+    double qd_init[6];
+    double c_init[12];
+
+    double q_term_min[6];
+    double q_term_max[6];
+    double qd_term_min[6];
+    double qd_term_max[6];
+    double QN[12];
+
+    double jpos_min[12];
+    double jpos_max[12];
+
+    double kin_box[2];
+
+    double mu;
+    double l_leg_max;
+    double mass;
+    double Ib[3];
+    double Ib_inv[3];
+
+}

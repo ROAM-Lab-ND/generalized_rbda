@@ -1,0 +1,11 @@
+struct humanoid_foot_forces_lcmt
+{
+
+    double force0[3]; //right foot force in global frame
+    double force1[3]; //right toe force in global frame
+    double force2[3]; //right heel force in global frame
+    double force3[3]; //left foot force in global frame
+    double force4[3]; //left toe force in global frame
+    double force5[3]; //left heel force in global frame
+
+}

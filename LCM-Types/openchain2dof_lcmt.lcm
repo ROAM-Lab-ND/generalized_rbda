@@ -1,0 +1,5 @@
+struct openchain2dof_lcmt
+{
+    float q[2];
+}
+

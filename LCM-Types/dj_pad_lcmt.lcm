@@ -1,0 +1,15 @@
+struct dj_pad_lcmt
+{
+  double slider_0[3];
+  double slider_1[3];
+  double slider_2[3];
+  double slider_3[3];
+  double slider_4[3];
+  double slider_5[3];
+  double slider_6[3];
+  double slider_7[3];
+
+  int32_t params_count;
+  string params_names[params_count];
+  int32_t params_types[params_count];
+  }

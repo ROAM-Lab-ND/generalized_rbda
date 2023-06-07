@@ -1,0 +1,12 @@
+prefix=/Users/runner/work/casadi/casadi/build/external_projects
+libdir=${prefix}/lib
+includedir=${prefix}/include/highs
+
+Name: HiGHS
+Description: Linear Optimization Software
+URL: https://github.com/ERGO-Code/HiGHS
+Version: 1.4.0
+Libs: -L${libdir} -lhighs
+#TODO Libs.private (when HiGHS lib is build as static lib)
+Cflags: -I${includedir}
+Requires:

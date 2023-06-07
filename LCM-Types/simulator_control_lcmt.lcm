@@ -1,0 +1,6 @@
+struct simulator_control_lcmt 
+{
+    boolean key_sim_speed_up;
+    boolean key_sim_speed_down;
+    boolean key_pause;
+}
