@@ -6,3 +6,4 @@
 #include "RevolutePairJoint.h"
 #include "RevolutePairWithRotorJoint.h"
 #include "GenericJoint.h"
+#include "TelloHipDifferential.h"
