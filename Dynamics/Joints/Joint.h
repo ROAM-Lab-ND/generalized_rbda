@@ -49,7 +49,11 @@ namespace grbda
             }
             ~Free() {}
 
-            void updateKinematics(const DVec<double> &q, const DVec<double> &qd) override {}
+            void updateKinematics(const DVec<double> &q, const DVec<double> &qd) override
+            {
+                XJ_ = SpatialTransform(quaternionToRotationMatrix(q.tail<4>()),
+                                       q.head<3>());
+            }
         };
 
         class Revolute : public Base
