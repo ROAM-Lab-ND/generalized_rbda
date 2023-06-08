@@ -20,6 +20,13 @@
 #include "rev_pair_w_rotor_4dof_FD_ref_inertia.h"
 #include "rev_pair_w_rotor_4dof_FD_ref_inertia_diag.h"
 
+#include "kikd_gen.h"
+#include "k_gen.h"
+#include "g_gen.h"
+#include "IK_dependent_state_to_y.h"
+#include "IK_dependent_state_to_y_dot.h"
+#include "IK_dependent_state_to_y_ddot.h"
+
 namespace grbda
 {
 
