@@ -1,6 +1,6 @@
 #include "gtest/gtest.h"
 
-#include "DynamicsEngine/RigidBodyTreeModel.h"
+#include "Dynamics/RigidBodyTreeModel.h"
 #include "Robots/RobotTypes.h"
 #include "Utils/Utilities/Timer.h"
 

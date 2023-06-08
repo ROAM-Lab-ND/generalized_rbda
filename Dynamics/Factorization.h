@@ -1,6 +1,6 @@
 #pragma once
 
-#include "DynamicsEngine/Nodes/RigidBodyTreeNode.h"
+#include "Dynamics/Nodes/RigidBodyTreeNode.h"
 
 namespace grbda
 {

@@ -1,8 +1,8 @@
 #include <iostream>
 #include <fstream>
 
-#include "DynamicsEngine/RigidBodyTreeModel.h"
-#include "DynamicsEngine/ReflectedInertiaTreeModel.h"
+#include "Dynamics/RigidBodyTreeModel.h"
+#include "Dynamics/ReflectedInertiaTreeModel.h"
 
 #include "Robots/RobotTypes.h"
 #include "Utils/Utilities/Timer.h"

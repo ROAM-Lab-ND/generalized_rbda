@@ -3,7 +3,7 @@
 #include <string>
 #include <memory>
 
-#include "DynamicsEngine/Body.h"
+#include "Dynamics/Body.h"
 #include "Utils/Utilities/SpatialTransforms.h"
 
 namespace grbda

@@ -6,7 +6,7 @@
 #include <stdexcept>
 
 #include "TreeModel.h"
-#include "DynamicsEngine/Nodes/ClusterTreeNode.h"
+#include "Dynamics/Nodes/ClusterTreeNode.h"
 
 namespace grbda
 {

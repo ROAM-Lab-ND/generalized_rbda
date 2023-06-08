@@ -2,8 +2,8 @@
 
 #include <memory>
 
-#include "DynamicsEngine/Body.h"
-#include "DynamicsEngine/Joints/Joint.h"
+#include "Dynamics/Body.h"
+#include "Dynamics/Joints/Joint.h"
 #include "Utils/Utilities/SpatialTransforms.h"
 
 namespace grbda

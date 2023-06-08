@@ -1,7 +1,7 @@
 #pragma once
 
 #include "TreeNode.h"
-#include "DynamicsEngine/GeneralizedJoints/GeneralizedJointTypes.h"
+#include "Dynamics/GeneralizedJoints/GeneralizedJointTypes.h"
 
 namespace grbda
 {

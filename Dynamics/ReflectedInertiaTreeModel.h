@@ -1,7 +1,7 @@
 #pragma once
 
 #include "ClusterTreeModel.h"
-#include "DynamicsEngine/Nodes/ReflectedInertiaTreeNode.h"
+#include "Dynamics/Nodes/ReflectedInertiaTreeNode.h"
 
 namespace grbda
 {

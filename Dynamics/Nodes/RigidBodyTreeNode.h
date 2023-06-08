@@ -1,7 +1,7 @@
 #pragma once
 
 #include "TreeNode.h"
-#include "DynamicsEngine/Joints/Joint.h"
+#include "Dynamics/Joints/Joint.h"
 
 namespace grbda
 {

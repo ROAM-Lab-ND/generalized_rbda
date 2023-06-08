@@ -1,7 +1,7 @@
 #pragma once
 
 #include "3rd-parties/CasadiGen/header/CasadiGen.h"
-#include "DynamicsEngine/ClusterTreeModel.h"
+#include "Dynamics/ClusterTreeModel.h"
 
 namespace grbda
 {
