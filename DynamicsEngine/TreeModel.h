@@ -7,73 +7,78 @@
 #include "Utils/Utilities/SpatialTransforms.h"
 #include "Utils/Utilities/utilities.h"
 
-using TreeNodePtr = std::shared_ptr<TreeNode>;
-
-class TreeModel
+namespace grbda
 {
-public:
-    TreeModel()
+
+    using TreeNodePtr = std::shared_ptr<TreeNode>;
+
+    class TreeModel
     {
-        gravity_ << 0., 0., 0., 0., 0., -9.81;
-    }
-    virtual ~TreeModel() {}
+    public:
+        TreeModel()
+        {
+            gravity_ << 0., 0., 0., 0., 0., -9.81;
+        }
+        virtual ~TreeModel() {}
 
-    int getNumPositions() const { return position_index_; }
-    int getNumDegreesOfFreedom() const { return velocity_index_; }
+        int getNumPositions() const { return position_index_; }
+        int getNumDegreesOfFreedom() const { return velocity_index_; }
 
-    virtual DMat<double> getMassMatrix() = 0;
-    virtual DVec<double> getBiasForceVector() = 0;
+        virtual DMat<double> getMassMatrix() = 0;
+        virtual DVec<double> getBiasForceVector() = 0;
 
-    virtual int getNumBodies() const = 0;
+        virtual int getNumBodies() const = 0;
 
-    virtual const Body& getBody(int index) const = 0;
-    virtual const TreeNodePtr getNodeContainingBody(int index) = 0;
+        virtual const Body &getBody(int index) const = 0;
+        virtual const TreeNodePtr getNodeContainingBody(int index) = 0;
 
-    void setGravity(const Vec3<double> &g) { gravity_.tail<3>() = g; }
-    SVec<double> getGravity() const { return gravity_; }
+        void setGravity(const Vec3<double> &g) { gravity_.tail<3>() = g; }
+        SVec<double> getGravity() const { return gravity_; }
 
-    virtual void initializeIndependentStates(const DVec<double> &y, const DVec<double> &yd) = 0;
-    virtual void initializeExternalForces(
-        const std::vector<ExternalForceAndBodyIndexPair> &force_and_body_index_pairs = {});
+        virtual void initializeIndependentStates(const DVec<double> &y, const DVec<double> &yd) = 0;
+        virtual void initializeExternalForces(
+            const std::vector<ExternalForceAndBodyIndexPair> &force_and_body_index_pairs = {});
 
-    void forwardKinematics();
-    virtual DVec<double> forwardDynamics(const DVec<double> &tau) = 0;
+        void forwardKinematics();
+        virtual DVec<double> forwardDynamics(const DVec<double> &tau) = 0;
 
-    const TreeNodePtr node(const int index) const { return nodes_[index]; }
-    const std::vector<TreeNodePtr> &nodes() const { return nodes_; }
+        const TreeNodePtr node(const int index) const { return nodes_[index]; }
+        const std::vector<TreeNodePtr> &nodes() const { return nodes_; }
 
-    const std::vector<ContactPoint> &contactPoints() const { return contact_points_; }
-    const ContactPoint &contactPoint(const int index) const { return contact_points_[index]; }
-    const ContactPoint &contactPoint(const std::string &name) const
-    {
-        return contact_points_[contact_name_to_contact_index_.at(name)];
-    }
+        const std::vector<ContactPoint> &contactPoints() const { return contact_points_; }
+        const ContactPoint &contactPoint(const int index) const { return contact_points_[index]; }
+        const ContactPoint &contactPoint(const std::string &name) const
+        {
+            return contact_points_[contact_name_to_contact_index_.at(name)];
+        }
 
-protected:
-    void contactPointForwardKinematics();
-    void compositeRigidBodyAlgorithm();
-    void updateBiasForceVector();
-    DVec<double> recursiveNewtonEulerAlgorithm(const DVec<double> &qdd);
+    protected:
+        void contactPointForwardKinematics();
+        void compositeRigidBodyAlgorithm();
+        void updateBiasForceVector();
+        DVec<double> recursiveNewtonEulerAlgorithm(const DVec<double> &qdd);
 
-    virtual void resetCache();
+        virtual void resetCache();
 
-    bool vectorContainsIndex(const std::vector<int> vec, const int index);
+        bool vectorContainsIndex(const std::vector<int> vec, const int index);
 
-    SVec<double> gravity_;
+        SVec<double> gravity_;
 
-    DMat<double> H_;
-    DVec<double> C_;
+        DMat<double> H_;
+        DVec<double> C_;
 
-    int position_index_ = 0;
-    int velocity_index_ = 0;
+        int position_index_ = 0;
+        int velocity_index_ = 0;
 
-    std::vector<TreeNodePtr> nodes_;
-    std::vector<int> indices_of_nodes_experiencing_external_forces_;
+        std::vector<TreeNodePtr> nodes_;
+        std::vector<int> indices_of_nodes_experiencing_external_forces_;
 
-    std::vector<ContactPoint> contact_points_;
-    UnorderedMap<std::string, int> contact_name_to_contact_index_;
+        std::vector<ContactPoint> contact_points_;
+        UnorderedMap<std::string, int> contact_name_to_contact_index_;
 
-    bool kinematics_updated_ = false;
-    bool mass_matrix_updated_ = false;
-    bool bias_force_updated_ = false;
-};
+        bool kinematics_updated_ = false;
+        bool mass_matrix_updated_ = false;
+        bool bias_force_updated_ = false;
+    };
+
+} // namespace grbda

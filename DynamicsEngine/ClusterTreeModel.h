@@ -8,125 +8,130 @@
 #include "TreeModel.h"
 #include "DynamicsEngine/Nodes/ClusterTreeNode.h"
 
-using namespace ori;
-using namespace spatial;
-
-using ClusterTreeNodePtr = std::shared_ptr<ClusterTreeNode>;
-
-/*!
- * Class to represent a floating base rigid body model with rotors and ground
- * contacts. No concept of state.
- */
-class ClusterTreeModel : public TreeModel
+namespace grbda
 {
-public:
-    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
-    ClusterTreeModel()
+    using namespace ori;
+    using namespace spatial;
+
+    using ClusterTreeNodePtr = std::shared_ptr<ClusterTreeNode>;
+
+    /*!
+     * Class to represent a floating base rigid body model with rotors and ground
+     * contacts. No concept of state.
+     */
+    class ClusterTreeModel : public TreeModel
     {
-        body_name_to_body_index_["ground"] = -1;
-        body_index_to_cluster_index_[-1] = -1;
-    }
-    ~ClusterTreeModel() {}
+    public:
+        EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
-    Body registerBody(const std::string name, const SpatialInertia<double> inertia,
-                      const std::string parent_name, const SpatialTransform Xtree);
-    // TODO(@MatthewChignoli): need to clean this up, should have to make all of these std::vectors we we are only appending one body. Right now the append body function is silly. Because That function creates a body (by registering it), but it also requires a generalized joint... which requires a body...
-    void appendBody(const std::string name, const SpatialInertia<double> inertia,
-                    const std::string parent_name, const SpatialTransform Xtree,
-                    std::shared_ptr<GeneralizedJoints::Base> joint);
-    void appendRegisteredBodiesAsCluster(const std::string name,
-                                         std::shared_ptr<GeneralizedJoints::Base> joint);
-    void appendContactPoint(const std::string body_name,
-                            const Vec3<double> &local_offset,
-                            const std::string contact_point_name);
+        ClusterTreeModel()
+        {
+            body_name_to_body_index_["ground"] = -1;
+            body_index_to_cluster_index_[-1] = -1;
+        }
+        ~ClusterTreeModel() {}
 
-    void print() const;
+        Body registerBody(const std::string name, const SpatialInertia<double> inertia,
+                          const std::string parent_name, const SpatialTransform Xtree);
+        // TODO(@MatthewChignoli): need to clean this up, should have to make all of these std::vectors we we are only appending one body. Right now the append body function is silly. Because That function creates a body (by registering it), but it also requires a generalized joint... which requires a body...
+        void appendBody(const std::string name, const SpatialInertia<double> inertia,
+                        const std::string parent_name, const SpatialTransform Xtree,
+                        std::shared_ptr<GeneralizedJoints::Base> joint);
+        void appendRegisteredBodiesAsCluster(const std::string name,
+                                             std::shared_ptr<GeneralizedJoints::Base> joint);
+        void appendContactPoint(const std::string body_name,
+                                const Vec3<double> &local_offset,
+                                const std::string contact_point_name);
 
-    void initializeIndependentStates(const DVec<double> &y, const DVec<double> &yd) override;
+        void print() const;
 
-    int getNumBodies() const override { return (int)bodies_.size(); }
+        void initializeIndependentStates(const DVec<double> &y, const DVec<double> &yd) override;
 
-    // NOTE: A body's "cluster ancestor" is the nearest member in the body's supporting tree that belongs to a different cluster
-    int getClusterAncestorIndexFromParent(const int body_index);
+        int getNumBodies() const override { return (int)bodies_.size(); }
 
-    int getSubIndexWithinClusterForBody(const Body &body) const;
-    int getSubIndexWithinClusterForBody(const int body_index) const;
-    int getSubIndexWithinClusterForBody(const std::string &body_name) const;
+        // NOTE: A body's "cluster ancestor" is the nearest member in the body's supporting tree that belongs to a different cluster
+        int getClusterAncestorIndexFromParent(const int body_index);
 
-    int getNumBodiesInCluster(const ClusterTreeNodePtr cluster) const;
-    int getNumBodiesInCluster(const int cluster_index) const;
-    int getNumBodiesInCluster(const std::string &cluster_name) const;
+        int getSubIndexWithinClusterForBody(const Body &body) const;
+        int getSubIndexWithinClusterForBody(const int body_index) const;
+        int getSubIndexWithinClusterForBody(const std::string &body_name) const;
 
-    int getIndexOfClusterContainingBody(const Body &body);
-    int getIndexOfClusterContainingBody(const int body_index);
-    int getIndexOfClusterContainingBody(const std::string &body_name);
+        int getNumBodiesInCluster(const ClusterTreeNodePtr cluster) const;
+        int getNumBodiesInCluster(const int cluster_index) const;
+        int getNumBodiesInCluster(const std::string &cluster_name) const;
 
-    ClusterTreeNodePtr getClusterContainingBody(const Body &body);
-    ClusterTreeNodePtr getClusterContainingBody(const int body_index);
-    ClusterTreeNodePtr getClusterContainingBody(const std::string &body_name);
+        int getIndexOfClusterContainingBody(const Body &body);
+        int getIndexOfClusterContainingBody(const int body_index);
+        int getIndexOfClusterContainingBody(const std::string &body_name);
 
-    int getIndexOfParentClusterFromBodies(const std::vector<Body> &bodies);
+        ClusterTreeNodePtr getClusterContainingBody(const Body &body);
+        ClusterTreeNodePtr getClusterContainingBody(const int body_index);
+        ClusterTreeNodePtr getClusterContainingBody(const std::string &body_name);
 
-    const Body &getBody(int index) const override { return bodies_[index]; }
-    const TreeNodePtr getNodeContainingBody(int index) override
-    {
-        return nodes_[getIndexOfClusterContainingBody(index)];
-    }
+        int getIndexOfParentClusterFromBodies(const std::vector<Body> &bodies);
 
-    const std::vector<Body> &bodies() const { return bodies_; }
-    const std::vector<ClusterTreeNodePtr> &clusters() const { return cluster_nodes_; }
+        const Body &getBody(int index) const override { return bodies_[index]; }
+        const TreeNodePtr getNodeContainingBody(int index) override
+        {
+            return nodes_[getIndexOfClusterContainingBody(index)];
+        }
 
-    const Body &body(const int body_index) const { return bodies_[body_index]; }
-    const Body &body(const std::string body_name) const
-    {
-        return bodies_[body_name_to_body_index_.at(body_name)];
-    }
+        const std::vector<Body> &bodies() const { return bodies_; }
+        const std::vector<ClusterTreeNodePtr> &clusters() const { return cluster_nodes_; }
 
-    const ClusterTreeNodePtr cluster(const int cluster_index) const { return cluster_nodes_[cluster_index]; }
-    const ClusterTreeNodePtr cluster(const std::string &cluster_name) const
-    {
-        return cluster_nodes_[cluster_name_to_cluster_index_.at(cluster_name)];
-    }
+        const Body &body(const int body_index) const { return bodies_[body_index]; }
+        const Body &body(const std::string body_name) const
+        {
+            return bodies_[body_name_to_body_index_.at(body_name)];
+        }
 
-    DVec<double> inverseDyamics(const DVec<double> &qdd);
-    DVec<double> forwardDynamics(const DVec<double> &tau) override;
-    double applyLocalFrameTestForceAtConactPoint(const Vec3<double> &force,
-                                                 const std::string &contact_point_name,
-                                                 DVec<double> &dstate_out);
+        const ClusterTreeNodePtr cluster(const int cluster_index) const { return cluster_nodes_[cluster_index]; }
+        const ClusterTreeNodePtr cluster(const std::string &cluster_name) const
+        {
+            return cluster_nodes_[cluster_name_to_cluster_index_.at(cluster_name)];
+        }
 
-    DMat<double> getMassMatrix() override;
-    DVec<double> getBiasForceVector() override;
+        DVec<double> inverseDyamics(const DVec<double> &qdd);
+        DVec<double> forwardDynamics(const DVec<double> &tau) override;
+        double applyLocalFrameTestForceAtConactPoint(const Vec3<double> &force,
+                                                     const std::string &contact_point_name,
+                                                     DVec<double> &dstate_out);
 
-private:
-    void checkValidParentClusterForBodiesInCluster(const ClusterTreeNodePtr cluster);
-    void checkValidParentClusterForBodiesInCluster(const int cluster_index);
-    void checkValidParentClusterForBodiesInCluster(const std::string &cluster_nam);
-    std::optional<int> searchClustersForBody(const int body_index);
+        DMat<double> getMassMatrix() override;
+        DVec<double> getBiasForceVector() override;
 
-    void resizeSystemMatrices();
-    void resetCache() override;
+    private:
+        void checkValidParentClusterForBodiesInCluster(const ClusterTreeNodePtr cluster);
+        void checkValidParentClusterForBodiesInCluster(const int cluster_index);
+        void checkValidParentClusterForBodiesInCluster(const std::string &cluster_nam);
+        std::optional<int> searchClustersForBody(const int body_index);
 
-    void updateArticulatedBodies();
-    void updateForcePropagators();
-    void updateQddEffects();
+        void resizeSystemMatrices();
+        void resetCache() override;
 
-    DVec<double> localCartesianForceAtPointToWorldPluckerForceOnCluster(
-        const Vec3<double> &force, const ContactPoint &contact_point);
+        void updateArticulatedBodies();
+        void updateForcePropagators();
+        void updateQddEffects();
 
-    std::vector<Body> bodies_;
-    std::vector<ClusterTreeNodePtr> cluster_nodes_;
+        DVec<double> localCartesianForceAtPointToWorldPluckerForceOnCluster(
+            const Vec3<double> &force, const ContactPoint &contact_point);
 
-    std::vector<Body> bodies_in_current_cluster_;
+        std::vector<Body> bodies_;
+        std::vector<ClusterTreeNodePtr> cluster_nodes_;
 
-    UnorderedMap<std::string, int> body_name_to_body_index_;
-    UnorderedMap<std::string, int> cluster_name_to_cluster_index_;
-    UnorderedMap<int, int> body_index_to_cluster_index_;
+        std::vector<Body> bodies_in_current_cluster_;
 
-    bool articulated_bodies_updated_ = false;
-    bool force_propagators_updated_ = false;
-    bool qdd_effects_updated_ = false;
+        UnorderedMap<std::string, int> body_name_to_body_index_;
+        UnorderedMap<std::string, int> cluster_name_to_cluster_index_;
+        UnorderedMap<int, int> body_index_to_cluster_index_;
 
-    friend class RigidBodyTreeModel;
-    friend class ReflectedInertiaTreeModel;
-};
+        bool articulated_bodies_updated_ = false;
+        bool force_propagators_updated_ = false;
+        bool qdd_effects_updated_ = false;
+
+        friend class RigidBodyTreeModel;
+        friend class ReflectedInertiaTreeModel;
+    };
+
+} // namespace grbda

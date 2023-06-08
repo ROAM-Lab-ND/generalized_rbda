@@ -3,66 +3,71 @@
 #include "ClusterTreeModel.h"
 #include "Factorization.h"
 
-using namespace ori;
-using namespace spatial;
-
-enum class ForwardDynamicsMethod
+namespace grbda
 {
-    Projection,
-    LagrangeMultiplier
-};
 
-using RigidBodyTreeNodePtr = std::shared_ptr<RigidBodyTreeNode>;
+    using namespace ori;
+    using namespace spatial;
 
-/*!
- * Class to represent a floating base rigid body model with rotors and ground
- * contacts. No concept of state.
- */
-class RigidBodyTreeModel : public TreeModel
-{
-public:
-    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-
-    RigidBodyTreeModel(const ClusterTreeModel &cluster_tree_model,
-                       const ForwardDynamicsMethod fd_method = ForwardDynamicsMethod::Projection);
-    ~RigidBodyTreeModel() {}
-
-    void setForwardDynamicsMethod(ForwardDynamicsMethod fd_method)
+    enum class ForwardDynamicsMethod
     {
-        forward_dynamics_method_ = fd_method;
-    }
+        Projection,
+        LagrangeMultiplier
+    };
 
-    int getNumBodies() const override { return (int)rigid_body_nodes_.size(); }
+    using RigidBodyTreeNodePtr = std::shared_ptr<RigidBodyTreeNode>;
 
-    const Body &getBody(int index) const override { return rigid_body_nodes_[index]->body_; }
-    const TreeNodePtr getNodeContainingBody(int index) override { return rigid_body_nodes_[index]; }
+    /*!
+     * Class to represent a floating base rigid body model with rotors and ground
+     * contacts. No concept of state.
+     */
+    class RigidBodyTreeModel : public TreeModel
+    {
+    public:
+        EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
-    void initializeIndependentStates(const DVec<double> &y, const DVec<double> &yd) override;
+        RigidBodyTreeModel(const ClusterTreeModel &cluster_tree_model,
+                           const ForwardDynamicsMethod fd_method = ForwardDynamicsMethod::Projection);
+        ~RigidBodyTreeModel() {}
 
-    DVec<double> forwardDynamics(const DVec<double> &tau) override;
+        void setForwardDynamicsMethod(ForwardDynamicsMethod fd_method)
+        {
+            forward_dynamics_method_ = fd_method;
+        }
 
-    DMat<double> getMassMatrix() override;
-    DVec<double> getBiasForceVector() override;
+        int getNumBodies() const override { return (int)rigid_body_nodes_.size(); }
 
-    DVec<double> qddToYdd(DVec<double> qdd) const { return G_pinv_ * (qdd - g_); }
-    DVec<double> yddToQdd(DVec<double> ydd) const { return G_ * ydd + g_; }
+        const Body &getBody(int index) const override { return rigid_body_nodes_[index]->body_; }
+        const TreeNodePtr getNodeContainingBody(int index) override { return rigid_body_nodes_[index]; }
 
-private:
-    void extractRigidBodiesAndJointsFromClusterModel(const ClusterTreeModel &cluster_tree_model);
-    void extractLoopClosureFunctionsFromClusterModel(const ClusterTreeModel &cluster_tree_model);
-    void extractContactPointsFromClusterModel(const ClusterTreeModel &cluster_tree_model);
+        void initializeIndependentStates(const DVec<double> &y, const DVec<double> &yd) override;
 
-    ForwardDynamicsMethod forward_dynamics_method_;
+        DVec<double> forwardDynamics(const DVec<double> &tau) override;
 
-    DVecFcn<double> gamma_;
-    DMat<double> G_;
-    DMat<double> G_pinv_;
-    DMat<double> G_tranpose_pinv_;
-    DVec<double> g_;
+        DMat<double> getMassMatrix() override;
+        DVec<double> getBiasForceVector() override;
 
-    DVecFcn<double> phi_;
-    DMat<double> K_;
-    DVec<double> k_;
+        DVec<double> qddToYdd(DVec<double> qdd) const { return G_pinv_ * (qdd - g_); }
+        DVec<double> yddToQdd(DVec<double> ydd) const { return G_ * ydd + g_; }
 
-    std::vector<RigidBodyTreeNodePtr> rigid_body_nodes_;
-};
+    private:
+        void extractRigidBodiesAndJointsFromClusterModel(const ClusterTreeModel &cluster_tree_model);
+        void extractLoopClosureFunctionsFromClusterModel(const ClusterTreeModel &cluster_tree_model);
+        void extractContactPointsFromClusterModel(const ClusterTreeModel &cluster_tree_model);
+
+        ForwardDynamicsMethod forward_dynamics_method_;
+
+        DVecFcn<double> gamma_;
+        DMat<double> G_;
+        DMat<double> G_pinv_;
+        DMat<double> G_tranpose_pinv_;
+        DVec<double> g_;
+
+        DVecFcn<double> phi_;
+        DMat<double> K_;
+        DVec<double> k_;
+
+        std::vector<RigidBodyTreeNodePtr> rigid_body_nodes_;
+    };
+
+} // namespace grbda

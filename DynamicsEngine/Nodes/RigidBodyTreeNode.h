@@ -3,25 +3,30 @@
 #include "TreeNode.h"
 #include "DynamicsEngine/Joints/Joint.h"
 
-using namespace spatial;
-
-struct RigidBodyTreeNode : TreeNode
+namespace grbda
 {
-    RigidBodyTreeNode(const Body &body, const std::shared_ptr<Joints::Base> &joint,
-                      const int position_index, const int velocity_index);
 
-    void updateKinematics() override;
-    const DVec<double> &vJ() const override { return vJ_; }
-    const DMat<double> &S() const override { return joint_->S(); }
-    const DMat<double> &S_ring() const override { return joint_->S_ring(); }
+    using namespace spatial;
 
-    const SpatialTransform &getAbsoluteTransformForBody(const Body &body) override;
-    DVec<double> getVelocityForBody(const Body& body) override;
-    void applyForceToBody(const SVec<double> &force, const Body &body) override;
+    struct RigidBodyTreeNode : TreeNode
+    {
+        RigidBodyTreeNode(const Body &body, const std::shared_ptr<Joints::Base> &joint,
+                          const int position_index, const int velocity_index);
 
-    const Body body_;
-    std::shared_ptr<Joints::Base> joint_;
+        void updateKinematics() override;
+        const DVec<double> &vJ() const override { return vJ_; }
+        const DMat<double> &S() const override { return joint_->S(); }
+        const DMat<double> &S_ring() const override { return joint_->S_ring(); }
 
-    DVec<double> vJ_;
-    const SpatialTransform Xtree_;
-};
+        const SpatialTransform &getAbsoluteTransformForBody(const Body &body) override;
+        DVec<double> getVelocityForBody(const Body &body) override;
+        void applyForceToBody(const SVec<double> &force, const Body &body) override;
+
+        const Body body_;
+        std::shared_ptr<Joints::Base> joint_;
+
+        DVec<double> vJ_;
+        const SpatialTransform Xtree_;
+    };
+
+} // namespace grbda

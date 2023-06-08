@@ -2,34 +2,39 @@
 
 #include "GeneralizedJoint.h"
 
-namespace GeneralizedJoints
+namespace grbda
 {
 
-class RevolutePair : public Base
-{
-public:
-    RevolutePair(Body &link_1, Body &link_2,
-                 CoordinateAxis joint_axis_1, CoordinateAxis joint_axis_2);
-    virtual ~RevolutePair() {}
+    namespace GeneralizedJoints
+    {
 
-    GeneralizedJointTypes type() const override { return GeneralizedJointTypes::RevolutePair; }
+        class RevolutePair : public Base
+        {
+        public:
+            RevolutePair(Body &link_1, Body &link_2,
+                         CoordinateAxis joint_axis_1, CoordinateAxis joint_axis_2);
+            virtual ~RevolutePair() {}
 
-    void updateKinematics(const DVec<double> &y, const DVec<double> &yd) override;
-    void computeSpatialTransformFromParentToCurrentCluster(
-        GeneralizedSpatialTransform &Xup) const override;
+            GeneralizedJointTypes type() const override { return GeneralizedJointTypes::RevolutePair; }
 
-    // ISSUE: #72
-    std::vector<std::tuple<Body, JointPtr, DMat<double>>>
-    bodiesJointsAndReflectedInertias() const override;
+            void updateKinematics(const DVec<double> &y, const DVec<double> &yd) override;
+            void computeSpatialTransformFromParentToCurrentCluster(
+                GeneralizedSpatialTransform &Xup) const override;
 
-private:
-    JointPtr link_1_joint_;
-    JointPtr link_2_joint_;
+            // ISSUE: #72
+            std::vector<std::tuple<Body, JointPtr, DMat<double>>>
+            bodiesJointsAndReflectedInertias() const override;
 
-    SpatialTransform X21_;
+        private:
+            JointPtr link_1_joint_;
+            JointPtr link_2_joint_;
 
-    const Body link_1_;
-    const Body link_2_;
-};
+            SpatialTransform X21_;
 
-}
+            const Body link_1_;
+            const Body link_2_;
+        };
+
+    }
+
+} // namespace grbda

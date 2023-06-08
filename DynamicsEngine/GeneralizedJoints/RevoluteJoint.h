@@ -2,27 +2,32 @@
 
 #include "GeneralizedJoint.h"
 
-namespace GeneralizedJoints
+namespace grbda
 {
 
-class Revolute : public Base
-{
-public:
-    Revolute(const Body &body, CoordinateAxis joint_axis);
-    virtual ~Revolute() {}
+    namespace GeneralizedJoints
+    {
 
-    GeneralizedJointTypes type() const override { return GeneralizedJointTypes::Revolute; }
+        class Revolute : public Base
+        {
+        public:
+            Revolute(const Body &body, CoordinateAxis joint_axis);
+            virtual ~Revolute() {}
 
-    void updateKinematics(const DVec<double> &y, const DVec<double> &yd) override;
+            GeneralizedJointTypes type() const override { return GeneralizedJointTypes::Revolute; }
 
-    void computeSpatialTransformFromParentToCurrentCluster(
-        GeneralizedSpatialTransform &Xup) const override;
+            void updateKinematics(const DVec<double> &y, const DVec<double> &yd) override;
 
-    std::vector<std::tuple<Body, JointPtr, DMat<double>>>
-    bodiesJointsAndReflectedInertias() const override;
+            void computeSpatialTransformFromParentToCurrentCluster(
+                GeneralizedSpatialTransform &Xup) const override;
 
-private:
-    const Body body_;
-};
+            std::vector<std::tuple<Body, JointPtr, DMat<double>>>
+            bodiesJointsAndReflectedInertias() const override;
 
-}
+        private:
+            const Body body_;
+        };
+
+    }
+    
+} // namespace grbda

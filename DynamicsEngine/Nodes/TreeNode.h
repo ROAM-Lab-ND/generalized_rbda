@@ -6,62 +6,66 @@
 #include "DynamicsEngine/Body.h"
 #include "Utils/Utilities/SpatialTransforms.h"
 
-using namespace spatial;
-
-struct TreeNode
+namespace grbda
 {
-    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
-    TreeNode(int index, std::string name, int parent_index, int motion_subspace_dimension,
-             int num_parent_bodies, int position_index, int num_positions,
-             int velocity_index, int num_velocities)
-        : position_index_(position_index), num_positions_(num_positions),
-          velocity_index_(velocity_index), num_velocities_(num_velocities),
-          motion_subspace_dimension_(motion_subspace_dimension), index_(index), name_(name),
-          parent_index_(parent_index), Xup_(num_parent_bodies)
+    using namespace spatial;
+
+    struct TreeNode
     {
-        q_ = DVec<double>::Zero(num_positions_);
-        qd_ = DVec<double>::Zero(num_velocities_);
+        EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
-        I_ = DMat<double>::Zero(motion_subspace_dimension_, motion_subspace_dimension_);
-        f_ext_ = DVec<double>::Zero(motion_subspace_dimension_);
-    }
+        TreeNode(int index, std::string name, int parent_index, int motion_subspace_dimension,
+                 int num_parent_bodies, int position_index, int num_positions,
+                 int velocity_index, int num_velocities)
+            : position_index_(position_index), num_positions_(num_positions),
+              velocity_index_(velocity_index), num_velocities_(num_velocities),
+              motion_subspace_dimension_(motion_subspace_dimension), index_(index), name_(name),
+              parent_index_(parent_index), Xup_(num_parent_bodies)
+        {
+            q_ = DVec<double>::Zero(num_positions_);
+            qd_ = DVec<double>::Zero(num_velocities_);
 
-    virtual ~TreeNode() {}
+            I_ = DMat<double>::Zero(motion_subspace_dimension_, motion_subspace_dimension_);
+            f_ext_ = DVec<double>::Zero(motion_subspace_dimension_);
+        }
 
-    virtual void updateKinematics() = 0;
-    virtual const DVec<double> &vJ() const = 0;
-    virtual const DMat<double> &S() const = 0;
-    virtual const DMat<double> &S_ring() const = 0;
+        virtual ~TreeNode() {}
 
-    virtual const SpatialTransform &getAbsoluteTransformForBody(const Body& body) = 0;
-    virtual DVec<double> getVelocityForBody(const Body& body) = 0;
-    virtual void applyForceToBody(const SVec<double> &force, const Body &body) = 0;
+        virtual void updateKinematics() = 0;
+        virtual const DVec<double> &vJ() const = 0;
+        virtual const DMat<double> &S() const = 0;
+        virtual const DMat<double> &S_ring() const = 0;
 
-    const int position_index_;
-    const int num_positions_;
-    const int velocity_index_;
-    const int num_velocities_;
+        virtual const SpatialTransform &getAbsoluteTransformForBody(const Body &body) = 0;
+        virtual DVec<double> getVelocityForBody(const Body &body) = 0;
+        virtual void applyForceToBody(const SVec<double> &force, const Body &body) = 0;
 
-    const int motion_subspace_dimension_;
+        const int position_index_;
+        const int num_positions_;
+        const int velocity_index_;
+        const int num_velocities_;
 
-    const int index_;
-    const std::string name_;
-    const int parent_index_;
+        const int motion_subspace_dimension_;
 
-    DVec<double> q_;  // joint positions
-    DVec<double> qd_; // joint velocities
+        const int index_;
+        const std::string name_;
+        const int parent_index_;
 
-    DVec<double> v_; // spatial velocity
-    DVec<double> c_; // velocity-product acceleration
-    DVec<double> a_; // spatial acceleration
-    DVec<double> f_; // spatial force across joint
-    DVec<double> f_ext_; // net external spatial force acting on the cluster
+        DVec<double> q_;  // joint positions
+        DVec<double> qd_; // joint velocities
 
-    DMat<double> I_;  // spatial inertia
-    DMat<double> Ic_; // compisite rigid body inertia
+        DVec<double> v_;     // spatial velocity
+        DVec<double> c_;     // velocity-product acceleration
+        DVec<double> a_;     // spatial acceleration
+        DVec<double> f_;     // spatial force across joint
+        DVec<double> f_ext_; // net external spatial force acting on the cluster
 
-    GeneralizedSpatialTransform Xup_;        // spatial transform from parent to child
-    GeneralizedAbsoluteSpatialTransform Xa_; // spatial transform from world frame to current frame
+        DMat<double> I_;  // spatial inertia
+        DMat<double> Ic_; // compisite rigid body inertia
 
-};
+        GeneralizedSpatialTransform Xup_;        // spatial transform from parent to child
+        GeneralizedAbsoluteSpatialTransform Xa_; // spatial transform from world frame to current frame
+    };
+
+} // namespace grbda

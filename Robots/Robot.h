@@ -3,29 +3,34 @@
 #include "3rd-parties/CasadiGen/header/CasadiGen.h"
 #include "DynamicsEngine/ClusterTreeModel.h"
 
-class Robot
+namespace grbda
 {
-public:
-  Robot() {}
-  virtual ~Robot() {}
 
-  virtual ClusterTreeModel buildClusterTreeModel() const = 0;
-
-  virtual DVec<double> forwardDynamics(
-      const DVec<double> &y, const DVec<double> &yd, const DVec<double> &tau) const
+  class Robot
   {
-    throw std::runtime_error("Not implemented");
+  public:
+    Robot() {}
+    virtual ~Robot() {}
+
+    virtual ClusterTreeModel buildClusterTreeModel() const = 0;
+
+    virtual DVec<double> forwardDynamics(
+        const DVec<double> &y, const DVec<double> &yd, const DVec<double> &tau) const
+    {
+      throw std::runtime_error("Not implemented");
+    };
+
+    virtual DVec<double> forwardDynamicsReflectedInertia(
+        const DVec<double> &y, const DVec<double> &yd, const DVec<double> &tau) const
+    {
+      throw std::runtime_error("Not implemented");
+    };
+
+    virtual DVec<double> forwardDynamicsReflectedInertiaDiag(
+        const DVec<double> &y, const DVec<double> &yd, const DVec<double> &tau) const
+    {
+      throw std::runtime_error("Not implemented");
+    };
   };
 
-  virtual DVec<double> forwardDynamicsReflectedInertia(
-      const DVec<double> &y, const DVec<double> &yd, const DVec<double> &tau) const
-  {
-    throw std::runtime_error("Not implemented");
-  };
-
-  virtual DVec<double> forwardDynamicsReflectedInertiaDiag(
-      const DVec<double> &y, const DVec<double> &yd, const DVec<double> &tau) const
-  {
-    throw std::runtime_error("Not implemented");
-  };
-};
+} // namespace grbda

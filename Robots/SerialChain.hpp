@@ -2,25 +2,30 @@
 
 #include "Robot.h"
 
-class SerialChain : public Robot
+namespace grbda
 {
-public:
-    SerialChain(bool random_parameters = true)
-        : _random_parameters(random_parameters) {}
 
-    ClusterTreeModel buildClusterTreeModel() const override
+    class SerialChain : public Robot
     {
-        if (_random_parameters)
-            return buildRandomClusterTreeModel();
-        else
-            return buildUniformClusterTreeModel();
-    }
+    public:
+        SerialChain(bool random_parameters = true)
+            : _random_parameters(random_parameters) {}
 
-    virtual size_t getNumDofs() const = 0;
+        ClusterTreeModel buildClusterTreeModel() const override
+        {
+            if (_random_parameters)
+                return buildRandomClusterTreeModel();
+            else
+                return buildUniformClusterTreeModel();
+        }
 
-private:
-    virtual ClusterTreeModel buildRandomClusterTreeModel() const = 0;
-    virtual ClusterTreeModel buildUniformClusterTreeModel() const = 0;
+        virtual size_t getNumDofs() const = 0;
 
-    const bool _random_parameters;
-};
+    private:
+        virtual ClusterTreeModel buildRandomClusterTreeModel() const = 0;
+        virtual ClusterTreeModel buildUniformClusterTreeModel() const = 0;
+
+        const bool _random_parameters;
+    };
+
+} // namespace grbda

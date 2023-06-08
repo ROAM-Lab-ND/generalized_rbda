@@ -3,54 +3,58 @@
 #include "ClusterTreeModel.h"
 #include "DynamicsEngine/Nodes/ReflectedInertiaTreeNode.h"
 
-using namespace ori;
-using namespace spatial;
-
-using ReflectedInertiaTreeNodePtr = std::shared_ptr<ReflectedInertiaTreeNode>;
-
-/*!
- * Class to represent a floating base rigid body model with rotors and ground
- * contacts. No concept of state.
- */
-class ReflectedInertiaTreeModel : public TreeModel
+namespace grbda
 {
-public:
-    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
-    ReflectedInertiaTreeModel(const ClusterTreeModel &cluster_tree_model);
+    using namespace ori;
+    using namespace spatial;
 
-    int getNumBodies() const override { return (int)reflected_inertia_nodes_.size(); }
+    using ReflectedInertiaTreeNodePtr = std::shared_ptr<ReflectedInertiaTreeNode>;
 
-    const Body &getBody(int spanning_tree_index) const override;
-    const TreeNodePtr getNodeContainingBody(int spanning_tree_index) override;
-    int getIndexOfParentNodeForBody(const int spanning_tree_index);
+    /*!
+     * Class to represent a floating base rigid body model with rotors and ground
+     * contacts. No concept of state.
+     */
+    class ReflectedInertiaTreeModel : public TreeModel
+    {
+    public:
+        EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
-    const DVec<int> &getIndependentCoordinateIndices() const { return independent_coord_indices_; }
+        ReflectedInertiaTreeModel(const ClusterTreeModel &cluster_tree_model);
 
-    void initializeIndependentStates(const DVec<double> &y, const DVec<double> &yd) override;
+        int getNumBodies() const override { return (int)reflected_inertia_nodes_.size(); }
 
-    DVec<double> forwardDynamics(const DVec<double> &tau) override;
-    DVec<double> forwardDynamicsHandC(const DVec<double> &tau);
+        const Body &getBody(int spanning_tree_index) const override;
+        const TreeNodePtr getNodeContainingBody(int spanning_tree_index) override;
+        int getIndexOfParentNodeForBody(const int spanning_tree_index);
 
-    DMat<double> getMassMatrix() override;
-    DVec<double> getBiasForceVector() override;
+        const DVec<int> &getIndependentCoordinateIndices() const { return independent_coord_indices_; }
 
-private:
-    void extractRigidBodiesAndJointsFromClusterModel(const ClusterTreeModel &cluster_tree_model);
-    void extractIndependentCoordinatesFromClusterModel(const ClusterTreeModel &cluster_tree_model);
-    void extractContactPointsFromClusterModel(const ClusterTreeModel &cluster_tree_model);
+        void initializeIndependentStates(const DVec<double> &y, const DVec<double> &yd) override;
 
-    void resetCache() override;
+        DVec<double> forwardDynamics(const DVec<double> &tau) override;
+        DVec<double> forwardDynamicsHandC(const DVec<double> &tau);
 
-    void updateArticulatedBodies();
+        DMat<double> getMassMatrix() override;
+        DVec<double> getBiasForceVector() override;
 
-    std::vector<ReflectedInertiaTreeNodePtr> reflected_inertia_nodes_;
+    private:
+        void extractRigidBodiesAndJointsFromClusterModel(const ClusterTreeModel &cluster_tree_model);
+        void extractIndependentCoordinatesFromClusterModel(const ClusterTreeModel &cluster_tree_model);
+        void extractContactPointsFromClusterModel(const ClusterTreeModel &cluster_tree_model);
 
-    DMat<double> reflected_inertia_;
+        void resetCache() override;
 
-    DMat<double> spanning_tree_to_independent_coords_conversion_;
-    DVec<int> independent_coord_indices_;
+        void updateArticulatedBodies();
 
-    bool articulated_bodies_updated_ = false;
+        std::vector<ReflectedInertiaTreeNodePtr> reflected_inertia_nodes_;
 
-};
+        DMat<double> reflected_inertia_;
+
+        DMat<double> spanning_tree_to_independent_coords_conversion_;
+        DVec<int> independent_coord_indices_;
+
+        bool articulated_bodies_updated_ = false;
+    };
+
+} // namespace grbda

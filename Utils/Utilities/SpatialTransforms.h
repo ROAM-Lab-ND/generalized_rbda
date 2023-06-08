@@ -1,99 +1,105 @@
 #pragma once
 
 #include "orientation_tools.h"
-namespace spatial {
-using namespace ori;
 
-class SpatialTransform
-{
-public:
-    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+namespace grbda {
 
-    SpatialTransform(const Mat3<double> &E = Mat3<double>::Identity(),
-                     const Vec3<double> &r = Vec3<double>::Zero());
+    namespace spatial
+    {
+        using namespace ori;
 
-    void setIdentity();
-    Mat6<double> toMatrix() const;
+        class SpatialTransform
+        {
+        public:
+            EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
-    SVec<double> transformMotionVector(const SVec<double> &m_in) const;
-    SVec<double> inverseTransformMotionVector(const SVec<double> &m_in) const;
+            SpatialTransform(const Mat3<double> &E = Mat3<double>::Identity(),
+                             const Vec3<double> &r = Vec3<double>::Zero());
 
-    SVec<double> transformForceVector(const SVec<double> &f_in) const;
-    SVec<double> inverseTransformForceVector(const SVec<double> &f_in) const;
+            void setIdentity();
+            Mat6<double> toMatrix() const;
 
-    Vec3<double> transformPoint(const Vec3<double> &local_offset) const;
-    Vec3<double> inverseTransformPoint(const Vec3<double> &local_offset) const;
+            SVec<double> transformMotionVector(const SVec<double> &m_in) const;
+            SVec<double> inverseTransformMotionVector(const SVec<double> &m_in) const;
 
-    Mat6<double> inverseTransformSpatialInertia(const Mat6<double> &I_in) const;
+            SVec<double> transformForceVector(const SVec<double> &f_in) const;
+            SVec<double> inverseTransformForceVector(const SVec<double> &f_in) const;
 
-    D6Mat<double> transformMotionSubspace(const D6Mat<double> &S_in) const;
-    D6Mat<double> inverseTransformMotionSubspace(const D6Mat<double> &S_in) const;
-    D6Mat<double> inverseTransformForceSubspace(const D6Mat<double> &F_in) const;
+            Vec3<double> transformPoint(const Vec3<double> &local_offset) const;
+            Vec3<double> inverseTransformPoint(const Vec3<double> &local_offset) const;
 
-    SpatialTransform operator*(const SpatialTransform &X_in) const;
+            Mat6<double> inverseTransformSpatialInertia(const Mat6<double> &I_in) const;
 
-    Mat3<double> getRotation() const { return E_; }
-    Vec3<double> getTranslation() const { return r_; }
-    Mat3<double> getSkewTranslationMatrix() const { return vectorToSkewMat(r_); }
+            D6Mat<double> transformMotionSubspace(const D6Mat<double> &S_in) const;
+            D6Mat<double> inverseTransformMotionSubspace(const D6Mat<double> &S_in) const;
+            D6Mat<double> inverseTransformForceSubspace(const D6Mat<double> &F_in) const;
 
-private:
-    Mat3<double> E_;
-    Vec3<double> r_;
-};
+            SpatialTransform operator*(const SpatialTransform &X_in) const;
 
-class GeneralizedAbsoluteSpatialTransform
-{
-public:
-    GeneralizedAbsoluteSpatialTransform(){};
+            Mat3<double> getRotation() const { return E_; }
+            Vec3<double> getTranslation() const { return r_; }
+            Mat3<double> getSkewTranslationMatrix() const { return vectorToSkewMat(r_); }
 
-    void appendSpatialTransform(const SpatialTransform &X);
+        private:
+            Mat3<double> E_;
+            Vec3<double> r_;
+        };
 
-    int getNumOutputBodies() const { return num_output_bodies_; }
-    const SpatialTransform &getTransformForOutputBody(int output_body_index) const;
+        class GeneralizedAbsoluteSpatialTransform
+        {
+        public:
+            GeneralizedAbsoluteSpatialTransform(){};
 
-    DMat<double> toMatrix() const;
+            void appendSpatialTransform(const SpatialTransform &X);
 
-    DVec<double> transformExternalForceVector(const DVec<double> &f_in) const;
+            int getNumOutputBodies() const { return num_output_bodies_; }
+            const SpatialTransform &getTransformForOutputBody(int output_body_index) const;
 
-    SpatialTransform &operator[](int output_body_index);
+            DMat<double> toMatrix() const;
 
-private:
-    int num_output_bodies_ = 0;
-    std::vector<SpatialTransform> transforms_;
-};
+            DVec<double> transformExternalForceVector(const DVec<double> &f_in) const;
 
-class GeneralizedSpatialTransform
-{
-public:
-    GeneralizedSpatialTransform(int num_parent_bodies);
+            SpatialTransform &operator[](int output_body_index);
 
-    void appendSpatialTransformWithClusterAncestorSubIndex(const SpatialTransform &X,
-                                                           const int subindex);
+        private:
+            int num_output_bodies_ = 0;
+            std::vector<SpatialTransform> transforms_;
+        };
 
-    int getNumOutputBodies() const { return num_output_bodies_; }
-    int getNumParentBodies() const { return num_parent_bodies_; }
+        class GeneralizedSpatialTransform
+        {
+        public:
+            GeneralizedSpatialTransform(int num_parent_bodies);
 
-    DMat<double> toMatrix() const;
-    GeneralizedAbsoluteSpatialTransform toAbsolute() const;
+            void appendSpatialTransformWithClusterAncestorSubIndex(const SpatialTransform &X,
+                                                                   const int subindex);
 
-    const std::pair<SpatialTransform, int> &
-    transform_and_parent_subindex(int output_body_index) const;
+            int getNumOutputBodies() const { return num_output_bodies_; }
+            int getNumParentBodies() const { return num_parent_bodies_; }
 
-    DVec<double> transformMotionVector(const DVec<double> &m_in) const;
-    DVec<double> inverseTransformForceVector(const DVec<double> &f_in) const;
+            DMat<double> toMatrix() const;
+            GeneralizedAbsoluteSpatialTransform toAbsolute() const;
 
-    DMat<double> inverseTransformForceSubspace(const DMat<double> &F_in) const;
+            const std::pair<SpatialTransform, int> &
+            transform_and_parent_subindex(int output_body_index) const;
 
-    DMat<double> inverseTransformSpatialInertia(const DMat<double> &I_in) const;
+            DVec<double> transformMotionVector(const DVec<double> &m_in) const;
+            DVec<double> inverseTransformForceVector(const DVec<double> &f_in) const;
 
-    SpatialTransform &operator[](int output_body_index);
-    GeneralizedSpatialTransform operator*(const GeneralizedSpatialTransform &X_in) const;
-    GeneralizedAbsoluteSpatialTransform operator*(const GeneralizedAbsoluteSpatialTransform &X_in) const;
+            DMat<double> inverseTransformForceSubspace(const DMat<double> &F_in) const;
 
-private:
-    int num_output_bodies_ = 0;
-    const int num_parent_bodies_ = 0;
-    std::vector<std::pair<SpatialTransform, int>> transforms_and_parent_subindices_;
-};
+            DMat<double> inverseTransformSpatialInertia(const DMat<double> &I_in) const;
 
-} // namespace spatial
+            SpatialTransform &operator[](int output_body_index);
+            GeneralizedSpatialTransform operator*(const GeneralizedSpatialTransform &X_in) const;
+            GeneralizedAbsoluteSpatialTransform operator*(const GeneralizedAbsoluteSpatialTransform &X_in) const;
+
+        private:
+            int num_output_bodies_ = 0;
+            const int num_parent_bodies_ = 0;
+            std::vector<std::pair<SpatialTransform, int>> transforms_and_parent_subindices_;
+        };
+
+    } // namespace spatial
+
+} // namespace grbda

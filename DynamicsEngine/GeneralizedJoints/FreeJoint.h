@@ -2,21 +2,26 @@
 
 #include "GeneralizedJoint.h"
 
-namespace GeneralizedJoints
+namespace grbda
 {
 
-class Free : public Base
-{
-public:
-    Free(const Body &body);
-    virtual ~Free() {}
+    namespace GeneralizedJoints
+    {
 
-    GeneralizedJointTypes type() const override { return GeneralizedJointTypes::Free; }
+        class Free : public Base
+        {
+        public:
+            Free(const Body &body);
+            virtual ~Free() {}
 
-    void updateKinematics(const DVec<double> &y, const DVec<double> &yd) override;
+            GeneralizedJointTypes type() const override { return GeneralizedJointTypes::Free; }
 
-    void computeSpatialTransformFromParentToCurrentCluster(
-        GeneralizedSpatialTransform &Xup) const override;
-};
+            void updateKinematics(const DVec<double> &y, const DVec<double> &yd) override;
 
-}
+            void computeSpatialTransformFromParentToCurrentCluster(
+                GeneralizedSpatialTransform &Xup) const override;
+        };
+
+    }
+
+} // namespace grbda

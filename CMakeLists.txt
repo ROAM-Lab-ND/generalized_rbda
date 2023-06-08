@@ -67,7 +67,6 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unused-const-variable \
 
 add_subdirectory(Utils)
 add_subdirectory(DynamicsEngine)
-#add_subdirectory(Systems)
 add_subdirectory(Robots)
 add_subdirectory(3rd-parties)
 add_subdirectory(Benchmarking)
