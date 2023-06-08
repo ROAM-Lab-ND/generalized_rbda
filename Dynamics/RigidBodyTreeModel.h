@@ -40,6 +40,7 @@ namespace grbda
         const Body &getBody(int index) const override { return rigid_body_nodes_[index]->body_; }
         const TreeNodePtr getNodeContainingBody(int index) override { return rigid_body_nodes_[index]; }
 
+	void initializeStates(const DVec<double> &q, const DVec<double> &qd);
         void initializeIndependentStates(const DVec<double> &y, const DVec<double> &yd) override;
 
         DVec<double> forwardDynamics(const DVec<double> &tau) override;
@@ -49,10 +50,11 @@ namespace grbda
 
         DVec<double> qddToYdd(DVec<double> qdd) const { return G_pinv_ * (qdd - g_); }
         DVec<double> yddToQdd(DVec<double> ydd) const { return G_ * ydd + g_; }
+	
+	void extractLoopClosureFunctionsFromClusterModel(const ClusterTreeModel &cluster_tree_model);
 
     private:
         void extractRigidBodiesAndJointsFromClusterModel(const ClusterTreeModel &cluster_tree_model);
-        void extractLoopClosureFunctionsFromClusterModel(const ClusterTreeModel &cluster_tree_model);
         void extractContactPointsFromClusterModel(const ClusterTreeModel &cluster_tree_model);
 
         ForwardDynamicsMethod forward_dynamics_method_;

@@ -159,6 +159,15 @@ namespace grbda
         initializeExternalForces();
     }
 
+    void ClusterTreeModel::initializeTelloIndependentStates(const DVec<double> &q, const DVec<double> &y_dot)
+    {
+        for (auto &cluster : cluster_nodes_)
+        {
+	    cluster->q_ = q.segment(0,4);
+            cluster->qd_ = y_dot.segment(cluster->velocity_index_, cluster->num_velocities_);
+        }
+        initializeExternalForces();
+    }
     void ClusterTreeModel::resetCache()
     {
         TreeModel::resetCache();
