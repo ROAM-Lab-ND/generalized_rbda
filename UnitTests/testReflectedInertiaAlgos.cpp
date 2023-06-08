@@ -5,6 +5,8 @@
 #include "Robots/RobotTypes.h"
 #include "Utils/Utilities/Timer.h"
 
+using namespace grbda;
+
 static const double tol = 1e-5;
 
 template <class T>

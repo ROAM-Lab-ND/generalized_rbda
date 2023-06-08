@@ -4,36 +4,40 @@
 #include "Utils/Utilities/SpatialInertia.h"
 #include "Utils/Utilities/SpatialTransforms.h"
 
-
-namespace internal_helpers {
-Mat3<double> randomRotationMatrix()
+namespace internal_helpers
 {
-    const Vec3<double> rpy = Vec3<double>::Random();
-    Eigen::Quaterniond q = Eigen::AngleAxisd(rpy[0], Vec3<double>::UnitZ()) *
-                           Eigen::AngleAxisd(rpy[1], Vec3<double>::UnitY()) *
-                           Eigen::AngleAxisd(rpy[2], Vec3<double>::UnitZ());
-    return q.matrix();
+
+    using namespace grbda;
+    using namespace grbda::spatial;
+
+    Mat3<double> randomRotationMatrix()
+    {
+        const Vec3<double> rpy = Vec3<double>::Random();
+        Eigen::Quaterniond q = Eigen::AngleAxisd(rpy[0], Vec3<double>::UnitZ()) *
+                               Eigen::AngleAxisd(rpy[1], Vec3<double>::UnitY()) *
+                               Eigen::AngleAxisd(rpy[2], Vec3<double>::UnitZ());
+        return q.matrix();
+    }
+
+    Mat6<double> randomSpatialInertia()
+    {
+        Mat4<double> P = 0.5 * Mat4<double>::Random();
+        P = 0.5 * (P + P.transpose());
+        P = P.exp();
+        SpatialInertia<double> I = SpatialInertia(P);
+        return I.getMatrix();
+    }
+
+    DVec<int> toBase(int number, int base, int digits)
+    {
+        DVec<int> out = DVec<int>::Zero(digits);
+        for (int i = 0; i < digits; i++)
+            out[i] = (number % (int)pow(base, i + 1)) / pow(base, i);
+        return out;
+    }
+
 }
 
-Mat6<double> randomSpatialInertia()
-{
-    Mat4<double> P = 0.5 * Mat4<double>::Random();
-    P = 0.5 * (P + P.transpose());
-    P = P.exp();
-    SpatialInertia<double> I = SpatialInertia(P);
-    return I.getMatrix();
-}
-
-DVec<int> toBase(int number, int base, int digits)
-{
-    DVec<int> out = DVec<int>::Zero(digits);
-    for (int i = 0; i < digits; i++)
-        out[i] = (number % (int)pow(base, i + 1)) / pow(base, i);
-    return out;
-}
-}
-
-using namespace spatial;
 using namespace internal_helpers;
 
 GTEST_TEST(Spatial, SpatialMotionTransform)

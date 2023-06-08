@@ -4,6 +4,8 @@
 #include "DynamicsEngine/ReflectedInertiaTreeModel.h"
 #include "Robots/RobotTypes.h"
 
+using namespace grbda;
+
 static const double tol = 1e-10;
 
 template <class T>

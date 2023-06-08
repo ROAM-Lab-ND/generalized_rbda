@@ -7,6 +7,8 @@
 #include "Robots/RobotTypes.h"
 #include "Utils/Utilities/Timer.h"
 
+using namespace grbda;
+
 template <class T>
 void runBenchmark(std::ofstream &file)
 {

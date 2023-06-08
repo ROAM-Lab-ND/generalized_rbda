@@ -4,6 +4,8 @@
 #include "Robots/RobotTypes.h"
 #include "Utils/Utilities/Timer.h"
 
+using namespace grbda;
+
 static const double tol = 1e-5;
 
 // The purpose of these tests is to ensure consistency between the outputs of the Rigid Body
