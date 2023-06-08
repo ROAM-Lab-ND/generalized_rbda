@@ -1,8 +1,10 @@
 #include "gtest/gtest.h"
 
-#include "DynamicsEngine/RigidBodyTreeModel.h"
-#include "DynamicsEngine/ReflectedInertiaTreeModel.h"
+#include "Dynamics/RigidBodyTreeModel.h"
+#include "Dynamics/ReflectedInertiaTreeModel.h"
 #include "Robots/RobotTypes.h"
+
+using namespace grbda;
 
 static const double tol = 1e-10;
 

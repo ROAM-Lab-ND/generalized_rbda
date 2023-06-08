@@ -55,7 +55,7 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR}/Systems)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/3rd-parties)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/3rd-parties/URDF)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/3rd-parties/CasadiGen)
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/DynamicsEngine)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/Dynamics)
 include_directories("/usr/local/include/eigen3")
 include_directories("/usr/local/include/lcm/")   # lcm includes
 include_directories(${CMAKE_BINARY_DIR})
@@ -66,8 +66,7 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unused-const-variable \
   -Wno-unused-parameter -Wno-unused-variable -Wno-uninitialized")
 
 add_subdirectory(Utils)
-add_subdirectory(DynamicsEngine)
-#add_subdirectory(Systems)
+add_subdirectory(Dynamics)
 add_subdirectory(Robots)
 add_subdirectory(3rd-parties)
 add_subdirectory(Benchmarking)
