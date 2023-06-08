@@ -1,9 +1,0 @@
-struct extended_jump_info
-{
-  double a;
-  double b;
-  double c;
-  double d;
-  double f;
-  double yaw;
-}

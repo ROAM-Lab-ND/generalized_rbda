@@ -1,6 +1,0 @@
-struct sim_command_lcmt
-{
-    int32_t command_number;
-    int32_t data_size;
-    double data[data_size];
-}

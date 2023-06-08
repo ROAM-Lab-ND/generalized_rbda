@@ -1,5 +1,0 @@
-struct rs_pointcloud_lcmt
-{
-    float pointlist[5001][3];
-    int32_t num_valid_points;
-}

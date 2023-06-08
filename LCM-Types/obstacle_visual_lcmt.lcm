@@ -1,8 +1,0 @@
-struct obstacle_visual_lcmt
-{
-    int32_t num_obs;
-    double location[100][3];
-    double sigma;
-    double height;
-    double mesh_center_pos[3];
-}

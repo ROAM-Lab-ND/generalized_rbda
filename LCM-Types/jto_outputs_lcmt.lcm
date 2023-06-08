@@ -1,6 +1,0 @@
-struct jto_outputs_lcmt
-{
-  double x_opt[360];
-  double u_opt[720];
-  double b_solved;
-}

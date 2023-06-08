@@ -1,6 +1,0 @@
-struct jump_callback_lcmt
-{
-  boolean success;
-  float net_jump_distance;
-  float net_yaw_change;
-}

@@ -1,7 +1,0 @@
-struct actuator_lcmt
-{
-    int32_t iter;
-    float qdot[10];
-    float tau[10];
-}
-

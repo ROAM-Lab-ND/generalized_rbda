@@ -1,6 +1,0 @@
-struct teleop_visualization_info_lcmt
-{
-  float body_pos[3];
-  float body_ori_quat[4];
-  float jpos[7];
-}

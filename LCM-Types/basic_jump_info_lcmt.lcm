@@ -1,5 +1,0 @@
-struct basic_jump_info_lcmt
-{
-  double height_delta;
-  double dist_to_obst;
-}

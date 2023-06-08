@@ -1,4 +1,0 @@
-struct waypoint_lcmt
-{
-    double point[3];
-}

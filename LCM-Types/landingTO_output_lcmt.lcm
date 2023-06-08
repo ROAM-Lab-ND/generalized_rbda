@@ -1,9 +1,0 @@
-struct landingTO_output_lcmt
-{
-  double opt_soln[972]; // hardcoded for now, can be changed
-
-  double obj_val;
-  double t_solve;
-  int32_t opt_solved;
-  int32_t iter;
-}

@@ -1,6 +1,0 @@
-struct spi_torque_lcmt
-{
-    float tau_abad[4];
-    float tau_hip[4];
-    float tau_knee[4];
-}
