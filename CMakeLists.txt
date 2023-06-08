@@ -54,7 +54,6 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR}/Utils)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/Systems)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/LCM-Types/cpp)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/3rd-parties)
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/3rd-parties/ParamHandler)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/3rd-parties/URDF)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/3rd-parties/CasadiGen)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/DynamicsEngine)
@@ -77,8 +76,6 @@ add_subdirectory(Benchmarking)
 # Check if the project is being built as a subdirectory
 if (${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_CURRENT_SOURCE_DIR})
     # This is the main project
-
-    # Your main project code here
     set(THIS_COM "${PROJECT_SOURCE_DIR}/" )
     configure_file(${CMAKE_CURRENT_SOURCE_DIR}/config.h.cmake
       ${CMAKE_BINARY_DIR}/Configuration.h)
@@ -86,8 +83,6 @@ if (${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_CURRENT_SOURCE_DIR})
     add_subdirectory(UnitTests)
 else()
     # This is a subdirectory
-
-    # Your subdirectory-specific code here
 endif()
 
 #------------------------------------------------------------------------

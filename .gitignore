@@ -1,0 +1,72 @@
+# Prerequisites
+*.d
+
+# Compiled Object files
+*.slo
+*.lo
+*.o
+*.obj
+
+# Precompiled Headers
+*.gch
+*.pch
+
+# Compiled Dynamic libraries
+*.so
+*.dylib
+*.dll
+
+# Fortran module files
+*.mod
+*.smod
+
+# Compiled Static libraries
+*.lai
+*.la
+*.a
+*.lib
+
+# Executables
+*.exe
+*.out
+*.app
+
+# Unity
+
+# Dynamics Engine's redundancies
+build*/
+*build/
+cmake-build-debug/
+*.casadi
+file_list.txt
+LCM-Types/c_lcm_files
+LCM-Types/controllerlcm
+LCM-Types/interfacelcm
+LCM-Types/java
+LCM-Types/simulatorlcm
+LCM-Types/wincontrollerlcm
+LCM-Types/file_list.txt
+LCM-Types/cpp/*
+LCM-Types/csharp/*
+LCM-Types/lcmtypes/*
+LCM-Types/python/*
+lcm_data/lcm_log
+lcm_data/matlab_log
+lcm_data/matlab_log_archive
+LCM-Types/file_list.txt
+*.m~
+*.swp
+*.pyc
+.DS_Store
+tags
+*.cache
+.vscode/
+cmake-build-remote-lab/*
+cmake-build-default/*
+.ftpconfig
+.~lock.notes.odt#
+notes.odt
+/cmake-build-default/
+data/*
+eigen-3.3.7/
+**casadi/
