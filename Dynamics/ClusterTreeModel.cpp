@@ -38,6 +38,7 @@ namespace grbda
                                       const std::string parent_name, const SpatialTransform Xtree,
                                       std::shared_ptr<GeneralizedJoints::Base> joint)
     {
+        throw std::runtime_error("No longer valid");
         registerBody(name, inertia, parent_name, Xtree);
         appendRegisteredBodiesAsCluster(name, joint);
     }
@@ -62,6 +63,7 @@ namespace grbda
 
         position_index_ += joint->numPositions();
         velocity_index_ += joint->numVelocities();
+        unactuated_dofs_ += joint->numUnactuatedVelocities();
 
         resizeSystemMatrices();
         bodies_in_current_cluster_.clear();

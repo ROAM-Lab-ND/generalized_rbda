@@ -23,6 +23,7 @@ namespace grbda
 
         int getNumPositions() const { return position_index_; }
         int getNumDegreesOfFreedom() const { return velocity_index_; }
+        int getNumActuatedDegreesOfFreedom() const { return velocity_index_ - unactuated_dofs_; }
 
         virtual DMat<double> getMassMatrix() = 0;
         virtual DVec<double> getBiasForceVector() = 0;
@@ -69,6 +70,7 @@ namespace grbda
 
         int position_index_ = 0;
         int velocity_index_ = 0;
+        int unactuated_dofs_ = 0;
 
         std::vector<TreeNodePtr> nodes_;
         std::vector<int> indices_of_nodes_experiencing_external_forces_;

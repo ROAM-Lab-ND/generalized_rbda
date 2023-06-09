@@ -49,6 +49,7 @@ namespace grbda
 
             int numPositions() const { return num_independent_positions_; }
             int numVelocities() const { return num_independent_velocities_; }
+            virtual int numUnactuatedVelocities() const { return 0; }
 
             const DMat<double> &S() const { return S_; }
             const DMat<double> &S_ring() const { return S_ring_; }

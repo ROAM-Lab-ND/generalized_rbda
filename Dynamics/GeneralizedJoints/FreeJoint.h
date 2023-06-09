@@ -16,6 +16,8 @@ namespace grbda
 
             GeneralizedJointTypes type() const override { return GeneralizedJointTypes::Free; }
 
+            int numUnactuatedVelocities() const override { return 6; }
+
             void updateKinematics(const DVec<double> &y, const DVec<double> &yd) override;
 
             void computeSpatialTransformFromParentToCurrentCluster(
