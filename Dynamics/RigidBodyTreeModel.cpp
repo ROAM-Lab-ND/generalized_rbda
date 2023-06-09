@@ -80,7 +80,7 @@ namespace grbda
             contact_points_.push_back(contact_point);
     }
 
-    void RigidBodyTreeModel::initializeStates(const DVec<double> q, const DVec<double> &qd)
+    void RigidBodyTreeModel::initializeStates(const DVec<double> &q, const DVec<double> &qd)
     {
         for (auto &node : rigid_body_nodes_)
         {

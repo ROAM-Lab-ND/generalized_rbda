@@ -1,7 +1,9 @@
 #include "gtest/gtest.h"
 
-#include "DynamicsEngine/RigidBodyTreeModel.h"
+#include "Dynamics/RigidBodyTreeModel.h"
 #include "Robots/Tello.hpp"
+
+using namespace grbda;
 
 static const double tol = 1e-5;
 

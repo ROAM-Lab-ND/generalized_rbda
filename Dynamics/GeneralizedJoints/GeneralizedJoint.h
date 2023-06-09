@@ -5,6 +5,7 @@
 #include "Dynamics/Body.h"
 #include "Dynamics/Joints/Joint.h"
 #include "Utils/Utilities/SpatialTransforms.h"
+#include "CasadiGen.h"
 
 namespace grbda
 {
@@ -19,7 +20,8 @@ namespace grbda
         RevolutePairWithRotor,
         RevoluteWithRotor,
         RevoluteWithMultipleRotorsJoint,
-        Generic
+        Generic,
+	TelloHipDifferential
     };
 
     namespace GeneralizedJoints
