@@ -48,6 +48,15 @@ namespace grbda
         vectorAligned<SVec<double>> _externalForces;
 
         size_t _nGroundContact = 0;
+        std::vector<size_t> _gcParent;
+        std::vector<Vec3<double>> _pGC;
+        std::vector<Vec3<double>> _vGC;
+        std::vector<D3Mat<double>> _Jc;
+
+        size_t _nJointLim = 0;
+        vector<size_t> _JointLimID;    // hold the joint nb ID as defined in humanoid.h
+        vector<double> _JointLimValueLower; // hold the joint nb ID as defined in humanoid.h
+        vector<double> _JointLimValueUpper; // hold the joint nb ID as defined in humanoid.h
 
         void resetCalculationFlags() { resetCache(); }
 
@@ -57,6 +66,13 @@ namespace grbda
             const int nv = getNumDegreesOfFreedom();
             initializeIndependentStates(state.head(nq), state.tail(nv));
         }
+
+        void contactJacobians() {}
+
+        double applyTestForce(const int gc_index, const Vec3<double> &force_ics_at_contact,
+                              DVec<double> &dstate_out) { return 0.; }
+
+        DMat<double> massMatrix() { return DMat<double>::Zero(0, 0); }
 
         /////////////////////////////////////
 
