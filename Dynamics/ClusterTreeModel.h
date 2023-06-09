@@ -32,6 +32,34 @@ namespace grbda
         }
         ~ClusterTreeModel() {}
 
+        // TODO(@MatthewChignoli): These are functions and members shared with FloatingBaseModel. Not sure how I want to deal with them moving forward. It's unclear which parts of Robot-Software need to change for compatiblity with GRBDA and which parts of GRBDA need to change for compatibility with Robot-Software
+        Vec3<double> getPosition(const int link_idx) { return Vec3<double>::Zero(); }
+        Mat3<double> getOrientation(const int link_idx) { return Mat3<double>::Zero(); }
+        Vec3<double> getLinearVelocity(const int link_idx) { return Vec3<double>::Zero(); }
+        Vec3<double> getAngularVelocity(const int link_idx) { return Vec3<double>::Zero(); }
+
+        void resetExternalForces()
+        {
+            for (int i = 0; i < getNumDegreesOfFreedom(); i++)
+            {
+                _externalForces[i] = SVec<double>::Zero();
+            }
+        }
+        vectorAligned<SVec<double>> _externalForces;
+
+        size_t _nGroundContact = 0;
+
+        void resetCalculationFlags() { resetCache(); }
+
+        void setState(const DVec<double> &state)
+        {
+            const int nq = getNumPositions();
+            const int nv = getNumDegreesOfFreedom();
+            initializeIndependentStates(state.head(nq), state.tail(nv));
+        }
+
+        /////////////////////////////////////
+
         Body registerBody(const std::string name, const SpatialInertia<double> inertia,
                           const std::string parent_name, const SpatialTransform Xtree);
         // TODO(@MatthewChignoli): need to clean this up, should have to make all of these std::vectors we we are only appending one body. Right now the append body function is silly. Because That function creates a body (by registering it), but it also requires a generalized joint... which requires a body...
