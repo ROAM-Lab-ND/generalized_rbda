@@ -33,10 +33,14 @@ namespace grbda
         ~ClusterTreeModel() {}
 
         // TODO(@MatthewChignoli): These are functions and members shared with FloatingBaseModel. Not sure how I want to deal with them moving forward. It's unclear which parts of Robot-Software need to change for compatiblity with GRBDA and which parts of GRBDA need to change for compatibility with Robot-Software
-        Vec3<double> getPosition(const int link_idx) { return Vec3<double>::Zero(); }
-        Mat3<double> getOrientation(const int link_idx) { return Mat3<double>::Zero(); }
-        Vec3<double> getLinearVelocity(const int link_idx) { return Vec3<double>::Zero(); }
-        Vec3<double> getAngularVelocity(const int link_idx) { return Vec3<double>::Zero(); }
+
+        // TODO(@MatthewChignoli): So the difficulty here is with the indexing of the bodies. We have to change the numbering of the floating base model... but this will have major downstream effects that we want to avoid for now
+        Vec3<double> getBodyPosition(const int& body_idx);
+
+        Vec3<double> getPosition(const int link_idx) const { return Vec3<double>::Zero(); }
+        Mat3<double> getOrientation(const int link_idx) const { return Mat3<double>::Zero(); }
+        Vec3<double> getLinearVelocity(const int link_idx) const { return Vec3<double>::Zero(); }
+        Vec3<double> getAngularVelocity(const int link_idx) const { return Vec3<double>::Zero(); }
 
         void resetExternalForces()
         {

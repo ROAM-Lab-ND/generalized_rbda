@@ -276,6 +276,21 @@ namespace grbda
     }
 
     /*!
+     * Invert a spatial transformation (much faster than matrix inverse)
+     */
+    template <typename T>
+    auto invertSXform(const Eigen::MatrixBase<T> &X)
+    {
+      static_assert(T::ColsAtCompileTime == 6 && T::RowsAtCompileTime == 6,
+                    "Must have 6x6 matrix");
+      RotMat<typename T::Scalar> R = rotationFromSXform(X);
+      Vec3<typename T::Scalar> r =
+          -matToSkewVec(R.transpose() * X.template bottomLeftCorner<3, 3>());
+      Mat6<typename T::Scalar> Xinv = createSXform(R.transpose(), -R * r);
+      return Xinv;
+    }
+
+    /*!
      * Compute joint motion subspace vector
      */
     template <typename T>
@@ -419,6 +434,24 @@ namespace grbda
       // classical accleration = spatial linear acc + omega x v
       Vec3<typename T::Scalar> acc = alin_x + v.template head<3>().cross(vlin_x);
       return acc;
+    }
+
+    /*!
+     * Apply spatial transformation to a point.
+     */
+    template <typename T, typename T2>
+    auto sXFormPoint(const Eigen::MatrixBase<T> &X,
+                     const Eigen::MatrixBase<T2> &p)
+    {
+      static_assert(T::ColsAtCompileTime == 6 && T::RowsAtCompileTime == 6,
+                    "Must have 6x6 vector");
+      static_assert(T2::ColsAtCompileTime == 1 && T2::RowsAtCompileTime == 3,
+                    "Must have 3x1 vector");
+
+      Mat3<typename T::Scalar> R = rotationFromSXform(X);
+      Vec3<typename T::Scalar> r = translationFromSXform(X);
+      Vec3<typename T::Scalar> Xp = R * (p - r);
+      return Xp;
     }
 
     /*!

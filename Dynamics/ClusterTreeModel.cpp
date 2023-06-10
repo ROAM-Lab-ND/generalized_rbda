@@ -159,6 +159,20 @@ namespace grbda
         initializeExternalForces();
     }
 
+    Vec3<double> ClusterTreeModel::getBodyPosition(const int& body_idx)
+    {
+        const int cluster_idx = getIndexOfClusterContainingBody(body_idx);
+        const int subindex_within_cluster = bodies_[body_idx].sub_index_within_cluster_;
+
+        forwardKinematics();
+        const SpatialTransform& Xa = cluster_nodes_[cluster_idx]->Xa_[subindex_within_cluster];
+        const Mat6<double> Xai = invertSXform(Xa.toMatrix().cast<double>());
+        Vec3<double> link_pos = sXFormPoint(Xai, Vec3<double>::Zero());
+        return link_pos;
+
+        return Vec3<double>::Zero();
+    }
+
     void ClusterTreeModel::resetCache()
     {
         TreeModel::resetCache();
