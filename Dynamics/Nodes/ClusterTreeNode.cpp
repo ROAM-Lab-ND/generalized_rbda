@@ -37,7 +37,7 @@ namespace grbda
 
     void ClusterTreeNode::applyForceToBody(const SVec<double> &force, const Body &body)
     {
-        f_ext_.segment<6>(6 * body.sub_index_within_cluster_) = force;
+        f_ext_.segment<6>(6 * body.sub_index_within_cluster_) += force;
     }
 
     bool ClusterTreeNode::containsBody(int body_index) const
