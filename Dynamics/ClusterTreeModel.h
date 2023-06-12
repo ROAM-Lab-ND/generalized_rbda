@@ -33,7 +33,7 @@ namespace grbda
         }
         ~ClusterTreeModel() {}
 
-        // TODO(@MatthewChignoli): These are functions and members shared with FloatingBaseModel. Not sure how I want to deal with them moving forward. It's unclear which parts of Robot-Software need to change for compatiblity with GRBDA and which parts of GRBDA need to change for compatibility with Robot-Software
+        // TODO(@MatthewChignoli): These are functions and members shared with FloatingBaseModel. Not sure how I want to deal with them moving forward. It's unclear which parts of Robot-Software need to change for compatiblity with GRBDA and which parts of GRBDA need to change for compatibility with Robot-Software. Some of this should be moved to TreeModel base class?
 
         Vec3<double> getPosition(const string &body_name);
         Mat3<double> getOrientation(const string &body_name);
@@ -73,6 +73,26 @@ namespace grbda
             }
         }
 
+        // TODO(@MatthewChignoli): For now we will use this, but I think maybe we want to create a contact point struct that holds this information
+        const std::unordered_map<std::string, int> &contacts() const { return contact_name_to_contact_index_; }
+
+        const Vec3<double> &pGC(const string &cp_name) const
+        {
+            return contactPoint(cp_name).position_;
+        }
+
+        const Vec3<double> &vGC(const string &cp_name) const
+        {
+            return contactPoint(cp_name).velocity_;
+        }
+
+        const string &gcParent(const string &cp_name) const
+        {
+            const int& body_index = contactPoint(cp_name).body_index_;
+            return bodies_.at(body_index).name_;
+        }
+
+        // TODO(@MatthewChignoli): So all of this stuff get's deprecated
         size_t _nGroundContact = 0;
         vector<size_t> _gcParent;
         vector<Vec3<double>> _pGC;
@@ -113,6 +133,7 @@ namespace grbda
         void appendContactPoint(const string body_name,
                                 const Vec3<double> &local_offset,
                                 const string contact_point_name);
+        void appendContactBox(const string body_name, const Vec3<double> &box_dimensions);
 
         void print() const;
 

@@ -69,6 +69,8 @@ namespace grbda
 
     void ClusterTreeModel::print() const
     {
+        printf("\nCluster Tree Model:\n");
+        printf("** Clusters **\n");
         for (const auto &cluster : cluster_nodes_)
         {
             int parent = cluster->parent_index_;
@@ -81,6 +83,14 @@ namespace grbda
                 parent_name = parent > -1 ? bodies_[parent].name_ : "ground";
                 printf("\t\t >%s (%s)\n", body.name_.c_str(), parent_name.c_str());
             }
+        }
+
+        printf("** Contact Points **\n");
+        for (const auto &contact_point : contact_points_)
+        {
+            const int parent = contact_point.body_index_;
+            string parent_name = bodies_.at(parent).name_;
+            printf("Contact Point: %s (%s)\n", contact_point.name_.c_str(), parent_name.c_str());
         }
     }
 
@@ -136,6 +146,7 @@ namespace grbda
             contact_point.jacobian_.setZero(6, num_degrees_of_freedom);
     }
 
+    // TODO(@MatthewChignoli): Do we have to add all contact points at the end? So that the jacobians have the correct number of columns?
     void ClusterTreeModel::appendContactPoint(const string body_name,
                                               const Vec3<double> &local_offset,
                                               const string contact_point_name)
@@ -145,6 +156,20 @@ namespace grbda
         contact_name_to_contact_index_[contact_point_name] = contact_point_index;
         contact_points_.emplace_back(body_name_to_body_index_[body_name], local_offset,
                                      contact_point_name, getNumDegreesOfFreedom());
+    }
+
+    void ClusterTreeModel::appendContactBox(const string body_name, const Vec3<double> &dims)
+    {
+        using V3d = Vec3<double>;
+        appendContactPoint(body_name, V3d(dims(0), dims(1), dims(2)) / 2, "torso-contact-1");
+        appendContactPoint(body_name, V3d(-dims(0), dims(1), dims(2)) / 2, "torso-contact-2");
+        appendContactPoint(body_name, V3d(dims(0), -dims(1), dims(2)) / 2, "torso-contact-3");
+        appendContactPoint(body_name, V3d(-dims(0), -dims(1), dims(2)) / 2, "torso-contact-4");
+
+        appendContactPoint(body_name, V3d(dims(0), dims(1), -dims(2)) / 2, "torso-contact-5");
+        appendContactPoint(body_name, V3d(-dims(0), dims(1), -dims(2)) / 2, "torso-contact-6");
+        appendContactPoint(body_name, V3d(dims(0), -dims(1), -dims(2)) / 2, "torso-contact-7");
+        appendContactPoint(body_name, V3d(-dims(0), -dims(1), -dims(2)) / 2, "torso-contact-8");
     }
 
     void ClusterTreeModel::initializeIndependentStates(const DVec<double> &y, const DVec<double> &yd)

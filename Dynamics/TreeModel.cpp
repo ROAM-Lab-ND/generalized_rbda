@@ -34,17 +34,17 @@ namespace grbda
 
     void TreeModel::contactPointForwardKinematics()
     {
-        for (auto &contact_point : contact_points_)
+        for (auto &cp : contact_points_)
         {
-            const auto &body = getBody(contact_point.body_index_);
-            const auto node = getNodeContainingBody(contact_point.body_index_);
+            const auto &body = getBody(cp.body_index_);
+            const auto node = getNodeContainingBody(cp.body_index_);
 
             const auto &Xa = node->getAbsoluteTransformForBody(body);
             const SVec<double> v_body = node->getVelocityForBody(body);
 
-            contact_point.position_ = Xa.inverseTransformPoint(contact_point.local_offset_);
-            contact_point.velocity_ = spatialToLinearVelocity(Xa.inverseTransformMotionVector(v_body),
-                                                              contact_point.position_);
+            cp.position_ = Xa.inverseTransformPoint(cp.local_offset_);
+            cp.velocity_ = spatialToLinearVelocity(Xa.inverseTransformMotionVector(v_body),
+                                                   cp.position_);
         }
     }
 
