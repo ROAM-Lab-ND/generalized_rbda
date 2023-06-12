@@ -93,16 +93,6 @@ namespace grbda
         }
 
         // TODO(@MatthewChignoli): So all of this stuff get's deprecated
-        size_t _nGroundContact = 0;
-        vector<size_t> _gcParent;
-        vector<Vec3<double>> _pGC;
-        vector<Vec3<double>> _vGC;
-        vector<D3Mat<double>> _Jc;
-
-        size_t _nJointLim = 0;
-        vector<size_t> _JointLimID;    // hold the joint nb ID as defined in humanoid.h
-        vector<double> _JointLimValueLower; // hold the joint nb ID as defined in humanoid.h
-        vector<double> _JointLimValueUpper; // hold the joint nb ID as defined in humanoid.h
 
         void resetCalculationFlags() { resetCache(); }
 
@@ -119,6 +109,18 @@ namespace grbda
                               DVec<double> &dstate_out) { return 0.; }
 
         DMat<double> massMatrix() { return DMat<double>::Zero(0, 0); }
+
+        // TODO(@MatthewChignoli): Things to delete
+        size_t _nGroundContact = 0;
+        vector<size_t> _gcParent;
+        vector<Vec3<double>> _pGC;
+        vector<Vec3<double>> _vGC;
+        vector<D3Mat<double>> _Jc;
+
+        size_t _nJointLim = 0;
+        vector<size_t> _JointLimID;         // hold the joint nb ID as defined in humanoid.h
+        vector<double> _JointLimValueLower; // hold the joint nb ID as defined in humanoid.h
+        vector<double> _JointLimValueUpper; // hold the joint nb ID as defined in humanoid.h
 
         /////////////////////////////////////
 
