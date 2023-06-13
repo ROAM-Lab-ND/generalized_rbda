@@ -114,7 +114,6 @@ namespace grbda
 		vector<Eigen::MatrixBase<Mat2<double>>*> K = {&Ki, &Kd, &Ki_dot, &Kd_dot};
 	    casadi_interface(arg, K, kikd_gen, kikd_gen_sparsity_out, kikd_gen_work);
 
-
 		const Mat2<double> Kd_inv = Kd.inverse();
 		Mat2<double> abcd_dot = -Kd_inv * Ki_dot + Kd_inv * Kd_dot * Kd_inv * Ki;
 
