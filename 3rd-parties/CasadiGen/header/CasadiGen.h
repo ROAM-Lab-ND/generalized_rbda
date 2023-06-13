@@ -44,18 +44,19 @@ namespace grbda
                         int f_work(int_T *, int_T *, int_T *, int_T *));
 
   template <typename T>
-  void casadi_interface(std::vector<DVec<T>> &arg, DMat<T> &res,
-                        int f(const T **, T **, int_T *, T *, int),
-                        const int_T *f_sparse_out(int_T),
-                        int f_work(int_T *, int_T *, int_T *, int_T *))
+  void casadi_interface(
+      std::vector<DVec<typename T::Scalar>> &arg, Eigen::MatrixBase<T> &res,
+      int f(const typename T::Scalar **, typename T::Scalar **, int_T *, typename T::Scalar *, int),
+      const int_T *f_sparse_out(int_T),
+      int f_work(int_T *, int_T *, int_T *, int_T *))
   {
-    std::vector<T *> ARG;
+    std::vector<typename T::Scalar *> ARG;
     for (size_t idx_arg = 0; idx_arg < arg.size(); idx_arg++)
     {
       ARG.push_back(arg[idx_arg].data());
     }
 
-    std::vector<T *> RES = {res.data()};
+    std::vector<typename T::Scalar *> RES = {res.derived().data()};
 
     casadi_interface(ARG, RES, res.size(), f, f_sparse_out, f_work);
   }
