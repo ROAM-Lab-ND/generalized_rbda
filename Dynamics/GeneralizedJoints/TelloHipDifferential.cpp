@@ -91,15 +91,9 @@ namespace grbda
 	    K_.leftCols(2) = -G_.bottomRows(2);
 
 	    // Calculate g and k
-	    Vec2<double> arg_y = q.head(2);
-	    Vec2<double> arg_q_dot = q.tail(2);
-	    Vec2<double> arg_y_dot = q_dot.head(2);
-	    Vec2<double> arg_qd_dot = q_dot.tail(2);
-	    vector<double *> arg = {arg_y.data(), arg_q_dot.data(), arg_y_dot.data(), arg_qd_dot.data()};
-	    vector<double *> res = {g_.data()};
-	    casadi_interface(arg, res, g_.size(), g_gen, g_gen_sparsity_out, g_gen_work);
-	    res = {k_.data()};
-	    casadi_interface(arg, res, k_.size(), k_gen, k_gen_sparsity_out, k_gen_work);
+        vector<DVec<double>> arg = {q.head(2), q.tail(2), q_dot.head(2), q_dot.tail(2)};
+	    casadi_interface(arg, g_, g_gen, g_gen_sparsity_out, g_gen_work);
+	    casadi_interface(arg, k_, k_gen, k_gen_sparsity_out, k_gen_work);
 
 	    X21_ = link_2_joint_->XJ() * link_2_.Xtree_;
 
@@ -113,12 +107,9 @@ namespace grbda
 	    // Given matrix abcd = [a b;c d] = G_.bottomRows(2) = -Kd.inv()*Ki,
 	    // calculate a_dot, b_dot, c_dot, d_dot for S_ring_
 	    Mat2<double> Ki, Kd, Ki_dot, Kd_dot; //TODO: move to GeneralizedJoints
-	    Ki.setZero();
-	    Kd.setZero();
-	    Ki_dot.setZero();
-	    Kd_dot.setZero();
-	    res = {Ki.data(), Kd.data(), Ki_dot.data(), Kd_dot.data()};
-	    casadi_interface(arg, res, Ki.size(), kikd_gen, kikd_gen_sparsity_out, kikd_gen_work);
+		vector<Eigen::MatrixBase<Mat2<double>>*> K = {&Ki, &Kd, &Ki_dot, &Kd_dot};
+	    casadi_interface(arg, K, kikd_gen, kikd_gen_sparsity_out, kikd_gen_work);
+
 	    Mat2<double> abcd_dot = -Kd.inverse() * Ki_dot\
 				    + Kd.inverse() * Kd_dot * Kd.inverse() * Ki;
 
