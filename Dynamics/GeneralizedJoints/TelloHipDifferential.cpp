@@ -25,7 +25,7 @@ namespace grbda
 
 	    G_.topRows(2) = DMat<double>::Identity(2, 2);
 
-	    phi_ = [&](DVec<double> q)
+	    phi_ = [](DVec<double> q)
 	    {
 		    DVec<double> out = DVec<double>::Zero(2);
 		    out[0] = \

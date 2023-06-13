@@ -1,6 +1,7 @@
 #pragma once
 
 #include "GeneralizedJoint.h"
+#include "CasadiGen.h"
 
 namespace grbda
 {

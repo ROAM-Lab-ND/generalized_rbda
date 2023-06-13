@@ -28,13 +28,5 @@ Kd_dot = reshape(Kd_dot,2,2); % (2,2)
 
 f = Function('kikd_gen',{y,qd,y_dot,qd_dot},{Ki,Kd,Ki_dot,Kd_dot});
 
-% code gen for cpp:
-% opts = struct('cpp', true, 'with_header', true);
-% f.generate('kikd_gen.cpp',opts);
-
-% code gen for matlab:
-% opts = struct('mex', true);
-% f.generate('kikd_gen.c',opts)
-% see https://web.casadi.org/docs/#casadi-s-external-function to generate
-% .so
-
+opts = struct('cpp', true, 'with_header', true);
+gen_code(f, 'kikd_gen', opts);

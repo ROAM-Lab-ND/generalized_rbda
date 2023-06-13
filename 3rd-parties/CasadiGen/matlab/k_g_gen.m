@@ -57,18 +57,6 @@ G_y_dot = G * y_dot;
 g = jtimes(G_y_dot,qd,qd_dot) + jtimes(G_y_dot,y,y_dot);
 f2 = Function('g_gen',{y,qd,y_dot,qd_dot},{g});
 
-% to test:
-% f1([1; 3],[2; 3],[3; 2],[1; 1])
-% f2([1; 3],[2; 3],[3; 2],[1; 1])
-
-% code gen for cpp:
-% opts = struct('cpp', true, 'with_header', true);
-% f1.generate('k_gen.cpp',opts);
-% f2.generate('g_gen.cpp',opts);
-
-% code gen for matlab:
-% (on matlab)
-% opts = struct('mex', true);
-% f2.generate('g_gen.c',opts)
-% (on unix : see https://web.casadi.org/docs/#casadi-s-external-function)
-% gcc -fPIC -shared g_gen.c -o g_gen.so
+opts = struct('cpp', true, 'with_header', true);
+gen_code(f1, 'k_gen', opts);
+gen_code(f2, 'g_gen', opts);
