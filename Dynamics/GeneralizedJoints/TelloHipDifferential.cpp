@@ -97,12 +97,16 @@ namespace grbda
 
 	    X21_ = link_2_joint_->XJ() * link_2_.Xtree_;
 
-	    S_.block<6, 1>(12, 0) = link_1_joint_->S() * G_.block<1, 1>(2,0);
-	    S_.block<6, 1>(12, 1) = link_1_joint_->S() * G_.block<1, 1>(2, 1);
-	    S_.block<6, 1>(18, 0) = X21_.transformMotionSubspace(link_1_joint_->S()) * G_.block<1, 1>(2, 0) +
-		    link_2_joint_->S() * G_.block<1, 1>(3, 0);
-	    S_.block<6, 1>(18, 1) = X21_.transformMotionSubspace(link_1_joint_->S()) * G_.block<1 ,1>(2, 1) +
-		    link_2_joint_->S() * G_.block<1, 1>(3, 1);
+		const DMat<double>& S1 = link_1_joint_->S();
+		const DMat<double> X21_S1 = X21_.transformMotionSubspace(S1);
+		const DMat<double>& S2 = link_2_joint_->S();
+	    const DVec<double> v2_relative = S2 * q_dot[3];
+		const DMat<double> v2_rel_crm = generalMotionCrossMatrix(v2_relative);
+
+	    S_.block<6, 1>(12, 0) = S1 * G_.block<1, 1>(2,0);
+	    S_.block<6, 1>(12, 1) = S1 * G_.block<1, 1>(2, 1);
+	    S_.block<6, 1>(18, 0) = X21_S1 * G_.block<1, 1>(2, 0) + S2 * G_.block<1, 1>(3, 0);
+	    S_.block<6, 1>(18, 1) = X21_S1 * G_.block<1 ,1>(2, 1) + S2 * G_.block<1, 1>(3, 1);
 
 	    // Given matrix abcd = [a b;c d] = G_.bottomRows(2) = -Kd.inv()*Ki,
 	    // calculate a_dot, b_dot, c_dot, d_dot for S_ring_
@@ -110,26 +114,20 @@ namespace grbda
 		vector<Eigen::MatrixBase<Mat2<double>>*> K = {&Ki, &Kd, &Ki_dot, &Kd_dot};
 	    casadi_interface(arg, K, kikd_gen, kikd_gen_sparsity_out, kikd_gen_work);
 
-	    Mat2<double> abcd_dot = -Kd.inverse() * Ki_dot\
-				    + Kd.inverse() * Kd_dot * Kd.inverse() * Ki;
 
-	    DVec<double> v2_relative = link_2_joint_->S() * q_dot[3];
-	    S_ring_.block<6, 1>(12, 0) = link_1_joint_->S() * abcd_dot.block<1, 1>(0, 0);
-	    S_ring_.block<6, 1>(12, 1) = link_1_joint_->S() * abcd_dot.block<1, 1>(0, 1);
-	    S_ring_.block<6, 1>(18, 0) = X21_.transformMotionSubspace(link_1_joint_->S())\
-					 * abcd_dot.block<1, 1>(0, 0)\
-					 + link_2_joint_->S() * abcd_dot.block<1, 1>(1, 0)\
-					 + (-generalMotionCrossMatrix(v2_relative)\
-					 * X21_.transformMotionSubspace(link_1_joint_->S()))\
-					 * G_.block<1, 1>(2, 0);
-	    S_ring_.block<6, 1>(18, 1) = X21_.transformMotionSubspace(link_1_joint_->S())\
-					 * abcd_dot.block<1, 1>(0, 1)\
-					 + link_2_joint_->S() * abcd_dot.block<1, 1>(1, 1)\
-					 + (-generalMotionCrossMatrix(v2_relative)\
-					 * X21_.transformMotionSubspace(link_1_joint_->S()))\
-					 * G_.block<1, 1>(2, 1);
+		const Mat2<double> Kd_inv = Kd.inverse();
+		Mat2<double> abcd_dot = -Kd_inv * Ki_dot + Kd_inv * Kd_dot * Kd_inv * Ki;
 
-	    vJ_ = S_ * yd;
+		S_ring_.block<6, 1>(12, 0) = S1 * abcd_dot.block<1, 1>(0, 0);
+		S_ring_.block<6, 1>(12, 1) = S1 * abcd_dot.block<1, 1>(0, 1);
+		S_ring_.block<6, 1>(18, 0) = X21_S1 * abcd_dot.block<1, 1>(0, 0) +
+									 S2 * abcd_dot.block<1, 1>(1, 0) +
+									 (-v2_rel_crm * X21_S1) * G_.block<1, 1>(2, 0);
+		S_ring_.block<6, 1>(18, 1) = X21_S1 * abcd_dot.block<1, 1>(0, 1) +
+									 S2 * abcd_dot.block<1, 1>(1, 1) +
+									 (-v2_rel_crm * X21_S1) * G_.block<1, 1>(2, 1);
+
+		vJ_ = S_ * yd;
 	}
 
 	void TelloHipDifferential::computeSpatialTransformFromParentToCurrentCluster(
