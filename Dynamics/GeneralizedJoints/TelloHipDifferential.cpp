@@ -23,7 +23,7 @@ namespace grbda
 	    g_.setZero(4);
 	    k_.setZero(2);
 
-	    G_.topRows(2) = DMat<double>::Identity(2, 2);
+	    G_.topRows<2>() = DMat<double>::Identity(2, 2);
 
 	    phi_ = [](DVec<double> q)
 	    {
@@ -41,7 +41,7 @@ namespace grbda
 		    return out;
 	    };
 
-	    K_.rightCols(2) = DMat<double>::Identity(2, 2);
+	    K_.rightCols<2>() = DMat<double>::Identity(2, 2);
 	    
 	    S_.block<6, 1>(0, 0) = rotor_1_joint_->S();
 	    S_.block<6, 1>(6, 1) = rotor_2_joint_->S();
@@ -79,7 +79,7 @@ namespace grbda
 
 	    DMat<double> J_dp_2_dq_hip = -J_q_hip.inverse() * J_p_hip;
 
-	    G_.bottomRows(2) = J_dp_2_dq_hip;
+	    G_.bottomRows<2>() = J_dp_2_dq_hip;
 
 	    DVec<double> q_dot = G_ * yd;
 
@@ -88,13 +88,13 @@ namespace grbda
 	    link_1_joint_->updateKinematics(q.segment<1>(2), q_dot.segment<1>(2));
 	    link_2_joint_->updateKinematics(q.segment<1>(3), q_dot.segment<1>(3));
 
-	    K_.leftCols(2) = -G_.bottomRows(2);
+	    K_.leftCols<2>() = -G_.bottomRows<2>();
 
 	    // Calculate g and k
-	    Vec2<double> arg_y = q.head(2);
-	    Vec2<double> arg_q_dot = q.tail(2);
-	    Vec2<double> arg_y_dot = q_dot.head(2);
-	    Vec2<double> arg_qd_dot = q_dot.tail(2);
+	    Vec2<double> arg_y = q.head<2>();
+	    Vec2<double> arg_q_dot = q.tail<2>();
+	    Vec2<double> arg_y_dot = q_dot.head<2>();
+	    Vec2<double> arg_qd_dot = q_dot.tail<2>();
 	    vector<double *> arg = {arg_y.data(), arg_q_dot.data(), arg_y_dot.data(), arg_qd_dot.data()};
 	    vector<double *> res = {g_.data()};
 	    casadi_interface(arg, res, g_.size(), g_gen, g_gen_sparsity_out, g_gen_work);
@@ -112,7 +112,7 @@ namespace grbda
 
 	    // Given matrix abcd = [a b;c d] = G_.bottomRows(2) = -Kd.inv()*Ki,
 	    // calculate a_dot, b_dot, c_dot, d_dot for S_ring_
-	    Mat2<double> Ki, Kd, Ki_dot, Kd_dot; //TODO: move to GeneralizedJoints
+	    Mat2<double> Ki, Kd, Ki_dot, Kd_dot;
 	    Ki.setZero();
 	    Kd.setZero();
 	    Ki_dot.setZero();
