@@ -24,23 +24,6 @@ namespace grbda
 	    k_.setZero(2);
 
 	    G_.topRows<2>() = DMat<double>::Identity(2, 2);
-
-	    phi_ = [](DVec<double> q)
-	    {
-		    DVec<double> out = DVec<double>::Zero(2);
-		    out[0] = \
-		    (57*sin(q[0]))/2500 - (49*cos(q[2]))/5000 - (399*sin(q[2]))/20000 - \
-		    (8*cos(q[0])*cos(q[3]))/625 - (57*cos(q[2])*sin(q[3]))/2500 - \
-		    (7*sin(q[0])*sin(q[2]))/625 + (7*sin(q[2])*sin(q[3]))/625 - \
-		    (8*cos(q[2])*sin(q[0])*sin(q[3]))/625 + 3021/160000;
-		    out[1] = \
-		    (57*sin(q[1]))/2500 - (49*cos(q[2]))/5000 + (399*sin(q[2]))/20000 - \
-		    (8*cos(q[1])*cos(q[3]))/625 - (57*cos(q[2])*sin(q[3]))/2500 + \
-		    (7*sin(q[1])*sin(q[2]))/625 - (7*sin(q[2])*sin(q[3]))/625 - \
-		    (8*cos(q[2])*sin(q[1])*sin(q[3]))/625 + 3021/160000;
-		    return out;
-	    };
-
 	    K_.rightCols<2>() = DMat<double>::Identity(2, 2);
 	    
 	    S_.block<6, 1>(0, 0) = rotor_1_joint_->S();
@@ -52,34 +35,15 @@ namespace grbda
 	    if (q.size() != 4)
 		    throw std::runtime_error("[TelloHipDifferential] Dimension of joint position must be 4");
 
-	    DMat<double> J_q_hip = DMat<double>::Zero(2,2);
-	    J_q_hip.topLeftCorner(1,1).setConstant(\
-	    (49*sin(q[2]))/5000 - (399*cos(q[2]))/20000 - (7*cos(q[2])*sin(q[0]))/625 + \
-	    (7*cos(q[2])*sin(q[3]))/625 + (57*sin(q[2])*sin(q[3]))/2500 + \
-	    (8*sin(q[0])*sin(q[2])*sin(q[3]))/625);
-	    J_q_hip.topRightCorner(1, 1).setConstant(\
-	    (8*cos(q[0])*sin(q[3]))/625 - \
-	    (57*cos(q[2])*cos(q[3]))/2500 + (7*cos(q[3])*sin(q[2]))/625 - \
-	    (8*cos(q[2])*cos(q[3])*sin(q[0]))/625);
-	    J_q_hip.bottomLeftCorner(1, 1).setConstant(\
-	    (399*cos(q[2]))/20000 + (49*sin(q[2]))/5000 + (7*cos(q[2])*sin(q[1]))/625 - \
-	    (7*cos(q[2])*sin(q[3]))/625 + (57*sin(q[2])*sin(q[3]))/2500 + \
-	    (8*sin(q[1])*sin(q[2])*sin(q[3]))/625);
-	    J_q_hip.bottomRightCorner(1, 1).setConstant(\
-	    (8*cos(q[1])*sin(q[3]))/625 - (57*cos(q[2])*cos(q[3]))/2500 - \
-	    (7*cos(q[3])*sin(q[2]))/625 - (8*cos(q[2])*cos(q[3])*sin(q[1]))/625);
+	    Mat2<double> J_dy_2_dqd;
+	    J_dy_2_dqd.setZero();
+	    Vec2<double> arg_y = q.head<2>();
+	    Vec2<double> arg_qd = q.tail<2>();
+	    vector<double *> arg = {arg_y.data(), arg_qd.data()};
+	    vector<double *> res = {J_dy_2_dqd.data()};
+	    casadi_interface(arg, res, J_dy_2_dqd.size(), thd_J_dy_2_dqd, thd_J_dy_2_dqd_sparsity_out, thd_J_dy_2_dqd_work);
 
-	    DMat<double> J_p_hip = DMat<double>::Zero(2,2);
-	    J_p_hip.topLeftCorner(1, 1).setConstant(\
-	    (57*cos(q[0]))/2500 - (7*cos(q[0])*sin(q[2]))/625 + (8*cos(q[3])*sin(q[0]))/625 - \
-	    (8*cos(q[0])*cos(q[2])*sin(q[3]))/625);
-	    J_p_hip.bottomRightCorner(1, 1).setConstant(\
-	    (57*cos(q[1]))/2500 + (7*cos(q[1])*sin(q[2]))/625 + \
-	    (8*cos(q[3])*sin(q[1]))/625 - (8*cos(q[1])*cos(q[2])*sin(q[3]))/625);
-
-	    DMat<double> J_dp_2_dq_hip = -J_q_hip.inverse() * J_p_hip;
-
-	    G_.bottomRows<2>() = J_dp_2_dq_hip;
+	    G_.bottomRows<2>() = J_dy_2_dqd;
 
 	    DVec<double> q_dot = G_ * yd;
 
@@ -91,15 +55,13 @@ namespace grbda
 	    K_.leftCols<2>() = -G_.bottomRows<2>();
 
 	    // Calculate g and k
-	    Vec2<double> arg_y = q.head<2>();
-	    Vec2<double> arg_q_dot = q.tail<2>();
 	    Vec2<double> arg_y_dot = q_dot.head<2>();
 	    Vec2<double> arg_qd_dot = q_dot.tail<2>();
-	    vector<double *> arg = {arg_y.data(), arg_q_dot.data(), arg_y_dot.data(), arg_qd_dot.data()};
-	    vector<double *> res = {g_.data()};
-	    casadi_interface(arg, res, g_.size(), g_gen, g_gen_sparsity_out, g_gen_work);
+	    arg = {arg_y.data(), arg_qd.data(), arg_y_dot.data(), arg_qd_dot.data()};
+	    res = {g_.data()};
+	    casadi_interface(arg, res, g_.size(), thd_g, thd_g_sparsity_out, thd_g_work);
 	    res = {k_.data()};
-	    casadi_interface(arg, res, k_.size(), k_gen, k_gen_sparsity_out, k_gen_work);
+	    casadi_interface(arg, res, k_.size(), thd_k, thd_k_sparsity_out, thd_k_work);
 
 	    X21_ = link_2_joint_->XJ() * link_2_.Xtree_;
 
@@ -118,7 +80,7 @@ namespace grbda
 	    Ki_dot.setZero();
 	    Kd_dot.setZero();
 	    res = {Ki.data(), Kd.data(), Ki_dot.data(), Kd_dot.data()};
-	    casadi_interface(arg, res, Ki.size(), kikd_gen, kikd_gen_sparsity_out, kikd_gen_work);
+	    casadi_interface(arg, res, Ki.size(), thd_kikd, thd_kikd_sparsity_out, thd_kikd_work);
 	    Mat2<double> abcd_dot = -Kd.inverse() * Ki_dot\
 				    + Kd.inverse() * Kd_dot * Kd.inverse() * Ki;
 
