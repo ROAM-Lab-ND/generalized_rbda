@@ -140,6 +140,7 @@ namespace grbda
         void print() const;
 
         void initializeIndependentStates(const DVec<double> &y, const DVec<double> &yd) override;
+	void initializeTelloIndependentStates(const DVec<double> &q, const DVec<double> &y_dot);
 
         int getNumBodies() const override { return (int)bodies_.size(); }
 

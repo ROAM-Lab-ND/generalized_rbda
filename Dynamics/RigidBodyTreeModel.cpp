@@ -80,6 +80,17 @@ namespace grbda
             contact_points_.push_back(contact_point);
     }
 
+    void RigidBodyTreeModel::initializeStates(const DVec<double> &q, const DVec<double> &qd)
+    {
+        for (auto &node : rigid_body_nodes_)
+        {
+            node->q_ = q.segment(node->position_index_, node->num_positions_);
+            node->qd_ = qd.segment(node->velocity_index_, node->num_velocities_);
+        }
+
+        initializeExternalForces();
+    }
+
     void RigidBodyTreeModel::initializeIndependentStates(const DVec<double> &y, const DVec<double> &yd)
     {
         DVec<double> q = gamma_(y);

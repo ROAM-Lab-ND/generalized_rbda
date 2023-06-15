@@ -19,7 +19,8 @@ namespace grbda
         RevolutePairWithRotor,
         RevoluteWithRotor,
         RevoluteWithMultipleRotorsJoint,
-        Generic
+        Generic,
+	TelloHipDifferential
     };
 
     namespace GeneralizedJoints
