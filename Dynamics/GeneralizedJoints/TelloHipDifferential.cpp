@@ -36,7 +36,6 @@ namespace grbda
 		    throw std::runtime_error("[TelloHipDifferential] Dimension of joint position must be 4");
 
 	    Mat2<double> J_dy_2_dqd;
-	    J_dy_2_dqd.setZero();
 	    vector<DVec<double>> arg = {q.head<2>(), q.tail<2>()};
 	    casadi_interface(arg, J_dy_2_dqd, thd_J_dy_2_dqd, thd_J_dy_2_dqd_sparsity_out, thd_J_dy_2_dqd_work);
 
