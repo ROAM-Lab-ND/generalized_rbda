@@ -42,13 +42,7 @@ y_ddot = dy_dqd * qd_ddot + jtimes(y_dot,qd,qd_dot);
 
 f3 = Function('IK_dependent_state_to_y_ddot',{qd,qd_dot,qd_ddot},{y_ddot});
 
-% to test:
-% f1([1, 2])
-% f2([1; 2],[3; 4])
-% f3([1; 2],[3; 4],[5; 6])
-
-% code gen:
-% opts = struct('cpp', true, 'with_header', true);
-% f1.generate('IK_dependent_state_to_y.cpp',opts);
-% f2.generate('IK_dependent_state_to_y_dot.cpp',opts);
-% f3.generate('IK_dependent_state_to_y_ddot.cpp',opts);
+opts = struct('cpp', true, 'with_header', true);
+gen_code(f1, 'IK_dependent_state_to_y.cpp', opts);
+gen_code(f2, 'IK_dependent_state_to_y_dot.cpp', opts);
+gen_code(f3, 'IK_dependent_state_to_y_ddot.cpp', opts);
