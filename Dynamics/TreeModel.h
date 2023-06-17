@@ -10,7 +10,7 @@
 namespace grbda
 {
 
-    using TreeNodePtr = std::shared_ptr<TreeNode>;
+    using TreeNodePtr = std::shared_ptr<TreeNode<>>;
 
     class TreeModel
     {
@@ -35,6 +35,11 @@ namespace grbda
 
         void setGravity(const Vec3<double> &g) { gravity_.tail<3>() = g; }
         SVec<double> getGravity() const { return gravity_; }
+
+        virtual void initializeState(const State<double> &joint_pos, const State<double> &joint_vel)
+        {
+            throw std::runtime_error("Not implemented");
+        }
 
         virtual void initializeIndependentStates(const DVec<double> &y, const DVec<double> &yd) = 0;
         virtual void initializeExternalForces(

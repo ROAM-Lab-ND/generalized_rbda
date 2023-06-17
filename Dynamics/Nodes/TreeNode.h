@@ -11,20 +11,22 @@ namespace grbda
 
     using namespace spatial;
 
+    template <typename JointPosStateType = IndependentState<double>,
+              typename JointVelStateType = IndependentState<double>>
     struct TreeNode
     {
-        EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-
         TreeNode(int index, std::string name, int parent_index, int motion_subspace_dimension,
                  int num_parent_bodies, int position_index, int num_positions,
                  int velocity_index, int num_velocities)
             : position_index_(position_index), num_positions_(num_positions),
               velocity_index_(velocity_index), num_velocities_(num_velocities),
               motion_subspace_dimension_(motion_subspace_dimension), index_(index), name_(name),
-              parent_index_(parent_index), Xup_(num_parent_bodies)
+              parent_index_(parent_index), 
+              q_(DVec<double>::Zero(num_positions_)), qd_(DVec<double>::Zero(num_velocities_)),
+              Xup_(num_parent_bodies)
         {
-            q_ = DVec<double>::Zero(num_positions_);
-            qd_ = DVec<double>::Zero(num_velocities_);
+            // q_ = DVec<double>::Zero(num_positions_);
+            // qd_ = DVec<double>::Zero(num_velocities_);
 
             I_ = DMat<double>::Zero(motion_subspace_dimension_, motion_subspace_dimension_);
             f_ext_ = DVec<double>::Zero(motion_subspace_dimension_);
@@ -52,8 +54,10 @@ namespace grbda
         const std::string name_;
         const int parent_index_;
 
-        DVec<double> q_;  // joint positions
-        DVec<double> qd_; // joint velocities
+        // TODO(@MatthewChignoli): Need to determine if these are independent or spanning tree.
+        // We need to rename to joint position and joint velocity
+        JointPosStateType q_;  // joint positions
+        JointVelStateType qd_; // joint velocities
 
         DVec<double> v_;     // spatial velocity
         DVec<double> c_;     // velocity-product acceleration

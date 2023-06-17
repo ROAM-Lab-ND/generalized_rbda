@@ -32,13 +32,19 @@ namespace grbda
             Xup_ring_spanning_tree_ = DMat<double>::Zero(6 * num_bodies_, 6 * num_bodies_);
         }
 
-        void Generic::updateKinematics(const DVec<double> &y, const DVec<double> &yd)
+        void Generic::updateKinematics(const State<double> &joint_pos,
+                                       const State<double> &joint_vel)
         {
-            if (y.size() != num_independent_positions_ || yd.size() != num_independent_velocities_)
+            if (joint_pos.size() != num_independent_positions_ ||
+                joint_vel.size() != num_independent_velocities_)
+            {
                 throw std::runtime_error("[Generic] Dimension of y or yd is wrong");
-
-            DVec<double> q = gamma_(y);
-            DVec<double> qd = G_ * yd;
+            }
+            
+            // DVec<double> q = joint_pos.isSpanning() ? joint_pos : gamma_(joint_pos);
+            // DVec<double> qd = joint_vel.isSpanning() ? joint_vel : G_ * joint_vel;
+            const DVec<double> q = toSpanningTreePositions(joint_pos);
+            const DVec<double> qd = toSpanningTreeVelocities(joint_vel);
 
             int pos_idx = 0;
             int vel_idx = 0;
@@ -72,8 +78,9 @@ namespace grbda
                 vel_idx += num_vel;
             }
 
+            // TODO(@MatthewChignoli): Bad because this assumes independent coords
             S_ = Xup_spanning_tree_ * S_spanning_tree_ * G_;
-            vJ_ = S_ * yd;
+            vJ_ = S_ * joint_vel;
 
             for (int i = 0; i < num_bodies_; i++)
             {

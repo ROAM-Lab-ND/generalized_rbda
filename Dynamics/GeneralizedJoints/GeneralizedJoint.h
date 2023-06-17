@@ -26,6 +26,7 @@ namespace grbda
     namespace GeneralizedJoints
     {
 
+        // TODO(@MatthewChignoli): Should probably be templated on the state types
         class Base
         {
         public:
@@ -36,7 +37,9 @@ namespace grbda
 
             virtual GeneralizedJointTypes type() const = 0;
 
-            virtual void updateKinematics(const DVec<double> &y, const DVec<double> &yd) = 0;
+            virtual void updateKinematics(const State<double> &joint_pos,
+                                          const State<double> &joint_vel) = 0;
+
             virtual void computeSpatialTransformFromParentToCurrentCluster(
                 GeneralizedSpatialTransform &Xup) const = 0;
 
@@ -57,7 +60,11 @@ namespace grbda
             const DMat<double> &Psi() const { return Psi_; }
             const DVec<double> &vJ() const { return vJ_; }
 
-            const DVec<double> gamma(DVec<double> q) const { return gamma_(q); }
+            // TODO(@MatthewChignoli): We should not need to static cast...
+            const DVec<double> gamma(IndependentState<double> q) const
+            {
+                return gamma_(static_cast<DVec<double>>(q));
+            }
             const DMat<double> &G() const { return G_; }
             const DVec<double> &g() const { return g_; }
 
@@ -70,6 +77,19 @@ namespace grbda
             }
 
         protected:
+            // TODO(@MatthewChignoli): I think we need the following function
+            SpanningState<double> toSpanningTreePositions(const State<double> &joint_pos) const
+            {
+                return joint_pos.isSpanning() ? static_cast<DVec<double>>(joint_pos)
+                                              : gamma_(joint_pos);
+            }
+
+            SpanningState<double> toSpanningTreeVelocities(const State<double> &joint_vel) const
+            {
+                return joint_vel.isSpanning() ? static_cast<DVec<double>>(joint_vel)
+                                              : G_ * joint_vel;
+            }
+
             const int num_bodies_;
             const int num_independent_positions_;
             const int num_independent_velocities_;
@@ -79,6 +99,7 @@ namespace grbda
             DMat<double> Psi_;
             DVec<double> vJ_;
 
+            // TODO(@MatthewChignoli): This should a std::function that takes IndState as input and returns a SpanningState
             DVecFcn<double> gamma_;
             DMat<double> G_;
             DVec<double> g_;

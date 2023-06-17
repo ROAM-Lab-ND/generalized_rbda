@@ -65,13 +65,17 @@ namespace grbda
             vJ_ = DVec<double>::Zero(24);
         }
 
-        void RevolutePairWithRotor::updateKinematics(const DVec<double> &y, const DVec<double> &yd)
+        void RevolutePairWithRotor::updateKinematics(const State<double> &joint_pos,
+                                                     const State<double> &joint_vel)
         {
-            if (y.size() != 2)
-                throw std::runtime_error("[RevolutePairWithRotor] Dimension of joint position must be 2");
+            // TODO(@MatthewChignoli): Commented out because this depends on the State type
+            // if (y.size() != 2)
+                // throw std::runtime_error("[RevolutePairWithRotor] Dimension of joint position must be 2");
 
-            Vec4<double> q = gamma_(y);
-            Vec4<double> qd = G_ * yd;
+            // Vec4<double> q = gamma_(y);
+            // Vec4<double> qd = G_ * yd;
+            const DVec<double> q = toSpanningTreePositions(joint_pos);
+            const DVec<double> qd = toSpanningTreeVelocities(joint_vel);
 
             link_1_joint_->updateKinematics(q.segment<1>(0), qd.segment<1>(0));
             rotor_1_joint_->updateKinematics(q.segment<1>(1), qd.segment<1>(1));
@@ -86,7 +90,8 @@ namespace grbda
             S_ring_.block<6, 1>(18, 0) = -generalMotionCrossMatrix(v2_relative) *
                                          X21_.transformMotionSubspace(link_1_joint_->S());
 
-            vJ_ = S_ * yd;
+            // TODO(@MatthewChignoli): Issue if joint_vel is spanning
+            vJ_ = S_ * joint_vel;
         }
 
         void RevolutePairWithRotor::computeSpatialTransformFromParentToCurrentCluster(

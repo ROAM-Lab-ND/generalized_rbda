@@ -16,7 +16,8 @@ namespace grbda
 
             GeneralizedJointTypes type() const override { return GeneralizedJointTypes::Revolute; }
 
-            void updateKinematics(const DVec<double> &y, const DVec<double> &yd) override;
+            void updateKinematics(const State<double> &joint_pos,
+                                  const State<double> &joint_vel) override;
 
             void computeSpatialTransformFromParentToCurrentCluster(
                 GeneralizedSpatialTransform &Xup) const override;

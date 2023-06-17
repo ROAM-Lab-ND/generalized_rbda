@@ -46,7 +46,9 @@ namespace grbda
                 const int pos_idx = cluster->position_index_;
                 const int num_pos = cluster->num_positions_;
                 const auto joint = cluster->joint_;
-                q_full = appendEigenVector(q_full, joint->gamma(q.segment(pos_idx, num_pos)));
+                // TODO(@MatthewChignoli): Again we are assuming q is independent state
+                const IndependentState<double> y(q.segment(pos_idx, num_pos));
+                q_full = appendEigenVector(q_full, joint->gamma(y));
             }
             return q_full;
         };

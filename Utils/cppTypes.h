@@ -181,6 +181,46 @@ namespace grbda
     template <typename T>
     using DVecFcn = std::function<DVec<T>(DVec<T>)>;
 
+    // TODO(@MatthewChignoli: Instead of "state", it should be called coordinate?
+    template <typename T>
+    class State : public DVec<T>
+    {
+    public:
+        State(const DVec<T> &vec, bool is_spanning) : DVec<T>(vec), _is_spanning(is_spanning) {}
+        const bool &isSpanning() const { return _is_spanning; }
+
+    private:
+        const bool _is_spanning;
+    };
+
+    template <typename T>
+    class IndependentState : public State<T>
+    {
+    public:
+        IndependentState(const DVec<T> &vec) : State<T>(vec, false) {}
+
+        template <typename Derived>
+        IndependentState &operator=(const Eigen::DenseBase<Derived> &x)
+        {
+            this->DVec<T>::operator=(x);
+            return *this;
+        }
+    };
+
+    template <typename T>
+    class SpanningState : public State<T>
+    {
+    public:
+        SpanningState(const DVec<T> &vec) : State<T>(vec, true) {}
+
+        template <typename Derived>
+        SpanningState &operator=(const Eigen::DenseBase<Derived> &x)
+        {
+            this->DVec<T>::operator=(x);
+            return *this;
+        }
+    };
+
 } // namespace grbda
 
 #endif // PROJECT_CPPTYPES_H

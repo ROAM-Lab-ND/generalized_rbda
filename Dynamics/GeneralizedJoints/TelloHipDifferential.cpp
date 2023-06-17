@@ -30,20 +30,24 @@ namespace grbda
 	    S_.block<6, 1>(6, 1) = rotor_2_joint_->S();
 	}
 
-	void TelloHipDifferential::updateKinematics(const DVec<double> &q, const DVec<double> &yd)
+	void TelloHipDifferential::updateKinematics(const State<double> &joint_pos,
+												const State<double> &joint_vel)
 	{
-	    if (q.size() != 4)
-		    throw std::runtime_error("[TelloHipDifferential] Dimension of joint position must be 4");
+		// TODO(@MatthewChignoli): Commented out because this depends on the State type
+		// if (q.size() != 4)
+		//     throw std::runtime_error("[TelloHipDifferential] Dimension of joint position must be 4");
 
-	    Mat2<double> J_dy_2_dqd;
+		// DVec<double> q_dot = G_ * yd;
+		const DVec<double> q = toSpanningTreePositions(joint_pos);
+		const DVec<double> q_dot = toSpanningTreeVelocities(joint_vel);
+
+		Mat2<double> J_dy_2_dqd;
 	    vector<DVec<double>> arg = {q.head<2>(), q.tail<2>()};
 	    casadi_interface(arg, J_dy_2_dqd, thd_J_dy_2_dqd, thd_J_dy_2_dqd_sparsity_out, thd_J_dy_2_dqd_work);
 
 	    G_.bottomRows<2>() = J_dy_2_dqd;
 
-	    DVec<double> q_dot = G_ * yd;
-
-	    rotor_1_joint_->updateKinematics(q.segment<1>(0), q_dot.segment<1>(0));
+		rotor_1_joint_->updateKinematics(q.segment<1>(0), q_dot.segment<1>(0));
 	    rotor_2_joint_->updateKinematics(q.segment<1>(1), q_dot.segment<1>(1));
 	    link_1_joint_->updateKinematics(q.segment<1>(2), q_dot.segment<1>(2));
 	    link_2_joint_->updateKinematics(q.segment<1>(3), q_dot.segment<1>(3));
@@ -86,7 +90,8 @@ namespace grbda
 					 S2 * abcd_dot.block<1, 1>(1, 1) +\
 					 (-v2_rel_crm * X21_S1) * G_.block<1, 1>(2, 1);
 
-	    vJ_ = S_ * yd;
+		// TODO(@MatthewChignoli): Issue if joint_vel is spanning
+		vJ_ = S_ * joint_vel;
 	}
 
 	void TelloHipDifferential::computeSpatialTransformFromParentToCurrentCluster(

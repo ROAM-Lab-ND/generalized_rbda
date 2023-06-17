@@ -8,7 +8,7 @@ namespace grbda
 
     using namespace spatial;
 
-    struct RigidBodyTreeNode : TreeNode
+    struct RigidBodyTreeNode : TreeNode<>
     {
         RigidBodyTreeNode(const Body &body, const std::shared_ptr<Joints::Base> &joint,
                           const int position_index, const int velocity_index);

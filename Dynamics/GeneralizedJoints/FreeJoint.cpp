@@ -30,10 +30,10 @@ namespace grbda
             spanning_tree_to_independent_coords_conversion_ = DMat<double>::Identity(6, 6);
         }
 
-        void Free::updateKinematics(const DVec<double> &y, const DVec<double> &yd)
+        void Free::updateKinematics(const State<double> &joint_pos, const State<double> &joint_vel)
         {
-            single_joints_[0]->updateKinematics(y, yd);
-            vJ_ = S_ * yd;
+            single_joints_[0]->updateKinematics(joint_pos, joint_vel);
+            vJ_ = S_ * joint_vel;
         }
 
         void Free::computeSpatialTransformFromParentToCurrentCluster(

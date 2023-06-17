@@ -6,7 +6,7 @@
 namespace grbda
 {
 
-    struct ClusterTreeNode : TreeNode
+    struct ClusterTreeNode : TreeNode<>
     {
         EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
