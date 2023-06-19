@@ -11,18 +11,19 @@ namespace grbda
 
     using namespace spatial;
 
-    template <typename JointPosStateType = IndependentState<double>,
-              typename JointVelStateType = IndependentState<double>>
     struct TreeNode
     {
+        // TODO(@MatthewChignoli): Can we clean up the constructor?
         TreeNode(int index, std::string name, int parent_index, int motion_subspace_dimension,
                  int num_parent_bodies, int position_index, int num_positions,
-                 int velocity_index, int num_velocities)
+                 int velocity_index, int num_velocities,
+                 bool spanning_positions = false, bool spanning_velocities = false)
             : position_index_(position_index), num_positions_(num_positions),
               velocity_index_(velocity_index), num_velocities_(num_velocities),
-              motion_subspace_dimension_(motion_subspace_dimension), index_(index), name_(name),
-              parent_index_(parent_index), 
-              q_(DVec<double>::Zero(num_positions_)), qd_(DVec<double>::Zero(num_velocities_)),
+              motion_subspace_dimension_(motion_subspace_dimension), 
+              index_(index), name_(name), parent_index_(parent_index),
+              q_(DVec<double>::Zero(num_positions_), spanning_positions),
+              qd_(DVec<double>::Zero(num_velocities_), spanning_velocities),
               Xup_(num_parent_bodies)
         {
             // q_ = DVec<double>::Zero(num_positions_);
@@ -56,8 +57,8 @@ namespace grbda
 
         // TODO(@MatthewChignoli): Need to determine if these are independent or spanning tree.
         // We need to rename to joint position and joint velocity
-        JointPosStateType q_;  // joint positions
-        JointVelStateType qd_; // joint velocities
+        State<double> q_;  // joint positions
+        State<double> qd_; // joint velocities
 
         DVec<double> v_;     // spatial velocity
         DVec<double> c_;     // velocity-product acceleration

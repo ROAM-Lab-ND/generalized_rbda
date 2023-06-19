@@ -10,7 +10,7 @@ namespace grbda
 
     using namespace spatial;
 
-    struct ReflectedInertiaTreeNode : TreeNode<>
+    struct ReflectedInertiaTreeNode : TreeNode
     {
         ReflectedInertiaTreeNode(const int index, const Body &link,
                                  const std::shared_ptr<Joints::Base> &joint, const int parent_index,

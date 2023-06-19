@@ -189,37 +189,29 @@ namespace grbda
         State(const DVec<T> &vec, bool is_spanning) : DVec<T>(vec), _is_spanning(is_spanning) {}
         const bool &isSpanning() const { return _is_spanning; }
 
+        template <typename Derived>
+        State &operator=(const Eigen::DenseBase<Derived> &x)
+        {
+            this->DVec<T>::operator=(x);
+            return *this;
+        }
+
     private:
         const bool _is_spanning;
     };
 
-    template <typename T>
-    class IndependentState : public State<T>
+    // TODO(@MatthewChignoli): Rename this once we rename State to JointCoordinate
+    struct StatePair
     {
-    public:
-        IndependentState(const DVec<T> &vec) : State<T>(vec, false) {}
-
-        template <typename Derived>
-        IndependentState &operator=(const Eigen::DenseBase<Derived> &x)
-        {
-            this->DVec<T>::operator=(x);
-            return *this;
-        }
+        // StatePair(const DVec<double> &q, const DVec<double> &qd) : q(q), qd(qd) {}
+        State<double> position;
+        State<double> velocity;
     };
 
-    template <typename T>
-    class SpanningState : public State<T>
-    {
-    public:
-        SpanningState(const DVec<T> &vec) : State<T>(vec, true) {}
-
-        template <typename Derived>
-        SpanningState &operator=(const Eigen::DenseBase<Derived> &x)
-        {
-            this->DVec<T>::operator=(x);
-            return *this;
-        }
-    };
+    // So here is the heirrchy we will have
+    // JointCoordinate
+    // Then a JointState will have JointCoordinates for position and velocity
+    // And then ModelState will be a std::vector of JointStates
 
 } // namespace grbda
 

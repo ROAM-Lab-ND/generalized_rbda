@@ -61,7 +61,7 @@ namespace grbda
             const DVec<double> &vJ() const { return vJ_; }
 
             // TODO(@MatthewChignoli): We should not need to static cast...
-            const DVec<double> gamma(IndependentState<double> q) const
+            const DVec<double> gamma(State<double> q) const
             {
                 return gamma_(static_cast<DVec<double>>(q));
             }
@@ -78,16 +78,22 @@ namespace grbda
 
         protected:
             // TODO(@MatthewChignoli): I think we need the following function
-            SpanningState<double> toSpanningTreePositions(const State<double> &joint_pos) const
+            State<double> toSpanningTreePositions(const State<double> &joint_pos) const
             {
-                return joint_pos.isSpanning() ? static_cast<DVec<double>>(joint_pos)
-                                              : gamma_(joint_pos);
+                DVec<double> x = joint_pos.isSpanning() ? static_cast<DVec<double>>(joint_pos)
+                                                        : gamma_(joint_pos);
+                return State<double>(x, true);
+                // return joint_pos.isSpanning() ? static_cast<DVec<double>>(joint_pos)
+                //   : gamma_(joint_pos);
             }
 
-            SpanningState<double> toSpanningTreeVelocities(const State<double> &joint_vel) const
+            State<double> toSpanningTreeVelocities(const State<double> &joint_vel) const
             {
-                return joint_vel.isSpanning() ? static_cast<DVec<double>>(joint_vel)
-                                              : G_ * joint_vel;
+                DVec<double> x = joint_vel.isSpanning() ? static_cast<DVec<double>>(joint_vel)
+                                                        : G_ * joint_vel;
+                return State<double>(x, true);
+                // return joint_vel.isSpanning() ? static_cast<DVec<double>>(joint_vel)
+                //   : G_ * joint_vel;
             }
 
             const int num_bodies_;

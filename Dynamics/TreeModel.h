@@ -10,7 +10,7 @@
 namespace grbda
 {
 
-    using TreeNodePtr = std::shared_ptr<TreeNode<>>;
+    using TreeNodePtr = std::shared_ptr<TreeNode>;
 
     class TreeModel
     {
