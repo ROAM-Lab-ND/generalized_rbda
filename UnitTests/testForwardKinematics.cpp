@@ -52,22 +52,8 @@ TYPED_TEST(RigidBodyKinemaitcsTest, ForwardKinematics)
 
         // Set random state
         DVec<double> state = DVec<double>::Random(nq + nv);
-        // SpanningState<double> joint_pos(DVec<double>::Random(nq));
-        // IndependentState<double> joint_vel(DVec<double>::Random(nv));
         this->cluster_model.initializeIndependentStates(state.head(nq), state.tail(nv));
         this->rigid_body_model.initializeIndependentStates(state.head(nq), state.tail(nv));
-
-        // this->cluster_model.initializeState(joint_pos, joint_vel);
-        // if (joint_pos.isSpanning())
-        // {
-        //     std::cout << "Joint pos is spanning" << std::endl;
-        // }
-
-        // State<double> joint_pos2 = joint_pos;
-        // if (joint_pos2.isSpanning())
-        // {
-        //     std::cout << "Joint pos is spanning" << std::endl;
-        // }
 
         // Forward kinematics
         this->cluster_model.forwardKinematics();

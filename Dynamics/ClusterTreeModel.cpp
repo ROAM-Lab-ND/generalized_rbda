@@ -172,18 +172,29 @@ namespace grbda
         appendContactPoint(body_name, V3d(-dims(0), -dims(1), -dims(2)) / 2, "torso-contact-8");
     }
 
-    void ClusterTreeModel::initializeIndependentStates(const DVec<double> &y, const DVec<double> &yd)
+    void ClusterTreeModel::initializeIndependentStates(const DVec<double> &y,
+                                                       const DVec<double> &yd)
     {
+        // Convert DVec to ModelState (make this is a pure virtual helper function in the base class?)
+        ModelState model_state;
         for (auto &cluster : cluster_nodes_)
         {
-            cluster->joint_state_.position = y.segment(cluster->position_index_,
-                                                       cluster->num_positions_);
-            cluster->joint_state_.velocity = yd.segment(cluster->velocity_index_,
-                                                        cluster->num_velocities_);
+            const int &pos_idx = cluster->position_index_;
+            const int &num_pos = cluster->num_positions_;
+            JointCoordinate<double> y_segment =
+                JointCoordinate<double>(y.segment(pos_idx, num_pos), false);
+
+            const int &vel_idx = cluster->velocity_index_;
+            const int &num_vel = cluster->num_velocities_;
+            JointCoordinate<double> yd_segment =
+                JointCoordinate<double>(yd.segment(vel_idx, num_vel), false);
+
+            JointState joint_state(y_segment, yd_segment);
+            model_state.push_back(joint_state);
         }
-        resetExternalForces();
-        // setExternalForces();
-        // initializeExternalForces();
+
+        // Initialize state
+        initializeState(model_state);
     }
 
     void ClusterTreeModel::initializeTelloIndependentStates(const DVec<double> &q,
@@ -196,6 +207,19 @@ namespace grbda
                                                            cluster->num_velocities_);
         }
         initializeExternalForces();
+    }
+
+    void ClusterTreeModel::initializeState(const ModelState &model_state)
+    {
+        // TODO(@MatthewChignoli): size needs to match the number of clusters
+        size_t i = 0;
+        for (auto &cluster : cluster_nodes_)
+        {
+            cluster->joint_state_ = model_state.at(i);
+            i++;
+        }
+
+        resetExternalForces();
     }
 
     void ClusterTreeModel::resetCache()

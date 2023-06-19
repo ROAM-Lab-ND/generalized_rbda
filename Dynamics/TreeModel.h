@@ -41,6 +41,7 @@ namespace grbda
             throw std::runtime_error("Not implemented");
         }
 
+        // TODO(@MatthewChignoli): Is this actually a common function? Probably not...
         virtual void initializeIndependentStates(const DVec<double> &y, const DVec<double> &yd) = 0;
         virtual void initializeExternalForces(
             const std::vector<ExternalForceAndBodyIndexPair> &force_and_body_index_pairs = {});
