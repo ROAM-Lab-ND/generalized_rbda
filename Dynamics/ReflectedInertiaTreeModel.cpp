@@ -78,8 +78,8 @@ namespace grbda
     {
         for (auto &node : reflected_inertia_nodes_)
         {
-            node->q_ = y.segment(node->position_index_, node->num_positions_);
-            node->qd_ = yd.segment(node->velocity_index_, node->num_velocities_);
+            node->joint_state_.position = y.segment(node->position_index_, node->num_positions_);
+            node->joint_state_.velocity = yd.segment(node->velocity_index_, node->num_velocities_);
         }
 
         initializeExternalForces();

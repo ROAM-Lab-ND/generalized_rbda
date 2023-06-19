@@ -47,7 +47,7 @@ namespace grbda
                 const int num_pos = cluster->num_positions_;
                 const auto joint = cluster->joint_;
                 // TODO(@MatthewChignoli): Again we are assuming q is independent state
-                const State<double> y(q.segment(pos_idx, num_pos), false);
+                const JointCoordinate<double> y(q.segment(pos_idx, num_pos), false);
                 q_full = appendEigenVector(q_full, joint->gamma(y));
             }
             return q_full;
@@ -82,12 +82,13 @@ namespace grbda
             contact_points_.push_back(contact_point);
     }
 
+    // TODO(@MatthewChignoli): These are the functions we need to modify
     void RigidBodyTreeModel::initializeStates(const DVec<double> &q, const DVec<double> &qd)
     {
         for (auto &node : rigid_body_nodes_)
         {
-            node->q_ = q.segment(node->position_index_, node->num_positions_);
-            node->qd_ = qd.segment(node->velocity_index_, node->num_velocities_);
+            node->joint_state_.position = q.segment(node->position_index_, node->num_positions_);
+            node->joint_state_.velocity = qd.segment(node->velocity_index_, node->num_velocities_);
         }
 
         initializeExternalForces();
@@ -100,8 +101,8 @@ namespace grbda
 
         for (auto &node : rigid_body_nodes_)
         {
-            node->q_ = q.segment(node->position_index_, node->num_positions_);
-            node->qd_ = qd.segment(node->velocity_index_, node->num_velocities_);
+            node->joint_state_.position = q.segment(node->position_index_, node->num_positions_);
+            node->joint_state_.velocity = qd.segment(node->velocity_index_, node->num_velocities_);
         }
 
         initializeExternalForces();

@@ -45,20 +45,18 @@ namespace grbda
             vJ_ = DVec<double>::Zero(12);
         }
 
-        void RevoluteWithRotor::updateKinematics(const State<double> &joint_pos,
-                                                 const State<double> &joint_vel)
+        void RevoluteWithRotor::updateKinematics(const JointState &joint_state)
         {
             // TODO(@MatthewChignoli): Commented out because this depends on the State type
             // if (y.size() != 1)
             //     throw std::runtime_error("[Revolute+Rotor Joint] Dimension of joint position must be 1");
 
-            // Vec2<double> q = gamma_(joint_pos);
-            // Vec2<double> qd = G_ * joint_vel;
-            const DVec<double> q = toSpanningTreePositions(joint_pos);
-            const DVec<double> qd = toSpanningTreeVelocities(joint_vel);
+            const JointState spanning_joint_state = toSpanningTreeState(joint_state);
+            const DVec<double> &q = spanning_joint_state.position;
+            const DVec<double> &qd = spanning_joint_state.velocity;
 
             link_joint_->updateKinematics(q.segment<1>(0), qd.segment<1>(0));
-            rotor_joint_->updateKinematics(q.segment<1>(01), qd.segment<1>(1));
+            rotor_joint_->updateKinematics(q.segment<1>(1), qd.segment<1>(1));
 
             vJ_.head<6>() = link_joint_->S() * qd[0];
             vJ_.tail<6>() = rotor_joint_->S() * qd[1];

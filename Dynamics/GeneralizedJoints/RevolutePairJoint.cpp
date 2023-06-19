@@ -44,17 +44,15 @@ namespace grbda
             vJ_ = DVec<double>::Zero(12);
         }
 
-        void RevolutePair::updateKinematics(const State<double> &joint_pos,
-                                            const State<double> &joint_vel)
+        void RevolutePair::updateKinematics(const JointState &joint_state)
         {
             // TODO(@MatthewChignoli): Commented out because this depends on the State type
             // if (y.size() != 2)
                 // throw std::runtime_error("[RevolutePair] Dimension of joint position must be 2");
 
-            // Vec2<double> q = gamma_(joint_pos);
-            // Vec2<double> qd = G_ * joint_vel;
-            const DVec<double> q = toSpanningTreePositions(joint_pos);
-            const DVec<double> qd = toSpanningTreeVelocities(joint_vel);
+            const JointState spanning_joint_state = toSpanningTreeState(joint_state);
+            const DVec<double> &q = spanning_joint_state.position;
+            const DVec<double> &qd = spanning_joint_state.velocity;
 
             link_1_joint_->updateKinematics(q.segment<1>(0), qd.segment<1>(0));
             link_2_joint_->updateKinematics(q.segment<1>(1), qd.segment<1>(1));
@@ -68,7 +66,7 @@ namespace grbda
                                         X21_.transformMotionSubspace(link_1_joint_->S());
 
             // TODO(@MatthewChignoli): Issue if joint_vel is spanning
-            vJ_ = S_ * joint_vel;
+            vJ_ = S_ * joint_state.velocity;
         }
 
         void RevolutePair::computeSpatialTransformFromParentToCurrentCluster(

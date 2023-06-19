@@ -37,8 +37,7 @@ namespace grbda
 
             virtual GeneralizedJointTypes type() const = 0;
 
-            virtual void updateKinematics(const State<double> &joint_pos,
-                                          const State<double> &joint_vel) = 0;
+            virtual void updateKinematics(const JointState &joint_state) = 0;
 
             virtual void computeSpatialTransformFromParentToCurrentCluster(
                 GeneralizedSpatialTransform &Xup) const = 0;
@@ -61,7 +60,7 @@ namespace grbda
             const DVec<double> &vJ() const { return vJ_; }
 
             // TODO(@MatthewChignoli): We should not need to static cast...
-            const DVec<double> gamma(State<double> q) const
+            const DVec<double> gamma(JointCoordinate<double> q) const
             {
                 return gamma_(static_cast<DVec<double>>(q));
             }
@@ -77,23 +76,25 @@ namespace grbda
             }
 
         protected:
-            // TODO(@MatthewChignoli): I think we need the following function
-            State<double> toSpanningTreePositions(const State<double> &joint_pos) const
+            JointState toSpanningTreeState(const JointState &joint_state) const
             {
-                DVec<double> x = joint_pos.isSpanning() ? static_cast<DVec<double>>(joint_pos)
-                                                        : gamma_(joint_pos);
-                return State<double>(x, true);
-                // return joint_pos.isSpanning() ? static_cast<DVec<double>>(joint_pos)
-                //   : gamma_(joint_pos);
-            }
+                JointState spanning_joint_state = joint_state;
 
-            State<double> toSpanningTreeVelocities(const State<double> &joint_vel) const
-            {
-                DVec<double> x = joint_vel.isSpanning() ? static_cast<DVec<double>>(joint_vel)
-                                                        : G_ * joint_vel;
-                return State<double>(x, true);
-                // return joint_vel.isSpanning() ? static_cast<DVec<double>>(joint_vel)
-                //   : G_ * joint_vel;
+                if (!joint_state.position.isSpanning() && !joint_state.velocity.isSpanning())
+                {
+                    spanning_joint_state.position = gamma_(joint_state.position);
+                    spanning_joint_state.velocity = G_ * joint_state.velocity;
+                }
+                else if (!joint_state.position.isSpanning())
+                {
+                    spanning_joint_state.position = gamma_(joint_state.position);
+                }
+                else if (!joint_state.velocity.isSpanning())
+                {
+                    spanning_joint_state.velocity = G_ * joint_state.velocity;
+                }
+
+                return spanning_joint_state;
             }
 
             const int num_bodies_;

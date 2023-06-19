@@ -20,15 +20,11 @@ namespace grbda
                  bool spanning_positions = false, bool spanning_velocities = false)
             : position_index_(position_index), num_positions_(num_positions),
               velocity_index_(velocity_index), num_velocities_(num_velocities),
-              motion_subspace_dimension_(motion_subspace_dimension), 
+              motion_subspace_dimension_(motion_subspace_dimension),
               index_(index), name_(name), parent_index_(parent_index),
-              q_(DVec<double>::Zero(num_positions_), spanning_positions),
-              qd_(DVec<double>::Zero(num_velocities_), spanning_velocities),
+              joint_state_(spanning_positions, spanning_velocities),
               Xup_(num_parent_bodies)
         {
-            // q_ = DVec<double>::Zero(num_positions_);
-            // qd_ = DVec<double>::Zero(num_velocities_);
-
             I_ = DMat<double>::Zero(motion_subspace_dimension_, motion_subspace_dimension_);
             f_ext_ = DVec<double>::Zero(motion_subspace_dimension_);
         }
@@ -36,6 +32,9 @@ namespace grbda
         virtual ~TreeNode() {}
 
         virtual void updateKinematics() = 0;
+
+        const JointCoordinate<double> &q() const { return joint_state_.position; }
+        const JointCoordinate<double> &qd() const { return joint_state_.velocity; }
         virtual const DVec<double> &vJ() const = 0;
         virtual const DMat<double> &S() const = 0;
         virtual const DMat<double> &S_ring() const = 0;
@@ -55,10 +54,7 @@ namespace grbda
         const std::string name_;
         const int parent_index_;
 
-        // TODO(@MatthewChignoli): Need to determine if these are independent or spanning tree.
-        // We need to rename to joint position and joint velocity
-        State<double> q_;  // joint positions
-        State<double> qd_; // joint velocities
+        JointState joint_state_;
 
         DVec<double> v_;     // spatial velocity
         DVec<double> c_;     // velocity-product acceleration

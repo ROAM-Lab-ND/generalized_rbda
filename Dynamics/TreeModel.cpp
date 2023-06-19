@@ -24,7 +24,9 @@ namespace grbda
                 node->Xa_ = node->Xup_.toAbsolute();
             }
 
-            node->c_ = node->S_ring() * node->qd_ + generalMotionCrossProduct(node->v_, node->vJ());
+            // TODO(@MatthewChignoli): This assumes independent velocity?
+            node->c_ = node->S_ring() * node->joint_state_.velocity +
+                       generalMotionCrossProduct(node->v_, node->vJ());
         }
 
         contactPointForwardKinematics();

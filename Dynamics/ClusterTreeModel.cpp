@@ -176,23 +176,28 @@ namespace grbda
     {
         for (auto &cluster : cluster_nodes_)
         {
-            cluster->q_ = y.segment(cluster->position_index_, cluster->num_positions_);
-            cluster->qd_ = yd.segment(cluster->velocity_index_, cluster->num_velocities_);
+            cluster->joint_state_.position = y.segment(cluster->position_index_,
+                                                       cluster->num_positions_);
+            cluster->joint_state_.velocity = yd.segment(cluster->velocity_index_,
+                                                        cluster->num_velocities_);
         }
         resetExternalForces();
         // setExternalForces();
         // initializeExternalForces();
     }
 
-    void ClusterTreeModel::initializeTelloIndependentStates(const DVec<double> &q, const DVec<double> &y_dot)
+    void ClusterTreeModel::initializeTelloIndependentStates(const DVec<double> &q,
+                                                            const DVec<double> &y_dot)
     {
         for (auto &cluster : cluster_nodes_)
         {
-	    cluster->q_ = q.segment(0,4);
-            cluster->qd_ = y_dot.segment(cluster->velocity_index_, cluster->num_velocities_);
+            cluster->joint_state_.position = q.segment(0, 4);
+            cluster->joint_state_.velocity = y_dot.segment(cluster->velocity_index_,
+                                                           cluster->num_velocities_);
         }
         initializeExternalForces();
     }
+
     void ClusterTreeModel::resetCache()
     {
         TreeModel::resetCache();

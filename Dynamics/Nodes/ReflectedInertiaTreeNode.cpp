@@ -19,9 +19,10 @@ namespace grbda
 
     void ReflectedInertiaTreeNode::updateKinematics()
     {
-        joint_->updateKinematics(q_, qd_);
+        // TODO(@MatthewChignoli): There is no difference between spanning and ind here, right? Only matters for cluster?
+        joint_->updateKinematics(joint_state_.position, joint_state_.velocity);
         Xup_[0] = joint_->XJ() * Xtree_;
-        vJ_ = joint_->S() * qd_;
+        vJ_ = joint_->S() * joint_state_.velocity;
     }
 
     const SpatialTransform &ReflectedInertiaTreeNode::getAbsoluteTransformForBody(const Body &body)

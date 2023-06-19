@@ -22,8 +22,7 @@ namespace grbda
                 return GeneralizedJointTypes::RevoluteWithMultipleRotorsJoint;
             }
 
-            void updateKinematics(const State<double> &joint_pos,
-                                  const State<double> &joint_vel) override;
+            void updateKinematics(const JointState &joint_state) override;
 
             void computeSpatialTransformFromParentToCurrentCluster(
                 GeneralizedSpatialTransform &Xup) const override;

@@ -21,7 +21,7 @@ namespace grbda
 
     void ClusterTreeNode::updateKinematics()
     {
-        joint_->updateKinematics(q_, qd_);
+        joint_->updateKinematics(joint_state_);
         joint_->computeSpatialTransformFromParentToCurrentCluster(Xup_);
     }
 

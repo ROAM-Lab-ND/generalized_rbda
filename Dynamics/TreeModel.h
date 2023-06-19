@@ -36,7 +36,7 @@ namespace grbda
         void setGravity(const Vec3<double> &g) { gravity_.tail<3>() = g; }
         SVec<double> getGravity() const { return gravity_; }
 
-        virtual void initializeState(const State<double> &joint_pos, const State<double> &joint_vel)
+        virtual void initializeState(const ModelState &model_state)
         {
             throw std::runtime_error("Not implemented");
         }

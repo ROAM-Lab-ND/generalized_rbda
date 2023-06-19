@@ -181,37 +181,50 @@ namespace grbda
     template <typename T>
     using DVecFcn = std::function<DVec<T>(DVec<T>)>;
 
-    // TODO(@MatthewChignoli: Instead of "state", it should be called coordinate?
+    // TODO(@MatthewChignoli): Does this really need to be templated?
     template <typename T>
-    class State : public DVec<T>
+    class JointCoordinate : public DVec<T>
     {
     public:
-        State(const DVec<T> &vec, bool is_spanning) : DVec<T>(vec), _is_spanning(is_spanning) {}
+        JointCoordinate(const DVec<T> &vec, bool is_spanning)
+            : DVec<T>(vec), _is_spanning(is_spanning) {}
+
         const bool &isSpanning() const { return _is_spanning; }
 
+        JointCoordinate &operator=(const JointCoordinate &other)
+        {
+            this->DVec<T>::operator=(other);
+            _is_spanning = other._is_spanning;
+            return *this;
+        }
+
         template <typename Derived>
-        State &operator=(const Eigen::DenseBase<Derived> &x)
+        JointCoordinate &operator=(const Eigen::DenseBase<Derived> &x)
         {
             this->DVec<T>::operator=(x);
             return *this;
         }
 
     private:
-        const bool _is_spanning;
+        bool _is_spanning;
     };
 
-    // TODO(@MatthewChignoli): Rename this once we rename State to JointCoordinate
-    struct StatePair
+    struct JointState
     {
-        // StatePair(const DVec<double> &q, const DVec<double> &qd) : q(q), qd(qd) {}
-        State<double> position;
-        State<double> velocity;
+        JointState(const JointCoordinate<double> &pos, const JointCoordinate<double> &vel)
+            : position(pos), velocity(vel) {}
+
+        JointState(bool position_is_spanning, bool velocity_is_spanning)
+            : position(JointCoordinate<double>(DVec<double>::Zero(0), position_is_spanning)),
+              velocity(JointCoordinate<double>(DVec<double>::Zero(0), velocity_is_spanning)) {}
+
+        JointCoordinate<double> position;
+        JointCoordinate<double> velocity;
     };
 
-    // So here is the heirrchy we will have
-    // JointCoordinate
-    // Then a JointState will have JointCoordinates for position and velocity
-    // And then ModelState will be a std::vector of JointStates
+    class ModelState : public std::vector<JointState>
+    {
+    };
 
 } // namespace grbda
 

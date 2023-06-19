@@ -15,9 +15,10 @@ namespace grbda
 
     void RigidBodyTreeNode::updateKinematics()
     {
-        joint_->updateKinematics(q_, qd_);
+        // TODO(@MatthewChignoli): Does spanning vs ind matter here?
+        joint_->updateKinematics(joint_state_.position, joint_state_.velocity);
         Xup_[0] = joint_->XJ() * Xtree_;
-        vJ_ = joint_->S() * qd_;
+        vJ_ = joint_->S() * joint_state_.velocity;
     }
 
     const SpatialTransform &RigidBodyTreeNode::getAbsoluteTransformForBody(const Body &body)

@@ -18,8 +18,7 @@ namespace grbda
 
             int numUnactuatedVelocities() const override { return 6; }
 
-            void updateKinematics(const State<double> &joint_pos,
-                                  const State<double> &joint_vel) override;
+            void updateKinematics(const JointState &joint_state) override;
 
             void computeSpatialTransformFromParentToCurrentCluster(
                 GeneralizedSpatialTransform &Xup) const override;

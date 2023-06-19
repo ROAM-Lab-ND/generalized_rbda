@@ -30,16 +30,15 @@ namespace grbda
 	    S_.block<6, 1>(6, 1) = rotor_2_joint_->S();
 	}
 
-	void TelloHipDifferential::updateKinematics(const State<double> &joint_pos,
-												const State<double> &joint_vel)
+	void TelloHipDifferential::updateKinematics(const JointState &joint_state)
 	{
 		// TODO(@MatthewChignoli): Commented out because this depends on the State type
 		// if (q.size() != 4)
 		//     throw std::runtime_error("[TelloHipDifferential] Dimension of joint position must be 4");
 
-		// DVec<double> q_dot = G_ * yd;
-		const DVec<double> q = toSpanningTreePositions(joint_pos);
-		const DVec<double> q_dot = toSpanningTreeVelocities(joint_vel);
+		const JointState spanning_joint_state = toSpanningTreeState(joint_state);
+		const DVec<double> &q = spanning_joint_state.position;
+		const DVec<double> &q_dot = spanning_joint_state.velocity;
 
 		Mat2<double> J_dy_2_dqd;
 	    vector<DVec<double>> arg = {q.head<2>(), q.tail<2>()};
@@ -91,7 +90,7 @@ namespace grbda
 					 (-v2_rel_crm * X21_S1) * G_.block<1, 1>(2, 1);
 
 		// TODO(@MatthewChignoli): Issue if joint_vel is spanning
-		vJ_ = S_ * joint_vel;
+		vJ_ = S_ * joint_state.velocity;
 	}
 
 	void TelloHipDifferential::computeSpatialTransformFromParentToCurrentCluster(

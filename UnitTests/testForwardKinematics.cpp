@@ -40,8 +40,8 @@ TYPED_TEST_SUITE(RigidBodyKinemaitcsTest, Robots);
 
 TYPED_TEST(RigidBodyKinemaitcsTest, ForwardKinematics)
 {
-    // This test compares the forward kinematics of a robot (rigid-body velocities and 
-    // contact-point positions/velocities) as computed by the cluster tree model versus the 
+    // This test compares the forward kinematics of a robot (rigid-body velocities and
+    // contact-point positions/velocities) as computed by the cluster tree model versus the
     // rigid-body tree model.
 
     const int nq = this->cluster_model.getNumPositions();
@@ -114,7 +114,7 @@ TYPED_TEST(RigidBodyKinemaitcsTest, ForwardKinematics)
 
 TYPED_TEST(RigidBodyKinemaitcsTest, MotionSubspaceApparentDerivative)
 {
-    // This test compares the apparent derivative of the motion subspace (S_ring) as computed by 
+    // This test compares the apparent derivative of the motion subspace (S_ring) as computed by
     // the cluster tree model to the apparent derivative as computed by finite difference
 
     double dt = 0.00001;
@@ -133,17 +133,17 @@ TYPED_TEST(RigidBodyKinemaitcsTest, MotionSubspaceApparentDerivative)
             auto joint = cluster->joint_;
 
             DMat<double> S_ring = joint->S_ring();
-            // DMat<double> S = joint->S();
 
-            // TODO(@MatthewChignoli): For now we are assuming independent, but that's wrong
-            // IndependentState<double> q_plus = cluster->q_ + dt * cluster->qd_;
-            State<double> q_plus(cluster->q_ + dt * cluster->qd_, false);
-            joint->updateKinematics(q_plus, cluster->qd_);
+            JointState q_plus_joint_state = cluster->joint_state_;
+            q_plus_joint_state.position = cluster->q() + dt * cluster->qd();
+            q_plus_joint_state.velocity = cluster->qd();
+            joint->updateKinematics(q_plus_joint_state);
             DMat<double> S_plus = joint->S();
 
-            // IndependentState<double> q_minus = cluster->q_ - dt * cluster->qd_;
-            State<double> q_minus(cluster->q_ - dt * cluster->qd_, false);
-            joint->updateKinematics(q_minus, cluster->qd_);
+            JointState q_minus_joint_state = cluster->joint_state_;
+            q_minus_joint_state.position = cluster->q() - dt * cluster->qd();
+            q_minus_joint_state.velocity = cluster->qd();
+            joint->updateKinematics(q_minus_joint_state);
             DMat<double> S_minus = joint->S();
 
             DMat<double> S_ring_fd = (S_plus - S_minus) / (2 * dt);
