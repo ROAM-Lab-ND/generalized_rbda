@@ -87,6 +87,13 @@ namespace grbda
             return bodies_joints_and_reflected_inertias_;
         }
 
+        JointState RevoluteWithRotor::randomJointState() const
+        {
+            JointState joint_state(false, false);
+            joint_state.position = DVec<double>::Random(numPositions());
+            joint_state.velocity = DVec<double>::Random(numVelocities());
+            return joint_state;
+        }
     }
 
 } // namespace grbda

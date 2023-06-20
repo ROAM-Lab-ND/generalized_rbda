@@ -24,6 +24,8 @@ namespace grbda
             std::vector<std::tuple<Body, JointPtr, DMat<double>>>
             bodiesJointsAndReflectedInertias() const override;
 
+            JointState randomJointState() const override;
+
         private:
             const Body body_;
         };

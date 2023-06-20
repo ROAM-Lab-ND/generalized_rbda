@@ -22,6 +22,8 @@ namespace grbda
 
             void computeSpatialTransformFromParentToCurrentCluster(
                 GeneralizedSpatialTransform &Xup) const override;
+
+            JointState randomJointState() const override;
         };
 
     }

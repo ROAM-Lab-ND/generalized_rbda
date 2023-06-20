@@ -83,7 +83,7 @@ namespace grbda
         {
             // TODO(@MatthewChignoli): Commented out because this depends on the State type
             // if (y.size() != num_independent_positions_ || yd.size() != num_independent_velocities_)
-                // throw std::runtime_error("[Revolute w/ Multiple Rotors] Dimension of y or yd is wrong");
+            // throw std::runtime_error("[Revolute w/ Multiple Rotors] Dimension of y or yd is wrong");
 
             const JointState spanning_joint_state = toSpanningTreeState(joint_state);
             const DVec<double> &q = spanning_joint_state.position;
@@ -128,6 +128,14 @@ namespace grbda
                 std::make_tuple(link_, link_joint_, reflected_inertia));
 
             return bodies_joints_and_reflected_inertias_;
+        }
+
+        JointState RevoluteWithMultipleRotorsJoint::randomJointState() const
+        {
+            JointState joint_state(false, false);
+            joint_state.position = DVec<double>::Random(numPositions());
+            joint_state.velocity = DVec<double>::Random(numVelocities());
+            return joint_state;
         }
 
     } // namespace GeneralizedJoints

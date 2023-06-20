@@ -69,7 +69,7 @@ namespace grbda
         {
             // TODO(@MatthewChignoli): Commented out because this depends on the State type
             // if (y.size() != 2)
-                // throw std::runtime_error("[RevolutePairWithRotor] Dimension of joint position must be 2");
+            // throw std::runtime_error("[RevolutePairWithRotor] Dimension of joint position must be 2");
 
             const JointState spanning_joint_state = toSpanningTreeState(joint_state);
             const DVec<double> &q = spanning_joint_state.position;
@@ -122,6 +122,14 @@ namespace grbda
                                                                       ref_inertia_2));
 
             return bodies_joints_and_ref_inertias_;
+        }
+
+        JointState RevolutePairWithRotor::randomJointState() const
+        {
+            JointState joint_state(false, false);
+            joint_state.position = DVec<double>::Random(numPositions());
+            joint_state.velocity = DVec<double>::Random(numVelocities());
+            return joint_state;
         }
 
     }

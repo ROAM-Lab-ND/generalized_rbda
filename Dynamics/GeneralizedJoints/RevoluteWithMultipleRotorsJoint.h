@@ -30,6 +30,8 @@ namespace grbda
             std::vector<std::tuple<Body, JointPtr, DMat<double>>>
             bodiesJointsAndReflectedInertias() const override;
 
+            JointState randomJointState() const override;
+
         private:
             JointPtr link_joint_;
             std::vector<JointPtr> rotor_joints_;

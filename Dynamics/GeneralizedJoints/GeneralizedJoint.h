@@ -26,7 +26,6 @@ namespace grbda
     namespace GeneralizedJoints
     {
 
-        // TODO(@MatthewChignoli): Should probably be templated on the state types
         class Base
         {
         public:
@@ -50,6 +49,7 @@ namespace grbda
                 throw std::runtime_error("Reflected Inertia not setup for this generalized joint type");
             }
 
+            // TODO(@MatthewChignoli): Rename to numIndependent...? And then also make functions for the total number and number of dependent
             int numPositions() const { return num_independent_positions_; }
             int numVelocities() const { return num_independent_velocities_; }
             virtual int numUnactuatedVelocities() const { return 0; }
@@ -59,6 +59,11 @@ namespace grbda
             const DMat<double> &Psi() const { return Psi_; }
             const DVec<double> &vJ() const { return vJ_; }
 
+            virtual JointState randomJointState() const
+            {
+                throw std::runtime_error("Not implemented");
+            }
+            
             // TODO(@MatthewChignoli): We should not need to static cast...
             const DVec<double> gamma(JointCoordinate<double> q) const
             {
@@ -75,27 +80,32 @@ namespace grbda
                 return spanning_tree_to_independent_coords_conversion_;
             }
 
-        protected:
-            JointState toSpanningTreeState(const JointState &joint_state) const
+            JointState toSpanningTreeState(const JointState &joint_state)
             {
                 JointState spanning_joint_state = joint_state;
 
                 if (!joint_state.position.isSpanning() && !joint_state.velocity.isSpanning())
                 {
+                    updateConstraintKinematics(joint_state);
                     spanning_joint_state.position = gamma_(joint_state.position);
                     spanning_joint_state.velocity = G_ * joint_state.velocity;
                 }
                 else if (!joint_state.position.isSpanning())
                 {
+                    updateConstraintKinematics(joint_state);
                     spanning_joint_state.position = gamma_(joint_state.position);
                 }
                 else if (!joint_state.velocity.isSpanning())
                 {
+                    updateConstraintKinematics(joint_state);
                     spanning_joint_state.velocity = G_ * joint_state.velocity;
                 }
 
                 return spanning_joint_state;
             }
+
+        protected:
+            virtual void updateConstraintKinematics(const JointState &joint_state) {}
 
             const int num_bodies_;
             const int num_independent_positions_;

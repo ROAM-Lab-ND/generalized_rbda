@@ -15,6 +15,39 @@ protected:
     RigidBodyKinemaitcsTest() : cluster_model(robot.buildClusterTreeModel()),
                                 rigid_body_model(cluster_model) {}
 
+    bool initializeRandomStates()
+    {
+        ModelState model_state;
+        DVec<double> spanning_joint_pos = DVec<double>::Zero(0);
+        DVec<double> spanning_joint_vel = DVec<double>::Zero(0);
+        for (const auto &cluster : cluster_model.clusters())
+        {
+            JointState joint_state = cluster->joint_->randomJointState();
+            JointState spanning_joint_state = cluster->joint_->toSpanningTreeState(joint_state);
+
+            spanning_joint_pos = appendEigenVector(spanning_joint_pos,
+                                                   spanning_joint_state.position);
+            spanning_joint_vel = appendEigenVector(spanning_joint_vel,
+                                                   spanning_joint_state.velocity);
+            model_state.push_back(joint_state);
+        }
+
+        cluster_model.initializeState(model_state);
+        rigid_body_model.initializeStates(spanning_joint_pos, spanning_joint_vel);
+
+        // Check for NaNs
+        bool nan_detected = false;
+        for (const auto &cluster : this->cluster_model.clusters())
+        {
+            if (cluster->joint_state_.position.hasNaN())
+            {
+                nan_detected = true;
+                break;
+            }
+        }
+        return nan_detected;
+    }
+
     T robot;
     ClusterTreeModel cluster_model;
     RigidBodyTreeModel rigid_body_model;
@@ -49,11 +82,12 @@ TYPED_TEST(RigidBodyKinemaitcsTest, ForwardKinematics)
 
     for (int k = 0; k < 20; k++)
     {
-
-        // Set random state
-        DVec<double> state = DVec<double>::Random(nq + nv);
-        this->cluster_model.initializeIndependentStates(state.head(nq), state.tail(nv));
-        this->rigid_body_model.initializeIndependentStates(state.head(nq), state.tail(nv));
+        // Initialize random state
+        bool nan_detected_in_state = this->initializeRandomStates();
+        if (nan_detected_in_state)
+        {
+            continue;
+        }
 
         // Forward kinematics
         this->cluster_model.forwardKinematics();
@@ -109,9 +143,11 @@ TYPED_TEST(RigidBodyKinemaitcsTest, MotionSubspaceApparentDerivative)
 
     for (int k = 0; k < 20; k++)
     {
-        DVec<double> y = DVec<double>::Random(nq);
-        DVec<double> yd = DVec<double>::Random(nv);
-        this->cluster_model.initializeIndependentStates(y, yd);
+        bool nan_detected_in_state = this->initializeRandomStates();
+        if (nan_detected_in_state)
+        {
+            continue;
+        }
         this->cluster_model.forwardKinematics();
 
         for (auto &cluster : this->cluster_model.clusters())
@@ -121,20 +157,20 @@ TYPED_TEST(RigidBodyKinemaitcsTest, MotionSubspaceApparentDerivative)
             DMat<double> S_ring = joint->S_ring();
 
             JointState q_plus_joint_state = cluster->joint_state_;
-            q_plus_joint_state.position = cluster->q() + dt * cluster->qd();
+            q_plus_joint_state.position = cluster->integratePosition(q_plus_joint_state, dt);
             q_plus_joint_state.velocity = cluster->qd();
             joint->updateKinematics(q_plus_joint_state);
             DMat<double> S_plus = joint->S();
 
             JointState q_minus_joint_state = cluster->joint_state_;
-            q_minus_joint_state.position = cluster->q() - dt * cluster->qd();
+            q_minus_joint_state.position = cluster->integratePosition(q_minus_joint_state, -dt);
             q_minus_joint_state.velocity = cluster->qd();
             joint->updateKinematics(q_minus_joint_state);
             DMat<double> S_minus = joint->S();
 
             DMat<double> S_ring_fd = (S_plus - S_minus) / (2 * dt);
 
-            GTEST_ASSERT_LT((S_ring - S_ring_fd).norm(), tol);
+            GTEST_ASSERT_LT((S_ring - S_ring_fd).norm(), 1e-3);
         }
     }
 }

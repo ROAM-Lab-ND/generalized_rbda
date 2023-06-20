@@ -3,11 +3,15 @@
 namespace grbda
 {
 
+    // TODO(@MatthewChignoli): Maybe the spanning information should come from the joint?
     ClusterTreeNode::ClusterTreeNode(int index, std::string name, std::vector<Body> &bodies,
-                                     std::shared_ptr<GeneralizedJoints::Base> joint, int parent_index,
-                                     int num_parent_bodies, int position_index, int velocity_index)
-        : TreeNode(index, name, parent_index, 6 * bodies.size(), num_parent_bodies, position_index,
-                   joint->numPositions(), velocity_index, joint->numVelocities()),
+                                     std::shared_ptr<GeneralizedJoints::Base> joint,
+                                     int parent_index, int num_parent_bodies,
+                                     int position_index, int velocity_index,
+                                     bool spanning_positions, bool spanning_velocities)
+        : TreeNode(index, name, parent_index, 6 * bodies.size(), num_parent_bodies,
+                   position_index, joint->numPositions(), velocity_index, joint->numVelocities(),
+                   spanning_positions, spanning_velocities),
           bodies_(bodies), joint_(joint)
     {
         for (size_t i = 0; i < bodies.size(); i++)
