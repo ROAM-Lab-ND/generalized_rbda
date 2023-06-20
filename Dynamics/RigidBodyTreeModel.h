@@ -49,7 +49,7 @@ namespace grbda
             // Convert model_state to a vector of spanning q and qd
             DVec<double> joint_pos = DVec<double>::Zero(0);
             DVec<double> joint_vel = DVec<double>::Zero(0);
-            for (const auto& joint_state : model_state)
+            for (const auto &joint_state : model_state)
             {
                 // TODO(@MatthewChignoli): We need to convert to all spanning...
                 joint_pos = appendEigenVector(joint_pos, joint_state.position);
@@ -67,8 +67,7 @@ namespace grbda
 
         DVec<double> qddToYdd(DVec<double> qdd) const { return G_pinv_ * (qdd - g_); }
         DVec<double> yddToQdd(DVec<double> ydd) const { return G_ * ydd + g_; }
-	
-	void extractLoopClosureFunctionsFromClusterModel(const ClusterTreeModel &cluster_tree_model);
+        void extractLoopClosureFunctionsFromClusterModel(const ClusterTreeModel &cluster_tree_model);
 
     private:
         void extractRigidBodiesAndJointsFromClusterModel(const ClusterTreeModel &cluster_tree_model);

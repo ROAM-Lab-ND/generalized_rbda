@@ -38,6 +38,7 @@ namespace grbda
     void RigidBodyTreeModel::extractLoopClosureFunctionsFromClusterModel(
         const ClusterTreeModel &cluster_tree_model)
     {
+
         gamma_ = [cluster_tree_model](DVec<double> q)
         {
             DVec<double> q_full = DVec<double>::Zero(0);
@@ -46,9 +47,18 @@ namespace grbda
                 const int pos_idx = cluster->position_index_;
                 const int num_pos = cluster->num_positions_;
                 const auto joint = cluster->joint_;
-                // TODO(@MatthewChignoli): Again we are assuming q is independent state
-                const JointCoordinate<double> y(q.segment(pos_idx, num_pos), false);
-                q_full = appendEigenVector(q_full, joint->gamma(y));
+
+                JointCoordinate<double> joint_pos = cluster->joint_state_.position;
+                if (cluster->joint_state_.position.isSpanning())
+                {
+                    joint_pos = q.segment(pos_idx, num_pos);
+                    q_full = appendEigenVector(q_full, joint_pos);
+                }
+                else
+                {
+                    joint_pos = q.segment(pos_idx, num_pos);
+                    q_full = appendEigenVector(q_full, joint->gamma(joint_pos));
+                }
             }
             return q_full;
         };
