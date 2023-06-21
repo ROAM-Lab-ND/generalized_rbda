@@ -105,15 +105,10 @@ namespace grbda
 	    Xup[3] = link_2_joint_->XJ() * link_2_.Xtree_ * Xup[2];
 	}
 
-	JointState TelloHipDifferential::randomJointState(bool spanning_coordinates) const
+	JointState TelloHipDifferential::randomJointState() const
 	{
-		const bool spanning_position = true;
-		const bool spanning_velocity = spanning_coordinates ? true : false;
-		const int velocity_dimension = spanning_coordinates ? 4 : 2;
-
-		JointCoordinate<double> joint_pos(DVec<double>::Zero(4), spanning_position);
-		JointCoordinate<double> joint_vel(DVec<double>::Zero(velocity_dimension),
-										  spanning_velocity);
+		JointCoordinate<double> joint_pos(DVec<double>::Zero(4), true);
+		JointCoordinate<double> joint_vel(DVec<double>::Zero(2), false);
 		JointState joint_state(joint_pos, joint_vel);
 
 		// Position
@@ -132,11 +127,34 @@ namespace grbda
 						 IK_dependent_state_to_y_dot,
 						 IK_dependent_state_to_y_dot_sparsity_out,
 						 IK_dependent_state_to_y_dot_work);
+		joint_state.velocity << y_dot;
 
-		if (spanning_velocity)
-			joint_state.velocity << y_dot, dependent_state[1];
-		else
-			joint_state.velocity << y_dot;
+		return joint_state;
+	}
+
+	JointState TelloHipDifferential::randomSpanningJointState() const
+	{
+		JointCoordinate<double> joint_pos(DVec<double>::Zero(4), true);
+		JointCoordinate<double> joint_vel(DVec<double>::Zero(4), true);
+		JointState joint_state(joint_pos, joint_vel);
+
+		// Position
+		std::vector<DVec<double>> dependent_state = {DVec<double>::Random(2)};
+		Vec2<double> y = Vec2<double>::Zero(2);
+		casadi_interface(dependent_state, y,
+						 IK_dependent_state_to_y,
+						 IK_dependent_state_to_y_sparsity_out,
+						 IK_dependent_state_to_y_work);
+		joint_state.position << y, dependent_state[0];
+
+		// Velocity
+		dependent_state.push_back(DVec<double>::Random(2));
+		Vec2<double> y_dot = Vec2<double>::Zero(2);
+		casadi_interface(dependent_state, y_dot,
+						 IK_dependent_state_to_y_dot,
+						 IK_dependent_state_to_y_dot_sparsity_out,
+						 IK_dependent_state_to_y_dot_work);
+		joint_state.velocity << y_dot, dependent_state[1];
 
 		return joint_state;
 	}

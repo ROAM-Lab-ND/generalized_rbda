@@ -24,7 +24,8 @@ namespace grbda
                 node->Xa_ = node->Xup_.toAbsolute();
             }
 
-            // TODO(@MatthewChignoli): This assumes independent velocity?
+
+            // TODO(@MatthewChignoli): This assumes independent velocity. So this is a main reason why we cannot deal with spanning velocity coordinates
             node->c_ = node->S_ring() * node->joint_state_.velocity +
                        generalMotionCrossProduct(node->v_, node->vJ());
         }

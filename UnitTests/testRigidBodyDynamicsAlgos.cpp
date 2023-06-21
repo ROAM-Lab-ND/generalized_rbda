@@ -43,7 +43,7 @@ protected:
 
         for (const auto &cluster : cluster_models.at(robot_idx).clusters())
         {
-            JointState joint_state = cluster->joint_->randomJointState(false);
+            JointState joint_state = cluster->joint_->randomJointState();
             JointState spanning_joint_state = cluster->joint_->toSpanningTreeState(joint_state);
 
             spanning_joint_pos = appendEigenVector(spanning_joint_pos,

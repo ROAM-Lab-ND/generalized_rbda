@@ -44,9 +44,19 @@ namespace grbda
             Xup[0] = single_joints_[0]->XJ();
         }
 
-        JointState Free::randomJointState(bool spanning_coordinates) const
+        JointState Free::randomJointState() const
         {
-            JointState joint_state(spanning_coordinates, spanning_coordinates);
+            JointState joint_state(false, false);
+            joint_state.position = DVec<double>::Zero(7);
+            joint_state.position.segment<3>(0) = Vec3<double>::Random(3);
+            joint_state.position.segment<4>(3) = ori::rpyToQuat(Vec3<double>::Random(3));
+            joint_state.velocity = DVec<double>::Random(6);
+            return joint_state;
+        }
+
+        JointState Free::randomSpanningJointState() const
+        {
+            JointState joint_state(true, true);
             joint_state.position = DVec<double>::Zero(7);
             joint_state.position.segment<3>(0) = Vec3<double>::Random(3);
             joint_state.position.segment<4>(3) = ori::rpyToQuat(Vec3<double>::Random(3));

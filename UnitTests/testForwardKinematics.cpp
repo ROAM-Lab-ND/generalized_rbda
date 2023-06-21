@@ -22,7 +22,8 @@ protected:
         DVec<double> spanning_joint_vel = DVec<double>::Zero(0);
         for (const auto &cluster : cluster_model.clusters())
         {
-            JointState joint_state = cluster->joint_->randomJointState(false);
+            JointState joint_state = cluster->joint_->randomJointState();
+            // JointState joint_state = cluster->joint_->randomSpanningJointState();
             JointState spanning_joint_state = cluster->joint_->toSpanningTreeState(joint_state);
 
             spanning_joint_pos = appendEigenVector(spanning_joint_pos,
@@ -76,9 +77,6 @@ TYPED_TEST(RigidBodyKinemaitcsTest, ForwardKinematics)
     // This test compares the forward kinematics of a robot (rigid-body velocities and
     // contact-point positions/velocities) as computed by the cluster tree model versus the
     // rigid-body tree model.
-
-    const int nq = this->cluster_model.getNumPositions();
-    const int nv = this->cluster_model.getNumDegreesOfFreedom();
 
     for (int k = 0; k < 20; k++)
     {
