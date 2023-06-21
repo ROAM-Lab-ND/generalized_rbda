@@ -143,7 +143,6 @@ TYPED_TEST(RigidBodyDynamicsAlgosTest, MassMatrix)
             this->t_cluster += this->timer.getMs();
 
             this->timer.start();
-            // TODO(@MatthewChignoli): Need a better way to do this
             projection_model.extractLoopClosureFunctionsFromClusterModel(cluster_model);
             DMat<double> H_projection = projection_model.getMassMatrix();
             this->t_projection += this->timer.getMs();
@@ -185,7 +184,6 @@ TYPED_TEST(RigidBodyDynamicsAlgosTest, BiasForceVector)
             this->t_cluster += this->timer.getMs();
 
             this->timer.start();
-            // TODO(@MatthewChignoli): Need a better way to do this
             projection_model.extractLoopClosureFunctionsFromClusterModel(cluster_model);
             DVec<double> C_projection = projection_model.getBiasForceVector();
             this->t_projection += this->timer.getMs();
@@ -239,13 +237,11 @@ TYPED_TEST(RigidBodyDynamicsAlgosTest, ForwardAndInverseDyanmics)
             this->t_cluster += this->timer.getMs();
 
             this->timer.start();
-            // TODO(@MatthewChignoli): Need a better way to do this
             lagrange_mult_model.extractLoopClosureFunctionsFromClusterModel(cluster_model);
             const DVec<double> qdd_lagrange_full = lagrange_mult_model.forwardDynamics(tau);
             this->t_lagrange += this->timer.getMs();
 
             this->timer.start();
-            // TODO(@MatthewChignoli): Need a better way to do this
             projection_model.extractLoopClosureFunctionsFromClusterModel(cluster_model);
             const DVec<double> qdd_projection_full = projection_model.forwardDynamics(tau);
             this->t_projection += this->timer.getMs();
