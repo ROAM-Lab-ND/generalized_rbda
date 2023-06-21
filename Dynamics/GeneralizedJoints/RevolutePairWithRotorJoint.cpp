@@ -88,7 +88,6 @@ namespace grbda
             S_ring_.block<6, 1>(18, 0) = -generalMotionCrossMatrix(v2_relative) *
                                          X21_.transformMotionSubspace(link_1_joint_->S());
 
-            // TODO(@MatthewChignoli): Issue if joint_vel is spanning
             vJ_ = S_ * joint_state.velocity;
         }
 

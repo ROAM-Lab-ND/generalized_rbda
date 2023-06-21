@@ -34,8 +34,6 @@ namespace grbda
 
         void Generic::updateKinematics(const JointState &joint_state)
         {
-            // TODO(@MatthewChignoli): Allow for spanning coords. Not possible now since we assume
-            // S = X * S_spanning * G, and therefore vJ = S * y_dot
             if (joint_state.position.isSpanning() || joint_state.velocity.isSpanning())
             {
                 throw std::runtime_error("Generic Joint does not support spanning coordinates");

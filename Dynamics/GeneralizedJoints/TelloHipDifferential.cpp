@@ -89,7 +89,6 @@ namespace grbda
 					 S2 * abcd_dot.block<1, 1>(1, 1) +\
 					 (-v2_rel_crm * X21_S1) * G_.block<1, 1>(2, 1);
 
-		// TODO(@MatthewChignoli): Issue if joint_vel is spanning
 		vJ_ = S_ * joint_state.velocity;
 	}
 

@@ -95,7 +95,6 @@ namespace grbda
                 rotor_joints_[i]->updateKinematics(q.segment<1>(i + 1), qd.segment<1>(i + 1));
             }
 
-            // TODO(@MatthewChignoli): Issue if joint_vel is spanning
             vJ_ = S_ * joint_state.velocity;
         }
 

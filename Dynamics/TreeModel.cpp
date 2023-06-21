@@ -25,7 +25,7 @@ namespace grbda
             }
 
 
-            // TODO(@MatthewChignoli): This assumes independent velocity. So this is a main reason why we cannot deal with spanning velocity coordinates
+            // ISSUE #9
             node->c_ = node->S_ring() * node->joint_state_.velocity +
                        generalMotionCrossProduct(node->v_, node->vJ());
         }
