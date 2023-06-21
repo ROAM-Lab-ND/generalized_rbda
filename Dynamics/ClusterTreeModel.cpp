@@ -50,20 +50,10 @@ namespace grbda
         const int cluster_index = (int)cluster_nodes_.size();
         cluster_name_to_cluster_index_[name] = cluster_index;
 
-        // TODO(@MatthewChignoli): This is a hack... I think I can just do this in the in the child class constructor before I pass to the parent constructor? Actually maybe not...
-        bool spanning_positions = false;
-        bool spanning_velocities = false;
-        if (joint->type() == GeneralizedJointTypes::TelloHipDifferential)
-        {
-            spanning_positions = true;
-        }
-
         auto node = make_shared<ClusterTreeNode>(cluster_index, name, bodies_in_current_cluster_,
                                                  joint, parent_cluster_index,
                                                  num_bodies_in_parent_cluster,
-                                                 position_index_, velocity_index_,
-                                                 spanning_positions,
-                                                 spanning_velocities);
+                                                 position_index_, velocity_index_);
         cluster_nodes_.push_back(node);
         nodes_.push_back(node);
 

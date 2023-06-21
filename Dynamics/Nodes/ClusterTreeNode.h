@@ -12,8 +12,7 @@ namespace grbda
 
         ClusterTreeNode(int index, std::string name, std::vector<Body> &bodies,
                         std::shared_ptr<GeneralizedJoints::Base> joint, int parent_index,
-                        int num_parent_bodies, int position_index, int velocity_index,
-                        bool spanning_positions = false, bool spanning_velocities = false);
+                        int num_parent_bodies, int position_index, int velocity_index);
 
         void updateKinematics() override;
         const DVec<double> &vJ() const override { return joint_->vJ(); }

@@ -218,6 +218,10 @@ namespace grbda
             : position(JointCoordinate<double>(DVec<double>::Zero(0), position_is_spanning)),
               velocity(JointCoordinate<double>(DVec<double>::Zero(0), velocity_is_spanning)) {}
 
+        JointState()
+            : position(JointCoordinate<double>(DVec<double>::Zero(0), false)),
+              velocity(JointCoordinate<double>(DVec<double>::Zero(0), false)) {}
+
         JointCoordinate<double> position;
         JointCoordinate<double> velocity;
     };

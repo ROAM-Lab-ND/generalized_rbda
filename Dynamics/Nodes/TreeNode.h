@@ -16,13 +16,11 @@ namespace grbda
         // TODO(@MatthewChignoli): Can we clean up the constructor?
         TreeNode(int index, std::string name, int parent_index, int motion_subspace_dimension,
                  int num_parent_bodies, int position_index, int num_positions,
-                 int velocity_index, int num_velocities,
-                 bool spanning_positions = false, bool spanning_velocities = false)
+                 int velocity_index, int num_velocities)
             : position_index_(position_index), num_positions_(num_positions),
               velocity_index_(velocity_index), num_velocities_(num_velocities),
               motion_subspace_dimension_(motion_subspace_dimension),
               index_(index), name_(name), parent_index_(parent_index),
-              joint_state_(spanning_positions, spanning_velocities),
               Xup_(num_parent_bodies)
         {
             I_ = DMat<double>::Zero(motion_subspace_dimension_, motion_subspace_dimension_);
