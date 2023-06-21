@@ -176,8 +176,8 @@ namespace grbda
         JointState Generic::randomJointState() const
         {
             JointState joint_state(false, false);
-            joint_state.position = DVec<double>::Random(numPositions());
-            joint_state.velocity = DVec<double>::Random(numVelocities());
+            joint_state.position = DVec<double>::Random(numIndependentPositions());
+            joint_state.velocity = DVec<double>::Random(numIndependentVelocities());
             return joint_state;
         }
     }

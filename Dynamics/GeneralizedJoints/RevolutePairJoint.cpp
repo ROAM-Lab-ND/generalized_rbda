@@ -13,7 +13,7 @@ namespace grbda
             link_1_joint_ = single_joints_.emplace_back(new Joints::Revolute(joint_axis_1));
             link_2_joint_ = single_joints_.emplace_back(new Joints::Revolute(joint_axis_2));
 
-            gamma_ = [&](DVec<double> y)
+            gamma_ = [](DVec<double> y)
             {
                 Vec2<double> q;
                 q[0] = y[0];
@@ -48,7 +48,7 @@ namespace grbda
         {
             // TODO(@MatthewChignoli): Commented out because this depends on the State type
             // if (y.size() != 2)
-                // throw std::runtime_error("[RevolutePair] Dimension of joint position must be 2");
+            // throw std::runtime_error("[RevolutePair] Dimension of joint position must be 2");
 
             const JointState spanning_joint_state = toSpanningTreeState(joint_state);
             const DVec<double> &q = spanning_joint_state.position;
@@ -59,7 +59,8 @@ namespace grbda
 
             X21_ = link_2_joint_->XJ() * link_2_.Xtree_;
 
-            S_.block<6, 1>(6, 0) = X21_.transformMotionSubspace(link_1_joint_->S()) - link_2_joint_->S();
+            S_.block<6, 1>(6, 0) = X21_.transformMotionSubspace(link_1_joint_->S()) -
+                                   link_2_joint_->S();
 
             const DVec<double> v2_relative = link_2_joint_->S() * qd[1];
             S_ring_.block<6, 1>(6, 0) = -generalMotionCrossMatrix(v2_relative) *
@@ -84,13 +85,13 @@ namespace grbda
         {
             std::vector<std::tuple<Body, JointPtr, DMat<double>>> bodies_joints_and_reflected_inertias_;
 
-            DMat<double> reflected_inertia_1 = DMat<double>::Zero(link_1_joint_->numVelocities(),
-                                                                  link_1_joint_->numVelocities());
+            const DMat<double> reflected_inertia_1 =
+                DMat<double>::Zero(link_1_joint_->numVelocities(), link_1_joint_->numVelocities());
             bodies_joints_and_reflected_inertias_.push_back(
                 std::make_tuple(link_1_, link_1_joint_, reflected_inertia_1));
 
-            DMat<double> reflected_inertia_2 = DMat<double>::Zero(link_2_joint_->numVelocities(),
-                                                                  link_2_joint_->numVelocities());
+            const DMat<double> reflected_inertia_2 =
+                DMat<double>::Zero(link_2_joint_->numVelocities(), link_2_joint_->numVelocities());
             bodies_joints_and_reflected_inertias_.push_back(
                 std::make_tuple(link_2_, link_2_joint_, reflected_inertia_2));
 
@@ -100,8 +101,8 @@ namespace grbda
         JointState RevolutePair::randomJointState() const
         {
             JointState joint_state(false, false);
-            joint_state.position = DVec<double>::Random(numPositions());
-            joint_state.velocity = DVec<double>::Random(numVelocities());
+            joint_state.position = DVec<double>::Random(numIndependentPositions());
+            joint_state.velocity = DVec<double>::Random(numIndependentVelocities());
             return joint_state;
         }
     }

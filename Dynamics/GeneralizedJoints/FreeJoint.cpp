@@ -46,7 +46,7 @@ namespace grbda
 
         JointState Free::randomJointState() const
         {
-            JointState joint_state(true, true);
+            JointState joint_state(false, false);
             joint_state.position = DVec<double>::Random(6);
             joint_state.velocity = DVec<double>::Random(6);
             return joint_state;

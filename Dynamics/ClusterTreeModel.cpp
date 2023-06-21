@@ -69,8 +69,8 @@ namespace grbda
 
         checkValidParentClusterForBodiesInCluster(cluster_nodes_.back());
 
-        position_index_ += joint->numPositions();
-        velocity_index_ += joint->numVelocities();
+        position_index_ += joint->numIndependentPositions();
+        velocity_index_ += joint->numIndependentVelocities();
         unactuated_dofs_ += joint->numUnactuatedVelocities();
 
         resizeSystemMatrices();
@@ -184,7 +184,6 @@ namespace grbda
 
     void ClusterTreeModel::initializeState(const ModelState &model_state)
     {
-        // TODO(@MatthewChignoli): size needs to match the number of clusters
         size_t i = 0;
         for (auto &cluster : cluster_nodes_)
         {

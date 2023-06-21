@@ -49,9 +49,8 @@ namespace grbda
                 throw std::runtime_error("Reflected Inertia not setup for this generalized joint type");
             }
 
-            // TODO(@MatthewChignoli): Rename to numIndependent...? And then also make functions for the total number and number of dependent
-            int numPositions() const { return num_independent_positions_; }
-            int numVelocities() const { return num_independent_velocities_; }
+            int numIndependentPositions() const { return num_independent_positions_; }
+            int numIndependentVelocities() const { return num_independent_velocities_; }
             virtual int numUnactuatedVelocities() const { return 0; }
 
             const DMat<double> &S() const { return S_; }

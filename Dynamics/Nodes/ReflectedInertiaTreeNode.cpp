@@ -9,7 +9,8 @@ namespace grbda
                                                        const int position_index,
                                                        const int velocity_index)
         : TreeNode(index, link.name_, parent_index, 6, 1,
-                   position_index, joint->numPositions(), velocity_index, joint->numVelocities()),
+                   position_index, joint->numPositions(),
+                   velocity_index, joint->numVelocities()),
           link_(link), joint_(joint), Xtree_(link.Xtree_)
     {
         I_ = link.inertia_.getMatrix();
@@ -19,7 +20,6 @@ namespace grbda
 
     void ReflectedInertiaTreeNode::updateKinematics()
     {
-        // TODO(@MatthewChignoli): There is no difference between spanning and ind here, right? Only matters for cluster?
         joint_->updateKinematics(joint_state_.position, joint_state_.velocity);
         Xup_[0] = joint_->XJ() * Xtree_;
         vJ_ = joint_->S() * joint_state_.velocity;

@@ -164,7 +164,6 @@ namespace grbda
 
         int getIndexOfParentClusterFromBodies(const vector<Body> &bodies);
 
-        // TODO(@MatthewChignoli): Should be using .at() when accessing things in std::vector
         const Body &getBody(int index) const override { return bodies_[index]; }
         const TreeNodePtr getNodeContainingBody(int index) override
         {
