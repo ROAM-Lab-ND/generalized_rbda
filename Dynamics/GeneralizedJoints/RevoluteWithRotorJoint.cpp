@@ -47,7 +47,7 @@ namespace grbda
 
         void RevoluteWithRotor::updateKinematics(const JointState &joint_state)
         {
-            // TODO(@MatthewChignoli): Commented out because this depends on the State type
+            // ISSUE #10
             // if (y.size() != 1)
             //     throw std::runtime_error("[Revolute+Rotor Joint] Dimension of joint position must be 1");
 

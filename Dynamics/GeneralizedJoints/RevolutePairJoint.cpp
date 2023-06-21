@@ -46,7 +46,7 @@ namespace grbda
 
         void RevolutePair::updateKinematics(const JointState &joint_state)
         {
-            // TODO(@MatthewChignoli): Commented out because this depends on the State type
+            // ISSUE #10
             // if (y.size() != 2)
             // throw std::runtime_error("[RevolutePair] Dimension of joint position must be 2");
 

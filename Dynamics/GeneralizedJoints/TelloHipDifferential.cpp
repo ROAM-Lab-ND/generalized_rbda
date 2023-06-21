@@ -32,7 +32,7 @@ namespace grbda
 
 	void TelloHipDifferential::updateKinematics(const JointState &joint_state)
 	{
-		// TODO(@MatthewChignoli): Commented out because this depends on the State type
+		// ISSUE #10
 		// if (q.size() != 4)
 		//     throw std::runtime_error("[TelloHipDifferential] Dimension of joint position must be 4");
 

@@ -29,9 +29,9 @@ namespace grbda
 
         void Revolute::updateKinematics(const JointState &joint_state)
         {
-            // TODO(@MatthewChignoli): Only do these types of checks in debug mode
-            if (joint_state.position.size() != 1 || joint_state.velocity.size() != 1)
-                throw std::runtime_error("[Revolute Joint] Dimension of joint position must be 1");
+            // ISSUE #10
+            // if (joint_state.position.size() != 1 || joint_state.velocity.size() != 1)
+                // throw std::runtime_error("[Revolute Joint] Dimension of joint position must be 1");
 
             single_joints_[0]->updateKinematics(joint_state.position, joint_state.velocity);
             vJ_ = S_ * joint_state.velocity;

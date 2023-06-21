@@ -34,16 +34,17 @@ namespace grbda
 
         void Generic::updateKinematics(const JointState &joint_state)
         {
-            if (joint_state.position.isSpanning() || joint_state.velocity.isSpanning())
-            {
-                throw std::runtime_error("Generic Joint does not support spanning coordinates");
-            }
+            // ISSUE #10
+            // if (joint_state.position.isSpanning() || joint_state.velocity.isSpanning())
+            // {
+            //     throw std::runtime_error("Generic Joint does not support spanning coordinates");
+            // }
 
-            if (joint_state.position.size() != num_independent_positions_ ||
-                joint_state.velocity.size() != num_independent_velocities_)
-            {
-                throw std::runtime_error("[Generic] Dimension of y or yd is wrong");
-            }
+            // if (joint_state.position.size() != num_independent_positions_ ||
+            //     joint_state.velocity.size() != num_independent_velocities_)
+            // {
+            //     throw std::runtime_error("[Generic] Dimension of y or yd is wrong");
+            // }
 
             const JointState spanning_joint_state = toSpanningTreeState(joint_state);
             const DVec<double> &q = spanning_joint_state.position;

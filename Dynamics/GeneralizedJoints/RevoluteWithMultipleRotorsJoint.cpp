@@ -81,7 +81,7 @@ namespace grbda
 
         void RevoluteWithMultipleRotorsJoint::updateKinematics(const JointState &joint_state)
         {
-            // TODO(@MatthewChignoli): Commented out because this depends on the State type
+            // ISSUE #10
             // if (y.size() != num_independent_positions_ || yd.size() != num_independent_velocities_)
             // throw std::runtime_error("[Revolute w/ Multiple Rotors] Dimension of y or yd is wrong");
 
