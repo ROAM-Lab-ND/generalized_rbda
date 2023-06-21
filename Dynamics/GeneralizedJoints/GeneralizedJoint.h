@@ -76,32 +76,11 @@ namespace grbda
                 return spanning_tree_to_independent_coords_conversion_;
             }
 
-            JointState toSpanningTreeState(const JointState &joint_state)
-            {
-                JointState spanning_joint_state = joint_state;
-
-                if (!joint_state.position.isSpanning() && !joint_state.velocity.isSpanning())
-                {
-                    updateConstraintKinematics(joint_state);
-                    spanning_joint_state.position = gamma_(joint_state.position);
-                    spanning_joint_state.velocity = G_ * joint_state.velocity;
-                }
-                else if (!joint_state.position.isSpanning())
-                {
-                    updateConstraintKinematics(joint_state);
-                    spanning_joint_state.position = gamma_(joint_state.position);
-                }
-                else if (!joint_state.velocity.isSpanning())
-                {
-                    updateConstraintKinematics(joint_state);
-                    spanning_joint_state.velocity = G_ * joint_state.velocity;
-                }
-
-                return spanning_joint_state;
-            }
+            JointState toSpanningTreeState(const JointState& joint_state);
 
         protected:
-            virtual void updateConstraintKinematics(const JointState &joint_state) {}
+            virtual void updateConstraintJacobians(const JointCoordinate &q) {}
+            virtual void updateConstraintBias(const JointState &joint_state) {}
 
             const int num_bodies_;
             const int num_independent_positions_;

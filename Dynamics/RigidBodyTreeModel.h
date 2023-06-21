@@ -37,14 +37,8 @@ namespace grbda
 
         int getNumBodies() const override { return (int)rigid_body_nodes_.size(); }
 
-        const Body &getBody(int index) const override
-        {
-            return rigid_body_nodes_[index]->body_;
-        }
-        const TreeNodePtr getNodeContainingBody(int index) override
-        {
-            return rigid_body_nodes_[index];
-        }
+        const Body &getBody(int index) const override { return rigid_body_nodes_[index]->body_; }
+        const TreeNodePtr getNodeContainingBody(int index) override { return rigid_body_nodes_[index]; }
 
         void initializeState(const DVec<double> &q, const DVec<double> &qd);
 
@@ -55,6 +49,7 @@ namespace grbda
 
         DVec<double> qddToYdd(DVec<double> qdd) const { return G_pinv_ * (qdd - g_); }
         DVec<double> yddToQdd(DVec<double> ydd) const { return G_ * ydd + g_; }
+
         void extractLoopClosureFunctionsFromClusterModel(const ClusterTreeModel &cluster_tree_model);
 
     private:

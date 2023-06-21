@@ -27,18 +27,8 @@ namespace grbda
 		JointState randomJointState() const override;
 
 	private:
-		void updateConstraintKinematics(const JointState &joint_state) override
-		{
-			// TODO(@MatthewChignoli): We are double dipping here in terms of having duplicate code, but Nicholas can clean this up
-
-			const DVec<double> &q = joint_state.position; // TODO(@MatthewChignoli): Needs to be spanning
-
-			Mat2<double> J_dy_2_dqd;
-			vector<DVec<double>> arg = {q.head<2>(), q.tail<2>()};
-			casadi_interface(arg, J_dy_2_dqd, thd_J_dy_2_dqd, thd_J_dy_2_dqd_sparsity_out, thd_J_dy_2_dqd_work);
-
-			G_.bottomRows<2>() = J_dy_2_dqd;
-		}
+		void updateConstraintJacobians(const JointCoordinate &joint_pos) override;
+		void updateConstraintBias(const JointState &joint_state) override;
 
 		JointPtr rotor_1_joint_;
 	    JointPtr rotor_2_joint_;
