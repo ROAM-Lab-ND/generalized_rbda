@@ -34,6 +34,13 @@ namespace grbda
 
         void Generic::updateKinematics(const JointState &joint_state)
         {
+            // TODO(@MatthewChignoli): Allow for spanning coords. Not possible now since we assume
+            // S = X * S_spanning * G, and therefore vJ = S * y_dot
+            if (joint_state.position.isSpanning() || joint_state.velocity.isSpanning())
+            {
+                throw std::runtime_error("Generic Joint does not support spanning coordinates");
+            }
+
             if (joint_state.position.size() != num_independent_positions_ ||
                 joint_state.velocity.size() != num_independent_velocities_)
             {
@@ -76,7 +83,6 @@ namespace grbda
                 vel_idx += num_vel;
             }
 
-            // TODO(@MatthewChignoli): Bad because this assumes independent coords
             S_ = Xup_spanning_tree_ * S_spanning_tree_ * G_;
             vJ_ = S_ * joint_state.velocity;
 
@@ -170,15 +176,6 @@ namespace grbda
                 if (body.index_ == body_index)
                     return body;
             throw std::runtime_error("Body is not in the current cluster");
-        }
-
-        // TODO(@MatthewChignoli): This assumes the generic joint can be described with independent coords
-        JointState Generic::randomJointState() const
-        {
-            JointState joint_state(false, false);
-            joint_state.position = DVec<double>::Random(numIndependentPositions());
-            joint_state.velocity = DVec<double>::Random(numIndependentVelocities());
-            return joint_state;
         }
     }
 

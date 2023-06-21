@@ -24,7 +24,7 @@ namespace grbda
 		void computeSpatialTransformFromParentToCurrentCluster(
 		GeneralizedSpatialTransform &Xup) const override;
 
-        JointState randomJointState() const override;
+		JointState randomJointState(bool spanning_coordinates) const override;
 
 	private:
 		void updateConstraintKinematics(const JointState &joint_state) override

@@ -17,6 +17,23 @@ namespace grbda
             vJ_ = DVec<double>::Zero(motion_subspace_dimension);
         }
 
+        JointState Base::randomJointState(bool spanning_coordinates) const
+        {
+            if (spanning_coordinates)
+            {
+                JointState joint_state(true, true);
+                joint_state.position = gamma_(DVec<double>::Random(numIndependentPositions()));
+                joint_state.velocity = G_ * DVec<double>::Random(numIndependentVelocities());
+                return joint_state;
+            }
+            else
+            {
+                JointState joint_state(false, false);
+                joint_state.position = DVec<double>::Random(numIndependentPositions());
+                joint_state.velocity = DVec<double>::Random(numIndependentVelocities());
+                return joint_state;
+            }
+        }
     }
 
 } // namespace grbda

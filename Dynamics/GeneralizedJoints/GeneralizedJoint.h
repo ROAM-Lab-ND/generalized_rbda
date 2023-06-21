@@ -58,9 +58,11 @@ namespace grbda
             const DMat<double> &Psi() const { return Psi_; }
             const DVec<double> &vJ() const { return vJ_; }
 
-            virtual JointState randomJointState() const = 0;
-            
-            // TODO(@MatthewChignoli): We should not need to static cast...
+            // TODO(@MatthewChignoli): Create unit tests where spannig_coordinates is true
+            // I also don't like this function name because it does not imply what the argument is..
+            virtual JointState randomJointState(bool spanning_coordinates) const;
+
+            // TODO(@MatthewChignoli): We should not need to static cast here
             const DVec<double> gamma(JointCoordinate<double> q) const
             {
                 return gamma_(static_cast<DVec<double>>(q));
@@ -112,7 +114,6 @@ namespace grbda
             DMat<double> Psi_;
             DVec<double> vJ_;
 
-            // TODO(@MatthewChignoli): This should a std::function that takes IndState as input and returns a SpanningState
             DVecFcn<double> gamma_;
             DMat<double> G_;
             DVec<double> g_;

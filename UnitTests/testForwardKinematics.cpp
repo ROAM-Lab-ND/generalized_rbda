@@ -22,7 +22,7 @@ protected:
         DVec<double> spanning_joint_vel = DVec<double>::Zero(0);
         for (const auto &cluster : cluster_model.clusters())
         {
-            JointState joint_state = cluster->joint_->randomJointState();
+            JointState joint_state = cluster->joint_->randomJointState(false);
             JointState spanning_joint_state = cluster->joint_->toSpanningTreeState(joint_state);
 
             spanning_joint_pos = appendEigenVector(spanning_joint_pos,
