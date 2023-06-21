@@ -59,10 +59,7 @@ namespace grbda
             const DMat<double> &Psi() const { return Psi_; }
             const DVec<double> &vJ() const { return vJ_; }
 
-            virtual JointState randomJointState() const
-            {
-                throw std::runtime_error("Not implemented");
-            }
+            virtual JointState randomJointState() const = 0;
             
             // TODO(@MatthewChignoli): We should not need to static cast...
             const DVec<double> gamma(JointCoordinate<double> q) const

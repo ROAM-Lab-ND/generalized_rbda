@@ -172,6 +172,14 @@ namespace grbda
             throw std::runtime_error("Body is not in the current cluster");
         }
 
+        // TODO(@MatthewChignoli): This assumes the generic joint can be described with independent coords
+        JointState Generic::randomJointState() const
+        {
+            JointState joint_state(false, false);
+            joint_state.position = DVec<double>::Random(numPositions());
+            joint_state.velocity = DVec<double>::Random(numVelocities());
+            return joint_state;
+        }
     }
 
 } // namespace grbda

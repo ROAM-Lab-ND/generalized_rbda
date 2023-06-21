@@ -43,6 +43,8 @@ namespace grbda
             void computeSpatialTransformFromParentToCurrentCluster(
                 GeneralizedSpatialTransform &Xup) const override;
 
+            JointState randomJointState() const override;
+
         private:
             void extractImplicitConstraintFromExplicit(const ExplicitConstraint &explicit_constraint);
             void extractExplicitConstraintFromImplicit(const ImplicitConstraint &implicit_constraint) {}
