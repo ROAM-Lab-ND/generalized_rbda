@@ -174,8 +174,6 @@ TYPED_TEST(RigidBodyDynamicsAlgosTest, BiasForceVector)
 
         for (int j = 0; j < num_tests_per_robot; j++)
         {
-            // DVec<double> state = DVec<double>::Random(nq + nv);
-            // this->setStateForAllModels(state.head(nq), state.tail(nv), i);
             bool nan_detected_in_state = this->initializeRandomStates(i);
             if (nan_detected_in_state)
             {
@@ -189,8 +187,6 @@ TYPED_TEST(RigidBodyDynamicsAlgosTest, BiasForceVector)
             this->timer.start();
             // TODO(@MatthewChignoli): Need a better way to do this
             projection_model.extractLoopClosureFunctionsFromClusterModel(cluster_model);
-            // TODO(@MatthewChignoli): Why do we need to do this?
-            DMat<double> H_proj_del = projection_model.getMassMatrix();
             DVec<double> C_projection = projection_model.getBiasForceVector();
             this->t_projection += this->timer.getMs();
 

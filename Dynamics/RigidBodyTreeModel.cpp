@@ -112,6 +112,10 @@ namespace grbda
     DVec<double> RigidBodyTreeModel::getBiasForceVector()
     {
         updateBiasForceVector();
+        if (g_.norm() > 1e-12)
+        {
+            compositeRigidBodyAlgorithm();
+        }
         return G_.transpose() * (C_ + H_ * g_);
     }
 
