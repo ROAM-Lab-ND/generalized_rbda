@@ -24,7 +24,6 @@ namespace grbda
                 GeneralizedSpatialTransform &Xup) const override;
 
             JointState randomJointState() const override;
-            JointState randomSpanningJointState() const override;
         };
 
     }

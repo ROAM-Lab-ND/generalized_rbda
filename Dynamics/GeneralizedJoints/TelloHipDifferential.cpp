@@ -131,33 +131,6 @@ namespace grbda
 
 		return joint_state;
 	}
-
-	JointState TelloHipDifferential::randomSpanningJointState() const
-	{
-		JointCoordinate joint_pos(DVec<double>::Zero(4), true);
-		JointCoordinate joint_vel(DVec<double>::Zero(4), true);
-		JointState joint_state(joint_pos, joint_vel);
-
-		// Position
-		std::vector<DVec<double>> dependent_state = {DVec<double>::Random(2)};
-		Vec2<double> y = Vec2<double>::Zero(2);
-		casadi_interface(dependent_state, y,
-						 IK_dependent_state_to_y,
-						 IK_dependent_state_to_y_sparsity_out,
-						 IK_dependent_state_to_y_work);
-		joint_state.position << y, dependent_state[0];
-
-		// Velocity
-		dependent_state.push_back(DVec<double>::Random(2));
-		Vec2<double> y_dot = Vec2<double>::Zero(2);
-		casadi_interface(dependent_state, y_dot,
-						 IK_dependent_state_to_y_dot,
-						 IK_dependent_state_to_y_dot_sparsity_out,
-						 IK_dependent_state_to_y_dot_work);
-		joint_state.velocity << y_dot, dependent_state[1];
-
-		return joint_state;
-	}
 	
 	}
 

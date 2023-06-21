@@ -25,7 +25,6 @@ namespace grbda
 		GeneralizedSpatialTransform &Xup) const override;
 
 		JointState randomJointState() const override;
-		JointState randomSpanningJointState() const override;
 
 	private:
 		void updateConstraintKinematics(const JointState &joint_state) override

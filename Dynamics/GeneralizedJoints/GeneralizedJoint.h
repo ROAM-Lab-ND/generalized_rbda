@@ -58,9 +58,7 @@ namespace grbda
             const DMat<double> &Psi() const { return Psi_; }
             const DVec<double> &vJ() const { return vJ_; }
 
-            // TODO(@MatthewChignoli): Create unit tests where spannig_coordinates is true
             virtual JointState randomJointState() const;
-            virtual JointState randomSpanningJointState() const;
 
             // TODO(@MatthewChignoli): We should not need to static cast here
             const DVec<double> gamma(JointCoordinate q) const

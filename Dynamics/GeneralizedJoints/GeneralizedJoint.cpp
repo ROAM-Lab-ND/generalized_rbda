@@ -24,14 +24,7 @@ namespace grbda
             joint_state.velocity = DVec<double>::Random(numIndependentVelocities());
             return joint_state;
         }
-
-        JointState Base::randomSpanningJointState() const
-        {
-            JointState joint_state(true, true);
-            joint_state.position = gamma_(DVec<double>::Random(numIndependentPositions()));
-            joint_state.velocity = G_ * DVec<double>::Random(numIndependentVelocities());
-            return joint_state;
-        }
+        
     }
 
 } // namespace grbda
