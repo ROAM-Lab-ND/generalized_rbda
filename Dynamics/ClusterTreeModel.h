@@ -100,7 +100,7 @@ namespace grbda
         {
             const int nq = getNumPositions();
             const int nv = getNumDegreesOfFreedom();
-            initializeIndependentStates(state.head(nq), state.tail(nv));
+            // initializeIndependentStates(state.head(nq), state.tail(nv));
         }
 
         void contactJacobians() {}
@@ -139,10 +139,7 @@ namespace grbda
 
         void print() const;
 
-        void initializeIndependentStates(const DVec<double> &y, const DVec<double> &yd) override;
-        void initializeTelloIndependentStates(const DVec<double> &q, const DVec<double> &y_dot);
-
-        void initializeState(const ModelState &model_state) override;
+        void initializeState(const ModelState &model_state);
 
         int getNumBodies() const override { return (int)bodies_.size(); }
 

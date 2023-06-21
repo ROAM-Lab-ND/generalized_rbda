@@ -33,7 +33,7 @@ protected:
         }
 
         cluster_model.initializeState(model_state);
-        rigid_body_model.initializeStates(spanning_joint_pos, spanning_joint_vel);
+        rigid_body_model.initializeState(spanning_joint_pos, spanning_joint_vel);
 
         // Check for NaNs
         bool nan_detected = false;

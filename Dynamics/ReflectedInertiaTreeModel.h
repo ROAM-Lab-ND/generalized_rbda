@@ -30,7 +30,8 @@ namespace grbda
 
         const DVec<int> &getIndependentCoordinateIndices() const { return independent_coord_indices_; }
 
-        void initializeIndependentStates(const DVec<double> &y, const DVec<double> &yd) override;
+        // TODO(@MatthewChignoli): So this is actually tricky because we are ignoring at least some of the spanning coordinates...
+        void initializeIndependentStates(const DVec<double> &y, const DVec<double> &yd);
 
         DVec<double> forwardDynamics(const DVec<double> &tau) override;
         DVec<double> forwardDynamicsHandC(const DVec<double> &tau);

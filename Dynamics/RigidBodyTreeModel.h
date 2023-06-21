@@ -41,24 +41,7 @@ namespace grbda
         const TreeNodePtr getNodeContainingBody(int index) override { return rigid_body_nodes_[index]; }
 
         // TODO(@MatthewChignoli): Cleanup
-        void initializeStates(const DVec<double> &q, const DVec<double> &qd);
-        void initializeIndependentStates(const DVec<double> &y, const DVec<double> &yd) override;
-
-        void initializeState(const ModelState &model_state) override
-        {
-            // Convert model_state to a vector of spanning q and qd
-            DVec<double> joint_pos = DVec<double>::Zero(0);
-            DVec<double> joint_vel = DVec<double>::Zero(0);
-            for (const auto &joint_state : model_state)
-            {
-                // TODO(@MatthewChignoli): We need to convert to all spanning...
-                joint_pos = appendEigenVector(joint_pos, joint_state.position);
-                joint_vel = appendEigenVector(joint_vel, joint_state.velocity);
-            }
-
-            // TODO(@MatthewChignoli): Delete the initializeStates function? And just put the code here?
-            initializeStates(joint_pos, joint_vel);
-        }
+        void initializeState(const DVec<double> &q, const DVec<double> &qd);
 
         DVec<double> forwardDynamics(const DVec<double> &tau) override;
 

@@ -54,8 +54,8 @@ protected:
         }
 
         cluster_models[robot_idx].initializeState(model_state);
-        lagrange_mult_models[robot_idx].initializeStates(spanning_joint_pos, spanning_joint_vel);
-        projection_models[robot_idx].initializeStates(spanning_joint_pos, spanning_joint_vel);
+        lagrange_mult_models[robot_idx].initializeState(spanning_joint_pos, spanning_joint_vel);
+        projection_models[robot_idx].initializeState(spanning_joint_pos, spanning_joint_vel);
 
         // Check for NaNs
         bool nan_detected = false;

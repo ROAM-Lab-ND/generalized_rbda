@@ -31,10 +31,25 @@ void runBenchmark(std::ofstream &file)
         {
 
             // Set random state
-            DVec<double> q = DVec<double>::Random(nq);
-            DVec<double> qd = DVec<double>::Random(nv);
-            cluster_model.initializeIndependentStates(q, qd);
-            reflected_inertia_model.initializeIndependentStates(q, qd);
+            ModelState model_state;
+            DVec<double> independent_joint_pos = DVec<double>::Zero(0);
+            DVec<double> independent_joint_vel = DVec<double>::Zero(0);
+            for (const auto &cluster : cluster_model.clusters())
+            {
+                JointState joint_state = cluster->joint_->randomJointState();
+                if (joint_state.position.isSpanning() || joint_state.velocity.isSpanning())
+                    throw std::runtime_error("Initializing reflected inertia model requires all independent coordinates");
+
+                independent_joint_pos = appendEigenVector(independent_joint_pos,
+                                                          joint_state.position);
+                independent_joint_vel = appendEigenVector(independent_joint_vel,
+                                                          joint_state.velocity);
+
+                model_state.push_back(joint_state);
+            }
+            cluster_model.initializeState(model_state);
+            reflected_inertia_model.initializeIndependentStates(independent_joint_pos,
+                                                                independent_joint_vel);
 
             // Forward Dynamics
             DVec<double> tau = DVec<double>::Random(nv);

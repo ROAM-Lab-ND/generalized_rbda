@@ -182,44 +182,6 @@ namespace grbda
         appendContactPoint(body_name, V3d(-dims(0), -dims(1), -dims(2)) / 2, "torso-contact-8");
     }
 
-    void ClusterTreeModel::initializeIndependentStates(const DVec<double> &y,
-                                                       const DVec<double> &yd)
-    {
-        // Convert DVec to ModelState (make this is a pure virtual helper function in the base class?)
-        ModelState model_state;
-        for (auto &cluster : cluster_nodes_)
-        {
-            const int &pos_idx = cluster->position_index_;
-            const int &num_pos = cluster->num_positions_;
-            JointCoordinate<double> y_segment =
-                JointCoordinate<double>(y.segment(pos_idx, num_pos), false);
-
-            const int &vel_idx = cluster->velocity_index_;
-            const int &num_vel = cluster->num_velocities_;
-            JointCoordinate<double> yd_segment =
-                JointCoordinate<double>(yd.segment(vel_idx, num_vel), false);
-
-            JointState joint_state(y_segment, yd_segment);
-            model_state.push_back(joint_state);
-        }
-
-        // Initialize state
-        initializeState(model_state);
-    }
-
-    void ClusterTreeModel::initializeTelloIndependentStates(const DVec<double> &q,
-                                                            const DVec<double> &y_dot)
-    {
-        for (auto &cluster : cluster_nodes_)
-        {
-            // TODO(@nicholasadr): How to get rid of the hard coded 0 and 4?
-            cluster->joint_state_.position = q.segment(0, 4);
-            cluster->joint_state_.velocity = y_dot.segment(cluster->velocity_index_,
-                                                           cluster->num_velocities_);
-        }
-        initializeExternalForces();
-    }
-
     void ClusterTreeModel::initializeState(const ModelState &model_state)
     {
         // TODO(@MatthewChignoli): size needs to match the number of clusters

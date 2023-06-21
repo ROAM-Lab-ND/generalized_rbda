@@ -36,13 +36,6 @@ namespace grbda
         void setGravity(const Vec3<double> &g) { gravity_.tail<3>() = g; }
         SVec<double> getGravity() const { return gravity_; }
 
-        virtual void initializeState(const ModelState &model_state)
-        {
-            throw std::runtime_error("Not implemented");
-        }
-
-        // TODO(@MatthewChignoli): Is this actually a common function? Probably not...
-        virtual void initializeIndependentStates(const DVec<double> &y, const DVec<double> &yd) = 0;
         virtual void initializeExternalForces(
             const std::vector<ExternalForceAndBodyIndexPair> &force_and_body_index_pairs = {});
 
