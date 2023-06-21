@@ -18,7 +18,6 @@ namespace grbda
                 : num_positions_(num_positions), num_velocities_(num_velocities) {}
             virtual ~Base() {}
 
-            // TODO(@MatthewChignoli): Should this also take JointState as input? Should we differentiate between JointStates and ClusterJointStates?
             virtual void updateKinematics(const DVec<double> &q, const DVec<double> &qd) = 0;
 
             int numPositions() const { return num_positions_; }

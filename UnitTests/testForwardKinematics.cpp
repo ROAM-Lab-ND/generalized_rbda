@@ -156,13 +156,13 @@ TYPED_TEST(RigidBodyKinemaitcsTest, MotionSubspaceApparentDerivative)
 
             JointState q_plus_joint_state = cluster->joint_state_;
             q_plus_joint_state.position = cluster->integratePosition(q_plus_joint_state, dt);
-            q_plus_joint_state.velocity = cluster->qd();
+            q_plus_joint_state.velocity = cluster->jointVelocity();
             joint->updateKinematics(q_plus_joint_state);
             DMat<double> S_plus = joint->S();
 
             JointState q_minus_joint_state = cluster->joint_state_;
             q_minus_joint_state.position = cluster->integratePosition(q_minus_joint_state, -dt);
-            q_minus_joint_state.velocity = cluster->qd();
+            q_minus_joint_state.velocity = cluster->jointVelocity();
             joint->updateKinematics(q_minus_joint_state);
             DMat<double> S_minus = joint->S();
 

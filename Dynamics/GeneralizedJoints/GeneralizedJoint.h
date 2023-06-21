@@ -59,12 +59,11 @@ namespace grbda
             const DVec<double> &vJ() const { return vJ_; }
 
             // TODO(@MatthewChignoli): Create unit tests where spannig_coordinates is true
-            // I also don't like this function name because it does not imply what the argument is..
             virtual JointState randomJointState() const;
             virtual JointState randomSpanningJointState() const;
 
             // TODO(@MatthewChignoli): We should not need to static cast here
-            const DVec<double> gamma(JointCoordinate<double> q) const
+            const DVec<double> gamma(JointCoordinate q) const
             {
                 return gamma_(static_cast<DVec<double>>(q));
             }

@@ -181,19 +181,17 @@ namespace grbda
     template <typename T>
     using DVecFcn = std::function<DVec<T>(DVec<T>)>;
 
-    // TODO(@MatthewChignoli): Does this really need to be templated?
-    template <typename T>
-    class JointCoordinate : public DVec<T>
+    class JointCoordinate : public DVec<double>
     {
     public:
-        JointCoordinate(const DVec<T> &vec, bool is_spanning)
-            : DVec<T>(vec), _is_spanning(is_spanning) {}
+        JointCoordinate(const DVec<double> &vec, bool is_spanning)
+            : DVec<double>(vec), _is_spanning(is_spanning) {}
 
         const bool &isSpanning() const { return _is_spanning; }
 
         JointCoordinate &operator=(const JointCoordinate &other)
         {
-            this->DVec<T>::operator=(other);
+            this->DVec<double>::operator=(other);
             _is_spanning = other._is_spanning;
             return *this;
         }
@@ -201,7 +199,7 @@ namespace grbda
         template <typename Derived>
         JointCoordinate &operator=(const Eigen::DenseBase<Derived> &x)
         {
-            this->DVec<T>::operator=(x);
+            this->DVec<double>::operator=(x);
             return *this;
         }
 
@@ -211,24 +209,22 @@ namespace grbda
 
     struct JointState
     {
-        JointState(const JointCoordinate<double> &pos, const JointCoordinate<double> &vel)
+        JointState(const JointCoordinate &pos, const JointCoordinate &vel)
             : position(pos), velocity(vel) {}
 
         JointState(bool position_is_spanning, bool velocity_is_spanning)
-            : position(JointCoordinate<double>(DVec<double>::Zero(0), position_is_spanning)),
-              velocity(JointCoordinate<double>(DVec<double>::Zero(0), velocity_is_spanning)) {}
+            : position(JointCoordinate(DVec<double>::Zero(0), position_is_spanning)),
+              velocity(JointCoordinate(DVec<double>::Zero(0), velocity_is_spanning)) {}
 
         JointState()
-            : position(JointCoordinate<double>(DVec<double>::Zero(0), false)),
-              velocity(JointCoordinate<double>(DVec<double>::Zero(0), false)) {}
+            : position(JointCoordinate(DVec<double>::Zero(0), false)),
+              velocity(JointCoordinate(DVec<double>::Zero(0), false)) {}
 
-        JointCoordinate<double> position;
-        JointCoordinate<double> velocity;
+        JointCoordinate position;
+        JointCoordinate velocity;
     };
 
-    class ModelState : public std::vector<JointState>
-    {
-    };
+    using ModelState = std::vector<JointState>;
 
 } // namespace grbda
 

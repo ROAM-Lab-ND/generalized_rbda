@@ -37,10 +37,15 @@ namespace grbda
 
         int getNumBodies() const override { return (int)rigid_body_nodes_.size(); }
 
-        const Body &getBody(int index) const override { return rigid_body_nodes_[index]->body_; }
-        const TreeNodePtr getNodeContainingBody(int index) override { return rigid_body_nodes_[index]; }
+        const Body &getBody(int index) const override
+        {
+            return rigid_body_nodes_[index]->body_;
+        }
+        const TreeNodePtr getNodeContainingBody(int index) override
+        {
+            return rigid_body_nodes_[index];
+        }
 
-        // TODO(@MatthewChignoli): Cleanup
         void initializeState(const DVec<double> &q, const DVec<double> &qd);
 
         DVec<double> forwardDynamics(const DVec<double> &tau) override;

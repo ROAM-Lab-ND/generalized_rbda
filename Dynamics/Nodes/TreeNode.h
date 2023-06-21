@@ -13,7 +13,6 @@ namespace grbda
 
     struct TreeNode
     {
-        // TODO(@MatthewChignoli): Can we clean up the constructor?
         TreeNode(int index, std::string name, int parent_index, int motion_subspace_dimension,
                  int num_parent_bodies, int position_index, int num_positions,
                  int velocity_index, int num_velocities)
@@ -31,8 +30,8 @@ namespace grbda
 
         virtual void updateKinematics() = 0;
 
-        const JointCoordinate<double> &q() const { return joint_state_.position; }
-        const JointCoordinate<double> &qd() const { return joint_state_.velocity; }
+        const JointCoordinate &jointPosition() const { return joint_state_.position; }
+        const JointCoordinate &jointVelocity() const { return joint_state_.velocity; }
         virtual const DVec<double> &vJ() const = 0;
         virtual const DMat<double> &S() const = 0;
         virtual const DMat<double> &S_ring() const = 0;

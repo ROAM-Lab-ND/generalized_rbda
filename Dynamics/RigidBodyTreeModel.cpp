@@ -48,7 +48,7 @@ namespace grbda
                 const int num_pos = cluster->num_positions_;
                 const auto joint = cluster->joint_;
 
-                JointCoordinate<double> joint_pos = cluster->joint_state_.position;
+                JointCoordinate joint_pos = cluster->joint_state_.position;
                 if (cluster->joint_state_.position.isSpanning())
                 {
                     joint_pos = q.segment(pos_idx, num_pos);

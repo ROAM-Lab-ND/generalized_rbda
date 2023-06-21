@@ -3,7 +3,6 @@
 namespace grbda
 {
 
-    // TODO(@MatthewChignoli): Maybe the spanning information should come from the joint?
     ClusterTreeNode::ClusterTreeNode(int index, std::string name, std::vector<Body> &bodies,
                                      std::shared_ptr<GeneralizedJoints::Base> joint,
                                      int parent_index, int num_parent_bodies,

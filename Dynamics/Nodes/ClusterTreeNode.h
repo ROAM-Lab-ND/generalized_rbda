@@ -20,7 +20,7 @@ namespace grbda
         const DMat<double> &S_ring() const override { return joint_->S_ring(); }
 
         // TODO(@MatthewChignoli): Should this actually be a virtual function in TreeNode.h?
-        JointCoordinate<double> integratePosition(JointState joint_state, double dt)
+        JointCoordinate integratePosition(JointState joint_state, double dt)
         {
             if (joint_state.position.isSpanning() && joint_state.velocity.isSpanning())
             {

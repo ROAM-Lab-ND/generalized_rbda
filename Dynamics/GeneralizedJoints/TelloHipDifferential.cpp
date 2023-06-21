@@ -107,8 +107,8 @@ namespace grbda
 
 	JointState TelloHipDifferential::randomJointState() const
 	{
-		JointCoordinate<double> joint_pos(DVec<double>::Zero(4), true);
-		JointCoordinate<double> joint_vel(DVec<double>::Zero(2), false);
+		JointCoordinate joint_pos(DVec<double>::Zero(4), true);
+		JointCoordinate joint_vel(DVec<double>::Zero(2), false);
 		JointState joint_state(joint_pos, joint_vel);
 
 		// Position
@@ -134,8 +134,8 @@ namespace grbda
 
 	JointState TelloHipDifferential::randomSpanningJointState() const
 	{
-		JointCoordinate<double> joint_pos(DVec<double>::Zero(4), true);
-		JointCoordinate<double> joint_vel(DVec<double>::Zero(4), true);
+		JointCoordinate joint_pos(DVec<double>::Zero(4), true);
+		JointCoordinate joint_vel(DVec<double>::Zero(4), true);
 		JointState joint_state(joint_pos, joint_vel);
 
 		// Position
