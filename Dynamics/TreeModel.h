@@ -21,8 +21,8 @@ namespace grbda
         }
         virtual ~TreeModel() {}
 
-        int getNumPositions() const { return position_index_; }
-        int getNumDegreesOfFreedom() const { return velocity_index_; }
+        const int& getNumPositions() const { return position_index_; }
+        const int& getNumDegreesOfFreedom() const { return velocity_index_; }
         int getNumActuatedDegreesOfFreedom() const { return velocity_index_ - unactuated_dofs_; }
 
         virtual DMat<double> getMassMatrix() = 0;
