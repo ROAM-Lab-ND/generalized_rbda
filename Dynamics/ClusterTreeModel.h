@@ -92,15 +92,35 @@ namespace grbda
             return bodies_.at(body_index).name_;
         }
 
-        // TODO(@MatthewChignoli): So all of this stuff get's deprecated
-
         void resetCalculationFlags() { resetCache(); }
 
         void setState(const DVec<double> &state)
         {
             const int nq = getNumPositions();
             const int nv = getNumDegreesOfFreedom();
-            // initializeIndependentStates(state.head(nq), state.tail(nv));
+
+            // TODO(@MatthewChignoli): This is the hacky way to convert the DVec version of the state to a Model State
+            ModelState model_state;
+            int pos_idx = 0;
+            int vel_idx = nq;
+            for (size_t i(0); i < clusters().size(); i++)
+            {
+                const auto &joint = cluster(i)->joint_;
+
+                const int &num_pos = joint->numIndependentPositions();
+                const int &num_vel = joint->numIndependentVelocities();
+
+                // TODO(@MatthewChignoli): We are assuming all coordinates are independent. This is a problem for robots like Tello
+                JointState joint_state(false, false);
+                joint_state.position = state.segment(pos_idx, num_pos);
+                joint_state.velocity = state.segment(vel_idx, num_vel);
+                model_state.push_back(joint_state);
+
+                pos_idx += num_pos;
+                vel_idx += num_vel;
+            }
+
+            initializeState(model_state);
         }
 
         void contactJacobians() {}

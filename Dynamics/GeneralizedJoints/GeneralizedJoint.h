@@ -49,8 +49,8 @@ namespace grbda
                 throw std::runtime_error("Reflected Inertia not setup for this generalized joint type");
             }
 
-            int numIndependentPositions() const { return num_independent_positions_; }
-            int numIndependentVelocities() const { return num_independent_velocities_; }
+            const int &numIndependentPositions() const { return num_independent_positions_; }
+            const int &numIndependentVelocities() const { return num_independent_velocities_; }
             virtual int numUnactuatedVelocities() const { return 0; }
 
             const DMat<double> &S() const { return S_; }
