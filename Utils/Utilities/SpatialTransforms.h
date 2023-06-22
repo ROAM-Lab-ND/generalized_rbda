@@ -36,8 +36,8 @@ namespace grbda {
 
             SpatialTransform operator*(const SpatialTransform &X_in) const;
 
-            Mat3<double> getRotation() const { return E_; }
-            Vec3<double> getTranslation() const { return r_; }
+            const Mat3<double>& getRotation() const { return E_; }
+            const Vec3<double>& getTranslation() const { return r_; }
             Mat3<double> getSkewTranslationMatrix() const { return vectorToSkewMat(r_); }
 
         private:

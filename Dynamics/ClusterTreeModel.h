@@ -92,6 +92,11 @@ namespace grbda
             return bodies_.at(body_index).name_;
         }
 
+        D3Mat<double> Jc(const string &cp_name) const
+        {
+            return contactPoint(cp_name).jacobian_.bottomRows<3>();
+        }
+
         void resetCalculationFlags() { resetCache(); }
 
         void setState(const DVec<double> &state)
@@ -123,12 +128,51 @@ namespace grbda
             initializeState(model_state);
         }
 
-        void contactJacobians() {}
+        void contactJacobians() 
+        {
+            forwardKinematics();
 
-        double applyTestForce(const int gc_index, const Vec3<double> &force_ics_at_contact,
-                              DVec<double> &dstate_out) { return 0.; }
+            for (ContactPoint& cp : contact_points_)
+            {
+                const size_t i = cp.body_index_;
 
-        DMat<double> massMatrix() { return DMat<double>::Zero(0, 0); }
+                const Body &body_i = body(i);
+                const auto& cluster_i = getClusterContainingBody(body_i);
+                const int& subindex_within_cluster_i = body_i.sub_index_within_cluster_;
+                
+                const SpatialTransform Xa = cluster_i->Xa_[subindex_within_cluster_i];
+                const Mat3<double>& R_link_to_world = Xa.getRotation().transpose();
+                Mat6<double> Xout = createSXform(R_link_to_world, cp.local_offset_);
+
+                int j = (int)i;
+                while (j > -1)
+                {
+                    const Body &body_j = body(j);
+                    const auto& cluster_j = getClusterContainingBody(body_j);
+                    const int& subindex_within_cluster_j = body_j.sub_index_within_cluster_;
+                    const int &vel_idx = cluster_j->velocity_index_;
+                    const int &num_vel = cluster_j->num_velocities_;
+
+                    D6Mat<double> S = cluster_j->S().middleRows<6>(6 * subindex_within_cluster_j);
+                    cp.jacobian_.middleCols(vel_idx, num_vel) = Xout * S;
+
+                    Mat6<double> Xup = cluster_j->Xup_[subindex_within_cluster_j].toMatrix();
+                    Xout = Xout * Xup;
+
+                    // TODO(@MatthewChignoli): WILL FAIL WHEN A BODY'S PARENT IS IN ITS SAME CLUSTER
+                    j = body_j.parent_index_;
+                }
+            }
+
+        }
+
+        double applyTestForce(const string &cp_name, const Vec3<double> &force_ics_at_contact,
+                              DVec<double> &dstate_out)
+        {
+            return applyLocalFrameTestForceAtConactPoint(force_ics_at_contact, cp_name, dstate_out);
+        }
+
+        DMat<double> massMatrix() { return getMassMatrix(); }
 
         // TODO(@MatthewChignoli): Things to delete
         size_t _nGroundContact = 0;

@@ -24,6 +24,7 @@ namespace grbda
     const SpatialTransform Xtree_;
     const SpatialInertia<double> inertia_;
     const int sub_index_within_cluster_;
+    const int cluster_ancestor_index_ = 0; // TODO(@MatthewChignoli): Remove this when fixing the contactJacobian calculation for non-trivial clusters
     const int cluster_ancestor_sub_index_within_cluster_;
   };
 
