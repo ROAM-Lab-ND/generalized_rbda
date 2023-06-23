@@ -73,7 +73,6 @@ namespace grbda
             }
         }
 
-        // TODO(@MatthewChignoli): For now we will use this, but I think maybe we want to create a contact point struct that holds this information
         const std::unordered_map<std::string, int> &contacts() const { return contact_name_to_contact_index_; }
 
         const Vec3<double> &pGC(const string &cp_name) const
