@@ -32,15 +32,15 @@ namespace grbda
 
 	void TelloHipDifferential::updateKinematics(const JointState &joint_state)
 	{
-		// ISSUE #10
-		// if (q.size() != 4)
-		//     throw std::runtime_error("[TelloHipDifferential] Dimension of joint position must be 4");
+	    // ISSUE #10
+	    // if (q.size() != 4)
+	    //     throw std::runtime_error("[TelloHipDifferential] Dimension of joint position must be 4");
 
-		const JointState spanning_joint_state = toSpanningTreeState(joint_state);
-		const DVec<double> &q = spanning_joint_state.position;
-		const DVec<double> &q_dot = spanning_joint_state.velocity;
+	    const JointState spanning_joint_state = toSpanningTreeState(joint_state);
+	    const DVec<double> &q = spanning_joint_state.position;
+	    const DVec<double> &q_dot = spanning_joint_state.velocity;
 
-		rotor_1_joint_->updateKinematics(q.segment<1>(0), q_dot.segment<1>(0));
+	    rotor_1_joint_->updateKinematics(q.segment<1>(0), q_dot.segment<1>(0));
 	    rotor_2_joint_->updateKinematics(q.segment<1>(1), q_dot.segment<1>(1));
 	    link_1_joint_->updateKinematics(q.segment<1>(2), q_dot.segment<1>(2));
 	    link_2_joint_->updateKinematics(q.segment<1>(3), q_dot.segment<1>(3));
@@ -77,70 +77,69 @@ namespace grbda
 					 S2 * abcd_dot.block<1, 1>(1, 1) +\
 					 (-v2_rel_crm * X21_S1) * G_.block<1, 1>(2, 1);
 
-		vJ_ = S_ * joint_state.velocity;
+	    vJ_ = S_ * joint_state.velocity;
 	}
 
 	void TelloHipDifferential::computeSpatialTransformFromParentToCurrentCluster(
 		GeneralizedSpatialTransform &Xup) const
 	{
-		if (Xup.getNumOutputBodies() != 4)
-			throw std::runtime_error("[TelloHipDifferential] Xup must have 24 rows");
+	    if (Xup.getNumOutputBodies() != 4)
+		throw std::runtime_error("[TelloHipDifferential] Xup must have 24 rows");
 
-		Xup[0] = rotor_1_joint_->XJ() * rotor_1_.Xtree_;
-		Xup[1] = rotor_2_joint_->XJ() * rotor_2_.Xtree_;
-		Xup[2] = link_1_joint_->XJ() * link_1_.Xtree_;
-		Xup[3] = link_2_joint_->XJ() * link_2_.Xtree_ * Xup[2];
+	    Xup[0] = rotor_1_joint_->XJ() * rotor_1_.Xtree_;
+	    Xup[1] = rotor_2_joint_->XJ() * rotor_2_.Xtree_;
+	    Xup[2] = link_1_joint_->XJ() * link_1_.Xtree_;
+	    Xup[3] = link_2_joint_->XJ() * link_2_.Xtree_ * Xup[2];
 	}
 
 	void TelloHipDifferential::updateConstraintJacobians(const JointCoordinate &joint_pos)
 	{
-		// ISSUE #10 - joint_pos needs to be spanning
-		vector<DVec<double>> arg = {joint_pos.head<2>(), joint_pos.tail<2>()};
-		Mat2<double> J_dy_2_dqd;
-		casadi_interface(arg, J_dy_2_dqd,
-						 thd_J_dy_2_dqd, thd_J_dy_2_dqd_sparsity_out, thd_J_dy_2_dqd_work);
+	    // ISSUE #10 - joint_pos needs to be spanning
+	    vector<DVec<double>> arg = {joint_pos.head<2>(), joint_pos.tail<2>()};
+	    Mat2<double> J_dy_2_dqd;
+	    casadi_interface(arg, J_dy_2_dqd, thd_J_dy_2_dqd,
+					      thd_J_dy_2_dqd_sparsity_out,
+					      thd_J_dy_2_dqd_work);
 
-		G_.bottomRows<2>() = J_dy_2_dqd;
-		K_.leftCols<2>() = -G_.bottomRows<2>();
+	    G_.bottomRows<2>() = J_dy_2_dqd;
+	    K_.leftCols<2>() = -G_.bottomRows<2>();
 	}
 
 	void TelloHipDifferential::updateConstraintBias(const JointState &joint_state)
 	{
-		// ISSUE #10 - joint_state.position and joint_state.velocity need to be spanning
-		const DVec<double> &q = joint_state.position;
-		const DVec<double> &q_dot = joint_state.velocity;
+	    // ISSUE #10 - joint_state.position and joint_state.velocity need to be spanning
+	    const DVec<double> &q = joint_state.position;
+	    const DVec<double> &q_dot = joint_state.velocity;
 
-		vector<DVec<double>> arg = {q.head<2>(), q.tail<2>(), q_dot.head<2>(), q_dot.tail<2>()};
-		casadi_interface(arg, g_, thd_g, thd_g_sparsity_out, thd_g_work);
-		casadi_interface(arg, k_, thd_k, thd_k_sparsity_out, thd_k_work);
+	    vector<DVec<double>> arg = {q.head<2>(), q.tail<2>(), q_dot.head<2>(), q_dot.tail<2>()};
+	    casadi_interface(arg, g_, thd_g, thd_g_sparsity_out, thd_g_work);
+	    casadi_interface(arg, k_, thd_k, thd_k_sparsity_out, thd_k_work);
 	}
 
 	JointState TelloHipDifferential::randomJointState() const
 	{
-		JointCoordinate joint_pos(DVec<double>::Zero(4), true);
-		JointCoordinate joint_vel(DVec<double>::Zero(2), false);
-		JointState joint_state(joint_pos, joint_vel);
+	    JointCoordinate joint_pos(DVec<double>::Zero(4), true);
+	    JointCoordinate joint_vel(DVec<double>::Zero(2), false);
+	    JointState joint_state(joint_pos, joint_vel);
 
-		// Position
-		std::vector<DVec<double>> dependent_state = {DVec<double>::Random(2)};
-		Vec2<double> y = Vec2<double>::Zero(2);
-		casadi_interface(dependent_state, y,
-						 IK_dependent_state_to_y,
+	    // Position
+	    std::vector<DVec<double>> dependent_state = {DVec<double>::Random(2)};
+	    Vec2<double> y = Vec2<double>::Zero(2);
+	    casadi_interface(dependent_state, y, IK_dependent_state_to_y,
 						 IK_dependent_state_to_y_sparsity_out,
 						 IK_dependent_state_to_y_work);
-		joint_state.position << y, dependent_state[0];
+	    joint_state.position << y, dependent_state[0];
 
-		// Velocity
-		dependent_state.push_back(DVec<double>::Random(2));
-		Vec2<double> y_dot = Vec2<double>::Zero(2);
-		casadi_interface(dependent_state, y_dot,
-						 IK_dependent_state_to_y_dot,
-						 IK_dependent_state_to_y_dot_sparsity_out,
-						 IK_dependent_state_to_y_dot_work);
-		joint_state.velocity << y_dot;
+	    // Velocity
+	    dependent_state.push_back(DVec<double>::Random(2));
+	    Vec2<double> y_dot = Vec2<double>::Zero(2);
+	    casadi_interface(dependent_state, y_dot, IK_dependent_state_to_y_dot,
+						     IK_dependent_state_to_y_dot_sparsity_out,
+						     IK_dependent_state_to_y_dot_work);
+	    joint_state.velocity << y_dot;
 
-		return joint_state;
+	    return joint_state;
 	}
-	}
+    }
 
 } // namespace grbda
