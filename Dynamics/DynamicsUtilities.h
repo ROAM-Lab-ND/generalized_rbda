@@ -20,6 +20,8 @@ namespace grbda
             : body_index_(body_index), local_offset_(local_offset), name_(name),
               jacobian_(D6Mat<double>::Zero(6, num_jacobian_cols)) {}
 
+        ContactPoint &operator=(const ContactPoint &contact_point) { return *this; }
+
         const int body_index_;
         const Vec3<double> local_offset_;
         const std::string name_;

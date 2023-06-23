@@ -18,6 +18,8 @@ namespace grbda
           inertia_(inertia), sub_index_within_cluster_(sub_index_within_cluster),
           cluster_ancestor_sub_index_within_cluster_(cluster_ancestor_sub_index_within_cluster) {}
 
+    Body &operator=(const Body &body) { return *this; }
+
     const int index_;
     const std::string name_;
     const int parent_index_;
