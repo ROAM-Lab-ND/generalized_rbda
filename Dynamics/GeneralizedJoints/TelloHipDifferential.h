@@ -19,18 +19,18 @@ namespace grbda
 
 	    GeneralizedJointTypes type() const override { return GeneralizedJointTypes::TelloHipDifferential; }
 
-		void updateKinematics(const JointState &joint_state) override;
+	    void updateKinematics(const JointState &joint_state) override;
 
-		void computeSpatialTransformFromParentToCurrentCluster(
+	    void computeSpatialTransformFromParentToCurrentCluster(
 		GeneralizedSpatialTransform &Xup) const override;
 
-		JointState randomJointState() const override;
+	    JointState randomJointState() const override;
 
 	private:
-		void updateConstraintJacobians(const JointCoordinate &joint_pos) override;
-		void updateConstraintBias(const JointState &joint_state) override;
+	    void updateConstraintJacobians(const JointCoordinate &joint_pos) override;
+	    void updateConstraintBias(const JointState &joint_state) override;
 
-		JointPtr rotor_1_joint_;
+	    JointPtr rotor_1_joint_;
 	    JointPtr rotor_2_joint_;
 	    JointPtr link_1_joint_;
 	    JointPtr link_2_joint_;

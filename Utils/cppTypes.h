@@ -188,6 +188,9 @@ namespace grbda
             : DVec<double>(vec), _is_spanning(is_spanning) {}
 
         const bool &isSpanning() const { return _is_spanning; }
+	
+	JointCoordinate(const JointCoordinate &other)
+	    : DVec<double>(other), _is_spanning(other._is_spanning) {}
 
         JointCoordinate &operator=(const JointCoordinate &other)
         {
