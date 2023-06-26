@@ -13,9 +13,11 @@ namespace grbda
 
     Body(const int index, const std::string name, const int parent_index,
          const SpatialTransform Xtree, const SpatialInertia<double> inertia,
-         const int sub_index_within_cluster, const int cluster_ancestor_sub_index_within_cluster)
+         const int sub_index_within_cluster, const int cluster_ancestor_index,
+         const int cluster_ancestor_sub_index_within_cluster)
         : index_(index), name_(name), parent_index_(parent_index), Xtree_(Xtree),
           inertia_(inertia), sub_index_within_cluster_(sub_index_within_cluster),
+          cluster_ancestor_index_(cluster_ancestor_index),
           cluster_ancestor_sub_index_within_cluster_(cluster_ancestor_sub_index_within_cluster) {}
 
     Body &operator=(const Body &body) { return *this; }
@@ -26,7 +28,7 @@ namespace grbda
     const SpatialTransform Xtree_;
     const SpatialInertia<double> inertia_;
     const int sub_index_within_cluster_;
-    const int cluster_ancestor_index_ = 0; // TODO(@MatthewChignoli): Remove this when fixing the contactJacobian calculation for non-trivial clusters
+    const int cluster_ancestor_index_;
     const int cluster_ancestor_sub_index_within_cluster_;
   };
 

@@ -25,6 +25,7 @@ namespace grbda
 
         auto body = Body(body_index, name, parent_body_index, Xtree, inertia,
                          (int)bodies_in_current_cluster_.size(),
+                         cluster_ancestor_index,
                          cluster_ancestor_sub_index_within_cluster);
 
         bodies_.push_back(body);

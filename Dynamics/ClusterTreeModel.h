@@ -158,8 +158,7 @@ namespace grbda
                     Mat6<double> Xup = cluster_j->Xup_[subindex_within_cluster_j].toMatrix();
                     Xout = Xout * Xup;
 
-                    // TODO(@MatthewChignoli): WILL FAIL WHEN A BODY'S PARENT IS IN ITS SAME CLUSTER
-                    j = body_j.parent_index_;
+                    j = body_j.cluster_ancestor_index_;
                 }
             }
 
@@ -206,7 +205,10 @@ namespace grbda
 
         int getNumBodies() const override { return (int)bodies_.size(); }
 
-        // NOTE: A body's "cluster ancestor" is the nearest member in the body's supporting tree that belongs to a different cluster
+        // NOTE: A body's "cluster ancestor" is the nearest member in the body's supporting tree 
+        // that belongs to a different cluster. This function is only intended to be run when 
+        // registering bodies. At all other times, a bodies cluster ancestor should be accesses via 
+        // body.cluster_ancestor_index_
         int getClusterAncestorIndexFromParent(const int body_index);
 
         int getSubIndexWithinClusterForBody(const Body &body) const;
