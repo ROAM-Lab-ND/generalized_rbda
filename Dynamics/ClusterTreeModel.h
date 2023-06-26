@@ -33,156 +33,36 @@ namespace grbda
         }
         ~ClusterTreeModel() {}
 
-        // TODO(@MatthewChignoli): These are functions and members shared with FloatingBaseModel. Not sure how I want to deal with them moving forward. It's unclear which parts of Robot-Software need to change for compatiblity with GRBDA and which parts of GRBDA need to change for compatibility with Robot-Software. Some of this should be moved to TreeModel base class?
-
+        // TODO(@MatthewChignoli): These are functions and members shared with FloatingBaseModel. Not sure how I want to deal with them moving forward. It's unclear which parts of Robot-Software need to change for compatiblity with GRBDA and which parts of GRBDA need to change for compatibility with Robot-Software.
         Vec3<double> getPosition(const string &body_name);
         Mat3<double> getOrientation(const string &body_name);
         Vec3<double> getLinearVelocity(const string &body_name);
         Vec3<double> getAngularVelocity(const string &body_name);
 
-        void resetExternalForces()
-        {
-            for (const int index : indices_of_nodes_experiencing_external_forces_)
-                nodes_[index]->f_ext_.setZero();
-            indices_of_nodes_experiencing_external_forces_.clear();
-
-            resetCache();
-        }
-
-        // TODO(@MatthewChignoli): Want to delete this eventually
-        vectorAligned<SVec<double>> _externalForces;
-
-        void setExternalForces(const string &body_name, const SVec<double> &force)
-        {
-            const auto &body_i = body(body_name);
-            const auto node = getNodeContainingBody(body_i.index_);
-            node->applyForceToBody(force, body_i);
-
-            // Add index to vector if vector does not already contain this cluster
-            if (!vectorContainsIndex(indices_of_nodes_experiencing_external_forces_, node->index_))
-                indices_of_nodes_experiencing_external_forces_.push_back(node->index_);
-        }
-
-        void setExternalForces(const unordered_map<string, SVec<double>> &ext_forces = {})
-        {
-            for (const auto &ext_force : ext_forces)
-            {
-                const string &body_name = ext_force.first;
-                const SVec<double> &force = ext_force.second;
-                setExternalForces(body_name, force);
-            }
-        }
-
-        const std::unordered_map<std::string, int> &contacts() const { return contact_name_to_contact_index_; }
-
-        const Vec3<double> &pGC(const string &cp_name) const
-        {
-            return contactPoint(cp_name).position_;
-        }
-
-        const Vec3<double> &vGC(const string &cp_name) const
-        {
-            return contactPoint(cp_name).velocity_;
-        }
-
-        const string &gcParent(const string &cp_name) const
-        {
-            const int& body_index = contactPoint(cp_name).body_index_;
-            return bodies_.at(body_index).name_;
-        }
-
-        D3Mat<double> Jc(const string &cp_name) const
-        {
-            return contactPoint(cp_name).jacobian_.bottomRows<3>();
-        }
-
+        void setState(const DVec<double> &state);
+        void setExternalForces(const string &body_name, const SVec<double> &force);
+        void setExternalForces(const unordered_map<string, SVec<double>> &ext_forces = {});
+        void resetExternalForces();
         void resetCalculationFlags() { resetCache(); }
 
-        void setState(const DVec<double> &state)
-        {
-            const int nq = getNumPositions();
-            const int nv = getNumDegreesOfFreedom();
-
-            // TODO(@MatthewChignoli): This is the hacky way to convert the DVec version of the state to a Model State
-            ModelState model_state;
-            int pos_idx = 0;
-            int vel_idx = nq;
-            for (size_t i(0); i < clusters().size(); i++)
-            {
-                const auto &joint = cluster(i)->joint_;
-
-                const int &num_pos = joint->numIndependentPositions();
-                const int &num_vel = joint->numIndependentVelocities();
-
-                // TODO(@MatthewChignoli): We are assuming all coordinates are independent. This is a problem for robots like Tello
-                JointState joint_state(false, false);
-                joint_state.position = state.segment(pos_idx, num_pos);
-                joint_state.velocity = state.segment(vel_idx, num_vel);
-                model_state.push_back(joint_state);
-
-                pos_idx += num_pos;
-                vel_idx += num_vel;
-            }
-
-            initializeState(model_state);
-        }
-
-        void contactJacobians() 
-        {
-            forwardKinematics();
-
-            for (ContactPoint& cp : contact_points_)
-            {
-                const size_t i = cp.body_index_;
-
-                const Body &body_i = body(i);
-                const auto& cluster_i = getClusterContainingBody(body_i);
-                const int& subindex_within_cluster_i = body_i.sub_index_within_cluster_;
-                
-                const SpatialTransform Xa = cluster_i->Xa_[subindex_within_cluster_i];
-                const Mat3<double>& R_link_to_world = Xa.getRotation().transpose();
-                Mat6<double> Xout = createSXform(R_link_to_world, cp.local_offset_);
-
-                int j = (int)i;
-                while (j > -1)
-                {
-                    const Body &body_j = body(j);
-                    const auto& cluster_j = getClusterContainingBody(body_j);
-                    const int& subindex_within_cluster_j = body_j.sub_index_within_cluster_;
-                    const int &vel_idx = cluster_j->velocity_index_;
-                    const int &num_vel = cluster_j->num_velocities_;
-
-                    D6Mat<double> S = cluster_j->S().middleRows<6>(6 * subindex_within_cluster_j);
-                    cp.jacobian_.middleCols(vel_idx, num_vel) = Xout * S;
-
-                    Mat6<double> Xup = cluster_j->Xup_[subindex_within_cluster_j].toMatrix();
-                    Xout = Xout * Xup;
-
-                    j = body_j.cluster_ancestor_index_;
-                }
-            }
-
-        }
-
-        double applyTestForce(const string &cp_name, const Vec3<double> &force_ics_at_contact,
-                              DVec<double> &dstate_out)
-        {
-            return applyLocalFrameTestForceAtConactPoint(force_ics_at_contact, cp_name, dstate_out);
-        }
+        void contactJacobians();
+        const std::unordered_map<std::string, int> &contacts() const;
+        const Vec3<double> &pGC(const string &cp_name) const;
+        const Vec3<double> &vGC(const string &cp_name) const;
+        const string &gcParent(const string &cp_name) const;
+        D3Mat<double> Jc(const string &cp_name) const;
 
         DMat<double> massMatrix() { return getMassMatrix(); }
+        double applyTestForce(const string &cp_name,
+                              const Vec3<double> &force_ics_at_contact,
+                              DVec<double> &dstate_out);
 
-        // TODO(@MatthewChignoli): Things to delete
-        size_t _nGroundContact = 0;
-        vector<size_t> _gcParent;
-        vector<Vec3<double>> _pGC;
-        vector<Vec3<double>> _vGC;
-        vector<D3Mat<double>> _Jc;
-
+        void addJointLim(size_t jointID, double joint_lim_value_lower,
+                         double joint_lim_value_upper);
         size_t _nJointLim = 0;
-        vector<size_t> _JointLimID;         // hold the joint nb ID as defined in humanoid.h
-        vector<double> _JointLimValueLower; // hold the joint nb ID as defined in humanoid.h
-        vector<double> _JointLimValueUpper; // hold the joint nb ID as defined in humanoid.h
+        vector<size_t> _JointLimID;        
+        vector<double> _JointLimValueLower;
+        vector<double> _JointLimValueUpper;
 
         /////////////////////////////////////
 
