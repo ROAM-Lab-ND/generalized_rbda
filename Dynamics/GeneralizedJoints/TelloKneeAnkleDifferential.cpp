@@ -1,4 +1,4 @@
-#include "TelloHipDifferential.h"
+#include "TelloKneeAnkleDifferential.h"
 
 namespace grbda
 {
@@ -6,7 +6,7 @@ namespace grbda
     namespace GeneralizedJoints
     {
 
-	TelloHipDifferential::TelloHipDifferential(
+	TelloKneeAnkleDifferential::TelloKneeAnkleDifferential(
 	    Body &rotor_1, Body &rotor_2, Body &link_1, Body &link_2,
 	    CoordinateAxis rotor_axis_1, CoordinateAxis rotor_axis_2,
 	    CoordinateAxis joint_axis_1, CoordinateAxis joint_axis_2)
@@ -30,11 +30,11 @@ namespace grbda
 	    S_.block<6, 1>(6, 1) = rotor_2_joint_->S();
 	}
 
-	void TelloHipDifferential::updateKinematics(const JointState &joint_state)
+	void TelloKneeAnkleDifferential::updateKinematics(const JointState &joint_state)
 	{
 	    // ISSUE #10
 	    // if (q.size() != 4)
-	    //     throw std::runtime_error("[TelloHipDifferential] Dimension of joint position must be 4");
+	    //     throw std::runtime_error("[TelloKneeAnkleDifferential] Dimension of joint position must be 4");
 
 	    const JointState spanning_joint_state = toSpanningTreeState(joint_state);
 	    const DVec<double> &q = spanning_joint_state.position;
@@ -80,11 +80,11 @@ namespace grbda
 	    vJ_ = S_ * joint_state.velocity;
 	}
 
-	void TelloHipDifferential::computeSpatialTransformFromParentToCurrentCluster(
+	void TelloKneeAnkleDifferential::computeSpatialTransformFromParentToCurrentCluster(
 		GeneralizedSpatialTransform &Xup) const
 	{
 	    if (Xup.getNumOutputBodies() != 4)
-		throw std::runtime_error("[TelloHipDifferential] Xup must have 24 rows");
+		throw std::runtime_error("[TelloKneeAnkleDifferential] Xup must have 24 rows");
 
 	    Xup[0] = rotor_1_joint_->XJ() * rotor_1_.Xtree_;
 	    Xup[1] = rotor_2_joint_->XJ() * rotor_2_.Xtree_;
@@ -92,7 +92,7 @@ namespace grbda
 	    Xup[3] = link_2_joint_->XJ() * link_2_.Xtree_ * Xup[2];
 	}
 
-	void TelloHipDifferential::updateConstraintJacobians(const JointCoordinate &joint_pos)
+	void TelloKneeAnkleDifferential::updateConstraintJacobians(const JointCoordinate &joint_pos)
 	{
 	    // ISSUE #10 - joint_pos needs to be spanning
 	    vector<DVec<double>> arg = {joint_pos.head<2>(), joint_pos.tail<2>()};
@@ -105,7 +105,7 @@ namespace grbda
 	    K_.leftCols<2>() = -G_.bottomRows<2>();
 	}
 
-	void TelloHipDifferential::updateConstraintBias(const JointState &joint_state)
+	void TelloKneeAnkleDifferential::updateConstraintBias(const JointState &joint_state)
 	{
 	    // ISSUE #10 - joint_state.position and joint_state.velocity need to be spanning
 	    const DVec<double> &q = joint_state.position;
@@ -116,7 +116,7 @@ namespace grbda
 	    casadi_interface(arg, k_, thd_k, thd_k_sparsity_out, thd_k_work);
 	}
 
-	JointState TelloHipDifferential::randomJointState() const
+	JointState TelloKneeAnkleDifferential::randomJointState() const
 	{
 	    JointCoordinate joint_pos(DVec<double>::Zero(4), true);
 	    JointCoordinate joint_vel(DVec<double>::Zero(2), false);
@@ -125,17 +125,17 @@ namespace grbda
 	    // Position
 	    std::vector<DVec<double>> dependent_state = {DVec<double>::Random(2)};
 	    Vec2<double> y = Vec2<double>::Zero(2);
-	    casadi_interface(dependent_state, y, thd_IK_pos,
-						 thd_IK_pos_sparsity_out,
-						 thd_IK_pos_work);
+	    casadi_interface(dependent_state, y, tkad_IK_pos,
+						 tkad_IK_pos_sparsity_out,
+						 tkad_IK_pos_work);
 	    joint_state.position << y, dependent_state[0];
 
 	    // Velocity
 	    dependent_state.push_back(DVec<double>::Random(2));
 	    Vec2<double> y_dot = Vec2<double>::Zero(2);
-	    casadi_interface(dependent_state, y_dot, thd_IK_vel,
-						     thd_IK_vel_sparsity_out,
-						     thd_IK_vel_work);
+	    casadi_interface(dependent_state, y_dot, tkad_IK_vel,
+						     tkad_IK_vel_sparsity_out,
+						     tkad_IK_vel_work);
 	    joint_state.velocity << y_dot;
 
 	    return joint_state;
