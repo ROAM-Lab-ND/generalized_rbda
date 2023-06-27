@@ -13,8 +13,8 @@ namespace grbda
 	{
 	public:
 	    TelloKneeAnkleDifferential(Body &rotor_1, Body &rotor_2, Body &link_1, Body &link_2,
-				 CoordinateAxis rotor_axis_1, CoordinateAxis rotor_axis_2,
-				 CoordinateAxis joint_axis_1, CoordinateAxis joint_axis_2);
+				       CoordinateAxis rotor_axis_1, CoordinateAxis rotor_axis_2,
+				       CoordinateAxis joint_axis_1, CoordinateAxis joint_axis_2);
 	    virtual ~TelloKneeAnkleDifferential() {}
 
 	    GeneralizedJointTypes type() const override { return GeneralizedJointTypes::TelloKneeAnkleDifferential; }
