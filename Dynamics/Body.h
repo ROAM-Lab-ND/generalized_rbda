@@ -20,6 +20,14 @@ namespace grbda
           cluster_ancestor_index_(cluster_ancestor_index),
           cluster_ancestor_sub_index_within_cluster_(cluster_ancestor_sub_index_within_cluster) {}
 
+    Body(const Body &body)
+	: index_(body.index_), name_(body.name_), parent_index_(body.parent_index_),
+	  Xtree_(body.Xtree_), inertia_(body.inertia_),
+	  sub_index_within_cluster_(body.sub_index_within_cluster_),
+	  cluster_ancestor_index_(body.cluster_ancestor_index_),
+	  cluster_ancestor_sub_index_within_cluster_(
+	      body.cluster_ancestor_sub_index_within_cluster_) {}
+    
     Body &operator=(const Body &body) { return *this; }
 
     const int index_;
