@@ -10,7 +10,7 @@
 using namespace grbda;
 
 template <class T>
-void runBenchmark(std::ofstream &file, const int ind_var, const bool include_forces)
+void runBenchmark(std::ofstream &file, const std::string& id, const bool include_forces)
 {
     Timer timer;
     double t_cluster = 0.;
@@ -104,12 +104,12 @@ void runBenchmark(std::ofstream &file, const int ind_var, const bool include_for
 
     T robot;
     const int num_samples = num_robot_samples * num_state_samples;
-    file << ind_var << ","
+    file << id << ","
          << t_cluster / num_samples << ","
          << t_lagrange / num_samples << "," << t_projection / num_samples << ","
          << t_approx / num_samples << std::endl;
 
-    std::cout << "Finished benchmark for robot w/ independent variable " << ind_var << std::endl;
+    std::cout << "Finished benchmark for robot w/ id " << id << std::endl;
 }
 
 const std::string path_to_data = "../Benchmarking/data/Timing_";
@@ -121,14 +121,14 @@ void runRevoluteWithRotorBenchmark(const bool include_forces)
     std::ofstream rev_file;
     rev_file.open(path_to_data + "RevoluteChain.csv");
 
-    runBenchmark<RevoluteChainWithRotor<2>>(rev_file, 2, include_forces);
-    runBenchmark<RevoluteChainWithRotor<4>>(rev_file, 4, include_forces);
-    runBenchmark<RevoluteChainWithRotor<6>>(rev_file, 6, include_forces);
-    runBenchmark<RevoluteChainWithRotor<8>>(rev_file, 8, include_forces);
-    runBenchmark<RevoluteChainWithRotor<12>>(rev_file, 12, include_forces);
-    runBenchmark<RevoluteChainWithRotor<16>>(rev_file, 16, include_forces);
-    runBenchmark<RevoluteChainWithRotor<20>>(rev_file, 20, include_forces);
-    runBenchmark<RevoluteChainWithRotor<24>>(rev_file, 24, include_forces);
+    runBenchmark<RevoluteChainWithRotor<2>>(rev_file, "2", include_forces);
+    runBenchmark<RevoluteChainWithRotor<4>>(rev_file, "4", include_forces);
+    runBenchmark<RevoluteChainWithRotor<6>>(rev_file, "6", include_forces);
+    runBenchmark<RevoluteChainWithRotor<8>>(rev_file, "8", include_forces);
+    runBenchmark<RevoluteChainWithRotor<12>>(rev_file, "12", include_forces);
+    runBenchmark<RevoluteChainWithRotor<16>>(rev_file, "16", include_forces);
+    runBenchmark<RevoluteChainWithRotor<20>>(rev_file, "20", include_forces);
+    runBenchmark<RevoluteChainWithRotor<24>>(rev_file, "24", include_forces);
 
     rev_file.close();
 }
@@ -140,14 +140,14 @@ void runRevolutePairWithRotorBenchmark(const bool include_forces)
     std::ofstream rev_pair_file;
     rev_pair_file.open(path_to_data + "RevolutePairChain.csv");
 
-    runBenchmark<RevolutePairChainWithRotor<2>>(rev_pair_file, 2, include_forces);
-    runBenchmark<RevolutePairChainWithRotor<4>>(rev_pair_file, 4, include_forces);
-    runBenchmark<RevolutePairChainWithRotor<6>>(rev_pair_file, 6, include_forces);
-    runBenchmark<RevolutePairChainWithRotor<8>>(rev_pair_file, 8, include_forces);
-    runBenchmark<RevolutePairChainWithRotor<12>>(rev_pair_file, 12, include_forces);
-    runBenchmark<RevolutePairChainWithRotor<16>>(rev_pair_file, 16, include_forces);
-    runBenchmark<RevolutePairChainWithRotor<20>>(rev_pair_file, 20, include_forces);
-    runBenchmark<RevolutePairChainWithRotor<24>>(rev_pair_file, 24, include_forces);
+    runBenchmark<RevolutePairChainWithRotor<2>>(rev_pair_file, "2", include_forces);
+    runBenchmark<RevolutePairChainWithRotor<4>>(rev_pair_file, "4", include_forces);
+    runBenchmark<RevolutePairChainWithRotor<6>>(rev_pair_file, "6", include_forces);
+    runBenchmark<RevolutePairChainWithRotor<8>>(rev_pair_file, "8", include_forces);
+    runBenchmark<RevolutePairChainWithRotor<12>>(rev_pair_file, "12", include_forces);
+    runBenchmark<RevolutePairChainWithRotor<16>>(rev_pair_file, "16", include_forces);
+    runBenchmark<RevolutePairChainWithRotor<20>>(rev_pair_file, "20", include_forces);
+    runBenchmark<RevolutePairChainWithRotor<24>>(rev_pair_file, "24", include_forces);
 
     rev_pair_file.close();
 }
@@ -161,13 +161,21 @@ void runLoopSizeBenchmark(const bool include_forces)
     std::ofstream results_file;
     results_file.open(path_to_data + "RevoluteMultiRotorChain.csv");
 
-    runBenchmark<RevoluteChainMultipleRotorsPerLink<4, 1>>(results_file, 1, include_forces);
-    runBenchmark<RevoluteChainMultipleRotorsPerLink<4, 2>>(results_file, 2, include_forces);
-    runBenchmark<RevoluteChainMultipleRotorsPerLink<4, 3>>(results_file, 3, include_forces);
-    runBenchmark<RevoluteChainMultipleRotorsPerLink<4, 4>>(results_file, 4, include_forces);
-    runBenchmark<RevoluteChainMultipleRotorsPerLink<4, 5>>(results_file, 5, include_forces);
-    runBenchmark<RevoluteChainMultipleRotorsPerLink<4, 6>>(results_file, 6, include_forces);
-    runBenchmark<RevoluteChainMultipleRotorsPerLink<4, 7>>(results_file, 7, include_forces);
+    runBenchmark<RevoluteChainMultipleRotorsPerLink<4, 1>>(results_file, "4,1", include_forces);
+    runBenchmark<RevoluteChainMultipleRotorsPerLink<4, 2>>(results_file, "4,2", include_forces);
+    runBenchmark<RevoluteChainMultipleRotorsPerLink<4, 3>>(results_file, "4,3", include_forces);
+    runBenchmark<RevoluteChainMultipleRotorsPerLink<4, 4>>(results_file, "4,4", include_forces);
+    runBenchmark<RevoluteChainMultipleRotorsPerLink<4, 5>>(results_file, "4,5", include_forces);
+    runBenchmark<RevoluteChainMultipleRotorsPerLink<4, 6>>(results_file, "4,6", include_forces);
+    runBenchmark<RevoluteChainMultipleRotorsPerLink<4, 7>>(results_file, "4,7", include_forces);
+
+    runBenchmark<RevoluteChainMultipleRotorsPerLink<8, 1>>(results_file, "8,1", include_forces);
+    runBenchmark<RevoluteChainMultipleRotorsPerLink<8, 2>>(results_file, "8,2", include_forces);
+    runBenchmark<RevoluteChainMultipleRotorsPerLink<8, 3>>(results_file, "8,3", include_forces);
+    runBenchmark<RevoluteChainMultipleRotorsPerLink<8, 4>>(results_file, "8,4", include_forces);
+    runBenchmark<RevoluteChainMultipleRotorsPerLink<8, 5>>(results_file, "8,5", include_forces);
+    runBenchmark<RevoluteChainMultipleRotorsPerLink<8, 6>>(results_file, "8,6", include_forces);
+    runBenchmark<RevoluteChainMultipleRotorsPerLink<8, 7>>(results_file, "8,7", include_forces);
 
     results_file.close();
 }
@@ -181,15 +189,15 @@ void runConstraintDimensionBenchmark(const bool include_forces)
     std::ofstream results_file;
     results_file.open(path_to_data + "RevoluteWithAndWithoutRotorChain.csv");
 
-    runBenchmark<RevoluteChainWithAndWithoutRotor<0, 8>>(results_file, 0, include_forces);
-    runBenchmark<RevoluteChainWithAndWithoutRotor<1, 7>>(results_file, 1, include_forces);
-    runBenchmark<RevoluteChainWithAndWithoutRotor<2, 6>>(results_file, 2, include_forces);
-    runBenchmark<RevoluteChainWithAndWithoutRotor<3, 5>>(results_file, 3, include_forces);
-    runBenchmark<RevoluteChainWithAndWithoutRotor<4, 4>>(results_file, 4, include_forces);
-    runBenchmark<RevoluteChainWithAndWithoutRotor<5, 3>>(results_file, 5, include_forces);
-    runBenchmark<RevoluteChainWithAndWithoutRotor<6, 2>>(results_file, 6, include_forces);
-    runBenchmark<RevoluteChainWithAndWithoutRotor<7, 1>>(results_file, 7, include_forces);
-    runBenchmark<RevoluteChainWithAndWithoutRotor<8, 0>>(results_file, 8, include_forces);
+    runBenchmark<RevoluteChainWithAndWithoutRotor<0, 8>>(results_file, "0,8", include_forces);
+    runBenchmark<RevoluteChainWithAndWithoutRotor<1, 7>>(results_file, "1,7", include_forces);
+    runBenchmark<RevoluteChainWithAndWithoutRotor<2, 6>>(results_file, "2,6", include_forces);
+    runBenchmark<RevoluteChainWithAndWithoutRotor<3, 5>>(results_file, "3,5", include_forces);
+    runBenchmark<RevoluteChainWithAndWithoutRotor<4, 4>>(results_file, "4,4", include_forces);
+    runBenchmark<RevoluteChainWithAndWithoutRotor<5, 3>>(results_file, "5,3", include_forces);
+    runBenchmark<RevoluteChainWithAndWithoutRotor<6, 2>>(results_file, "6,2", include_forces);
+    runBenchmark<RevoluteChainWithAndWithoutRotor<7, 1>>(results_file, "7,1", include_forces);
+    runBenchmark<RevoluteChainWithAndWithoutRotor<8, 0>>(results_file, "8,0", include_forces);
 
     results_file.close();
 }
