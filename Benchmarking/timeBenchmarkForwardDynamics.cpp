@@ -112,12 +112,14 @@ void runBenchmark(std::ofstream &file, const int ind_var, const bool include_for
     std::cout << "Finished benchmark for robot w/ independent variable " << ind_var << std::endl;
 }
 
+const std::string path_to_data = "../Benchmarking/data/Timing_";
+
 void runRevoluteWithRotorBenchmark(const bool include_forces)
 {
     std::cout << "** Revolute With Rotor Benchmark **" << std::endl;
  
     std::ofstream rev_file;
-    rev_file.open("../Matlab_files/Results/RevoluteChain.csv");
+    rev_file.open(path_to_data + "RevoluteChain.csv");
 
     runBenchmark<RevoluteChainWithRotor<2>>(rev_file, 2, include_forces);
     runBenchmark<RevoluteChainWithRotor<4>>(rev_file, 4, include_forces);
@@ -136,7 +138,7 @@ void runRevolutePairWithRotorBenchmark(const bool include_forces)
     std::cout << "** Revolute Pair With Rotor Benchmark **" << std::endl;
 
     std::ofstream rev_pair_file;
-    rev_pair_file.open("../Matlab_files/Results/RevolutePairChain.csv");
+    rev_pair_file.open(path_to_data + "RevolutePairChain.csv");
 
     runBenchmark<RevolutePairChainWithRotor<2>>(rev_pair_file, 2, include_forces);
     runBenchmark<RevolutePairChainWithRotor<4>>(rev_pair_file, 4, include_forces);
@@ -157,7 +159,7 @@ void runLoopSizeBenchmark(const bool include_forces)
     std::cout << "** Revolute Multi-Rotor Chain Benchmark **" << std::endl;
 
     std::ofstream results_file;
-    results_file.open("../Matlab_files/Results/RevoluteMultiRotorChain.csv");
+    results_file.open(path_to_data + "RevoluteMultiRotorChain.csv");
 
     runBenchmark<RevoluteChainMultipleRotorsPerLink<4, 1>>(results_file, 1, include_forces);
     runBenchmark<RevoluteChainMultipleRotorsPerLink<4, 2>>(results_file, 2, include_forces);
@@ -177,7 +179,7 @@ void runConstraintDimensionBenchmark(const bool include_forces)
     std::cout << "** Revolute With And Without Rotor Chain Benchmark **" << std::endl;
 
     std::ofstream results_file;
-    results_file.open("../Matlab_files/Results/RevoluteWithAndWithoutRotorChain.csv");
+    results_file.open(path_to_data + "RevoluteWithAndWithoutRotorChain.csv");
 
     runBenchmark<RevoluteChainWithAndWithoutRotor<0, 8>>(results_file, 0, include_forces);
     runBenchmark<RevoluteChainWithAndWithoutRotor<1, 7>>(results_file, 1, include_forces);

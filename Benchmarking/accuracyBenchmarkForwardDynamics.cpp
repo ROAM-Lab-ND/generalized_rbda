@@ -72,11 +72,13 @@ void runBenchmark(std::ofstream &file)
     std::cout << "Finished benchmark for robot with " << num_dof << " dofs" << std::endl;
 }
 
+const std::string path_to_data = "../Benchmarking/data/Accuracy_";
+
 void runRevoluteWithRotorBenchmark()
 {
     // Revolute With Rotors
     std::ofstream rev_file;
-    rev_file.open("../Matlab_files/Results/RevoluteChainAccuracy.csv");
+    rev_file.open(path_to_data + "RevoluteChain.csv");
 
     runBenchmark<RevoluteChainWithRotor<2>>(rev_file);
     runBenchmark<RevoluteChainWithRotor<4>>(rev_file);
@@ -94,7 +96,7 @@ void runRevolutePairWithRotorBenchmark()
 {
     // Revolute Pair With Rotors
     std::ofstream rev_pair_file;
-    rev_pair_file.open("../Matlab_files/Results/RevolutePairChainAccuracy.csv");
+    rev_pair_file.open(path_to_data + "RevolutePairChain.csv");
 
     runBenchmark<RevolutePairChainWithRotor<2>>(rev_pair_file);
     runBenchmark<RevolutePairChainWithRotor<4>>(rev_pair_file);
