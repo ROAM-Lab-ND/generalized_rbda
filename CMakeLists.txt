@@ -51,7 +51,6 @@ set(CMAKE_C_FLAGS "-O3  -ggdb  -march=native -std=gnu99 -I.")
 #------------------------------------------------------------------------
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/Utils)
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/Systems)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/3rd-parties)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/3rd-parties/URDF)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/3rd-parties/CasadiGen)
