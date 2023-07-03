@@ -25,6 +25,12 @@ compareWithAndWithoutRotorTimes(revolute_chain_with_and_wo_rotors)
 saveas(gcf, [path_to_figures, 'RevoluteWithAndWithoutRotorChain.png'])
 
 %% Helper Function
+% Function for getting the number of rows and columns of the subplot
+function [rows, cols] = getSubplotRowsAndCols(num_plots)
+    rows = floor(sqrt(num_plots));
+    cols = ceil(num_plots / rows);
+end
+
 function compareTimes(data, robot_name)
     figure
     plot(data(:, 1), data(:, 2), 'ro-', 'Linewidth', 2.0, 'MarkerSize', 10.)
@@ -45,11 +51,12 @@ end
 
 function compareMultipleRotorTimes(data)
     dofs = unique(data(:, 1));
+    [rows, cols] = getSubplotRowsAndCols(length(dofs));
 
     figure
 
     for i = 1:length(dofs)
-        subplot(1, length(dofs), i)
+        subplot(rows, cols, i)
         idx = find(data(:, 1) == dofs(i));
         plot(data(idx, 2), data(idx, 3), 'ro-', 'Linewidth', 2.0, 'MarkerSize', 10.)
         hold on

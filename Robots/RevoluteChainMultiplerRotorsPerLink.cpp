@@ -67,5 +67,19 @@ namespace grbda
     template class RevoluteChainMultipleRotorsPerLink<8ul, 5ul>;
     template class RevoluteChainMultipleRotorsPerLink<8ul, 6ul>;
     template class RevoluteChainMultipleRotorsPerLink<8ul, 7ul>;
+    template class RevoluteChainMultipleRotorsPerLink<16ul, 1ul>;
+    template class RevoluteChainMultipleRotorsPerLink<16ul, 2ul>;
+    template class RevoluteChainMultipleRotorsPerLink<16ul, 3ul>;
+    template class RevoluteChainMultipleRotorsPerLink<16ul, 4ul>;
+    template class RevoluteChainMultipleRotorsPerLink<16ul, 5ul>;
+    template class RevoluteChainMultipleRotorsPerLink<16ul, 6ul>;
+    template class RevoluteChainMultipleRotorsPerLink<16ul, 7ul>;
+    template class RevoluteChainMultipleRotorsPerLink<24ul, 1ul>;
+    template class RevoluteChainMultipleRotorsPerLink<24ul, 2ul>;
+    template class RevoluteChainMultipleRotorsPerLink<24ul, 3ul>;
+    template class RevoluteChainMultipleRotorsPerLink<24ul, 4ul>;
+    template class RevoluteChainMultipleRotorsPerLink<24ul, 5ul>;
+    template class RevoluteChainMultipleRotorsPerLink<24ul, 6ul>;
+    template class RevoluteChainMultipleRotorsPerLink<24ul, 7ul>;
 
 } // namespace grbda

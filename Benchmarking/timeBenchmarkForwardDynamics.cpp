@@ -102,7 +102,6 @@ void runBenchmark(std::ofstream &file, const std::string& id, const bool include
         }
     }
 
-    T robot;
     const int num_samples = num_robot_samples * num_state_samples;
     file << id << ","
          << t_cluster / num_samples << ","
@@ -176,6 +175,22 @@ void runLoopSizeBenchmark(const bool include_forces)
     runBenchmark<RevoluteChainMultipleRotorsPerLink<8, 5>>(results_file, "8,5", include_forces);
     runBenchmark<RevoluteChainMultipleRotorsPerLink<8, 6>>(results_file, "8,6", include_forces);
     runBenchmark<RevoluteChainMultipleRotorsPerLink<8, 7>>(results_file, "8,7", include_forces);
+
+    runBenchmark<RevoluteChainMultipleRotorsPerLink<16, 1>>(results_file, "16,1", include_forces);
+    runBenchmark<RevoluteChainMultipleRotorsPerLink<16, 2>>(results_file, "16,2", include_forces);
+    runBenchmark<RevoluteChainMultipleRotorsPerLink<16, 3>>(results_file, "16,3", include_forces);
+    runBenchmark<RevoluteChainMultipleRotorsPerLink<16, 4>>(results_file, "16,4", include_forces);
+    runBenchmark<RevoluteChainMultipleRotorsPerLink<16, 5>>(results_file, "16,5", include_forces);
+    runBenchmark<RevoluteChainMultipleRotorsPerLink<16, 6>>(results_file, "16,6", include_forces);
+    runBenchmark<RevoluteChainMultipleRotorsPerLink<16, 7>>(results_file, "16,7", include_forces);
+
+    runBenchmark<RevoluteChainMultipleRotorsPerLink<24, 1>>(results_file, "24,1", include_forces);
+    runBenchmark<RevoluteChainMultipleRotorsPerLink<24, 2>>(results_file, "24,2", include_forces);
+    runBenchmark<RevoluteChainMultipleRotorsPerLink<24, 3>>(results_file, "24,3", include_forces);
+    runBenchmark<RevoluteChainMultipleRotorsPerLink<24, 4>>(results_file, "24,4", include_forces);
+    runBenchmark<RevoluteChainMultipleRotorsPerLink<24, 5>>(results_file, "24,5", include_forces);
+    runBenchmark<RevoluteChainMultipleRotorsPerLink<24, 6>>(results_file, "24,6", include_forces);
+    runBenchmark<RevoluteChainMultipleRotorsPerLink<24, 7>>(results_file, "24,7", include_forces);
 
     results_file.close();
 }
