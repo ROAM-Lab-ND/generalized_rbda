@@ -27,29 +27,66 @@ namespace grbda
             // Based on Method 2 in Featherstone Ch 8.5
 
             // Factorize H into L^T*L
+#ifdef TIMING_STATS
+            timer_.start();
+#endif
             factorization::LTL L(H_, rigid_body_nodes_);
+#ifdef TIMING_STATS
+            timing_statistics_.ltl_factorization_time = timer_.getMs();
+#endif
 
             // Calculate tau_prime
+#ifdef TIMING_STATS
+            timer_.start();
+#endif
             DVec<double> tau_full = G_tranpose_pinv_ * tau;
             DVec<double> tau_prime = tau_full - C_;
+#ifdef TIMING_STATS
+            timing_statistics_.tau_prime_calc_time = timer_.getMs();
+#endif
 
             // Calculate Y and z via back-subsition
+#ifdef TIMING_STATS
+            timer_.start();
+#endif
             DMat<double> Y = L.inverseTransposeMatrixProduct(K_.transpose());
             DVec<double> z = L.inverseTransposeProduct(tau_prime);
+#ifdef TIMING_STATS
+            timing_statistics_.Y_and_z_calc_time = timer_.getMs();
+#endif
 
             // Calculate A and b
+#ifdef TIMING_STATS
+            timer_.start();
+#endif
             DMat<double> A = Y.transpose() * Y;
             DVec<double> b = k_ - Y.transpose() * z;
+#ifdef TIMING_STATS
+            timing_statistics_.A_and_b_time = timer_.getMs();
+#endif
 
             // Solve Linear System A*lambda = b
+#ifdef TIMING_STATS
+            timer_.start();
+#endif
             DVec<double> lambda;
             if (A.size() > 0)
                 lambda = A.colPivHouseholderQr().solve(b);
             else
                 lambda = DVec<double>::Zero(0);
+#ifdef TIMING_STATS
+            timing_statistics_.lambda_solve_time = timer_.getMs();
+#endif
 
             // Solve for qdd using the factors from step 1
+#ifdef TIMING_STATS
+            timer_.start();
+            DVec<double> qdd = L.solve(tau_prime + K_.transpose() * lambda);
+            timing_statistics_.qdd_solve_time = timer_.getMs();
+            return qdd;
+#else
             return L.solve(tau_prime + K_.transpose() * lambda);
+#endif
         }
 
         default:

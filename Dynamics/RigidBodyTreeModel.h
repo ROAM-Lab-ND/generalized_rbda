@@ -2,6 +2,7 @@
 
 #include "ClusterTreeModel.h"
 #include "Factorization.h"
+#include "Utils/Utilities/Timer.h"
 
 namespace grbda
 {
@@ -14,6 +15,40 @@ namespace grbda
         Projection,
         LagrangeMultiplier
     };
+
+#ifdef TIMING_STATS
+    struct RigidBodyTreeTimingStatistics
+    {
+        double ltl_factorization_time = 0.0;
+        double tau_prime_calc_time = 0.0;
+        double Y_and_z_calc_time = 0.0;
+        double A_and_b_time = 0.0;
+        double lambda_solve_time = 0.0;
+        double qdd_solve_time = 0.0;
+
+        RigidBodyTreeTimingStatistics &operator+=(const RigidBodyTreeTimingStatistics &other)
+        {
+            ltl_factorization_time += other.ltl_factorization_time;
+            tau_prime_calc_time += other.tau_prime_calc_time;
+            Y_and_z_calc_time += other.Y_and_z_calc_time;
+            A_and_b_time += other.A_and_b_time;
+            lambda_solve_time += other.lambda_solve_time;
+            qdd_solve_time += other.qdd_solve_time;
+            return *this;
+        }
+
+        RigidBodyTreeTimingStatistics &operator/=(const double &scalar)
+        {
+            ltl_factorization_time /= scalar;
+            tau_prime_calc_time /= scalar;
+            Y_and_z_calc_time /= scalar;
+            A_and_b_time /= scalar;
+            lambda_solve_time /= scalar;
+            qdd_solve_time /= scalar;
+            return *this;
+        }
+    };
+#endif
 
     using RigidBodyTreeNodePtr = std::shared_ptr<RigidBodyTreeNode>;
 
@@ -52,6 +87,13 @@ namespace grbda
 
         void extractLoopClosureFunctionsFromClusterModel(const ClusterTreeModel &cluster_tree_model);
 
+#ifdef TIMING_STATS
+        const RigidBodyTreeTimingStatistics &getTimingStatistics() const
+        {
+            return timing_statistics_;
+        }
+#endif
+
     private:
         void extractRigidBodiesAndJointsFromClusterModel(const ClusterTreeModel &cluster_tree_model);
         void extractContactPointsFromClusterModel(const ClusterTreeModel &cluster_tree_model);
@@ -69,6 +111,11 @@ namespace grbda
         DVec<double> k_;
 
         std::vector<RigidBodyTreeNodePtr> rigid_body_nodes_;
+
+#ifdef TIMING_STATS
+        Timer timer_;
+        RigidBodyTreeTimingStatistics timing_statistics_;
+#endif
     };
 
 } // namespace grbda

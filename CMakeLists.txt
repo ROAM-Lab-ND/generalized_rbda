@@ -23,6 +23,7 @@ set(CMAKE_BUILD_TYPE Debug)
 
 option(CMAKE_BUILD_TYPE "compile type. default: Debug" Debug)
 option(M1_BUILD "set compile options for Mac M1 chip" OFF)
+option(TIMING_STATS "log detailed timing statistics for algorithms" OFF)
 
 if(CMAKE_SYSTEM_NAME MATCHES Linux)
   set(CMAKE_CXX_FLAGS "-O3 -no-pie -march=native -ggdb -Wall \
@@ -45,6 +46,10 @@ elseif(APPLE)
 endif()
 
 set(CMAKE_C_FLAGS "-O3  -ggdb  -march=native -std=gnu99 -I.")
+
+if(TIMING_STATS)
+  add_definitions(-DTIMING_STATS)
+endif()
 
 #------------------------------------------------------------------------
 # Directory setup

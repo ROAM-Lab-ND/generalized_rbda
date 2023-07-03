@@ -3,3 +3,6 @@ target_link_libraries(time_benchmark dyna-utils robots)
 
 add_executable(accuracy_benchmark accuracyBenchmarkForwardDynamics.cpp)
 target_link_libraries(accuracy_benchmark dyna-utils robots)
+
+add_executable(lg_mult_timing_analysis lagrangeMultiplierMethodTimingAnalysis.cpp)
+target_link_libraries(lg_mult_timing_analysis dyna-utils robots)
