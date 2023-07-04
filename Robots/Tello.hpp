@@ -77,6 +77,10 @@ namespace grbda
 	const Mat3<double> R_right_knee_ankle_rotor_2 = R_right_hip_rotor_1;
 	const Vec3<double> p_right_knee_ankle_rotor_2 = Vec3<double>{0., -26.55e-3, 0.};
 
+	const double torso_mass = 2.3008;
+	const Vec3<double> torso_CoM = Vec3<double>{0.0073, -0.0013, -0.0023};
+	const Mat3<double> torso_inertia = (Mat3<double>() << 0.0366, 0., -0.0006, 0., 0.0142, -0.0002, -0.0006, -0.0002, 0.0291).finished();
+
 	const double hip_clamp_mass = 1.3289;
 	const Vec3<double> hip_clamp_CoM = Vec3<double>{-0.0010, 0., -0.0069};
 	const Mat3<double> hip_clamp_inertia = (Mat3<double>() << 0.0032, 0., 0.0001, 0., 0.0033, 0., 0.0001, 0., 0.0027).finished();

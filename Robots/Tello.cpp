@@ -10,9 +10,19 @@ namespace grbda
 	// Set gravity in z direction
 	model.setGravity(Vec3<double>{0., 0., grav});
 
+	// Torso
+	const std::string torso_name = "torso";
+	const std::string torso_parent_name = "ground";
+	const SpatialInertia<double> torso_spatial_inertia = SpatialInertia<double>{torso_mass,
+	    torso_CoM, torso_inertia};
+	auto torso = model.registerBody(torso_name, torso_spatial_inertia, torso_parent_name,
+					SpatialTransform{});
+	auto torso_generalized_joint = std::make_shared<GeneralizedJoints::Free>(torso);
+	model.appendRegisteredBodiesAsCluster(torso_name, torso_generalized_joint);
+
 	std::vector<std::string> sides = {"left","right"};
-	const std::string hip_clamp_parent_name = "ground";
-	const std::string hip_clamp_rotor_parent_name = "ground";
+	const std::string hip_clamp_parent_name = "torso";
+	const std::string hip_clamp_rotor_parent_name = "torso";
 
 	for (size_t i(0); i < 2; i++)
 	{
