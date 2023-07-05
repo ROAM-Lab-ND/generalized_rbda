@@ -10,7 +10,7 @@ namespace grbda
             Body &link, std::vector<Body> &rotors,
             CoordinateAxis joint_axis, std::vector<CoordinateAxis> &rotor_axes,
             std::vector<double> &gear_ratios)
-            : Base(1, 1, 1 + rotors.size()), link_(link), rotors_(rotors)
+            : Base(1 + rotors.size(), 1, 1, false, false), link_(link), rotors_(rotors)
         {
             const size_t num_rotors = rotors.size();
             if (num_rotors != rotor_axes.size() || num_rotors != gear_ratios.size())
@@ -81,9 +81,9 @@ namespace grbda
 
         void RevoluteWithMultipleRotorsJoint::updateKinematics(const JointState &joint_state)
         {
-            // ISSUE #10
-            // if (y.size() != num_independent_positions_ || yd.size() != num_independent_velocities_)
-            // throw std::runtime_error("[Revolute w/ Multiple Rotors] Dimension of y or yd is wrong");
+#ifdef DEBUG_MODE
+            jointStateCheck(joint_state);
+#endif
 
             const JointState spanning_joint_state = toSpanningTreeState(joint_state);
             const DVec<double> &q = spanning_joint_state.position;

@@ -60,8 +60,8 @@ namespace grbda
 
         checkValidParentClusterForBodiesInCluster(cluster_nodes_.back());
 
-        position_index_ += joint->numIndependentPositions();
-        velocity_index_ += joint->numIndependentVelocities();
+        position_index_ += joint->numPositions();
+        velocity_index_ += joint->numVelocities();
         unactuated_dofs_ += joint->numUnactuatedVelocities();
 
         resizeSystemMatrices();
@@ -187,7 +187,11 @@ namespace grbda
         const int nq = getNumPositions();
         const int nv = getNumDegreesOfFreedom();
 
-        // TODO(@MatthewChignoli): This is the hacky way to convert the DVec version of the state to a Model State
+#ifdef DEBUG_MODE
+        if (state.size() != nq + nv)
+            throw runtime_error("State vector has incorrect size");
+#endif
+
         ModelState model_state;
         int pos_idx = 0;
         int vel_idx = nq;
@@ -195,11 +199,11 @@ namespace grbda
         {
             const auto &joint = cluster(i)->joint_;
 
-            const int &num_pos = joint->numIndependentPositions();
-            const int &num_vel = joint->numIndependentVelocities();
+            const int &num_pos = joint->numPositions();
+            const int &num_vel = joint->numVelocities();
 
-            // TODO(@MatthewChignoli): We are assuming all coordinates are independent. This is a problem for robots like Tello
-            JointState joint_state(false, false);
+            JointState joint_state(joint->positionIsSpanning(),
+                                   joint->velocityIsSpanning());
             joint_state.position = state.segment(pos_idx, num_pos);
             joint_state.velocity = state.segment(vel_idx, num_vel);
             model_state.push_back(joint_state);

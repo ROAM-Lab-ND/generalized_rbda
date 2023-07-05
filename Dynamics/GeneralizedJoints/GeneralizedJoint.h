@@ -31,7 +31,8 @@ namespace grbda
         public:
             EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
-            Base(int num_independent_positions, int num_independent_velocities, int num_bodies);
+            Base(int num_bodies, int num_independent_positions, int num_independent_velocities,
+                 bool position_is_spanning, bool velocity_is_spanning);
             virtual ~Base() {}
 
             virtual GeneralizedJointTypes type() const = 0;
@@ -49,9 +50,12 @@ namespace grbda
                 throw std::runtime_error("Reflected Inertia not setup for this generalized joint type");
             }
 
-            const int &numIndependentPositions() const { return num_independent_positions_; }
-            const int &numIndependentVelocities() const { return num_independent_velocities_; }
+            const int &numPositions() const { return num_positions_; }
+            const int &numVelocities() const { return num_velocities_; }
             virtual int numUnactuatedVelocities() const { return 0; }
+
+            const bool &positionIsSpanning() const { return position_is_spanning_; }
+            const bool &velocityIsSpanning() const { return velocity_is_spanning_; }
 
             const DMat<double> &S() const { return S_; }
             const DMat<double> &S_ring() const { return S_ring_; }
@@ -82,9 +86,26 @@ namespace grbda
             virtual void updateConstraintJacobians(const JointCoordinate &q) {}
             virtual void updateConstraintBias(const JointState &joint_state) {}
 
+#ifdef DEBUG_MODE
+            void jointStateCheck(const JointState &joint_state) const
+            {
+                if (joint_state.position.isSpanning() != position_is_spanning_)
+                    throw std::runtime_error("Position is in the wrong coordinates");
+                if (joint_state.velocity.isSpanning() != velocity_is_spanning_)
+                    throw std::runtime_error("Velocity is in the wrong coordinates");
+                if (joint_state.position.rows() != num_positions_)
+                    throw std::runtime_error("Position is the wrong size");
+                if (joint_state.velocity.rows() != num_velocities_)
+                    throw std::runtime_error("Velocity is the wrong size");
+            }
+#endif
+
             const int num_bodies_;
-            const int num_independent_positions_;
-            const int num_independent_velocities_;
+            const int num_positions_;
+            const int num_velocities_;
+
+            const bool position_is_spanning_;
+            const bool velocity_is_spanning_;
 
             DMat<double> S_;
             DMat<double> S_ring_;
