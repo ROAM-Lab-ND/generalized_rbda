@@ -106,11 +106,12 @@ namespace grbda
             {
                 auto parent_cluster = cluster_nodes_[cluster->parent_index_];
 
-                DMat<double> Ia =
-                    cluster->IA_ - cluster->U_ * cluster->D_inv_ * cluster->U_.transpose();
+                DMat<double> Ia = cluster->IA_ -
+                                  cluster->U_ * (cluster->D_inv_.solve(cluster->U_.transpose()));
 
-                DVec<double> pa =
-                    cluster->pA_ + Ia * cluster->c_ + cluster->U_ * cluster->D_inv_ * cluster->u_;
+                DVec<double> pa = cluster->pA_ +
+                                  Ia * cluster->c_ +
+                                  cluster->U_ * (cluster->D_inv_.solve(cluster->u_));
 
                 parent_cluster->pA_ += cluster->Xup_.inverseTransformForceVector(pa);
             }
@@ -138,7 +139,7 @@ namespace grbda
                 a_temp = cluster->Xup_.transformMotionVector(-gravity_) + cluster->c_;
             }
             qdd.segment(vel_idx, num_vel) =
-                cluster->D_inv_ * (cluster->u_ - cluster->U_.transpose() * a_temp);
+                cluster->D_inv_.solve(cluster->u_ - cluster->U_.transpose() * a_temp);
             cluster->a_ = a_temp + joint->S() * qdd.segment(vel_idx, num_vel);
         }
 #ifdef TIMING_STATS
@@ -167,14 +168,15 @@ namespace grbda
             auto &cluster = cluster_nodes_[i];
             const auto joint = cluster->joint_;
             cluster->U_ = cluster->IA_ * joint->S();
-            cluster->D_inv_ = (joint->S().transpose() * cluster->U_).inverse();
+            // cluster->D_inv_ = (joint->S().transpose() * cluster->U_).inverse();
+            cluster->D_inv_ = Eigen::LLT<DMat<double>>(joint->S().transpose() * cluster->U_);
 
             // Articulated body inertia recursion
             if (cluster->parent_index_ >= 0)
             {
                 auto parent_cluster = cluster_nodes_[cluster->parent_index_];
                 DMat<double> Ia =
-                    cluster->IA_ - cluster->U_ * cluster->D_inv_ * cluster->U_.transpose();
+                    cluster->IA_ - cluster->U_ * (cluster->D_inv_.solve(cluster->U_.transpose()));
                 parent_cluster->IA_ += cluster->Xup_.inverseTransformSpatialInertia(Ia);
             }
         }
@@ -269,7 +271,7 @@ namespace grbda
             const auto joint = cluster->joint_;
             cluster->ChiUp_ =
                 cluster->Xup_.toMatrix() -
-                joint->S() * cluster->D_inv_ * cluster->U_.transpose() * cluster->Xup_.toMatrix();
+                joint->S() * (cluster->D_inv_.solve(cluster->U_.transpose())) * cluster->Xup_.toMatrix();
         }
 
         force_propagators_updated_ = true;
