@@ -8,7 +8,7 @@ namespace grbda
 
         RevolutePair::RevolutePair(Body &link_1, Body &link_2, CoordinateAxis joint_axis_1,
                                    CoordinateAxis joint_axis_2)
-            : Base(2, 2, 2), link_1_(link_1), link_2_(link_2)
+            : Base(2, 2, 2, false, false), link_1_(link_1), link_2_(link_2)
         {
             link_1_joint_ = single_joints_.emplace_back(new Joints::Revolute(joint_axis_1));
             link_2_joint_ = single_joints_.emplace_back(new Joints::Revolute(joint_axis_2));
@@ -46,9 +46,9 @@ namespace grbda
 
         void RevolutePair::updateKinematics(const JointState &joint_state)
         {
-            // ISSUE #10
-            // if (y.size() != 2)
-            // throw std::runtime_error("[RevolutePair] Dimension of joint position must be 2");
+#ifdef DEBUG_MODE
+            jointStateCheck(joint_state);
+#endif
 
             const JointState spanning_joint_state = toSpanningTreeState(joint_state);
             const DVec<double> &q = spanning_joint_state.position;

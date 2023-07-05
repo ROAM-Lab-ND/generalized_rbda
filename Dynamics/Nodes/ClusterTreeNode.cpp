@@ -8,8 +8,8 @@ namespace grbda
                                      int parent_index, int num_parent_bodies,
                                      int position_index, int velocity_index)
         : TreeNode(index, name, parent_index, 6 * bodies.size(), num_parent_bodies,
-                   position_index, joint->numIndependentPositions(),
-                   velocity_index, joint->numIndependentVelocities()),
+                   position_index, joint->numPositions(),
+                   velocity_index, joint->numVelocities()),
           bodies_(bodies), joint_(joint)
     {
         for (size_t i = 0; i < bodies.size(); i++)
