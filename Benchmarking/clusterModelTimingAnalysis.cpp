@@ -1,9 +1,10 @@
 #include <iostream>
 #include <fstream>
 
-#include "Dynamics/RigidBodyTreeModel.h"
+#include "Dynamics/ClusterTreeModel.h"
 
 #include "Robots/RobotTypes.h"
+#include "Utils/Utilities/Timer.h"
 
 using namespace grbda;
 
@@ -12,14 +13,12 @@ void runBenchmark(std::ofstream &file, const std::string &id)
 {
     const int num_robot_samples = 1000;
     const int num_state_samples = 10;
-    RigidBodyTreeTimingStatistics timing_stats;
+    ClusterTreeTimingStatistics timing_stats;
 
     for (int i = 0; i < num_robot_samples; i++)
     {
         T robot = T(true);
-        const ClusterTreeModel cluster_model = robot.buildClusterTreeModel();
-        RigidBodyTreeModel lagrange_mult_model{cluster_model,
-                                               FwdDynMethod::LagrangeMultiplierCustom};
+        ClusterTreeModel cluster_model = robot.buildClusterTreeModel();
 
         const int nq = cluster_model.getNumPositions();
         const int nv = cluster_model.getNumDegreesOfFreedom();
@@ -29,28 +28,18 @@ void runBenchmark(std::ofstream &file, const std::string &id)
 
             // Set random state
             ModelState model_state;
-            DVec<double> spanning_joint_pos = DVec<double>::Zero(0);
-            DVec<double> spanning_joint_vel = DVec<double>::Zero(0);
             for (const auto &cluster : cluster_model.clusters())
             {
-                JointState joint_state = cluster->joint_->randomJointState();
-
-                JointState spanning_joint_state = cluster->joint_->toSpanningTreeState(joint_state);
-                spanning_joint_pos = appendEigenVector(spanning_joint_pos,
-                                                       spanning_joint_state.position);
-                spanning_joint_vel = appendEigenVector(spanning_joint_vel,
-                                                       spanning_joint_state.velocity);
-
-                model_state.push_back(joint_state);
+                model_state.push_back(cluster->joint_->randomJointState());
             }
 
-            lagrange_mult_model.initializeState(spanning_joint_pos, spanning_joint_vel);
+            cluster_model.initializeState(model_state);
 
             // Forward Dynamics
             DVec<double> tau = DVec<double>::Random(nv);
-            DVec<double> qdd_lagrange = lagrange_mult_model.forwardDynamics(tau);
+            cluster_model.forwardDynamics(tau);
 
-            timing_stats += lagrange_mult_model.getTimingStatistics();
+            timing_stats += cluster_model.getTimingStatistics();
         }
     }
 
@@ -58,17 +47,17 @@ void runBenchmark(std::ofstream &file, const std::string &id)
     timing_stats /= num_samples;
 
     file << id << ","
-         << timing_stats.ltl_factorization_time << ","
-         << timing_stats.tau_prime_calc_time << ","
-         << timing_stats.Y_and_z_calc_time << ","
-         << timing_stats.A_and_b_time << ","
-         << timing_stats.lambda_solve_time << ","
-         << timing_stats.qdd_solve_time << std::endl;
+         << timing_stats.forward_kinematics_time << ","
+         << timing_stats.update_articulated_bodies_time << ","
+         << timing_stats.forward_pass1_time << ","
+         << timing_stats.external_force_time << ","
+         << timing_stats.backward_pass_time << ","
+         << timing_stats.forward_pass2_time << std::endl;
 
     std::cout << "Finished benchmark for robot w/ id " << id << std::endl;
 }
 
-const std::string path_to_data = "../Benchmarking/data/LgMlt_";
+const std::string path_to_data = "../Benchmarking/data/CL_";
 
 void runRevoluteWithRotorBenchmark()
 {

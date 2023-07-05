@@ -2,7 +2,9 @@
 
 #include "ClusterTreeModel.h"
 #include "Factorization.h"
+#ifdef TIMING_STATS
 #include "Utils/Utilities/Timer.h"
+#endif
 
 namespace grbda
 {
