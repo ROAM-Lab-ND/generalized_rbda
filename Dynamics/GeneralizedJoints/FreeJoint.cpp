@@ -6,7 +6,7 @@ namespace grbda
     namespace GeneralizedJoints
     {
 
-        Free::Free(const Body &body) : Base(7, 6, 1)
+        Free::Free(const Body &body) : Base(1, 7, 6, false, false)
         {
             if (body.parent_index_ >= 0)
                 throw std::runtime_error("Free joint is only valid as the first joint in a tree and thus cannot have a parent body");
@@ -32,6 +32,9 @@ namespace grbda
 
         void Free::updateKinematics(const JointState &joint_state)
         {
+#ifdef DEBUG_MODE
+            jointStateCheck(joint_state);
+#endif
             single_joints_[0]->updateKinematics(joint_state.position, joint_state.velocity);
             vJ_ = S_ * joint_state.velocity;
         }

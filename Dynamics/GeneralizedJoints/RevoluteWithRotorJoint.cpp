@@ -8,7 +8,7 @@ namespace grbda
 
         RevoluteWithRotor::RevoluteWithRotor(Body &link, Body &rotor, CoordinateAxis joint_axis,
                                              CoordinateAxis rotor_axis, double gear_ratio)
-            : Base(1, 1, 2), link_(link), rotor_(rotor)
+            : Base(2, 1, 1, false, false), link_(link), rotor_(rotor)
         {
             link_joint_ = single_joints_.emplace_back(new Joints::Revolute(joint_axis));
             rotor_joint_ = single_joints_.emplace_back(new Joints::Revolute(rotor_axis));
@@ -47,9 +47,9 @@ namespace grbda
 
         void RevoluteWithRotor::updateKinematics(const JointState &joint_state)
         {
-            // ISSUE #10
-            // if (y.size() != 1)
-            //     throw std::runtime_error("[Revolute+Rotor Joint] Dimension of joint position must be 1");
+#ifdef DEBUG_MODE
+            jointStateCheck(joint_state);
+#endif
 
             const JointState spanning_joint_state = toSpanningTreeState(joint_state);
             const DVec<double> &q = spanning_joint_state.position;

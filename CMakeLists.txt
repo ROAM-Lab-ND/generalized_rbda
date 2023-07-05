@@ -21,7 +21,10 @@ set(CMAKE_PREFIX_PATH "${CMAKE_PREFIX_PATH};${PROJECT_SOURCE_DIR}/cmake")
 #set(CMAKE_BUILD_TYPE Release)
 set(CMAKE_BUILD_TYPE Debug)
 
-option(CMAKE_BUILD_TYPE "compile type. default: Debug" Debug)
+if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+  add_definitions(-DDEBUG_MODE)
+endif()
+
 option(M1_BUILD "set compile options for Mac M1 chip" OFF)
 option(TIMING_STATS "log detailed timing statistics for algorithms" OFF)
 
