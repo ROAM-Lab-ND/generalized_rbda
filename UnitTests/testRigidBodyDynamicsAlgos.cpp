@@ -188,7 +188,7 @@ TYPED_TEST(RigidBodyDynamicsAlgosTest, BiasForceVector)
             DVec<double> C_projection = projection_model.getBiasForceVector();
             this->t_projection += this->timer.getMs();
 
-            GTEST_ASSERT_LT((C_cluster - C_projection).norm(), 1e-4);
+            GTEST_ASSERT_LT((C_cluster - C_projection).norm(), tol);
         }
     }
 

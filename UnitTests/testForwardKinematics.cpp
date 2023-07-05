@@ -134,7 +134,7 @@ TYPED_TEST(RigidBodyKinemaitcsTest, MotionSubspaceApparentDerivative)
     // This test compares the apparent derivative of the motion subspace (S_ring) as computed by
     // the cluster tree model to the apparent derivative as computed by finite difference
 
-    double dt = 1e-8;
+    double dt = 0.00001;
     const int nq = this->cluster_model.getNumPositions();
     const int nv = this->cluster_model.getNumDegreesOfFreedom();
 
