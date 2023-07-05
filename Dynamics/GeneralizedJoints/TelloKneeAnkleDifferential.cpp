@@ -10,7 +10,7 @@ namespace grbda
 	    Body &rotor_1, Body &rotor_2, Body &link_1, Body &link_2,
 	    CoordinateAxis rotor_axis_1, CoordinateAxis rotor_axis_2,
 	    CoordinateAxis joint_axis_1, CoordinateAxis joint_axis_2)
-	    : Base(2, 2, 4), rotor_1_(rotor_1), rotor_2_(rotor_2),
+	    : Base(4, 4, 2, true, false), rotor_1_(rotor_1), rotor_2_(rotor_2),
 	    link_1_(link_1), link_2_(link_2)
 	{
 	    rotor_1_joint_ = single_joints_.emplace_back(new Joints::Revolute(rotor_axis_1));
@@ -32,9 +32,9 @@ namespace grbda
 
 	void TelloKneeAnkleDifferential::updateKinematics(const JointState &joint_state)
 	{
-	    // ISSUE #10
-	    // if (q.size() != 4)
-	    //     throw std::runtime_error("[TelloKneeAnkleDifferential] Dimension of joint position must be 4");
+#ifdef DEBUG_MODE
+		jointStateCheck(joint_state);
+#endif
 
 	    const JointState spanning_joint_state = toSpanningTreeState(joint_state);
 	    const DVec<double> &q = spanning_joint_state.position;
@@ -94,7 +94,10 @@ namespace grbda
 
 	void TelloKneeAnkleDifferential::updateConstraintJacobians(const JointCoordinate &joint_pos)
 	{
-	    // ISSUE #10 - joint_pos needs to be spanning
+#ifdef DEBUG_MODE
+		if (!joint_pos.isSpanning())
+		throw std::runtime_error("[TelloKneeAnkleDifferential] Position for updating constraint Jacobians must be spanning");
+#endif
 	    vector<DVec<double>> arg = {joint_pos.head<2>(), joint_pos.tail<2>()};
 	    Mat2<double> J_dy_2_dqd;
 	    casadi_interface(arg, J_dy_2_dqd, thd_J_dy_2_dqd,
@@ -107,7 +110,10 @@ namespace grbda
 
 	void TelloKneeAnkleDifferential::updateConstraintBias(const JointState &joint_state)
 	{
-	    // ISSUE #10 - joint_state.position and joint_state.velocity need to be spanning
+#ifdef DEBUG_MODE
+		if (!joint_state.position.isSpanning() || !joint_state.velocity.isSpanning())
+		throw std::runtime_error("[TelloKneeAnkleDifferential] Position and velocity for updating constraint bias must be spanning");
+#endif
 	    const DVec<double> &q = joint_state.position;
 	    const DVec<double> &q_dot = joint_state.velocity;
 
@@ -118,8 +124,8 @@ namespace grbda
 
 	JointState TelloKneeAnkleDifferential::randomJointState() const
 	{
-	    JointCoordinate joint_pos(DVec<double>::Zero(4), true);
-	    JointCoordinate joint_vel(DVec<double>::Zero(2), false);
+	    JointCoordinate joint_pos(DVec<double>::Zero(num_positions_), position_is_spanning_);
+	    JointCoordinate joint_vel(DVec<double>::Zero(num_velocities_), velocity_is_spanning_);
 	    JointState joint_state(joint_pos, joint_vel);
 
 	    // Position

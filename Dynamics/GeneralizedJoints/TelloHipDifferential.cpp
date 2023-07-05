@@ -94,7 +94,10 @@ namespace grbda
 
 	void TelloHipDifferential::updateConstraintJacobians(const JointCoordinate &joint_pos)
 	{
-	    // ISSUE #10 - joint_pos needs to be spanning
+#ifdef DEBUG_MODE
+		if (!joint_pos.isSpanning())
+		throw std::runtime_error("[TelloHipDifferential] Position for updating constraint Jacobians must be spanning");
+#endif
 	    vector<DVec<double>> arg = {joint_pos.head<2>(), joint_pos.tail<2>()};
 	    Mat2<double> J_dy_2_dqd;
 	    casadi_interface(arg, J_dy_2_dqd, thd_J_dy_2_dqd,
@@ -122,8 +125,8 @@ namespace grbda
 
 	JointState TelloHipDifferential::randomJointState() const
 	{
-	    JointCoordinate joint_pos(DVec<double>::Zero(4), true);
-	    JointCoordinate joint_vel(DVec<double>::Zero(2), false);
+	    JointCoordinate joint_pos(DVec<double>::Zero(num_positions_), position_is_spanning_);
+	    JointCoordinate joint_vel(DVec<double>::Zero(num_velocities_), velocity_is_spanning_);
 	    JointState joint_state(joint_pos, joint_vel);
 
 	    // Position
