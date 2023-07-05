@@ -63,7 +63,7 @@ namespace grbda
 	    vector<DVec<double>> arg = {q.head<2>(), q.tail<2>(), q_dot.head<2>(), q_dot.tail<2>()};
 	    Mat2<double> Ki, Kd, Ki_dot, Kd_dot;
 	    vector<Eigen::MatrixBase<Mat2<double>>*> K = {&Ki, &Kd, &Ki_dot, &Kd_dot};
-	    casadi_interface(arg, K, thd_kikd, thd_kikd_sparsity_out, thd_kikd_work);
+	    casadi_interface(arg, K, tkad_kikd, tkad_kikd_sparsity_out, tkad_kikd_work);
 
 	    const Mat2<double> Kd_inv = Kd.inverse();
 	    Mat2<double> abcd_dot = -Kd_inv * Ki_dot + Kd_inv * Kd_dot * Kd_inv * Ki;
@@ -100,9 +100,9 @@ namespace grbda
 #endif
 	    vector<DVec<double>> arg = {joint_pos.head<2>(), joint_pos.tail<2>()};
 	    Mat2<double> J_dy_2_dqd;
-	    casadi_interface(arg, J_dy_2_dqd, thd_J_dy_2_dqd,
-					      thd_J_dy_2_dqd_sparsity_out,
-					      thd_J_dy_2_dqd_work);
+	    casadi_interface(arg, J_dy_2_dqd, tkad_J_dy_2_dqd,
+					      tkad_J_dy_2_dqd_sparsity_out,
+					      tkad_J_dy_2_dqd_work);
 
 	    G_.bottomRows<2>() = J_dy_2_dqd;
 	    K_.leftCols<2>() = -G_.bottomRows<2>();
@@ -118,8 +118,8 @@ namespace grbda
 	    const DVec<double> &q_dot = joint_state.velocity;
 
 	    vector<DVec<double>> arg = {q.head<2>(), q.tail<2>(), q_dot.head<2>(), q_dot.tail<2>()};
-	    casadi_interface(arg, g_, thd_g, thd_g_sparsity_out, thd_g_work);
-	    casadi_interface(arg, k_, thd_k, thd_k_sparsity_out, thd_k_work);
+	    casadi_interface(arg, g_, tkad_g, tkad_g_sparsity_out, tkad_g_work);
+	    casadi_interface(arg, k_, tkad_k, tkad_k_sparsity_out, tkad_k_work);
 	}
 
 	JointState TelloKneeAnkleDifferential::randomJointState() const
