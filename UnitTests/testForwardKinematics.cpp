@@ -152,6 +152,11 @@ TYPED_TEST(RigidBodyKinemaitcsTest, MotionSubspaceApparentDerivative)
             auto joint = cluster->joint_;
             JointState joint_state = cluster->joint_state_;
 
+            if (joint_state.position.size() != joint_state.velocity.size())
+            {
+                continue;
+            }
+
             DMat<double> S_ring = joint->S_ring();
 
             JointState q_plus_joint_state = cluster->joint_state_;

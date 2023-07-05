@@ -29,6 +29,19 @@ namespace grbda
             // Factorize H into L^T*L
             factorization::LTL L(H_, rigid_body_nodes_);
 
+            // TODO(@MatthewChignoli): Hack for dealing with multi-dof joints
+            if (L.size() == 0)
+            {
+                DMat<double> H_inv = H_.inverse();
+                DMat<double> A = K_ * H_inv * K_.transpose();
+                DVec<double> tau_full = G_tranpose_pinv_ * tau;
+                DVec<double> tau_prime = tau_full - C_;
+                DVec<double> b = k_ - K_ * H_inv * tau_prime;
+                DVec<double> lambda = A.size() > 0 ? DVec<double>(A.colPivHouseholderQr().solve(b))
+                                                   : DVec<double>::Zero(0);
+                return H_inv * (tau_prime + K_.transpose() * lambda);
+            }
+
             // Calculate tau_prime
             DVec<double> tau_full = G_tranpose_pinv_ * tau;
             DVec<double> tau_prime = tau_full - C_;
@@ -42,11 +55,8 @@ namespace grbda
             DVec<double> b = k_ - Y.transpose() * z;
 
             // Solve Linear System A*lambda = b
-            DVec<double> lambda;
-            if (A.size() > 0)
-                lambda = A.colPivHouseholderQr().solve(b);
-            else
-                lambda = DVec<double>::Zero(0);
+            DVec<double> lambda = A.size() > 0 ? DVec<double>(A.colPivHouseholderQr().solve(b))
+                                               : DVec<double>::Zero(0);
 
             // Solve for qdd using the factors from step 1
             return L.solve(tau_prime + K_.transpose() * lambda);
