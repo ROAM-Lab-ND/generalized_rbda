@@ -152,6 +152,7 @@ TYPED_TEST(RigidBodyKinemaitcsTest, MotionSubspaceApparentDerivative)
             auto joint = cluster->joint_;
             JointState joint_state = cluster->joint_state_;
 
+            // ISSUE #14
             if (joint_state.position.size() != joint_state.velocity.size())
             {
                 continue;

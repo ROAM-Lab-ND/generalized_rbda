@@ -29,7 +29,7 @@ namespace grbda
             // Factorize H into L^T*L
             factorization::LTL L(H_, rigid_body_nodes_);
 
-            // TODO(@MatthewChignoli): Hack for dealing with multi-dof joints
+            // ISSUE #14
             if (L.size() == 0)
             {
                 DMat<double> H_inv = H_.inverse();

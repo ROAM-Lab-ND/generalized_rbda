@@ -9,7 +9,7 @@ namespace grbda
         LTL::LTL(DMat<double> H, const std::vector<std::shared_ptr<RigidBodyTreeNode>> &nodes)
             : nodes_(nodes)
         {
-            // TODO(@MatthewChignoli): Factorization currently fails if the robot contains a multi-dof joint. Raise an issue for this
+            // ISSUE #14
             for (const auto& node : nodes)
             {
                 if (node->joint_->numVelocities() > 1)
