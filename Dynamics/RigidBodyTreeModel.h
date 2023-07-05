@@ -10,10 +10,11 @@ namespace grbda
     using namespace ori;
     using namespace spatial;
 
-    enum class ForwardDynamicsMethod
+    enum class FwdDynMethod
     {
         Projection,
-        LagrangeMultiplier
+        LagrangeMultiplierCustom,
+        LagrangeMultiplierEigen
     };
 
 #ifdef TIMING_STATS
@@ -62,10 +63,10 @@ namespace grbda
         EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
         RigidBodyTreeModel(const ClusterTreeModel &cluster_tree_model,
-                           const ForwardDynamicsMethod fd_method = ForwardDynamicsMethod::Projection);
+                           const FwdDynMethod fd_method = FwdDynMethod::Projection);
         ~RigidBodyTreeModel() {}
 
-        void setForwardDynamicsMethod(ForwardDynamicsMethod fd_method)
+        void setForwardDynamicsMethod(FwdDynMethod fd_method)
         {
             forward_dynamics_method_ = fd_method;
         }
@@ -98,7 +99,7 @@ namespace grbda
         void extractRigidBodiesAndJointsFromClusterModel(const ClusterTreeModel &cluster_tree_model);
         void extractContactPointsFromClusterModel(const ClusterTreeModel &cluster_tree_model);
 
-        ForwardDynamicsMethod forward_dynamics_method_;
+        FwdDynMethod forward_dynamics_method_;
 
         DVecFcn<double> gamma_;
         DMat<double> G_;

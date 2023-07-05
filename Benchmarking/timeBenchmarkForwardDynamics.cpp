@@ -14,7 +14,8 @@ void runBenchmark(std::ofstream &file, const std::string& id, const bool include
 {
     Timer timer;
     double t_cluster = 0.;
-    double t_lagrange = 0.;
+    double t_lg_custom = 0.;
+    double t_lg_eigen = 0.;
     double t_projection = 0.;
     double t_approx = 0.;
 
@@ -25,10 +26,12 @@ void runBenchmark(std::ofstream &file, const std::string& id, const bool include
     {
         T robot = T(true);
         ClusterTreeModel cluster_model = robot.buildClusterTreeModel();
-        RigidBodyTreeModel lagrange_mult_model{cluster_model,
-                                               ForwardDynamicsMethod::LagrangeMultiplier};
+        RigidBodyTreeModel lg_custom_mult_model{cluster_model,
+                                                FwdDynMethod::LagrangeMultiplierCustom};
+        RigidBodyTreeModel lg_eigen_mult_model{cluster_model,
+                                               FwdDynMethod::LagrangeMultiplierEigen};
         RigidBodyTreeModel projection_model{cluster_model,
-                                            ForwardDynamicsMethod::Projection};
+                                            FwdDynMethod::Projection};
         ReflectedInertiaTreeModel reflected_inertia_model{cluster_model};
 
         const int nq = cluster_model.getNumPositions();
@@ -64,7 +67,8 @@ void runBenchmark(std::ofstream &file, const std::string& id, const bool include
             }
 
             cluster_model.initializeState(model_state);
-            lagrange_mult_model.initializeState(spanning_joint_pos, spanning_joint_vel);
+            lg_custom_mult_model.initializeState(spanning_joint_pos, spanning_joint_vel);
+            lg_eigen_mult_model.initializeState(spanning_joint_pos, spanning_joint_vel);
             projection_model.initializeState(spanning_joint_pos, spanning_joint_vel);
             reflected_inertia_model.initializeIndependentStates(independent_joint_pos,
                                                                 independent_joint_vel);
@@ -77,7 +81,8 @@ void runBenchmark(std::ofstream &file, const std::string& id, const bool include
                 for (const auto &body : cluster_model.bodies())
                     force_and_index_pairs.emplace_back(body.index_, SVec<double>::Random());
                 cluster_model.initializeExternalForces(force_and_index_pairs);
-                lagrange_mult_model.initializeExternalForces(force_and_index_pairs);
+                lg_custom_mult_model.initializeExternalForces(force_and_index_pairs);
+                lg_eigen_mult_model.initializeExternalForces(force_and_index_pairs);
                 projection_model.initializeExternalForces(force_and_index_pairs);
                 reflected_inertia_model.initializeExternalForces(force_and_index_pairs);
             }
@@ -85,19 +90,23 @@ void runBenchmark(std::ofstream &file, const std::string& id, const bool include
             // Forward Dynamics
             DVec<double> tau = DVec<double>::Random(nv);
             timer.start();
-            DVec<double> qdd_cluster = cluster_model.forwardDynamics(tau);
+            cluster_model.forwardDynamics(tau);
             t_cluster += timer.getMs();
 
             timer.start();
-            DVec<double> qdd_lagrange = lagrange_mult_model.forwardDynamics(tau);
-            t_lagrange += timer.getMs();
+            lg_custom_mult_model.forwardDynamics(tau);
+            t_lg_custom += timer.getMs();
 
             timer.start();
-            DVec<double> qdd_projection = projection_model.forwardDynamics(tau);
+            lg_eigen_mult_model.forwardDynamics(tau);
+            t_lg_eigen += timer.getMs();
+
+            timer.start();
+            projection_model.forwardDynamics(tau);
             t_projection += timer.getMs();
 
             timer.start();
-            DVec<double> qdd_approx = reflected_inertia_model.forwardDynamics(tau);
+            reflected_inertia_model.forwardDynamics(tau);
             t_approx += timer.getMs();
         }
     }
@@ -105,7 +114,9 @@ void runBenchmark(std::ofstream &file, const std::string& id, const bool include
     const int num_samples = num_robot_samples * num_state_samples;
     file << id << ","
          << t_cluster / num_samples << ","
-         << t_lagrange / num_samples << "," << t_projection / num_samples << ","
+         << t_lg_custom / num_samples << ","
+         << t_lg_eigen / num_samples << ","
+         << t_projection / num_samples << ","
          << t_approx / num_samples << std::endl;
 
     std::cout << "Finished benchmark for robot w/ id " << id << std::endl;

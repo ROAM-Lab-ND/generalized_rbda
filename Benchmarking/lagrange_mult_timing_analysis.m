@@ -20,7 +20,7 @@ function plotTimingStats(data, robot_name)
 
     figure
     bar(data(:, 1), data(:, 2:end), 'stacked')
-    legend('LTL', '$\tau''$', '$Y_z$', '$A_b$', '$\lambda$', '$\ddot{q}$', 'Interpreter', 'latex','Location','northwest')
+    legend('LTL', '$\tau''$', '$Y,z$', '$A,b$', '$\lambda$', '$\ddot{q}$', 'Interpreter', 'latex','Location','northwest')
 
     xlabel('Number of Joints','Interpreter','latex')
     ylabel('Time (ms)','Interpreter','latex')

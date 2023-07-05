@@ -36,15 +36,16 @@ function compareTimes(data, robot_name)
     plot(data(:, 1), data(:, 2), 'ro-', 'Linewidth', 2.0, 'MarkerSize', 10.)
     hold on
     plot(data(:, 1), data(:, 3), 'go-', 'Linewidth', 2.0, 'MarkerSize', 10.)
-    plot(data(:, 1), data(:, 4), 'bo-', 'Linewidth', 2.0, 'MarkerSize', 10.)
-    plot(data(:, 1), data(:, 5), 'ko-', 'Linewidth', 2.0, 'MarkerSize', 10.)
+    plot(data(:, 1), data(:, 4), 'go--', 'Linewidth', 2.0, 'MarkerSize', 10.)
+    plot(data(:, 1), data(:, 5), 'bo-', 'Linewidth', 2.0, 'MarkerSize', 10.)
+    plot(data(:, 1), data(:, 6), 'ko-', 'Linewidth', 2.0, 'MarkerSize', 10.)
 
     grid on
 
     xlabel('Degrees of Freedom', 'Interpreter', 'latex')
     ylabel('Computation Time (ms)', 'Interpreter', 'latex')
     title(['Forward Dynamics - ', robot_name], 'Interpreter', 'latex')
-    legend({'Cluster-Based', 'Lagrange Multipliers', 'Projection', 'Reflected Inertia Approximation'}, 'Location', 'Northwest', 'Interpreter', 'latex')
+    legend({'Cluster-Based', 'Lagrange Multipliers (Custom)', 'Lagrange Multipliers (Eigen)', 'Projection', 'Reflected Inertia Approximation'}, 'Location', 'Northwest', 'Interpreter', 'latex')
     set(gca, 'Fontsize', 20)
     set(gca, 'TickLabelInterpreter', 'latex')
 end
@@ -61,14 +62,15 @@ function compareMultipleRotorTimes(data)
         plot(data(idx, 2), data(idx, 3), 'ro-', 'Linewidth', 2.0, 'MarkerSize', 10.)
         hold on
         plot(data(idx, 2), data(idx, 4), 'go-', 'Linewidth', 2.0, 'MarkerSize', 10.)
-        plot(data(idx, 2), data(idx, 5), 'bo-', 'Linewidth', 2.0, 'MarkerSize', 10.)
-        plot(data(idx, 2), data(idx, 6), 'ko-', 'Linewidth', 2.0, 'MarkerSize', 10.)
+        plot(data(idx, 2), data(idx, 5), 'go--', 'Linewidth', 2.0, 'MarkerSize', 10.)
+        plot(data(idx, 2), data(idx, 6), 'bo-', 'Linewidth', 2.0, 'MarkerSize', 10.)
+        plot(data(idx, 2), data(idx, 7), 'ko-', 'Linewidth', 2.0, 'MarkerSize', 10.)
 
         grid on
         xlabel('Rotors Per Link', 'Interpreter', 'latex')
         ylabel('Computation Time (ms)', 'Interpreter', 'latex')
         title(['Forward Dynamics - Revolute Multi Rotor Chain - ', num2str(dofs(i)), ' DoFs'], 'Interpreter', 'latex')
-        legend({'Cluster-Based', 'Lagrange Multipliers', 'Projection', 'Reflected Inertia Approximation'}, 'Location', 'Northwest', 'Interpreter', 'latex')
+        legend({'Cluster-Based', 'Lagrange Multipliers (Custom)', 'Lagrange Multipliers (Eigen)', 'Projection', 'Reflected Inertia Approximation'}, 'Location', 'Northwest', 'Interpreter', 'latex')
         set(gca, 'Fontsize', 10)
         set(gca, 'TickLabelInterpreter', 'latex')
     end
@@ -80,15 +82,16 @@ function compareWithAndWithoutRotorTimes(data)
     plot(data(:, 1), data(:, 3), 'ro-', 'Linewidth', 2.0, 'MarkerSize', 10.)
     hold on
     plot(data(:, 1), data(:, 4), 'go-', 'Linewidth', 2.0, 'MarkerSize', 10.)
-    plot(data(:, 1), data(:, 5), 'bo-', 'Linewidth', 2.0, 'MarkerSize', 10.)
-    plot(data(:, 1), data(:, 6), 'ko-', 'Linewidth', 2.0, 'MarkerSize', 10.)
+    plot(data(:, 1), data(:, 5), 'go--', 'Linewidth', 2.0, 'MarkerSize', 10.)
+    plot(data(:, 1), data(:, 6), 'bo-', 'Linewidth', 2.0, 'MarkerSize', 10.)
+    plot(data(:, 1), data(:, 7), 'ko-', 'Linewidth', 2.0, 'MarkerSize', 10.)
 
     grid on
 
     xlabel('Number of Links w/ Rotor', 'Interpreter', 'latex')
     ylabel('Computation Time (ms)', 'Interpreter', 'latex')
-    title(['Forward Dynamics - ',num2str(sum(data(1,1:2))),' DoFs'], 'Interpreter', 'latex')
-    legend({'Cluster-Based', 'Lagrange Multipliers', 'Projection', 'Reflected Inertia Approximation'}, 'Location', 'Northwest', 'Interpreter', 'latex')
+    title(['Forward Dynamics - ', num2str(sum(data(1, 1:2))), ' DoFs'], 'Interpreter', 'latex')
+    legend({'Cluster-Based', 'Lagrange Multipliers (Custom)', 'Lagrange Multipliers (Eigen)', 'Projection', 'Reflected Inertia Approximation'}, 'Location', 'Northwest', 'Interpreter', 'latex')
     set(gca, 'Fontsize', 20)
     set(gca, 'TickLabelInterpreter', 'latex')
 end

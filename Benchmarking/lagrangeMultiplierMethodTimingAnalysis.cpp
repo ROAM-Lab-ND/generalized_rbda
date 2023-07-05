@@ -9,9 +9,8 @@
 
 using namespace grbda;
 
-#ifdef TIMING_STATS
 template <class T>
-void runBenchmark(std::ofstream &file, const std::string& id)
+void runBenchmark(std::ofstream &file, const std::string &id)
 {
     const int num_robot_samples = 1000;
     const int num_state_samples = 10;
@@ -23,7 +22,6 @@ void runBenchmark(std::ofstream &file, const std::string& id)
         const ClusterTreeModel cluster_model = robot.buildClusterTreeModel();
         RigidBodyTreeModel lagrange_mult_model{cluster_model,
                                                ForwardDynamicsMethod::LagrangeMultiplier};
-
 
         const int nq = cluster_model.getNumPositions();
         const int nv = cluster_model.getNumDegreesOfFreedom();
@@ -42,7 +40,7 @@ void runBenchmark(std::ofstream &file, const std::string& id)
                 JointState joint_state = cluster->joint_->randomJointState();
                 if (joint_state.position.isSpanning() || joint_state.velocity.isSpanning())
                     throw std::runtime_error("Initializing reflected inertia model requires all independent coordinates");
-                    
+
                 independent_joint_pos = appendEigenVector(independent_joint_pos,
                                                           joint_state.position);
                 independent_joint_vel = appendEigenVector(independent_joint_vel,
@@ -86,7 +84,7 @@ const std::string path_to_data = "../Benchmarking/data/LgMlt_";
 void runRevoluteWithRotorBenchmark()
 {
     std::cout << "** Revolute With Rotor Benchmark **" << std::endl;
- 
+
     std::ofstream rev_file;
     rev_file.open(path_to_data + "RevoluteChain.csv");
 
@@ -121,13 +119,9 @@ void runRevolutePairWithRotorBenchmark()
     rev_pair_file.close();
 }
 
-
-
 int main()
 {
     runRevoluteWithRotorBenchmark();
     runRevolutePairWithRotorBenchmark();
     return 0;
 }
-
-#endif

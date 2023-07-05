@@ -4,7 +4,7 @@ namespace grbda
 {
 
     RigidBodyTreeModel::RigidBodyTreeModel(const ClusterTreeModel &cluster_tree_model,
-                                           const ForwardDynamicsMethod fd_method)
+                                           const FwdDynMethod fd_method)
     {
         forward_dynamics_method_ = fd_method;
         gravity_ = cluster_tree_model.getGravity();
