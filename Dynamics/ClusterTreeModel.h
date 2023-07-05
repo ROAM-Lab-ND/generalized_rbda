@@ -18,7 +18,6 @@ namespace grbda
     using namespace ori;
     using namespace spatial;
 
-    // TODO(@MatthewChignoli): Create timing statistics struct for this class
 #ifdef TIMING_STATS
     struct ClusterTreeTimingStatistics
     {

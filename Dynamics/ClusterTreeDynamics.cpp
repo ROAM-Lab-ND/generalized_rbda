@@ -168,7 +168,6 @@ namespace grbda
             auto &cluster = cluster_nodes_[i];
             const auto joint = cluster->joint_;
             cluster->U_ = cluster->IA_ * joint->S();
-            // cluster->D_inv_ = (joint->S().transpose() * cluster->U_).inverse();
             cluster->D_inv_ = Eigen::LLT<DMat<double>>(joint->S().transpose() * cluster->U_);
 
             // Articulated body inertia recursion

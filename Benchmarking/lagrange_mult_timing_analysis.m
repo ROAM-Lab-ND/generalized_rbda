@@ -3,8 +3,6 @@ close all; clear; clc;
 path_to_data = '../Benchmarking/data/LgMlt_';
 path_to_figures = '../Benchmarking/figures/LgMlt_';
 
-% TODO(@MatthewChignoli): Add timing data for the projection method as a comparison
-
 % Revolute Chain
 revolute_chain_with_rotors = readmatrix([path_to_data, 'RevoluteChain.csv']);
 plotTimingStats(revolute_chain_with_rotors, 'Revolute w/ Rotor Chain')

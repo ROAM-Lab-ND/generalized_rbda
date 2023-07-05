@@ -69,11 +69,8 @@ namespace grbda
 #ifdef TIMING_STATS
             timer_.start();
 #endif
-            DVec<double> lambda;
-            if (A.size() > 0)
-                lambda = A.colPivHouseholderQr().solve(b);
-            else
-                lambda = DVec<double>::Zero(0);
+            DVec<double> lambda = A.size() > 0 ? DVec<double>(A.colPivHouseholderQr().solve(b))
+                                               : DVec<double>::Zero(0);
 #ifdef TIMING_STATS
             timing_statistics_.lambda_solve_time = timer_.getMs();
 #endif
