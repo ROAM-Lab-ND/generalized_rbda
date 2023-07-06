@@ -12,6 +12,20 @@ namespace grbda
         extractRigidBodiesAndJointsFromClusterModel(cluster_tree_model);
         extractLoopClosureFunctionsFromClusterModel(cluster_tree_model);
         extractContactPointsFromClusterModel(cluster_tree_model);
+
+        if (forward_dynamics_method_ == FwdDynMethod::LagrangeMultiplierCustom)
+        {
+            for (const auto &node : rigid_body_nodes_)
+            {
+                if (node->joint_->numVelocities() > 1)
+                {
+                    // ISSUE #14
+                    std::cout << "LagrangeMultiplierCustom is not supported for joints with more than 1 DOF. Switching to LagrangeMultiplierEigen." << std::endl;
+                    forward_dynamics_method_ = FwdDynMethod::LagrangeMultiplierEigen;
+                    break;
+                }
+            }
+        }
     }
 
     void RigidBodyTreeModel::extractRigidBodiesAndJointsFromClusterModel(

@@ -19,6 +19,7 @@ namespace grbda
         const DMat<double> &S() const override { return joint_->S(); }
         const DMat<double> &S_ring() const override { return joint_->S_ring(); }
 
+        // ISSUE #14
         // TODO(@MatthewChignoli): Should this actually be a virtual function in TreeNode.h?
         JointCoordinate integratePosition(JointState joint_state, double dt)
         {

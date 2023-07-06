@@ -19,6 +19,7 @@ protected:
     RigidBodyDynamicsAlgosTest()
         : t_cluster(0), t_lagrange_custom(0), t_lagrange_eigen(0), t_projection(0)
     {
+        // TODO(@MatthewChignoli): In cases where we cannot build a random robot (e.g. Tello), we do not need to have multiple robots
         const int num_robots = 10;
         for (int i = 0; i < num_robots; i++)
         {

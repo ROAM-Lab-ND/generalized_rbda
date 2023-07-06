@@ -33,42 +33,34 @@ namespace grbda
             factorization::LTL L(H_, rigid_body_nodes_);
 #ifdef TIMING_STATS
             timing_statistics_.ltl_factorization_time = timer_.getMs();
+            timer_.start();
 #endif
 
             // Calculate tau_prime
-#ifdef TIMING_STATS
-            timer_.start();
-#endif
             DVec<double> tau_full = G_tranpose_pinv_ * tau;
             DVec<double> tau_prime = tau_full - C_;
 #ifdef TIMING_STATS
             timing_statistics_.tau_prime_calc_time = timer_.getMs();
+            timer_.start();
 #endif
 
             // Calculate Y and z via back-subsition
-#ifdef TIMING_STATS
-            timer_.start();
-#endif
             DMat<double> Y = L.inverseTransposeMatrixProduct(K_.transpose());
             DVec<double> z = L.inverseTransposeProduct(tau_prime);
 #ifdef TIMING_STATS
             timing_statistics_.Y_and_z_calc_time = timer_.getMs();
+            timer_.start();
 #endif
 
             // Calculate A and b
-#ifdef TIMING_STATS
-            timer_.start();
-#endif
             DMat<double> A = Y.transpose() * Y;
             DVec<double> b = k_ - Y.transpose() * z;
 #ifdef TIMING_STATS
             timing_statistics_.A_and_b_time = timer_.getMs();
+            timer_.start();
 #endif
 
             // Solve Linear System A*lambda = b
-#ifdef TIMING_STATS
-            timer_.start();
-#endif
             DVec<double> lambda = A.size() > 0 ? DVec<double>(A.colPivHouseholderQr().solve(b))
                                                : DVec<double>::Zero(0);
 #ifdef TIMING_STATS
