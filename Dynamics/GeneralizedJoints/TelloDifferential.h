@@ -17,8 +17,6 @@ namespace grbda
 				 CoordinateAxis joint_axis_1, CoordinateAxis joint_axis_2);
 	    virtual ~TelloDifferential() {}
 
-	    //GeneralizedJointTypes type() const override { return GeneralizedJointTypes::TelloHipDifferential; }
-
 	    void updateKinematics(const JointState &joint_state) override;
 
 	    void computeSpatialTransformFromParentToCurrentCluster(
