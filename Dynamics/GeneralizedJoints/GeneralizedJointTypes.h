@@ -7,3 +7,4 @@
 #include "RevolutePairWithRotorJoint.h"
 #include "GenericJoint.h"
 #include "TelloHipDifferential.h"
+#include "TelloKneeAnkleDifferential.h"

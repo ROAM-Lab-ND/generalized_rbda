@@ -25,9 +25,18 @@
 #include "thd_J_dy_2_dqd.h"
 #include "thd_g.h"
 #include "thd_k.h"
-#include "IK_dependent_state_to_y.h"
-#include "IK_dependent_state_to_y_dot.h"
-#include "IK_dependent_state_to_y_ddot.h"
+#include "thd_IK_pos.h"
+#include "thd_IK_vel.h"
+#include "thd_IK_acc.h"
+
+#include "tkad_phi.h"
+#include "tkad_kikd.h"
+#include "tkad_J_dy_2_dqd.h"
+#include "tkad_g.h"
+#include "tkad_k.h"
+#include "tkad_IK_pos.h"
+#include "tkad_IK_vel.h"
+#include "tkad_IK_acc.h"
 
 namespace grbda
 {
