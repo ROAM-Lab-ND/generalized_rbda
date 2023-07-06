@@ -80,14 +80,15 @@ add_subdirectory(Benchmarking)
 
 # Check if the project is being built as a subdirectory
 if (${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_CURRENT_SOURCE_DIR})
-    # This is the main project
-    set(THIS_COM "${PROJECT_SOURCE_DIR}/" )
-    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/config.h.cmake
-      ${CMAKE_BINARY_DIR}/Configuration.h)
+  set(SUBMOD_MESSAGE "GRBDA compiled as main project")
+  
+  set(THIS_COM "${PROJECT_SOURCE_DIR}/" )
+  configure_file(${CMAKE_CURRENT_SOURCE_DIR}/config.h.cmake
+    ${CMAKE_BINARY_DIR}/Configuration.h)
 
-    add_subdirectory(UnitTests)
+  add_subdirectory(UnitTests)
 else()
-    # This is a subdirectory
+  set(SUBMOD_MESSAGE "GRBDA compiled as sub-module")
 endif()
 
 #------------------------------------------------------------------------
@@ -95,6 +96,8 @@ endif()
 #------------------------------------------------------------------------
 message ("")
 message ("--------------------------------------------------------------")
+message (" *** ${SUBMOD_MESSAGE} *** ")
+message ("")
 message (" The project name/ Build Type: ${PROJECT_NAME}/${CMAKE_BUILD_TYPE}")
 message (" The system name: ${CMAKE_SYSTEM_NAME}")
 message (" The project source directory: ${PROJECT_SOURCE_DIR}")
