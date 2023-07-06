@@ -15,6 +15,7 @@ namespace grbda
                         int num_parent_bodies, int position_index, int velocity_index);
 
         void updateKinematics() override;
+        void updateDinv(const DMat<double> &D);
         const DVec<double> &vJ() const override { return joint_->vJ(); }
         const DMat<double> &S() const override { return joint_->S(); }
         const DMat<double> &S_ring() const override { return joint_->S_ring(); }
@@ -57,11 +58,11 @@ namespace grbda
         std::shared_ptr<GeneralizedJoints::Base> joint_;
 
         // Featherstone quantities
-        DMat<double> IA_;                         // articulated body inertia
-        DVec<double> pA_;                         // articulated body bias force
-        DMat<double> U_;                          // helper variable for ABA
-        Eigen::PartialPivLU<DMat<double>> D_inv_; // helper variable for ABA
-        DVec<double> u_;                          // helper variable for ABA
+        DMat<double> IA_;                                // articulated body inertia
+        DVec<double> pA_;                                // articulated body bias force
+        DMat<double> U_;                                 // helper variable for ABA
+        Eigen::ColPivHouseholderQR<DMat<double>> D_inv_; // helper variable for ABA
+        DVec<double> u_;                                 // helper variable for ABA
 
         DMat<double> ChiUp_;
         DMat<double> qdd_for_subtree_due_to_subtree_root_joint_qdd;

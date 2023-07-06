@@ -169,7 +169,7 @@ namespace grbda
             const auto joint = cluster->joint_;
             cluster->U_ = cluster->IA_ * joint->S();
             const DMat<double> D = joint->S().transpose() * cluster->U_;
-            cluster->D_inv_ = Eigen::PartialPivLU<DMat<double>>(D);
+            cluster->updateDinv(D);
 
             // Articulated body inertia recursion
             if (cluster->parent_index_ >= 0)

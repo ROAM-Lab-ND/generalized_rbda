@@ -27,6 +27,11 @@ namespace grbda
         joint_->computeSpatialTransformFromParentToCurrentCluster(Xup_);
     }
 
+    void ClusterTreeNode::updateDinv(const DMat<double> &D)
+    {
+        D_inv_ = Eigen::ColPivHouseholderQR<DMat<double>>(D);
+    }
+
     const SpatialTransform &ClusterTreeNode::getAbsoluteTransformForBody(const Body &body)
     {
         return Xa_.getTransformForOutputBody(body.sub_index_within_cluster_);
