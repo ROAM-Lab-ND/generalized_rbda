@@ -33,10 +33,10 @@ namespace grbda
 	void TelloDifferential::updateKinematics(const JointState &joint_state)
 	{
 #ifdef DEBUG_MODE
-		jointStateCheck(joint_state);
+	    jointStateCheck(joint_state);
 #endif
 
-		const JointState spanning_joint_state = toSpanningTreeState(joint_state);
+	    const JointState spanning_joint_state = toSpanningTreeState(joint_state);
 	    const DVec<double> &q = spanning_joint_state.position;
 	    const DVec<double> &q_dot = spanning_joint_state.velocity;
 
@@ -95,8 +95,8 @@ namespace grbda
 	void TelloDifferential::updateConstraintJacobians(const JointCoordinate &joint_pos)
 	{
 #ifdef DEBUG_MODE
-		if (!joint_pos.isSpanning())
-		throw std::runtime_error("[TelloDifferential] Position for updating constraint Jacobians must be spanning");
+	    if (!joint_pos.isSpanning())
+	    throw std::runtime_error("[TelloDifferential] Position for updating constraint Jacobians must be spanning");
 #endif
 	    vector<DVec<double>> arg = {joint_pos.head<2>(), joint_pos.tail<2>()};
 	    Mat2<double> J_dy_2_dqd;
@@ -111,11 +111,11 @@ namespace grbda
 	void TelloDifferential::updateConstraintBias(const JointState &joint_state)
 	{
 #ifdef DEBUG_MODE
-		if (!joint_state.position.isSpanning() || !joint_state.velocity.isSpanning())
-		throw std::runtime_error("[TelloDifferential] Position and velocity for updating constraint bias must be spanning");
+	    if (!joint_state.position.isSpanning() || !joint_state.velocity.isSpanning())
+	    throw std::runtime_error("[TelloDifferential] Position and velocity for updating constraint bias must be spanning");
 #endif
 
-		const DVec<double> &q = joint_state.position;
+	    const DVec<double> &q = joint_state.position;
 	    const DVec<double> &q_dot = joint_state.velocity;
 
 	    vector<DVec<double>> arg = {q.head<2>(), q.tail<2>(), q_dot.head<2>(), q_dot.tail<2>()};
