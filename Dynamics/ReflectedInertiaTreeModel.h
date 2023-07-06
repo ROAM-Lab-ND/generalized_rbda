@@ -30,7 +30,7 @@ namespace grbda
 
         const DVec<int> &getIndependentCoordinateIndices() const { return independent_coord_indices_; }
 
-        void initializeIndependentStates(const DVec<double> &y, const DVec<double> &yd) override;
+        void initializeIndependentStates(const DVec<double> &y, const DVec<double> &yd);
 
         DVec<double> forwardDynamics(const DVec<double> &tau) override;
         DVec<double> forwardDynamicsHandC(const DVec<double> &tau);

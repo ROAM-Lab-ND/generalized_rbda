@@ -12,7 +12,7 @@ namespace grbda
             CoordinateAxis rotor_axis_1, CoordinateAxis rotor_axis_2,
             double gear_ratio_1, double gear_ratio_2,
             double belt_ratio_1, double belt_ratio_2)
-            : Base(2, 2, 4), link_1_(link_1), link_2_(link_2),
+            : Base(4, 2, 2, false, false), link_1_(link_1), link_2_(link_2),
               rotor_1_(rotor_1), rotor_2_(rotor_2)
         {
             double net_ratio_1 = gear_ratio_1 * belt_ratio_1;
@@ -65,13 +65,15 @@ namespace grbda
             vJ_ = DVec<double>::Zero(24);
         }
 
-        void RevolutePairWithRotor::updateKinematics(const DVec<double> &y, const DVec<double> &yd)
+        void RevolutePairWithRotor::updateKinematics(const JointState &joint_state)
         {
-            if (y.size() != 2)
-                throw std::runtime_error("[RevolutePairWithRotor] Dimension of joint position must be 2");
+#ifdef DEBUG_MODE
+            jointStateCheck(joint_state);
+#endif
 
-            Vec4<double> q = gamma_(y);
-            Vec4<double> qd = G_ * yd;
+            const JointState spanning_joint_state = toSpanningTreeState(joint_state);
+            const DVec<double> &q = spanning_joint_state.position;
+            const DVec<double> &qd = spanning_joint_state.velocity;
 
             link_1_joint_->updateKinematics(q.segment<1>(0), qd.segment<1>(0));
             rotor_1_joint_->updateKinematics(q.segment<1>(1), qd.segment<1>(1));
@@ -82,11 +84,11 @@ namespace grbda
 
             S_.block<6, 1>(18, 0) = X21_.transformMotionSubspace(link_1_joint_->S());
 
-            DVec<double> v2_relative = link_2_joint_->S() * qd[3];
+            const DVec<double> v2_relative = link_2_joint_->S() * qd[3];
             S_ring_.block<6, 1>(18, 0) = -generalMotionCrossMatrix(v2_relative) *
                                          X21_.transformMotionSubspace(link_1_joint_->S());
 
-            vJ_ = S_ * yd;
+            vJ_ = S_ * joint_state.velocity;
         }
 
         void RevolutePairWithRotor::computeSpatialTransformFromParentToCurrentCluster(

@@ -181,6 +181,54 @@ namespace grbda
     template <typename T>
     using DVecFcn = std::function<DVec<T>(DVec<T>)>;
 
+    class JointCoordinate : public DVec<double>
+    {
+    public:
+        JointCoordinate(const DVec<double> &vec, bool is_spanning)
+            : DVec<double>(vec), _is_spanning(is_spanning) {}
+
+        const bool &isSpanning() const { return _is_spanning; }
+	
+	JointCoordinate(const JointCoordinate &other)
+	    : DVec<double>(other), _is_spanning(other._is_spanning) {}
+
+        JointCoordinate &operator=(const JointCoordinate &other)
+        {
+            this->DVec<double>::operator=(other);
+            _is_spanning = other._is_spanning;
+            return *this;
+        }
+
+        template <typename Derived>
+        JointCoordinate &operator=(const Eigen::DenseBase<Derived> &x)
+        {
+            this->DVec<double>::operator=(x);
+            return *this;
+        }
+
+    private:
+        bool _is_spanning;
+    };
+
+    struct JointState
+    {
+        JointState(const JointCoordinate &pos, const JointCoordinate &vel)
+            : position(pos), velocity(vel) {}
+
+        JointState(bool position_is_spanning, bool velocity_is_spanning)
+            : position(JointCoordinate(DVec<double>::Zero(0), position_is_spanning)),
+              velocity(JointCoordinate(DVec<double>::Zero(0), velocity_is_spanning)) {}
+
+        JointState()
+            : position(JointCoordinate(DVec<double>::Zero(0), false)),
+              velocity(JointCoordinate(DVec<double>::Zero(0), false)) {}
+
+        JointCoordinate position;
+        JointCoordinate velocity;
+    };
+
+    using ModelState = std::vector<JointState>;
+
 } // namespace grbda
 
 #endif // PROJECT_CPPTYPES_H

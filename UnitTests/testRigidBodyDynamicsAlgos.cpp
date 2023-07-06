@@ -35,11 +35,39 @@ protected:
         }
     }
 
-    void setStateForAllModels(DVec<double> q, DVec<double> qd, const int robot_idx)
+    bool initializeRandomStates(const int robot_idx)
     {
-        cluster_models[robot_idx].initializeIndependentStates(q, qd);
-        lagrange_mult_models[robot_idx].initializeIndependentStates(q, qd);
-        projection_models[robot_idx].initializeIndependentStates(q, qd);
+        ModelState model_state;
+        DVec<double> spanning_joint_pos = DVec<double>::Zero(0);
+        DVec<double> spanning_joint_vel = DVec<double>::Zero(0);
+
+        for (const auto &cluster : cluster_models.at(robot_idx).clusters())
+        {
+            JointState joint_state = cluster->joint_->randomJointState();
+            JointState spanning_joint_state = cluster->joint_->toSpanningTreeState(joint_state);
+
+            spanning_joint_pos = appendEigenVector(spanning_joint_pos,
+                                                   spanning_joint_state.position);
+            spanning_joint_vel = appendEigenVector(spanning_joint_vel,
+                                                   spanning_joint_state.velocity);
+            model_state.push_back(joint_state);
+        }
+
+        cluster_models[robot_idx].initializeState(model_state);
+        lagrange_mult_models[robot_idx].initializeState(spanning_joint_pos, spanning_joint_vel);
+        projection_models[robot_idx].initializeState(spanning_joint_pos, spanning_joint_vel);
+
+        // Check for NaNs
+        bool nan_detected = false;
+        for (const auto &cluster : this->cluster_models[robot_idx].clusters())
+        {
+            if (cluster->joint_state_.position.hasNaN())
+            {
+                nan_detected = true;
+                break;
+            }
+        }
+        return nan_detected;
     }
 
     void setForcesForAllModels(std::vector<ExternalForceAndBodyIndexPair> force_and_index_pairs,
@@ -71,7 +99,7 @@ protected:
 using testing::Types;
 
 typedef Types<
-    TeleopArm,
+    TeleopArm, Tello,
     RevoluteChainWithRotor<2>,
     RevoluteChainWithRotor<4>,
     RevoluteChainWithRotor<8>,
@@ -96,22 +124,26 @@ TYPED_TEST(RigidBodyDynamicsAlgosTest, MassMatrix)
     const int num_tests_per_robot = 20;
     for (int i = 0; i < (int)this->cluster_models.size(); i++)
     {
-        ClusterTreeModel cluster_model = this->cluster_models[i];
-        RigidBodyTreeModel projection_model = this->projection_models[i];
+        ClusterTreeModel& cluster_model = this->cluster_models.at(i);
+        RigidBodyTreeModel& projection_model = this->projection_models.at(i);
 
         const int nq = cluster_model.getNumPositions();
         const int nv = cluster_model.getNumDegreesOfFreedom();
 
         for (int j = 0; j < num_tests_per_robot; j++)
         {
-            DVec<double> state = DVec<double>::Random(nq + nv);
-            this->setStateForAllModels(state.head(nq), state.tail(nv), i);
+            bool nan_detected_in_state = this->initializeRandomStates(i);
+            if (nan_detected_in_state)
+            {
+                continue;
+            }
 
             this->timer.start();
             DMat<double> H_cluster = cluster_model.getMassMatrix();
             this->t_cluster += this->timer.getMs();
 
             this->timer.start();
+            projection_model.extractLoopClosureFunctionsFromClusterModel(cluster_model);
             DMat<double> H_projection = projection_model.getMassMatrix();
             this->t_projection += this->timer.getMs();
 
@@ -133,22 +165,26 @@ TYPED_TEST(RigidBodyDynamicsAlgosTest, BiasForceVector)
     const int num_tests_per_robot = 20;
     for (int i = 0; i < (int)this->cluster_models.size(); i++)
     {
-        ClusterTreeModel cluster_model = this->cluster_models[i];
-        RigidBodyTreeModel projection_model = this->projection_models[i];
+        ClusterTreeModel &cluster_model = this->cluster_models[i];
+        RigidBodyTreeModel &projection_model = this->projection_models[i];
 
         const int nq = cluster_model.getNumPositions();
         const int nv = cluster_model.getNumDegreesOfFreedom();
 
         for (int j = 0; j < num_tests_per_robot; j++)
         {
-            DVec<double> state = DVec<double>::Random(nq + nv);
-            this->setStateForAllModels(state.head(nq), state.tail(nv), i);
+            bool nan_detected_in_state = this->initializeRandomStates(i);
+            if (nan_detected_in_state)
+            {
+                continue;
+            }
 
             this->timer.start();
             DVec<double> C_cluster = cluster_model.getBiasForceVector();
             this->t_cluster += this->timer.getMs();
 
             this->timer.start();
+            projection_model.extractLoopClosureFunctionsFromClusterModel(cluster_model);
             DVec<double> C_projection = projection_model.getBiasForceVector();
             this->t_projection += this->timer.getMs();
 
@@ -171,9 +207,9 @@ TYPED_TEST(RigidBodyDynamicsAlgosTest, ForwardAndInverseDyanmics)
     const int num_tests_per_robot = 20;
     for (int i = 0; i < (int)this->cluster_models.size(); i++)
     {
-        ClusterTreeModel cluster_model = this->cluster_models[i];
-        RigidBodyTreeModel lagrange_mult_model = this->lagrange_mult_models[i];
-        RigidBodyTreeModel projection_model = this->projection_models[i];
+        ClusterTreeModel &cluster_model = this->cluster_models[i];
+        RigidBodyTreeModel &lagrange_mult_model = this->lagrange_mult_models[i];
+        RigidBodyTreeModel &projection_model = this->projection_models[i];
 
         const int nq = cluster_model.getNumPositions();
         const int nv = cluster_model.getNumDegreesOfFreedom();
@@ -181,8 +217,11 @@ TYPED_TEST(RigidBodyDynamicsAlgosTest, ForwardAndInverseDyanmics)
         for (int j = 0; j < num_tests_per_robot; j++)
         {
             // Set random state
-            DVec<double> state = DVec<double>::Random(nq + nv);
-            this->setStateForAllModels(state.head(nq), state.tail(nv), i);
+            bool nan_detected_in_state = this->initializeRandomStates(i);
+            if (nan_detected_in_state)
+            {
+                continue;
+            }
 
             // Set random spatial forces on bodies
             std::vector<ExternalForceAndBodyIndexPair> force_and_index_pairs;
@@ -191,25 +230,29 @@ TYPED_TEST(RigidBodyDynamicsAlgosTest, ForwardAndInverseDyanmics)
             this->setForcesForAllModels(force_and_index_pairs, i);
 
             // Forward Dynamics
-            DVec<double> tau = DVec<double>::Random(nv);
+            const DVec<double> tau = DVec<double>::Random(nv);
 
             this->timer.start();
-            DVec<double> qdd_cluster = cluster_model.forwardDynamics(tau);
+            const DVec<double> qdd_cluster = cluster_model.forwardDynamics(tau);
             this->t_cluster += this->timer.getMs();
-            DVec<double> qdd_cluster_full = lagrange_mult_model.yddToQdd(qdd_cluster);
 
             this->timer.start();
-            DVec<double> qdd_lagrange_full = lagrange_mult_model.forwardDynamics(tau);
+            lagrange_mult_model.extractLoopClosureFunctionsFromClusterModel(cluster_model);
+            const DVec<double> qdd_lagrange_full = lagrange_mult_model.forwardDynamics(tau);
             this->t_lagrange += this->timer.getMs();
-            DVec<double> qdd_lagrange = lagrange_mult_model.qddToYdd(qdd_lagrange_full);
 
             this->timer.start();
-            DVec<double> qdd_projection_full = projection_model.forwardDynamics(tau);
+            projection_model.extractLoopClosureFunctionsFromClusterModel(cluster_model);
+            const DVec<double> qdd_projection_full = projection_model.forwardDynamics(tau);
             this->t_projection += this->timer.getMs();
-            DVec<double> qdd_projection = projection_model.qddToYdd(qdd_projection_full);
+
+            // Convert between qdd and ydd
+            const DVec<double> qdd_cluster_full = lagrange_mult_model.yddToQdd(qdd_cluster);
+            const DVec<double> qdd_lagrange = lagrange_mult_model.qddToYdd(qdd_lagrange_full);
+            const DVec<double> qdd_projection = projection_model.qddToYdd(qdd_projection_full);
 
             // Inverse Dynamics
-            DVec<double> tau_cluster = cluster_model.inverseDyamics(qdd_cluster);
+            const DVec<double> tau_cluster = cluster_model.inverseDyamics(qdd_cluster);
 
             // Verify joint acceleration agreement
             GTEST_ASSERT_LT((qdd_cluster_full - qdd_lagrange_full).norm(), tol);

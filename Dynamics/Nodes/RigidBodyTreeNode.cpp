@@ -5,7 +5,9 @@ namespace grbda
 
     RigidBodyTreeNode::RigidBodyTreeNode(const Body &body, const std::shared_ptr<Joints::Base> &joint,
                                          const int position_index, const int velocity_index)
-        : TreeNode(body.index_, body.name_, body.parent_index_, 6, 1, position_index, joint->numPositions(), velocity_index, joint->numVelocities()),
+        : TreeNode(body.index_, body.name_, body.parent_index_, 6, 1,
+                   position_index, joint->numPositions(),
+                   velocity_index, joint->numVelocities()),
           body_(body), joint_(joint), Xtree_(body.Xtree_)
     {
         I_ = body.inertia_.getMatrix();
@@ -15,9 +17,9 @@ namespace grbda
 
     void RigidBodyTreeNode::updateKinematics()
     {
-        joint_->updateKinematics(q_, qd_);
+        joint_->updateKinematics(joint_state_.position, joint_state_.velocity);
         Xup_[0] = joint_->XJ() * Xtree_;
-        vJ_ = joint_->S() * qd_;
+        vJ_ = joint_->S() * joint_state_.velocity;
     }
 
     const SpatialTransform &RigidBodyTreeNode::getAbsoluteTransformForBody(const Body &body)

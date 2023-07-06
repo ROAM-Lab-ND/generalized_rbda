@@ -25,6 +25,7 @@ namespace grbda
 
         auto body = Body(body_index, name, parent_body_index, Xtree, inertia,
                          (int)bodies_in_current_cluster_.size(),
+                         cluster_ancestor_index,
                          cluster_ancestor_sub_index_within_cluster);
 
         bodies_.push_back(body);
@@ -146,7 +147,6 @@ namespace grbda
             contact_point.jacobian_.setZero(6, num_degrees_of_freedom);
     }
 
-    // TODO(@MatthewChignoli): Do we have to add all contact points at the end? So that the jacobians have the correct number of columns?
     void ClusterTreeModel::appendContactPoint(const string body_name,
                                               const Vec3<double> &local_offset,
                                               const string contact_point_name)
@@ -172,27 +172,91 @@ namespace grbda
         appendContactPoint(body_name, V3d(-dims(0), -dims(1), -dims(2)) / 2, "torso-contact-8");
     }
 
-    void ClusterTreeModel::initializeIndependentStates(const DVec<double> &y, const DVec<double> &yd)
+    void ClusterTreeModel::addJointLim(size_t jointID, double joint_lim_value_lower,
+                                       double joint_lim_value_upper)
     {
-        for (auto &cluster : cluster_nodes_)
-        {
-            cluster->q_ = y.segment(cluster->position_index_, cluster->num_positions_);
-            cluster->qd_ = yd.segment(cluster->velocity_index_, cluster->num_velocities_);
-        }
-        resetExternalForces();
-        // setExternalForces();
-        // initializeExternalForces();
+
+        _JointLimID.push_back(jointID);
+        _JointLimValueLower.push_back(joint_lim_value_lower);
+        _JointLimValueUpper.push_back(joint_lim_value_upper);
+        _nJointLim++;
     }
 
-    void ClusterTreeModel::initializeTelloIndependentStates(const DVec<double> &q, const DVec<double> &y_dot)
+    void ClusterTreeModel::setState(const DVec<double> &state)
     {
+        const int nq = getNumPositions();
+        const int nv = getNumDegreesOfFreedom();
+
+#ifdef DEBUG_MODE
+        if (state.size() != nq + nv)
+            throw runtime_error("State vector has incorrect size");
+#endif
+
+        ModelState model_state;
+        int pos_idx = 0;
+        int vel_idx = nq;
+        for (size_t i(0); i < clusters().size(); i++)
+        {
+            const auto &joint = cluster(i)->joint_;
+
+            const int &num_pos = joint->numPositions();
+            const int &num_vel = joint->numVelocities();
+
+            JointState joint_state(joint->positionIsSpanning(),
+                                   joint->velocityIsSpanning());
+            joint_state.position = state.segment(pos_idx, num_pos);
+            joint_state.velocity = state.segment(vel_idx, num_vel);
+            model_state.push_back(joint_state);
+
+            pos_idx += num_pos;
+            vel_idx += num_vel;
+        }
+
+        initializeState(model_state);
+    }
+
+    void ClusterTreeModel::initializeState(const ModelState &model_state)
+    {
+        size_t i = 0;
         for (auto &cluster : cluster_nodes_)
         {
-	    cluster->q_ = q.segment(0,4);
-            cluster->qd_ = y_dot.segment(cluster->velocity_index_, cluster->num_velocities_);
+            cluster->joint_state_ = model_state.at(i);
+            i++;
         }
-        initializeExternalForces();
+
+        resetExternalForces();
     }
+
+    void ClusterTreeModel::resetExternalForces()
+    {
+        for (const int index : indices_of_nodes_experiencing_external_forces_)
+            nodes_[index]->f_ext_.setZero();
+        indices_of_nodes_experiencing_external_forces_.clear();
+
+        resetCache();
+    }
+
+    void ClusterTreeModel::setExternalForces(const string &body_name, const SVec<double> &force)
+    {
+        const auto &body_i = body(body_name);
+        const auto node = getNodeContainingBody(body_i.index_);
+        node->applyForceToBody(force, body_i);
+
+        // Add index to vector if vector does not already contain this cluster
+        if (!vectorContainsIndex(indices_of_nodes_experiencing_external_forces_, node->index_))
+            indices_of_nodes_experiencing_external_forces_.push_back(node->index_);
+    }
+
+    void ClusterTreeModel::setExternalForces(const unordered_map<string, SVec<double>> &ext_forces)
+    {
+        for (const auto &ext_force : ext_forces)
+        {
+            const string &body_name = ext_force.first;
+            const SVec<double> &force = ext_force.second;
+            setExternalForces(body_name, force);
+        }
+    }
+
     void ClusterTreeModel::resetCache()
     {
         TreeModel::resetCache();
@@ -247,6 +311,32 @@ namespace grbda
         const DVec<double> &v_cluster = cluster_nodes_[cluster_idx]->v_;
         const SVec<double> v = v_cluster.segment<6>(6 * subindex_within_cluster);
         return Rai * v.head<3>();
+    }
+
+    const std::unordered_map<std::string, int> &ClusterTreeModel::contacts() const
+    {
+        return contact_name_to_contact_index_;
+    }
+
+    const Vec3<double> &ClusterTreeModel::pGC(const string &cp_name) const
+    {
+        return contactPoint(cp_name).position_;
+    }
+
+    const Vec3<double> &ClusterTreeModel::vGC(const string &cp_name) const
+    {
+        return contactPoint(cp_name).velocity_;
+    }
+
+    const string &ClusterTreeModel::gcParent(const string &cp_name) const
+    {
+        const int &body_index = contactPoint(cp_name).body_index_;
+        return bodies_.at(body_index).name_;
+    }
+
+    D3Mat<double> ClusterTreeModel::Jc(const string &cp_name) const
+    {
+        return contactPoint(cp_name).jacobian_.bottomRows<3>();
     }
 
     int ClusterTreeModel::getClusterAncestorIndexFromParent(const int body_index)

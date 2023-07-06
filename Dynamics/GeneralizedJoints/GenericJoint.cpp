@@ -9,9 +9,10 @@ namespace grbda
 
         Generic::Generic(const std::vector<Body> &bodies, const std::vector<JointPtr> &joints,
                          const ExplicitConstraint &explicit_constraint)
-            : Base(explicit_constraint.numIndependentVelocities(),
+            : Base((int)bodies.size(),
                    explicit_constraint.numIndependentVelocities(),
-                   (int)bodies.size()),
+                   explicit_constraint.numIndependentVelocities(),
+                   false, false),
               bodies_(bodies)
         {
             for (auto &joint : joints)
@@ -32,13 +33,15 @@ namespace grbda
             Xup_ring_spanning_tree_ = DMat<double>::Zero(6 * num_bodies_, 6 * num_bodies_);
         }
 
-        void Generic::updateKinematics(const DVec<double> &y, const DVec<double> &yd)
+        void Generic::updateKinematics(const JointState &joint_state)
         {
-            if (y.size() != num_independent_positions_ || yd.size() != num_independent_velocities_)
-                throw std::runtime_error("[Generic] Dimension of y or yd is wrong");
+#ifdef DEBUG_MODE
+            jointStateCheck(joint_state);
+#endif
 
-            DVec<double> q = gamma_(y);
-            DVec<double> qd = G_ * yd;
+            const JointState spanning_joint_state = toSpanningTreeState(joint_state);
+            const DVec<double> &q = spanning_joint_state.position;
+            const DVec<double> &qd = spanning_joint_state.velocity;
 
             int pos_idx = 0;
             int vel_idx = 0;
@@ -73,7 +76,7 @@ namespace grbda
             }
 
             S_ = Xup_spanning_tree_ * S_spanning_tree_ * G_;
-            vJ_ = S_ * yd;
+            vJ_ = S_ * joint_state.velocity;
 
             for (int i = 0; i < num_bodies_; i++)
             {
@@ -166,7 +169,6 @@ namespace grbda
                     return body;
             throw std::runtime_error("Body is not in the current cluster");
         }
-
     }
 
 } // namespace grbda

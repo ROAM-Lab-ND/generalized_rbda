@@ -33,94 +33,36 @@ namespace grbda
         }
         ~ClusterTreeModel() {}
 
-        // TODO(@MatthewChignoli): These are functions and members shared with FloatingBaseModel. Not sure how I want to deal with them moving forward. It's unclear which parts of Robot-Software need to change for compatiblity with GRBDA and which parts of GRBDA need to change for compatibility with Robot-Software. Some of this should be moved to TreeModel base class?
-
+        // TODO(@MatthewChignoli): These are functions and members shared with FloatingBaseModel. Not sure how I want to deal with them moving forward. It's unclear which parts of Robot-Software need to change for compatiblity with GRBDA and which parts of GRBDA need to change for compatibility with Robot-Software.
         Vec3<double> getPosition(const string &body_name);
         Mat3<double> getOrientation(const string &body_name);
         Vec3<double> getLinearVelocity(const string &body_name);
         Vec3<double> getAngularVelocity(const string &body_name);
 
-        void resetExternalForces()
-        {
-            for (const int index : indices_of_nodes_experiencing_external_forces_)
-                nodes_[index]->f_ext_.setZero();
-            indices_of_nodes_experiencing_external_forces_.clear();
-
-            resetCache();
-        }
-
-        // TODO(@MatthewChignoli): Want to delete this eventually
-        vectorAligned<SVec<double>> _externalForces;
-
-        void setExternalForces(const string &body_name, const SVec<double> &force)
-        {
-            const auto &body_i = body(body_name);
-            const auto node = getNodeContainingBody(body_i.index_);
-            node->applyForceToBody(force, body_i);
-
-            // Add index to vector if vector does not already contain this cluster
-            if (!vectorContainsIndex(indices_of_nodes_experiencing_external_forces_, node->index_))
-                indices_of_nodes_experiencing_external_forces_.push_back(node->index_);
-        }
-
-        void setExternalForces(const unordered_map<string, SVec<double>> &ext_forces = {})
-        {
-            for (const auto &ext_force : ext_forces)
-            {
-                const string &body_name = ext_force.first;
-                const SVec<double> &force = ext_force.second;
-                setExternalForces(body_name, force);
-            }
-        }
-
-        // TODO(@MatthewChignoli): For now we will use this, but I think maybe we want to create a contact point struct that holds this information
-        const std::unordered_map<std::string, int> &contacts() const { return contact_name_to_contact_index_; }
-
-        const Vec3<double> &pGC(const string &cp_name) const
-        {
-            return contactPoint(cp_name).position_;
-        }
-
-        const Vec3<double> &vGC(const string &cp_name) const
-        {
-            return contactPoint(cp_name).velocity_;
-        }
-
-        const string &gcParent(const string &cp_name) const
-        {
-            const int& body_index = contactPoint(cp_name).body_index_;
-            return bodies_.at(body_index).name_;
-        }
-
-        // TODO(@MatthewChignoli): So all of this stuff get's deprecated
-
+        void setState(const DVec<double> &state);
+        void setExternalForces(const string &body_name, const SVec<double> &force);
+        void setExternalForces(const unordered_map<string, SVec<double>> &ext_forces = {});
+        void resetExternalForces();
         void resetCalculationFlags() { resetCache(); }
 
-        void setState(const DVec<double> &state)
-        {
-            const int nq = getNumPositions();
-            const int nv = getNumDegreesOfFreedom();
-            initializeIndependentStates(state.head(nq), state.tail(nv));
-        }
+        void contactJacobians();
+        const std::unordered_map<std::string, int> &contacts() const;
+        const Vec3<double> &pGC(const string &cp_name) const;
+        const Vec3<double> &vGC(const string &cp_name) const;
+        const string &gcParent(const string &cp_name) const;
+        D3Mat<double> Jc(const string &cp_name) const;
 
-        void contactJacobians() {}
+        DMat<double> massMatrix() { return getMassMatrix(); }
+        double applyTestForce(const string &cp_name,
+                              const Vec3<double> &force_ics_at_contact,
+                              DVec<double> &dstate_out);
 
-        double applyTestForce(const int gc_index, const Vec3<double> &force_ics_at_contact,
-                              DVec<double> &dstate_out) { return 0.; }
-
-        DMat<double> massMatrix() { return DMat<double>::Zero(0, 0); }
-
-        // TODO(@MatthewChignoli): Things to delete
-        size_t _nGroundContact = 0;
-        vector<size_t> _gcParent;
-        vector<Vec3<double>> _pGC;
-        vector<Vec3<double>> _vGC;
-        vector<D3Mat<double>> _Jc;
-
+        void addJointLim(size_t jointID, double joint_lim_value_lower,
+                         double joint_lim_value_upper);
         size_t _nJointLim = 0;
-        vector<size_t> _JointLimID;         // hold the joint nb ID as defined in humanoid.h
-        vector<double> _JointLimValueLower; // hold the joint nb ID as defined in humanoid.h
-        vector<double> _JointLimValueUpper; // hold the joint nb ID as defined in humanoid.h
+        vector<size_t> _JointLimID;        
+        vector<double> _JointLimValueLower;
+        vector<double> _JointLimValueUpper;
 
         /////////////////////////////////////
 
@@ -139,12 +81,14 @@ namespace grbda
 
         void print() const;
 
-        void initializeIndependentStates(const DVec<double> &y, const DVec<double> &yd) override;
-	void initializeTelloIndependentStates(const DVec<double> &q, const DVec<double> &y_dot);
+        void initializeState(const ModelState &model_state);
 
         int getNumBodies() const override { return (int)bodies_.size(); }
 
-        // NOTE: A body's "cluster ancestor" is the nearest member in the body's supporting tree that belongs to a different cluster
+        // NOTE: A body's "cluster ancestor" is the nearest member in the body's supporting tree 
+        // that belongs to a different cluster. This function is only intended to be run when 
+        // registering bodies. At all other times, a bodies cluster ancestor should be accesses via 
+        // body.cluster_ancestor_index_
         int getClusterAncestorIndexFromParent(const int body_index);
 
         int getSubIndexWithinClusterForBody(const Body &body) const;

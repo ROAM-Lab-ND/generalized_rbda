@@ -6,7 +6,7 @@ namespace grbda
     {
 
         Revolute::Revolute(const Body &body, CoordinateAxis joint_axis)
-            : Base(1, 1, 1), body_(body)
+            : Base(1, 1, 1, false, false), body_(body)
         {
             single_joints_.emplace_back(new Joints::Revolute(joint_axis));
 
@@ -27,13 +27,14 @@ namespace grbda
             spanning_tree_to_independent_coords_conversion_ = DMat<double>::Identity(1, 1);
         }
 
-        void Revolute::updateKinematics(const DVec<double> &y, const DVec<double> &yd)
+        void Revolute::updateKinematics(const JointState &joint_state)
         {
-            if (y.size() != 1)
-                throw std::runtime_error("[Revolute Joint] Dimension of joint position must be 1");
+#ifdef DEBUG_MODE
+            jointStateCheck(joint_state);
+#endif
 
-            single_joints_[0]->updateKinematics(y, yd);
-            vJ_ = S_ * yd;
+            single_joints_[0]->updateKinematics(joint_state.position, joint_state.velocity);
+            vJ_ = S_ * joint_state.velocity;
         }
 
         void Revolute::computeSpatialTransformFromParentToCurrentCluster(

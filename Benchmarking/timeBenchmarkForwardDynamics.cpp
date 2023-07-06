@@ -38,12 +38,36 @@ void runBenchmark(std::ofstream &file, const int ind_var, const bool include_for
         {
 
             // Set random state
-            DVec<double> q = DVec<double>::Random(nq);
-            DVec<double> qd = DVec<double>::Random(nv);
-            cluster_model.initializeIndependentStates(q, qd);
-            lagrange_mult_model.initializeIndependentStates(q, qd);
-            projection_model.initializeIndependentStates(q, qd);
-            reflected_inertia_model.initializeIndependentStates(q, qd);
+            ModelState model_state;
+            DVec<double> independent_joint_pos = DVec<double>::Zero(0);
+            DVec<double> independent_joint_vel = DVec<double>::Zero(0);
+            DVec<double> spanning_joint_pos = DVec<double>::Zero(0);
+            DVec<double> spanning_joint_vel = DVec<double>::Zero(0);
+            for (const auto &cluster : cluster_model.clusters())
+            {
+                JointState joint_state = cluster->joint_->randomJointState();
+                if (joint_state.position.isSpanning() || joint_state.velocity.isSpanning())
+                    throw std::runtime_error("Initializing reflected inertia model requires all independent coordinates");
+                    
+                independent_joint_pos = appendEigenVector(independent_joint_pos,
+                                                          joint_state.position);
+                independent_joint_vel = appendEigenVector(independent_joint_vel,
+                                                          joint_state.velocity);
+
+                JointState spanning_joint_state = cluster->joint_->toSpanningTreeState(joint_state);
+                spanning_joint_pos = appendEigenVector(spanning_joint_pos,
+                                                       spanning_joint_state.position);
+                spanning_joint_vel = appendEigenVector(spanning_joint_vel,
+                                                       spanning_joint_state.velocity);
+
+                model_state.push_back(joint_state);
+            }
+
+            cluster_model.initializeState(model_state);
+            lagrange_mult_model.initializeState(spanning_joint_pos, spanning_joint_vel);
+            projection_model.initializeState(spanning_joint_pos, spanning_joint_vel);
+            reflected_inertia_model.initializeIndependentStates(independent_joint_pos,
+                                                                independent_joint_vel);
 
             // TODO(@MatthewChignoli): Seems like including forces does not slow it down? That's strange
             if (include_forces)
@@ -90,6 +114,8 @@ void runBenchmark(std::ofstream &file, const int ind_var, const bool include_for
 
 void runRevoluteWithRotorBenchmark(const bool include_forces)
 {
+    std::cout << "** Revolute With Rotor Benchmark **" << std::endl;
+ 
     std::ofstream rev_file;
     rev_file.open("../Matlab_files/Results/RevoluteChain.csv");
 
@@ -107,6 +133,8 @@ void runRevoluteWithRotorBenchmark(const bool include_forces)
 
 void runRevolutePairWithRotorBenchmark(const bool include_forces)
 {
+    std::cout << "** Revolute Pair With Rotor Benchmark **" << std::endl;
+
     std::ofstream rev_pair_file;
     rev_pair_file.open("../Matlab_files/Results/RevolutePairChain.csv");
 
@@ -126,6 +154,8 @@ void runLoopSizeBenchmark(const bool include_forces)
 {
     // This benchmark finds the trend in computation time when the number of clusters is held constant, but the size of every cluster is varied
 
+    std::cout << "** Revolute Multi-Rotor Chain Benchmark **" << std::endl;
+
     std::ofstream results_file;
     results_file.open("../Matlab_files/Results/RevoluteMultiRotorChain.csv");
 
@@ -143,6 +173,8 @@ void runLoopSizeBenchmark(const bool include_forces)
 void runConstraintDimensionBenchmark(const bool include_forces)
 {
     // This benchmark finds the trend in computation time when the number of independent coordinates is held constant, but the number of constraints is varied
+
+    std::cout << "** Revolute With And Without Rotor Chain Benchmark **" << std::endl;
 
     std::ofstream results_file;
     results_file.open("../Matlab_files/Results/RevoluteWithAndWithoutRotorChain.csv");

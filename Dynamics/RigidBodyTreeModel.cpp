@@ -38,6 +38,7 @@ namespace grbda
     void RigidBodyTreeModel::extractLoopClosureFunctionsFromClusterModel(
         const ClusterTreeModel &cluster_tree_model)
     {
+
         gamma_ = [cluster_tree_model](DVec<double> q)
         {
             DVec<double> q_full = DVec<double>::Zero(0);
@@ -46,7 +47,18 @@ namespace grbda
                 const int pos_idx = cluster->position_index_;
                 const int num_pos = cluster->num_positions_;
                 const auto joint = cluster->joint_;
-                q_full = appendEigenVector(q_full, joint->gamma(q.segment(pos_idx, num_pos)));
+
+                JointCoordinate joint_pos = cluster->joint_state_.position;
+                if (cluster->joint_state_.position.isSpanning())
+                {
+                    joint_pos = q.segment(pos_idx, num_pos);
+                    q_full = appendEigenVector(q_full, joint_pos);
+                }
+                else
+                {
+                    joint_pos = q.segment(pos_idx, num_pos);
+                    q_full = appendEigenVector(q_full, joint->gamma(joint_pos));
+                }
             }
             return q_full;
         };
@@ -80,26 +92,12 @@ namespace grbda
             contact_points_.push_back(contact_point);
     }
 
-    void RigidBodyTreeModel::initializeStates(const DVec<double> &q, const DVec<double> &qd)
+    void RigidBodyTreeModel::initializeState(const DVec<double> &q, const DVec<double> &qd)
     {
         for (auto &node : rigid_body_nodes_)
         {
-            node->q_ = q.segment(node->position_index_, node->num_positions_);
-            node->qd_ = qd.segment(node->velocity_index_, node->num_velocities_);
-        }
-
-        initializeExternalForces();
-    }
-
-    void RigidBodyTreeModel::initializeIndependentStates(const DVec<double> &y, const DVec<double> &yd)
-    {
-        DVec<double> q = gamma_(y);
-        DVec<double> qd = G_ * yd;
-
-        for (auto &node : rigid_body_nodes_)
-        {
-            node->q_ = q.segment(node->position_index_, node->num_positions_);
-            node->qd_ = qd.segment(node->velocity_index_, node->num_velocities_);
+            node->joint_state_.position = q.segment(node->position_index_, node->num_positions_);
+            node->joint_state_.velocity = qd.segment(node->velocity_index_, node->num_velocities_);
         }
 
         initializeExternalForces();
@@ -114,6 +112,10 @@ namespace grbda
     DVec<double> RigidBodyTreeModel::getBiasForceVector()
     {
         updateBiasForceVector();
+        if (g_.norm() > 1e-12)
+        {
+            compositeRigidBodyAlgorithm();
+        }
         return G_.transpose() * (C_ + H_ * g_);
     }
 

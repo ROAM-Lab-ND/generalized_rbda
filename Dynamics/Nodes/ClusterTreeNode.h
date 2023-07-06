@@ -19,6 +19,29 @@ namespace grbda
         const DMat<double> &S() const override { return joint_->S(); }
         const DMat<double> &S_ring() const override { return joint_->S_ring(); }
 
+        // TODO(@MatthewChignoli): Should this actually be a virtual function in TreeNode.h?
+        JointCoordinate integratePosition(JointState joint_state, double dt)
+        {
+            if (joint_state.position.isSpanning() && joint_state.velocity.isSpanning())
+            {
+                joint_state.position += joint_state.velocity * dt;
+            }
+            else if (joint_state.position.isSpanning())
+            {
+                joint_state.position += joint_->G() * joint_state.velocity * dt;
+            }
+            else if (joint_state.velocity.isSpanning())
+            {
+                throw std::runtime_error("Velocity is spanning but position is not. This is not supported.");
+            }
+            else
+            {
+                joint_state.position += joint_state.velocity * dt;
+            }
+
+            return joint_state.position;
+        }
+
         const SpatialTransform &getAbsoluteTransformForBody(const Body &body) override;
         DVec<double> getVelocityForBody(const Body &body) override;
         void applyForceToBody(const SVec<double> &force, const Body &body) override;

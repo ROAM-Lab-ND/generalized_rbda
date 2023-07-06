@@ -10,7 +10,7 @@ namespace grbda
             Body &link, std::vector<Body> &rotors,
             CoordinateAxis joint_axis, std::vector<CoordinateAxis> &rotor_axes,
             std::vector<double> &gear_ratios)
-            : Base(1, 1, 1 + rotors.size()), link_(link), rotors_(rotors)
+            : Base(1 + rotors.size(), 1, 1, false, false), link_(link), rotors_(rotors)
         {
             const size_t num_rotors = rotors.size();
             if (num_rotors != rotor_axes.size() || num_rotors != gear_ratios.size())
@@ -79,14 +79,15 @@ namespace grbda
             vJ_ = DVec<double>::Zero(6 * (1 + num_rotors));
         }
 
-        void RevoluteWithMultipleRotorsJoint::updateKinematics(const DVec<double> &y,
-                                                               const DVec<double> &yd)
+        void RevoluteWithMultipleRotorsJoint::updateKinematics(const JointState &joint_state)
         {
-            if (y.size() != num_independent_positions_ || yd.size() != num_independent_velocities_)
-                throw std::runtime_error("[Revolute w/ Multiple Rotors] Dimension of y or yd is wrong");
+#ifdef DEBUG_MODE
+            jointStateCheck(joint_state);
+#endif
 
-            DVec<double> q = gamma_(y);
-            DVec<double> qd = G_ * yd;
+            const JointState spanning_joint_state = toSpanningTreeState(joint_state);
+            const DVec<double> &q = spanning_joint_state.position;
+            const DVec<double> &qd = spanning_joint_state.velocity;
 
             link_joint_->updateKinematics(q.segment<1>(0), qd.segment<1>(0));
             for (size_t i(0); i < rotors_.size(); i++)
@@ -94,7 +95,7 @@ namespace grbda
                 rotor_joints_[i]->updateKinematics(q.segment<1>(i + 1), qd.segment<1>(i + 1));
             }
 
-            vJ_ = S_ * yd;
+            vJ_ = S_ * joint_state.velocity;
         }
 
         void RevoluteWithMultipleRotorsJoint::computeSpatialTransformFromParentToCurrentCluster(

@@ -31,12 +31,14 @@ namespace grbda
         public:
             EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
-            Base(int num_independent_positions, int num_independent_velocities, int num_bodies);
+            Base(int num_bodies, int num_independent_positions, int num_independent_velocities,
+                 bool position_is_spanning, bool velocity_is_spanning);
             virtual ~Base() {}
 
             virtual GeneralizedJointTypes type() const = 0;
 
-            virtual void updateKinematics(const DVec<double> &y, const DVec<double> &yd) = 0;
+            virtual void updateKinematics(const JointState &joint_state) = 0;
+
             virtual void computeSpatialTransformFromParentToCurrentCluster(
                 GeneralizedSpatialTransform &Xup) const = 0;
 
@@ -48,16 +50,25 @@ namespace grbda
                 throw std::runtime_error("Reflected Inertia not setup for this generalized joint type");
             }
 
-            int numPositions() const { return num_independent_positions_; }
-            int numVelocities() const { return num_independent_velocities_; }
+            const int &numPositions() const { return num_positions_; }
+            const int &numVelocities() const { return num_velocities_; }
             virtual int numUnactuatedVelocities() const { return 0; }
+
+            const bool &positionIsSpanning() const { return position_is_spanning_; }
+            const bool &velocityIsSpanning() const { return velocity_is_spanning_; }
 
             const DMat<double> &S() const { return S_; }
             const DMat<double> &S_ring() const { return S_ring_; }
             const DMat<double> &Psi() const { return Psi_; }
             const DVec<double> &vJ() const { return vJ_; }
 
-            const DVec<double> gamma(DVec<double> q) const { return gamma_(q); }
+            virtual JointState randomJointState() const;
+
+            // TODO(@MatthewChignoli): We should not need to static cast here
+            const DVec<double> gamma(JointCoordinate q) const
+            {
+                return gamma_(static_cast<DVec<double>>(q));
+            }
             const DMat<double> &G() const { return G_; }
             const DVec<double> &g() const { return g_; }
 
@@ -69,10 +80,32 @@ namespace grbda
                 return spanning_tree_to_independent_coords_conversion_;
             }
 
+            JointState toSpanningTreeState(const JointState& joint_state);
+
         protected:
+            virtual void updateConstraintJacobians(const JointCoordinate &q) {}
+            virtual void updateConstraintBias(const JointState &joint_state) {}
+
+#ifdef DEBUG_MODE
+            void jointStateCheck(const JointState &joint_state) const
+            {
+                if (joint_state.position.isSpanning() != position_is_spanning_)
+                    throw std::runtime_error("Position is in the wrong coordinates");
+                if (joint_state.velocity.isSpanning() != velocity_is_spanning_)
+                    throw std::runtime_error("Velocity is in the wrong coordinates");
+                if (joint_state.position.rows() != num_positions_)
+                    throw std::runtime_error("Position is the wrong size");
+                if (joint_state.velocity.rows() != num_velocities_)
+                    throw std::runtime_error("Velocity is the wrong size");
+            }
+#endif
+
             const int num_bodies_;
-            const int num_independent_positions_;
-            const int num_independent_velocities_;
+            const int num_positions_;
+            const int num_velocities_;
+
+            const bool position_is_spanning_;
+            const bool velocity_is_spanning_;
 
             DMat<double> S_;
             DMat<double> S_ring_;

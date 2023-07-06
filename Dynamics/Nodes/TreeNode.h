@@ -13,19 +13,15 @@ namespace grbda
 
     struct TreeNode
     {
-        EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-
         TreeNode(int index, std::string name, int parent_index, int motion_subspace_dimension,
                  int num_parent_bodies, int position_index, int num_positions,
                  int velocity_index, int num_velocities)
             : position_index_(position_index), num_positions_(num_positions),
               velocity_index_(velocity_index), num_velocities_(num_velocities),
-              motion_subspace_dimension_(motion_subspace_dimension), index_(index), name_(name),
-              parent_index_(parent_index), Xup_(num_parent_bodies)
+              motion_subspace_dimension_(motion_subspace_dimension),
+              index_(index), name_(name), parent_index_(parent_index),
+              Xup_(num_parent_bodies)
         {
-            q_ = DVec<double>::Zero(num_positions_);
-            qd_ = DVec<double>::Zero(num_velocities_);
-
             I_ = DMat<double>::Zero(motion_subspace_dimension_, motion_subspace_dimension_);
             f_ext_ = DVec<double>::Zero(motion_subspace_dimension_);
         }
@@ -33,6 +29,9 @@ namespace grbda
         virtual ~TreeNode() {}
 
         virtual void updateKinematics() = 0;
+
+        const JointCoordinate &jointPosition() const { return joint_state_.position; }
+        const JointCoordinate &jointVelocity() const { return joint_state_.velocity; }
         virtual const DVec<double> &vJ() const = 0;
         virtual const DMat<double> &S() const = 0;
         virtual const DMat<double> &S_ring() const = 0;
@@ -52,8 +51,7 @@ namespace grbda
         const std::string name_;
         const int parent_index_;
 
-        DVec<double> q_;  // joint positions
-        DVec<double> qd_; // joint velocities
+        JointState joint_state_;
 
         DVec<double> v_;     // spatial velocity
         DVec<double> c_;     // velocity-product acceleration

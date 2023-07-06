@@ -139,18 +139,24 @@ namespace grbda
         upper_arm_cluster_joints.push_back(wrist_roll_rotor_joint);
 
         // Cluster Constraint
-        DVecFcn<double> gamma = [&](DVec<double> y)
+        const std::vector<double> gear_ratios = {elbow_rotor_gear_ratio_,
+                                                 wrist_pitch_rotor_gear_ratio_,
+                                                 wrist_roll_rotor_gear_ratio_};
+        const std::vector<double> belt_ratios = {elbow_rotor_belt_ratio_,
+                                                 wrist_pitch_rotor_belt_ratio_,
+                                                 wrist_roll_rotor_belt_ratio_};
+        DVecFcn<double> gamma = [gear_ratios, belt_ratios](DVec<double> y)
         {
             Vec6<double> q;
             q[0] = y[0];
             q[1] = y[1];
             q[2] = y[2];
-            q[3] = elbow_rotor_gear_ratio_ * elbow_rotor_belt_ratio_ * y[0];
-            q[4] = wrist_pitch_rotor_gear_ratio_ * elbow_rotor_belt_ratio_ * y[0] +
-                   wrist_pitch_rotor_gear_ratio_ * wrist_pitch_rotor_belt_ratio_ * y[1];
-            q[5] = -wrist_roll_rotor_gear_ratio_ * elbow_rotor_belt_ratio_ * y[0] +
-                   -wrist_roll_rotor_gear_ratio_ * wrist_pitch_rotor_belt_ratio_ * y[1] +
-                   wrist_roll_rotor_gear_ratio_ * wrist_roll_rotor_belt_ratio_ * y[2];
+            q[3] = gear_ratios.at(0) * belt_ratios.at(0) * y[0];
+            q[4] = gear_ratios.at(1) * belt_ratios.at(0) * y[0] +
+                   gear_ratios.at(1) * belt_ratios.at(1) * y[1];
+            q[5] = -gear_ratios.at(2) * belt_ratios.at(0) * y[0] +
+                   -gear_ratios.at(2) * belt_ratios.at(1) * y[1] +
+                   gear_ratios.at(2) * belt_ratios.at(2) * y[2];
             return q;
         };
 

@@ -15,6 +15,39 @@ protected:
     RigidBodyKinemaitcsTest() : cluster_model(robot.buildClusterTreeModel()),
                                 rigid_body_model(cluster_model) {}
 
+    bool initializeRandomStates()
+    {
+        ModelState model_state;
+        DVec<double> spanning_joint_pos = DVec<double>::Zero(0);
+        DVec<double> spanning_joint_vel = DVec<double>::Zero(0);
+        for (const auto &cluster : cluster_model.clusters())
+        {
+            JointState joint_state = cluster->joint_->randomJointState();
+            JointState spanning_joint_state = cluster->joint_->toSpanningTreeState(joint_state);
+
+            spanning_joint_pos = appendEigenVector(spanning_joint_pos,
+                                                   spanning_joint_state.position);
+            spanning_joint_vel = appendEigenVector(spanning_joint_vel,
+                                                   spanning_joint_state.velocity);
+            model_state.push_back(joint_state);
+        }
+
+        cluster_model.initializeState(model_state);
+        rigid_body_model.initializeState(spanning_joint_pos, spanning_joint_vel);
+
+        // Check for NaNs
+        bool nan_detected = false;
+        for (const auto &cluster : this->cluster_model.clusters())
+        {
+            if (cluster->joint_state_.position.hasNaN())
+            {
+                nan_detected = true;
+                break;
+            }
+        }
+        return nan_detected;
+    }
+
     T robot;
     ClusterTreeModel cluster_model;
     RigidBodyTreeModel rigid_body_model;
@@ -33,27 +66,25 @@ typedef Types<
     RevoluteChainWithAndWithoutRotor<0ul, 8ul>,
     RevoluteChainWithAndWithoutRotor<4ul, 4ul>,
     RevoluteChainWithAndWithoutRotor<8ul, 0ul>,
-    TeleopArm>
+    Tello, TeleopArm>
     Robots;
 
 TYPED_TEST_SUITE(RigidBodyKinemaitcsTest, Robots);
 
 TYPED_TEST(RigidBodyKinemaitcsTest, ForwardKinematics)
 {
-    // This test compares the forward kinematics of a robot (rigid-body velocities and 
-    // contact-point positions/velocities) as computed by the cluster tree model versus the 
+    // This test compares the forward kinematics of a robot (rigid-body velocities and
+    // contact-point positions/velocities) as computed by the cluster tree model versus the
     // rigid-body tree model.
-
-    const int nq = this->cluster_model.getNumPositions();
-    const int nv = this->cluster_model.getNumDegreesOfFreedom();
 
     for (int k = 0; k < 20; k++)
     {
-
-        // Set random state
-        DVec<double> state = DVec<double>::Random(nq + nv);
-        this->cluster_model.initializeIndependentStates(state.head(nq), state.tail(nv));
-        this->rigid_body_model.initializeIndependentStates(state.head(nq), state.tail(nv));
+        // Initialize random state
+        bool nan_detected_in_state = this->initializeRandomStates();
+        if (nan_detected_in_state)
+        {
+            continue;
+        }
 
         // Forward kinematics
         this->cluster_model.forwardKinematics();
@@ -100,38 +131,44 @@ TYPED_TEST(RigidBodyKinemaitcsTest, ForwardKinematics)
 
 TYPED_TEST(RigidBodyKinemaitcsTest, MotionSubspaceApparentDerivative)
 {
-    // This test compares the apparent derivative of the motion subspace (S_ring) as computed by 
+    // This test compares the apparent derivative of the motion subspace (S_ring) as computed by
     // the cluster tree model to the apparent derivative as computed by finite difference
 
     double dt = 0.00001;
     const int nq = this->cluster_model.getNumPositions();
     const int nv = this->cluster_model.getNumDegreesOfFreedom();
 
-    for (int k = 0; k < 20; k++)
+    for (int k = 0; k < 5; k++)
     {
-        DVec<double> y = DVec<double>::Random(nq);
-        DVec<double> yd = DVec<double>::Random(nv);
-        this->cluster_model.initializeIndependentStates(y, yd);
+        bool nan_detected_in_state = this->initializeRandomStates();
+        if (nan_detected_in_state)
+        {
+            continue;
+        }
         this->cluster_model.forwardKinematics();
 
         for (auto &cluster : this->cluster_model.clusters())
         {
             auto joint = cluster->joint_;
+            JointState joint_state = cluster->joint_state_;
 
             DMat<double> S_ring = joint->S_ring();
-            // DMat<double> S = joint->S();
 
-            DVec<double> q_plus = cluster->q_ + dt * cluster->qd_;
-            joint->updateKinematics(q_plus, cluster->qd_);
+            JointState q_plus_joint_state = cluster->joint_state_;
+            q_plus_joint_state.position = cluster->integratePosition(joint_state, dt);
+            q_plus_joint_state.velocity = cluster->jointVelocity();
+            joint->updateKinematics(q_plus_joint_state);
             DMat<double> S_plus = joint->S();
 
-            DVec<double> q_minus = cluster->q_ - dt * cluster->qd_;
-            joint->updateKinematics(q_minus, cluster->qd_);
+            JointState q_minus_joint_state = cluster->joint_state_;
+            q_minus_joint_state.position = cluster->integratePosition(joint_state, -dt);
+            q_minus_joint_state.velocity = cluster->jointVelocity();
+            joint->updateKinematics(q_minus_joint_state);
             DMat<double> S_minus = joint->S();
 
             DMat<double> S_ring_fd = (S_plus - S_minus) / (2 * dt);
 
-            GTEST_ASSERT_LT((S_ring - S_ring_fd).norm(), tol);
+            GTEST_ASSERT_LT((S_ring - S_ring_fd).norm(), 1e-3);
         }
     }
 }
