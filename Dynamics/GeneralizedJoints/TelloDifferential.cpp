@@ -96,7 +96,7 @@ namespace grbda
 	{
 #ifdef DEBUG_MODE
 	    if (!joint_pos.isSpanning())
-	    throw std::runtime_error("[TelloDifferential] Position for updating constraint Jacobians must be spanning");
+		throw std::runtime_error("[TelloDifferential] Position for updating constraint Jacobians must be spanning");
 #endif
 	    vector<DVec<double>> arg = {joint_pos.head<2>(), joint_pos.tail<2>()};
 	    Mat2<double> J_dy_2_dqd;
@@ -112,7 +112,7 @@ namespace grbda
 	{
 #ifdef DEBUG_MODE
 	    if (!joint_state.position.isSpanning() || !joint_state.velocity.isSpanning())
-	    throw std::runtime_error("[TelloDifferential] Position and velocity for updating constraint bias must be spanning");
+		throw std::runtime_error("[TelloDifferential] Position and velocity for updating constraint bias must be spanning");
 #endif
 
 	    const DVec<double> &q = joint_state.position;
