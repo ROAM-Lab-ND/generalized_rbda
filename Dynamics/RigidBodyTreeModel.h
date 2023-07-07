@@ -74,6 +74,10 @@ namespace grbda
         }
 
         // TODO(@MatthewChignoli): These are functions and members shared with FloatingBaseModel. Not sure how I want to deal with them moving forward. It's unclear which parts of Robot-Software need to change for compatiblity with GRBDA and which parts of GRBDA need to change for compatibility with Robot-Software. Should these functions be abstraced to TreeModel since ClusterTreeModel also uses them?
+        Vec3<double> getPosition(const string &body_name);
+        Mat3<double> getOrientation(const string &body_name);
+        Vec3<double> getLinearVelocity(const string &body_name);
+        Vec3<double> getAngularVelocity(const string &body_name);
 
         // TODO(@MatthewChignoli): We currently assume that the state is given as independent coordinates.
         void setState(const DVec<double> &state)
@@ -93,8 +97,10 @@ namespace grbda
         /////////////////////////////////////
 
 
+
         int getNumBodies() const override { return (int)rigid_body_nodes_.size(); }
 
+        // TOOD(@MatthewChignoli): I don't really like these functions...
         const Body &getBody(int index) const override { return rigid_body_nodes_[index]->body_; }
         const TreeNodePtr getNodeContainingBody(int index) override { return rigid_body_nodes_[index]; }
 
@@ -134,6 +140,8 @@ namespace grbda
         DVec<double> k_;
 
         std::vector<RigidBodyTreeNodePtr> rigid_body_nodes_;
+
+        UnorderedMap<string, int> body_name_to_body_index_;
 
 #ifdef TIMING_STATS
         Timer timer_;

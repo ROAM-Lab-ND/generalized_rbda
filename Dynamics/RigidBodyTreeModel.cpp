@@ -31,6 +31,7 @@ namespace grbda
     void RigidBodyTreeModel::extractRigidBodiesAndJointsFromClusterModel(
         const ClusterTreeModel &cluster_tree_model)
     {
+        int body_index = 0;
         for (const auto &cluster : cluster_tree_model.clusters())
         {
             for (const auto &body_and_joint : cluster->bodiesAndJoints())
@@ -41,6 +42,8 @@ namespace grbda
                                                                 velocity_index_);
                 rigid_body_nodes_.push_back(node);
                 nodes_.push_back(node);
+                body_name_to_body_index_[body.name_] = body_index++;
+
                 position_index_ += joint->numPositions();
                 velocity_index_ += joint->numVelocities();
             }
@@ -115,6 +118,53 @@ namespace grbda
         }
 
         initializeExternalForces();
+    }
+
+    Vec3<double> RigidBodyTreeModel::getPosition(const string &body_name)
+    {
+        // TODO(@MatthewChignoli): Helper function that gets node given the name?
+        const int &body_idx = body_name_to_body_index_.at(body_name);
+        const TreeNodePtr rigid_body_node = getNodeContainingBody(body_idx);
+
+        forwardKinematics();
+        const SpatialTransform &Xa = rigid_body_node->Xa_[0];
+        const Mat6<double> Xai = invertSXform(Xa.toMatrix().cast<double>());
+        Vec3<double> link_pos = sXFormPoint(Xai, Vec3<double>::Zero());
+        return link_pos;
+    }
+
+    Mat3<double> RigidBodyTreeModel::getOrientation(const string &body_name)
+    {
+        const int &body_idx = body_name_to_body_index_.at(body_name);
+        const TreeNodePtr rigid_body_node = getNodeContainingBody(body_idx);
+
+        forwardKinematics();
+        const SpatialTransform &Xa = rigid_body_node->Xa_[0];
+        Mat3<double> Rai = Xa.getRotation();
+        Rai.transposeInPlace();
+        return Rai;
+    }
+
+    Vec3<double> RigidBodyTreeModel::getLinearVelocity(const string &body_name)
+    {
+        const int &body_idx = body_name_to_body_index_.at(body_name);
+        const TreeNodePtr rigid_body_node = getNodeContainingBody(body_idx);
+
+        forwardKinematics();
+        const Mat3<double> Rai = getOrientation(body_name);
+        const SVec<double> v = rigid_body_node->v_.head<6>();
+        return Rai * spatialToLinearVelocity(v, Vec3<double>::Zero());
+    }
+
+    Vec3<double> RigidBodyTreeModel::getAngularVelocity(const string &body_name)
+    {
+        const int &body_idx = body_name_to_body_index_.at(body_name);
+        const TreeNodePtr rigid_body_node = getNodeContainingBody(body_idx);
+
+        forwardKinematics();
+        const Mat3<double> Rai = getOrientation(body_name);
+        const SVec<double> v = rigid_body_node->v_.head<6>();
+        return Rai * v.head<3>();
     }
 
     DMat<double> RigidBodyTreeModel::getMassMatrix()
