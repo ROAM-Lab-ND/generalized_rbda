@@ -88,9 +88,6 @@ namespace grbda
             const DVec<double> q = gamma_(state.head(nq));
             const DVec<double> qd = G_ * state.tail(nv);
 
-            std::cout << "State: " << state.transpose() << std::endl;
-            std::cout << "q, qd: " << q.transpose() << ", " << qd.transpose() << std::endl;
-
             initializeState(q, qd);
         }
 
