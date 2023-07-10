@@ -100,18 +100,15 @@ namespace grbda
             const auto joint = cluster->joint_;
 
             cluster->u_ = tau.segment(vel_idx, num_vel) - joint->S().transpose() * cluster->pA_;
+            cluster->D_inv_u_ = cluster->D_inv_.solve(cluster->u_);
 
             // Articulated body bias force recursion
             if (cluster->parent_index_ >= 0)
             {
                 auto parent_cluster = cluster_nodes_[cluster->parent_index_];
 
-                DMat<double> Ia = cluster->IA_ -
-                                  cluster->U_ * (cluster->D_inv_.solve(cluster->U_.transpose()));
-
-                DVec<double> pa = cluster->pA_ +
-                                  Ia * cluster->c_ +
-                                  cluster->U_ * (cluster->D_inv_.solve(cluster->u_));
+                const DVec<double> pa = cluster->pA_ + cluster->Ia_ * cluster->c_ +
+                                        cluster->U_ * cluster->D_inv_u_;
 
                 parent_cluster->pA_ += cluster->Xup_.inverseTransformForceVector(pa);
             }
@@ -138,8 +135,7 @@ namespace grbda
             {
                 a_temp = cluster->Xup_.transformMotionVector(-gravity_) + cluster->c_;
             }
-            qdd.segment(vel_idx, num_vel) =
-                cluster->D_inv_.solve(cluster->u_ - cluster->U_.transpose() * a_temp);
+            qdd.segment(vel_idx, num_vel) = cluster->D_inv_u_ - cluster->D_inv_UT_ * a_temp;
             cluster->a_ = a_temp + joint->S() * qdd.segment(vel_idx, num_vel);
         }
 #ifdef TIMING_STATS
@@ -170,14 +166,14 @@ namespace grbda
             cluster->U_ = cluster->IA_ * joint->S();
             const DMat<double> D = joint->S().transpose() * cluster->U_;
             cluster->updateDinv(D);
+            cluster->D_inv_UT_ = cluster->D_inv_.solve(cluster->U_.transpose());
 
             // Articulated body inertia recursion
             if (cluster->parent_index_ >= 0)
             {
                 auto parent_cluster = cluster_nodes_[cluster->parent_index_];
-                DMat<double> Ia =
-                    cluster->IA_ - cluster->U_ * (cluster->D_inv_.solve(cluster->U_.transpose()));
-                parent_cluster->IA_ += cluster->Xup_.inverseTransformSpatialInertia(Ia);
+                cluster->Ia_ = cluster->IA_ - cluster->U_ * cluster->D_inv_UT_;
+                parent_cluster->IA_ += cluster->Xup_.inverseTransformSpatialInertia(cluster->Ia_);
             }
         }
 

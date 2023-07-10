@@ -63,6 +63,9 @@ namespace grbda
         DMat<double> U_;                                 // helper variable for ABA
         Eigen::ColPivHouseholderQR<DMat<double>> D_inv_; // helper variable for ABA
         DVec<double> u_;                                 // helper variable for ABA
+        DMat<double> D_inv_UT_;                          // D_inv_ * U_.transpose();
+        DVec<double> D_inv_u_;                           // D_inv_ * u_;
+        DMat<double> Ia_;
 
         DMat<double> ChiUp_;
         DMat<double> qdd_for_subtree_due_to_subtree_root_joint_qdd;
