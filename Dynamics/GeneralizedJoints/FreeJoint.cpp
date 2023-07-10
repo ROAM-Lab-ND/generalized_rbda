@@ -42,8 +42,10 @@ namespace grbda
         void Free::computeSpatialTransformFromParentToCurrentCluster(
             GeneralizedSpatialTransform &Xup) const
         {
+#ifdef DEBUG_MODE
             if (Xup.getNumOutputBodies() != 1 || Xup.getNumParentBodies() != 1)
                 throw std::runtime_error("[Free Joint] Xup must be 6x6");
+#endif
             Xup[0] = single_joints_[0]->XJ();
         }
 
