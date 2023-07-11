@@ -290,37 +290,71 @@ TYPED_TEST(RigidBodyDynamicsAlgosTest, ForwardAndInverseDyanmics)
     this->printAverageComputationTimes(num_tests);
 }
 
-// GTEST_TEST(OpenChain2DoF, ApplyTestForceTest)
-// {
-//     Openchain2DoF model_lagrange{};
-//     ClusterTreeModel model_featherstone = model_lagrange.buildClusterTreeModel();
+TYPED_TEST(RigidBodyDynamicsAlgosTest, ApplyTestForceTest)
+{
+    // TODO(@MatthewChignoli): write description
 
-//     // Set random state
-//     DVec<double> state = Vec4<double>::Random();
-//     model_lagrange.setState(state);
-//     model_featherstone.initializeIndependentStates(state.head<2>(), state.tail<2>());
+    const int num_tests_per_robot = 20;
+    for (int i = 0; i < (int)this->cluster_models.size(); i++)
+    {
+        ClusterTreeModel &cluster_model = this->cluster_models[i];
 
-//     model_lagrange._UpdateDynamics_ABA(Vec2<double>::Zero());
-//     Mat3<double> inv_ops_inertia = model_lagrange.inverse_operational_space_inertia_matrix();
+        const int nq = cluster_model.getNumPositions();
+        const int nv = cluster_model.getNumDegreesOfFreedom();
 
-//     Vec3<double> test_force = Vec3<double>{1., 0., 0.};
-//     DVec<double> dstate_out;
+        for (int j = 0; j < num_tests_per_robot; j++)
+        {
+            // Set random state
+            bool nan_detected_in_state = this->initializeRandomStates(i);
+            if (nan_detected_in_state)
+            {
+                continue;
+            }
 
-//     double lambda_inv_x =
-//         model_featherstone.applyLocalFrameTestForceAtConactPoint(Vec3<double>{1., 0., 0.},
-//                                                                  "tip-of-link-2",
-//                                                                  dstate_out);
-//     GTEST_ASSERT_LT(fabs(inv_ops_inertia(0, 0) - lambda_inv_x), tol);
+            for (const auto cp : cluster_model.contactPoints())
+            {
+                Vec3<double> test_force = Vec3<double>{1., 0., 0.};
+                DVec<double> dstate_out;
 
-//     double lambda_inv_y =
-//         model_featherstone.applyLocalFrameTestForceAtConactPoint(Vec3<double>{0., 1., 0.},
-//                                                                  "tip-of-link-2",
-//                                                                  dstate_out);
-//     GTEST_ASSERT_LT(fabs(inv_ops_inertia(1, 1) - lambda_inv_y), tol);
+                double lambda_inv_x =
+                    cluster_model.applyLocalFrameTestForceAtConactPoint(Vec3<double>{1., 0., 0.},
+                                                                        cp.name_,
+                                                                        dstate_out);
+            }
+        }
+    }
 
-//     double lambda_inv_z =
-//         model_featherstone.applyLocalFrameTestForceAtConactPoint(Vec3<double>{0., 0., 1.},
-//                                                                  "tip-of-link-2",
-//                                                                  dstate_out);
-//     GTEST_ASSERT_LT(fabs(inv_ops_inertia(2, 2) - lambda_inv_z), tol);
-// }
+    // ClusterTreeModel &cluster_model = this->cluster_models[i];
+
+    // // Openchain2DoF model_lagrange{};
+    // ClusterTreeModel model_featherstone = model_lagrange.buildClusterTreeModel();
+
+    // // Set random state
+    // DVec<double> state = Vec4<double>::Random();
+    // model_lagrange.setState(state);
+    // model_featherstone.initializeIndependentStates(state.head<2>(), state.tail<2>());
+
+    // model_lagrange._UpdateDynamics_ABA(Vec2<double>::Zero());
+    // Mat3<double> inv_ops_inertia = model_lagrange.inverse_operational_space_inertia_matrix();
+
+    // Vec3<double> test_force = Vec3<double>{1., 0., 0.};
+    // DVec<double> dstate_out;
+
+    // double lambda_inv_x =
+    //     model_featherstone.applyLocalFrameTestForceAtConactPoint(Vec3<double>{1., 0., 0.},
+    //                                                              "tip-of-link-2",
+    //                                                              dstate_out);
+    // GTEST_ASSERT_LT(fabs(inv_ops_inertia(0, 0) - lambda_inv_x), tol);
+
+    // double lambda_inv_y =
+    //     model_featherstone.applyLocalFrameTestForceAtConactPoint(Vec3<double>{0., 1., 0.},
+    //                                                              "tip-of-link-2",
+    //                                                              dstate_out);
+    // GTEST_ASSERT_LT(fabs(inv_ops_inertia(1, 1) - lambda_inv_y), tol);
+
+    // double lambda_inv_z =
+    //     model_featherstone.applyLocalFrameTestForceAtConactPoint(Vec3<double>{0., 0., 1.},
+    //                                                              "tip-of-link-2",
+    //                                                              dstate_out);
+    // GTEST_ASSERT_LT(fabs(inv_ops_inertia(2, 2) - lambda_inv_z), tol);
+}

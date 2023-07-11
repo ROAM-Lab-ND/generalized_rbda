@@ -194,19 +194,19 @@ namespace grbda
     {
         // ISSUE #185 (old repo): Find bug in reduced order algo for inverse op space inertia
 
-        // contact_name_to_contact_index_.checkForKey(contact_point_name);
-        // const int contact_point_index = contact_name_to_contact_index_[contact_point_name];
-        // const ContactPoint &contact_point = contact_points_[contact_point_index];
+        contact_name_to_contact_index_.checkForKey(contact_point_name);
+        const int contact_point_index = contact_name_to_contact_index_[contact_point_name];
+        const ContactPoint &contact_point = contact_points_[contact_point_index];
 
-        // std::cout << "Entered applyLocalFrameTestForceAtConactPoint" << std::endl;
+        std::cout << "Entered applyLocalFrameTestForceAtConactPoint" << std::endl;
 
-        // forwardKinematics();
-        // updateArticulatedBodies();
-        // std::cout << "Updated articulated bodies" << std::endl;
-        // updateForcePropagators();
-        // std::cout << "Updated force propagators" << std::endl;
-        // updateQddEffects();
-        // std::cout << "Updated qdd effects" << std::endl;
+        forwardKinematics();
+        updateArticulatedBodies();
+        std::cout << "Updated articulated bodies" << std::endl;
+        updateForcePropagators();
+        std::cout << "Updated force propagators" << std::endl;
+        updateQddEffects();
+        std::cout << "Updated qdd effects" << std::endl;
 
         // std::cout << "Did all of the updates" << std::endl;
 
@@ -267,7 +267,7 @@ namespace grbda
             const auto joint = cluster->joint_;
             cluster->ChiUp_ =
                 cluster->Xup_.toMatrix() -
-                joint->S() * (cluster->D_inv_.solve(cluster->U_.transpose())) * cluster->Xup_.toMatrix();
+                joint->S() * cluster->D_inv_UT_ * cluster->Xup_.toMatrix();
         }
 
         force_propagators_updated_ = true;
@@ -289,8 +289,24 @@ namespace grbda
             cluster->qdd_for_subtree_due_to_subtree_root_joint_qdd
                 .middleRows(vel_idx, num_vel)
                 .setIdentity();
+
+            // TODO(@MatthewChignoli): Clean this up majorly
+            const DMat<double>& S = joint->S();
+            const Eigen::HouseholderQR<DMat<double>> qr(S);
+            const DMat<double> Q = qr.householderQ();
+            DMat<double> S_free_and_constrained(S.rows(), S.cols() + Q.cols() - num_vel);
+            S_free_and_constrained << S, Q.rightCols(Q.cols() - num_vel);
+            DMat<double> Psi = S_free_and_constrained.inverse().transpose();
+            Psi = Psi.leftCols(num_vel);
+            // TODO(@MatthewChignoli): Why is this not always identity?
+            std::cout << "S^T * Psi:\n" << S.transpose() * Psi << std::endl;
+            std::cout << "S^T * joint->Psi():\n" << S.transpose() * joint->Psi() << std::endl;
+
+            // DMat<double> F =
+                // (cluster->ChiUp_.transpose() - cluster->Xup_.toMatrix().transpose()) * joint->Psi();
+
             DMat<double> F =
-                (cluster->ChiUp_.transpose() - cluster->Xup_.toMatrix().transpose()) * joint->Psi();
+                (cluster->ChiUp_.transpose() - cluster->Xup_.toMatrix().transpose()) * Psi;
 
             int j = cluster->parent_index_;
             while (j > -1)
