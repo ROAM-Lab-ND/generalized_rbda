@@ -290,7 +290,8 @@ TYPED_TEST(RigidBodyDynamicsAlgosTest, ForwardAndInverseDyanmics)
     this->printAverageComputationTimes(num_tests);
 }
 
-// TODO(@MatthewChignoli): Add this test back in
+// TODO(@MatthewChignoli): Add this test back in. If we want to actually implement this test, then every type of TreeModel will need to implement this applyLocalFrameTestForceAtContactPoint metod
+
 TYPED_TEST(RigidBodyDynamicsAlgosTest, ApplyTestForceTest)
 {
     // TODO(@MatthewChignoli): write description
@@ -318,7 +319,7 @@ TYPED_TEST(RigidBodyDynamicsAlgosTest, ApplyTestForceTest)
                 DVec<double> dstate_out;
 
                 double lambda_inv_x =
-                    cluster_model.applyLocalFrameTestForceAtConactPoint(Vec3<double>{1., 0., 0.},
+                    cluster_model.applyLocalFrameTestForceAtContactPoint(Vec3<double>{1., 0., 0.},
                                                                         cp.name_,
                                                                         dstate_out);
             }
@@ -342,19 +343,19 @@ TYPED_TEST(RigidBodyDynamicsAlgosTest, ApplyTestForceTest)
     // DVec<double> dstate_out;
 
     // double lambda_inv_x =
-    //     model_featherstone.applyLocalFrameTestForceAtConactPoint(Vec3<double>{1., 0., 0.},
+    //     model_featherstone.applyLocalFrameTestForceAtContactPoint(Vec3<double>{1., 0., 0.},
     //                                                              "tip-of-link-2",
     //                                                              dstate_out);
     // GTEST_ASSERT_LT(fabs(inv_ops_inertia(0, 0) - lambda_inv_x), tol);
 
     // double lambda_inv_y =
-    //     model_featherstone.applyLocalFrameTestForceAtConactPoint(Vec3<double>{0., 1., 0.},
+    //     model_featherstone.applyLocalFrameTestForceAtContactPoint(Vec3<double>{0., 1., 0.},
     //                                                              "tip-of-link-2",
     //                                                              dstate_out);
     // GTEST_ASSERT_LT(fabs(inv_ops_inertia(1, 1) - lambda_inv_y), tol);
 
     // double lambda_inv_z =
-    //     model_featherstone.applyLocalFrameTestForceAtConactPoint(Vec3<double>{0., 0., 1.},
+    //     model_featherstone.applyLocalFrameTestForceAtContactPoint(Vec3<double>{0., 0., 1.},
     //                                                              "tip-of-link-2",
     //                                                              dstate_out);
     // GTEST_ASSERT_LT(fabs(inv_ops_inertia(2, 2) - lambda_inv_z), tol);

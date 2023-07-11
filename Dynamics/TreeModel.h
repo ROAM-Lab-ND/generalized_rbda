@@ -40,6 +40,11 @@ namespace grbda
             const std::vector<ExternalForceAndBodyIndexPair> &force_and_body_index_pairs = {});
 
         void forwardKinematics();
+        virtual void contactJacobians()
+        {
+            throw std::runtime_error("Contact Jacobians not implemented for this model");
+        }
+
         virtual DVec<double> forwardDynamics(const DVec<double> &tau) = 0;
         virtual DVec<double> inverseDynamics(const DVec<double> &qdd) 
         {

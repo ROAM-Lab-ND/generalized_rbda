@@ -82,7 +82,7 @@ namespace grbda
         void resetExternalForces();
         void resetCalculationFlags() { resetCache(); }
 
-        void contactJacobians();
+        void contactJacobians() override;
         const std::unordered_map<std::string, int> &contacts() const;
         const Vec3<double> &pGC(const string &cp_name) const;
         const Vec3<double> &vGC(const string &cp_name) const;
@@ -169,9 +169,9 @@ namespace grbda
 
         DVec<double> inverseDynamics(const DVec<double> &qdd) override;
         DVec<double> forwardDynamics(const DVec<double> &tau) override;
-        double applyLocalFrameTestForceAtConactPoint(const Vec3<double> &force,
-                                                     const string &contact_point_name,
-                                                     DVec<double> &dstate_out);
+        double applyLocalFrameTestForceAtContactPoint(const Vec3<double> &force,
+                                                      const string &contact_point_name,
+                                                      DVec<double> &dstate_out);
 
         DMat<double> getMassMatrix() override;
         DVec<double> getBiasForceVector() override;

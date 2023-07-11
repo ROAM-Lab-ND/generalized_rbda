@@ -114,6 +114,8 @@ TYPED_TEST(RigidBodyKinemaitcsTest, ForwardKinematics)
         GTEST_ASSERT_EQ(this->cluster_model.contactPoints().size(),
                         this->rigid_body_model.contactPoints().size());
 
+        this->cluster_model.contactJacobians();
+        this->rigid_body_model.contactJacobians();
         for (int j = 0; j < (int)this->cluster_model.contactPoints().size(); j++)
         {
             // Verify positions
@@ -125,7 +127,15 @@ TYPED_TEST(RigidBodyKinemaitcsTest, ForwardKinematics)
             Vec3<double> v_cp_cluster = this->cluster_model.contactPoint(j).velocity_;
             Vec3<double> v_cp_rigid_body = this->rigid_body_model.contactPoint(j).velocity_;
             GTEST_ASSERT_LT((v_cp_cluster - v_cp_rigid_body).norm(), tol);
+
+            // TODO(@MatthewChignoli) Verify contact jacobians are the same (and maybe that the contact jacobians give the proper contact point vel)
+            D6Mat<double> J_cp_cluster = this->cluster_model.contactPoint(j).jacobian_;
+            D6Mat<double> J_cp_rigid_body = this->rigid_body_model.contactPoint(j).jacobian_;
+            GTEST_ASSERT_LT((J_cp_cluster - J_cp_rigid_body).norm(), tol);
         }
+
+
+
     }
 }
 

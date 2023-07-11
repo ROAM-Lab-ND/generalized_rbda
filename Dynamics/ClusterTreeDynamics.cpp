@@ -184,13 +184,13 @@ namespace grbda
                                             const Vec3<double> &force_ics_at_contact,
                                             DVec<double> &dstate_out)
     {
-        return applyLocalFrameTestForceAtConactPoint(force_ics_at_contact, cp_name, dstate_out);
+        return applyLocalFrameTestForceAtContactPoint(force_ics_at_contact, cp_name, dstate_out);
     }
 
     double
-    ClusterTreeModel::applyLocalFrameTestForceAtConactPoint(const Vec3<double> &force,
-                                                            const std::string &contact_point_name,
-                                                            DVec<double> &dstate_out)
+    ClusterTreeModel::applyLocalFrameTestForceAtContactPoint(const Vec3<double> &force,
+                                                             const std::string &contact_point_name,
+                                                             DVec<double> &dstate_out)
     {
         const int contact_point_index = contact_name_to_contact_index_.at(contact_point_name);
         const ContactPoint &contact_point = contact_points_[contact_point_index];
