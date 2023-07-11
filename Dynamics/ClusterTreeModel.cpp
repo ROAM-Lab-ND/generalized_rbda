@@ -13,12 +13,10 @@ namespace grbda
     Body ClusterTreeModel::registerBody(const string name, const SpatialInertia<double> inertia,
                                         const string parent_name, const SpatialTransform Xtree)
     {
-        body_name_to_body_index_.checkForKey(parent_name);
-
         const int body_index = (int)bodies_.size();
         body_name_to_body_index_[name] = body_index;
 
-        const int parent_body_index = body_name_to_body_index_[parent_name];
+        const int parent_body_index = body_name_to_body_index_.at(parent_name);
         const int cluster_ancestor_index = getClusterAncestorIndexFromParent(parent_body_index);
         const int cluster_ancestor_sub_index_within_cluster =
             getSubIndexWithinClusterForBody(cluster_ancestor_index);
@@ -151,10 +149,9 @@ namespace grbda
                                               const Vec3<double> &local_offset,
                                               const string contact_point_name)
     {
-        body_name_to_body_index_.checkForKey(body_name);
         const int contact_point_index = (int)contact_points_.size();
         contact_name_to_contact_index_[contact_point_name] = contact_point_index;
-        contact_points_.emplace_back(body_name_to_body_index_[body_name], local_offset,
+        contact_points_.emplace_back(body_name_to_body_index_.at(body_name), local_offset,
                                      contact_point_name, getNumDegreesOfFreedom());
     }
 

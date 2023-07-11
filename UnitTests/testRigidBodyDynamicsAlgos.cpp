@@ -290,6 +290,7 @@ TYPED_TEST(RigidBodyDynamicsAlgosTest, ForwardAndInverseDyanmics)
     this->printAverageComputationTimes(num_tests);
 }
 
+// TODO(@MatthewChignoli): Add this test back in
 TYPED_TEST(RigidBodyDynamicsAlgosTest, ApplyTestForceTest)
 {
     // TODO(@MatthewChignoli): write description

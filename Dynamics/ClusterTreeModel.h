@@ -204,9 +204,9 @@ namespace grbda
 
         vector<Body> bodies_in_current_cluster_;
 
-        UnorderedMap<string, int> body_name_to_body_index_;
-        UnorderedMap<string, int> cluster_name_to_cluster_index_;
-        UnorderedMap<int, int> body_index_to_cluster_index_;
+        std::unordered_map<string, int> body_name_to_body_index_;
+        std::unordered_map<string, int> cluster_name_to_cluster_index_;
+        std::unordered_map<int, int> body_index_to_cluster_index_;
 
         bool articulated_bodies_updated_ = false;
         bool force_propagators_updated_ = false;

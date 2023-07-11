@@ -79,7 +79,7 @@ namespace grbda
         std::vector<int> indices_of_nodes_experiencing_external_forces_;
 
         std::vector<ContactPoint> contact_points_;
-        UnorderedMap<std::string, int> contact_name_to_contact_index_;
+        std::unordered_map<std::string, int> contact_name_to_contact_index_;
 
         bool kinematics_updated_ = false;
         bool mass_matrix_updated_ = false;

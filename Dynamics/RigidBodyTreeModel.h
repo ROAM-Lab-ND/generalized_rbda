@@ -138,7 +138,7 @@ namespace grbda
 
         std::vector<RigidBodyTreeNodePtr> rigid_body_nodes_;
 
-        UnorderedMap<string, int> body_name_to_body_index_;
+        std::unordered_map<string, int> body_name_to_body_index_;
 
 #ifdef TIMING_STATS
         Timer timer_;
