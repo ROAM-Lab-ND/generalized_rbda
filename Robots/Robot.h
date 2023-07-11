@@ -31,6 +31,24 @@ namespace grbda
     {
       throw std::runtime_error("Not implemented");
     };
+
+    virtual DVec<double> inverseDynamics(
+        const DVec<double> &y, const DVec<double> &yd, const DVec<double> &ydd) const
+    {
+      throw std::runtime_error("Not implemented");
+    };
+
+    virtual DVec<double> inverseDynamicsReflectedInertia(
+        const DVec<double> &y, const DVec<double> &yd, const DVec<double> &ydd) const
+    {
+      throw std::runtime_error("Not implemented");
+    };
+
+    virtual DVec<double> inverseDynamicsReflectedInertiaDiag(
+        const DVec<double> &y, const DVec<double> &yd, const DVec<double> &ydd) const
+    {
+      throw std::runtime_error("Not implemented");
+    };
   };
 
 } // namespace grbda

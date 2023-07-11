@@ -269,7 +269,7 @@ TYPED_TEST(RigidBodyDynamicsAlgosTest, ForwardAndInverseDyanmics)
             const DVec<double> qdd_projection = projection_model.qddToYdd(qdd_projection_full);
 
             // Inverse Dynamics
-            const DVec<double> tau_cluster = cluster_model.inverseDyamics(qdd_cluster);
+            const DVec<double> tau_cluster = cluster_model.inverseDynamics(qdd_cluster);
 
             // Verify joint acceleration agreement
             GTEST_ASSERT_LT((qdd_cluster_full - qdd_lg_custom_full).norm(), tol);

@@ -20,7 +20,8 @@ namespace grbda
     public:
         EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
-        ReflectedInertiaTreeModel(const ClusterTreeModel &cluster_tree_model);
+        ReflectedInertiaTreeModel(const ClusterTreeModel &cluster_tree_model,
+                                  bool use_off_diagonal_terms = true);
 
         int getNumBodies() const override { return (int)reflected_inertia_nodes_.size(); }
 
@@ -33,7 +34,7 @@ namespace grbda
         void initializeIndependentStates(const DVec<double> &y, const DVec<double> &yd);
 
         DVec<double> forwardDynamics(const DVec<double> &tau) override;
-        DVec<double> forwardDynamicsHandC(const DVec<double> &tau);
+        DVec<double> inverseDynamics(const DVec<double> &ydd) override;
 
         DMat<double> getMassMatrix() override;
         DVec<double> getBiasForceVector() override;
@@ -45,7 +46,12 @@ namespace grbda
 
         void resetCache() override;
 
+        DVec<double> forwardDynamicsWithoutOffDiag(const DVec<double> &tau);
+        DVec<double> forwardDynamicsWithOffDiag(const DVec<double> &tau);
         void updateArticulatedBodies();
+
+        DVec<double> inverseDynamicsWithoutOffDiag(const DVec<double> &ydd);
+        DVec<double> inverseDynamicsWithOffDiag(const DVec<double> &ydd);
 
         std::vector<ReflectedInertiaTreeNodePtr> reflected_inertia_nodes_;
 
@@ -55,6 +61,8 @@ namespace grbda
         DVec<int> independent_coord_indices_;
 
         bool articulated_bodies_updated_ = false;
+
+        const bool use_off_diagonal_terms_;
     };
 
 } // namespace grbda

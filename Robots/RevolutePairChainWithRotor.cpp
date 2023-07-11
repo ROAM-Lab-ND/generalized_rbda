@@ -203,6 +203,75 @@ namespace grbda
         return eom;
     }
 
+    template <size_t N>
+    DVec<double> RevolutePairChainWithRotor<N>::inverseDynamics(
+        const DVec<double> &y, const DVec<double> &yd, const DVec<double> &ydd) const
+    {
+        vector<DVec<double>> arg = {y, yd, ydd};
+        DMat<double> eom = DVec<double>::Zero(N);
+
+        if (N == 2)
+            casadi_interface(arg, eom,
+                             RevPairWithRotors2DofInvDyn,
+                             RevPairWithRotors2DofInvDyn_sparsity_out,
+                             RevPairWithRotors2DofInvDyn_work);
+        else if (N == 4)
+            casadi_interface(arg, eom,
+                             RevPairWithRotors4DofInvDyn,
+                             RevPairWithRotors4DofInvDyn_sparsity_out,
+                             RevPairWithRotors4DofInvDyn_work);
+        else
+            throw std::runtime_error("N must be 2 or 4");
+
+        return eom;
+    }
+
+    template <size_t N>
+    DVec<double> RevolutePairChainWithRotor<N>::inverseDynamicsReflectedInertia(
+        const DVec<double> &y, const DVec<double> &yd, const DVec<double> &ydd) const
+    {
+        vector<DVec<double>> arg = {y, yd, ydd};
+        DMat<double> eom = DVec<double>::Zero(N);
+
+        if (N == 2)
+            casadi_interface(arg, eom,
+                             RevPairWithRotors2DofInvDynReflectedInertia,
+                             RevPairWithRotors2DofInvDynReflectedInertia_sparsity_out,
+                             RevPairWithRotors2DofInvDynReflectedInertia_work);
+        else if (N == 4)
+            casadi_interface(arg, eom,
+                             RevPairWithRotors4DofInvDynReflectedInertia,
+                             RevPairWithRotors4DofInvDynReflectedInertia_sparsity_out,
+                             RevPairWithRotors4DofInvDynReflectedInertia_work);
+        else
+            throw std::runtime_error("N must be 2 or 4");
+
+        return eom;
+    }
+
+    template <size_t N>
+    DVec<double> RevolutePairChainWithRotor<N>::inverseDynamicsReflectedInertiaDiag(
+        const DVec<double> &y, const DVec<double> &yd, const DVec<double> &ydd) const
+    {
+        vector<DVec<double>> arg = {y, yd, ydd};
+        DMat<double> eom = DVec<double>::Zero(N);
+
+        if (N == 2)
+            casadi_interface(arg, eom,
+                             RevPairWithRotors2DofInvDynReflectedInertiaDiag,
+                             RevPairWithRotors2DofInvDynReflectedInertiaDiag_sparsity_out,
+                             RevPairWithRotors2DofInvDynReflectedInertiaDiag_work);
+        else if (N == 4)
+            casadi_interface(arg, eom,
+                             RevPairWithRotors4DofInvDynReflectedInertiaDiag,
+                             RevPairWithRotors4DofInvDynReflectedInertiaDiag_sparsity_out,
+                             RevPairWithRotors4DofInvDynReflectedInertiaDiag_work);
+        else
+            throw std::runtime_error("N must be 2 or 4");
+
+        return eom;
+    }
+
     template class RevolutePairChainWithRotor<2ul>;
     template class RevolutePairChainWithRotor<4ul>;
     template class RevolutePairChainWithRotor<6ul>;

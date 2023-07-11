@@ -29,6 +29,15 @@ namespace grbda
         DVec<double> forwardDynamicsReflectedInertiaDiag(
             const DVec<double> &y, const DVec<double> &yd, const DVec<double> &tau) const override;
 
+        DVec<double> inverseDynamics(
+            const DVec<double> &y, const DVec<double> &yd, const DVec<double> &ydd) const override;
+
+        DVec<double> inverseDynamicsReflectedInertia(
+            const DVec<double> &y, const DVec<double> &yd, const DVec<double> &ydd) const override;
+
+        DVec<double> inverseDynamicsReflectedInertiaDiag(
+            const DVec<double> &y, const DVec<double> &yd, const DVec<double> &ydd) const override;
+
     private:
         ClusterTreeModel buildRandomClusterTreeModel() const override;
         ClusterTreeModel buildUniformClusterTreeModel() const override;

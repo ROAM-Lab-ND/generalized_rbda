@@ -167,7 +167,7 @@ namespace grbda
             return cluster_nodes_[cluster_name_to_cluster_index_.at(cluster_name)];
         }
 
-        DVec<double> inverseDyamics(const DVec<double> &qdd);
+        DVec<double> inverseDynamics(const DVec<double> &qdd) override;
         DVec<double> forwardDynamics(const DVec<double> &tau) override;
         double applyLocalFrameTestForceAtConactPoint(const Vec3<double> &force,
                                                      const string &contact_point_name,

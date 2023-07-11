@@ -46,7 +46,7 @@ namespace grbda
         }
     }
 
-    DVec<double> ClusterTreeModel::inverseDyamics(const DVec<double> &qdd)
+    DVec<double> ClusterTreeModel::inverseDynamics(const DVec<double> &qdd)
     {
         return recursiveNewtonEulerAlgorithm(qdd);
     }

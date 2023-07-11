@@ -1,9 +1,10 @@
-function fwd_dyn = derive_revolute_with_rotor(N)
+function [fwd_dyn, inv_dyn] = derive_revolute_with_rotor(N)
     import casadi.*
 
     % Define symbolic variables
     q = SX.sym('q', N);
     dq = SX.sym('dq', N);
+    ddq = SX.sym('ddq', N);
     tau = SX.sym('tau', N);
 
     % Define parameters
@@ -107,6 +108,18 @@ function fwd_dyn = derive_revolute_with_rotor(N)
     fwd_dyn.rf = Function([name, 'ReflectedInertia'], args, {fd_rf});
     fwd_dyn.rf_diag = Function([name, 'ReflectedInertiaDiag'], args, {fd_rf_diag});
 
+    % Symbolic inverse dynamics
+    id_exact = computeSymbolicInverseDynamics(q, dq, ddq, L);
+    id_rf = computeSymbolicInverseDynamics(q, dq, ddq, L_approx);
+    id_rf_diag = computeSymbolicInverseDynamics(q, dq, ddq, L_approx);
+
+    % Casadi Functions
+    args = {q, dq, ddq};
+    name = ['RevWithRotors', num2str(N), 'DofInvDyn'];
+    inv_dyn.exact = Function(name, args, {id_exact});
+    inv_dyn.rf = Function([name, 'ReflectedInertia'], args, {id_rf});
+    inv_dyn.rf_diag = Function([name, 'ReflectedInertiaDiag'], args, {id_rf_diag});
+
 end
 
 %% Helper functions
@@ -118,5 +131,16 @@ function fwd_dyn = computeSymbolicForwardDynamics(q, dq, L, Q)
     C = jacobian(dL_dqd, q) * dq - dL_dq - Q;
 
     fwd_dyn = H \ (-C);
+
+end
+
+function inv_dyn = computeSymbolicInverseDynamics(q, dq, ddq, L)
+    dL_dq = jacobian(L, q)';
+    dL_dqd = jacobian(L, dq)';
+
+    H = hessian(L, dq);
+    C = jacobian(dL_dqd, q) * dq - dL_dq;
+
+    inv_dyn = H * ddq + C;
 
 end
