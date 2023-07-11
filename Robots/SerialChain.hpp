@@ -21,11 +21,22 @@ namespace grbda
 
         virtual size_t getNumDofs() const = 0;
 
-    private:
+    protected:
         virtual ClusterTreeModel buildRandomClusterTreeModel() const = 0;
         virtual ClusterTreeModel buildUniformClusterTreeModel() const = 0;
 
+        SpatialInertia<double> randomLinkSpatialInertia() const
+        {
+            return SpatialInertia<double>::createRandomInertia();
+        }
+
+        SpatialInertia<double> randomRotorSpatialInertia() const
+        {
+            return SpatialInertia<double>::createRandomInertia(1e-4);
+        }
+
         const bool _random_parameters;
-    };
+        int _gear_ratio_scale = 5;
+        };
 
 } // namespace grbda
