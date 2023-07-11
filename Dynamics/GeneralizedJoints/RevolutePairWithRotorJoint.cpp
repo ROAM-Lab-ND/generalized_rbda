@@ -94,8 +94,10 @@ namespace grbda
         void RevolutePairWithRotor::computeSpatialTransformFromParentToCurrentCluster(
             GeneralizedSpatialTransform &Xup) const
         {
+#ifdef DEBUG_MODE
             if (Xup.getNumOutputBodies() != 4)
                 throw std::runtime_error("[RevolutePairWithRotor] Xup must have 24 rows");
+#endif
 
             Xup[0] = link_1_joint_->XJ() * link_1_.Xtree_;
             Xup[1] = rotor_1_joint_->XJ() * rotor_1_.Xtree_;

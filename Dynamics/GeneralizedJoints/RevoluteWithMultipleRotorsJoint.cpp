@@ -101,8 +101,10 @@ namespace grbda
         void RevoluteWithMultipleRotorsJoint::computeSpatialTransformFromParentToCurrentCluster(
             GeneralizedSpatialTransform &Xup) const
         {
+#ifdef DEBUG_MODE
             if (Xup.getNumOutputBodies() != (int)(1 + rotors_.size()))
                 throw std::runtime_error("[Revolute + Mutl Rotor Joint] Xup invalid size");
+#endif
 
             Xup[0] = link_joint_->XJ() * link_.Xtree_;
             for (size_t i(0); i < rotors_.size(); i++)

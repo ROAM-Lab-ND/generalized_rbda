@@ -40,8 +40,10 @@ namespace grbda
         void Revolute::computeSpatialTransformFromParentToCurrentCluster(
             GeneralizedSpatialTransform &Xup) const
         {
+#ifdef DEBUG_MODE
             if (Xup.getNumOutputBodies() != 1)
                 throw std::runtime_error("[Revolute Joint] Xup must have 6 rows");
+#endif
             Xup[0] = single_joints_[0]->XJ() * body_.Xtree_;
         }
 

@@ -83,8 +83,10 @@ namespace grbda
 	void TelloDifferential::computeSpatialTransformFromParentToCurrentCluster(
 		GeneralizedSpatialTransform &Xup) const
 	{
+#ifdef DEBUG_MODE
 	    if (Xup.getNumOutputBodies() != 4)
-		throw std::runtime_error("[TelloDifferential] Xup must have 24 rows");
+			throw std::runtime_error("[TelloDifferential] Xup must have 24 rows");
+#endif
 
 	    Xup[0] = rotor_1_joint_->XJ() * rotor_1_.Xtree_;
 	    Xup[1] = rotor_2_joint_->XJ() * rotor_2_.Xtree_;
