@@ -56,9 +56,6 @@ namespace grbda
         DVec<double> forwardDynamicsWithOffDiag(const DVec<double> &tau);
         void updateArticulatedBodies();
 
-        DVec<double> inverseDynamicsWithoutOffDiag(const DVec<double> &ydd);
-        DVec<double> inverseDynamicsWithOffDiag(const DVec<double> &ydd);
-
         std::vector<ReflectedInertiaTreeNodePtr> reflected_inertia_nodes_;
 
         DMat<double> reflected_inertia_;

@@ -60,6 +60,7 @@ void runBenchmark(std::ofstream &file)
             DVec<double> dstate_approx;
             DVec<double> dstate_diag;
 
+            // TODO(@MatthewChignoli): What should this force be?
             const Vec3<double> test_force = Vec3<double>::Random();
             const std::string cp_name = cl_model.contactPoints().back().name_;
 
@@ -81,7 +82,6 @@ void runBenchmark(std::ofstream &file)
     T robot;
     const size_t num_dof = robot.getNumDofs();
     const int num_samples = num_robot_samples * num_state_samples;
-    file << "num_dof,rf_lambda_inv_error,rf_diag_lambda_inv_error,rf_dstate_error,rf_diag_dstate_error" << std::endl;
     file << num_dof << ","
             << rf_lambda_inv_error / num_samples << ","
             << rf_diag_lambda_inv_error / num_samples << ","

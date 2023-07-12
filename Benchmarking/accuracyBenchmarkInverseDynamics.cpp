@@ -68,7 +68,6 @@ void runBenchmark(std::ofstream &file)
     T robot;
     const size_t num_dof = robot.getNumDofs();
     const int num_samples = num_robot_samples * num_state_samples;
-    file << "num_dof,rf_error,rf_diag_error" << std::endl;
     file << num_dof << ","
          << rf_error / num_samples << ","
          << rf_diag_error / num_samples << std::endl;

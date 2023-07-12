@@ -98,7 +98,18 @@ namespace grbda
     DMat<double> ReflectedInertiaTreeModel::getMassMatrix()
     {
         compositeRigidBodyAlgorithm();
-        return H_ + reflected_inertia_;
+
+        if (use_off_diagonal_terms_)
+        {
+            H_ += reflected_inertia_;
+        }
+        else
+        {
+            const DMat<double> reflected_inertia_diag = reflected_inertia_.diagonal().asDiagonal();
+            H_ += reflected_inertia_diag;
+        }
+
+        return H_;
     }
 
     DVec<double> ReflectedInertiaTreeModel::getBiasForceVector()
@@ -173,10 +184,7 @@ namespace grbda
 
     DVec<double> ReflectedInertiaTreeModel::inverseDynamics(const DVec<double> &ydd)
     {
-        if (use_off_diagonal_terms_)
-            return inverseDynamicsWithOffDiag(ydd);
-        else
-            return inverseDynamicsWithoutOffDiag(ydd);
+        return getMassMatrix() * ydd + getBiasForceVector();
     }
 
     DVec<double> ReflectedInertiaTreeModel::forwardDynamicsWithOffDiag(const DVec<double> &tau)
@@ -296,25 +304,6 @@ namespace grbda
         }
 
         articulated_bodies_updated_ = true;
-    }
-
-    DVec<double> ReflectedInertiaTreeModel::inverseDynamicsWithOffDiag(const DVec<double> &ydd)
-    {
-        compositeRigidBodyAlgorithm();
-        updateBiasForceVector();
-
-        DVec<double> tau_ref_inertia = (H_ + reflected_inertia_) * ydd + C_;
-        return tau_ref_inertia;
-    }
-
-    DVec<double> ReflectedInertiaTreeModel::inverseDynamicsWithoutOffDiag(const DVec<double> &ydd)
-    {
-        compositeRigidBodyAlgorithm();
-        updateBiasForceVector();
-
-        const DMat<double> reflected_inertia_diag = reflected_inertia_.diagonal().asDiagonal();
-        DVec<double> tau_ref_inertia = (H_ + reflected_inertia_diag) * ydd + C_;
-        return tau_ref_inertia;
     }
 
     double ReflectedInertiaTreeModel::applyLocalFrameTestForceAtContactPoint(
