@@ -131,11 +131,11 @@ TYPED_TEST(RigidBodyKinemaitcsTest, ForwardKinematics)
             const Vec3<double> v_cp_rigid_body = rigid_body_cp.velocity_;
             GTEST_ASSERT_LT((v_cp_cluster - v_cp_rigid_body).norm(), tol);
 
+            // Verify jacobians
             // TODO(@MatthewChignoli) Verify that the jacobians times the joint velocities yield the contact point velocities
             // TODO(@MatthewChignoli) Validate the jacobians by finite difference
             const D6Mat<double> J_cp_cluster = cluster_cp.jacobian_;
             const D6Mat<double> J_cp_rigid_body = rigid_body_cp.jacobian_;
-
             GTEST_ASSERT_LT((J_cp_cluster - J_cp_rigid_body).norm(), tol);
         }
     }

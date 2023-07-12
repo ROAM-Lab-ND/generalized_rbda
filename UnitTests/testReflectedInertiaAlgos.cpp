@@ -135,17 +135,27 @@ TYPED_TEST(ReflectedInertiaDynamicsAlgosTest, ForwardKinematics)
         GTEST_ASSERT_EQ(this->cluster_model.contactPoints().size(),
                         this->reflected_inertia_model.contactPoints().size());
 
+        this->cluster_model.contactJacobians();
+        this->reflected_inertia_model.contactJacobians();
         for (int j = 0; j < (int)this->cluster_model.contactPoints().size(); j++)
         {
+            const ContactPoint &cluster_cp = this->cluster_model.contactPoint(j);
+            const ContactPoint &ref_inertia_cp = this->reflected_inertia_model.contactPoint(j);
+
             // Verify positions
-            Vec3<double> p_cp_cluster = this->cluster_model.contactPoint(j).position_;
-            Vec3<double> p_cp_ref_inertia = this->reflected_inertia_model.contactPoint(j).position_;
+            const Vec3<double> p_cp_cluster = cluster_cp.position_;
+            const Vec3<double> p_cp_ref_inertia = ref_inertia_cp.position_;
             GTEST_ASSERT_LT((p_cp_cluster - p_cp_ref_inertia).norm(), tol);
 
             // Verify velocities
-            Vec3<double> v_cp_cluster = this->cluster_model.contactPoint(j).velocity_;
-            Vec3<double> v_cp_ref_inertia = this->reflected_inertia_model.contactPoint(j).velocity_;
+            const Vec3<double> v_cp_cluster = cluster_cp.velocity_;
+            const Vec3<double> v_cp_ref_inertia = ref_inertia_cp.velocity_;
             GTEST_ASSERT_LT((v_cp_cluster - v_cp_ref_inertia).norm(), tol);
+
+            // Verify jacobians
+            const D6Mat<double> J_cp_cluster = cluster_cp.jacobian_;
+            const D6Mat<double> J_cp_ref_inertia = ref_inertia_cp.jacobian_;
+            GTEST_ASSERT_LT((J_cp_cluster - J_cp_ref_inertia).norm(), tol);
         }
     }
 }

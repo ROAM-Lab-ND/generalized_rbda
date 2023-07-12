@@ -33,6 +33,8 @@ namespace grbda
 
         void initializeIndependentStates(const DVec<double> &y, const DVec<double> &yd);
 
+        void contactJacobians() override;
+
         DVec<double> forwardDynamics(const DVec<double> &tau) override;
         DVec<double> inverseDynamics(const DVec<double> &ydd) override;
 
