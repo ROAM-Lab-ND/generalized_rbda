@@ -118,24 +118,26 @@ TYPED_TEST(RigidBodyKinemaitcsTest, ForwardKinematics)
         this->rigid_body_model.contactJacobians();
         for (int j = 0; j < (int)this->cluster_model.contactPoints().size(); j++)
         {
+            const ContactPoint &cluster_cp = this->cluster_model.contactPoint(j);
+            const ContactPoint &rigid_body_cp = this->rigid_body_model.contactPoint(j);
+
             // Verify positions
-            Vec3<double> p_cp_cluster = this->cluster_model.contactPoint(j).position_;
-            Vec3<double> p_cp_rigid_body = this->rigid_body_model.contactPoint(j).position_;
+            const Vec3<double> p_cp_cluster = cluster_cp.position_;
+            const Vec3<double> p_cp_rigid_body = rigid_body_cp.position_;
             GTEST_ASSERT_LT((p_cp_cluster - p_cp_rigid_body).norm(), tol);
 
             // Verify velocities
-            Vec3<double> v_cp_cluster = this->cluster_model.contactPoint(j).velocity_;
-            Vec3<double> v_cp_rigid_body = this->rigid_body_model.contactPoint(j).velocity_;
+            const Vec3<double> v_cp_cluster = cluster_cp.velocity_;
+            const Vec3<double> v_cp_rigid_body = rigid_body_cp.velocity_;
             GTEST_ASSERT_LT((v_cp_cluster - v_cp_rigid_body).norm(), tol);
 
-            // TODO(@MatthewChignoli) Verify contact jacobians are the same (and maybe that the contact jacobians give the proper contact point vel)
-            D6Mat<double> J_cp_cluster = this->cluster_model.contactPoint(j).jacobian_;
-            D6Mat<double> J_cp_rigid_body = this->rigid_body_model.contactPoint(j).jacobian_;
+            // TODO(@MatthewChignoli) Verify that the jacobians times the joint velocities yield the contact point velocities
+            // TODO(@MatthewChignoli) Validate the jacobians by finite difference
+            const D6Mat<double> J_cp_cluster = cluster_cp.jacobian_;
+            const D6Mat<double> J_cp_rigid_body = rigid_body_cp.jacobian_;
+
             GTEST_ASSERT_LT((J_cp_cluster - J_cp_rigid_body).norm(), tol);
         }
-
-
-
     }
 }
 

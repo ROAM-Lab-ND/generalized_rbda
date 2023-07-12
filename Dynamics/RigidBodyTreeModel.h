@@ -103,6 +103,8 @@ namespace grbda
 
         void initializeState(const DVec<double> &q, const DVec<double> &qd);
 
+        void contactJacobians() override;
+
         DVec<double> forwardDynamics(const DVec<double> &tau) override;
 
         DMat<double> getMassMatrix() override;
