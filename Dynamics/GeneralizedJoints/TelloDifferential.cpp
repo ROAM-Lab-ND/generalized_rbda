@@ -85,7 +85,7 @@ namespace grbda
 	{
 #ifdef DEBUG_MODE
 	    if (Xup.getNumOutputBodies() != 4)
-			throw std::runtime_error("[TelloDifferential] Xup must have 24 rows");
+		throw std::runtime_error("[TelloDifferential] Xup must have 24 rows");
 #endif
 
 	    Xup[0] = rotor_1_joint_->XJ() * rotor_1_.Xtree_;
@@ -100,6 +100,7 @@ namespace grbda
 	    if (!joint_pos.isSpanning())
 		throw std::runtime_error("[TelloDifferential] Position for updating constraint Jacobians must be spanning");
 #endif
+
 	    vector<DVec<double>> arg = {joint_pos.head<2>(), joint_pos.tail<2>()};
 	    Mat2<double> J_dy_2_dqd;
 	    casadi_interface(arg, J_dy_2_dqd, td_J_dy_2_dqd,
