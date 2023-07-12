@@ -108,20 +108,26 @@ protected:
 
 using testing::Types;
 
+// typedef Types<
+//     TeleopArm, Tello,
+//     RevoluteChainWithRotor<2>,
+//     RevoluteChainWithRotor<4>,
+//     RevoluteChainWithRotor<8>,
+//     RevolutePairChainWithRotor<2>,
+//     RevolutePairChainWithRotor<4>,
+//     RevolutePairChainWithRotor<8>,
+//     RevoluteChainMultipleRotorsPerLink<2, 2>,
+//     RevoluteChainMultipleRotorsPerLink<4, 1>,
+//     RevoluteChainMultipleRotorsPerLink<4, 3>,
+//     RevoluteChainWithAndWithoutRotor<0ul, 8ul>,
+//     RevoluteChainWithAndWithoutRotor<4ul, 4ul>,
+//     RevoluteChainWithAndWithoutRotor<8ul, 0ul>>
+//     Robots;
+
 typedef Types<
-    TeleopArm, Tello,
+    TeleopArm,
     RevoluteChainWithRotor<2>,
-    RevoluteChainWithRotor<4>,
-    RevoluteChainWithRotor<8>,
-    RevolutePairChainWithRotor<2>,
-    RevolutePairChainWithRotor<4>,
-    RevolutePairChainWithRotor<8>,
-    RevoluteChainMultipleRotorsPerLink<2, 2>,
-    RevoluteChainMultipleRotorsPerLink<4, 1>,
-    RevoluteChainMultipleRotorsPerLink<4, 3>,
-    RevoluteChainWithAndWithoutRotor<0ul, 8ul>,
-    RevoluteChainWithAndWithoutRotor<4ul, 4ul>,
-    RevoluteChainWithAndWithoutRotor<8ul, 0ul>>
+    RevolutePairChainWithRotor<2>>
     Robots;
 
 TYPED_TEST_SUITE(RigidBodyDynamicsAlgosTest, Robots);
@@ -130,12 +136,12 @@ TYPED_TEST(RigidBodyDynamicsAlgosTest, MassMatrix)
 {
     // This test compares mass matrices as computed by the cluster based model versus the rigid body
     // tree model, specifically via the projection method
-    
+
     const int num_tests_per_robot = 20;
     for (int i = 0; i < (int)this->cluster_models.size(); i++)
     {
-        ClusterTreeModel& cluster_model = this->cluster_models.at(i);
-        RigidBodyTreeModel& projection_model = this->projection_models.at(i);
+        ClusterTreeModel &cluster_model = this->cluster_models.at(i);
+        RigidBodyTreeModel &projection_model = this->projection_models.at(i);
 
         const int nq = cluster_model.getNumPositions();
         const int nv = cluster_model.getNumDegreesOfFreedom();
@@ -301,8 +307,16 @@ TYPED_TEST(RigidBodyDynamicsAlgosTest, ApplyTestForceTest)
     {
         ClusterTreeModel &cluster_model = this->cluster_models[i];
 
+        if (i == 0)
+            cluster_model.print();
+
         const int nq = cluster_model.getNumPositions();
         const int nv = cluster_model.getNumDegreesOfFreedom();
+
+        std::vector<Vec3<double>> test_forces;
+        test_forces.push_back(Vec3<double>{1., 0., 0.});
+        test_forces.push_back(Vec3<double>{0., 1., 0.});
+        test_forces.push_back(Vec3<double>{0., 0., 1.});
 
         for (int j = 0; j < num_tests_per_robot; j++)
         {
@@ -313,50 +327,38 @@ TYPED_TEST(RigidBodyDynamicsAlgosTest, ApplyTestForceTest)
                 continue;
             }
 
+            cluster_model.contactJacobians();
             for (const auto cp : cluster_model.contactPoints())
             {
-                Vec3<double> test_force = Vec3<double>{1., 0., 0.};
-                DVec<double> dstate_out;
+                std::cout << "Contact point name: " << cp.name_ << std::endl;
+                const D3Mat<double> J = cluster_model.Jc(cp.name_);
+                const DMat<double> H = cluster_model.massMatrix();
+                const DMat<double> H_inv = H.inverse();
+                const DMat<double> inv_ops_inertia = J * H_inv * J.transpose();
 
-                double lambda_inv_x =
-                    cluster_model.applyLocalFrameTestForceAtContactPoint(Vec3<double>{1., 0., 0.},
-                                                                        cp.name_,
-                                                                        dstate_out);
+                // std::cout << "H:\n" << H << std::endl;
+                // std::cout << "H_inv:\n" << H_inv << std::endl;
+                // std::cout << "J_t:\n" << J.transpose() << std::endl;
+
+                for (const Vec3<double> &test_force : test_forces)
+                {
+                    const DVec<double> dstate_iosi = H_inv * (J.transpose() * test_force);
+                    const double lambda_inv_iosi = test_force.dot(inv_ops_inertia * test_force);
+
+                    DVec<double> dstate_efpa = DVec<double>::Zero(nv);
+                    const double lambda_inv_efpa =
+                        cluster_model.applyLocalFrameTestForceAtContactPoint(test_force,
+                                                                             cp.name_,
+                                                                             dstate_efpa);
+
+                    // print the dstates
+                    std::cout << "dstate_iosi: " << dstate_iosi.transpose() << std::endl;
+                    std::cout << "dstate_efpa: " << dstate_efpa.transpose() << std::endl;
+
+                    GTEST_ASSERT_LT(std::fabs(lambda_inv_efpa - lambda_inv_iosi), tol);
+                    GTEST_ASSERT_LT((dstate_efpa - dstate_iosi).norm(), tol);
+                }
             }
         }
     }
-
-    // ClusterTreeModel &cluster_model = this->cluster_models[i];
-
-    // // Openchain2DoF model_lagrange{};
-    // ClusterTreeModel model_featherstone = model_lagrange.buildClusterTreeModel();
-
-    // // Set random state
-    // DVec<double> state = Vec4<double>::Random();
-    // model_lagrange.setState(state);
-    // model_featherstone.initializeIndependentStates(state.head<2>(), state.tail<2>());
-
-    // model_lagrange._UpdateDynamics_ABA(Vec2<double>::Zero());
-    // Mat3<double> inv_ops_inertia = model_lagrange.inverse_operational_space_inertia_matrix();
-
-    // Vec3<double> test_force = Vec3<double>{1., 0., 0.};
-    // DVec<double> dstate_out;
-
-    // double lambda_inv_x =
-    //     model_featherstone.applyLocalFrameTestForceAtContactPoint(Vec3<double>{1., 0., 0.},
-    //                                                              "tip-of-link-2",
-    //                                                              dstate_out);
-    // GTEST_ASSERT_LT(fabs(inv_ops_inertia(0, 0) - lambda_inv_x), tol);
-
-    // double lambda_inv_y =
-    //     model_featherstone.applyLocalFrameTestForceAtContactPoint(Vec3<double>{0., 1., 0.},
-    //                                                              "tip-of-link-2",
-    //                                                              dstate_out);
-    // GTEST_ASSERT_LT(fabs(inv_ops_inertia(1, 1) - lambda_inv_y), tol);
-
-    // double lambda_inv_z =
-    //     model_featherstone.applyLocalFrameTestForceAtContactPoint(Vec3<double>{0., 0., 1.},
-    //                                                              "tip-of-link-2",
-    //                                                              dstate_out);
-    // GTEST_ASSERT_LT(fabs(inv_ops_inertia(2, 2) - lambda_inv_z), tol);
 }

@@ -171,7 +171,7 @@ namespace grbda
         DVec<double> forwardDynamics(const DVec<double> &tau) override;
         double applyLocalFrameTestForceAtContactPoint(const Vec3<double> &force,
                                                       const string &contact_point_name,
-                                                      DVec<double> &dstate_out);
+                                                      DVec<double> &dstate_out) override;
 
         DMat<double> getMassMatrix() override;
         DVec<double> getBiasForceVector() override;

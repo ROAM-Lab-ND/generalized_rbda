@@ -48,6 +48,13 @@ namespace grbda
             throw std::runtime_error("Inverse dynamics not implemented for this model");
         }
 
+        virtual double applyLocalFrameTestForceAtContactPoint(const Vec3<double> &force,
+                                                              const string &contact_point_name,
+                                                              DVec<double> &dstate_out)
+        {
+            throw std::runtime_error("applyLocalFrameTestForce not implemented for this model");
+        }
+
         const TreeNodePtr node(const int index) const { return nodes_[index]; }
         const std::vector<TreeNodePtr> &nodes() const { return nodes_; }
 

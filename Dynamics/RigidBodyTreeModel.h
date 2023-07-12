@@ -93,8 +93,6 @@ namespace grbda
 
         /////////////////////////////////////
 
-
-
         int getNumBodies() const override { return (int)rigid_body_nodes_.size(); }
 
         // TOOD(@MatthewChignoli): I don't really like these functions...

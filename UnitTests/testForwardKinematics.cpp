@@ -17,7 +17,7 @@ protected:
 
     bool initializeRandomStates()
     {
-        ModelState model_state;
+        model_state.clear();
         DVec<double> spanning_joint_pos = DVec<double>::Zero(0);
         DVec<double> spanning_joint_vel = DVec<double>::Zero(0);
         for (const auto &cluster : cluster_model.clusters())
@@ -51,6 +51,8 @@ protected:
     T robot;
     ClusterTreeModel cluster_model;
     RigidBodyTreeModel rigid_body_model;
+
+    ModelState model_state;
 };
 
 using testing::Types;
@@ -132,11 +134,22 @@ TYPED_TEST(RigidBodyKinemaitcsTest, ForwardKinematics)
             GTEST_ASSERT_LT((v_cp_cluster - v_cp_rigid_body).norm(), tol);
 
             // Verify jacobians
-            // TODO(@MatthewChignoli) Verify that the jacobians times the joint velocities yield the contact point velocities
-            // TODO(@MatthewChignoli) Validate the jacobians by finite difference
             const D6Mat<double> J_cp_cluster = cluster_cp.jacobian_;
             const D6Mat<double> J_cp_rigid_body = rigid_body_cp.jacobian_;
             GTEST_ASSERT_LT((J_cp_cluster - J_cp_rigid_body).norm(), tol);
+
+            // Verify that jacobians produce the same cartesian velocity
+            Vec6<double> J_qdot = Vec6<double>::Zero();
+            for (size_t i = 0; i < this->cluster_model.clusters().size(); i++)
+            {
+                const auto cluster = this->cluster_model.cluster(i);
+                const int &vel_idx = cluster->velocity_index_;
+                const int &num_vel = cluster->num_velocities_;
+                J_qdot += J_cp_cluster.middleCols(vel_idx, num_vel) * this->model_state[i].velocity;
+            }
+            GTEST_ASSERT_LT((J_qdot.tail<3>() - v_cp_cluster).norm(), tol);
+
+            // TODO(@MatthewChignoli) Validate the jacobians by finite difference
         }
     }
 }

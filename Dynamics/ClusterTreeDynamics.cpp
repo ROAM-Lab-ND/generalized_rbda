@@ -200,10 +200,21 @@ namespace grbda
         updateForcePropagators();
         updateQddEffects();
 
+        // // Print the full qdd_for_subtree
+        // DMat<double> qdd_for_subtree(getNumDegreesOfFreedom(), getNumDegreesOfFreedom());
+        // for (const auto& cluster : cluster_nodes_)
+        // {
+        //     const int& vel_idx = cluster->velocity_index_;
+        //     const int& num_vel = cluster->num_velocities_;
+        //     qdd_for_subtree.middleCols(vel_idx, num_vel) = cluster->qdd_for_subtree_due_to_subtree_root_joint_qdd;
+        // }
+        // std::cout << "qdd_for_subtree =\n" << qdd_for_subtree << std::endl;
+
         dstate_out = DVec<double>::Zero(getNumDegreesOfFreedom());
 
-        DVec<double> f = localCartesianForceAtPointToWorldPluckerForceOnCluster(force, contact_point);
-        Vec1<double> lambda_inv = Vec1<double>::Zero();
+        DVec<double> f = localCartesianForceAtPointToWorldPluckerForceOnCluster(force,
+                                                                                contact_point);
+        double lambda_inv = 0.;
 
         // from tips to base
         int j = getIndexOfClusterContainingBody(contact_point.body_index_);
@@ -216,7 +227,7 @@ namespace grbda
 
             DVec<double> tmp = DVec<double>::Zero(num_vel);
             tmp = joint->S().transpose() * f;
-            lambda_inv += tmp.transpose() * cluster->D_inv_.solve(tmp);
+            lambda_inv += tmp.dot(cluster->D_inv_.solve(tmp));
 
             dstate_out +=
                 cluster->qdd_for_subtree_due_to_subtree_root_joint_qdd * cluster->D_inv_.solve(tmp);
@@ -226,7 +237,7 @@ namespace grbda
             j = cluster->parent_index_;
         }
 
-        return lambda_inv[0];
+        return lambda_inv;
     }
 
     void ClusterTreeModel::updateForcePropagators()
@@ -255,8 +266,8 @@ namespace grbda
 
         for (auto &cluster : cluster_nodes_)
         {
-            const int vel_idx = cluster->velocity_index_;
-            const int num_vel = cluster->num_velocities_;
+            const int &vel_idx = cluster->velocity_index_;
+            const int &num_vel = cluster->num_velocities_;
             const auto joint = cluster->joint_;
 
             cluster->qdd_for_subtree_due_to_subtree_root_joint_qdd
