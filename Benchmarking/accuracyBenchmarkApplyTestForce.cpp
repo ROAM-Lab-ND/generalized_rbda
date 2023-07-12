@@ -9,26 +9,27 @@
 
 using namespace grbda;
 
-// TODO(@MatthewChignoli): Add a benchmark for the accuracy of the reflected inertia model for apply test force
-
 template <class T>
 void runBenchmark(std::ofstream &file)
 {
     const int num_robot_samples = 400;
     const int num_state_samples = 25;
 
-    double rf_error = 0.;
-    double rf_diag_error = 0.;
+    double rf_lambda_inv_error = 0.;
+    double rf_diag_lambda_inv_error = 0.;
+
+    double rf_dstate_error = 0.;
+    double rf_diag_dstate_error = 0.;
 
     for (int i = 0; i < num_robot_samples; i++)
     {
         T robot = T(true);
-        ClusterTreeModel cluster_model = robot.buildClusterTreeModel();
-        ReflectedInertiaTreeModel reflected_inertia_model{cluster_model, true};
-        ReflectedInertiaTreeModel reflected_inertia_diag_model{cluster_model, false};
+        ClusterTreeModel cl_model = robot.buildClusterTreeModel();
+        ReflectedInertiaTreeModel rf_model{cl_model, true};
+        ReflectedInertiaTreeModel rf_diag_model{cl_model, false};
 
-        const int nq = cluster_model.getNumPositions();
-        const int nv = cluster_model.getNumDegreesOfFreedom();
+        const int nq = cl_model.getNumPositions();
+        const int nv = cl_model.getNumDegreesOfFreedom();
 
         for (int j = 0; j < num_state_samples; j++)
         {
@@ -37,7 +38,7 @@ void runBenchmark(std::ofstream &file)
             ModelState model_state;
             DVec<double> independent_joint_pos = DVec<double>::Zero(0);
             DVec<double> independent_joint_vel = DVec<double>::Zero(0);
-            for (const auto &cluster : cluster_model.clusters())
+            for (const auto &cluster : cl_model.clusters())
             {
                 JointState joint_state = cluster->joint_->randomJointState();
                 if (joint_state.position.isSpanning() || joint_state.velocity.isSpanning())
@@ -50,35 +51,47 @@ void runBenchmark(std::ofstream &file)
 
                 model_state.push_back(joint_state);
             }
-            cluster_model.initializeState(model_state);
-            reflected_inertia_model.initializeIndependentStates(independent_joint_pos,
-                                                                independent_joint_vel);
-            reflected_inertia_diag_model.initializeIndependentStates(independent_joint_pos,
-                                                                     independent_joint_vel);
+            cl_model.initializeState(model_state);
+            rf_model.initializeIndependentStates(independent_joint_pos, independent_joint_vel);
+            rf_diag_model.initializeIndependentStates(independent_joint_pos, independent_joint_vel);
 
-            // Forward Dynamics
-            DVec<double> tau = DVec<double>::Random(nv);
-            DVec<double> qdd_cluster = cluster_model.forwardDynamics(tau);
-            DVec<double> qdd_approx = reflected_inertia_model.forwardDynamics(tau);
-            DVec<double> qdd_diag_approx = reflected_inertia_diag_model.forwardDynamics(tau);
+            // Apply Test Force
+            DVec<double> dstate;
+            DVec<double> dstate_approx;
+            DVec<double> dstate_diag;
 
-            rf_error += (qdd_cluster - qdd_approx).norm();
-            rf_diag_error += (qdd_cluster - qdd_diag_approx).norm();
+            const Vec3<double> test_force = Vec3<double>::Random();
+            const std::string cp_name = cl_model.contactPoints().back().name_;
+
+            const double lambda_inv =
+                cl_model.applyLocalFrameTestForceAtContactPoint(test_force, cp_name, dstate);
+            const double lambda_inv_approx =
+                rf_model.applyLocalFrameTestForceAtContactPoint(test_force, cp_name, dstate_approx);
+            const double lambda_inv_diag =
+                rf_diag_model.applyLocalFrameTestForceAtContactPoint(test_force, cp_name,dstate_diag);
+
+            rf_lambda_inv_error += std::fabs(lambda_inv - lambda_inv_approx); 
+            rf_diag_lambda_inv_error += std::fabs(lambda_inv - lambda_inv_diag);
+
+            rf_dstate_error += (dstate - dstate_approx).norm();
+            rf_diag_dstate_error += (dstate - dstate_diag).norm();
         }
     }
 
     T robot;
     const size_t num_dof = robot.getNumDofs();
     const int num_samples = num_robot_samples * num_state_samples;
-    file << "num_dof,rf_error,rf_diag_error" << std::endl;
+    file << "num_dof,rf_lambda_inv_error,rf_diag_lambda_inv_error,rf_dstate_error,rf_diag_dstate_error" << std::endl;
     file << num_dof << ","
-         << rf_error / num_samples << ","
-         << rf_diag_error / num_samples << std::endl;
+            << rf_lambda_inv_error / num_samples << ","
+            << rf_diag_lambda_inv_error / num_samples << ","
+            << rf_dstate_error / num_samples << ","
+            << rf_diag_dstate_error / num_samples << std::endl;
 
     std::cout << "Finished benchmark for robot with " << num_dof << " dofs" << std::endl;
 }
 
-const std::string path_to_data = "../Benchmarking/data/AccuracyFD_";
+const std::string path_to_data = "../Benchmarking/data/AccuracyATF_";
 
 void runRevoluteWithRotorBenchmark()
 {

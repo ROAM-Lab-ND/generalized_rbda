@@ -38,6 +38,10 @@ namespace grbda
         DVec<double> forwardDynamics(const DVec<double> &tau) override;
         DVec<double> inverseDynamics(const DVec<double> &ydd) override;
 
+        double applyLocalFrameTestForceAtContactPoint(const Vec3<double> &force,
+                                                      const string &contact_point_name,
+                                                      DVec<double> &dstate_out) override;
+
         DMat<double> getMassMatrix() override;
         DVec<double> getBiasForceVector() override;
 

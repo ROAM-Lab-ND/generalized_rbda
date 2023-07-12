@@ -308,9 +308,6 @@ TYPED_TEST(RigidBodyDynamicsAlgosTest, ApplyTestForceTest)
     {
         ClusterTreeModel &cluster_model = this->cluster_models[i];
 
-        if (i == 0)
-            cluster_model.print();
-
         const int nq = cluster_model.getNumPositions();
         const int nv = cluster_model.getNumDegreesOfFreedom();
 
@@ -331,15 +328,10 @@ TYPED_TEST(RigidBodyDynamicsAlgosTest, ApplyTestForceTest)
             cluster_model.contactJacobians();
             for (const auto cp : cluster_model.contactPoints())
             {
-                std::cout << "Contact point name: " << cp.name_ << std::endl;
                 const D3Mat<double> J = cluster_model.Jc(cp.name_);
                 const DMat<double> H = cluster_model.massMatrix();
                 const DMat<double> H_inv = H.inverse();
                 const DMat<double> inv_ops_inertia = J * H_inv * J.transpose();
-
-                // std::cout << "H:\n" << H << std::endl;
-                // std::cout << "H_inv:\n" << H_inv << std::endl;
-                // std::cout << "J_t:\n" << J.transpose() << std::endl;
 
                 for (const Vec3<double> &test_force : test_forces)
                 {
@@ -351,10 +343,6 @@ TYPED_TEST(RigidBodyDynamicsAlgosTest, ApplyTestForceTest)
                         cluster_model.applyLocalFrameTestForceAtContactPoint(test_force,
                                                                              cp.name_,
                                                                              dstate_efpa);
-
-                    // print the dstates
-                    std::cout << "dstate_iosi: " << dstate_iosi.transpose() << std::endl;
-                    std::cout << "dstate_efpa: " << dstate_efpa.transpose() << std::endl;
 
                     GTEST_ASSERT_LT(std::fabs(lambda_inv_efpa - lambda_inv_iosi), tol);
                     GTEST_ASSERT_LT((dstate_efpa - dstate_iosi).norm(), tol);

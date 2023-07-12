@@ -33,9 +33,7 @@ namespace grbda
             model.appendRegisteredBodiesAsCluster(cluster_name, joint);
 
             // Contact point
-            const std::string cp_name = "cp-" + std::to_string(i);
-            const Vec3<double> cp_local_offset = Vec3<double>::Random();
-            model.appendContactPoint(link_name, cp_local_offset, cp_name);
+            appendContactPoints(model, i, link_name);
 
             prev_link_name = link_name;
         }
@@ -98,10 +96,22 @@ namespace grbda
                 link, rotor, axis, axis, gr * br);
             model.appendRegisteredBodiesAsCluster(cluster_name, joint);
 
+            // Contact point
+            appendContactPoints(model, i, link_name);
+
             prev_link_name = link_name;
         }
 
         return model;
+    }
+
+    template <size_t N>
+    void RevoluteChainWithRotor<N>::appendContactPoints(ClusterTreeModel &model, const int i,
+                                                        const std::string link_name) const
+    {
+        const std::string cp_name = "cp-" + std::to_string(i);
+        const Vec3<double> cp_local_offset = Vec3<double>::Random();
+        model.appendContactPoint(link_name, cp_local_offset, cp_name);
     }
 
     template <size_t N>

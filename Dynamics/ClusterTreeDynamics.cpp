@@ -196,6 +196,17 @@ namespace grbda
         const ContactPoint &contact_point = contact_points_[contact_point_index];
 
         forwardKinematics();
+        // TODO(@MatthewChignoli): make a flag so that we don't have to recalc Jacobians
+        contactJacobians();
+
+        const D3Mat<double> J = Jc(contact_point_name);
+        const DMat<double> H = massMatrix();
+        const DMat<double> H_inv = H.inverse();
+        const DMat<double> inv_ops_inertia = J * H_inv * J.transpose();
+        dstate_out = H_inv * (J.transpose() * force);
+        return force.dot(inv_ops_inertia * force);
+
+        // TODO(@MatthewChignoli): Fix this to use the EFPA algorithm
         updateArticulatedBodies();
         updateForcePropagators();
         updateQddEffects();

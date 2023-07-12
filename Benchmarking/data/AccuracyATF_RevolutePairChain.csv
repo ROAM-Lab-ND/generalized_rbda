@@ -1,0 +1,16 @@
+num_dof,rf_lambda_inv_error,rf_diag_lambda_inv_error,rf_dstate_error,rf_diag_dstate_error
+2,5.31648e-17,5.31648e-17,7.96597e-17,7.96597e-17
+num_dof,rf_lambda_inv_error,rf_diag_lambda_inv_error,rf_dstate_error,rf_diag_dstate_error
+4,0.000160654,0.000160654,0.000303744,0.000303744
+num_dof,rf_lambda_inv_error,rf_diag_lambda_inv_error,rf_dstate_error,rf_diag_dstate_error
+6,0.0001572,0.0001572,0.000373954,0.000373954
+num_dof,rf_lambda_inv_error,rf_diag_lambda_inv_error,rf_dstate_error,rf_diag_dstate_error
+8,0.000207074,0.000207074,0.000519177,0.000519177
+num_dof,rf_lambda_inv_error,rf_diag_lambda_inv_error,rf_dstate_error,rf_diag_dstate_error
+12,0.000234806,0.000234806,0.000603664,0.000603664
+num_dof,rf_lambda_inv_error,rf_diag_lambda_inv_error,rf_dstate_error,rf_diag_dstate_error
+16,0.000193983,0.000193983,0.000574475,0.000574475
+num_dof,rf_lambda_inv_error,rf_diag_lambda_inv_error,rf_dstate_error,rf_diag_dstate_error
+20,0.000194975,0.000194975,0.0005888,0.0005888
+num_dof,rf_lambda_inv_error,rf_diag_lambda_inv_error,rf_dstate_error,rf_diag_dstate_error
+24,0.00020326,0.00020326,0.000594353,0.000594353

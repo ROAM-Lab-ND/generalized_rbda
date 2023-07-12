@@ -36,6 +36,9 @@ namespace grbda
     private:
         ClusterTreeModel buildRandomClusterTreeModel() const override;
         ClusterTreeModel buildUniformClusterTreeModel() const override;
+
+        void appendContactPoints(ClusterTreeModel &model, const int i,
+                                 const std::string link_name) const;
     };
 
 } // namespace grbda
