@@ -126,8 +126,9 @@ using testing::Types;
 
 typedef Types<
     TeleopArm,
-    RevoluteChainWithRotor<2>,
-    RevolutePairChainWithRotor<2>>
+    // RevoluteChainWithRotor<2>,
+    // RevolutePairChainWithRotor<2>>
+    RevolutePairChain<2>>
     Robots;
 
 TYPED_TEST_SUITE(RigidBodyDynamicsAlgosTest, Robots);

@@ -60,6 +60,8 @@ using testing::Types;
 typedef Types<
     RevoluteChainWithRotor<2>,
     RevoluteChainWithRotor<4>,
+    RevolutePairChain<2>,
+    RevolutePairChain<4>,
     RevolutePairChainWithRotor<2>,
     RevolutePairChainWithRotor<4>,
     RevoluteChainMultipleRotorsPerLink<2, 2>,

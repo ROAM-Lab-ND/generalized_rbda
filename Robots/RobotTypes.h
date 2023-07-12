@@ -1,5 +1,6 @@
 #include "TeleopArm.hpp"
 #include "RevoluteChainWithRotor.hpp"
+#include "RevolutePairChain.hpp"
 #include "RevolutePairChainWithRotor.hpp"
 #include "RevoluteChainMultiplerRotorsPerLink.hpp"
 #include "RevoluteChainWithAndWithoutRotor.hpp"

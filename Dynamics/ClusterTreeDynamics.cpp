@@ -225,8 +225,7 @@ namespace grbda
             const int num_vel = cluster->num_velocities_;
             const auto joint = cluster->joint_;
 
-            DVec<double> tmp = DVec<double>::Zero(num_vel);
-            tmp = joint->S().transpose() * f;
+            DVec<double> tmp = joint->S().transpose() * f;
             lambda_inv += tmp.dot(cluster->D_inv_.solve(tmp));
 
             dstate_out +=
