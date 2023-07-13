@@ -6,7 +6,7 @@ namespace grbda
     namespace GeneralizedJoints
     {
 
-        Free::Free(const Body &body) : Base(1, 7, 6, false, false)
+        Free::Free(const Body &body) : Base(1, 7, 6, false, false), body_(body)
         {
             if (body.parent_index_ >= 0)
                 throw std::runtime_error("Free joint is only valid as the first joint in a tree and thus cannot have a parent body");
@@ -57,6 +57,15 @@ namespace grbda
             joint_state.position.segment<4>(3) = ori::rpyToQuat(Vec3<double>::Random(3));
             joint_state.velocity = DVec<double>::Random(6);
             return joint_state;
+        }
+
+        std::vector<std::tuple<Body, JointPtr, DMat<double>>>
+        Free::bodiesJointsAndReflectedInertias() const
+        {
+            std::vector<std::tuple<Body, JointPtr, DMat<double>>> bodies_joints_and_ref_inertias_;
+            bodies_joints_and_ref_inertias_.push_back(std::make_tuple(body_, single_joints_[0],
+                                                                      Mat6<double>::Zero()));
+            return bodies_joints_and_ref_inertias_;
         }
 
     }
