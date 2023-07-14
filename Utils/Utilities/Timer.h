@@ -52,6 +52,6 @@ namespace grbda
     struct timespec _startTime;
   };
 
-#endif // PROJECT_TIMER_H
-
 } // namespace grbda
+
+#endif // PROJECT_TIMER_H

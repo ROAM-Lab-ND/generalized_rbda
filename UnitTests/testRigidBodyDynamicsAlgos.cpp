@@ -16,21 +16,26 @@ template <class T>
 class RigidBodyDynamicsAlgosTest : public testing::Test
 {
 protected:
-    RigidBodyDynamicsAlgosTest() : t_cluster(0), t_lagrange(0), t_projection(0)
+    RigidBodyDynamicsAlgosTest()
+        : t_cluster(0), t_lagrange_custom(0), t_lagrange_eigen(0), t_projection(0)
     {
+        // TODO(@MatthewChignoli): In cases where we cannot build a random robot (e.g. Tello), we do not need to have multiple robots
         const int num_robots = 10;
         for (int i = 0; i < num_robots; i++)
         {
             T robot;
             ClusterTreeModel cluster_model(robot.buildClusterTreeModel());
-            RigidBodyTreeModel lagrange_mult_model(cluster_model,
-                                                   ForwardDynamicsMethod::LagrangeMultiplier);
+            RigidBodyTreeModel lg_mult_custom_model(cluster_model,
+                                                    FwdDynMethod::LagrangeMultiplierCustom);
+            RigidBodyTreeModel lg_mult_eigen_model(cluster_model,
+                                                   FwdDynMethod::LagrangeMultiplierEigen);
             RigidBodyTreeModel projection_model(cluster_model,
-                                                ForwardDynamicsMethod::Projection);
+                                                FwdDynMethod::Projection);
 
             robots.push_back(robot);
             cluster_models.push_back(cluster_model);
-            lagrange_mult_models.push_back(lagrange_mult_model);
+            lg_mult_custom_models.push_back(lg_mult_custom_model);
+            lg_mult_eigen_models.push_back(lg_mult_eigen_model);
             projection_models.push_back(projection_model);
         }
     }
@@ -54,7 +59,8 @@ protected:
         }
 
         cluster_models[robot_idx].initializeState(model_state);
-        lagrange_mult_models[robot_idx].initializeState(spanning_joint_pos, spanning_joint_vel);
+        lg_mult_custom_models[robot_idx].initializeState(spanning_joint_pos, spanning_joint_vel);
+        lg_mult_eigen_models[robot_idx].initializeState(spanning_joint_pos, spanning_joint_vel);
         projection_models[robot_idx].initializeState(spanning_joint_pos, spanning_joint_vel);
 
         // Check for NaNs
@@ -74,26 +80,30 @@ protected:
                                const int robot_idx)
     {
         cluster_models[robot_idx].initializeExternalForces(force_and_index_pairs);
-        lagrange_mult_models[robot_idx].initializeExternalForces(force_and_index_pairs);
+        lg_mult_custom_models[robot_idx].initializeExternalForces(force_and_index_pairs);
+        lg_mult_eigen_models[robot_idx].initializeExternalForces(force_and_index_pairs);
         projection_models[robot_idx].initializeExternalForces(force_and_index_pairs);
     }
 
     void printAverageComputationTimes(double num_samples)
     {
         if (t_cluster > 0)
-            std::cout << "Cluster   : " << t_cluster / num_samples << "ms\n";
-        if (t_lagrange > 0)
-            std::cout << "Lagrange  : " << t_lagrange / num_samples << "ms\n";
+            std::cout << "Cluster     : " << t_cluster / num_samples << "ms\n";
+        if (t_lagrange_custom > 0)
+            std::cout << "Lagrange (C): " << t_lagrange_custom / num_samples << "ms\n";
+        if (t_lagrange_eigen > 0)
+            std::cout << "Lagrange (E): " << t_lagrange_eigen / num_samples << "ms\n";
         if (t_projection > 0)
-            std::cout << "Projection: " << t_projection / num_samples << "ms\n\n\n";
+            std::cout << "Projection  : " << t_projection / num_samples << "ms\n\n\n";
     }
 
     std::vector<T> robots;
     std::vector<ClusterTreeModel> cluster_models;
-    std::vector<RigidBodyTreeModel> lagrange_mult_models, projection_models;
+    std::vector<RigidBodyTreeModel> lg_mult_custom_models, lg_mult_eigen_models;
+    std::vector<RigidBodyTreeModel> projection_models;
 
     Timer timer;
-    double t_cluster, t_lagrange, t_projection;
+    double t_cluster, t_lagrange_custom, t_lagrange_eigen, t_projection;
 };
 
 using testing::Types;
@@ -208,7 +218,8 @@ TYPED_TEST(RigidBodyDynamicsAlgosTest, ForwardAndInverseDyanmics)
     for (int i = 0; i < (int)this->cluster_models.size(); i++)
     {
         ClusterTreeModel &cluster_model = this->cluster_models[i];
-        RigidBodyTreeModel &lagrange_mult_model = this->lagrange_mult_models[i];
+        RigidBodyTreeModel &lg_mult_custom_model = this->lg_mult_custom_models[i];
+        RigidBodyTreeModel &lg_mult_eigen_model = this->lg_mult_eigen_models[i];
         RigidBodyTreeModel &projection_model = this->projection_models[i];
 
         const int nq = cluster_model.getNumPositions();
@@ -237,9 +248,14 @@ TYPED_TEST(RigidBodyDynamicsAlgosTest, ForwardAndInverseDyanmics)
             this->t_cluster += this->timer.getMs();
 
             this->timer.start();
-            lagrange_mult_model.extractLoopClosureFunctionsFromClusterModel(cluster_model);
-            const DVec<double> qdd_lagrange_full = lagrange_mult_model.forwardDynamics(tau);
-            this->t_lagrange += this->timer.getMs();
+            lg_mult_custom_model.extractLoopClosureFunctionsFromClusterModel(cluster_model);
+            const DVec<double> qdd_lg_custom_full = lg_mult_custom_model.forwardDynamics(tau);
+            this->t_lagrange_custom += this->timer.getMs();
+
+            this->timer.start();
+            lg_mult_eigen_model.extractLoopClosureFunctionsFromClusterModel(cluster_model);
+            const DVec<double> qdd_lg_eigen_full = lg_mult_eigen_model.forwardDynamics(tau);
+            this->t_lagrange_eigen += this->timer.getMs();
 
             this->timer.start();
             projection_model.extractLoopClosureFunctionsFromClusterModel(cluster_model);
@@ -247,18 +263,21 @@ TYPED_TEST(RigidBodyDynamicsAlgosTest, ForwardAndInverseDyanmics)
             this->t_projection += this->timer.getMs();
 
             // Convert between qdd and ydd
-            const DVec<double> qdd_cluster_full = lagrange_mult_model.yddToQdd(qdd_cluster);
-            const DVec<double> qdd_lagrange = lagrange_mult_model.qddToYdd(qdd_lagrange_full);
+            const DVec<double> qdd_cluster_full = lg_mult_custom_model.yddToQdd(qdd_cluster);
+            const DVec<double> qdd_lg_custom = lg_mult_custom_model.qddToYdd(qdd_lg_custom_full);
+            const DVec<double> qdd_lg_eigen = lg_mult_eigen_model.qddToYdd(qdd_lg_eigen_full);
             const DVec<double> qdd_projection = projection_model.qddToYdd(qdd_projection_full);
 
             // Inverse Dynamics
-            const DVec<double> tau_cluster = cluster_model.inverseDyamics(qdd_cluster);
+            const DVec<double> tau_cluster = cluster_model.inverseDynamics(qdd_cluster);
 
             // Verify joint acceleration agreement
-            GTEST_ASSERT_LT((qdd_cluster_full - qdd_lagrange_full).norm(), tol);
+            GTEST_ASSERT_LT((qdd_cluster_full - qdd_lg_custom_full).norm(), tol);
+            GTEST_ASSERT_LT((qdd_cluster_full - qdd_lg_eigen_full).norm(), tol);
             GTEST_ASSERT_LT((qdd_cluster_full - qdd_projection_full).norm(), tol);
 
-            GTEST_ASSERT_LT((qdd_cluster - qdd_lagrange).norm(), tol);
+            GTEST_ASSERT_LT((qdd_cluster - qdd_lg_custom).norm(), tol);
+            GTEST_ASSERT_LT((qdd_cluster - qdd_lg_eigen).norm(), tol);
             GTEST_ASSERT_LT((qdd_cluster - qdd_projection).norm(), tol);
 
             // Verify joint torque agreement

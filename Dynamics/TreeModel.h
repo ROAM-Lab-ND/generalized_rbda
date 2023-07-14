@@ -41,6 +41,10 @@ namespace grbda
 
         void forwardKinematics();
         virtual DVec<double> forwardDynamics(const DVec<double> &tau) = 0;
+        virtual DVec<double> inverseDynamics(const DVec<double> &qdd) 
+        {
+            throw std::runtime_error("Inverse dynamics not implemented for this model");
+        }
 
         const TreeNodePtr node(const int index) const { return nodes_[index]; }
         const std::vector<TreeNodePtr> &nodes() const { return nodes_; }

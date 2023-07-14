@@ -14,14 +14,14 @@ namespace grbda
             // Link A
             const std::string linkA_name = "link-A-" + std::to_string(i);
             const auto linkA_Xtree = randomSpatialRotation<double>();
-            const auto linkA_inertia = SpatialInertia<double>::createRandomInertia();
+            const auto linkA_inertia = randomLinkSpatialInertia();
             CoordinateAxis linkA_joint_axis = ori::randomCoordinateAxis<double>();
             auto linkA = model.registerBody(linkA_name, linkA_inertia, parent_name, linkA_Xtree);
 
             // Rotor A
             const std::string rotorA_name = "rotor-A-" + std::to_string(i);
             const auto rotorA_Xtree = randomSpatialRotation<double>();
-            const auto rotorA_inertia = SpatialInertia<double>::createRandomInertia();
+            const auto rotorA_inertia = randomRotorSpatialInertia();
             CoordinateAxis rotorA_joint_axis = ori::randomCoordinateAxis<double>();
             auto rotorA = model.registerBody(rotorA_name, rotorA_inertia,
                                              parent_name, rotorA_Xtree);
@@ -29,7 +29,7 @@ namespace grbda
             // Rotor B
             const std::string rotorB_name = "rotor-B-" + std::to_string(i);
             const auto rotorB_Xtree = randomSpatialRotation<double>();
-            const auto rotorB_inertia = SpatialInertia<double>::createRandomInertia();
+            const auto rotorB_inertia = randomRotorSpatialInertia();
             CoordinateAxis rotorB_joint_axis = ori::randomCoordinateAxis<double>();
             auto rotorB = model.registerBody(rotorB_name, rotorB_inertia,
                                              parent_name, rotorB_Xtree);
@@ -37,15 +37,15 @@ namespace grbda
             // Link B
             const std::string linkB_name = "link-B-" + std::to_string(i);
             const auto linkB_Xtree = randomSpatialRotation<double>();
-            const auto linkB_inertia = SpatialInertia<double>::createRandomInertia();
+            const auto linkB_inertia = randomLinkSpatialInertia();
             CoordinateAxis linkB_joint_axis = ori::randomCoordinateAxis<double>();
             auto linkB = model.registerBody(linkB_name, linkB_inertia, linkA_name, linkB_Xtree);
 
             // Cluster
-            const int gear_ratioA = rand() % 5 + 1;
-            const int belt_ratioA = rand() % 5 + 1;
-            const int gear_ratioB = rand() % 5 + 1;
-            const int belt_ratioB = rand() % 5 + 1;
+            const int gear_ratioA = rand() % this->_gear_ratio_scale + 1;
+            const int belt_ratioA = rand() % this->_gear_ratio_scale + 1;
+            const int gear_ratioB = rand() % this->_gear_ratio_scale + 1;
+            const int belt_ratioB = rand() % this->_gear_ratio_scale + 1;
 
             const std::string cluster_name = "cluster-" + std::to_string(i);
             auto joint = std::make_shared<GeneralizedJoints::RevolutePairWithRotor>(
@@ -197,6 +197,75 @@ namespace grbda
                              RevPairWithRotors4DofFwdDynReflectedInertiaDiag,
                              RevPairWithRotors4DofFwdDynReflectedInertiaDiag_sparsity_out,
                              RevPairWithRotors4DofFwdDynReflectedInertiaDiag_work);
+        else
+            throw std::runtime_error("N must be 2 or 4");
+
+        return eom;
+    }
+
+    template <size_t N>
+    DVec<double> RevolutePairChainWithRotor<N>::inverseDynamics(
+        const DVec<double> &y, const DVec<double> &yd, const DVec<double> &ydd) const
+    {
+        vector<DVec<double>> arg = {y, yd, ydd};
+        DMat<double> eom = DVec<double>::Zero(N);
+
+        if (N == 2)
+            casadi_interface(arg, eom,
+                             RevPairWithRotors2DofInvDyn,
+                             RevPairWithRotors2DofInvDyn_sparsity_out,
+                             RevPairWithRotors2DofInvDyn_work);
+        else if (N == 4)
+            casadi_interface(arg, eom,
+                             RevPairWithRotors4DofInvDyn,
+                             RevPairWithRotors4DofInvDyn_sparsity_out,
+                             RevPairWithRotors4DofInvDyn_work);
+        else
+            throw std::runtime_error("N must be 2 or 4");
+
+        return eom;
+    }
+
+    template <size_t N>
+    DVec<double> RevolutePairChainWithRotor<N>::inverseDynamicsReflectedInertia(
+        const DVec<double> &y, const DVec<double> &yd, const DVec<double> &ydd) const
+    {
+        vector<DVec<double>> arg = {y, yd, ydd};
+        DMat<double> eom = DVec<double>::Zero(N);
+
+        if (N == 2)
+            casadi_interface(arg, eom,
+                             RevPairWithRotors2DofInvDynReflectedInertia,
+                             RevPairWithRotors2DofInvDynReflectedInertia_sparsity_out,
+                             RevPairWithRotors2DofInvDynReflectedInertia_work);
+        else if (N == 4)
+            casadi_interface(arg, eom,
+                             RevPairWithRotors4DofInvDynReflectedInertia,
+                             RevPairWithRotors4DofInvDynReflectedInertia_sparsity_out,
+                             RevPairWithRotors4DofInvDynReflectedInertia_work);
+        else
+            throw std::runtime_error("N must be 2 or 4");
+
+        return eom;
+    }
+
+    template <size_t N>
+    DVec<double> RevolutePairChainWithRotor<N>::inverseDynamicsReflectedInertiaDiag(
+        const DVec<double> &y, const DVec<double> &yd, const DVec<double> &ydd) const
+    {
+        vector<DVec<double>> arg = {y, yd, ydd};
+        DMat<double> eom = DVec<double>::Zero(N);
+
+        if (N == 2)
+            casadi_interface(arg, eom,
+                             RevPairWithRotors2DofInvDynReflectedInertiaDiag,
+                             RevPairWithRotors2DofInvDynReflectedInertiaDiag_sparsity_out,
+                             RevPairWithRotors2DofInvDynReflectedInertiaDiag_work);
+        else if (N == 4)
+            casadi_interface(arg, eom,
+                             RevPairWithRotors4DofInvDynReflectedInertiaDiag,
+                             RevPairWithRotors4DofInvDynReflectedInertiaDiag_sparsity_out,
+                             RevPairWithRotors4DofInvDynReflectedInertiaDiag_work);
         else
             throw std::runtime_error("N must be 2 or 4");
 

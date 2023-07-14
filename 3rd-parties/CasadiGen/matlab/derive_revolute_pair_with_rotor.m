@@ -1,4 +1,4 @@
-function fwd_dyn = derive_revolute_pair_with_rotor(N)
+function [fwd_dyn, inv_dyn] = derive_revolute_pair_with_rotor(N)
     import casadi.*
 
     % Throw error if N is odd
@@ -9,6 +9,7 @@ function fwd_dyn = derive_revolute_pair_with_rotor(N)
     % Define symbolic variables
     q = SX.sym('q', N);
     dq = SX.sym('dq', N);
+    ddq = SX.sym('ddq', N);
     tau = SX.sym('tau', N);
 
     % Define parameters
@@ -123,7 +124,7 @@ function fwd_dyn = derive_revolute_pair_with_rotor(N)
     L_approx = simplify(T_approx - V);
     L_link = simplify(T_link - V);
 
-    % Symbolic equations of motion
+    % Symbolic forward dynamics
     fd_exact = computeSymbolicForwardDynamics(q, dq, L, Q);
     fd_rf = computeSymbolicForwardDynamics(q, dq, L_approx, Q);
     fd_rf_diag = computeSymbolicForwardDynamicsDiagRefInertia(q, dq, L_link, Q, T_rotor_approx);
@@ -134,6 +135,18 @@ function fwd_dyn = derive_revolute_pair_with_rotor(N)
     fwd_dyn.exact = Function(name, args, {fd_exact});
     fwd_dyn.rf = Function([name, 'ReflectedInertia'], args, {fd_rf});
     fwd_dyn.rf_diag = Function([name, 'ReflectedInertiaDiag'], args, {fd_rf_diag});
+
+    % Symbolic inverse dynamics
+    id_exact = computeSymbolicInverseDynamics(q, dq, ddq, L);
+    id_rf = computeSymbolicInverseDynamics(q, dq, ddq, L_approx);
+    id_rf_diag = computeSymbolicInverseDynamicsDiagRefInertia(q, dq, ddq, L_link, T_rotor_approx);
+
+    % Casadi Functions
+    args = {q, dq, ddq};
+    name = ['RevPairWithRotors', num2str(N), 'DofInvDyn'];
+    inv_dyn.exact = Function(name, args, {id_exact});
+    inv_dyn.rf = Function([name, 'ReflectedInertia'], args, {id_rf});
+    inv_dyn.rf_diag = Function([name, 'ReflectedInertiaDiag'], args, {id_rf_diag});
 
 end
 
@@ -149,6 +162,17 @@ function fwd_dyn = computeSymbolicForwardDynamics(q, dq, L, Q)
 
 end
 
+function inv_dyn = computeSymbolicInverseDynamics(q, dq, ddq, L)
+    dL_dq = jacobian(L, q)';
+    dL_dqd = jacobian(L, dq)';
+
+    H = hessian(L, dq);
+    C = jacobian(dL_dqd, q) * dq - dL_dq;
+
+    inv_dyn = H * ddq + C;
+
+end
+
 function fwd_dyn = computeSymbolicForwardDynamicsDiagRefInertia(q, dq, L, Q, T_approx)
     dL_dq = jacobian(L, q)';
     dL_dqd = jacobian(L, dq)';
@@ -157,5 +181,16 @@ function fwd_dyn = computeSymbolicForwardDynamicsDiagRefInertia(q, dq, L, Q, T_a
     C = jacobian(dL_dqd, q) * dq - dL_dq - Q;
 
     fwd_dyn = H \ (-C);
+
+end
+
+function inv_dyn = computeSymbolicInverseDynamicsDiagRefInertia(q, dq, ddq, L, T_approx)
+    dL_dq = jacobian(L, q)';
+    dL_dqd = jacobian(L, dq)';
+
+    H = hessian(L, dq) + diag(diag(hessian(T_approx, dq)));
+    C = jacobian(dL_dqd, q) * dq - dL_dq;
+
+    inv_dyn = H * ddq + C;
 
 end

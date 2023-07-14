@@ -7,6 +7,9 @@
 
 #include "TreeModel.h"
 #include "Dynamics/Nodes/ClusterTreeNode.h"
+#ifdef TIMING_STATS
+#include "Utils/Utilities/Timer.h"
+#endif
 
 namespace grbda
 {
@@ -14,6 +17,40 @@ namespace grbda
     using namespace std;
     using namespace ori;
     using namespace spatial;
+
+#ifdef TIMING_STATS
+    struct ClusterTreeTimingStatistics
+    {
+        double forward_kinematics_time = 0.0;
+        double update_articulated_bodies_time = 0.0;
+        double forward_pass1_time = 0.0;
+        double external_force_time = 0.0;
+        double backward_pass_time = 0.0;
+        double forward_pass2_time = 0.0;
+
+        ClusterTreeTimingStatistics &operator+=(const ClusterTreeTimingStatistics &other)
+        {
+            forward_kinematics_time += other.forward_kinematics_time;
+            update_articulated_bodies_time += other.update_articulated_bodies_time;
+            forward_pass1_time += other.forward_pass1_time;
+            external_force_time += other.external_force_time;
+            backward_pass_time += other.backward_pass_time;
+            forward_pass2_time += other.forward_pass2_time;
+            return *this;
+        }
+
+        ClusterTreeTimingStatistics &operator/=(const double &scalar)
+        {
+            forward_kinematics_time /= scalar;
+            update_articulated_bodies_time /= scalar;
+            forward_pass1_time /= scalar;
+            external_force_time /= scalar;
+            backward_pass_time /= scalar;
+            forward_pass2_time /= scalar;
+            return *this;
+        }
+    };
+#endif
 
     using ClusterTreeNodePtr = std::shared_ptr<ClusterTreeNode>;
 
@@ -60,7 +97,7 @@ namespace grbda
         void addJointLim(size_t jointID, double joint_lim_value_lower,
                          double joint_lim_value_upper);
         size_t _nJointLim = 0;
-        vector<size_t> _JointLimID;        
+        vector<size_t> _JointLimID;
         vector<double> _JointLimValueLower;
         vector<double> _JointLimValueUpper;
 
@@ -85,9 +122,9 @@ namespace grbda
 
         int getNumBodies() const override { return (int)bodies_.size(); }
 
-        // NOTE: A body's "cluster ancestor" is the nearest member in the body's supporting tree 
-        // that belongs to a different cluster. This function is only intended to be run when 
-        // registering bodies. At all other times, a bodies cluster ancestor should be accesses via 
+        // NOTE: A body's "cluster ancestor" is the nearest member in the body's supporting tree
+        // that belongs to a different cluster. This function is only intended to be run when
+        // registering bodies. At all other times, a bodies cluster ancestor should be accesses via
         // body.cluster_ancestor_index_
         int getClusterAncestorIndexFromParent(const int body_index);
 
@@ -130,7 +167,7 @@ namespace grbda
             return cluster_nodes_[cluster_name_to_cluster_index_.at(cluster_name)];
         }
 
-        DVec<double> inverseDyamics(const DVec<double> &qdd);
+        DVec<double> inverseDynamics(const DVec<double> &qdd) override;
         DVec<double> forwardDynamics(const DVec<double> &tau) override;
         double applyLocalFrameTestForceAtConactPoint(const Vec3<double> &force,
                                                      const string &contact_point_name,
@@ -138,6 +175,13 @@ namespace grbda
 
         DMat<double> getMassMatrix() override;
         DVec<double> getBiasForceVector() override;
+
+#ifdef TIMING_STATS
+        const ClusterTreeTimingStatistics &getTimingStatistics() const
+        {
+            return timing_statistics_;
+        }
+#endif
 
     private:
         void checkValidParentClusterForBodiesInCluster(const ClusterTreeNodePtr cluster);
@@ -167,6 +211,11 @@ namespace grbda
         bool articulated_bodies_updated_ = false;
         bool force_propagators_updated_ = false;
         bool qdd_effects_updated_ = false;
+
+#ifdef TIMING_STATS
+        Timer timer_;
+        ClusterTreeTimingStatistics timing_statistics_;
+#endif
 
         friend class RigidBodyTreeModel;
         friend class ReflectedInertiaTreeModel;

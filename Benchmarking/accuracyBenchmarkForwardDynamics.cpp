@@ -22,7 +22,8 @@ void runBenchmark(std::ofstream &file)
     {
         T robot = T(true);
         ClusterTreeModel cluster_model = robot.buildClusterTreeModel();
-        ReflectedInertiaTreeModel reflected_inertia_model{cluster_model};
+        ReflectedInertiaTreeModel reflected_inertia_model{cluster_model, true};
+        ReflectedInertiaTreeModel reflected_inertia_diag_model{cluster_model, false};
 
         const int nq = cluster_model.getNumPositions();
         const int nv = cluster_model.getNumDegreesOfFreedom();
@@ -50,12 +51,14 @@ void runBenchmark(std::ofstream &file)
             cluster_model.initializeState(model_state);
             reflected_inertia_model.initializeIndependentStates(independent_joint_pos,
                                                                 independent_joint_vel);
+            reflected_inertia_diag_model.initializeIndependentStates(independent_joint_pos,
+                                                                     independent_joint_vel);
 
             // Forward Dynamics
             DVec<double> tau = DVec<double>::Random(nv);
             DVec<double> qdd_cluster = cluster_model.forwardDynamics(tau);
-            DVec<double> qdd_approx = reflected_inertia_model.forwardDynamicsHandC(tau);
-            DVec<double> qdd_diag_approx = reflected_inertia_model.forwardDynamics(tau);
+            DVec<double> qdd_approx = reflected_inertia_model.forwardDynamics(tau);
+            DVec<double> qdd_diag_approx = reflected_inertia_diag_model.forwardDynamics(tau);
 
             rf_error += (qdd_cluster - qdd_approx).norm();
             rf_diag_error += (qdd_cluster - qdd_diag_approx).norm();
@@ -72,11 +75,13 @@ void runBenchmark(std::ofstream &file)
     std::cout << "Finished benchmark for robot with " << num_dof << " dofs" << std::endl;
 }
 
+const std::string path_to_data = "../Benchmarking/data/AccuracyFD_";
+
 void runRevoluteWithRotorBenchmark()
 {
     // Revolute With Rotors
     std::ofstream rev_file;
-    rev_file.open("../Matlab_files/Results/RevoluteChainAccuracy.csv");
+    rev_file.open(path_to_data + "RevoluteChain.csv");
 
     runBenchmark<RevoluteChainWithRotor<2>>(rev_file);
     runBenchmark<RevoluteChainWithRotor<4>>(rev_file);
@@ -94,7 +99,7 @@ void runRevolutePairWithRotorBenchmark()
 {
     // Revolute Pair With Rotors
     std::ofstream rev_pair_file;
-    rev_pair_file.open("../Matlab_files/Results/RevolutePairChainAccuracy.csv");
+    rev_pair_file.open(path_to_data + "RevolutePairChain.csv");
 
     runBenchmark<RevolutePairChainWithRotor<2>>(rev_pair_file);
     runBenchmark<RevolutePairChainWithRotor<4>>(rev_pair_file);

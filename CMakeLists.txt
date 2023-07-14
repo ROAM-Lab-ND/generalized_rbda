@@ -18,14 +18,15 @@ set(CMAKE_MODULE_PATH "${CMAKE_MODULE_PATH};${PROJECT_SOURCE_DIR}/cmake")
 set(CMAKE_PREFIX_PATH "${CMAKE_PREFIX_PATH};${PROJECT_SOURCE_DIR}/cmake")
 
 #set(CMAKE_VERBOSE_MAKEFILE ON)
-#set(CMAKE_BUILD_TYPE Release)
-set(CMAKE_BUILD_TYPE Debug)
+set(CMAKE_BUILD_TYPE Release)
+# set(CMAKE_BUILD_TYPE Debug)
 
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")
   add_definitions(-DDEBUG_MODE)
 endif()
 
 option(M1_BUILD "set compile options for Mac M1 chip" OFF)
+option(TIMING_STATS "log detailed timing statistics for algorithms" OFF)
 
 if(CMAKE_SYSTEM_NAME MATCHES Linux)
   set(CMAKE_CXX_FLAGS "-O3 -no-pie -march=native -ggdb -Wall \
@@ -49,12 +50,15 @@ endif()
 
 set(CMAKE_C_FLAGS "-O3  -ggdb  -march=native -std=gnu99 -I.")
 
+if(TIMING_STATS)
+  add_definitions(-DTIMING_STATS)
+endif()
+
 #------------------------------------------------------------------------
 # Directory setup
 #------------------------------------------------------------------------
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/Utils)
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/Systems)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/3rd-parties)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/3rd-parties/URDF)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/3rd-parties/CasadiGen)
@@ -76,14 +80,15 @@ add_subdirectory(Benchmarking)
 
 # Check if the project is being built as a subdirectory
 if (${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_CURRENT_SOURCE_DIR})
-    # This is the main project
-    set(THIS_COM "${PROJECT_SOURCE_DIR}/" )
-    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/config.h.cmake
-      ${CMAKE_BINARY_DIR}/Configuration.h)
+  set(SUBMOD_MESSAGE "GRBDA compiled as main project")
+  
+  set(THIS_COM "${PROJECT_SOURCE_DIR}/" )
+  configure_file(${CMAKE_CURRENT_SOURCE_DIR}/config.h.cmake
+    ${CMAKE_BINARY_DIR}/Configuration.h)
 
-    add_subdirectory(UnitTests)
+  add_subdirectory(UnitTests)
 else()
-    # This is a subdirectory
+  set(SUBMOD_MESSAGE "GRBDA compiled as sub-module")
 endif()
 
 #------------------------------------------------------------------------
@@ -91,9 +96,12 @@ endif()
 #------------------------------------------------------------------------
 message ("")
 message ("--------------------------------------------------------------")
+message (" *** ${SUBMOD_MESSAGE} *** ")
+message ("")
 message (" The project name/ Build Type: ${PROJECT_NAME}/${CMAKE_BUILD_TYPE}")
 message (" The system name: ${CMAKE_SYSTEM_NAME}")
 message (" The project source directory: ${PROJECT_SOURCE_DIR}")
 message (" The project binary directory: ${CMAKE_BINARY_DIR}")
+message (" Timing statistics: ${TIMING_STATS}")
 message ("--------------------------------------------------------------")
 message ("")

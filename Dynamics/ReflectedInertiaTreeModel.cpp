@@ -3,7 +3,9 @@
 namespace grbda
 {
 
-    ReflectedInertiaTreeModel::ReflectedInertiaTreeModel(const ClusterTreeModel &cluster_tree_model)
+    ReflectedInertiaTreeModel::ReflectedInertiaTreeModel(const ClusterTreeModel &cluster_tree_model,
+                                                         bool use_off_diagonal_terms)
+        : TreeModel(), use_off_diagonal_terms_(use_off_diagonal_terms)
     {
         gravity_ = cluster_tree_model.getGravity();
 
@@ -129,7 +131,23 @@ namespace grbda
             return getNodeContainingBody(spanning_tree_index)->index_;
     }
 
-    DVec<double> ReflectedInertiaTreeModel::forwardDynamicsHandC(const DVec<double> &tau)
+    DVec<double> ReflectedInertiaTreeModel::forwardDynamics(const DVec<double> &tau)
+    {
+        if (use_off_diagonal_terms_)
+            return forwardDynamicsWithOffDiag(tau);
+        else
+            return forwardDynamicsWithoutOffDiag(tau);
+    }
+
+    DVec<double> ReflectedInertiaTreeModel::inverseDynamics(const DVec<double> &ydd)
+    {
+        if (use_off_diagonal_terms_)
+            return inverseDynamicsWithOffDiag(ydd);
+        else
+            return inverseDynamicsWithoutOffDiag(ydd);
+    }
+
+    DVec<double> ReflectedInertiaTreeModel::forwardDynamicsWithOffDiag(const DVec<double> &tau)
     {
         compositeRigidBodyAlgorithm();
         updateBiasForceVector();
@@ -137,7 +155,7 @@ namespace grbda
         return qdd_ref_inertia;
     }
 
-    DVec<double> ReflectedInertiaTreeModel::forwardDynamics(const DVec<double> &tau)
+    DVec<double> ReflectedInertiaTreeModel::forwardDynamicsWithoutOffDiag(const DVec<double> &tau)
     {
         // Forward dynamics via Articulated Body Algorithm
         forwardKinematics();
@@ -246,6 +264,25 @@ namespace grbda
         }
 
         articulated_bodies_updated_ = true;
+    }
+
+    DVec<double> ReflectedInertiaTreeModel::inverseDynamicsWithOffDiag(const DVec<double> &ydd)
+    {
+        compositeRigidBodyAlgorithm();
+        updateBiasForceVector();
+
+        DVec<double> tau_ref_inertia = (H_ + reflected_inertia_) * ydd + C_;
+        return tau_ref_inertia;
+    }
+
+    DVec<double> ReflectedInertiaTreeModel::inverseDynamicsWithoutOffDiag(const DVec<double> &ydd)
+    {
+        compositeRigidBodyAlgorithm();
+        updateBiasForceVector();
+
+        const DMat<double> reflected_inertia_diag = reflected_inertia_.diagonal().asDiagonal();
+        DVec<double> tau_ref_inertia = (H_ + reflected_inertia_diag) * ydd + C_;
+        return tau_ref_inertia;
     }
 
 } // namespace grbda

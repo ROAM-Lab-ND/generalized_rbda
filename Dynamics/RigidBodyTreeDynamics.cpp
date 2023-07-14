@@ -11,7 +11,7 @@ namespace grbda
 
         switch (forward_dynamics_method_)
         {
-        case ForwardDynamicsMethod::Projection:
+        case FwdDynMethod::Projection:
         {
             // Based on Method 3 in Featherstone Ch 8.5
             DMat<double> A = G_.transpose() * H_ * G_;
@@ -20,46 +20,77 @@ namespace grbda
             return G_ * ydd + g_;
         }
 
-        case ForwardDynamicsMethod::LagrangeMultiplier:
+        case FwdDynMethod::LagrangeMultiplierCustom:
         {
             // TODO(@MatthewChignoli): In a future issue, we will implement this in a more efficient way since in theory it should be faster than the projection method
 
-            // Based on Method 2 in Featherstone Ch 8.5
+            // Based on Method 2 in Featherstone Ch 8.5 (using custom sparse factorization)
 
             // Factorize H into L^T*L
+#ifdef TIMING_STATS
+            timer_.start();
+#endif
             factorization::LTL L(H_, rigid_body_nodes_);
-
-            // ISSUE #14
-            if (L.size() == 0)
-            {
-                DMat<double> H_inv = H_.inverse();
-                DMat<double> A = K_ * H_inv * K_.transpose();
-                DVec<double> tau_full = G_tranpose_pinv_ * tau;
-                DVec<double> tau_prime = tau_full - C_;
-                DVec<double> b = k_ - K_ * H_inv * tau_prime;
-                DVec<double> lambda = A.size() > 0 ? DVec<double>(A.colPivHouseholderQr().solve(b))
-                                                   : DVec<double>::Zero(0);
-                return H_inv * (tau_prime + K_.transpose() * lambda);
-            }
+#ifdef TIMING_STATS
+            timing_statistics_.ltl_factorization_time = timer_.getMs();
+            timer_.start();
+#endif
 
             // Calculate tau_prime
             DVec<double> tau_full = G_tranpose_pinv_ * tau;
             DVec<double> tau_prime = tau_full - C_;
+#ifdef TIMING_STATS
+            timing_statistics_.tau_prime_calc_time = timer_.getMs();
+            timer_.start();
+#endif
 
             // Calculate Y and z via back-subsition
             DMat<double> Y = L.inverseTransposeMatrixProduct(K_.transpose());
             DVec<double> z = L.inverseTransposeProduct(tau_prime);
+#ifdef TIMING_STATS
+            timing_statistics_.Y_and_z_calc_time = timer_.getMs();
+            timer_.start();
+#endif
 
             // Calculate A and b
             DMat<double> A = Y.transpose() * Y;
             DVec<double> b = k_ - Y.transpose() * z;
+#ifdef TIMING_STATS
+            timing_statistics_.A_and_b_time = timer_.getMs();
+            timer_.start();
+#endif
 
             // Solve Linear System A*lambda = b
             DVec<double> lambda = A.size() > 0 ? DVec<double>(A.colPivHouseholderQr().solve(b))
                                                : DVec<double>::Zero(0);
+#ifdef TIMING_STATS
+            timing_statistics_.lambda_solve_time = timer_.getMs();
+#endif
 
             // Solve for qdd using the factors from step 1
+#ifdef TIMING_STATS
+            timer_.start();
+            DVec<double> qdd = L.solve(tau_prime + K_.transpose() * lambda);
+            timing_statistics_.qdd_solve_time = timer_.getMs();
+            return qdd;
+#else
             return L.solve(tau_prime + K_.transpose() * lambda);
+#endif
+        }
+
+        case FwdDynMethod::LagrangeMultiplierEigen:
+        {
+            // Based on Method 2 in Featherstone Ch 8.5 (using Eigen factorization)
+
+            auto lltOfH = H_.llt();
+            DMat<double> KT = K_.transpose();
+            DMat<double> A = K_ * (lltOfH.solve(KT));
+            DVec<double> tau_full = G_tranpose_pinv_ * tau;
+            DVec<double> tau_prime = tau_full - C_;
+            DVec<double> b = k_ - K_ * lltOfH.solve(tau_prime);
+            DVec<double> lambda = A.size() > 0 ? DVec<double>(A.colPivHouseholderQr().solve(b))
+                                               : DVec<double>::Zero(0);
+            return lltOfH.solve(tau_prime + KT * lambda);
         }
 
         default:

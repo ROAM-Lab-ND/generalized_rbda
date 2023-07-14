@@ -14,19 +14,19 @@ namespace grbda
             // Link
             const std::string link_name = "link-" + std::to_string(i);
             const auto link_Xtree = randomSpatialRotation<double>();
-            const auto link_inertia = SpatialInertia<double>::createRandomInertia();
+            const auto link_inertia = randomLinkSpatialInertia();
             CoordinateAxis link_joint_axis = ori::randomCoordinateAxis<double>();
             auto link = model.registerBody(link_name, link_inertia, prev_link_name, link_Xtree);
 
             // Rotor
             const std::string rotor_name = "rotor-" + std::to_string(i);
             const auto rotor_Xtree = randomSpatialRotation<double>();
-            const auto rotor_inertia = SpatialInertia<double>::createRandomInertia();
+            const auto rotor_inertia = randomRotorSpatialInertia();
             CoordinateAxis rotor_joint_axis = ori::randomCoordinateAxis<double>();
             auto rotor = model.registerBody(rotor_name, rotor_inertia, prev_link_name, rotor_Xtree);
 
             // Cluster
-            const int gear_ratio = rand() % 50 + 1;
+            const int gear_ratio = rand() % this->_gear_ratio_scale + 1;
             const std::string cluster_name = "cluster-" + std::to_string(i);
             auto joint = std::make_shared<GeneralizedJoints::RevoluteWithRotor>(
                 link, rotor, link_joint_axis, rotor_joint_axis, gear_ratio);
@@ -40,7 +40,7 @@ namespace grbda
             // Link
             const std::string link_name = "link-" + std::to_string(i);
             const auto link_Xtree = randomSpatialRotation<double>();
-            const auto link_inertia = SpatialInertia<double>::createRandomInertia();
+            const auto link_inertia = randomLinkSpatialInertia();
             CoordinateAxis link_joint_axis = ori::randomCoordinateAxis<double>();
             auto link = model.registerBody(link_name, link_inertia, prev_link_name, link_Xtree);
 

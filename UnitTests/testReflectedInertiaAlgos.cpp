@@ -15,7 +15,8 @@ class ReflectedInertiaDynamicsAlgosTest : public testing::Test
 protected:
     ReflectedInertiaDynamicsAlgosTest()
         : cluster_model(robot.buildClusterTreeModel()),
-          reflected_inertia_model{cluster_model} {}
+          reflected_inertia_model{cluster_model, true},
+          reflected_inertia_diag_model{cluster_model, false} {}
 
     bool initializeRandomStates()
     {
@@ -40,6 +41,8 @@ protected:
         cluster_model.initializeState(model_state);
         reflected_inertia_model.initializeIndependentStates(independent_joint_pos_,
                                                             independent_joint_vel_);
+        reflected_inertia_diag_model.initializeIndependentStates(independent_joint_pos_,
+                                                                 independent_joint_vel_);
 
         // Check for NaNs
         bool nan_detected = false;
@@ -58,11 +61,13 @@ protected:
     {
         cluster_model.initializeExternalForces(force_and_index_pairs);
         reflected_inertia_model.initializeExternalForces(force_and_index_pairs);
+        reflected_inertia_diag_model.initializeExternalForces(force_and_index_pairs);
     }
 
     T robot = T(false);
     ClusterTreeModel cluster_model;
     ReflectedInertiaTreeModel reflected_inertia_model;
+    ReflectedInertiaTreeModel reflected_inertia_diag_model;
 
     DVec<double> independent_joint_pos_;
     DVec<double> independent_joint_vel_;
@@ -80,8 +85,8 @@ TYPED_TEST_SUITE(ReflectedInertiaDynamicsAlgosTest, RobotsCompatibleWithReflecte
 
 TYPED_TEST(ReflectedInertiaDynamicsAlgosTest, ForwardKinematics)
 {
-    // This test compares the forward kinematics of a robot (rigid-body velocities and 
-    // contact-point positions/velocities) as computed by the cluster tree model versus the 
+    // This test compares the forward kinematics of a robot (rigid-body velocities and
+    // contact-point positions/velocities) as computed by the cluster tree model versus the
     // reflected inertia tree model.
 
     const int nv = this->cluster_model.getNumDegreesOfFreedom();
@@ -145,14 +150,14 @@ TYPED_TEST(ReflectedInertiaDynamicsAlgosTest, ForwardKinematics)
     }
 }
 
-TYPED_TEST(ReflectedInertiaDynamicsAlgosTest, ComparisonAgainstLagrangianDerivation)
+TYPED_TEST(ReflectedInertiaDynamicsAlgosTest, CompareFwdDynAgainstLagrangianDerivation)
 {
-    // This test compares equations of motion for 3 cases:
+    // This test compares the forward dynamics for 3 cases:
     // 1) Cluster based model versus the exact Lagrangian derivation (via MATLAB CasADi codegen)
-    // 2) Standard ABA with refelected inertia vs Lagrangian derivation that encodes the same
-    // approximation
-    // 3) Projection model with full block diagonal reflected inertia vs. Lagrangian derivation
-    // that encodes the same approximation
+    // 2) Standard ABA with diagonal refelected inertia vs Lagrangian derivation that encodes the
+    // same approximation
+    // 3) Reflected inertia model with full block diagonal reflected inertia vs. Lagrangian
+    // derivation that encodes the same approximation
 
     const int num_tests = 100;
     for (int i = 0; i < num_tests; i++)
@@ -184,19 +189,64 @@ TYPED_TEST(ReflectedInertiaDynamicsAlgosTest, ComparisonAgainstLagrangianDerivat
 
         // Case 2: Standard ABA with reflected inertia vs Lagrangian derivation that encodes the
         // same approximation
-        const DVec<double> qdd_rfd1 = this->reflected_inertia_model.forwardDynamics(tau);
+        const DVec<double> qdd_rfd1 = this->reflected_inertia_diag_model.forwardDynamics(tau);
         const DVec<double> qdd_rfd2 =
             this->robot.forwardDynamicsReflectedInertiaDiag(this->independent_joint_pos_,
                                                             this->independent_joint_vel_, tau);
         GTEST_ASSERT_LT((qdd_rfd1 - qdd_rfd2).norm(), tol);
 
-        // TODO(@MatthewChignoli): Replace with the cluster model ref inertia ABA
-        // Case 3: Projection model with full block diagonal reflected inertia vs. Lagrangian
-        // derivation that encodes the same approximation
-        const DVec<double> qdd_rf1 = this->reflected_inertia_model.forwardDynamicsHandC(tau);
+        // Case 3: Full block diagonal reflected inertia vs. Lagrangian derivation that encodes the
+        // same approximation
+        const DVec<double> qdd_rf1 = this->reflected_inertia_model.forwardDynamics(tau);
         const DVec<double> qdd_rf2 =
             this->robot.forwardDynamicsReflectedInertia(this->independent_joint_pos_,
                                                         this->independent_joint_vel_, tau);
         GTEST_ASSERT_LT((qdd_rf1 - qdd_rf2).norm(), tol);
+    }
+}
+
+TYPED_TEST(ReflectedInertiaDynamicsAlgosTest, CompareInvDynAgainstLagrangianDerivation)
+{
+    // This test compares the inverse dynamics for 3 cases:
+    // 1) Cluster based model versus the exact Lagrangian derivation (via MATLAB CasADi codegen)
+    // 2) Standard ABA with diagonal refelected inertia vs Lagrangian derivation that encodes the
+    // same approximation
+    // 3) Reflected inertia model with full block diagonal reflected inertia vs. Lagrangian
+    // derivation that encodes the same approximation
+
+    const int num_tests = 100;
+    for (int i = 0; i < num_tests; i++)
+    {
+        const int nv = this->cluster_model.getNumDegreesOfFreedom();
+
+        bool nan_detected_in_state = this->initializeRandomStates();
+        if (nan_detected_in_state)
+        {
+            continue;
+        }
+
+        const DVec<double> ydd = DVec<double>::Random(nv);
+
+        // Case 1: Cluster based model versus the exact Lagrangian derivation
+        const DVec<double> tau1 = this->cluster_model.inverseDynamics(ydd);
+        const DVec<double> tau2 = this->robot.inverseDynamics(this->independent_joint_pos_,
+                                                              this->independent_joint_vel_, ydd);
+        GTEST_ASSERT_LT((tau1 - tau2).norm(), tol);
+
+        // Case 2: Standard ABA with reflected inertia vs Lagrangian derivation that encodes the
+        // same approximation
+        const DVec<double> tau_rfd1 = this->reflected_inertia_diag_model.inverseDynamics(ydd);
+        const DVec<double> tau_rfd2 =
+            this->robot.inverseDynamicsReflectedInertiaDiag(this->independent_joint_pos_,
+                                                            this->independent_joint_vel_, ydd);
+        GTEST_ASSERT_LT((tau_rfd1 - tau_rfd2).norm(), tol);
+
+        // Case 3: Full block diagonal reflected inertia vs. Lagrangian derivation that encodes the
+        // same approximation
+        const DVec<double> tau_rf1 = this->reflected_inertia_model.inverseDynamics(ydd);
+        const DVec<double> tau_rf2 =
+            this->robot.inverseDynamicsReflectedInertia(this->independent_joint_pos_,
+                                                        this->independent_joint_vel_, ydd);
+        GTEST_ASSERT_LT((tau_rf1 - tau_rf2).norm(), tol);
     }
 }

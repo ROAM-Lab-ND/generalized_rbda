@@ -10,11 +10,12 @@
 using namespace grbda;
 
 template <class T>
-void runBenchmark(std::ofstream &file, const int ind_var, const bool include_forces)
+void runBenchmark(std::ofstream &file, const std::string& id, const bool include_forces)
 {
     Timer timer;
     double t_cluster = 0.;
-    double t_lagrange = 0.;
+    double t_lg_custom = 0.;
+    double t_lg_eigen = 0.;
     double t_projection = 0.;
     double t_approx = 0.;
 
@@ -25,10 +26,12 @@ void runBenchmark(std::ofstream &file, const int ind_var, const bool include_for
     {
         T robot = T(true);
         ClusterTreeModel cluster_model = robot.buildClusterTreeModel();
-        RigidBodyTreeModel lagrange_mult_model{cluster_model,
-                                               ForwardDynamicsMethod::LagrangeMultiplier};
+        RigidBodyTreeModel lg_custom_mult_model{cluster_model,
+                                                FwdDynMethod::LagrangeMultiplierCustom};
+        RigidBodyTreeModel lg_eigen_mult_model{cluster_model,
+                                               FwdDynMethod::LagrangeMultiplierEigen};
         RigidBodyTreeModel projection_model{cluster_model,
-                                            ForwardDynamicsMethod::Projection};
+                                            FwdDynMethod::Projection};
         ReflectedInertiaTreeModel reflected_inertia_model{cluster_model};
 
         const int nq = cluster_model.getNumPositions();
@@ -64,7 +67,8 @@ void runBenchmark(std::ofstream &file, const int ind_var, const bool include_for
             }
 
             cluster_model.initializeState(model_state);
-            lagrange_mult_model.initializeState(spanning_joint_pos, spanning_joint_vel);
+            lg_custom_mult_model.initializeState(spanning_joint_pos, spanning_joint_vel);
+            lg_eigen_mult_model.initializeState(spanning_joint_pos, spanning_joint_vel);
             projection_model.initializeState(spanning_joint_pos, spanning_joint_vel);
             reflected_inertia_model.initializeIndependentStates(independent_joint_pos,
                                                                 independent_joint_vel);
@@ -77,7 +81,8 @@ void runBenchmark(std::ofstream &file, const int ind_var, const bool include_for
                 for (const auto &body : cluster_model.bodies())
                     force_and_index_pairs.emplace_back(body.index_, SVec<double>::Random());
                 cluster_model.initializeExternalForces(force_and_index_pairs);
-                lagrange_mult_model.initializeExternalForces(force_and_index_pairs);
+                lg_custom_mult_model.initializeExternalForces(force_and_index_pairs);
+                lg_eigen_mult_model.initializeExternalForces(force_and_index_pairs);
                 projection_model.initializeExternalForces(force_and_index_pairs);
                 reflected_inertia_model.initializeExternalForces(force_and_index_pairs);
             }
@@ -85,48 +90,55 @@ void runBenchmark(std::ofstream &file, const int ind_var, const bool include_for
             // Forward Dynamics
             DVec<double> tau = DVec<double>::Random(nv);
             timer.start();
-            DVec<double> qdd_cluster = cluster_model.forwardDynamics(tau);
+            cluster_model.forwardDynamics(tau);
             t_cluster += timer.getMs();
 
             timer.start();
-            DVec<double> qdd_lagrange = lagrange_mult_model.forwardDynamics(tau);
-            t_lagrange += timer.getMs();
+            lg_custom_mult_model.forwardDynamics(tau);
+            t_lg_custom += timer.getMs();
 
             timer.start();
-            DVec<double> qdd_projection = projection_model.forwardDynamics(tau);
+            lg_eigen_mult_model.forwardDynamics(tau);
+            t_lg_eigen += timer.getMs();
+
+            timer.start();
+            projection_model.forwardDynamics(tau);
             t_projection += timer.getMs();
 
             timer.start();
-            DVec<double> qdd_approx = reflected_inertia_model.forwardDynamics(tau);
+            reflected_inertia_model.forwardDynamics(tau);
             t_approx += timer.getMs();
         }
     }
 
-    T robot;
     const int num_samples = num_robot_samples * num_state_samples;
-    file << ind_var << ","
+    file << id << ","
          << t_cluster / num_samples << ","
-         << t_lagrange / num_samples << "," << t_projection / num_samples << ","
+         << t_lg_custom / num_samples << ","
+         << t_lg_eigen / num_samples << ","
+         << t_projection / num_samples << ","
          << t_approx / num_samples << std::endl;
 
-    std::cout << "Finished benchmark for robot w/ independent variable " << ind_var << std::endl;
+    std::cout << "Finished benchmark for robot w/ id " << id << std::endl;
 }
+
+const std::string path_to_data = "../Benchmarking/data/Timing_";
 
 void runRevoluteWithRotorBenchmark(const bool include_forces)
 {
     std::cout << "** Revolute With Rotor Benchmark **" << std::endl;
  
     std::ofstream rev_file;
-    rev_file.open("../Matlab_files/Results/RevoluteChain.csv");
+    rev_file.open(path_to_data + "RevoluteChain.csv");
 
-    runBenchmark<RevoluteChainWithRotor<2>>(rev_file, 2, include_forces);
-    runBenchmark<RevoluteChainWithRotor<4>>(rev_file, 4, include_forces);
-    runBenchmark<RevoluteChainWithRotor<6>>(rev_file, 6, include_forces);
-    runBenchmark<RevoluteChainWithRotor<8>>(rev_file, 8, include_forces);
-    runBenchmark<RevoluteChainWithRotor<12>>(rev_file, 12, include_forces);
-    runBenchmark<RevoluteChainWithRotor<16>>(rev_file, 16, include_forces);
-    runBenchmark<RevoluteChainWithRotor<20>>(rev_file, 20, include_forces);
-    runBenchmark<RevoluteChainWithRotor<24>>(rev_file, 24, include_forces);
+    runBenchmark<RevoluteChainWithRotor<2>>(rev_file, "2", include_forces);
+    runBenchmark<RevoluteChainWithRotor<4>>(rev_file, "4", include_forces);
+    runBenchmark<RevoluteChainWithRotor<6>>(rev_file, "6", include_forces);
+    runBenchmark<RevoluteChainWithRotor<8>>(rev_file, "8", include_forces);
+    runBenchmark<RevoluteChainWithRotor<12>>(rev_file, "12", include_forces);
+    runBenchmark<RevoluteChainWithRotor<16>>(rev_file, "16", include_forces);
+    runBenchmark<RevoluteChainWithRotor<20>>(rev_file, "20", include_forces);
+    runBenchmark<RevoluteChainWithRotor<24>>(rev_file, "24", include_forces);
 
     rev_file.close();
 }
@@ -136,16 +148,16 @@ void runRevolutePairWithRotorBenchmark(const bool include_forces)
     std::cout << "** Revolute Pair With Rotor Benchmark **" << std::endl;
 
     std::ofstream rev_pair_file;
-    rev_pair_file.open("../Matlab_files/Results/RevolutePairChain.csv");
+    rev_pair_file.open(path_to_data + "RevolutePairChain.csv");
 
-    runBenchmark<RevolutePairChainWithRotor<2>>(rev_pair_file, 2, include_forces);
-    runBenchmark<RevolutePairChainWithRotor<4>>(rev_pair_file, 4, include_forces);
-    runBenchmark<RevolutePairChainWithRotor<6>>(rev_pair_file, 6, include_forces);
-    runBenchmark<RevolutePairChainWithRotor<8>>(rev_pair_file, 8, include_forces);
-    runBenchmark<RevolutePairChainWithRotor<12>>(rev_pair_file, 12, include_forces);
-    runBenchmark<RevolutePairChainWithRotor<16>>(rev_pair_file, 16, include_forces);
-    runBenchmark<RevolutePairChainWithRotor<20>>(rev_pair_file, 20, include_forces);
-    runBenchmark<RevolutePairChainWithRotor<24>>(rev_pair_file, 24, include_forces);
+    runBenchmark<RevolutePairChainWithRotor<2>>(rev_pair_file, "2", include_forces);
+    runBenchmark<RevolutePairChainWithRotor<4>>(rev_pair_file, "4", include_forces);
+    runBenchmark<RevolutePairChainWithRotor<6>>(rev_pair_file, "6", include_forces);
+    runBenchmark<RevolutePairChainWithRotor<8>>(rev_pair_file, "8", include_forces);
+    runBenchmark<RevolutePairChainWithRotor<12>>(rev_pair_file, "12", include_forces);
+    runBenchmark<RevolutePairChainWithRotor<16>>(rev_pair_file, "16", include_forces);
+    runBenchmark<RevolutePairChainWithRotor<20>>(rev_pair_file, "20", include_forces);
+    runBenchmark<RevolutePairChainWithRotor<24>>(rev_pair_file, "24", include_forces);
 
     rev_pair_file.close();
 }
@@ -157,15 +169,39 @@ void runLoopSizeBenchmark(const bool include_forces)
     std::cout << "** Revolute Multi-Rotor Chain Benchmark **" << std::endl;
 
     std::ofstream results_file;
-    results_file.open("../Matlab_files/Results/RevoluteMultiRotorChain.csv");
+    results_file.open(path_to_data + "RevoluteMultiRotorChain.csv");
 
-    runBenchmark<RevoluteChainMultipleRotorsPerLink<4, 1>>(results_file, 1, include_forces);
-    runBenchmark<RevoluteChainMultipleRotorsPerLink<4, 2>>(results_file, 2, include_forces);
-    runBenchmark<RevoluteChainMultipleRotorsPerLink<4, 3>>(results_file, 3, include_forces);
-    runBenchmark<RevoluteChainMultipleRotorsPerLink<4, 4>>(results_file, 4, include_forces);
-    runBenchmark<RevoluteChainMultipleRotorsPerLink<4, 5>>(results_file, 5, include_forces);
-    runBenchmark<RevoluteChainMultipleRotorsPerLink<4, 6>>(results_file, 6, include_forces);
-    runBenchmark<RevoluteChainMultipleRotorsPerLink<4, 7>>(results_file, 7, include_forces);
+    runBenchmark<RevoluteChainMultipleRotorsPerLink<4, 1>>(results_file, "4,1", include_forces);
+    runBenchmark<RevoluteChainMultipleRotorsPerLink<4, 2>>(results_file, "4,2", include_forces);
+    runBenchmark<RevoluteChainMultipleRotorsPerLink<4, 3>>(results_file, "4,3", include_forces);
+    runBenchmark<RevoluteChainMultipleRotorsPerLink<4, 4>>(results_file, "4,4", include_forces);
+    runBenchmark<RevoluteChainMultipleRotorsPerLink<4, 5>>(results_file, "4,5", include_forces);
+    runBenchmark<RevoluteChainMultipleRotorsPerLink<4, 6>>(results_file, "4,6", include_forces);
+    runBenchmark<RevoluteChainMultipleRotorsPerLink<4, 7>>(results_file, "4,7", include_forces);
+
+    runBenchmark<RevoluteChainMultipleRotorsPerLink<8, 1>>(results_file, "8,1", include_forces);
+    runBenchmark<RevoluteChainMultipleRotorsPerLink<8, 2>>(results_file, "8,2", include_forces);
+    runBenchmark<RevoluteChainMultipleRotorsPerLink<8, 3>>(results_file, "8,3", include_forces);
+    runBenchmark<RevoluteChainMultipleRotorsPerLink<8, 4>>(results_file, "8,4", include_forces);
+    runBenchmark<RevoluteChainMultipleRotorsPerLink<8, 5>>(results_file, "8,5", include_forces);
+    runBenchmark<RevoluteChainMultipleRotorsPerLink<8, 6>>(results_file, "8,6", include_forces);
+    runBenchmark<RevoluteChainMultipleRotorsPerLink<8, 7>>(results_file, "8,7", include_forces);
+
+    runBenchmark<RevoluteChainMultipleRotorsPerLink<16, 1>>(results_file, "16,1", include_forces);
+    runBenchmark<RevoluteChainMultipleRotorsPerLink<16, 2>>(results_file, "16,2", include_forces);
+    runBenchmark<RevoluteChainMultipleRotorsPerLink<16, 3>>(results_file, "16,3", include_forces);
+    runBenchmark<RevoluteChainMultipleRotorsPerLink<16, 4>>(results_file, "16,4", include_forces);
+    runBenchmark<RevoluteChainMultipleRotorsPerLink<16, 5>>(results_file, "16,5", include_forces);
+    runBenchmark<RevoluteChainMultipleRotorsPerLink<16, 6>>(results_file, "16,6", include_forces);
+    runBenchmark<RevoluteChainMultipleRotorsPerLink<16, 7>>(results_file, "16,7", include_forces);
+
+    runBenchmark<RevoluteChainMultipleRotorsPerLink<24, 1>>(results_file, "24,1", include_forces);
+    runBenchmark<RevoluteChainMultipleRotorsPerLink<24, 2>>(results_file, "24,2", include_forces);
+    runBenchmark<RevoluteChainMultipleRotorsPerLink<24, 3>>(results_file, "24,3", include_forces);
+    runBenchmark<RevoluteChainMultipleRotorsPerLink<24, 4>>(results_file, "24,4", include_forces);
+    runBenchmark<RevoluteChainMultipleRotorsPerLink<24, 5>>(results_file, "24,5", include_forces);
+    runBenchmark<RevoluteChainMultipleRotorsPerLink<24, 6>>(results_file, "24,6", include_forces);
+    runBenchmark<RevoluteChainMultipleRotorsPerLink<24, 7>>(results_file, "24,7", include_forces);
 
     results_file.close();
 }
@@ -177,17 +213,17 @@ void runConstraintDimensionBenchmark(const bool include_forces)
     std::cout << "** Revolute With And Without Rotor Chain Benchmark **" << std::endl;
 
     std::ofstream results_file;
-    results_file.open("../Matlab_files/Results/RevoluteWithAndWithoutRotorChain.csv");
+    results_file.open(path_to_data + "RevoluteWithAndWithoutRotorChain.csv");
 
-    runBenchmark<RevoluteChainWithAndWithoutRotor<0, 8>>(results_file, 0, include_forces);
-    runBenchmark<RevoluteChainWithAndWithoutRotor<1, 7>>(results_file, 1, include_forces);
-    runBenchmark<RevoluteChainWithAndWithoutRotor<2, 6>>(results_file, 2, include_forces);
-    runBenchmark<RevoluteChainWithAndWithoutRotor<3, 5>>(results_file, 3, include_forces);
-    runBenchmark<RevoluteChainWithAndWithoutRotor<4, 4>>(results_file, 4, include_forces);
-    runBenchmark<RevoluteChainWithAndWithoutRotor<5, 3>>(results_file, 5, include_forces);
-    runBenchmark<RevoluteChainWithAndWithoutRotor<6, 2>>(results_file, 6, include_forces);
-    runBenchmark<RevoluteChainWithAndWithoutRotor<7, 1>>(results_file, 7, include_forces);
-    runBenchmark<RevoluteChainWithAndWithoutRotor<8, 0>>(results_file, 8, include_forces);
+    runBenchmark<RevoluteChainWithAndWithoutRotor<0, 8>>(results_file, "0,8", include_forces);
+    runBenchmark<RevoluteChainWithAndWithoutRotor<1, 7>>(results_file, "1,7", include_forces);
+    runBenchmark<RevoluteChainWithAndWithoutRotor<2, 6>>(results_file, "2,6", include_forces);
+    runBenchmark<RevoluteChainWithAndWithoutRotor<3, 5>>(results_file, "3,5", include_forces);
+    runBenchmark<RevoluteChainWithAndWithoutRotor<4, 4>>(results_file, "4,4", include_forces);
+    runBenchmark<RevoluteChainWithAndWithoutRotor<5, 3>>(results_file, "5,3", include_forces);
+    runBenchmark<RevoluteChainWithAndWithoutRotor<6, 2>>(results_file, "6,2", include_forces);
+    runBenchmark<RevoluteChainWithAndWithoutRotor<7, 1>>(results_file, "7,1", include_forces);
+    runBenchmark<RevoluteChainWithAndWithoutRotor<8, 0>>(results_file, "8,0", include_forces);
 
     results_file.close();
 }

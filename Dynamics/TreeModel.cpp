@@ -30,6 +30,7 @@ namespace grbda
                        generalMotionCrossProduct(node->v_, node->vJ());
         }
 
+        // TODO(@MatthewChignoli): Should we do contact kinematics every time we do kinematics?
         contactPointForwardKinematics();
 
         kinematics_updated_ = true;

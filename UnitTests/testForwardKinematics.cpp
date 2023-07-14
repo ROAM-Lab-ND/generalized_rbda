@@ -90,25 +90,25 @@ TYPED_TEST(RigidBodyKinemaitcsTest, ForwardKinematics)
         this->cluster_model.forwardKinematics();
         this->rigid_body_model.forwardKinematics();
 
-        // Verify spatial velocity agreement of bodies
-        DVec<double> v_cluster = DVec<double>::Zero(6 * this->cluster_model.getNumBodies());
-        int i = 0;
-        for (const auto &cluster : this->cluster_model.clusters())
+        // Verify link kinematics
+        for (const auto& body : this->cluster_model.bodies())
         {
-            v_cluster.segment(i, cluster->motion_subspace_dimension_) = cluster->v_;
-            i += cluster->motion_subspace_dimension_;
-        }
+            const Vec3<double> p_cluster = this->cluster_model.getPosition(body.name_);
+            const Vec3<double> p_rigid_body = this->rigid_body_model.getPosition(body.name_);
+            GTEST_ASSERT_LT((p_cluster - p_rigid_body).norm(), tol);
 
-        DVec<double> v_rigid_body = DVec<double>::Zero(6 * this->rigid_body_model.getNumBodies());
-        i = 0;
-        for (const auto &node : this->rigid_body_model.nodes())
-        {
-            v_rigid_body.segment<6>(i) = node->v_;
-            i += 6;
-        }
+            const Mat3<double> R_cluster = this->cluster_model.getOrientation(body.name_);
+            const Mat3<double> R_rigid_body = this->rigid_body_model.getOrientation(body.name_);
+            GTEST_ASSERT_LT((R_cluster - R_rigid_body).norm(), tol);
 
-        GTEST_ASSERT_EQ(v_cluster.rows(), v_rigid_body.rows());
-        GTEST_ASSERT_LT((v_cluster - v_rigid_body).norm(), tol);
+            const Vec3<double> v_cluster = this->cluster_model.getLinearVelocity(body.name_);
+            const Vec3<double> v_rigid_body = this->rigid_body_model.getLinearVelocity(body.name_);
+            GTEST_ASSERT_LT((v_cluster - v_rigid_body).norm(), tol);
+
+            const Vec3<double> w_cluster = this->cluster_model.getAngularVelocity(body.name_);
+            const Vec3<double> w_rigid_body = this->rigid_body_model.getAngularVelocity(body.name_);
+            GTEST_ASSERT_LT((w_cluster - w_rigid_body).norm(), tol);
+        }
 
         // Verify cartesian velocity of contact points
         GTEST_ASSERT_EQ(this->cluster_model.contactPoints().size(),

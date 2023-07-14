@@ -46,24 +46,39 @@ namespace grbda
         }
     }
 
-    DVec<double> ClusterTreeModel::inverseDyamics(const DVec<double> &qdd)
+    DVec<double> ClusterTreeModel::inverseDynamics(const DVec<double> &qdd)
     {
         return recursiveNewtonEulerAlgorithm(qdd);
     }
 
     DVec<double> ClusterTreeModel::forwardDynamics(const DVec<double> &tau)
     {
-        // Forward dynamics via Articulated Body Algorithm
-        forwardKinematics();
-        updateArticulatedBodies();
-
         DVec<double> qdd = DVec<double>::Zero(getNumDegreesOfFreedom());
+
+        // Forward dynamics via Articulated Body Algorithm
+#ifdef TIMING_STATS
+        timer_.start();
+#endif
+        forwardKinematics();
+#ifdef TIMING_STATS
+        timing_statistics_.forward_kinematics_time = timer_.getMs();
+        timer_.start();
+#endif
+        updateArticulatedBodies();
+#ifdef TIMING_STATS
+        timing_statistics_.update_articulated_bodies_time = timer_.getMs();
+        timer_.start();
+#endif
 
         // Forward Pass - Articulated body bias force
         for (auto &cluster : cluster_nodes_)
         {
             cluster->pA_ = generalForceCrossProduct(cluster->v_, DVec<double>(cluster->I_ * cluster->v_));
         }
+#ifdef TIMING_STATS
+        timing_statistics_.forward_pass1_time = timer_.getMs();
+        timer_.start();
+#endif
 
         // Account for external forces in bias force
         for (int cluster_index : indices_of_nodes_experiencing_external_forces_)
@@ -71,6 +86,10 @@ namespace grbda
             auto &cluster = cluster_nodes_[cluster_index];
             cluster->pA_ -= cluster->Xa_.transformExternalForceVector(cluster->f_ext_);
         }
+#ifdef TIMING_STATS
+        timing_statistics_.external_force_time = timer_.getMs();
+        timer_.start();
+#endif
 
         // Backward pass - Gauss principal of least constraint
         for (int i = (int)cluster_nodes_.size() - 1; i >= 0; i--)
@@ -81,21 +100,23 @@ namespace grbda
             const auto joint = cluster->joint_;
 
             cluster->u_ = tau.segment(vel_idx, num_vel) - joint->S().transpose() * cluster->pA_;
+            cluster->D_inv_u_ = cluster->D_inv_.solve(cluster->u_);
 
             // Articulated body bias force recursion
             if (cluster->parent_index_ >= 0)
             {
                 auto parent_cluster = cluster_nodes_[cluster->parent_index_];
 
-                DMat<double> Ia =
-                    cluster->IA_ - cluster->U_ * cluster->D_inv_ * cluster->U_.transpose();
-
-                DVec<double> pa =
-                    cluster->pA_ + Ia * cluster->c_ + cluster->U_ * cluster->D_inv_ * cluster->u_;
+                const DVec<double> pa = cluster->pA_ + cluster->Ia_ * cluster->c_ +
+                                        cluster->U_ * cluster->D_inv_u_;
 
                 parent_cluster->pA_ += cluster->Xup_.inverseTransformForceVector(pa);
             }
         }
+#ifdef TIMING_STATS
+        timing_statistics_.backward_pass_time = timer_.getMs();
+        timer_.start();
+#endif
 
         // Forward Pass - Joint accelerations
         for (auto &cluster : cluster_nodes_)
@@ -114,10 +135,12 @@ namespace grbda
             {
                 a_temp = cluster->Xup_.transformMotionVector(-gravity_) + cluster->c_;
             }
-            qdd.segment(vel_idx, num_vel) =
-                cluster->D_inv_ * (cluster->u_ - cluster->U_.transpose() * a_temp);
+            qdd.segment(vel_idx, num_vel) = cluster->D_inv_u_ - cluster->D_inv_UT_ * a_temp;
             cluster->a_ = a_temp + joint->S() * qdd.segment(vel_idx, num_vel);
         }
+#ifdef TIMING_STATS
+        timing_statistics_.forward_pass2_time = timer_.getMs();
+#endif
 
         return qdd;
     }
@@ -141,15 +164,16 @@ namespace grbda
             auto &cluster = cluster_nodes_[i];
             const auto joint = cluster->joint_;
             cluster->U_ = cluster->IA_ * joint->S();
-            cluster->D_inv_ = (joint->S().transpose() * cluster->U_).inverse();
+            const DMat<double> D = joint->S().transpose() * cluster->U_;
+            cluster->updateDinv(D);
+            cluster->D_inv_UT_ = cluster->D_inv_.solve(cluster->U_.transpose());
 
             // Articulated body inertia recursion
             if (cluster->parent_index_ >= 0)
             {
                 auto parent_cluster = cluster_nodes_[cluster->parent_index_];
-                DMat<double> Ia =
-                    cluster->IA_ - cluster->U_ * cluster->D_inv_ * cluster->U_.transpose();
-                parent_cluster->IA_ += cluster->Xup_.inverseTransformSpatialInertia(Ia);
+                cluster->Ia_ = cluster->IA_ - cluster->U_ * cluster->D_inv_UT_;
+                parent_cluster->IA_ += cluster->Xup_.inverseTransformSpatialInertia(cluster->Ia_);
             }
         }
 
@@ -243,7 +267,7 @@ namespace grbda
             const auto joint = cluster->joint_;
             cluster->ChiUp_ =
                 cluster->Xup_.toMatrix() -
-                joint->S() * cluster->D_inv_ * cluster->U_.transpose() * cluster->Xup_.toMatrix();
+                joint->S() * (cluster->D_inv_.solve(cluster->U_.transpose())) * cluster->Xup_.toMatrix();
         }
 
         force_propagators_updated_ = true;

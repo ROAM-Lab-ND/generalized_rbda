@@ -67,14 +67,13 @@ namespace grbda
             spanning_tree_to_independent_coords_conversion_ = DMat<double>::Zero(1, 1 + num_rotors);
             spanning_tree_to_independent_coords_conversion_(0, 0) = 1.;
 
-            DMat<double> S_spanning_tree = DMat<double>::Zero(0, 0);
-            for (auto &joint : single_joints_)
-            {
-                S_spanning_tree = appendEigenMatrix(S_spanning_tree, joint->S());
-            }
-            S_ = S_spanning_tree * G_;
-
             // TODO(@MatthewChignoli): How to compute Psi?
+
+            S_spanning_tree_ = DMat<double>::Zero(0, 0);
+            for (const auto &joint : single_joints_)
+                S_spanning_tree_ = appendEigenMatrix(S_spanning_tree_, joint->S());
+
+            Xup_spanning_tree_ = DMat<double>::Identity(6 * num_bodies_, 6 * num_bodies_);
 
             vJ_ = DVec<double>::Zero(6 * (1 + num_rotors));
         }
@@ -95,14 +94,17 @@ namespace grbda
                 rotor_joints_[i]->updateKinematics(q.segment<1>(i + 1), qd.segment<1>(i + 1));
             }
 
+            S_ = Xup_spanning_tree_ * S_spanning_tree_ * G_;
             vJ_ = S_ * joint_state.velocity;
         }
 
         void RevoluteWithMultipleRotorsJoint::computeSpatialTransformFromParentToCurrentCluster(
             GeneralizedSpatialTransform &Xup) const
         {
+#ifdef DEBUG_MODE
             if (Xup.getNumOutputBodies() != (int)(1 + rotors_.size()))
                 throw std::runtime_error("[Revolute + Mutl Rotor Joint] Xup invalid size");
+#endif
 
             Xup[0] = link_joint_->XJ() * link_.Xtree_;
             for (size_t i(0); i < rotors_.size(); i++)
