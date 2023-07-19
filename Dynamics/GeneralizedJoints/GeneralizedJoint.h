@@ -20,8 +20,8 @@ namespace grbda
         RevoluteWithRotor,
         RevoluteWithMultipleRotorsJoint,
         Generic,
-	TelloHipDifferential,
-	TelloKneeAnkleDifferential
+        TelloHipDifferential,
+        TelloKneeAnkleDifferential
     };
 
     namespace GeneralizedJoints
