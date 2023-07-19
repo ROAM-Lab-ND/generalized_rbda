@@ -23,6 +23,22 @@ namespace grbda
         ReflectedInertiaTreeModel(const ClusterTreeModel &cluster_tree_model,
                                   bool use_off_diagonal_terms = true);
 
+        // TODO(@MatthewChignoli): These are functions and members shared with FloatingBaseModel. Not sure how I want to deal with them moving forward. It's unclear which parts of Robot-Software need to change for compatiblity with GRBDA and which parts of GRBDA need to change for compatibility with Robot-Software. Should these functions be abstraced to TreeModel since ClusterTreeModel also uses them?
+        Vec3<double> getPosition(const string &body_name);
+        Mat3<double> getOrientation(const string &body_name);
+        Vec3<double> getLinearVelocity(const string &body_name);
+        Vec3<double> getAngularVelocity(const string &body_name);
+
+        // TODO(@MatthewChignoli): We currently assume that the state is given as independent coordinates.
+        void setState(const DVec<double> &state)
+        {
+            const int &nq = ceil(state.size() / 2.0);
+            const int &nv = floor(state.size() / 2.0);
+            initializeIndependentStates(state.head(nq), state.tail(nv));
+        }
+
+        /////////////////////////////////////
+
         int getNumBodies() const override { return (int)reflected_inertia_nodes_.size(); }
 
         const Body &getBody(int spanning_tree_index) const override;
