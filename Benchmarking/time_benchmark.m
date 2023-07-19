@@ -3,16 +3,20 @@ close all; clear; clc;
 path_to_data = '../Benchmarking/data/Timing_';
 path_to_figures = '../Benchmarking/figures/Timing_';
 
-%% Compare Forward Dynamics Times as number of
+%% Compare Forward Dynamics Times as number of DoFs increases
+figure
+
 % Revolute Chain
 revolute_chain_with_rotors = readmatrix([path_to_data, 'RevoluteChain.csv']);
+subplot(1, 2, 1)
 compareTimes(revolute_chain_with_rotors, 'Revolute w/ Rotor Chain')
-saveas(gcf, [path_to_figures, 'RevoluteChain.png'])
 
 % Revolute Pair Chain
 revolute_pair_chain_with_rotors = readmatrix([path_to_data, 'RevolutePairChain.csv']);
+subplot(1, 2, 2)
 compareTimes(revolute_pair_chain_with_rotors, 'Revolute Pair w/ Rotors Chain')
-saveas(gcf, [path_to_figures, 'RevolutePairChain.png'])
+
+saveas(gcf, [path_to_figures, 'RevoluteChains.png'])
 
 %% Revolute Chain with Multiple Rotors
 revolute_chain_with_multiple_rotors = readmatrix([path_to_data, 'RevoluteMultiRotorChain.csv']);
@@ -32,7 +36,6 @@ function [rows, cols] = getSubplotRowsAndCols(num_plots)
 end
 
 function compareTimes(data, robot_name)
-    figure
     plot(data(:, 1), data(:, 2), 'ro-', 'Linewidth', 2.0, 'MarkerSize', 10.)
     hold on
     plot(data(:, 1), data(:, 3), 'go-', 'Linewidth', 2.0, 'MarkerSize', 10.)
@@ -45,9 +48,10 @@ function compareTimes(data, robot_name)
     xlabel('Degrees of Freedom', 'Interpreter', 'latex')
     ylabel('Computation Time (ms)', 'Interpreter', 'latex')
     title(['Forward Dynamics - ', robot_name], 'Interpreter', 'latex')
-    legend({'Cluster-Based', 'Lagrange Multipliers (Custom)', 'Lagrange Multipliers (Eigen)', 'Projection', 'Reflected Inertia Approximation'}, 'Location', 'Northwest', 'Interpreter', 'latex')
-    set(gca, 'Fontsize', 20)
+    legend({'Cluster-Based', 'Lagrange Multipliers (Custom)', 'Lagrange Multipliers (Eigen)', 'Projection', 'Original ABA'}, 'Location', 'Northwest', 'Interpreter', 'latex')
+    set(gca, 'Fontsize', 10)
     set(gca, 'TickLabelInterpreter', 'latex')
+    axis([0 25 0 0.16])
 end
 
 function compareMultipleRotorTimes(data)
