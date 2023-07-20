@@ -17,8 +17,8 @@ saveas(gcf, [path_to_figures, 'CL_Passes_Tello.png'])
 %% Helper Function
 function plotForwardDynamics(data, robot_name)
     figure
-    x = categorical({'Generalized RBDA','Lagrange Multipliers','Projection'});
-    x = reordercats(x,{'Generalized RBDA','Lagrange Multipliers','Projection'});
+    x = categorical({'Cluster-Based','Lagrange Multipliers','Projection'});
+    x = reordercats(x,{'Cluster-Based','Lagrange Multipliers','Projection'});
     bar(x, diag(data(:,[1 3 4]),0),'stacked')
     ylabel('Computation Time (ms)', 'Interpreter', 'latex')
     title(['Forward Dynamics - ', robot_name], 'Interpreter', 'latex')
