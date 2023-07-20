@@ -2,7 +2,8 @@
 
 #include "orientation_tools.h"
 
-namespace grbda {
+namespace grbda
+{
 
     namespace spatial
     {
@@ -36,8 +37,47 @@ namespace grbda {
 
             SpatialTransform operator*(const SpatialTransform &X_in) const;
 
-            const Mat3<double>& getRotation() const { return E_; }
-            const Vec3<double>& getTranslation() const { return r_; }
+            // TODO(@MatthewChignoli): move to the cpp file
+            Mat6<double> rightMultiplyMotionTransform(const Mat6<double> &M_in) const
+            {
+                Mat6<double> M_out;
+
+                const Mat3<double> &M_TL = M_in.topLeftCorner<3, 3>();
+                const Mat3<double> &M_TR = M_in.topRightCorner<3, 3>();
+                const Mat3<double> &M_BL = M_in.bottomLeftCorner<3, 3>();
+                const Mat3<double> &M_BR = M_in.bottomRightCorner<3, 3>();
+
+                const Mat3<double> r_hat = vectorToSkewMat(r_);
+
+                M_out.topLeftCorner<3, 3>() = M_TL * E_ - M_TR * E_ * r_hat;
+                M_out.topRightCorner<3, 3>() = M_TR * E_;
+                M_out.bottomLeftCorner<3, 3>() = M_BL * E_ - M_BR * E_ * r_hat;
+                M_out.bottomRightCorner<3, 3>() = M_BR * E_;
+
+                return M_out;
+            }
+
+            Mat6<double> leftMultiplyForceTransform(const Mat6<double> &M_in) const
+            {
+                Mat6<double> M_out;
+                const Mat3<double> &M_TL = M_in.topLeftCorner<3, 3>();
+                const Mat3<double> &M_TR = M_in.topRightCorner<3, 3>();
+                const Mat3<double> &M_BL = M_in.bottomLeftCorner<3, 3>();
+                const Mat3<double> &M_BR = M_in.bottomRightCorner<3, 3>();
+
+                const Mat3<double> E_trans = E_.transpose();
+                const Mat3<double> r_hat = vectorToSkewMat(r_);
+
+                M_out.topLeftCorner<3, 3>() = E_trans * M_TL + r_hat * E_trans * M_BL;
+                M_out.topRightCorner<3, 3>() = E_trans * M_TR + r_hat * E_trans * M_BR;
+                M_out.bottomLeftCorner<3, 3>() = E_trans * M_BL;
+                M_out.bottomRightCorner<3, 3>() = E_trans * M_BR;
+
+                return M_out;
+            }
+
+            const Mat3<double> &getRotation() const { return E_; }
+            const Vec3<double> &getTranslation() const { return r_; }
             Mat3<double> getSkewTranslationMatrix() const { return vectorToSkewMat(r_); }
 
         private:
@@ -93,6 +133,56 @@ namespace grbda {
             SpatialTransform &operator[](int output_body_index);
             GeneralizedSpatialTransform operator*(const GeneralizedSpatialTransform &X_in) const;
             GeneralizedAbsoluteSpatialTransform operator*(const GeneralizedAbsoluteSpatialTransform &X_in) const;
+
+            DMat<double> rightMultiplyMotionTransform(const DMat<double> &M_in) const
+            {
+                // TODO(@MatthewChignoli): M_in must be 6num_output_bodies_ * 6num_output_bodies_
+
+                DMat<double> M_out = DMat<double>::Zero(6 * num_output_bodies_,
+                                                        6 * num_parent_bodies_);
+
+                int output_body = 0;
+                for (const auto &transform_and_parent_subindex : transforms_and_parent_subindices_)
+                {
+                    const SpatialTransform &X = transform_and_parent_subindex.first;
+                    const int &parent_subindex = transform_and_parent_subindex.second;
+
+                    for (int i = 0; i < M_in.rows(); i += 6)
+                    {
+                        M_out.block<6, 6>(i, 6 * parent_subindex) +=
+                            X.rightMultiplyMotionTransform(M_in.block<6, 6>(i, 6 * output_body));
+                    }
+
+                    output_body++;
+                }
+
+                return M_out;
+            }
+
+            DMat<double> leftMultiplyForceTransform(const DMat<double> &M_in) const
+            {
+                // TODO(@MatthewChignoli): M_in must be 6num_output_bodies_ * 6num_parent_bodies_
+
+                DMat<double> M_out = DMat<double>::Zero(6 * num_parent_bodies_,
+                                                        6 * num_parent_bodies_);
+
+                int output_body = 0;
+                for (const auto &transform_and_parent_subindex : transforms_and_parent_subindices_)
+                {
+                    const SpatialTransform &X = transform_and_parent_subindex.first;
+                    const int &parent_subindex = transform_and_parent_subindex.second;
+
+                    for (int i = 0; i < M_in.cols(); i += 6)
+                    {
+                        M_out.block<6, 6>(6 * parent_subindex, i) +=
+                            X.leftMultiplyForceTransform(M_in.block<6, 6>(6 * output_body, i));
+                    }
+
+                    output_body++;
+                }
+
+                return M_out;
+            }
 
         private:
             int num_output_bodies_ = 0;

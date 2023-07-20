@@ -267,7 +267,7 @@ namespace grbda
 
         DMat<double> GeneralizedSpatialTransform::inverseTransformSpatialInertia(const DMat<double> &I_in) const
         {
-            return toMatrix().transpose() * I_in * toMatrix();
+            return leftMultiplyForceTransform(rightMultiplyMotionTransform(I_in));
         }
 
         SpatialTransform &GeneralizedSpatialTransform::operator[](int output_body_index)
