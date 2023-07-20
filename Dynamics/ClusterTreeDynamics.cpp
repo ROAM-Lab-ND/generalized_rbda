@@ -57,6 +57,7 @@ namespace grbda
 
         // Forward dynamics via Articulated Body Algorithm
 #ifdef TIMING_STATS
+        timing_statistics_.zero();
         timer_.start();
 #endif
         forwardKinematics();
@@ -153,27 +154,45 @@ namespace grbda
         forwardKinematics();
 
         // Forward pass
+#ifdef TIMING_STATS
+        double start_time_IA = timer_.getMs();
+#endif
         for (auto &cluster : cluster_nodes_)
         {
             cluster->IA_ = cluster->I_;
         }
+#ifdef TIMING_STATS
+        timing_statistics_.reset_IA_time += timer_.getMs() - start_time_IA;
+#endif
 
         // Backward pass (Gauss principal of least constraint)
         for (int i = (int)cluster_nodes_.size() - 1; i >= 0; i--)
         {
             auto &cluster = cluster_nodes_[i];
             const auto joint = cluster->joint_;
+#ifdef TIMING_STATS
+            double start_time_D = timer_.getMs();
+#endif
             cluster->U_ = cluster->IA_ * joint->S();
             const DMat<double> D = joint->S().transpose() * cluster->U_;
             cluster->updateDinv(D);
             cluster->D_inv_UT_ = cluster->D_inv_.solve(cluster->U_.transpose());
+#ifdef TIMING_STATS
+            timing_statistics_.update_and_solve_D_time += timer_.getMs() - start_time_D;
+#endif
 
             // Articulated body inertia recursion
             if (cluster->parent_index_ >= 0)
             {
+#ifdef TIMING_STATS
+                double start_time_Ia = timer_.getMs();
+#endif
                 auto parent_cluster = cluster_nodes_[cluster->parent_index_];
-                cluster->Ia_ = cluster->IA_ - cluster->U_ * cluster->D_inv_UT_;
+                cluster->Ia_ = cluster->IA_;// - cluster->U_ * cluster->D_inv_UT_;
                 parent_cluster->IA_ += cluster->Xup_.inverseTransformSpatialInertia(cluster->Ia_);
+#ifdef TIMING_STATS
+                timing_statistics_.invert_xform_spatial_inertia_time += timer_.getMs() - start_time_Ia;
+#endif
             }
         }
 

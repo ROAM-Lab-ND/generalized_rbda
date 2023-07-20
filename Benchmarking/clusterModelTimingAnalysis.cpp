@@ -52,9 +52,13 @@ void runBenchmark(std::ofstream &file, const std::string &id)
          << timing_stats.forward_pass1_time << ","
          << timing_stats.external_force_time << ","
          << timing_stats.backward_pass_time << ","
-         << timing_stats.forward_pass2_time << std::endl;
+         << timing_stats.forward_pass2_time << ","
+         << timing_stats.invert_xform_spatial_inertia_time << ","
+         << timing_stats.update_and_solve_D_time << ","
+         << timing_stats.reset_IA_time << std::endl;
 
-    std::cout << "Finished benchmark for robot w/ id " << id << std::endl;
+    std::cout
+        << "Finished benchmark for robot w/ id " << id << std::endl;
 }
 
 const std::string path_to_data = "../Benchmarking/data/CL_";

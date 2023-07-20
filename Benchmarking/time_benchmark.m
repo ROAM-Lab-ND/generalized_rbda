@@ -9,15 +9,16 @@ figure
 % Revolute Chain
 revolute_chain_with_rotors = readmatrix([path_to_data, 'RevoluteChain.csv']);
 subplot(1, 2, 1)
-compareTimes(revolute_chain_with_rotors, 'Revolute w/ Rotor Chain')
+compareTimes(revolute_chain_with_rotors, 'Revolute w/ Rotor')
 
 % Revolute Pair Chain
 revolute_pair_chain_with_rotors = readmatrix([path_to_data, 'RevolutePairChain.csv']);
 subplot(1, 2, 2)
-compareTimes(revolute_pair_chain_with_rotors, 'Revolute Pair w/ Rotors Chain')
+compareTimes(revolute_pair_chain_with_rotors, 'Revolute Pair w/ Rotors')
 
 saveas(gcf, [path_to_figures, 'RevoluteChains.png'])
 
+return
 %% Revolute Chain with Multiple Rotors
 revolute_chain_with_multiple_rotors = readmatrix([path_to_data, 'RevoluteMultiRotorChain.csv']);
 compareMultipleRotorTimes(revolute_chain_with_multiple_rotors)
@@ -36,10 +37,15 @@ function [rows, cols] = getSubplotRowsAndCols(num_plots)
 end
 
 function compareTimes(data, robot_name)
+    
+    plot_both_lg = false;
+
     plot(data(:, 1), data(:, 2), 'ro-', 'Linewidth', 2.0, 'MarkerSize', 10.)
     hold on
     plot(data(:, 1), data(:, 3), 'go-', 'Linewidth', 2.0, 'MarkerSize', 10.)
-    plot(data(:, 1), data(:, 4), 'go--', 'Linewidth', 2.0, 'MarkerSize', 10.)
+    if plot_both_lg
+        plot(data(:, 1), data(:, 4), 'go--', 'Linewidth', 2.0, 'MarkerSize', 10.)
+    end
     plot(data(:, 1), data(:, 5), 'bo-', 'Linewidth', 2.0, 'MarkerSize', 10.)
     plot(data(:, 1), data(:, 6), 'ko-', 'Linewidth', 2.0, 'MarkerSize', 10.)
 
@@ -47,9 +53,13 @@ function compareTimes(data, robot_name)
 
     xlabel('Degrees of Freedom', 'Interpreter', 'latex')
     ylabel('Computation Time (ms)', 'Interpreter', 'latex')
-    title(['Forward Dynamics - ', robot_name], 'Interpreter', 'latex')
-    legend({'Cluster-Based', 'Lagrange Multipliers (Custom)', 'Lagrange Multipliers (Eigen)', 'Projection', 'Original ABA'}, 'Location', 'Northwest', 'Interpreter', 'latex')
-    set(gca, 'Fontsize', 10)
+    title(robot_name, 'Interpreter', 'latex')
+    if plot_both_lg
+        legend({'Cluster-Based', 'Lagrange Multipliers (Custom)', 'Lagrange Multipliers (Eigen)', 'Projection', 'Original ABA'}, 'Location', 'Best', 'Interpreter', 'latex')
+    else
+        legend({'Cluster-Based', 'Lagrange Multipliers', 'Projection', 'Original ABA'}, 'Location', 'Best', 'Interpreter', 'latex')
+    end
+    set(gca, 'Fontsize', 16)
     set(gca, 'TickLabelInterpreter', 'latex')
     axis([0 25 0 0.16])
 end
