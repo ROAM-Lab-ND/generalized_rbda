@@ -19,7 +19,7 @@ void runBenchmark(std::ofstream &file, const std::string& id, const bool include
     double t_projection = 0.;
     double t_approx = 0.;
 
-    const int num_robot_samples = 1000;
+    const int num_robot_samples = 300;
     const int num_state_samples = 10;
 
     for (int i = 0; i < num_robot_samples; i++)
@@ -233,7 +233,7 @@ int main()
     const bool include_forces = false;
     runRevoluteWithRotorBenchmark(include_forces);
     runRevolutePairWithRotorBenchmark(include_forces);
-    runLoopSizeBenchmark(include_forces);
-    runConstraintDimensionBenchmark(include_forces);
+    // runLoopSizeBenchmark(include_forces);
+    // runConstraintDimensionBenchmark(include_forces);
     return 0;
 }
