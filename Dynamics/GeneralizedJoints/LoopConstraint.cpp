@@ -127,7 +127,7 @@ namespace grbda
                 cnstr_cnt += n_cnstr;
             }
 
-            resetCache()
+            resetCache();
         }
 
         void Collection::resetCache()

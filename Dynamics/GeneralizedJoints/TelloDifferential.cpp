@@ -3,7 +3,69 @@
 namespace grbda
 {
 
-    namespace GeneralizedJoints
+	namespace LoopConstraint
+	{
+		TelloDifferential::TelloDifferential(const CasadiHelperFunctions &G_helpers,
+											 const CasadiHelperFunctions &g_helpers,
+											 const CasadiHelperFunctions &k_helpers,
+											 const CasadiHelperFunctions &kikd_helpers,
+											 const CasadiHelperFunctions &IK_pos_helpers,
+											 const CasadiHelperFunctions &IK_vel_helpers)
+			: G_helpers_(G_helpers), g_helpers_(g_helpers),
+			  k_helpers_(k_helpers), kikd_helpers_(kikd_helpers),
+			  IK_pos_helpers_(IK_pos_helpers), IK_vel_helpers_(IK_vel_helpers)
+		{
+			G_.setZero(4, 2);
+			K_.setZero(2, 4);
+			g_.setZero(4);
+			k_.setZero(2);
+
+			G_.topRows<2>() = DMat<double>::Identity(2, 2);
+			K_.rightCols<2>() = DMat<double>::Identity(2, 2);
+		}
+
+		std::shared_ptr<Base> TelloDifferential::clone() const
+		{
+			return std::make_shared<TelloDifferential>(*this);
+		}
+
+		DVec<double> TelloDifferential::gamma(const JointCoordinate &joint_pos) const
+		{
+			throw std::runtime_error("Tello loop constraint does not have a gamma function");
+		}
+
+		void TelloDifferential::updateJacobians(const JointCoordinate &joint_pos)
+		{
+#ifdef DEBUG_MODE
+			if (!joint_pos.isSpanning())
+				throw std::runtime_error("[TelloDifferential] Position for updating constraint Jacobians must be spanning");
+#endif
+			vector<DVec<double>> arg = {joint_pos.head<2>(), joint_pos.tail<2>()};
+			Mat2<double> J_dy_2_dqd;
+			casadi_interface(arg, J_dy_2_dqd, G_helpers_);
+
+			G_.bottomRows<2>() = J_dy_2_dqd;
+			K_.leftCols<2>() = -G_.bottomRows<2>();
+		}
+
+		void TelloDifferential::updateBiases(const JointState &joint_state)
+		{
+#ifdef DEBUG_MODE
+			if (!joint_state.position.isSpanning() || !joint_state.velocity.isSpanning())
+				throw std::runtime_error("[TelloDifferential] Position and velocity for updating constraint bias must be spanning");
+#endif
+
+			const DVec<double> &q = joint_state.position;
+			const DVec<double> &q_dot = joint_state.velocity;
+
+			vector<DVec<double>> arg = {q.head<2>(), q.tail<2>(), q_dot.head<2>(), q_dot.tail<2>()};
+			casadi_interface(arg, g_, g_helpers_);
+			casadi_interface(arg, k_, k_helpers_);
+		}
+
+	}
+
+	namespace GeneralizedJoints
     {
 
 	TelloDifferential::TelloDifferential(
@@ -56,7 +118,7 @@ namespace grbda
 	    vector<DVec<double>> arg = {q.head<2>(), q.tail<2>(), q_dot.head<2>(), q_dot.tail<2>()};
 	    Mat2<double> Ki, Kd, Ki_dot, Kd_dot;
 	    vector<Eigen::MatrixBase<Mat2<double>>*> K = {&Ki, &Kd, &Ki_dot, &Kd_dot};
-	    casadi_interface(arg, K, td_kikd, td_kikd_sparsity_out, td_kikd_work);
+	    casadi_interface(arg, K, tello_constraint_->kikd_helpers_);
 
 	    const Mat2<double> Kd_inv = Kd.inverse();
 	    Mat2<double> abcd_dot = -Kd_inv * Ki_dot + Kd_inv * Kd_dot * Kd_inv * Ki;
@@ -96,17 +158,13 @@ namespace grbda
 	    // Position
 	    std::vector<DVec<double>> dependent_state = {DVec<double>::Random(2)};
 	    Vec2<double> y = Vec2<double>::Zero(2);
-	    casadi_interface(dependent_state, y, td_IK_pos,
-						 td_IK_pos_sparsity_out,
-						 td_IK_pos_work);
+	    casadi_interface(dependent_state, y, tello_constraint_->IK_pos_helpers_);
 	    joint_state.position << y, dependent_state[0];
 
 	    // Velocity
 	    dependent_state.push_back(DVec<double>::Random(2));
 	    Vec2<double> y_dot = Vec2<double>::Zero(2);
-	    casadi_interface(dependent_state, y_dot, td_IK_vel,
-						     td_IK_vel_sparsity_out,
-						     td_IK_vel_work);
+	    casadi_interface(dependent_state, y_dot, tello_constraint_->IK_vel_helpers_);
 	    joint_state.velocity << y_dot;
 
 	    return joint_state;
