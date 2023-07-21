@@ -115,7 +115,7 @@ namespace grbda
   template <typename T>
   void casadi_interface(
       std::vector<DVec<typename T::Scalar>> &arg, std::vector<Eigen::MatrixBase<T> *> &res,
-      CasadiHelperFunctions helpers)
+      const CasadiHelperFunctions& helpers)
   {
     casadi_interface(arg, res, helpers.main_, helpers.sparsity_, helpers.work_);
   }
@@ -134,7 +134,7 @@ namespace grbda
   template <typename T>
   void casadi_interface(
       std::vector<DVec<typename T::Scalar>> &arg, Eigen::MatrixBase<T> &res,
-      CasadiHelperFunctions helpers)
+      const CasadiHelperFunctions& helpers)
   {
     casadi_interface(arg, res, helpers.main_, helpers.sparsity_, helpers.work_);
   }
