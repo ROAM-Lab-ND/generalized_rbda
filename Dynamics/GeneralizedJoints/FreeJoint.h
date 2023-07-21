@@ -9,30 +9,17 @@ namespace grbda
     {
         struct Free : Base
         {
-            Free()
-            {
-                G_ = DMat<double>::Identity(6, 6);
-                g_ = DVec<double>::Zero(6);
-
-                K_ = DMat<double>::Zero(0, 6);
-                k_ = DVec<double>::Zero(0);
-            }
+            Free();
 
             int numSpanningPos() const override { return 7; }
             int numIndependentPos() const override { return 7; }
 
-            virtual std::shared_ptr<Base> clone() const
-            {
-                return std::make_shared<Free>(*this);
-            }
+            std::shared_ptr<Base> clone() const override;
 
             void updateJacobians(const JointCoordinate &joint_pos) override {}
             void updateBiases(const JointState &joint_state) override {}
 
-            DVec<double> gamma(const JointCoordinate &joint_pos) const override
-            {
-                return joint_pos;
-            }
+            DVec<double> gamma(const JointCoordinate &joint_pos) const override;
 
         };
 

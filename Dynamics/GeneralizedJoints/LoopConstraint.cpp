@@ -127,6 +127,11 @@ namespace grbda
                 cnstr_cnt += n_cnstr;
             }
 
+            resetCache()
+        }
+
+        void Collection::resetCache()
+        {
             G_transpose_computed_ = false;
             G_pinv_computed_ = false;
             G_tranpose_pinv_computed_ = false;

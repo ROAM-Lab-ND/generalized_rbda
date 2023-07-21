@@ -71,6 +71,8 @@ namespace grbda
             void update(DVec<double> q, DVec<double> qd);
 
         private:
+            void resetCache();
+            
             int span_pos_cnt_ = 0;
             DMat<double> G_ = DMat<double>::Zero(0, 0);
             DVec<double> g_ = DVec<double>::Zero(0);

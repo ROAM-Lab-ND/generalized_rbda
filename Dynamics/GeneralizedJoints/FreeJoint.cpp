@@ -3,6 +3,29 @@
 namespace grbda
 {
 
+    namespace LoopConstraint
+    {
+        Free::Free()
+        {
+            G_ = DMat<double>::Identity(6, 6);
+            g_ = DVec<double>::Zero(6);
+
+            K_ = DMat<double>::Zero(0, 6);
+            k_ = DVec<double>::Zero(0);
+        }
+
+        std::shared_ptr<Base> Free::clone() const
+        {
+            return std::make_shared<Free>(*this);
+        }
+
+        DVec<double> Free::gamma(const JointCoordinate &joint_pos) const
+        {
+            return joint_pos;
+        }
+
+    }
+
     namespace GeneralizedJoints
     {
 
