@@ -71,12 +71,6 @@ namespace grbda
 
             virtual JointState randomJointState() const;
 
-            // TODO(@MatthewChignoli): We should not need to static cast here
-            const DVec<double> gamma(JointCoordinate q) const
-            {
-                return gamma_(static_cast<DVec<double>>(q));
-            }
-
             const DMat<double> &G() const { return loop_constraint_->G(); }
             const DVec<double> &g() const { return loop_constraint_->g(); }
 
@@ -121,8 +115,6 @@ namespace grbda
             std::vector<JointPtr> single_joints_;
 
             // TODO(@MatthewChignoli): Eventually delete all of this stuff
-            DVecFcn<double> gamma_;
-            DVecFcn<double> phi_;
             DMat<double> spanning_tree_to_independent_coords_conversion_;
         };
 

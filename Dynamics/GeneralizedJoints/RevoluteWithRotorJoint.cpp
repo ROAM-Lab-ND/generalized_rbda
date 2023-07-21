@@ -13,21 +13,6 @@ namespace grbda
             link_joint_ = single_joints_.emplace_back(new Joints::Revolute(joint_axis));
             rotor_joint_ = single_joints_.emplace_back(new Joints::Revolute(rotor_axis));
 
-            gamma_ = [gear_ratio](DVec<double> y)
-            {
-                Vec2<double> q;
-                q[0] = y[0];
-                q[1] = gear_ratio * y[0];
-                return q;
-            };
-
-            phi_ = [gear_ratio](DVec<double> q)
-            {
-                DVec<double> out = DVec<double>::Zero(1);
-                out[0] = gear_ratio * q[0] - q[1];
-                return out;
-            };
-
             spanning_tree_to_independent_coords_conversion_ = DMat<double>::Zero(1, 2);
             spanning_tree_to_independent_coords_conversion_ << 1., 0.;
 

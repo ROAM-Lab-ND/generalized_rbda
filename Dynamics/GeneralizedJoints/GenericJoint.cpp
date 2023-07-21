@@ -18,10 +18,8 @@ namespace grbda
             for (auto &joint : joints)
                 single_joints_.push_back(joint);
 
-            gamma_ = explicit_constraint.gamma_;
-            DMat<double> K = extractImplicitConstraintFromExplicit(explicit_constraint);
-
             // TODO(@MatthewChignoli): This is fine for now since the only generic joint we have is for the Teleop arm, which is a static one
+            DMat<double> K = extractImplicitConstraintFromExplicit(explicit_constraint);
             loop_constraint_ = std::make_shared<LoopConstraint::Static>(explicit_constraint.G_, K);
 
             extractConnectivity();

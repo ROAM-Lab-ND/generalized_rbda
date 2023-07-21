@@ -25,27 +25,6 @@ namespace grbda
                 rotor_joints_.push_back(rotor);
             }
 
-            gamma_ = [gear_ratios, num_rotors](const DVec<double> &y)
-            {
-                DVec<double> q = DVec<double>::Zero(1 + num_rotors);
-                q[0] = y[0];
-                for (size_t j(0); j < num_rotors; j++)
-                {
-                    q[j + 1] = gear_ratios[j] * y[0];
-                }
-                return q;
-            };
-
-            phi_ = [gear_ratios, num_rotors](const DVec<double> &q)
-            {
-                DVec<double> out = DVec<double>::Zero(num_rotors);
-                for (size_t j(0); j < num_rotors; j++)
-                {
-                    out[j] = gear_ratios[j] * q[0] - q[1 + j];
-                }
-                return out;
-            };
-
             spanning_tree_to_independent_coords_conversion_ = DMat<double>::Zero(1, 1 + num_rotors);
             spanning_tree_to_independent_coords_conversion_(0, 0) = 1.;
 

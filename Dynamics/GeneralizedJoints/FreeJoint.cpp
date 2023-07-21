@@ -17,12 +17,6 @@ namespace grbda
 
             single_joints_.emplace_back(new Joints::Free());
 
-            gamma_ = [](DVec<double> y)
-            { return y; };
-
-            phi_ = [](DVec<double> q)
-            { return DVec<double>::Zero(0); };
-
             spanning_tree_to_independent_coords_conversion_ = DMat<double>::Identity(6, 6);
 
             loop_constraint_ = std::make_shared<LoopConstraint::Free>();

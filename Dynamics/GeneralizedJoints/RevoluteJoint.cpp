@@ -14,12 +14,6 @@ namespace grbda
             Psi_ = single_joints_[0]->S();
             vJ_ = SVec<double>::Zero();
 
-            gamma_ = [](DVec<double> y)
-            { return y; };
-
-            phi_ = [](DVec<double> q)
-            { return DVec<double>::Zero(0); };
-
             spanning_tree_to_independent_coords_conversion_ = DMat<double>::Identity(1, 1);
 
             const DMat<double> G = DMat<double>::Identity(1, 1);

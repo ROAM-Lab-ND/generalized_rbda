@@ -13,19 +13,6 @@ namespace grbda
             link_1_joint_ = single_joints_.emplace_back(new Joints::Revolute(joint_axis_1));
             link_2_joint_ = single_joints_.emplace_back(new Joints::Revolute(joint_axis_2));
 
-            gamma_ = [](DVec<double> y)
-            {
-                Vec2<double> q;
-                q[0] = y[0];
-                q[1] = y[1];
-                return q;
-            };
-
-            phi_ = [&](DVec<double> q)
-            {
-                return DVec<double>::Zero(0);
-            };
-
             // ISSUE: #72 (old repo)
             spanning_tree_to_independent_coords_conversion_ = DMat<double>::Zero(0, 0);
 
