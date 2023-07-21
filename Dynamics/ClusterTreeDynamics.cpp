@@ -188,7 +188,7 @@ namespace grbda
                 double start_time_Ia = timer_.getMs();
 #endif
                 auto parent_cluster = cluster_nodes_[cluster->parent_index_];
-                cluster->Ia_ = cluster->IA_;// - cluster->U_ * cluster->D_inv_UT_;
+                cluster->Ia_ = cluster->IA_ - cluster->U_ * cluster->D_inv_UT_;
                 parent_cluster->IA_ += cluster->Xup_.inverseTransformSpatialInertia(cluster->Ia_);
 #ifdef TIMING_STATS
                 timing_statistics_.invert_xform_spatial_inertia_time += timer_.getMs() - start_time_Ia;
