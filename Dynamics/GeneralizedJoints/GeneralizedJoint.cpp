@@ -35,19 +35,19 @@ namespace grbda
                 spanning_joint_state.position = joint_state.position;
             }
             loop_constraint_->updateJacobians(spanning_joint_state.position);
-            updateConstraintJacobians(spanning_joint_state.position);
+            // updateConstraintJacobians(spanning_joint_state.position);
 
             if (!joint_state.velocity.isSpanning())
             {
                 spanning_joint_state.velocity = loop_constraint_->G() * joint_state.velocity;
-                spanning_joint_state.velocity = G_ * joint_state.velocity;
+                // spanning_joint_state.velocity = G_ * joint_state.velocity;
             }
             else
             {
                 spanning_joint_state.velocity = joint_state.velocity;
             }
             loop_constraint_->updateBiases(spanning_joint_state);
-            updateConstraintBias(spanning_joint_state);
+            // updateConstraintBias(spanning_joint_state);
 
             return spanning_joint_state;
         }

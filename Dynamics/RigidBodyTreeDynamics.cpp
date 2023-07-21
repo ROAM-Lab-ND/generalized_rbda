@@ -33,12 +33,14 @@ namespace grbda
                 j = node_j->parent_index_;
             }
 
+            cp.jacobian_ = J_spanning * loop_constraints_.G();
             cp.jacobian_ = J_spanning * G_;
         }
     }
 
     DVec<double> RigidBodyTreeModel::forwardDynamics(const DVec<double> &tau)
     {
+        updateLoopConstraints();
         forwardKinematics();
         compositeRigidBodyAlgorithm();
         updateBiasForceVector();
@@ -48,10 +50,16 @@ namespace grbda
         case FwdDynMethod::Projection:
         {
             // Based on Method 3 in Featherstone Ch 8.5
-            DMat<double> A = G_.transpose() * H_ * G_;
-            DVec<double> b = tau - G_.transpose() * (C_ + H_ * g_);
-            DVec<double> ydd = A.llt().solve(b);
-            return G_ * ydd + g_;
+            const DMat<double>& G = loop_constraints_.G();
+            // const DMat<double>& G = G_;
+
+            const DVec<double> g = loop_constraints_.g();
+            // const DVec<double>& g = g_;
+
+            const DMat<double> A = G.transpose() * H_ * G;
+            const DVec<double> b = tau - G.transpose() * (C_ + H_ * g);
+            const DVec<double> ydd = A.llt().solve(b);
+            return G * ydd + g;
         }
 
         case FwdDynMethod::LagrangeMultiplierCustom:

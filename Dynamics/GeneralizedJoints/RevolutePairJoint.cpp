@@ -21,18 +21,10 @@ namespace grbda
                 return q;
             };
 
-            G_ = DMat<double>::Zero(2, 2);
-            G_ << 1., 0.,
-                0., 1.;
-
-            g_ = DVec<double>::Zero(2);
-
             phi_ = [&](DVec<double> q)
             {
                 return DVec<double>::Zero(0);
             };
-            K_ = DMat<double>::Zero(0, 2);
-            k_ = DVec<double>::Zero(0);
 
             // ISSUE: #72 (old repo)
             spanning_tree_to_independent_coords_conversion_ = DMat<double>::Zero(0, 0);

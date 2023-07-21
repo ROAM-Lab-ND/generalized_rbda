@@ -27,6 +27,11 @@ namespace grbda
 				K_.rightCols<2>() = DMat<double>::Identity(2, 2);
 			}
 
+			virtual std::shared_ptr<Base> clone() const
+			{
+				return std::make_shared<TelloDifferential>(*this);
+			}
+
 			DVec<double> gamma(const JointCoordinate &joint_pos) const override
 			{
 				throw std::runtime_error("Tello loop constraint does not have a gamma function");
@@ -82,7 +87,7 @@ namespace grbda
 				 CoordinateAxis joint_axis_1, CoordinateAxis joint_axis_2);
 	    virtual ~TelloDifferential() {}
 
-	    void updateKinematics(const JointState &joint_state) override;
+		void updateKinematics(const JointState &joint_state) override;
 
 	    void computeSpatialTransformFromParentToCurrentCluster(
 		GeneralizedSpatialTransform &Xup) const override;
@@ -104,18 +109,10 @@ namespace grbda
 	    typedef const long long int* (*casadi_sparsity_out_fn)(long long int);
 	    typedef int (*casadi_work_fn)(long long int*, long long int*, long long int*, long long int*);
 
+		// TODO(@MatthewChignoli): Eventually get rid of all of this stuff, no need for different TelloDifferential inherited classes
 	    casadi_fn td_kikd;
 	    casadi_sparsity_out_fn td_kikd_sparsity_out;
 	    casadi_work_fn td_kikd_work;
-	    casadi_fn td_J_dy_2_dqd;
-	    casadi_sparsity_out_fn td_J_dy_2_dqd_sparsity_out;
-	    casadi_work_fn td_J_dy_2_dqd_work;
-	    casadi_fn td_g;
-	    casadi_sparsity_out_fn td_g_sparsity_out;
-	    casadi_work_fn td_g_work;
-	    casadi_fn td_k;
-	    casadi_sparsity_out_fn td_k_sparsity_out;
-	    casadi_work_fn td_k_work;
 	    casadi_fn td_IK_pos = thd_IK_pos;
 	    casadi_sparsity_out_fn td_IK_pos_sparsity_out;
 	    casadi_work_fn td_IK_pos_work;
@@ -124,9 +121,6 @@ namespace grbda
 	    casadi_work_fn td_IK_vel_work;
 
 	private:
-	    void updateConstraintJacobians(const JointCoordinate &joint_pos) override;
-	    void updateConstraintBias(const JointState &joint_state) override;
-
 	    JointPtr rotor_1_joint_;
 	    JointPtr rotor_2_joint_;
 	    JointPtr link_1_joint_;

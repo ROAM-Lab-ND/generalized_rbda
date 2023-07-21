@@ -26,6 +26,12 @@ namespace grbda
                 }
             }
         }
+
+        // TODO(@MatthewChignoli): Turn this into a helper function
+        for (const auto &cluster : cluster_tree_model.clusters())
+        {
+            loop_constraints_.push_back(cluster->joint_->cloneLoopConstraint());
+        }
     }
 
     void RigidBodyTreeModel::extractRigidBodiesAndJointsFromClusterModel(
@@ -116,6 +122,9 @@ namespace grbda
             node->joint_state_.position = q.segment(node->position_index_, node->num_positions_);
             node->joint_state_.velocity = qd.segment(node->velocity_index_, node->num_velocities_);
         }
+
+        q_ = q;
+        qd_ = qd;
 
         initializeExternalForces();
     }

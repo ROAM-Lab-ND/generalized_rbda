@@ -64,6 +64,11 @@ namespace grbda
             const DMat<double> &Psi() const { return Psi_; }
             const DVec<double> &vJ() const { return vJ_; }
 
+            std::shared_ptr<LoopConstraint::Base> cloneLoopConstraint() const
+            {
+                return loop_constraint_->clone();
+            }
+
             virtual JointState randomJointState() const;
 
             // TODO(@MatthewChignoli): We should not need to static cast here
@@ -71,23 +76,21 @@ namespace grbda
             {
                 return gamma_(static_cast<DVec<double>>(q));
             }
-            const DMat<double> &G() const { return G_; }
-            const DVec<double> &g() const { return g_; }
 
-            const DMat<double> &K() const { return K_; }
-            const DVec<double> &k() const { return k_; }
+            const DMat<double> &G() const { return loop_constraint_->G(); }
+            const DVec<double> &g() const { return loop_constraint_->g(); }
+
+            const DMat<double> &K() const { return loop_constraint_->K(); }
+            const DVec<double> &k() const { return loop_constraint_->k(); }
 
             const DMat<double> &spanningTreeToIndependentCoordsConversion() const
             {
                 return spanning_tree_to_independent_coords_conversion_;
             }
 
-            JointState toSpanningTreeState(const JointState& joint_state);
+            JointState toSpanningTreeState(const JointState &joint_state);
 
         protected:
-            virtual void updateConstraintJacobians(const JointCoordinate &q) {}
-            virtual void updateConstraintBias(const JointState &joint_state) {}
-
 #ifdef DEBUG_MODE
             void jointStateCheck(const JointState &joint_state) const
             {
@@ -115,19 +118,12 @@ namespace grbda
             DVec<double> vJ_;
 
             std::shared_ptr<LoopConstraint::Base> loop_constraint_;
-
-            // TODO(@MatthewChignoli): Eventually delete all of this stuff except for single joints
-            DVecFcn<double> gamma_;
-            DMat<double> G_;
-            DVec<double> g_;
-
-            DVecFcn<double> phi_;
-            DMat<double> K_;
-            DVec<double> k_;
-
-            DMat<double> spanning_tree_to_independent_coords_conversion_;
-
             std::vector<JointPtr> single_joints_;
+
+            // TODO(@MatthewChignoli): Eventually delete all of this stuff
+            DVecFcn<double> gamma_;
+            DVecFcn<double> phi_;
+            DMat<double> spanning_tree_to_independent_coords_conversion_;
         };
 
     }

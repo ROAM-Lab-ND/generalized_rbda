@@ -19,12 +19,10 @@ namespace grbda
                 single_joints_.push_back(joint);
 
             gamma_ = explicit_constraint.gamma_;
-            G_ = explicit_constraint.G_;
-            g_ = explicit_constraint.g_;
-            extractImplicitConstraintFromExplicit(explicit_constraint);
+            DMat<double> K = extractImplicitConstraintFromExplicit(explicit_constraint);
 
             // TODO(@MatthewChignoli): This is fine for now since the only generic joint we have is for the Teleop arm, which is a static one
-            loop_constraint_ = std::make_shared<LoopConstraint::Static>(G_, K_);
+            loop_constraint_ = std::make_shared<LoopConstraint::Static>(explicit_constraint.G_, K);
 
             extractConnectivity();
 
@@ -78,7 +76,7 @@ namespace grbda
                 vel_idx += num_vel;
             }
 
-            S_ = Xup_spanning_tree_ * S_spanning_tree_ * G_;
+            S_ = Xup_spanning_tree_ * S_spanning_tree_ * loop_constraint_->G();
             vJ_ = S_ * joint_state.velocity;
 
             for (int i = 0; i < num_bodies_; i++)
@@ -97,7 +95,7 @@ namespace grbda
                 }
             }
 
-            S_ring_ = Xup_ring_spanning_tree_ * S_spanning_tree_ * G_;
+            S_ring_ = Xup_ring_spanning_tree_ * S_spanning_tree_ * loop_constraint_->G();
         }
 
         void Generic::computeSpatialTransformFromParentToCurrentCluster(
@@ -117,7 +115,7 @@ namespace grbda
             }
         }
 
-        void
+        DMat<double>
         Generic::extractImplicitConstraintFromExplicit(const ExplicitConstraint &explicit_constraint)
         {
             const DMat<double> &G = explicit_constraint.G_;
@@ -132,14 +130,17 @@ namespace grbda
             if (!G.topRows(num_independent_coords).isIdentity())
                 throw std::runtime_error("Generic joints require the independent coordinates be a subset of the spanning tree coordinates");
 
-            K_ = DMat<double>::Zero(num_constraints, num_spanning_coords);
-            K_.leftCols(num_independent_coords) = -G.bottomRows(num_constraints);
-            K_.rightCols(num_constraints).setIdentity();
-            k_ = -g.tail(num_constraints);
+            DMat<double> K;
+            K = DMat<double>::Zero(num_constraints, num_spanning_coords);
+            K.leftCols(num_independent_coords) = -G.bottomRows(num_constraints);
+            K.rightCols(num_constraints).setIdentity();
+            // k_ = -g.tail(num_constraints);
 
             spanning_tree_to_independent_coords_conversion_ =
                 DMat<double>::Zero(num_independent_coords, num_spanning_coords);
             spanning_tree_to_independent_coords_conversion_.leftCols(num_independent_coords) = DMat<double>::Identity(num_independent_coords, num_independent_coords);
+
+            return K;
         }
 
         void Generic::extractConnectivity()

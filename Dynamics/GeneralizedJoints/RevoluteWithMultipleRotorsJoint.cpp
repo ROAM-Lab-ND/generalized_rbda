@@ -36,15 +36,6 @@ namespace grbda
                 return q;
             };
 
-            G_ = DMat<double>::Zero(1 + num_rotors, 1);
-            G_(0, 0) = 1.;
-            for (size_t j(0); j < num_rotors; j++)
-            {
-                G_(j + 1, 0) = gear_ratios[j];
-            }
-
-            g_ = DVec<double>::Zero(1 + num_rotors);
-
             phi_ = [gear_ratios, num_rotors](const DVec<double> &q)
             {
                 DVec<double> out = DVec<double>::Zero(num_rotors);
@@ -54,15 +45,6 @@ namespace grbda
                 }
                 return out;
             };
-
-            K_ = DMat<double>::Zero(num_rotors, 1 + num_rotors);
-            for (size_t j(0); j < num_rotors; j++)
-            {
-                K_(j, 0) = gear_ratios[j];
-                K_(j, j + 1) = -1.;
-            }
-
-            k_ = DVec<double>::Zero(num_rotors);
 
             spanning_tree_to_independent_coords_conversion_ = DMat<double>::Zero(1, 1 + num_rotors);
             spanning_tree_to_independent_coords_conversion_(0, 0) = 1.;
@@ -108,7 +90,7 @@ namespace grbda
                 rotor_joints_[i]->updateKinematics(q.segment<1>(i + 1), qd.segment<1>(i + 1));
             }
 
-            S_ = Xup_spanning_tree_ * S_spanning_tree_ * G_;
+            S_ = Xup_spanning_tree_ * S_spanning_tree_ * loop_constraint_->G();
             vJ_ = S_ * joint_state.velocity;
         }
 

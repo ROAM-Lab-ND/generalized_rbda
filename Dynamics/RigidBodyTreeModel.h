@@ -103,6 +103,16 @@ namespace grbda
 
         void contactJacobians() override;
 
+        // TODO(@MatthewChignoli): Add an "update loop constraints" function
+        void updateLoopConstraints()
+        {
+#ifdef DEBUG_MODE
+            if (q_.size() != getNumPositions() || qd_.size() != getNumDegreesOfFreedom())
+                throw std::runtime_error("State is not initialized");
+#endif
+            loop_constraints_.update(q_, qd_);
+        }
+
         DVec<double> forwardDynamics(const DVec<double> &tau) override;
 
         DMat<double> getMassMatrix() override;
@@ -132,9 +142,14 @@ namespace grbda
         DMat<double> G_tranpose_pinv_;
         DVec<double> g_;
 
-        DVecFcn<double> phi_;
+        LoopConstraint::Collection loop_constraints_;
+
         DMat<double> K_;
         DVec<double> k_;
+
+        // TODO(@MatthewChignoli): This is kind of a hack as well
+        DVec<double> q_;
+        DVec<double> qd_;
 
         std::vector<RigidBodyTreeNodePtr> rigid_body_nodes_;
 

@@ -25,6 +25,8 @@ namespace grbda
         DVec<double> k_;
     };
 
+    // TODO(@MatthewChignoli): I fucked up this class pretty good...
+
     namespace GeneralizedJoints
     {
 
@@ -44,7 +46,7 @@ namespace grbda
                 GeneralizedSpatialTransform &Xup) const override;
 
         private:
-            void extractImplicitConstraintFromExplicit(const ExplicitConstraint &explicit_constraint);
+            DMat<double> extractImplicitConstraintFromExplicit(const ExplicitConstraint &explicit_constraint);
             void extractExplicitConstraintFromImplicit(const ImplicitConstraint &implicit_constraint) {}
             void extractConnectivity();
 

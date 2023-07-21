@@ -5,6 +5,39 @@
 namespace grbda
 {
 
+    namespace LoopConstraint
+    {
+        struct Free : Base
+        {
+            Free()
+            {
+                G_ = DMat<double>::Identity(6, 6);
+                g_ = DVec<double>::Zero(6);
+
+                K_ = DMat<double>::Zero(0, 6);
+                k_ = DVec<double>::Zero(0);
+            }
+
+            int numSpanningPos() const override { return 7; }
+            int numIndependentPos() const override { return 7; }
+
+            virtual std::shared_ptr<Base> clone() const
+            {
+                return std::make_shared<Free>(*this);
+            }
+
+            void updateJacobians(const JointCoordinate &joint_pos) override {}
+            void updateBiases(const JointState &joint_state) override {}
+
+            DVec<double> gamma(const JointCoordinate &joint_pos) const override
+            {
+                return joint_pos;
+            }
+
+        };
+
+    }
+
     namespace GeneralizedJoints
     {
 

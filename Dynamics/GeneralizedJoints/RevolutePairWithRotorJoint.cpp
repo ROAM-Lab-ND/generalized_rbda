@@ -33,14 +33,6 @@ namespace grbda
                 return q;
             };
 
-            G_ = DMat<double>::Zero(4, 2);
-            G_ << 1., 0.,
-                net_ratio_1, 0.,
-                gear_ratio_2 * belt_ratio_1, net_ratio_2,
-                0., 1.;
-
-            g_ = DVec<double>::Zero(4);
-
             phi_ = [net_ratio_1, gear_ratio_2, belt_ratio_1, net_ratio_2](DVec<double> q)
             {
                 DVec<double> out = DVec<double>::Zero(2);
@@ -48,10 +40,6 @@ namespace grbda
                 out[1] = gear_ratio_2 * belt_ratio_1 * q[0] + net_ratio_2 * q[3] - q[2];
                 return out;
             };
-            K_ = DMat<double>::Identity(2, 4);
-            K_ << net_ratio_1, -1., 0., 0.,
-                gear_ratio_2 * belt_ratio_1, 0, -1., net_ratio_2;
-            k_ = DVec<double>::Zero(2);
 
             spanning_tree_to_independent_coords_conversion_ = DMat<double>::Identity(2, 4);
             spanning_tree_to_independent_coords_conversion_ << 1., 0., 0., 0., 0., 0., 0., 1.;

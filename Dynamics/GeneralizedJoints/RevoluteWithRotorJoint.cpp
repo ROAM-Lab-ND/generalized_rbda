@@ -20,9 +20,6 @@ namespace grbda
                 q[1] = gear_ratio * y[0];
                 return q;
             };
-            G_ = DMat<double>::Zero(2, 1);
-            G_ << 1., gear_ratio;
-            g_ = DVec<double>::Zero(2);
 
             phi_ = [gear_ratio](DVec<double> q)
             {
@@ -30,9 +27,6 @@ namespace grbda
                 out[0] = gear_ratio * q[0] - q[1];
                 return out;
             };
-            K_ = DMat<double>::Zero(1, 2);
-            K_ << gear_ratio, -1.;
-            k_ = DVec<double>::Zero(1);
 
             spanning_tree_to_independent_coords_conversion_ = DMat<double>::Zero(1, 2);
             spanning_tree_to_independent_coords_conversion_ << 1., 0.;

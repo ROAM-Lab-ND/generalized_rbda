@@ -5,6 +5,7 @@
 // #include "Dynamics/Joints/Joint.h"
 // #include "Utils/Utilities/SpatialTransforms.h"
 #include "Utils/cppTypes.h"
+#include <iostream>
 
 // TODO(@MatthewChignoli): The constraints are the abstract class. Then we can have stuff inherit from them.
 
@@ -22,15 +23,23 @@ namespace grbda
         {
             virtual ~Base() {}
 
+            virtual std::shared_ptr<Base> clone() const = 0;
+
+            virtual int numSpanningPos() const { return G_.rows(); }
+            virtual int numIndependentPos() const { return G_.cols(); }
+            int numSpanningVel() const { return G_.rows(); }
+            int numIndependentVel() const { return G_.cols(); }
+            int numConstraints() const { return K_.rows(); }
+
             virtual void updateJacobians(const JointCoordinate &joint_pos) = 0;
             virtual void updateBiases(const JointState &joint_state) = 0;
 
             virtual DVec<double> gamma(const JointCoordinate &joint_pos) const = 0;
-            DMat<double> G() const { return G_;}
-            DVec<double> g() const { return g_;}
+            const DMat<double> &G() const { return G_; }
+            const DVec<double> &g() const { return g_; }
 
-            DMat<double> K() const { return K_;}
-            DVec<double> k() const { return k_;}
+            const DMat<double> &K() const { return K_; }
+            const DVec<double> &k() const { return k_; }
 
         protected:
             DMat<double> G_;
@@ -51,6 +60,11 @@ namespace grbda
                 k_ = DVec<double>::Zero(K.rows());
             }
 
+            virtual std::shared_ptr<Base> clone() const
+            {
+                return std::make_shared<Static>(*this);
+            }
+
             void updateJacobians(const JointCoordinate &joint_pos) override {}
             void updateBiases(const JointState &joint_state) override {}
 
@@ -60,6 +74,68 @@ namespace grbda
             }
         };
 
+        // TODO(@MatthewChignoli): I think a more efficient way would be to bind references of G to blocks of the big G collection matrix, but let's worry about that later
+        struct Collection : std::vector<std::shared_ptr<Base>>
+        {
+            const DMat<double> &G() const { return G_; }
+            const DVec<double> &g() const { return g_; }
+
+            const DMat<double> &K() const { return K_; }
+            const DVec<double> &k() const { return k_; }
+
+            void push_back(const std::shared_ptr<Base> loop_constraint)
+            {
+                std::vector<std::shared_ptr<Base>>::push_back(loop_constraint);
+
+                G_ = DMat<double>::Zero(G_.rows() + loop_constraint->G().rows(),
+                                        G_.cols() + loop_constraint->G().cols());
+                g_ = DVec<double>::Zero(G_.rows());
+
+                K_ = DMat<double>::Zero(K_.rows() + loop_constraint->K().rows(),
+                                        K_.cols() + loop_constraint->K().cols());
+                k_ = DVec<double>::Zero(K_.rows());
+            }
+
+            void update(DVec<double> q, DVec<double> qd)
+            {
+                int pos_cnt = 0;
+                int span_vel_cnt = 0;
+                int ind_vel_cnt = 0;
+                int cnstr_cnt = 0;
+
+                for (auto constraint : *this)
+                {
+                    const int n_span_pos = constraint->numSpanningPos();
+                    const int n_span_vel = constraint->numSpanningVel();
+                    const int n_ind_vel = constraint->numIndependentVel();
+                    const int n_cnstr = constraint->numConstraints();
+
+                    JointCoordinate position(q.segment(pos_cnt, n_span_pos), true);
+                    JointCoordinate velocity(qd.segment(span_vel_cnt, n_span_vel), true);
+                    JointState state(position, velocity);
+                    constraint->updateJacobians(position);
+                    constraint->updateBiases(state);
+
+                    G_.block(span_vel_cnt, ind_vel_cnt, n_span_vel, n_ind_vel) = constraint->G();
+                    g_.segment(span_vel_cnt, n_span_vel) = constraint->g();
+
+                    K_.block(cnstr_cnt, span_vel_cnt, n_cnstr, n_span_vel) = constraint->K();
+                    k_.segment(cnstr_cnt, n_cnstr) = constraint->k();
+
+                    pos_cnt += n_span_pos;
+                    span_vel_cnt += n_span_vel;
+                    ind_vel_cnt += n_ind_vel;
+                    cnstr_cnt += n_cnstr;
+                }
+            }
+
+        private:
+            DMat<double> G_ = DMat<double>::Zero(0, 0);
+            DVec<double> g_ = DVec<double>::Zero(0);
+
+            DMat<double> K_ = DMat<double>::Zero(0, 0);
+            DVec<double> k_ = DVec<double>::Zero(0);
+        };
     }
 
 }
