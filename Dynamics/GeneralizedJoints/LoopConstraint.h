@@ -77,15 +77,77 @@ namespace grbda
         // TODO(@MatthewChignoli): I think a more efficient way would be to bind references of G to blocks of the big G collection matrix, but let's worry about that later
         struct Collection : std::vector<std::shared_ptr<Base>>
         {
+            DVec<double> gamma(const DVec<double> y) const
+            {
+                DVec<double> spanning_pos(span_pos_cnt_);
+
+                int span_pos_cnt = 0;
+                int ind_pos_cnt = 0;
+                for (auto constraint : *this)
+                {
+                    const int n_span_pos = constraint->numSpanningPos();
+                    const int n_ind_pos = constraint->numIndependentPos();
+
+                    JointCoordinate position(y.segment(ind_pos_cnt, n_ind_pos), false);
+                    spanning_pos.segment(span_pos_cnt, n_span_pos) = constraint->gamma(position);
+
+                    span_pos_cnt += n_span_pos;
+                    ind_pos_cnt += n_ind_pos;
+                }
+                return spanning_pos;
+            }
+
             const DMat<double> &G() const { return G_; }
             const DVec<double> &g() const { return g_; }
 
             const DMat<double> &K() const { return K_; }
             const DVec<double> &k() const { return k_; }
 
+            const DMat<double> &G_transpose() const
+            {
+                if (!G_transpose_computed_)
+                {
+                    G_transpose_ = G_.transpose();
+                    G_transpose_computed_ = true;
+                }
+                return G_transpose_;
+            }
+
+            const DMat<double> &G_pinv() const
+            {
+                if (!G_pinv_computed_)
+                {
+                    G_pinv_ = G_.completeOrthogonalDecomposition().pseudoInverse();
+                    G_pinv_computed_ = true;
+                }
+
+                return G_pinv_;
+            }
+            const DMat<double> &G_tranpose_pinv() const
+            {
+                if (!G_tranpose_pinv_computed_)
+                {
+                    G_tranpose_pinv_ = G_transpose().completeOrthogonalDecomposition().pseudoInverse();
+                    G_tranpose_pinv_computed_ = true;
+                }
+                return G_tranpose_pinv_;
+            }
+
+            const DMat<double> &K_transpose() const
+            {
+                if (!K_transpose_computed_)
+                {
+                    K_transpose_ = K_.transpose();
+                    K_transpose_computed_ = true;
+                }
+                return K_transpose_;
+            }
+
             void push_back(const std::shared_ptr<Base> loop_constraint)
             {
                 std::vector<std::shared_ptr<Base>>::push_back(loop_constraint);
+
+                span_pos_cnt_ += loop_constraint->numSpanningPos();
 
                 G_ = DMat<double>::Zero(G_.rows() + loop_constraint->G().rows(),
                                         G_.cols() + loop_constraint->G().cols());
@@ -127,14 +189,30 @@ namespace grbda
                     ind_vel_cnt += n_ind_vel;
                     cnstr_cnt += n_cnstr;
                 }
+
+                G_transpose_computed_ = false;
+                G_pinv_computed_ = false;
+                G_tranpose_pinv_computed_ = false;
+                K_transpose_computed_ = false;
+
             }
 
         private:
+            int span_pos_cnt_ = 0;
             DMat<double> G_ = DMat<double>::Zero(0, 0);
             DVec<double> g_ = DVec<double>::Zero(0);
 
             DMat<double> K_ = DMat<double>::Zero(0, 0);
             DVec<double> k_ = DVec<double>::Zero(0);
+
+            mutable bool G_transpose_computed_ = false;
+            mutable DMat<double> G_transpose_;
+            mutable bool G_pinv_computed_ = false;
+            mutable DMat<double> G_pinv_;
+            mutable bool G_tranpose_pinv_computed_ = false;
+            mutable DMat<double> G_tranpose_pinv_;
+            mutable bool K_transpose_computed_ = false;
+            mutable DMat<double> K_transpose_;
         };
     }
 

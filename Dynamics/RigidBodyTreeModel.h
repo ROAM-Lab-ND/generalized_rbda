@@ -85,8 +85,8 @@ namespace grbda
             const int &nq = ceil(state.size() / 2.0);
             const int &nv = floor(state.size() / 2.0);
 
-            const DVec<double> q = gamma_(state.head(nq));
-            const DVec<double> qd = G_ * state.tail(nv);
+            const DVec<double> q = loop_constraints_.gamma(state.head(nq));
+            const DVec<double> qd = loop_constraints_.G() * state.tail(nv);
 
             initializeState(q, qd);
         }
@@ -110,7 +110,12 @@ namespace grbda
             if (q_.size() != getNumPositions() || qd_.size() != getNumDegreesOfFreedom())
                 throw std::runtime_error("State is not initialized");
 #endif
+            if (loop_constraints_updated_)
+                return;
+
             loop_constraints_.update(q_, qd_);
+
+            loop_constraints_updated_ = true;
         }
 
         DVec<double> forwardDynamics(const DVec<double> &tau) override;
@@ -118,10 +123,15 @@ namespace grbda
         DMat<double> getMassMatrix() override;
         DVec<double> getBiasForceVector() override;
 
-        DVec<double> qddToYdd(DVec<double> qdd) const { return G_pinv_ * (qdd - g_); }
-        DVec<double> yddToQdd(DVec<double> ydd) const { return G_ * ydd + g_; }
+        DVec<double> qddToYdd(DVec<double> qdd) const
+        {
+            return loop_constraints_.G_pinv() * (qdd - loop_constraints_.g());
+        }
 
-        void extractLoopClosureFunctionsFromClusterModel(const ClusterTreeModel &cluster_tree_model);
+        DVec<double> yddToQdd(DVec<double> ydd) const
+        {
+            return loop_constraints_.G() * ydd + loop_constraints_.g();
+        }
 
 #ifdef TIMING_STATS
         const RigidBodyTreeTimingStatistics &getTimingStatistics() const
@@ -132,20 +142,19 @@ namespace grbda
 
     private:
         void extractRigidBodiesAndJointsFromClusterModel(const ClusterTreeModel &cluster_tree_model);
+        void extractLoopClosureFunctionsFromClusterModel(const ClusterTreeModel &cluster_tree_model);
         void extractContactPointsFromClusterModel(const ClusterTreeModel &cluster_tree_model);
+
+        void resetCache() override
+        {
+            TreeModel::resetCache();
+            loop_constraints_updated_ = false;
+        }
 
         FwdDynMethod forward_dynamics_method_;
 
-        DVecFcn<double> gamma_;
-        DMat<double> G_;
-        DMat<double> G_pinv_;
-        DMat<double> G_tranpose_pinv_;
-        DVec<double> g_;
-
         LoopConstraint::Collection loop_constraints_;
-
-        DMat<double> K_;
-        DVec<double> k_;
+        bool loop_constraints_updated_ = false;
 
         // TODO(@MatthewChignoli): This is kind of a hack as well
         DVec<double> q_;
