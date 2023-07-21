@@ -110,7 +110,7 @@ namespace grbda
             // Solve for qdd using the factors from step 1
 #ifdef TIMING_STATS
             timer_.start();
-            DVec<double> qdd = L.solve(tau_prime + K_.transpose() * lambda);
+            DVec<double> qdd = L.solve(tau_prime + loop_constraints_.K_transpose() * lambda);
             timing_statistics_.qdd_solve_time = timer_.getMs();
             return qdd;
 #else
