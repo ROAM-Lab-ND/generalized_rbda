@@ -25,8 +25,8 @@ namespace grbda
         DVec<double> k_;
     };
 
-    // TODO(@MatthewChignoli): I fucked up this class pretty good...
 
+    // TODO(@MatthewChignoli): This class is not in a very usable state right now
     namespace GeneralizedJoints
     {
 
