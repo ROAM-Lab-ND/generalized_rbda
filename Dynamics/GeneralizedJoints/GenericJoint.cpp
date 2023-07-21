@@ -23,6 +23,9 @@ namespace grbda
             g_ = explicit_constraint.g_;
             extractImplicitConstraintFromExplicit(explicit_constraint);
 
+            // TODO(@MatthewChignoli): This is fine for now since the only generic joint we have is for the Teleop arm, which is a static one
+            loop_constraint_ = std::make_shared<LoopConstraint::Static>(G_, K_);
+
             extractConnectivity();
 
             S_spanning_tree_ = DMat<double>::Zero(0, 0);

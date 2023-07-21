@@ -2,6 +2,7 @@
 
 #include <memory>
 
+#include "LoopConstraint.h"
 #include "Dynamics/Body.h"
 #include "Dynamics/Joints/Joint.h"
 #include "Utils/Utilities/SpatialTransforms.h"
@@ -113,6 +114,9 @@ namespace grbda
             DMat<double> Psi_;
             DVec<double> vJ_;
 
+            std::shared_ptr<LoopConstraint::Base> loop_constraint_;
+
+            // TODO(@MatthewChignoli): Eventually delete all of this stuff except for single joints
             DVecFcn<double> gamma_;
             DMat<double> G_;
             DVec<double> g_;

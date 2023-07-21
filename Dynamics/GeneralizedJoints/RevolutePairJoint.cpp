@@ -34,8 +34,14 @@ namespace grbda
             K_ = DMat<double>::Zero(0, 2);
             k_ = DVec<double>::Zero(0);
 
-            // ISSUE: #72
+            // ISSUE: #72 (old repo)
             spanning_tree_to_independent_coords_conversion_ = DMat<double>::Zero(0, 0);
+
+            DMat<double> G = DMat<double>::Zero(2, 2);
+            G << 1., 0.,
+                0., 1.;
+            const DMat<double> K = DMat<double>::Identity(0, 2);
+            loop_constraint_ = std::make_shared<LoopConstraint::Static>(G, K);
 
             S_ = DMat<double>::Zero(12, 2);
             S_.block<6, 1>(0, 0) = link_1_joint_->S();

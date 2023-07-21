@@ -67,6 +67,20 @@ namespace grbda
             spanning_tree_to_independent_coords_conversion_ = DMat<double>::Zero(1, 1 + num_rotors);
             spanning_tree_to_independent_coords_conversion_(0, 0) = 1.;
 
+            DMat<double> G = DMat<double>::Zero(1 + num_rotors, 1);
+            G(0, 0) = 1.;
+            for (size_t j(0); j < num_rotors; j++)
+            {
+                G(j + 1, 0) = gear_ratios[j];
+            }
+            DMat<double> K = DMat<double>::Zero(num_rotors, 1 + num_rotors);
+            for (size_t j(0); j < num_rotors; j++)
+            {
+                K(j, 0) = gear_ratios[j];
+                K(j, j + 1) = -1.;
+            }
+            loop_constraint_ = std::make_shared<LoopConstraint::Static>(G, K);
+
             // TODO(@MatthewChignoli): How to compute Psi?
 
             S_spanning_tree_ = DMat<double>::Zero(0, 0);

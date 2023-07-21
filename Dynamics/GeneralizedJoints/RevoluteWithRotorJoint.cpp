@@ -30,12 +30,18 @@ namespace grbda
                 out[0] = gear_ratio * q[0] - q[1];
                 return out;
             };
-            K_ = DMat<double>::Identity(1, 2);
+            K_ = DMat<double>::Zero(1, 2);
             K_ << gear_ratio, -1.;
             k_ = DVec<double>::Zero(1);
 
-            spanning_tree_to_independent_coords_conversion_ = DMat<double>::Identity(1, 2);
+            spanning_tree_to_independent_coords_conversion_ = DMat<double>::Zero(1, 2);
             spanning_tree_to_independent_coords_conversion_ << 1., 0.;
+
+            DMat<double> G = DMat<double>::Zero(2, 1);
+            G << 1., gear_ratio;
+            DMat<double> K = DMat<double>::Zero(1, 2);
+            K << gear_ratio, -1.;
+            loop_constraint_ = std::make_shared<LoopConstraint::Static>(G, K);
 
             S_.block<6, 1>(0, 0) = link_joint_->S();
             S_.block<6, 1>(6, 0) = gear_ratio * rotor_joint_->S();

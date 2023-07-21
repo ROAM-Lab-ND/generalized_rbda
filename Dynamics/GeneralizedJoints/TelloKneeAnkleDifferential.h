@@ -36,7 +36,12 @@ namespace grbda
 		td_IK_vel = tkad_IK_vel;
 		td_IK_vel_sparsity_out = tkad_IK_vel_sparsity_out;
 		td_IK_vel_work = tkad_IK_vel_work;
-	    }
+
+		CasadiHelperFunctions G_helpers(tkad_J_dy_2_dqd, tkad_J_dy_2_dqd_sparsity_out, tkad_J_dy_2_dqd_work);
+		CasadiHelperFunctions g_helpers(tkad_g, tkad_g_sparsity_out, tkad_g_work);
+		CasadiHelperFunctions k_helpers(tkad_k, tkad_k_sparsity_out, tkad_k_work);
+		loop_constraint_ = std::make_shared<LoopConstraint::TelloDifferential>(G_helpers, g_helpers, k_helpers);
+		}
 	    virtual ~TelloKneeAnkleDifferential() {}
 
 	    GeneralizedJointTypes type() const override { return GeneralizedJointTypes::TelloKneeAnkleDifferential; }

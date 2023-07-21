@@ -28,6 +28,10 @@ namespace grbda
             k_ = DVec<double>::Zero(0);
 
             spanning_tree_to_independent_coords_conversion_ = DMat<double>::Identity(6, 6);
+
+            const DMat<double> G = DMat<double>::Identity(6, 6);
+            const DMat<double> K = DMat<double>::Identity(0, 6);
+            loop_constraint_ = std::make_shared<LoopConstraint::Static>(G, K);
         }
 
         void Free::updateKinematics(const JointState &joint_state)

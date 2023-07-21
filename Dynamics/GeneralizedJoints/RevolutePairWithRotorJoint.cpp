@@ -56,6 +56,16 @@ namespace grbda
             spanning_tree_to_independent_coords_conversion_ = DMat<double>::Identity(2, 4);
             spanning_tree_to_independent_coords_conversion_ << 1., 0., 0., 0., 0., 0., 0., 1.;
 
+            DMat<double> G = DMat<double>::Zero(4, 2);
+            G << 1., 0.,
+                net_ratio_1, 0.,
+                gear_ratio_2 * belt_ratio_1, net_ratio_2,
+                0., 1.;
+            DMat<double> K = DMat<double>::Identity(2, 4);
+            K << net_ratio_1, -1., 0., 0.,
+                gear_ratio_2 * belt_ratio_1, 0, -1., net_ratio_2;
+            loop_constraint_ = std::make_shared<LoopConstraint::Static>(G, K);
+
             S_.block<6, 1>(0, 0) = link_1_joint_->S();
             S_.block<6, 1>(6, 0) = net_ratio_1 * rotor_1_joint_->S();
             S_.block<6, 1>(12, 0) = gear_ratio_2 * belt_ratio_1 * rotor_2_joint_->S();
