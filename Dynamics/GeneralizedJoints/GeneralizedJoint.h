@@ -114,7 +114,6 @@ namespace grbda
             std::shared_ptr<LoopConstraint::Base> loop_constraint_;
             std::vector<JointPtr> single_joints_;
 
-            // TODO(@MatthewChignoli): Eventually delete all of this stuff
             DMat<double> spanning_tree_to_independent_coords_conversion_;
         };
 

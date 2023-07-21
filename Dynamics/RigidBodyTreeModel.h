@@ -101,22 +101,9 @@ namespace grbda
 
         void initializeState(const DVec<double> &q, const DVec<double> &qd);
 
+        void updateLoopConstraints();
+
         void contactJacobians() override;
-
-        // TODO(@MatthewChignoli): Add an "update loop constraints" function
-        void updateLoopConstraints()
-        {
-#ifdef DEBUG_MODE
-            if (q_.size() != getNumPositions() || qd_.size() != getNumDegreesOfFreedom())
-                throw std::runtime_error("State is not initialized");
-#endif
-            if (loop_constraints_updated_)
-                return;
-
-            loop_constraints_.update(q_, qd_);
-
-            loop_constraints_updated_ = true;
-        }
 
         DVec<double> forwardDynamics(const DVec<double> &tau) override;
 
@@ -156,13 +143,11 @@ namespace grbda
         LoopConstraint::Collection loop_constraints_;
         bool loop_constraints_updated_ = false;
 
-        // TODO(@MatthewChignoli): This is kind of a hack as well
+        std::vector<RigidBodyTreeNodePtr> rigid_body_nodes_;
+        std::unordered_map<string, int> body_name_to_body_index_;
+
         DVec<double> q_;
         DVec<double> qd_;
-
-        std::vector<RigidBodyTreeNodePtr> rigid_body_nodes_;
-
-        std::unordered_map<string, int> body_name_to_body_index_;
 
 #ifdef TIMING_STATS
         Timer timer_;

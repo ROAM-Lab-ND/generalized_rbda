@@ -37,7 +37,7 @@ namespace grbda
 
             if (!joint_state.velocity.isSpanning())
             {
-                spanning_joint_state.velocity = loop_constraint_->G() * joint_state.velocity;
+                spanning_joint_state.velocity = G() * joint_state.velocity;
             }
             else
             {

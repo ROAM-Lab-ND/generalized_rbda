@@ -84,6 +84,19 @@ namespace grbda
         initializeExternalForces();
     }
 
+    void RigidBodyTreeModel::updateLoopConstraints()
+    {
+#ifdef DEBUG_MODE
+        if (q_.size() != getNumPositions() || qd_.size() != getNumDegreesOfFreedom())
+            throw std::runtime_error("State is not initialized");
+#endif
+        if (loop_constraints_updated_)
+            return;
+
+        loop_constraints_.update(q_, qd_);
+        loop_constraints_updated_ = true;
+    }
+
     Vec3<double> RigidBodyTreeModel::getPosition(const string &body_name)
     {
         // TODO(@MatthewChignoli): Helper function that gets node given the name?

@@ -69,7 +69,7 @@ namespace grbda
                 rotor_joints_[i]->updateKinematics(q.segment<1>(i + 1), qd.segment<1>(i + 1));
             }
 
-            S_ = Xup_spanning_tree_ * S_spanning_tree_ * loop_constraint_->G();
+            S_ = Xup_spanning_tree_ * S_spanning_tree_ * G();
             vJ_ = S_ * joint_state.velocity;
         }
 
