@@ -18,6 +18,7 @@ namespace grbda
         Revolute,
         RevolutePair,
         RevolutePairWithRotor,
+        RevoluteTripleWithRotor,
         RevoluteWithRotor,
         RevoluteWithMultipleRotorsJoint,
         Generic,

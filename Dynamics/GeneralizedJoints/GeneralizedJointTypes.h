@@ -5,6 +5,7 @@
 #include "RevoluteWithMultipleRotorsJoint.h"
 #include "RevolutePairJoint.h"
 #include "RevolutePairWithRotorJoint.h"
+#include "RevoluteTripleWithRotorJoint.h"
 #include "GenericJoint.h"
 #include "TelloHipDifferential.h"
 #include "TelloKneeAnkleDifferential.h"

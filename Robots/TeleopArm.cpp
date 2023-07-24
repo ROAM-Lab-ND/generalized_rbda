@@ -21,8 +21,11 @@ namespace grbda
                                              base_rotor_parent_name_, base_rotor_Xtree);
 
         // Base Cluster
-        auto base_cluster_generalized_joint = std::make_shared<GeneralizedJoints::RevoluteWithRotor>(
-            base, base_rotor, CoordinateAxis::Z, CoordinateAxis::Z, base_rotor_gear_ratio_);
+        auto base_cluster_generalized_joint =
+            std::make_shared<GeneralizedJoints::RevoluteWithRotor>(base, base_rotor,
+                                                                   CoordinateAxis::Z,
+                                                                   CoordinateAxis::Z,
+                                                                   base_rotor_gear_ratio_);
 
         model.appendRegisteredBodiesAsCluster(base_cluster_name_, base_cluster_generalized_joint);
 
@@ -117,64 +120,21 @@ namespace grbda
         auto wrist_roll_rotor_joint = std::make_shared<Joints::Revolute>(CoordinateAxis::Z);
 
         // Upper Arm Cluster
-        std::vector<Body> upper_arm_cluster_bodies;
-        std::vector<JointPtr> upper_arm_cluster_joints;
-
-        upper_arm_cluster_bodies.push_back(upper_link);
-        upper_arm_cluster_joints.push_back(elbow_joint);
-
-        upper_arm_cluster_bodies.push_back(wrist_pitch_link);
-        upper_arm_cluster_joints.push_back(wrist_pitch_joint);
-
-        upper_arm_cluster_bodies.push_back(wrist_roll_link);
-        upper_arm_cluster_joints.push_back(wrist_roll_joint);
-
-        upper_arm_cluster_bodies.push_back(elbow_rotor);
-        upper_arm_cluster_joints.push_back(elbow_rotor_joint);
-
-        upper_arm_cluster_bodies.push_back(wrist_pitch_rotor);
-        upper_arm_cluster_joints.push_back(wrist_pitch_rotor_joint);
-
-        upper_arm_cluster_bodies.push_back(wrist_roll_rotor);
-        upper_arm_cluster_joints.push_back(wrist_roll_rotor_joint);
-
-        // Cluster Constraint
-        const std::vector<double> gear_ratios = {elbow_rotor_gear_ratio_,
-                                                 wrist_pitch_rotor_gear_ratio_,
-                                                 wrist_roll_rotor_gear_ratio_};
-        const std::vector<double> belt_ratios = {elbow_rotor_belt_ratio_,
-                                                 wrist_pitch_rotor_belt_ratio_,
-                                                 wrist_roll_rotor_belt_ratio_};
-        DVecFcn<double> gamma = [gear_ratios, belt_ratios](DVec<double> y)
-        {
-            Vec6<double> q;
-            q[0] = y[0];
-            q[1] = y[1];
-            q[2] = y[2];
-            q[3] = gear_ratios.at(0) * belt_ratios.at(0) * y[0];
-            q[4] = gear_ratios.at(1) * belt_ratios.at(0) * y[0] +
-                   gear_ratios.at(1) * belt_ratios.at(1) * y[1];
-            q[5] = -gear_ratios.at(2) * belt_ratios.at(0) * y[0] +
-                   -gear_ratios.at(2) * belt_ratios.at(1) * y[1] +
-                   gear_ratios.at(2) * belt_ratios.at(2) * y[2];
-            return q;
-        };
-
-        DMat<double> G = DMat<double>::Zero(6, 3);
-        G.topRows<3>().setIdentity();
-        G.row(3) << elbow_rotor_gear_ratio_ * elbow_rotor_belt_ratio_, 0., 0.;
-        G.row(4) << wrist_pitch_rotor_gear_ratio_ * elbow_rotor_belt_ratio_,
-            wrist_pitch_rotor_gear_ratio_ * wrist_pitch_rotor_belt_ratio_, 0.;
-        G.row(5) << -wrist_roll_rotor_gear_ratio_ * elbow_rotor_belt_ratio_,
-            -wrist_roll_rotor_gear_ratio_ * wrist_pitch_rotor_belt_ratio_,
-            wrist_roll_rotor_gear_ratio_ * wrist_roll_rotor_belt_ratio_;
-
-        DVec<double> g = DVec<double>::Zero(6);
+        std::vector<GeneralizedJoints::ParallelBeltTransmissionModule> triple_joint_modules;
+        triple_joint_modules.push_back({upper_link, elbow_rotor,
+                                        CoordinateAxis::Y, CoordinateAxis::Y,
+                                        elbow_rotor_gear_ratio_, elbow_rotor_belt_ratio_});
+        triple_joint_modules.push_back({wrist_pitch_link, wrist_pitch_rotor,
+                                        CoordinateAxis::Y, CoordinateAxis::Y,
+                                        wrist_pitch_rotor_gear_ratio_,
+                                        wrist_pitch_rotor_belt_ratio_});
+        triple_joint_modules.push_back({wrist_roll_link, wrist_roll_rotor,
+                                        CoordinateAxis::Z, CoordinateAxis::Z,
+                                        wrist_roll_rotor_gear_ratio_,
+                                        wrist_roll_rotor_belt_ratio_});
 
         auto upper_arm_cluster_generalized_joint =
-            std::make_shared<GeneralizedJoints::Generic>(upper_arm_cluster_bodies,
-                                                         upper_arm_cluster_joints,
-                                                         ExplicitConstraint{gamma, G, g});
+            std::make_shared<GeneralizedJoints::RevoluteTripleWithRotor>(triple_joint_modules);
 
         model.appendRegisteredBodiesAsCluster(upper_arm_cluster_name_,
                                               upper_arm_cluster_generalized_joint);
