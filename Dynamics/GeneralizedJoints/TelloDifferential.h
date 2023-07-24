@@ -23,14 +23,7 @@ namespace grbda
                 GeneralizedSpatialTransform &Xup) const override;
 
             std::vector<std::tuple<Body, JointPtr, DMat<double>>>
-            bodiesJointsAndReflectedInertias() const override
-            {
-                std::vector<std::tuple<Body, JointPtr, DMat<double>>> bodies_joints_and_ref_inertias_;
-                const Mat2<double> Z = Mat2<double>::Zero();
-                bodies_joints_and_ref_inertias_.push_back(std::make_tuple(link_1_, link_1_joint_, Z));
-                bodies_joints_and_ref_inertias_.push_back(std::make_tuple(link_2_, link_2_joint_, Z));
-                return bodies_joints_and_ref_inertias_;
-            }
+            bodiesJointsAndReflectedInertias() const override;
 
             JointState randomJointState() const override;
 
