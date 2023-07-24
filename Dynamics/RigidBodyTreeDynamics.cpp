@@ -6,6 +6,7 @@ namespace grbda
     void RigidBodyTreeModel::contactJacobians()
     {
         forwardKinematics();
+        updateLoopConstraints();
 
         for (ContactPoint &cp : contact_points_)
         {
@@ -33,13 +34,14 @@ namespace grbda
                 j = node_j->parent_index_;
             }
 
-            cp.jacobian_ = J_spanning * G_;
+            cp.jacobian_ = J_spanning * loop_constraints_.G();
         }
     }
 
     DVec<double> RigidBodyTreeModel::forwardDynamics(const DVec<double> &tau)
     {
         forwardKinematics();
+        updateLoopConstraints();
         compositeRigidBodyAlgorithm();
         updateBiasForceVector();
 
@@ -48,10 +50,14 @@ namespace grbda
         case FwdDynMethod::Projection:
         {
             // Based on Method 3 in Featherstone Ch 8.5
-            DMat<double> A = G_.transpose() * H_ * G_;
-            DVec<double> b = tau - G_.transpose() * (C_ + H_ * g_);
-            DVec<double> ydd = A.llt().solve(b);
-            return G_ * ydd + g_;
+            const DMat<double> &G = loop_constraints_.G();
+            const DMat<double>& G_transpose = loop_constraints_.G_transpose();
+            const DVec<double>& g = loop_constraints_.g();
+
+            const DMat<double> A = G_transpose * H_ * G;
+            const DVec<double> b = tau - G_transpose * (C_ + H_ * g);
+            const DVec<double> ydd = A.llt().solve(b);
+            return G * ydd + g;
         }
 
         case FwdDynMethod::LagrangeMultiplierCustom:
@@ -71,7 +77,7 @@ namespace grbda
 #endif
 
             // Calculate tau_prime
-            DVec<double> tau_full = G_tranpose_pinv_ * tau;
+            DVec<double> tau_full = loop_constraints_.G_tranpose_pinv() * tau;
             DVec<double> tau_prime = tau_full - C_;
 #ifdef TIMING_STATS
             timing_statistics_.tau_prime_calc_time = timer_.getMs();
@@ -79,7 +85,7 @@ namespace grbda
 #endif
 
             // Calculate Y and z via back-subsition
-            DMat<double> Y = L.inverseTransposeMatrixProduct(K_.transpose());
+            DMat<double> Y = L.inverseTransposeMatrixProduct(loop_constraints_.K_transpose());
             DVec<double> z = L.inverseTransposeProduct(tau_prime);
 #ifdef TIMING_STATS
             timing_statistics_.Y_and_z_calc_time = timer_.getMs();
@@ -88,7 +94,7 @@ namespace grbda
 
             // Calculate A and b
             DMat<double> A = Y.transpose() * Y;
-            DVec<double> b = k_ - Y.transpose() * z;
+            DVec<double> b = loop_constraints_.k() - Y.transpose() * z;
 #ifdef TIMING_STATS
             timing_statistics_.A_and_b_time = timer_.getMs();
             timer_.start();
@@ -104,11 +110,11 @@ namespace grbda
             // Solve for qdd using the factors from step 1
 #ifdef TIMING_STATS
             timer_.start();
-            DVec<double> qdd = L.solve(tau_prime + K_.transpose() * lambda);
+            DVec<double> qdd = L.solve(tau_prime + loop_constraints_.K_transpose() * lambda);
             timing_statistics_.qdd_solve_time = timer_.getMs();
             return qdd;
 #else
-            return L.solve(tau_prime + K_.transpose() * lambda);
+            return L.solve(tau_prime + loop_constraints_.K_transpose() * lambda);
 #endif
         }
 
@@ -117,14 +123,14 @@ namespace grbda
             // Based on Method 2 in Featherstone Ch 8.5 (using Eigen factorization)
 
             auto lltOfH = H_.llt();
-            DMat<double> KT = K_.transpose();
-            DMat<double> A = K_ * (lltOfH.solve(KT));
-            DVec<double> tau_full = G_tranpose_pinv_ * tau;
+            DMat<double> A = loop_constraints_.K() * lltOfH.solve(loop_constraints_.K_transpose());
+            DVec<double> tau_full = loop_constraints_.G_tranpose_pinv() * tau;
             DVec<double> tau_prime = tau_full - C_;
-            DVec<double> b = k_ - K_ * lltOfH.solve(tau_prime);
+            DVec<double> b = loop_constraints_.k() -
+                             loop_constraints_.K() * lltOfH.solve(tau_prime);
             DVec<double> lambda = A.size() > 0 ? DVec<double>(A.colPivHouseholderQr().solve(b))
                                                : DVec<double>::Zero(0);
-            return lltOfH.solve(tau_prime + KT * lambda);
+            return lltOfH.solve(tau_prime + loop_constraints_.K_transpose() * lambda);
         }
 
         default:

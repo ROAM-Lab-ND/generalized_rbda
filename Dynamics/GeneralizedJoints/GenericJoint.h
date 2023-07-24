@@ -4,26 +4,9 @@
 
 namespace grbda
 {
+    // TODO(@MatthewChignoli): This class is not unit tested at the moment
 
     // TODO(@MatthewChignoli): Add a unit test that compares generic joint versions to specialized versions. For example, compare revolute pair with rotor as a generic joint to the specialized joint class.
-    struct ExplicitConstraint
-    {
-        ExplicitConstraint(DVecFcn<double> gamma, DMat<double> G, DVec<double> g)
-            : gamma_(gamma), G_(G), g_(g) {}
-
-        int numIndependentVelocities() const { return G_.cols(); }
-
-        DVecFcn<double> gamma_;
-        DMat<double> G_;
-        DVec<double> g_;
-    };
-
-    struct ImplicitConstraint
-    {
-        DVecFcn<double> phi_;
-        DMat<double> K_;
-        DVec<double> k_;
-    };
 
     namespace GeneralizedJoints
     {
@@ -32,9 +15,7 @@ namespace grbda
         {
         public:
             Generic(const std::vector<Body> &bodies, const std::vector<JointPtr> &joints,
-                    const ExplicitConstraint &explicit_constraint);
-            Generic(const std::vector<Body> &bodies, const std::vector<JointPtr> &joints,
-                    const ImplicitConstraint &implicit_constraint);
+                    const shared_ptr<const LoopConstraint::Base> &loop_constraint);
 
             GeneralizedJointTypes type() const override { return GeneralizedJointTypes::Generic; }
 
@@ -44,8 +25,6 @@ namespace grbda
                 GeneralizedSpatialTransform &Xup) const override;
 
         private:
-            void extractImplicitConstraintFromExplicit(const ExplicitConstraint &explicit_constraint);
-            void extractExplicitConstraintFromImplicit(const ImplicitConstraint &implicit_constraint) {}
             void extractConnectivity();
 
             bool bodyInCurrentCluster(const int body_index) const;

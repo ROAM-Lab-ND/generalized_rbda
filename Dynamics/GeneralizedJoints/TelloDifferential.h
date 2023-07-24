@@ -6,7 +6,34 @@
 namespace grbda
 {
 
-    namespace GeneralizedJoints
+	namespace LoopConstraint
+	{
+		struct TelloDifferential : Base
+		{
+			TelloDifferential(const CasadiHelperFunctions &G_helpers,
+							  const CasadiHelperFunctions &g_helpers,
+							  const CasadiHelperFunctions &k_helpers,
+							  const CasadiHelperFunctions &kikd_helpers,
+							  const CasadiHelperFunctions &IK_pos_helpers,
+							  const CasadiHelperFunctions &IK_vel_helpers);
+
+			std::shared_ptr<Base> clone() const override;
+
+			DVec<double> gamma(const JointCoordinate &joint_pos) const override;
+
+			void updateJacobians(const JointCoordinate &joint_pos) override;
+			void updateBiases(const JointState &joint_state) override;
+
+			const CasadiHelperFunctions G_helpers_;
+			const CasadiHelperFunctions g_helpers_;
+			const CasadiHelperFunctions k_helpers_;
+			const CasadiHelperFunctions kikd_helpers_;
+			const CasadiHelperFunctions IK_pos_helpers_;
+			const CasadiHelperFunctions IK_vel_helpers_;
+		};
+	}
+
+	namespace GeneralizedJoints
     {
 
 	class TelloDifferential : public Base
@@ -17,7 +44,7 @@ namespace grbda
 				 CoordinateAxis joint_axis_1, CoordinateAxis joint_axis_2);
 	    virtual ~TelloDifferential() {}
 
-	    void updateKinematics(const JointState &joint_state) override;
+		void updateKinematics(const JointState &joint_state) override;
 
 	    void computeSpatialTransformFromParentToCurrentCluster(
 		GeneralizedSpatialTransform &Xup) const override;
@@ -35,33 +62,9 @@ namespace grbda
 		JointState randomJointState() const override;
 
 	protected:
-	    typedef int (*casadi_fn)(const double**, double**, long long int*, double*, int);
-	    typedef const long long int* (*casadi_sparsity_out_fn)(long long int);
-	    typedef int (*casadi_work_fn)(long long int*, long long int*, long long int*, long long int*);
-
-	    casadi_fn td_kikd;
-	    casadi_sparsity_out_fn td_kikd_sparsity_out;
-	    casadi_work_fn td_kikd_work;
-	    casadi_fn td_J_dy_2_dqd;
-	    casadi_sparsity_out_fn td_J_dy_2_dqd_sparsity_out;
-	    casadi_work_fn td_J_dy_2_dqd_work;
-	    casadi_fn td_g;
-	    casadi_sparsity_out_fn td_g_sparsity_out;
-	    casadi_work_fn td_g_work;
-	    casadi_fn td_k;
-	    casadi_sparsity_out_fn td_k_sparsity_out;
-	    casadi_work_fn td_k_work;
-	    casadi_fn td_IK_pos = thd_IK_pos;
-	    casadi_sparsity_out_fn td_IK_pos_sparsity_out;
-	    casadi_work_fn td_IK_pos_work;
-	    casadi_fn td_IK_vel;
-	    casadi_sparsity_out_fn td_IK_vel_sparsity_out;
-	    casadi_work_fn td_IK_vel_work;
+		std::shared_ptr<LoopConstraint::TelloDifferential> tello_constraint_;
 
 	private:
-	    void updateConstraintJacobians(const JointCoordinate &joint_pos) override;
-	    void updateConstraintBias(const JointState &joint_state) override;
-
 	    JointPtr rotor_1_joint_;
 	    JointPtr rotor_2_joint_;
 	    JointPtr link_1_joint_;

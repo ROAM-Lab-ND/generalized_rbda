@@ -2,6 +2,7 @@
 
 #include <memory>
 
+#include "LoopConstraint.h"
 #include "Dynamics/Body.h"
 #include "Dynamics/Joints/Joint.h"
 #include "Utils/Utilities/SpatialTransforms.h"
@@ -17,6 +18,7 @@ namespace grbda
         Revolute,
         RevolutePair,
         RevolutePairWithRotor,
+        RevoluteTripleWithRotor,
         RevoluteWithRotor,
         RevoluteWithMultipleRotorsJoint,
         Generic,
@@ -63,30 +65,27 @@ namespace grbda
             const DMat<double> &Psi() const { return Psi_; }
             const DVec<double> &vJ() const { return vJ_; }
 
+            std::shared_ptr<LoopConstraint::Base> cloneLoopConstraint() const
+            {
+                return loop_constraint_->clone();
+            }
+
             virtual JointState randomJointState() const;
 
-            // TODO(@MatthewChignoli): We should not need to static cast here
-            const DVec<double> gamma(JointCoordinate q) const
-            {
-                return gamma_(static_cast<DVec<double>>(q));
-            }
-            const DMat<double> &G() const { return G_; }
-            const DVec<double> &g() const { return g_; }
+            const DMat<double> &G() const { return loop_constraint_->G(); }
+            const DVec<double> &g() const { return loop_constraint_->g(); }
 
-            const DMat<double> &K() const { return K_; }
-            const DVec<double> &k() const { return k_; }
+            const DMat<double> &K() const { return loop_constraint_->K(); }
+            const DVec<double> &k() const { return loop_constraint_->k(); }
 
             const DMat<double> &spanningTreeToIndependentCoordsConversion() const
             {
                 return spanning_tree_to_independent_coords_conversion_;
             }
 
-            JointState toSpanningTreeState(const JointState& joint_state);
+            JointState toSpanningTreeState(const JointState &joint_state);
 
         protected:
-            virtual void updateConstraintJacobians(const JointCoordinate &q) {}
-            virtual void updateConstraintBias(const JointState &joint_state) {}
-
 #ifdef DEBUG_MODE
             void jointStateCheck(const JointState &joint_state) const
             {
@@ -113,17 +112,10 @@ namespace grbda
             DMat<double> Psi_;
             DVec<double> vJ_;
 
-            DVecFcn<double> gamma_;
-            DMat<double> G_;
-            DVec<double> g_;
-
-            DVecFcn<double> phi_;
-            DMat<double> K_;
-            DVec<double> k_;
+            std::shared_ptr<LoopConstraint::Base> loop_constraint_;
+            std::vector<JointPtr> single_joints_;
 
             DMat<double> spanning_tree_to_independent_coords_conversion_;
-
-            std::vector<JointPtr> single_joints_;
         };
 
     }

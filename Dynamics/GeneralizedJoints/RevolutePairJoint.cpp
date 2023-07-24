@@ -13,29 +13,14 @@ namespace grbda
             link_1_joint_ = single_joints_.emplace_back(new Joints::Revolute(joint_axis_1));
             link_2_joint_ = single_joints_.emplace_back(new Joints::Revolute(joint_axis_2));
 
-            gamma_ = [](DVec<double> y)
-            {
-                Vec2<double> q;
-                q[0] = y[0];
-                q[1] = y[1];
-                return q;
-            };
-
-            G_ = DMat<double>::Zero(2, 2);
-            G_ << 1., 0.,
-                0., 1.;
-
-            g_ = DVec<double>::Zero(2);
-
-            phi_ = [&](DVec<double> q)
-            {
-                return DVec<double>::Zero(0);
-            };
-            K_ = DMat<double>::Zero(0, 2);
-            k_ = DVec<double>::Zero(0);
-
-            // ISSUE: #72
+            // ISSUE: #72 (old repo)
             spanning_tree_to_independent_coords_conversion_ = DMat<double>::Zero(0, 0);
+
+            DMat<double> G = DMat<double>::Zero(2, 2);
+            G << 1., 0.,
+                0., 1.;
+            const DMat<double> K = DMat<double>::Identity(0, 2);
+            loop_constraint_ = std::make_shared<LoopConstraint::Static>(G, K);
 
             S_ = DMat<double>::Zero(12, 2);
             S_.block<6, 1>(0, 0) = link_1_joint_->S();

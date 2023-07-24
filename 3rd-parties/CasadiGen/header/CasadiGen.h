@@ -53,6 +53,21 @@
 namespace grbda
 {
 
+  struct CasadiHelperFunctions
+  {
+    typedef int (*casadi_fn)(const double **, double **, long long int *, double *, int);
+    typedef const long long int *(*sparsity_out_fn)(long long int);
+    typedef int (*work_fn)(long long int *, long long int *, long long int *, long long int *);
+
+    CasadiHelperFunctions() {}
+    CasadiHelperFunctions(casadi_fn main, sparsity_out_fn sparsity, work_fn work)
+        : main_(main), sparsity_(sparsity), work_(work) {}
+
+    casadi_fn main_;
+    sparsity_out_fn sparsity_;
+    work_fn work_;
+  };
+
   /*
     @brief: Get the numerical evaluation of a CasadiGen function and the output sparsity pattern
     @params:
@@ -99,6 +114,14 @@ namespace grbda
 
   template <typename T>
   void casadi_interface(
+      std::vector<DVec<typename T::Scalar>> &arg, std::vector<Eigen::MatrixBase<T> *> &res,
+      const CasadiHelperFunctions& helpers)
+  {
+    casadi_interface(arg, res, helpers.main_, helpers.sparsity_, helpers.work_);
+  }
+
+  template <typename T>
+  void casadi_interface(
       std::vector<DVec<typename T::Scalar>> &arg, Eigen::MatrixBase<T> &res,
       int f(const typename T::Scalar **, typename T::Scalar **, int_T *, typename T::Scalar *, int),
       const int_T *f_sparse_out(int_T),
@@ -106,6 +129,14 @@ namespace grbda
   {
     std::vector<Eigen::MatrixBase<T> *> res_vec = {&res};
     casadi_interface(arg, res_vec, f, f_sparse_out, f_work);
+  }
+
+  template <typename T>
+  void casadi_interface(
+      std::vector<DVec<typename T::Scalar>> &arg, Eigen::MatrixBase<T> &res,
+      const CasadiHelperFunctions& helpers)
+  {
+    casadi_interface(arg, res, helpers.main_, helpers.sparsity_, helpers.work_);
   }
 
 } // namespace grbda

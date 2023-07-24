@@ -56,48 +56,9 @@ namespace grbda
         const ClusterTreeModel &cluster_tree_model)
     {
 
-        gamma_ = [cluster_tree_model](DVec<double> q)
-        {
-            DVec<double> q_full = DVec<double>::Zero(0);
-            for (const auto &cluster : cluster_tree_model.clusters())
-            {
-                const int pos_idx = cluster->position_index_;
-                const int num_pos = cluster->num_positions_;
-                const auto joint = cluster->joint_;
-
-                JointCoordinate joint_pos = cluster->joint_state_.position;
-                if (cluster->joint_state_.position.isSpanning())
-                {
-                    joint_pos = q.segment(pos_idx, num_pos);
-                    q_full = appendEigenVector(q_full, joint_pos);
-                }
-                else
-                {
-                    joint_pos = q.segment(pos_idx, num_pos);
-                    q_full = appendEigenVector(q_full, joint->gamma(joint_pos));
-                }
-            }
-            return q_full;
-        };
-
-        G_ = DMat<double>::Zero(0, 0);
-        g_ = DVec<double>::Zero(0);
         for (const auto &cluster : cluster_tree_model.clusters())
         {
-            const auto joint = cluster->joint_;
-            G_ = appendEigenMatrix(G_, joint->G());
-            g_ = appendEigenVector(g_, joint->g());
-        }
-        G_pinv_ = G_.completeOrthogonalDecomposition().pseudoInverse();
-        G_tranpose_pinv_ = G_.transpose().completeOrthogonalDecomposition().pseudoInverse();
-
-        K_ = DMat<double>::Zero(0, 0);
-        k_ = DVec<double>::Zero(0);
-        for (const auto &cluster : cluster_tree_model.clusters())
-        {
-            const auto joint = cluster->joint_;
-            K_ = appendEigenMatrix(K_, joint->K());
-            k_ = appendEigenVector(k_, joint->k());
+            loop_constraints_.push_back(cluster->joint_->cloneLoopConstraint());
         }
     }
 
@@ -117,7 +78,23 @@ namespace grbda
             node->joint_state_.velocity = qd.segment(node->velocity_index_, node->num_velocities_);
         }
 
+        q_ = q;
+        qd_ = qd;
+
         initializeExternalForces();
+    }
+
+    void RigidBodyTreeModel::updateLoopConstraints()
+    {
+#ifdef DEBUG_MODE
+        if (q_.size() != getNumPositions() || qd_.size() != getNumDegreesOfFreedom())
+            throw std::runtime_error("State is not initialized");
+#endif
+        if (loop_constraints_updated_)
+            return;
+
+        loop_constraints_.update(q_, qd_);
+        loop_constraints_updated_ = true;
     }
 
     Vec3<double> RigidBodyTreeModel::getPosition(const string &body_name)
@@ -169,18 +146,20 @@ namespace grbda
 
     DMat<double> RigidBodyTreeModel::getMassMatrix()
     {
+        updateLoopConstraints();
         compositeRigidBodyAlgorithm();
-        return G_.transpose() * H_ * G_;
+        return loop_constraints_.G_transpose() * H_ * loop_constraints_.G();
     }
 
     DVec<double> RigidBodyTreeModel::getBiasForceVector()
     {
+        updateLoopConstraints();
         updateBiasForceVector();
-        if (g_.norm() > 1e-12)
+        if (loop_constraints_.g().norm() > 1e-12)
         {
             compositeRigidBodyAlgorithm();
         }
-        return G_.transpose() * (C_ + H_ * g_);
+        return loop_constraints_.G_transpose() * (C_ + H_ * loop_constraints_.g());
     }
 
 } // namespace grbda

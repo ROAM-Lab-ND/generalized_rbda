@@ -3,6 +3,29 @@
 namespace grbda
 {
 
+    namespace LoopConstraint
+    {
+        Free::Free()
+        {
+            G_ = DMat<double>::Identity(6, 6);
+            g_ = DVec<double>::Zero(6);
+
+            K_ = DMat<double>::Zero(0, 6);
+            k_ = DVec<double>::Zero(0);
+        }
+
+        std::shared_ptr<Base> Free::clone() const
+        {
+            return std::make_shared<Free>(*this);
+        }
+
+        DVec<double> Free::gamma(const JointCoordinate &joint_pos) const
+        {
+            return joint_pos;
+        }
+
+    }
+
     namespace GeneralizedJoints
     {
 
@@ -17,17 +40,9 @@ namespace grbda
 
             single_joints_.emplace_back(new Joints::Free());
 
-            gamma_ = [](DVec<double> y)
-            { return y; };
-            G_ = DMat<double>::Identity(6, 6);
-            g_ = DVec<double>::Zero(6);
-
-            phi_ = [](DVec<double> q)
-            { return DVec<double>::Zero(0); };
-            K_ = DMat<double>::Identity(0, 6);
-            k_ = DVec<double>::Zero(0);
-
             spanning_tree_to_independent_coords_conversion_ = DMat<double>::Identity(6, 6);
+
+            loop_constraint_ = std::make_shared<LoopConstraint::Free>();
         }
 
         void Free::updateKinematics(const JointState &joint_state)

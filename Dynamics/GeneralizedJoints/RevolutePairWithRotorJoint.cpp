@@ -23,38 +23,18 @@ namespace grbda
             rotor_2_joint_ = single_joints_.emplace_back(new Joints::Revolute(rotor_axis_2));
             link_2_joint_ = single_joints_.emplace_back(new Joints::Revolute(joint_axis_2));
 
-            gamma_ = [net_ratio_1, gear_ratio_2, belt_ratio_1, net_ratio_2](DVec<double> y)
-            {
-                Vec4<double> q;
-                q[0] = y[0];
-                q[1] = net_ratio_1 * y[0];
-                q[2] = gear_ratio_2 * belt_ratio_1 * y[0] + net_ratio_2 * y[1];
-                q[3] = y[1];
-                return q;
-            };
+            spanning_tree_to_independent_coords_conversion_ = DMat<double>::Identity(2, 4);
+            spanning_tree_to_independent_coords_conversion_ << 1., 0., 0., 0., 0., 0., 0., 1.;
 
-            G_ = DMat<double>::Zero(4, 2);
-            G_ << 1., 0.,
+            DMat<double> G = DMat<double>::Zero(4, 2);
+            G << 1., 0.,
                 net_ratio_1, 0.,
                 gear_ratio_2 * belt_ratio_1, net_ratio_2,
                 0., 1.;
-
-            g_ = DVec<double>::Zero(4);
-
-            phi_ = [net_ratio_1, gear_ratio_2, belt_ratio_1, net_ratio_2](DVec<double> q)
-            {
-                DVec<double> out = DVec<double>::Zero(2);
-                out[0] = net_ratio_1 * q[0] - q[1];
-                out[1] = gear_ratio_2 * belt_ratio_1 * q[0] + net_ratio_2 * q[3] - q[2];
-                return out;
-            };
-            K_ = DMat<double>::Identity(2, 4);
-            K_ << net_ratio_1, -1., 0., 0.,
+            DMat<double> K = DMat<double>::Identity(2, 4);
+            K << net_ratio_1, -1., 0., 0.,
                 gear_ratio_2 * belt_ratio_1, 0, -1., net_ratio_2;
-            k_ = DVec<double>::Zero(2);
-
-            spanning_tree_to_independent_coords_conversion_ = DMat<double>::Identity(2, 4);
-            spanning_tree_to_independent_coords_conversion_ << 1., 0., 0., 0., 0., 0., 0., 1.;
+            loop_constraint_ = std::make_shared<LoopConstraint::Static>(G, K);
 
             S_.block<6, 1>(0, 0) = link_1_joint_->S();
             S_.block<6, 1>(6, 0) = net_ratio_1 * rotor_1_joint_->S();

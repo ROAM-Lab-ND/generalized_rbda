@@ -114,17 +114,14 @@ void runTelloBenchmark(std::ofstream &file, const bool include_forces)
         t_cluster += timer.getMs();
 
         timer.start();
-        lg_custom_mult_model.extractLoopClosureFunctionsFromClusterModel(cluster_model);
         lg_custom_mult_model.forwardDynamics(tau);
         t_lg_custom += timer.getMs();
 
         timer.start();
-        lg_eigen_mult_model.extractLoopClosureFunctionsFromClusterModel(cluster_model);
         lg_eigen_mult_model.forwardDynamics(tau);
         t_lg_eigen += timer.getMs();
 
         timer.start();
-        projection_model.extractLoopClosureFunctionsFromClusterModel(cluster_model);
         projection_model.forwardDynamics(tau);
         t_projection += timer.getMs();
 

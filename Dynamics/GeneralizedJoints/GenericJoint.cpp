@@ -8,20 +8,16 @@ namespace grbda
     {
 
         Generic::Generic(const std::vector<Body> &bodies, const std::vector<JointPtr> &joints,
-                         const ExplicitConstraint &explicit_constraint)
+                         const shared_ptr<const LoopConstraint::Base> &loop_constraint)
             : Base((int)bodies.size(),
-                   explicit_constraint.numIndependentVelocities(),
-                   explicit_constraint.numIndependentVelocities(),
+                   loop_constraint->numIndependentPos(), loop_constraint->numIndependentVel(),
                    false, false),
               bodies_(bodies)
         {
             for (auto &joint : joints)
                 single_joints_.push_back(joint);
 
-            gamma_ = explicit_constraint.gamma_;
-            G_ = explicit_constraint.G_;
-            g_ = explicit_constraint.g_;
-            extractImplicitConstraintFromExplicit(explicit_constraint);
+            loop_constraint_ = loop_constraint->clone();
 
             extractConnectivity();
 
@@ -75,7 +71,7 @@ namespace grbda
                 vel_idx += num_vel;
             }
 
-            S_ = Xup_spanning_tree_ * S_spanning_tree_ * G_;
+            S_ = Xup_spanning_tree_ * S_spanning_tree_ * loop_constraint_->G();
             vJ_ = S_ * joint_state.velocity;
 
             for (int i = 0; i < num_bodies_; i++)
@@ -94,7 +90,7 @@ namespace grbda
                 }
             }
 
-            S_ring_ = Xup_ring_spanning_tree_ * S_spanning_tree_ * G_;
+            S_ring_ = Xup_ring_spanning_tree_ * S_spanning_tree_ * loop_constraint_->G();
         }
 
         void Generic::computeSpatialTransformFromParentToCurrentCluster(
@@ -112,31 +108,6 @@ namespace grbda
                         break;
                     }
             }
-        }
-
-        void
-        Generic::extractImplicitConstraintFromExplicit(const ExplicitConstraint &explicit_constraint)
-        {
-            const DMat<double> &G = explicit_constraint.G_;
-            const DVec<double> &g = explicit_constraint.g_;
-
-            const int num_spanning_coords = G.rows();
-            const int num_independent_coords = G.cols();
-            const int num_constraints = num_spanning_coords - num_independent_coords;
-
-            if (num_spanning_coords < num_independent_coords)
-                throw std::runtime_error("Generic Joint cannot have more independent coordinates than spanning tree coordinates");
-            if (!G.topRows(num_independent_coords).isIdentity())
-                throw std::runtime_error("Generic joints require the independent coordinates be a subset of the spanning tree coordinates");
-
-            K_ = DMat<double>::Zero(num_constraints, num_spanning_coords);
-            K_.leftCols(num_independent_coords) = -G.bottomRows(num_constraints);
-            K_.rightCols(num_constraints).setIdentity();
-            k_ = -g.tail(num_constraints);
-
-            spanning_tree_to_independent_coords_conversion_ =
-                DMat<double>::Zero(num_independent_coords, num_spanning_coords);
-            spanning_tree_to_independent_coords_conversion_.leftCols(num_independent_coords) = DMat<double>::Identity(num_independent_coords, num_independent_coords);
         }
 
         void Generic::extractConnectivity()

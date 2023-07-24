@@ -85,8 +85,8 @@ namespace grbda
             const int &nq = ceil(state.size() / 2.0);
             const int &nv = floor(state.size() / 2.0);
 
-            const DVec<double> q = gamma_(state.head(nq));
-            const DVec<double> qd = G_ * state.tail(nv);
+            const DVec<double> q = loop_constraints_.gamma(state.head(nq));
+            const DVec<double> qd = loop_constraints_.G() * state.tail(nv);
 
             initializeState(q, qd);
         }
@@ -101,6 +101,8 @@ namespace grbda
 
         void initializeState(const DVec<double> &q, const DVec<double> &qd);
 
+        void updateLoopConstraints();
+
         void contactJacobians() override;
 
         DVec<double> forwardDynamics(const DVec<double> &tau) override;
@@ -108,10 +110,15 @@ namespace grbda
         DMat<double> getMassMatrix() override;
         DVec<double> getBiasForceVector() override;
 
-        DVec<double> qddToYdd(DVec<double> qdd) const { return G_pinv_ * (qdd - g_); }
-        DVec<double> yddToQdd(DVec<double> ydd) const { return G_ * ydd + g_; }
+        DVec<double> qddToYdd(DVec<double> qdd) const
+        {
+            return loop_constraints_.G_pinv() * (qdd - loop_constraints_.g());
+        }
 
-        void extractLoopClosureFunctionsFromClusterModel(const ClusterTreeModel &cluster_tree_model);
+        DVec<double> yddToQdd(DVec<double> ydd) const
+        {
+            return loop_constraints_.G() * ydd + loop_constraints_.g();
+        }
 
 #ifdef TIMING_STATS
         const RigidBodyTreeTimingStatistics &getTimingStatistics() const
@@ -122,23 +129,25 @@ namespace grbda
 
     private:
         void extractRigidBodiesAndJointsFromClusterModel(const ClusterTreeModel &cluster_tree_model);
+        void extractLoopClosureFunctionsFromClusterModel(const ClusterTreeModel &cluster_tree_model);
         void extractContactPointsFromClusterModel(const ClusterTreeModel &cluster_tree_model);
+
+        void resetCache() override
+        {
+            TreeModel::resetCache();
+            loop_constraints_updated_ = false;
+        }
 
         FwdDynMethod forward_dynamics_method_;
 
-        DVecFcn<double> gamma_;
-        DMat<double> G_;
-        DMat<double> G_pinv_;
-        DMat<double> G_tranpose_pinv_;
-        DVec<double> g_;
-
-        DVecFcn<double> phi_;
-        DMat<double> K_;
-        DVec<double> k_;
+        LoopConstraint::Collection loop_constraints_;
+        bool loop_constraints_updated_ = false;
 
         std::vector<RigidBodyTreeNodePtr> rigid_body_nodes_;
-
         std::unordered_map<string, int> body_name_to_body_index_;
+
+        DVec<double> q_;
+        DVec<double> qd_;
 
 #ifdef TIMING_STATS
         Timer timer_;

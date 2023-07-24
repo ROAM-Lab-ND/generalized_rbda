@@ -25,47 +25,22 @@ namespace grbda
                 rotor_joints_.push_back(rotor);
             }
 
-            gamma_ = [gear_ratios, num_rotors](const DVec<double> &y)
-            {
-                DVec<double> q = DVec<double>::Zero(1 + num_rotors);
-                q[0] = y[0];
-                for (size_t j(0); j < num_rotors; j++)
-                {
-                    q[j + 1] = gear_ratios[j] * y[0];
-                }
-                return q;
-            };
-
-            G_ = DMat<double>::Zero(1 + num_rotors, 1);
-            G_(0, 0) = 1.;
-            for (size_t j(0); j < num_rotors; j++)
-            {
-                G_(j + 1, 0) = gear_ratios[j];
-            }
-
-            g_ = DVec<double>::Zero(1 + num_rotors);
-
-            phi_ = [gear_ratios, num_rotors](const DVec<double> &q)
-            {
-                DVec<double> out = DVec<double>::Zero(num_rotors);
-                for (size_t j(0); j < num_rotors; j++)
-                {
-                    out[j] = gear_ratios[j] * q[0] - q[1 + j];
-                }
-                return out;
-            };
-
-            K_ = DMat<double>::Zero(num_rotors, 1 + num_rotors);
-            for (size_t j(0); j < num_rotors; j++)
-            {
-                K_(j, 0) = gear_ratios[j];
-                K_(j, j + 1) = -1.;
-            }
-
-            k_ = DVec<double>::Zero(num_rotors);
-
             spanning_tree_to_independent_coords_conversion_ = DMat<double>::Zero(1, 1 + num_rotors);
             spanning_tree_to_independent_coords_conversion_(0, 0) = 1.;
+
+            DMat<double> G = DMat<double>::Zero(1 + num_rotors, 1);
+            G(0, 0) = 1.;
+            for (size_t j(0); j < num_rotors; j++)
+            {
+                G(j + 1, 0) = gear_ratios[j];
+            }
+            DMat<double> K = DMat<double>::Zero(num_rotors, 1 + num_rotors);
+            for (size_t j(0); j < num_rotors; j++)
+            {
+                K(j, 0) = gear_ratios[j];
+                K(j, j + 1) = -1.;
+            }
+            loop_constraint_ = std::make_shared<LoopConstraint::Static>(G, K);
 
             // TODO(@MatthewChignoli): How to compute Psi?
 
@@ -94,7 +69,7 @@ namespace grbda
                 rotor_joints_[i]->updateKinematics(q.segment<1>(i + 1), qd.segment<1>(i + 1));
             }
 
-            S_ = Xup_spanning_tree_ * S_spanning_tree_ * G_;
+            S_ = Xup_spanning_tree_ * S_spanning_tree_ * G();
             vJ_ = S_ * joint_state.velocity;
         }
 

@@ -14,17 +14,12 @@ namespace grbda
             Psi_ = single_joints_[0]->S();
             vJ_ = SVec<double>::Zero();
 
-            gamma_ = [](DVec<double> y)
-            { return y; };
-            G_ = DMat<double>::Identity(1, 1);
-            g_ = DVec<double>::Zero(1);
-
-            phi_ = [](DVec<double> q)
-            { return DVec<double>::Zero(0); };
-            K_ = DMat<double>::Identity(0, 1);
-            k_ = DVec<double>::Zero(0);
-
             spanning_tree_to_independent_coords_conversion_ = DMat<double>::Identity(1, 1);
+
+            const DMat<double> G = DMat<double>::Identity(1, 1);
+            const DMat<double> K = DMat<double>::Identity(0, 1);
+            loop_constraint_ = std::make_shared<LoopConstraint::Static>(G, K);
+
         }
 
         void Revolute::updateKinematics(const JointState &joint_state)
