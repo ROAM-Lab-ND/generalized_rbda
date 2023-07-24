@@ -34,11 +34,11 @@ namespace grbda
 
             // Contact points
             const std::string cpA_name = "cp-A-" + std::to_string(i);
-            const Vec3<double> cpA_local_offset = Vec3<double>::Random();
+            const Vec3<double> cpA_local_offset = Vec3<double>::Zero();
             model.appendContactPoint(linkA_name, cpA_local_offset, cpA_name);
 
             const std::string cpB_name = "cp-B-" + std::to_string(i);
-            const Vec3<double> cpB_local_offset = Vec3<double>::Random();
+            const Vec3<double> cpB_local_offset = Vec3<double>::Zero();
             model.appendContactPoint(linkB_name, cpB_local_offset, cpB_name);
 
             parent_name = linkA_name;

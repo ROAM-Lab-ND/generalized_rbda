@@ -60,7 +60,11 @@ namespace grbda
 
             const DMat<double> &S() const { return S_; }
             const DMat<double> &S_ring() const { return S_ring_; }
-            const DMat<double> &Psi() const { return Psi_; }
+            // TODO(@MatthewChignoli): Just delete this function?
+            const DMat<double> &Psi() const
+            {
+                throw std::runtime_error("Psi not setup for this generalized joint type");
+            }
             const DVec<double> &vJ() const { return vJ_; }
 
             virtual JointState randomJointState() const;

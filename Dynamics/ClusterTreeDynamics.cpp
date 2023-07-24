@@ -196,30 +196,9 @@ namespace grbda
         const ContactPoint &contact_point = contact_points_[contact_point_index];
 
         forwardKinematics();
-        // TODO(@MatthewChignoli): make a flag so that we don't have to recalc Jacobians
-        contactJacobians();
-
-        const D3Mat<double> J = Jc(contact_point_name);
-        const DMat<double> H = massMatrix();
-        const DMat<double> H_inv = H.inverse();
-        const DMat<double> inv_ops_inertia = J * H_inv * J.transpose();
-        dstate_out = H_inv * (J.transpose() * force);
-        return force.dot(inv_ops_inertia * force);
-
-        // TODO(@MatthewChignoli): Fix this to use the EFPA algorithm
         updateArticulatedBodies();
         updateForcePropagators();
         updateQddEffects();
-
-        // // Print the full qdd_for_subtree
-        // DMat<double> qdd_for_subtree(getNumDegreesOfFreedom(), getNumDegreesOfFreedom());
-        // for (const auto& cluster : cluster_nodes_)
-        // {
-        //     const int& vel_idx = cluster->velocity_index_;
-        //     const int& num_vel = cluster->num_velocities_;
-        //     qdd_for_subtree.middleCols(vel_idx, num_vel) = cluster->qdd_for_subtree_due_to_subtree_root_joint_qdd;
-        // }
-        // std::cout << "qdd_for_subtree =\n" << qdd_for_subtree << std::endl;
 
         dstate_out = DVec<double>::Zero(getNumDegreesOfFreedom());
 
@@ -284,8 +263,12 @@ namespace grbda
                 .middleRows(vel_idx, num_vel)
                 .setIdentity();
 
+            // Compute Psi
+            const DMat<double> S = joint->S();
+            DMat<double> Psi = S.transpose().completeOrthogonalDecomposition().pseudoInverse();
+
             DMat<double> F =
-                (cluster->ChiUp_.transpose() - cluster->Xup_.toMatrix().transpose()) * joint->Psi();
+                (cluster->ChiUp_.transpose() - cluster->Xup_.toMatrix().transpose()) * Psi;
 
             int j = cluster->parent_index_;
             while (j > -1)

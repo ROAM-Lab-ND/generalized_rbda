@@ -6,7 +6,7 @@
 
 using namespace grbda;
 
-static const double tol = 1e-5;
+static const double tol = 1e-8;
 
 // The purpose of these tests is to ensure consistency between the outputs of the Rigid Body
 // Dynamics Algorithms for our cluster tree model and the constrained rigid body tree
@@ -108,28 +108,29 @@ protected:
 
 using testing::Types;
 
-// typedef Types<
-//     TeleopArm, Tello,
-//     RevoluteChainWithRotor<2>,
-//     RevoluteChainWithRotor<4>,
-//     RevoluteChainWithRotor<8>,
-//     RevolutePairChainWithRotor<2>,
-//     RevolutePairChainWithRotor<4>,
-//     RevolutePairChainWithRotor<8>,
-//     RevoluteChainMultipleRotorsPerLink<2, 2>,
-//     RevoluteChainMultipleRotorsPerLink<4, 1>,
-//     RevoluteChainMultipleRotorsPerLink<4, 3>,
-//     RevoluteChainWithAndWithoutRotor<0ul, 8ul>,
-//     RevoluteChainWithAndWithoutRotor<4ul, 4ul>,
-//     RevoluteChainWithAndWithoutRotor<8ul, 0ul>>
-//     Robots;
-
 typedef Types<
-    TeleopArm,
-    // RevoluteChainWithRotor<2>,
-    // RevolutePairChainWithRotor<2>>
-    RevolutePairChain<2>>
+    TeleopArm, Tello,
+    RevoluteChainWithRotor<2>,
+    RevoluteChainWithRotor<4>,
+    RevoluteChainWithRotor<8>,
+    RevolutePairChainWithRotor<2>,
+    RevolutePairChainWithRotor<4>,
+    RevolutePairChainWithRotor<8>,
+    RevoluteChainMultipleRotorsPerLink<2, 2>,
+    RevoluteChainMultipleRotorsPerLink<4, 1>,
+    RevoluteChainMultipleRotorsPerLink<4, 3>,
+    RevoluteChainWithAndWithoutRotor<0ul, 8ul>,
+    RevoluteChainWithAndWithoutRotor<4ul, 4ul>,
+    RevoluteChainWithAndWithoutRotor<8ul, 0ul>>
     Robots;
+
+// typedef Types<
+//     // TeleopArm,
+//     // RevoluteChainWithRotor<2>,
+//     // RevolutePairChainWithRotor<2>>
+//     // RevoluteChainWithRotor<8>,
+//     RevolutePairChain<2>>
+//     Robots;
 
 TYPED_TEST_SUITE(RigidBodyDynamicsAlgosTest, Robots);
 
