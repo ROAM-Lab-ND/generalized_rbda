@@ -31,7 +31,7 @@ namespace grbda
 		tello_constraint_ = std::make_shared<LoopConstraint::TelloDifferential>(
 			G_helpers, g_helpers, k_helpers, kikd_helpers, IK_pos_helpers, IK_vel_helpers);
 		loop_constraint_ = tello_constraint_;
-		}
+	    }
 	    virtual ~TelloKneeAnkleDifferential() {}
 
 	    GeneralizedJointTypes type() const override { return GeneralizedJointTypes::TelloKneeAnkleDifferential; }
