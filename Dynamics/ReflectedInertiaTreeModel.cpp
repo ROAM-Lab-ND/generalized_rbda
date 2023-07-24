@@ -315,6 +315,8 @@ namespace grbda
         const int contact_point_index = contact_name_to_contact_index_.at(contact_point_name);
         const ContactPoint &contact_point = contact_points_[contact_point_index];
 
+        // TODO(@MatthewChignoli): We need to implement the EFPA for this model as well so we can do speed comparisons with Cluster-based method. And we need to unit test it as well somehow.
+
         const D3Mat<double> J = contact_point.jacobian_.bottomRows<3>();
         const DMat<double> H = getMassMatrix();
         const DMat<double> H_inv = H.inverse();

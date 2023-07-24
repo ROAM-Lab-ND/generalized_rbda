@@ -150,8 +150,6 @@ TYPED_TEST(RigidBodyKinemaitcsTest, ForwardKinematics)
                 J_qdot += J_cp_cluster.middleCols(vel_idx, num_vel) * this->model_state[i].velocity;
             }
             GTEST_ASSERT_LT((J_qdot.tail<3>() - v_cp_cluster).norm(), tol);
-
-            // TODO(@MatthewChignoli) Validate the jacobians by finite difference
         }
     }
 }

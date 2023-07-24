@@ -124,14 +124,6 @@ typedef Types<
     RevoluteChainWithAndWithoutRotor<8ul, 0ul>>
     Robots;
 
-// typedef Types<
-//     // TeleopArm,
-//     // RevoluteChainWithRotor<2>,
-//     // RevolutePairChainWithRotor<2>>
-//     // RevoluteChainWithRotor<8>,
-//     RevolutePairChain<2>>
-//     Robots;
-
 TYPED_TEST_SUITE(RigidBodyDynamicsAlgosTest, Robots);
 
 TYPED_TEST(RigidBodyDynamicsAlgosTest, MassMatrix)
@@ -298,11 +290,12 @@ TYPED_TEST(RigidBodyDynamicsAlgosTest, ForwardAndInverseDyanmics)
     this->printAverageComputationTimes(num_tests);
 }
 
-// TODO(@MatthewChignoli): Add this test back in. If we want to actually implement this test, then every type of TreeModel will need to implement this applyLocalFrameTestForceAtContactPoint metod
-
 TYPED_TEST(RigidBodyDynamicsAlgosTest, ApplyTestForceTest)
 {
-    // TODO(@MatthewChignoli): write description
+    // This test validates that the Extended Force Propagator Algorithm works as expected.
+    // We compare the elements of the inverse operational space inertia matrix (lambda_inv) and the
+    // resulting change in joint state (dstate) as computed by the Extended Force Propagator
+    // Algorithm to the same quantities computed by the classic J H^-1 J^T method.
 
     const int num_tests_per_robot = 20;
     for (int i = 0; i < (int)this->cluster_models.size(); i++)
