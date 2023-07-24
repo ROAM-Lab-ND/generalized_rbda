@@ -315,6 +315,7 @@ namespace grbda
         const int contact_point_index = contact_name_to_contact_index_.at(contact_point_name);
         const ContactPoint &contact_point = contact_points_[contact_point_index];
 
+        // ISSUE #23
         const D3Mat<double> J = contact_point.jacobian_.bottomRows<3>();
         const DMat<double> H = getMassMatrix();
         const DMat<double> H_inv = H.inverse();

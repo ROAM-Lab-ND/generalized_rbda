@@ -94,19 +94,6 @@ void runTelloBenchmark(std::ofstream &file, const bool include_forces)
         reflected_inertia_model.initializeIndependentStates(independent_joint_pos,
                                                             independent_joint_vel);
 
-        // // TODO(@MatthewChignoli): Seems like including forces does not slow it down? That's strange
-        // if (include_forces)
-        // {
-        //     // Set random spatial forces on bodies
-        //     std::vector<ExternalForceAndBodyIndexPair> force_and_index_pairs;
-        //     for (const auto &body : cluster_model.bodies())
-        //         force_and_index_pairs.emplace_back(body.index_, SVec<double>::Random());
-        //     cluster_model.initializeExternalForces(force_and_index_pairs);
-        //     lg_custom_mult_model.initializeExternalForces(force_and_index_pairs);
-        //     lg_eigen_mult_model.initializeExternalForces(force_and_index_pairs);
-        //     projection_model.initializeExternalForces(force_and_index_pairs);
-        // }
-
         // Forward Dynamics
         DVec<double> tau = DVec<double>::Random(nv);
         timer.start();

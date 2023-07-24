@@ -6,7 +6,7 @@
 
 using namespace grbda;
 
-static const double tol = 1e-5;
+static const double tol = 1e-8;
 
 // The purpose of these tests is to ensure consistency between the outputs of the Rigid Body
 // Dynamics Algorithms for our cluster tree model and the constrained rigid body tree
@@ -285,11 +285,12 @@ TYPED_TEST(RigidBodyDynamicsAlgosTest, ForwardAndInverseDyanmics)
     this->printAverageComputationTimes(num_tests);
 }
 
-// TODO(@MatthewChignoli): Add this test back in. If we want to actually implement this test, then every type of TreeModel will need to implement this applyLocalFrameTestForceAtContactPoint metod
-
 TYPED_TEST(RigidBodyDynamicsAlgosTest, ApplyTestForceTest)
 {
-    // TODO(@MatthewChignoli): write description
+    // This test validates that the Extended Force Propagator Algorithm works as expected.
+    // We compare the elements of the inverse operational space inertia matrix (lambda_inv) and the
+    // resulting change in joint state (dstate) as computed by the Extended Force Propagator
+    // Algorithm to the same quantities computed by the classic J H^-1 J^T method.
 
     const int num_tests_per_robot = 20;
     for (int i = 0; i < (int)this->cluster_models.size(); i++)

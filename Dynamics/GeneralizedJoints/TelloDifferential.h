@@ -34,51 +34,43 @@ namespace grbda
 	}
 
 	namespace GeneralizedJoints
-    {
-
-	class TelloDifferential : public Base
 	{
-	public:
-	    TelloDifferential(Body &rotor_1, Body &rotor_2, Body &link_1, Body &link_2,
-				 CoordinateAxis rotor_axis_1, CoordinateAxis rotor_axis_2,
-				 CoordinateAxis joint_axis_1, CoordinateAxis joint_axis_2);
-	    virtual ~TelloDifferential() {}
 
-		void updateKinematics(const JointState &joint_state) override;
-
-	    void computeSpatialTransformFromParentToCurrentCluster(
-		GeneralizedSpatialTransform &Xup) const override;
-
-		std::vector<std::tuple<Body, JointPtr, DMat<double>>>
-		bodiesJointsAndReflectedInertias() const override
+		class TelloDifferential : public Base
 		{
-			std::vector<std::tuple<Body, JointPtr, DMat<double>>> bodies_joints_and_ref_inertias_;
-			const Mat2<double> Z = Mat2<double>::Zero();
-			bodies_joints_and_ref_inertias_.push_back(std::make_tuple(link_1_, link_1_joint_, Z));
-			bodies_joints_and_ref_inertias_.push_back(std::make_tuple(link_2_, link_2_joint_, Z));
-			return bodies_joints_and_ref_inertias_;
-		}
+		public:
+			TelloDifferential(Body &rotor_1, Body &rotor_2, Body &link_1, Body &link_2,
+							  CoordinateAxis rotor_axis_1, CoordinateAxis rotor_axis_2,
+							  CoordinateAxis joint_axis_1, CoordinateAxis joint_axis_2);
+			virtual ~TelloDifferential() {}
 
-		JointState randomJointState() const override;
+			void updateKinematics(const JointState &joint_state) override;
 
-	protected:
-		std::shared_ptr<LoopConstraint::TelloDifferential> tello_constraint_;
+			void computeSpatialTransformFromParentToCurrentCluster(
+				GeneralizedSpatialTransform &Xup) const override;
 
-	private:
-	    JointPtr rotor_1_joint_;
-	    JointPtr rotor_2_joint_;
-	    JointPtr link_1_joint_;
-	    JointPtr link_2_joint_;
+			std::vector<std::tuple<Body, JointPtr, DMat<double>>>
+			bodiesJointsAndReflectedInertias() const override;
 
-	    SpatialTransform X21_;
-	    
-	    const Body rotor_1_;
-	    const Body rotor_2_;
-	    const Body link_1_;
-	    const Body link_2_;
+			JointState randomJointState() const override;
 
-	};
+		protected:
+			std::shared_ptr<LoopConstraint::TelloDifferential> tello_constraint_;
 
-    }
+		private:
+			JointPtr rotor_1_joint_;
+			JointPtr rotor_2_joint_;
+			JointPtr link_1_joint_;
+			JointPtr link_2_joint_;
+
+			SpatialTransform X21_;
+
+			const Body rotor_1_;
+			const Body rotor_2_;
+			const Body link_1_;
+			const Body link_2_;
+		};
+
+	}
 
 } // namespace grbda

@@ -469,7 +469,7 @@ namespace grbda
         spatial_force.tail<3>() = force;
 
         DVec<double> F = DVec<double>::Zero(cluster->motion_subspace_dimension_);
-        F.segment<6>(body.sub_index_within_cluster_) =
+        F.segment<6>(6 * body.sub_index_within_cluster_) =
             X_cartesian_to_plucker.inverseTransformForceVector(spatial_force);
 
         return F;
