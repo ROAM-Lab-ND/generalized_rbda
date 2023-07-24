@@ -61,7 +61,7 @@ void runBenchmark(std::ofstream &file)
             DVec<double> dstate_diag;
 
             // TODO(@MatthewChignoli): What should this force be?
-            const Vec3<double> test_force = Vec3<double>::Random();
+            const Vec3<double> test_force = 50. * Vec3<double>::Random();
             const std::string cp_name = cl_model.contactPoints().back().name_;
 
             const double lambda_inv =
