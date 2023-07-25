@@ -38,9 +38,9 @@ TYPED_TEST(ClusterTreeModelTest, SetState)
     ModelState model_state;
     DVec<double> q(0);
     DVec<double> qd(0);
-    for (const auto &cluster : this->cluster_model.clusters())
+    for (const ClusterTreeNode &cluster : this->cluster_model.clusters())
     {
-        model_state.push_back(cluster->joint_->randomJointState());
+        model_state.push_back(cluster.joint_->randomJointState());
         q = appendEigenVector(q, model_state.back().position);
         qd = appendEigenVector(qd, model_state.back().velocity);
     }
@@ -57,14 +57,14 @@ TYPED_TEST(ClusterTreeModelTest, SetState)
         this->cluster_model.forwardKinematics();
 
         std::vector<DVec<double>> link_velocities_set_state;
-        for (const auto &cluster : this->cluster_model.clusters())
+        for (const ClusterTreeNode &cluster : this->cluster_model.clusters())
         {
-            link_velocities_set_state.push_back(cluster->v_);
+            link_velocities_set_state.push_back(cluster.v_);
         }
 
         std::vector<DVec<double>> cp_positions_set_state;
         std::vector<DVec<double>> cp_velocities_set_state;
-        for (const auto &cp : this->cluster_model.contactPoints())
+        for (const ContactPoint &cp : this->cluster_model.contactPoints())
         {
             cp_positions_set_state.push_back(cp.position_);
             cp_velocities_set_state.push_back(cp.velocity_);
@@ -75,14 +75,14 @@ TYPED_TEST(ClusterTreeModelTest, SetState)
         this->cluster_model.forwardKinematics();
 
         std::vector<DVec<double>> link_velocities_initialize_state;
-        for (const auto &cluster : this->cluster_model.clusters())
+        for (const ClusterTreeNode &cluster : this->cluster_model.clusters())
         {
-            link_velocities_initialize_state.push_back(cluster->v_);
+            link_velocities_initialize_state.push_back(cluster.v_);
         }
 
         std::vector<DVec<double>> cp_positions_initialize_state;
         std::vector<DVec<double>> cp_velocities_initialize_state;
-        for (const auto &cp : this->cluster_model.contactPoints())
+        for (const ContactPoint &cp : this->cluster_model.contactPoints())
         {
             cp_positions_initialize_state.push_back(cp.position_);
             cp_velocities_initialize_state.push_back(cp.velocity_);

@@ -6,7 +6,7 @@
 namespace grbda
 {
 
-    struct ClusterTreeNode : TreeNode
+    struct ClusterTreeNode : TreeNode<ClusterTreeNode>
     {
         EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
@@ -14,15 +14,15 @@ namespace grbda
                         std::shared_ptr<GeneralizedJoints::Base> joint, int parent_index,
                         int num_parent_bodies, int position_index, int velocity_index);
 
-        void updateKinematics() override;
+        void updateKinematics();
         void updateDinv(const DMat<double> &D);
-        const DVec<double> &vJ() const override { return joint_->vJ(); }
-        const DMat<double> &S() const override { return joint_->S(); }
-        const DMat<double> &S_ring() const override { return joint_->S_ring(); }
+        const DVec<double> &vJ() const { return joint_->vJ(); }
+        const DMat<double> &S() const { return joint_->S(); }
+        const DMat<double> &S_ring() const { return joint_->S_ring(); }
 
         // ISSUE #14
         // TODO(@MatthewChignoli): Should this actually be a virtual function in TreeNode.h?
-        JointCoordinate integratePosition(JointState joint_state, double dt)
+        JointCoordinate integratePosition(JointState joint_state, double dt) const
         {
             if (joint_state.position.isSpanning() && joint_state.velocity.isSpanning())
             {
@@ -44,9 +44,9 @@ namespace grbda
             return joint_state.position;
         }
 
-        const SpatialTransform &getAbsoluteTransformForBody(const Body &body) override;
-        DVec<double> getVelocityForBody(const Body &body) override;
-        void applyForceToBody(const SVec<double> &force, const Body &body) override;
+        const SpatialTransform &getAbsoluteTransformForBody(const Body &body) const;
+        DVec<double> getVelocityForBody(const Body &body) const;
+        void applyForceToBody(const SVec<double> &force, const Body &body);
 
         bool containsBody(int body_index) const;
 

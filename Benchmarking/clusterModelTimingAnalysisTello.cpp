@@ -24,10 +24,10 @@ void runTelloBenchmark(std::ofstream &file)
 
         // Set random state
         ModelState model_state;
-	bool nan_detected = false;
-        for (const auto &cluster : cluster_model.clusters())
+        bool nan_detected = false;
+        for (const ClusterTreeNode &cluster : cluster_model.clusters())
         {
-	    JointState joint_state = cluster->joint_->randomJointState();
+	    JointState joint_state = cluster.joint_->randomJointState();
 	    if (joint_state.position.hasNaN())
 	    {
 		nan_detected = true;

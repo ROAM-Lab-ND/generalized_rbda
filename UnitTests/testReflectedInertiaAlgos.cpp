@@ -23,9 +23,9 @@ protected:
         ModelState model_state;
         independent_joint_pos_ = DVec<double>::Zero(0);
         independent_joint_vel_ = DVec<double>::Zero(0);
-        for (const auto &cluster : cluster_model.clusters())
+        for (const ClusterTreeNode &cluster : cluster_model.clusters())
         {
-            JointState joint_state = cluster->joint_->randomJointState();
+            JointState joint_state = cluster.joint_->randomJointState();
 
             if (joint_state.position.isSpanning() || joint_state.velocity.isSpanning())
                 throw std::runtime_error("Initializing reflected inertia model requires all independent coordinates");
@@ -46,9 +46,9 @@ protected:
 
         // Check for NaNs
         bool nan_detected = false;
-        for (const auto &cluster : this->cluster_model.clusters())
+        for (const ClusterTreeNode &cluster : this->cluster_model.clusters())
         {
-            if (cluster->joint_state_.position.hasNaN())
+            if (cluster.joint_state_.position.hasNaN())
             {
                 nan_detected = true;
                 break;
@@ -108,17 +108,17 @@ TYPED_TEST(ReflectedInertiaDynamicsAlgosTest, ForwardKinematics)
         // Verify spatial velocity agreement of bodies
         DVec<double> v_cluster = DVec<double>::Zero(6 * this->cluster_model.getNumBodies());
         int i = 0;
-        for (const auto &cluster : this->cluster_model.clusters())
+        for (const ClusterTreeNode &cluster : this->cluster_model.clusters())
         {
-            v_cluster.segment(i, cluster->motion_subspace_dimension_) = cluster->v_;
-            i += cluster->motion_subspace_dimension_;
+            v_cluster.segment(i, cluster.motion_subspace_dimension_) = cluster.v_;
+            i += cluster.motion_subspace_dimension_;
         }
 
         DVec<double> v_links = DVec<double>::Zero(6 * this->reflected_inertia_model.getNumBodies());
         i = 0;
-        for (const auto &node : this->reflected_inertia_model.nodes())
+        for (const ReflectedInertiaTreeNode &node : this->reflected_inertia_model.nodes())
         {
-            v_links.segment<6>(i) = node->v_;
+            v_links.segment<6>(i) = node.v_;
             i += 6;
         }
 

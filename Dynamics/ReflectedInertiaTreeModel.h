@@ -9,13 +9,11 @@ namespace grbda
     using namespace ori;
     using namespace spatial;
 
-    using ReflectedInertiaTreeNodePtr = std::shared_ptr<ReflectedInertiaTreeNode>;
-
     /*!
      * Class to represent a floating base rigid body model with rotors and ground
      * contacts. No concept of state.
      */
-    class ReflectedInertiaTreeModel : public TreeModel<ReflectedInertiaTreeModel>
+    class ReflectedInertiaTreeModel : public TreeModel<ReflectedInertiaTreeModel, ReflectedInertiaTreeNode>
     {
     public:
         EIGEN_MAKE_ALIGNED_OPERATOR_NEW
@@ -39,10 +37,10 @@ namespace grbda
 
         /////////////////////////////////////
 
-        int getNumBodies() const { return (int)reflected_inertia_nodes_.size(); }
+        int getNumBodies() const { return (int)nodes_.size(); }
 
         const Body &getBody(int spanning_tree_index) const;
-        const TreeNodePtr getNodeContainingBody(int spanning_tree_index);
+        ReflectedInertiaTreeNode& getNodeContainingBody(int spanning_tree_index);
         int getIndexOfParentNodeForBody(const int spanning_tree_index);
 
         const DVec<int> &getIndependentCoordinateIndices() const { return independent_coord_indices_; }
@@ -72,8 +70,6 @@ namespace grbda
         DVec<double> forwardDynamicsWithOffDiag(const DVec<double> &tau);
         void updateArticulatedBodies();
 
-        std::vector<ReflectedInertiaTreeNodePtr> reflected_inertia_nodes_;
-
         DMat<double> reflected_inertia_;
 
         DMat<double> spanning_tree_to_independent_coords_conversion_;
@@ -83,7 +79,7 @@ namespace grbda
 
         const bool use_off_diagonal_terms_;
 
-        friend class TreeModel<ReflectedInertiaTreeModel>;
+        friend class TreeModel<ReflectedInertiaTreeModel, ReflectedInertiaTreeNode>;
     };
 
 } // namespace grbda

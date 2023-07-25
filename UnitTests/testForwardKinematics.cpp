@@ -20,10 +20,10 @@ protected:
         model_state.clear();
         DVec<double> spanning_joint_pos = DVec<double>::Zero(0);
         DVec<double> spanning_joint_vel = DVec<double>::Zero(0);
-        for (const auto &cluster : cluster_model.clusters())
+        for (const ClusterTreeNode &cluster : cluster_model.clusters())
         {
-            JointState joint_state = cluster->joint_->randomJointState();
-            JointState spanning_joint_state = cluster->joint_->toSpanningTreeState(joint_state);
+            JointState joint_state = cluster.joint_->randomJointState();
+            JointState spanning_joint_state = cluster.joint_->toSpanningTreeState(joint_state);
 
             spanning_joint_pos = appendEigenVector(spanning_joint_pos,
                                                    spanning_joint_state.position);
@@ -37,9 +37,9 @@ protected:
 
         // Check for NaNs
         bool nan_detected = false;
-        for (const auto &cluster : this->cluster_model.clusters())
+        for (const ClusterTreeNode &cluster : this->cluster_model.clusters())
         {
-            if (cluster->joint_state_.position.hasNaN())
+            if (cluster.joint_state_.position.hasNaN())
             {
                 nan_detected = true;
                 break;
@@ -95,7 +95,7 @@ TYPED_TEST(RigidBodyKinemaitcsTest, ForwardKinematics)
         this->rigid_body_model.forwardKinematics();
 
         // Verify link kinematics
-        for (const auto& body : this->cluster_model.bodies())
+        for (const Body& body : this->cluster_model.bodies())
         {
             const Vec3<double> p_cluster = this->cluster_model.getPosition(body.name_);
             const Vec3<double> p_rigid_body = this->rigid_body_model.getPosition(body.name_);
@@ -145,8 +145,8 @@ TYPED_TEST(RigidBodyKinemaitcsTest, ForwardKinematics)
             for (size_t i = 0; i < this->cluster_model.clusters().size(); i++)
             {
                 const auto cluster = this->cluster_model.cluster(i);
-                const int &vel_idx = cluster->velocity_index_;
-                const int &num_vel = cluster->num_velocities_;
+                const int &vel_idx = cluster.velocity_index_;
+                const int &num_vel = cluster.num_velocities_;
                 J_qdot += J_cp_cluster.middleCols(vel_idx, num_vel) * this->model_state[i].velocity;
             }
             GTEST_ASSERT_LT((J_qdot.tail<3>() - v_cp_cluster).norm(), tol);
@@ -172,10 +172,10 @@ TYPED_TEST(RigidBodyKinemaitcsTest, MotionSubspaceApparentDerivative)
         }
         this->cluster_model.forwardKinematics();
 
-        for (auto &cluster : this->cluster_model.clusters())
+        for (const ClusterTreeNode &cluster : this->cluster_model.clusters())
         {
-            auto joint = cluster->joint_;
-            JointState joint_state = cluster->joint_state_;
+            auto joint = cluster.joint_;
+            JointState joint_state = cluster.joint_state_;
 
             // ISSUE #14
             if (joint_state.position.size() != joint_state.velocity.size())
@@ -185,15 +185,15 @@ TYPED_TEST(RigidBodyKinemaitcsTest, MotionSubspaceApparentDerivative)
 
             DMat<double> S_ring = joint->S_ring();
 
-            JointState q_plus_joint_state = cluster->joint_state_;
-            q_plus_joint_state.position = cluster->integratePosition(joint_state, dt);
-            q_plus_joint_state.velocity = cluster->jointVelocity();
+            JointState q_plus_joint_state = cluster.joint_state_;
+            q_plus_joint_state.position = cluster.integratePosition(joint_state, dt);
+            q_plus_joint_state.velocity = cluster.jointVelocity();
             joint->updateKinematics(q_plus_joint_state);
             DMat<double> S_plus = joint->S();
 
-            JointState q_minus_joint_state = cluster->joint_state_;
-            q_minus_joint_state.position = cluster->integratePosition(joint_state, -dt);
-            q_minus_joint_state.velocity = cluster->jointVelocity();
+            JointState q_minus_joint_state = cluster.joint_state_;
+            q_minus_joint_state.position = cluster.integratePosition(joint_state, -dt);
+            q_minus_joint_state.velocity = cluster.jointVelocity();
             joint->updateKinematics(q_minus_joint_state);
             DMat<double> S_minus = joint->S();
 

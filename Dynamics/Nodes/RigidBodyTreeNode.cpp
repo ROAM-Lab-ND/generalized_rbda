@@ -22,12 +22,12 @@ namespace grbda
         vJ_ = joint_->S() * joint_state_.velocity;
     }
 
-    const SpatialTransform &RigidBodyTreeNode::getAbsoluteTransformForBody(const Body &body)
+    const SpatialTransform &RigidBodyTreeNode::getAbsoluteTransformForBody(const Body &body) const
     {
         return Xa_[0];
     };
 
-    DVec<double> RigidBodyTreeNode::getVelocityForBody(const Body &body)
+    DVec<double> RigidBodyTreeNode::getVelocityForBody(const Body &body) const
     {
         return v_;
     };

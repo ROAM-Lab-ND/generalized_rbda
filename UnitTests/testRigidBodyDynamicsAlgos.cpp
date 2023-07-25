@@ -46,10 +46,10 @@ protected:
         DVec<double> spanning_joint_pos = DVec<double>::Zero(0);
         DVec<double> spanning_joint_vel = DVec<double>::Zero(0);
 
-        for (const auto &cluster : cluster_models.at(robot_idx).clusters())
+        for (const ClusterTreeNode &cluster : cluster_models.at(robot_idx).clusters())
         {
-            JointState joint_state = cluster->joint_->randomJointState();
-            JointState spanning_joint_state = cluster->joint_->toSpanningTreeState(joint_state);
+            JointState joint_state = cluster.joint_->randomJointState();
+            JointState spanning_joint_state = cluster.joint_->toSpanningTreeState(joint_state);
 
             spanning_joint_pos = appendEigenVector(spanning_joint_pos,
                                                    spanning_joint_state.position);
@@ -65,9 +65,9 @@ protected:
 
         // Check for NaNs
         bool nan_detected = false;
-        for (const auto &cluster : this->cluster_models[robot_idx].clusters())
+        for (const ClusterTreeNode &cluster : this->cluster_models[robot_idx].clusters())
         {
-            if (cluster->joint_state_.position.hasNaN())
+            if (cluster.joint_state_.position.hasNaN())
             {
                 nan_detected = true;
                 break;
@@ -234,7 +234,7 @@ TYPED_TEST(RigidBodyDynamicsAlgosTest, ForwardAndInverseDyanmics)
 
             // Set random spatial forces on bodies
             std::vector<ExternalForceAndBodyIndexPair> force_and_index_pairs;
-            for (const auto &body : cluster_model.bodies())
+            for (const Body &body : cluster_model.bodies())
                 force_and_index_pairs.emplace_back(body.index_, SVec<double>::Random());
             this->setForcesForAllModels(force_and_index_pairs, i);
 
@@ -315,7 +315,7 @@ TYPED_TEST(RigidBodyDynamicsAlgosTest, ApplyTestForceTest)
             }
 
             cluster_model.contactJacobians();
-            for (const auto cp : cluster_model.contactPoints())
+            for (const ContactPoint cp : cluster_model.contactPoints())
             {
                 const D3Mat<double> J = cluster_model.Jc(cp.name_);
                 const DMat<double> H = cluster_model.massMatrix();

@@ -205,7 +205,14 @@ namespace grbda
             return f_out;
         }
 
-        SpatialTransform &GeneralizedAbsoluteSpatialTransform::operator[](int output_body_index)
+        SpatialTransform &
+        GeneralizedAbsoluteSpatialTransform::operator[](int output_body_index)
+        {
+            return transforms_[output_body_index];
+        }
+
+        const SpatialTransform &
+        GeneralizedAbsoluteSpatialTransform::operator[](int output_body_index) const
         {
             return transforms_[output_body_index];
         }
@@ -308,7 +315,14 @@ namespace grbda
             return leftMultiplyForceTransform(rightMultiplyMotionTransform(I_in));
         }
 
-        SpatialTransform &GeneralizedSpatialTransform::operator[](int output_body_index)
+        SpatialTransform &
+        GeneralizedSpatialTransform::operator[](int output_body_index)
+        {
+            return transforms_and_parent_subindices_[output_body_index].first;
+        }
+
+        const SpatialTransform &
+        GeneralizedSpatialTransform::operator[](int output_body_index) const
         {
             return transforms_and_parent_subindices_[output_body_index].first;
         }

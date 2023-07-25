@@ -16,13 +16,13 @@ namespace grbda
 
         for (ContactPoint &cp : contact_points_)
         {
-            const size_t i = cp.body_index_;
+            const size_t &i = cp.body_index_;
 
             const Body &body_i = body(i);
-            const auto &cluster_i = getClusterContainingBody(body_i);
+            const ClusterTreeNode &cluster_i = getClusterContainingBody(body_i);
             const int &subindex_within_cluster_i = body_i.sub_index_within_cluster_;
 
-            const SpatialTransform Xa = cluster_i->Xa_[subindex_within_cluster_i];
+            const SpatialTransform Xa = cluster_i.Xa_[subindex_within_cluster_i];
             const Mat3<double> &R_link_to_world = Xa.getRotation().transpose();
             Mat6<double> Xout = createSXform(R_link_to_world, cp.local_offset_);
 
@@ -30,15 +30,15 @@ namespace grbda
             while (j > -1)
             {
                 const Body &body_j = body(j);
-                const auto &cluster_j = getClusterContainingBody(body_j);
+                const ClusterTreeNode &cluster_j = getClusterContainingBody(body_j);
                 const int &subindex_within_cluster_j = body_j.sub_index_within_cluster_;
-                const int &vel_idx = cluster_j->velocity_index_;
-                const int &num_vel = cluster_j->num_velocities_;
+                const int &vel_idx = cluster_j.velocity_index_;
+                const int &num_vel = cluster_j.num_velocities_;
 
-                D6Mat<double> S = cluster_j->S().middleRows<6>(6 * subindex_within_cluster_j);
+                const D6Mat<double> S = cluster_j.S().middleRows<6>(6 * subindex_within_cluster_j);
                 cp.jacobian_.middleCols(vel_idx, num_vel) = Xout * S;
 
-                Mat6<double> Xup = cluster_j->Xup_[subindex_within_cluster_j].toMatrix();
+                const Mat6<double> Xup = cluster_j.Xup_[subindex_within_cluster_j].toMatrix();
                 Xout = Xout * Xup;
 
                 j = body_j.cluster_ancestor_index_;
@@ -72,9 +72,10 @@ namespace grbda
 #endif
 
         // Forward Pass - Articulated body bias force
-        for (auto &cluster : cluster_nodes_)
+        for (ClusterTreeNode &cluster : nodes_)
         {
-            cluster->pA_ = generalForceCrossProduct(cluster->v_, DVec<double>(cluster->I_ * cluster->v_));
+            const DVec<double> Iv = cluster.I_ * cluster.v_;
+            cluster.pA_ = generalForceCrossProduct(cluster.v_, Iv);
         }
 #ifdef TIMING_STATS
         timing_statistics_.forward_pass1_time = timer_.getMs();
@@ -84,8 +85,8 @@ namespace grbda
         // Account for external forces in bias force
         for (int cluster_index : indices_of_nodes_experiencing_external_forces_)
         {
-            auto &cluster = cluster_nodes_[cluster_index];
-            cluster->pA_ -= cluster->Xa_.transformExternalForceVector(cluster->f_ext_);
+            ClusterTreeNode &cluster = nodes_[cluster_index];
+            cluster.pA_ -= cluster.Xa_.transformExternalForceVector(cluster.f_ext_);
         }
 #ifdef TIMING_STATS
         timing_statistics_.external_force_time = timer_.getMs();
@@ -93,25 +94,25 @@ namespace grbda
 #endif
 
         // Backward pass - Gauss principal of least constraint
-        for (int i = (int)cluster_nodes_.size() - 1; i >= 0; i--)
+        for (int i = (int)nodes_.size() - 1; i >= 0; i--)
         {
-            auto &cluster = cluster_nodes_[i];
-            const int vel_idx = cluster->velocity_index_;
-            const int num_vel = cluster->num_velocities_;
-            const auto joint = cluster->joint_;
+            ClusterTreeNode &cluster = nodes_[i];
+            const int &vel_idx = cluster.velocity_index_;
+            const int &num_vel = cluster.num_velocities_;
+            const auto joint = cluster.joint_;
 
-            cluster->u_ = tau.segment(vel_idx, num_vel) - joint->S().transpose() * cluster->pA_;
-            cluster->D_inv_u_ = cluster->D_inv_.solve(cluster->u_);
+            cluster.u_ = tau.segment(vel_idx, num_vel) - joint->S().transpose() * cluster.pA_;
+            cluster.D_inv_u_ = cluster.D_inv_.solve(cluster.u_);
 
             // Articulated body bias force recursion
-            if (cluster->parent_index_ >= 0)
+            if (cluster.parent_index_ >= 0)
             {
-                auto parent_cluster = cluster_nodes_[cluster->parent_index_];
+                ClusterTreeNode &parent_cluster = nodes_[cluster.parent_index_];
 
-                const DVec<double> pa = cluster->pA_ + cluster->Ia_ * cluster->c_ +
-                                        cluster->U_ * cluster->D_inv_u_;
+                const DVec<double> pa = cluster.pA_ + cluster.Ia_ * cluster.c_ +
+                                        cluster.U_ * cluster.D_inv_u_;
 
-                parent_cluster->pA_ += cluster->Xup_.inverseTransformForceVector(pa);
+                parent_cluster.pA_ += cluster.Xup_.inverseTransformForceVector(pa);
             }
         }
 #ifdef TIMING_STATS
@@ -120,24 +121,24 @@ namespace grbda
 #endif
 
         // Forward Pass - Joint accelerations
-        for (auto &cluster : cluster_nodes_)
+        for (ClusterTreeNode &cluster : nodes_)
         {
-            const int vel_idx = cluster->velocity_index_;
-            const int num_vel = cluster->num_velocities_;
-            const auto joint = cluster->joint_;
+            const int &vel_idx = cluster.velocity_index_;
+            const int &num_vel = cluster.num_velocities_;
+            const auto joint = cluster.joint_;
 
             DVec<double> a_temp;
-            if (cluster->parent_index_ >= 0)
+            if (cluster.parent_index_ >= 0)
             {
-                const auto parent_cluster = cluster_nodes_[cluster->parent_index_];
-                a_temp = cluster->Xup_.transformMotionVector(parent_cluster->a_) + cluster->c_;
+                const ClusterTreeNode &parent_cluster = nodes_[cluster.parent_index_];
+                a_temp = cluster.Xup_.transformMotionVector(parent_cluster.a_) + cluster.c_;
             }
             else
             {
-                a_temp = cluster->Xup_.transformMotionVector(-gravity_) + cluster->c_;
+                a_temp = cluster.Xup_.transformMotionVector(-gravity_) + cluster.c_;
             }
-            qdd.segment(vel_idx, num_vel) = cluster->D_inv_u_ - cluster->D_inv_UT_ * a_temp;
-            cluster->a_ = a_temp + joint->S() * qdd.segment(vel_idx, num_vel);
+            qdd.segment(vel_idx, num_vel) = cluster.D_inv_u_ - cluster.D_inv_UT_ * a_temp;
+            cluster.a_ = a_temp + joint->S() * qdd.segment(vel_idx, num_vel);
         }
 #ifdef TIMING_STATS
         timing_statistics_.forward_pass2_time = timer_.getMs();
@@ -157,39 +158,39 @@ namespace grbda
 #ifdef TIMING_STATS
         double start_time_IA = timer_.getMs();
 #endif
-        for (auto &cluster : cluster_nodes_)
+        for (ClusterTreeNode &cluster : nodes_)
         {
-            cluster->IA_ = cluster->I_;
+            cluster.IA_ = cluster.I_;
         }
 #ifdef TIMING_STATS
         timing_statistics_.reset_IA_time += timer_.getMs() - start_time_IA;
 #endif
 
         // Backward pass (Gauss principal of least constraint)
-        for (int i = (int)cluster_nodes_.size() - 1; i >= 0; i--)
+        for (int i = (int)nodes_.size() - 1; i >= 0; i--)
         {
-            auto &cluster = cluster_nodes_[i];
-            const auto joint = cluster->joint_;
+            ClusterTreeNode &cluster = nodes_[i];
+            const auto joint = cluster.joint_;
 #ifdef TIMING_STATS
             double start_time_D = timer_.getMs();
 #endif
-            cluster->U_ = cluster->IA_ * joint->S();
-            const DMat<double> D = joint->S().transpose() * cluster->U_;
-            cluster->updateDinv(D);
-            cluster->D_inv_UT_ = cluster->D_inv_.solve(cluster->U_.transpose());
+            cluster.U_ = cluster.IA_ * joint->S();
+            const DMat<double> D = joint->S().transpose() * cluster.U_;
+            cluster.updateDinv(D);
+            cluster.D_inv_UT_ = cluster.D_inv_.solve(cluster.U_.transpose());
 #ifdef TIMING_STATS
             timing_statistics_.update_and_solve_D_time += timer_.getMs() - start_time_D;
 #endif
 
             // Articulated body inertia recursion
-            if (cluster->parent_index_ >= 0)
+            if (cluster.parent_index_ >= 0)
             {
 #ifdef TIMING_STATS
                 double start_time_Ia = timer_.getMs();
 #endif
-                auto parent_cluster = cluster_nodes_[cluster->parent_index_];
-                cluster->Ia_ = cluster->IA_ - cluster->U_ * cluster->D_inv_UT_;
-                parent_cluster->IA_ += cluster->Xup_.inverseTransformSpatialInertia(cluster->Ia_);
+                ClusterTreeNode &parent_cluster = nodes_[cluster.parent_index_];
+                cluster.Ia_ = cluster.IA_ - cluster.U_ * cluster.D_inv_UT_;
+                parent_cluster.IA_ += cluster.Xup_.inverseTransformSpatialInertia(cluster.Ia_);
 #ifdef TIMING_STATS
                 timing_statistics_.invert_xform_spatial_inertia_time += timer_.getMs() - start_time_Ia;
 #endif
@@ -229,20 +230,20 @@ namespace grbda
         int j = getIndexOfClusterContainingBody(contact_point.body_index_);
         while (j > -1)
         {
-            const auto &cluster = cluster_nodes_[j];
-            const int vel_idx = cluster->velocity_index_;
-            const int num_vel = cluster->num_velocities_;
-            const auto joint = cluster->joint_;
+            const ClusterTreeNode &cluster = nodes_[j];
+            const int &vel_idx = cluster.velocity_index_;
+            const int &num_vel = cluster.num_velocities_;
+            const auto joint = cluster.joint_;
 
-            DVec<double> tmp = joint->S().transpose() * f;
-            lambda_inv += tmp.dot(cluster->D_inv_.solve(tmp));
+            const DVec<double> tmp = joint->S().transpose() * f;
+            lambda_inv += tmp.dot(cluster.D_inv_.solve(tmp));
 
             dstate_out +=
-                cluster->qdd_for_subtree_due_to_subtree_root_joint_qdd * cluster->D_inv_.solve(tmp);
+                cluster.qdd_for_subtree_due_to_subtree_root_joint_qdd * cluster.D_inv_.solve(tmp);
 
-            f = cluster->ChiUp_.transpose() * f;
+            f = cluster.ChiUp_.transpose() * f;
 
-            j = cluster->parent_index_;
+            j = cluster.parent_index_;
         }
 
         return lambda_inv;
@@ -255,11 +256,11 @@ namespace grbda
 
         updateArticulatedBodies();
 
-        for (auto &cluster : cluster_nodes_)
+        for (ClusterTreeNode &cluster : nodes_)
         {
-            const auto joint = cluster->joint_;
-            const DMat<double> Xup = cluster->Xup_.toMatrix();
-            cluster->ChiUp_ = Xup - joint->S() * cluster->D_inv_UT_ * Xup;
+            const auto joint = cluster.joint_;
+            const DMat<double> Xup = cluster.Xup_.toMatrix();
+            cluster.ChiUp_ = Xup - joint->S() * cluster.D_inv_UT_ * Xup;
         }
 
         force_propagators_updated_ = true;
@@ -272,34 +273,35 @@ namespace grbda
 
         updateForcePropagators();
 
-        for (auto &cluster : cluster_nodes_)
+        for (ClusterTreeNode &cluster : nodes_)
         {
-            const int &vel_idx = cluster->velocity_index_;
-            const int &num_vel = cluster->num_velocities_;
-            const auto joint = cluster->joint_;
+            const int &vel_idx = cluster.velocity_index_;
+            const int &num_vel = cluster.num_velocities_;
+            const auto joint = cluster.joint_;
 
-            cluster->qdd_for_subtree_due_to_subtree_root_joint_qdd
+            cluster.qdd_for_subtree_due_to_subtree_root_joint_qdd
                 .middleRows(vel_idx, num_vel)
                 .setIdentity();
 
             // Compute Psi
             const DMat<double> S = joint->S();
-            DMat<double> Psi = S.transpose().completeOrthogonalDecomposition().pseudoInverse();
+            const DMat<double> Psi =
+                S.transpose().completeOrthogonalDecomposition().pseudoInverse();
 
             DMat<double> F =
-                (cluster->ChiUp_.transpose() - cluster->Xup_.toMatrix().transpose()) * Psi;
+                (cluster.ChiUp_.transpose() - cluster.Xup_.toMatrix().transpose()) * Psi;
 
-            int j = cluster->parent_index_;
+            int j = cluster.parent_index_;
             while (j > -1)
             {
-                auto parent_cluster = cluster_nodes_[j];
-                const auto parent_joint = parent_cluster->joint_;
+                ClusterTreeNode &parent_cluster = nodes_[j];
+                const auto parent_joint = parent_cluster.joint_;
 
-                parent_cluster->qdd_for_subtree_due_to_subtree_root_joint_qdd
+                parent_cluster.qdd_for_subtree_due_to_subtree_root_joint_qdd
                     .middleRows(vel_idx, num_vel) = F.transpose() * parent_joint->S();
 
-                F = parent_cluster->ChiUp_.transpose() * F;
-                j = parent_cluster->parent_index_;
+                F = parent_cluster.ChiUp_.transpose() * F;
+                j = parent_cluster.parent_index_;
             }
         }
 

@@ -32,12 +32,12 @@ namespace grbda
         D_inv_ = Eigen::ColPivHouseholderQR<DMat<double>>(D);
     }
 
-    const SpatialTransform &ClusterTreeNode::getAbsoluteTransformForBody(const Body &body)
+    const SpatialTransform &ClusterTreeNode::getAbsoluteTransformForBody(const Body &body) const
     {
         return Xa_.getTransformForOutputBody(body.sub_index_within_cluster_);
     }
 
-    DVec<double> ClusterTreeNode::getVelocityForBody(const Body &body)
+    DVec<double> ClusterTreeNode::getVelocityForBody(const Body &body) const
     {
         return v_.segment<6>(6 * body.sub_index_within_cluster_);
     }

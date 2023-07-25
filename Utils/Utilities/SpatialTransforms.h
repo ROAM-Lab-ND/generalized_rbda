@@ -64,6 +64,7 @@ namespace grbda
             DVec<double> transformExternalForceVector(const DVec<double> &f_in) const;
 
             SpatialTransform &operator[](int output_body_index);
+            const SpatialTransform &operator[](int output_body_index) const;
 
         private:
             int num_output_bodies_ = 0;
@@ -95,6 +96,8 @@ namespace grbda
             DMat<double> inverseTransformSpatialInertia(const DMat<double> &I_in) const;
 
             SpatialTransform &operator[](int output_body_index);
+            const SpatialTransform &operator[](int output_body_index) const;
+            
             GeneralizedSpatialTransform operator*(const GeneralizedSpatialTransform &X_in) const;
             GeneralizedAbsoluteSpatialTransform operator*(const GeneralizedAbsoluteSpatialTransform &X_in) const;
 

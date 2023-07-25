@@ -107,8 +107,8 @@ namespace grbda
             GeneralizedSpatialTransform &Xup) const
         {
 #ifdef DEBUG_MODE
-            if (Xup.getNumOutputBodies() != 4)
-                throw std::runtime_error("[RevoluteTripleWithRotor] Xup must have 24 rows");
+            if (Xup.getNumOutputBodies() != 6)
+                throw std::runtime_error("[RevoluteTripleWithRotor] Xup must have 36 rows");
 #endif
 
             // TODO(@MatthewChignoli): Could be some cost savings here by not recomputing the internal spatial transforms

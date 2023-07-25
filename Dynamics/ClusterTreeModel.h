@@ -74,13 +74,11 @@ namespace grbda
     };
 #endif
 
-    using ClusterTreeNodePtr = std::shared_ptr<ClusterTreeNode>;
-
     /*!
      * Class to represent a floating base rigid body model with rotors and ground
      * contacts. No concept of state.
      */
-    class ClusterTreeModel : public TreeModel<ClusterTreeModel>
+    class ClusterTreeModel : public TreeModel<ClusterTreeModel, ClusterTreeNode>
     {
     public:
         EIGEN_MAKE_ALIGNED_OPERATOR_NEW
@@ -154,7 +152,7 @@ namespace grbda
         int getSubIndexWithinClusterForBody(const int body_index) const;
         int getSubIndexWithinClusterForBody(const string &body_name) const;
 
-        int getNumBodiesInCluster(const ClusterTreeNodePtr cluster) const;
+        int getNumBodiesInCluster(const ClusterTreeNode &cluster) const;
         int getNumBodiesInCluster(const int cluster_index) const;
         int getNumBodiesInCluster(const string &cluster_name) const;
 
@@ -162,20 +160,20 @@ namespace grbda
         int getIndexOfClusterContainingBody(const int body_index);
         int getIndexOfClusterContainingBody(const string &body_name);
 
-        ClusterTreeNodePtr getClusterContainingBody(const Body &body);
-        ClusterTreeNodePtr getClusterContainingBody(const int body_index);
-        ClusterTreeNodePtr getClusterContainingBody(const string &body_name);
+        ClusterTreeNode &getClusterContainingBody(const Body &body);
+        ClusterTreeNode &getClusterContainingBody(const int body_index);
+        ClusterTreeNode &getClusterContainingBody(const string &body_name);
 
         int getIndexOfParentClusterFromBodies(const vector<Body> &bodies);
 
         const Body &getBody(int index) const { return bodies_[index]; }
-        const TreeNodePtr getNodeContainingBody(int index)
+        ClusterTreeNode &getNodeContainingBody(int index)
         {
             return nodes_[getIndexOfClusterContainingBody(index)];
         }
 
         const vector<Body> &bodies() const { return bodies_; }
-        const vector<ClusterTreeNodePtr> &clusters() const { return cluster_nodes_; }
+        const vector<ClusterTreeNode> &clusters() const { return nodes_; }
 
         const Body &body(const int body_index) const { return bodies_[body_index]; }
         const Body &body(const string body_name) const
@@ -183,10 +181,13 @@ namespace grbda
             return bodies_[body_name_to_body_index_.at(body_name)];
         }
 
-        const ClusterTreeNodePtr cluster(const int cluster_index) const { return cluster_nodes_[cluster_index]; }
-        const ClusterTreeNodePtr cluster(const string &cluster_name) const
+        const ClusterTreeNode &cluster(const int cluster_index) const
         {
-            return cluster_nodes_[cluster_name_to_cluster_index_.at(cluster_name)];
+            return nodes_[cluster_index];
+        }
+        const ClusterTreeNode &cluster(const string &cluster_name) const
+        {
+            return nodes_[cluster_name_to_cluster_index_.at(cluster_name)];
         }
 
         DVec<double> inverseDynamics(const DVec<double> &qdd);
@@ -206,7 +207,7 @@ namespace grbda
 #endif
 
     private:
-        void checkValidParentClusterForBodiesInCluster(const ClusterTreeNodePtr cluster);
+        void checkValidParentClusterForBodiesInCluster(const ClusterTreeNode &cluster);
         void checkValidParentClusterForBodiesInCluster(const int cluster_index);
         void checkValidParentClusterForBodiesInCluster(const string &cluster_nam);
         optional<int> searchClustersForBody(const int body_index);
@@ -222,10 +223,7 @@ namespace grbda
             const Vec3<double> &force, const ContactPoint &contact_point);
 
         vector<Body> bodies_;
-        vector<ClusterTreeNodePtr> cluster_nodes_;
-
         vector<Body> bodies_in_current_cluster_;
-
         std::unordered_map<string, int> body_name_to_body_index_;
         std::unordered_map<string, int> cluster_name_to_cluster_index_;
         std::unordered_map<int, int> body_index_to_cluster_index_;
@@ -239,7 +237,7 @@ namespace grbda
         ClusterTreeTimingStatistics timing_statistics_;
 #endif
 
-        friend class TreeModel<ClusterTreeModel>;
+        friend class TreeModel<ClusterTreeModel, ClusterTreeNode>;
         friend class RigidBodyTreeModel;
         friend class ReflectedInertiaTreeModel;
     };

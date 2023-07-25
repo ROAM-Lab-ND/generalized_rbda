@@ -53,13 +53,11 @@ namespace grbda
     };
 #endif
 
-    using RigidBodyTreeNodePtr = std::shared_ptr<RigidBodyTreeNode>;
-
     /*!
      * Class to represent a floating base rigid body model with rotors and ground
      * contacts. No concept of state.
      */
-    class RigidBodyTreeModel : public TreeModel<RigidBodyTreeModel>
+    class RigidBodyTreeModel : public TreeModel<RigidBodyTreeModel, RigidBodyTreeNode>
     {
     public:
         EIGEN_MAKE_ALIGNED_OPERATOR_NEW
@@ -93,11 +91,11 @@ namespace grbda
 
         /////////////////////////////////////
 
-        int getNumBodies() const { return (int)rigid_body_nodes_.size(); }
+        int getNumBodies() const { return (int)nodes_.size(); }
 
         // TOOD(@MatthewChignoli): I don't really like these functions...
-        const Body &getBody(int index) const { return rigid_body_nodes_[index]->body_; }
-        const TreeNodePtr getNodeContainingBody(int index) { return rigid_body_nodes_[index]; }
+        const Body &getBody(int index) const { return nodes_[index].body_; }
+        RigidBodyTreeNode &getNodeContainingBody(int index) { return nodes_[index]; }
 
         void initializeState(const DVec<double> &q, const DVec<double> &qd);
 
@@ -145,7 +143,6 @@ namespace grbda
         LoopConstraint::Collection loop_constraints_;
         bool loop_constraints_updated_ = false;
 
-        std::vector<RigidBodyTreeNodePtr> rigid_body_nodes_;
         std::unordered_map<string, int> body_name_to_body_index_;
 
         DVec<double> q_;
@@ -156,7 +153,7 @@ namespace grbda
         RigidBodyTreeTimingStatistics timing_statistics_;
 #endif
 
-        friend class TreeModel<RigidBodyTreeModel>;
+        friend class TreeModel<RigidBodyTreeModel, RigidBodyTreeNode>;
     };
 
 } // namespace grbda

@@ -12,7 +12,7 @@ namespace grbda
         class LTL : public DMat<double>
         {
         public:
-            LTL(DMat<double> H, const std::vector<std::shared_ptr<RigidBodyTreeNode>> &nodes);
+            LTL(DMat<double> H, const std::vector<RigidBodyTreeNode> &nodes);
 
             DVec<double> product(const DVec<double> &x) const;
 
@@ -29,8 +29,8 @@ namespace grbda
             DVec<double> solve(const DVec<double> &x) const;
 
         private:
-            int parent(const int i) const { return nodes_[i]->parent_index_; }
-            std::vector<std::shared_ptr<RigidBodyTreeNode>> nodes_;
+            int parent(const int i) const { return nodes_[i].parent_index_; }
+            std::vector<RigidBodyTreeNode> nodes_;
         };
 
     }

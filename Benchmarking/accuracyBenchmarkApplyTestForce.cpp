@@ -38,9 +38,9 @@ void runBenchmark(std::ofstream &file)
             ModelState model_state;
             DVec<double> independent_joint_pos = DVec<double>::Zero(0);
             DVec<double> independent_joint_vel = DVec<double>::Zero(0);
-            for (const auto &cluster : cl_model.clusters())
+            for (const ClusterTreeNode &cluster : cl_model.clusters())
             {
-                JointState joint_state = cluster->joint_->randomJointState();
+                JointState joint_state = cluster.joint_->randomJointState();
                 if (joint_state.position.isSpanning() || joint_state.velocity.isSpanning())
                     throw std::runtime_error("Initializing reflected inertia model requires all independent coordinates");
 

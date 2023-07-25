@@ -13,25 +13,25 @@ namespace grbda
             D6Mat<double> J_spanning = D6Mat<double>::Zero(6, getNumDegreesOfFreedom());
 
             const size_t &i = cp.body_index_;
-            const auto node_i = getNodeContainingBody(i);
-            const SpatialTransform Xa = node_i->Xa_[0];
+            const RigidBodyTreeNode& node_i = getNodeContainingBody(i);
+            const SpatialTransform& Xa = node_i.Xa_[0];
             const Mat3<double> R_link_to_world = Xa.getRotation().transpose();
             Mat6<double> Xout = createSXform(R_link_to_world, cp.local_offset_);
 
             int j = (int)i;
             while (j > -1)
             {
-                const auto node_j = getNodeContainingBody(j);
-                const int &vel_idx = node_j->velocity_index_;
-                const int &num_vel = node_j->num_velocities_;
+                const RigidBodyTreeNode& node_j = getNodeContainingBody(j);
+                const int &vel_idx = node_j.velocity_index_;
+                const int &num_vel = node_j.num_velocities_;
 
-                const D6Mat<double> &S = node_j->S();
+                const D6Mat<double> &S = node_j.S();
                 J_spanning.middleCols(vel_idx, num_vel) = Xout * S;
 
-                const Mat6<double> Xup = node_j->Xup_[0].toMatrix();
+                const Mat6<double> Xup = node_j.Xup_[0].toMatrix();
                 Xout = Xout * Xup;
 
-                j = node_j->parent_index_;
+                j = node_j.parent_index_;
             }
 
             cp.jacobian_ = J_spanning * loop_constraints_.G();
@@ -70,7 +70,7 @@ namespace grbda
 #ifdef TIMING_STATS
             timer_.start();
 #endif
-            factorization::LTL L(H_, rigid_body_nodes_);
+            factorization::LTL L(H_, nodes_);
 #ifdef TIMING_STATS
             timing_statistics_.ltl_factorization_time = timer_.getMs();
             timer_.start();

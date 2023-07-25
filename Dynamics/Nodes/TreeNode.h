@@ -11,34 +11,33 @@ namespace grbda
 
     using namespace spatial;
 
+    template <typename Derived>
     struct TreeNode
     {
-        TreeNode(int index, std::string name, int parent_index, int motion_subspace_dimension,
-                 int num_parent_bodies, int position_index, int num_positions,
-                 int velocity_index, int num_velocities)
-            : position_index_(position_index), num_positions_(num_positions),
-              velocity_index_(velocity_index), num_velocities_(num_velocities),
-              motion_subspace_dimension_(motion_subspace_dimension),
-              index_(index), name_(name), parent_index_(parent_index),
-              Xup_(num_parent_bodies)
-        {
-            I_ = DMat<double>::Zero(motion_subspace_dimension_, motion_subspace_dimension_);
-            f_ext_ = DVec<double>::Zero(motion_subspace_dimension_);
-        }
+        const Derived &derived() const { return *static_cast<const Derived *>(this); }
+        Derived &derived() { return *static_cast<Derived *>(this); }
 
-        virtual ~TreeNode() {}
-
-        virtual void updateKinematics() = 0;
+        void updateKinematics() { derived().updateKinematics(); }
 
         const JointCoordinate &jointPosition() const { return joint_state_.position; }
         const JointCoordinate &jointVelocity() const { return joint_state_.velocity; }
-        virtual const DVec<double> &vJ() const = 0;
-        virtual const DMat<double> &S() const = 0;
-        virtual const DMat<double> &S_ring() const = 0;
 
-        virtual const SpatialTransform &getAbsoluteTransformForBody(const Body &body) = 0;
-        virtual DVec<double> getVelocityForBody(const Body &body) = 0;
-        virtual void applyForceToBody(const SVec<double> &force, const Body &body) = 0;
+        const DVec<double> &vJ() const { return derived().vJ(); }
+        const DMat<double> &S() const { return derived().S(); }
+        const DMat<double> &S_ring() const { return derived().S_ring(); }
+
+        const SpatialTransform &getAbsoluteTransformForBody(const Body &body) const
+        {
+            return derived().getAbsoluteTransformForBody(body);
+        }
+        DVec<double> getVelocityForBody(const Body &body) const
+        {
+            return derived().getVelocityForBody(body);
+        }
+        void applyForceToBody(const SVec<double> &force, const Body &body) const
+        {
+            derived().applyForceToBody(force, body);
+        }
 
         const int position_index_;
         const int num_positions_;
@@ -64,6 +63,21 @@ namespace grbda
 
         GeneralizedSpatialTransform Xup_;        // spatial transform from parent to child
         GeneralizedAbsoluteSpatialTransform Xa_; // spatial transform from world frame to current frame
+
+    private:
+        TreeNode(int index, std::string name, int parent_index, int motion_subspace_dimension,
+                 int num_parent_bodies, int position_index, int num_positions,
+                 int velocity_index, int num_velocities)
+            : position_index_(position_index), num_positions_(num_positions),
+              velocity_index_(velocity_index), num_velocities_(num_velocities),
+              motion_subspace_dimension_(motion_subspace_dimension),
+              index_(index), name_(name), parent_index_(parent_index),
+              Xup_(num_parent_bodies)
+        {
+            I_ = DMat<double>::Zero(motion_subspace_dimension_, motion_subspace_dimension_);
+            f_ext_ = DVec<double>::Zero(motion_subspace_dimension_);
+        }
+        friend Derived;
     };
 
 } // namespace grbda

@@ -31,11 +31,11 @@ void runBenchmark(std::ofstream &file, const std::string &id)
             ModelState model_state;
             DVec<double> spanning_joint_pos = DVec<double>::Zero(0);
             DVec<double> spanning_joint_vel = DVec<double>::Zero(0);
-            for (const auto &cluster : cluster_model.clusters())
+            for (const ClusterTreeNode &cluster : cluster_model.clusters())
             {
-                JointState joint_state = cluster->joint_->randomJointState();
+                JointState joint_state = cluster.joint_->randomJointState();
 
-                JointState spanning_joint_state = cluster->joint_->toSpanningTreeState(joint_state);
+                JointState spanning_joint_state = cluster.joint_->toSpanningTreeState(joint_state);
                 spanning_joint_pos = appendEigenVector(spanning_joint_pos,
                                                        spanning_joint_state.position);
                 spanning_joint_vel = appendEigenVector(spanning_joint_vel,
