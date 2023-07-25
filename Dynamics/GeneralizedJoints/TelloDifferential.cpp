@@ -82,6 +82,10 @@ namespace grbda
 
 	    S_.block<6, 1>(0, 0) = rotor_1_joint_->S();
 	    S_.block<6, 1>(6, 1) = rotor_2_joint_->S();
+
+		spanning_tree_to_independent_coords_conversion_ = DMat<double>::Zero(2, 4);
+		spanning_tree_to_independent_coords_conversion_(0, 2) = 1.;
+		spanning_tree_to_independent_coords_conversion_(1, 3) = 1.;
 	}
 
 	void TelloDifferential::updateKinematics(const JointState &joint_state)

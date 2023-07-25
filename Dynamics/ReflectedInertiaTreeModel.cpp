@@ -58,10 +58,10 @@ namespace grbda
                                   joint->spanningTreeToIndependentCoordsConversion());
         }
 
-        const int num_bodies = cluster_tree_model.getNumBodies();
+        const int num_spanning_coords = spanning_tree_to_independent_coords_conversion_.cols();
         independent_coord_indices_ =
             spanning_tree_to_independent_coords_conversion_.template cast<int>() *
-            DVec<int>::LinSpaced(num_bodies, 0, num_bodies - 1);
+            DVec<int>::LinSpaced(num_spanning_coords, 0, num_spanning_coords - 1);
     }
 
     void ReflectedInertiaTreeModel::extractContactPointsFromClusterModel(
