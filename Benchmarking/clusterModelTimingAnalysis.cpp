@@ -28,7 +28,7 @@ void runBenchmark(std::ofstream &file, const std::string &id)
 
             // Set random state
             ModelState model_state;
-            for (const ClusterTreeNode &cluster : cluster_model.clusters())
+            for (const ClusterTreeModel::NodeType &cluster : cluster_model.clusters())
             {
                 model_state.push_back(cluster.joint_->randomJointState());
             }

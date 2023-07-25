@@ -17,7 +17,7 @@ namespace grbda
     void ReflectedInertiaTreeModel::extractRigidBodiesAndJointsFromClusterModel(
         const ClusterTreeModel &cluster_tree_model)
     {
-        for (const ClusterTreeNode<> &cluster : cluster_tree_model.clusters())
+        for (const ClusterTreeModel::NodeType &cluster : cluster_tree_model.clusters())
         {
             const int &nv = cluster.num_velocities_;
             DMat<double> cluster_reflected_inertia = DMat<double>::Zero(nv, nv);
@@ -50,7 +50,7 @@ namespace grbda
         const ClusterTreeModel &cluster_tree_model)
     {
         spanning_tree_to_independent_coords_conversion_ = DMat<double>::Zero(0, 0);
-        for (const ClusterTreeNode<> &cluster : cluster_tree_model.clusters())
+        for (const ClusterTreeModel::NodeType &cluster : cluster_tree_model.clusters())
         {
             const auto joint = cluster.joint_;
             spanning_tree_to_independent_coords_conversion_ =

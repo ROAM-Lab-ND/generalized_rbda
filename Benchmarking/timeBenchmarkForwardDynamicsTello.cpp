@@ -43,7 +43,7 @@ void runTelloBenchmark(std::ofstream &file, const bool include_forces)
         DVec<double> spanning_joint_vel = DVec<double>::Zero(0);
 
         bool nan_detected = false;
-        for (const ClusterTreeNode &cluster : cluster_model.clusters())
+        for (const ClusterTreeModel::NodeType &cluster : cluster_model.clusters())
         {
             JointState joint_state = cluster.joint_->randomJointState();
             if (joint_state.position.hasNaN())

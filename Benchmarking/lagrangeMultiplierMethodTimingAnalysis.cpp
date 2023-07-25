@@ -31,7 +31,7 @@ void runBenchmark(std::ofstream &file, const std::string &id)
             ModelState model_state;
             DVec<double> spanning_joint_pos = DVec<double>::Zero(0);
             DVec<double> spanning_joint_vel = DVec<double>::Zero(0);
-            for (const ClusterTreeNode &cluster : cluster_model.clusters())
+            for (const ClusterTreeModel::NodeType &cluster : cluster_model.clusters())
             {
                 JointState joint_state = cluster.joint_->randomJointState();
 

@@ -20,7 +20,7 @@ protected:
         model_state.clear();
         DVec<double> spanning_joint_pos = DVec<double>::Zero(0);
         DVec<double> spanning_joint_vel = DVec<double>::Zero(0);
-        for (const ClusterTreeNode &cluster : cluster_model.clusters())
+        for (const ClusterTreeModel::NodeType &cluster : cluster_model.clusters())
         {
             JointState joint_state = cluster.joint_->randomJointState();
             JointState spanning_joint_state = cluster.joint_->toSpanningTreeState(joint_state);
@@ -37,7 +37,7 @@ protected:
 
         // Check for NaNs
         bool nan_detected = false;
-        for (const ClusterTreeNode &cluster : this->cluster_model.clusters())
+        for (const ClusterTreeModel::NodeType &cluster : this->cluster_model.clusters())
         {
             if (cluster.joint_state_.position.hasNaN())
             {
@@ -172,7 +172,7 @@ TYPED_TEST(RigidBodyKinemaitcsTest, MotionSubspaceApparentDerivative)
         }
         this->cluster_model.forwardKinematics();
 
-        for (const ClusterTreeNode &cluster : this->cluster_model.clusters())
+        for (const ClusterTreeModel::NodeType &cluster : this->cluster_model.clusters())
         {
             auto joint = cluster.joint_;
             JointState joint_state = cluster.joint_state_;
