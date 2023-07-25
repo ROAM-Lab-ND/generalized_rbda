@@ -7,11 +7,13 @@
 namespace grbda
 {
 
-    template <typename Derived, typename NodeType>
-    void TreeModel<Derived, NodeType>::forwardKinematics()
+    template <typename Derived>
+    void TreeModel<Derived>::forwardKinematics()
     {
         if (kinematics_updated_)
             return;
+
+            // So I think I need a lambda function for the forward pass, and if I have a std::variant, then I use std::visit, otherwise I just call the function. I think that's the way to do it.
 
         for (NodeType &node : nodes_)
         {
@@ -41,8 +43,8 @@ namespace grbda
         kinematics_updated_ = true;
     }
 
-    template <typename Derived, typename NodeType>
-    void TreeModel<Derived, NodeType>::contactPointForwardKinematics()
+    template <typename Derived>
+    void TreeModel<Derived>::contactPointForwardKinematics()
     {
         for (auto &cp : contact_points_)
         {
@@ -58,8 +60,8 @@ namespace grbda
         }
     }
 
-    template <typename Derived, typename NodeType>
-    void TreeModel<Derived, NodeType>::compositeRigidBodyAlgorithm()
+    template <typename Derived>
+    void TreeModel<Derived>::compositeRigidBodyAlgorithm()
     {
         if (mass_matrix_updated_)
             return;
@@ -105,8 +107,8 @@ namespace grbda
         mass_matrix_updated_ = true;
     }
 
-    template <typename Derived, typename NodeType>
-    void TreeModel<Derived, NodeType>::updateBiasForceVector()
+    template <typename Derived>
+    void TreeModel<Derived>::updateBiasForceVector()
     {
         if (bias_force_updated_)
             return;
@@ -116,8 +118,8 @@ namespace grbda
         bias_force_updated_ = true;
     }
 
-    template <typename Derived, typename NodeType>
-    DVec<double> TreeModel<Derived, NodeType>::recursiveNewtonEulerAlgorithm(const DVec<double> &qdd)
+    template <typename Derived>
+    DVec<double> TreeModel<Derived>::recursiveNewtonEulerAlgorithm(const DVec<double> &qdd)
     {
         forwardKinematics();
 
@@ -171,8 +173,8 @@ namespace grbda
         return tau;
     }
 
-    template <typename Derived, typename NodeType>
-    void TreeModel<Derived, NodeType>::initializeExternalForces(
+    template <typename Derived>
+    void TreeModel<Derived>::initializeExternalForces(
         const std::vector<ExternalForceAndBodyIndexPair> &force_and_body_index_pairs)
     {
         // Clear previous external forces
@@ -198,15 +200,15 @@ namespace grbda
         resetCache();
     }
 
-    template <typename Derived, typename NodeType>
-    bool TreeModel<Derived, NodeType>::vectorContainsIndex(const std::vector<int> vec,
+    template <typename Derived>
+    bool TreeModel<Derived>::vectorContainsIndex(const std::vector<int> vec,
                                                            const int index)
     {
         return std::find(vec.begin(), vec.end(), index) != vec.end();
     }
 
-    template class TreeModel<ClusterTreeModel, ClusterTreeNode>;
-    template class TreeModel<RigidBodyTreeModel, RigidBodyTreeNode>;
-    template class TreeModel<ReflectedInertiaTreeModel, ReflectedInertiaTreeNode>;
+    template class TreeModel<ClusterTreeModel>;
+    template class TreeModel<RigidBodyTreeModel>;
+    template class TreeModel<ReflectedInertiaTreeModel>;
 
 } // namespace grbda

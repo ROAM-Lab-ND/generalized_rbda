@@ -78,10 +78,12 @@ namespace grbda
      * Class to represent a floating base rigid body model with rotors and ground
      * contacts. No concept of state.
      */
-    class ClusterTreeModel : public TreeModel<ClusterTreeModel, ClusterTreeNode>
+    class ClusterTreeModel : public TreeModel<ClusterTreeModel>
     {
     public:
         EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
+        typedef TreeModel<ClusterTreeModel>::NodeType NodeType;
 
         ClusterTreeModel()
         {
@@ -152,7 +154,7 @@ namespace grbda
         int getSubIndexWithinClusterForBody(const int body_index) const;
         int getSubIndexWithinClusterForBody(const string &body_name) const;
 
-        int getNumBodiesInCluster(const ClusterTreeNode &cluster) const;
+        int getNumBodiesInCluster(const NodeType &cluster) const;
         int getNumBodiesInCluster(const int cluster_index) const;
         int getNumBodiesInCluster(const string &cluster_name) const;
 
@@ -160,20 +162,20 @@ namespace grbda
         int getIndexOfClusterContainingBody(const int body_index);
         int getIndexOfClusterContainingBody(const string &body_name);
 
-        ClusterTreeNode &getClusterContainingBody(const Body &body);
-        ClusterTreeNode &getClusterContainingBody(const int body_index);
-        ClusterTreeNode &getClusterContainingBody(const string &body_name);
+        NodeType &getClusterContainingBody(const Body &body);
+        NodeType &getClusterContainingBody(const int body_index);
+        NodeType &getClusterContainingBody(const string &body_name);
 
         int getIndexOfParentClusterFromBodies(const vector<Body> &bodies);
 
         const Body &getBody(int index) const { return bodies_[index]; }
-        ClusterTreeNode &getNodeContainingBody(int index)
+        NodeType &getNodeContainingBody(int index)
         {
             return nodes_[getIndexOfClusterContainingBody(index)];
         }
 
         const vector<Body> &bodies() const { return bodies_; }
-        const vector<ClusterTreeNode> &clusters() const { return nodes_; }
+        const vector<NodeType> &clusters() const { return nodes_; }
 
         const Body &body(const int body_index) const { return bodies_[body_index]; }
         const Body &body(const string body_name) const
@@ -181,11 +183,11 @@ namespace grbda
             return bodies_[body_name_to_body_index_.at(body_name)];
         }
 
-        const ClusterTreeNode &cluster(const int cluster_index) const
+        const NodeType &cluster(const int cluster_index) const
         {
             return nodes_[cluster_index];
         }
-        const ClusterTreeNode &cluster(const string &cluster_name) const
+        const NodeType &cluster(const string &cluster_name) const
         {
             return nodes_[cluster_name_to_cluster_index_.at(cluster_name)];
         }
@@ -207,7 +209,7 @@ namespace grbda
 #endif
 
     private:
-        void checkValidParentClusterForBodiesInCluster(const ClusterTreeNode &cluster);
+        void checkValidParentClusterForBodiesInCluster(const NodeType &cluster);
         void checkValidParentClusterForBodiesInCluster(const int cluster_index);
         void checkValidParentClusterForBodiesInCluster(const string &cluster_nam);
         optional<int> searchClustersForBody(const int body_index);
@@ -237,7 +239,7 @@ namespace grbda
         ClusterTreeTimingStatistics timing_statistics_;
 #endif
 
-        friend class TreeModel<ClusterTreeModel, ClusterTreeNode>;
+        friend class TreeModel<ClusterTreeModel>;
         friend class RigidBodyTreeModel;
         friend class ReflectedInertiaTreeModel;
     };

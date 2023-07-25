@@ -57,10 +57,12 @@ namespace grbda
      * Class to represent a floating base rigid body model with rotors and ground
      * contacts. No concept of state.
      */
-    class RigidBodyTreeModel : public TreeModel<RigidBodyTreeModel, RigidBodyTreeNode>
+    class RigidBodyTreeModel : public TreeModel<RigidBodyTreeModel>
     {
     public:
         EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
+        typedef TreeModel<RigidBodyTreeModel>::NodeType NodeType;
 
         RigidBodyTreeModel(const ClusterTreeModel &cluster_tree_model,
                            const FwdDynMethod fd_method = FwdDynMethod::Projection);
@@ -95,7 +97,7 @@ namespace grbda
 
         // TOOD(@MatthewChignoli): I don't really like these functions...
         const Body &getBody(int index) const { return nodes_[index].body_; }
-        RigidBodyTreeNode &getNodeContainingBody(int index) { return nodes_[index]; }
+        NodeType &getNodeContainingBody(int index) { return nodes_[index]; }
 
         void initializeState(const DVec<double> &q, const DVec<double> &qd);
 
@@ -153,7 +155,7 @@ namespace grbda
         RigidBodyTreeTimingStatistics timing_statistics_;
 #endif
 
-        friend class TreeModel<RigidBodyTreeModel, RigidBodyTreeNode>;
+        friend class TreeModel<RigidBodyTreeModel>;
     };
 
 } // namespace grbda

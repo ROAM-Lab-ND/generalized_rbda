@@ -3,10 +3,12 @@
 namespace grbda
 {
 
-    ClusterTreeNode::ClusterTreeNode(int index, std::string name, std::vector<Body> &bodies,
-                                     std::shared_ptr<GeneralizedJoints::Base> joint,
-                                     int parent_index, int num_parent_bodies,
-                                     int position_index, int velocity_index)
+    template <typename GenJointType>
+    ClusterTreeNode<GenJointType>::ClusterTreeNode(int index, std::string name,
+                                                   std::vector<Body> &bodies,
+                                                   std::shared_ptr<GenJointType> joint,
+                                                   int parent_index, int num_parent_bodies,
+                                                   int position_index, int velocity_index)
         : TreeNode(index, name, parent_index, 6 * bodies.size(), num_parent_bodies,
                    position_index, joint->numPositions(),
                    velocity_index, joint->numVelocities()),
@@ -21,33 +23,41 @@ namespace grbda
         }
     }
 
-    void ClusterTreeNode::updateKinematics()
+    template <typename GenJointType>
+    void ClusterTreeNode<GenJointType>::updateKinematics()
     {
         joint_->updateKinematics(joint_state_);
         joint_->computeSpatialTransformFromParentToCurrentCluster(Xup_);
     }
 
-    void ClusterTreeNode::updateDinv(const DMat<double> &D)
+    template <typename GenJointType>
+    void ClusterTreeNode<GenJointType>::updateDinv(const DMat<double> &D)
     {
         D_inv_ = Eigen::ColPivHouseholderQR<DMat<double>>(D);
     }
 
-    const SpatialTransform &ClusterTreeNode::getAbsoluteTransformForBody(const Body &body) const
+    template <typename GenJointType>
+    const SpatialTransform &
+    ClusterTreeNode<GenJointType>::getAbsoluteTransformForBody(const Body &body) const
     {
         return Xa_.getTransformForOutputBody(body.sub_index_within_cluster_);
     }
 
-    DVec<double> ClusterTreeNode::getVelocityForBody(const Body &body) const
+    template <typename GenJointType>
+    DVec<double> ClusterTreeNode<GenJointType>::getVelocityForBody(const Body &body) const
     {
         return v_.segment<6>(6 * body.sub_index_within_cluster_);
     }
 
-    void ClusterTreeNode::applyForceToBody(const SVec<double> &force, const Body &body)
+    template <typename GenJointType>
+    void ClusterTreeNode<GenJointType>::applyForceToBody(const SVec<double> &force,
+                                                         const Body &body)
     {
         f_ext_.segment<6>(6 * body.sub_index_within_cluster_) += force;
     }
 
-    bool ClusterTreeNode::containsBody(int body_index) const
+    template <typename GenJointType>
+    bool ClusterTreeNode<GenJointType>::containsBody(int body_index) const
     {
         for (const auto &body : bodies_)
         {
@@ -57,8 +67,9 @@ namespace grbda
         return false;
     }
 
+    template <typename GenJointType>
     std::vector<std::pair<Body, JointPtr>>
-    ClusterTreeNode::bodiesAndJoints() const
+    ClusterTreeNode<GenJointType>::bodiesAndJoints() const
     {
         std::vector<JointPtr> single_joints = joint_->singleJoints();
         std::vector<std::pair<Body, JointPtr>> bodies_and_joints;
@@ -70,10 +81,13 @@ namespace grbda
         return bodies_and_joints;
     }
 
+    template <typename GenJointType>
     std::vector<std::tuple<Body, JointPtr, DMat<double>>>
-    ClusterTreeNode::bodiesJointsAndReflectedInertias() const
+    ClusterTreeNode<GenJointType>::bodiesJointsAndReflectedInertias() const
     {
         return joint_->bodiesJointsAndReflectedInertias();
     }
+
+    template class ClusterTreeNode<GeneralizedJoints::Base>;
 
 } // namespace grbda

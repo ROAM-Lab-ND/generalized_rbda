@@ -49,7 +49,7 @@ namespace grbda
         const int cluster_index = (int)nodes_.size();
         cluster_name_to_cluster_index_[name] = cluster_index;
 
-        ClusterTreeNode node(cluster_index, name, bodies_in_current_cluster_, joint,
+        NodeType node(cluster_index, name, bodies_in_current_cluster_, joint,
                              parent_cluster_index, num_bodies_in_parent_cluster,
                              position_index_, velocity_index_);
         nodes_.push_back(node);
@@ -68,7 +68,7 @@ namespace grbda
     {
         printf("\nCluster Tree Model:\n");
         printf("** Clusters **\n");
-        for (const ClusterTreeNode &cluster : nodes_)
+        for (const NodeType &cluster : nodes_)
         {
             int parent = cluster.parent_index_;
             string parent_name = parent > -1 ? nodes_[parent].name_ : "ground";
@@ -103,7 +103,7 @@ namespace grbda
         return C_;
     }
 
-    void ClusterTreeModel::checkValidParentClusterForBodiesInCluster(const ClusterTreeNode &cluster)
+    void ClusterTreeModel::checkValidParentClusterForBodiesInCluster(const NodeType &cluster)
     {
         const int cluster_index = cluster.index_;
         const int parent_cluster_index = cluster.parent_index_;
@@ -135,7 +135,7 @@ namespace grbda
         H_ = DMat<double>::Zero(num_degrees_of_freedom, num_degrees_of_freedom);
         C_ = DVec<double>::Zero(num_degrees_of_freedom);
 
-        for (ClusterTreeNode &cluster : nodes_)
+        for (NodeType &cluster : nodes_)
             cluster.qdd_for_subtree_due_to_subtree_root_joint_qdd
                 .setZero(num_degrees_of_freedom, cluster.num_velocities_);
 
@@ -213,7 +213,7 @@ namespace grbda
     void ClusterTreeModel::initializeState(const ModelState &model_state)
     {
         size_t i = 0;
-        for (ClusterTreeNode &cluster : nodes_)
+        for (NodeType &cluster : nodes_)
         {
             cluster.joint_state_ = model_state.at(i);
             i++;
@@ -234,7 +234,7 @@ namespace grbda
     void ClusterTreeModel::setExternalForces(const string &body_name, const SVec<double> &force)
     {
         const Body &body_i = body(body_name);
-        ClusterTreeNode &node = nodes_[getIndexOfClusterContainingBody(body_i.index_)];
+        NodeType &node = nodes_[getIndexOfClusterContainingBody(body_i.index_)];
         node.applyForceToBody(force, body_i);
 
         // Add index to vector if vector does not already contain this cluster
@@ -366,7 +366,7 @@ namespace grbda
         return cluster_index >= 0 ? nodes_[cluster_index].bodies_.size() : 1;
     }
 
-    int ClusterTreeModel::getNumBodiesInCluster(const ClusterTreeNode &cluster) const
+    int ClusterTreeModel::getNumBodiesInCluster(const NodeType &cluster) const
     {
         return getNumBodiesInCluster(cluster.index_);
     }
@@ -440,17 +440,17 @@ namespace grbda
         return nullopt;
     }
 
-    ClusterTreeNode &ClusterTreeModel::getClusterContainingBody(const int body_index)
+    ClusterTreeModel::NodeType &ClusterTreeModel::getClusterContainingBody(const int body_index)
     {
         return nodes_[getIndexOfClusterContainingBody(body_index)];
     }
 
-    ClusterTreeNode &ClusterTreeModel::getClusterContainingBody(const Body &body)
+    ClusterTreeModel::NodeType &ClusterTreeModel::getClusterContainingBody(const Body &body)
     {
         return nodes_[getIndexOfClusterContainingBody(body)];
     }
 
-    ClusterTreeNode &ClusterTreeModel::getClusterContainingBody(const string &body_name)
+    ClusterTreeModel::NodeType &ClusterTreeModel::getClusterContainingBody(const string &body_name)
     {
         return nodes_[getIndexOfClusterContainingBody(body_name)];
     }
@@ -459,7 +459,7 @@ namespace grbda
         const Vec3<double> &force, const ContactPoint &contact_point)
     {
         const Body &body = bodies_[contact_point.body_index_];
-        const ClusterTreeNode &cluster = getClusterContainingBody(contact_point.body_index_);
+        const NodeType &cluster = getClusterContainingBody(contact_point.body_index_);
 
         const SpatialTransform &Xa =
             cluster.Xa_.getTransformForOutputBody(body.sub_index_within_cluster_);

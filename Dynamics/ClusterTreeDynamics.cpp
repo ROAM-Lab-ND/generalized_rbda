@@ -19,7 +19,7 @@ namespace grbda
             const size_t &i = cp.body_index_;
 
             const Body &body_i = body(i);
-            const ClusterTreeNode &cluster_i = getClusterContainingBody(body_i);
+            const NodeType &cluster_i = getClusterContainingBody(body_i);
             const int &subindex_within_cluster_i = body_i.sub_index_within_cluster_;
 
             const SpatialTransform Xa = cluster_i.Xa_[subindex_within_cluster_i];
@@ -30,7 +30,7 @@ namespace grbda
             while (j > -1)
             {
                 const Body &body_j = body(j);
-                const ClusterTreeNode &cluster_j = getClusterContainingBody(body_j);
+                const NodeType &cluster_j = getClusterContainingBody(body_j);
                 const int &subindex_within_cluster_j = body_j.sub_index_within_cluster_;
                 const int &vel_idx = cluster_j.velocity_index_;
                 const int &num_vel = cluster_j.num_velocities_;
@@ -72,7 +72,7 @@ namespace grbda
 #endif
 
         // Forward Pass - Articulated body bias force
-        for (ClusterTreeNode &cluster : nodes_)
+        for (NodeType &cluster : nodes_)
         {
             const DVec<double> Iv = cluster.I_ * cluster.v_;
             cluster.pA_ = generalForceCrossProduct(cluster.v_, Iv);
@@ -85,7 +85,7 @@ namespace grbda
         // Account for external forces in bias force
         for (int cluster_index : indices_of_nodes_experiencing_external_forces_)
         {
-            ClusterTreeNode &cluster = nodes_[cluster_index];
+            NodeType &cluster = nodes_[cluster_index];
             cluster.pA_ -= cluster.Xa_.transformExternalForceVector(cluster.f_ext_);
         }
 #ifdef TIMING_STATS
@@ -96,7 +96,7 @@ namespace grbda
         // Backward pass - Gauss principal of least constraint
         for (int i = (int)nodes_.size() - 1; i >= 0; i--)
         {
-            ClusterTreeNode &cluster = nodes_[i];
+            NodeType &cluster = nodes_[i];
             const int &vel_idx = cluster.velocity_index_;
             const int &num_vel = cluster.num_velocities_;
             const auto joint = cluster.joint_;
@@ -107,7 +107,7 @@ namespace grbda
             // Articulated body bias force recursion
             if (cluster.parent_index_ >= 0)
             {
-                ClusterTreeNode &parent_cluster = nodes_[cluster.parent_index_];
+                NodeType &parent_cluster = nodes_[cluster.parent_index_];
 
                 const DVec<double> pa = cluster.pA_ + cluster.Ia_ * cluster.c_ +
                                         cluster.U_ * cluster.D_inv_u_;
@@ -121,7 +121,7 @@ namespace grbda
 #endif
 
         // Forward Pass - Joint accelerations
-        for (ClusterTreeNode &cluster : nodes_)
+        for (NodeType &cluster : nodes_)
         {
             const int &vel_idx = cluster.velocity_index_;
             const int &num_vel = cluster.num_velocities_;
@@ -130,7 +130,7 @@ namespace grbda
             DVec<double> a_temp;
             if (cluster.parent_index_ >= 0)
             {
-                const ClusterTreeNode &parent_cluster = nodes_[cluster.parent_index_];
+                const NodeType &parent_cluster = nodes_[cluster.parent_index_];
                 a_temp = cluster.Xup_.transformMotionVector(parent_cluster.a_) + cluster.c_;
             }
             else
@@ -158,7 +158,7 @@ namespace grbda
 #ifdef TIMING_STATS
         double start_time_IA = timer_.getMs();
 #endif
-        for (ClusterTreeNode &cluster : nodes_)
+        for (NodeType &cluster : nodes_)
         {
             cluster.IA_ = cluster.I_;
         }
@@ -169,7 +169,7 @@ namespace grbda
         // Backward pass (Gauss principal of least constraint)
         for (int i = (int)nodes_.size() - 1; i >= 0; i--)
         {
-            ClusterTreeNode &cluster = nodes_[i];
+            NodeType &cluster = nodes_[i];
             const auto joint = cluster.joint_;
 #ifdef TIMING_STATS
             double start_time_D = timer_.getMs();
@@ -188,7 +188,7 @@ namespace grbda
 #ifdef TIMING_STATS
                 double start_time_Ia = timer_.getMs();
 #endif
-                ClusterTreeNode &parent_cluster = nodes_[cluster.parent_index_];
+                NodeType &parent_cluster = nodes_[cluster.parent_index_];
                 cluster.Ia_ = cluster.IA_ - cluster.U_ * cluster.D_inv_UT_;
                 parent_cluster.IA_ += cluster.Xup_.inverseTransformSpatialInertia(cluster.Ia_);
 #ifdef TIMING_STATS
@@ -230,7 +230,7 @@ namespace grbda
         int j = getIndexOfClusterContainingBody(contact_point.body_index_);
         while (j > -1)
         {
-            const ClusterTreeNode &cluster = nodes_[j];
+            const NodeType &cluster = nodes_[j];
             const int &vel_idx = cluster.velocity_index_;
             const int &num_vel = cluster.num_velocities_;
             const auto joint = cluster.joint_;
@@ -256,7 +256,7 @@ namespace grbda
 
         updateArticulatedBodies();
 
-        for (ClusterTreeNode &cluster : nodes_)
+        for (NodeType &cluster : nodes_)
         {
             const auto joint = cluster.joint_;
             const DMat<double> Xup = cluster.Xup_.toMatrix();
@@ -273,7 +273,7 @@ namespace grbda
 
         updateForcePropagators();
 
-        for (ClusterTreeNode &cluster : nodes_)
+        for (NodeType &cluster : nodes_)
         {
             const int &vel_idx = cluster.velocity_index_;
             const int &num_vel = cluster.num_velocities_;
@@ -294,7 +294,7 @@ namespace grbda
             int j = cluster.parent_index_;
             while (j > -1)
             {
-                ClusterTreeNode &parent_cluster = nodes_[j];
+                NodeType &parent_cluster = nodes_[j];
                 const auto parent_joint = parent_cluster.joint_;
 
                 parent_cluster.qdd_for_subtree_due_to_subtree_root_joint_qdd

@@ -6,12 +6,15 @@
 namespace grbda
 {
 
-    struct ClusterTreeNode : TreeNode<ClusterTreeNode>
+    // TODO(@MatthewChignoli): We will need to provide the generalized joint type as a template to this class. Which means that we will have to change ClusterTreeModel::NodeType to std::variant<ClusterTreeNode<Free>, ClusterTreeNode<Revolute>, etc>. And so then we will need to setup the system of std::get_if and std::visit cases to handle with the fast that ClusterTreeNode has a variant type whereas the others are direct access to the types.
+
+    template <typename GenJointType = GeneralizedJoints::Base>
+    struct ClusterTreeNode : TreeNode<ClusterTreeNode<>>
     {
         EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
         ClusterTreeNode(int index, std::string name, std::vector<Body> &bodies,
-                        std::shared_ptr<GeneralizedJoints::Base> joint, int parent_index,
+                        std::shared_ptr<GenJointType> joint, int parent_index,
                         int num_parent_bodies, int position_index, int velocity_index);
 
         void updateKinematics();
@@ -55,7 +58,7 @@ namespace grbda
         std::vector<std::tuple<Body, JointPtr, DMat<double>>> bodiesJointsAndReflectedInertias() const;
 
         const std::vector<Body> bodies_;
-        std::shared_ptr<GeneralizedJoints::Base> joint_;
+        std::shared_ptr<GenJointType> joint_;
 
         // Featherstone quantities
         DMat<double> IA_;                                // articulated body inertia

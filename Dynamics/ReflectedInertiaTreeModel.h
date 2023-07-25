@@ -13,10 +13,12 @@ namespace grbda
      * Class to represent a floating base rigid body model with rotors and ground
      * contacts. No concept of state.
      */
-    class ReflectedInertiaTreeModel : public TreeModel<ReflectedInertiaTreeModel, ReflectedInertiaTreeNode>
+    class ReflectedInertiaTreeModel : public TreeModel<ReflectedInertiaTreeModel>
     {
     public:
         EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
+        typedef TreeModel<ReflectedInertiaTreeModel>::NodeType NodeType;
 
         ReflectedInertiaTreeModel(const ClusterTreeModel &cluster_tree_model,
                                   bool use_off_diagonal_terms = true);
@@ -40,7 +42,7 @@ namespace grbda
         int getNumBodies() const { return (int)nodes_.size(); }
 
         const Body &getBody(int spanning_tree_index) const;
-        ReflectedInertiaTreeNode& getNodeContainingBody(int spanning_tree_index);
+        NodeType& getNodeContainingBody(int spanning_tree_index);
         int getIndexOfParentNodeForBody(const int spanning_tree_index);
 
         const DVec<int> &getIndependentCoordinateIndices() const { return independent_coord_indices_; }
@@ -79,7 +81,7 @@ namespace grbda
 
         const bool use_off_diagonal_terms_;
 
-        friend class TreeModel<ReflectedInertiaTreeModel, ReflectedInertiaTreeNode>;
+        friend class TreeModel<ReflectedInertiaTreeModel>;
     };
 
 } // namespace grbda

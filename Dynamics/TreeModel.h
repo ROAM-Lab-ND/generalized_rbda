@@ -14,11 +14,39 @@
 
 namespace grbda
 {
+
+    class ClusterTreeModel;
+    class RigidBodyTreeModel;
+    class ReflectedInertiaTreeModel;
+
+    template <typename Derived>
+    struct BaseTraits;
+
+    template <>
+    struct BaseTraits<ClusterTreeModel>
+    {
+        typedef ClusterTreeNode<> NodeType;
+    };
+
+    template <>
+    struct BaseTraits<RigidBodyTreeModel>
+    {
+        typedef RigidBodyTreeNode NodeType;
+    };
+
+    template <>
+    struct BaseTraits<ReflectedInertiaTreeModel>
+    {
+        typedef ReflectedInertiaTreeNode NodeType;
+    };
+
     // TODO(@MatthewChignoli): I should not need to pass both templates. I should somehow be able to get the NodeType from Derived (Pinocchio knows how to do this)
-    template <typename Derived, typename NodeType>
+    template <typename Derived>
     class TreeModel
     {
     public:
+        typedef typename BaseTraits<Derived>::NodeType NodeType;
+
         const Derived &derived() const { return *static_cast<const Derived *>(this); }
         Derived &derived() { return *static_cast<Derived *>(this); }
 
@@ -104,5 +132,6 @@ namespace grbda
         }
         friend Derived;
     };
+
 
 } // namespace grbda
