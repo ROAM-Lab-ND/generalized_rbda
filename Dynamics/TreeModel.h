@@ -12,47 +12,42 @@ namespace grbda
 
     using TreeNodePtr = std::shared_ptr<TreeNode>;
 
+    template <typename Derived>
     class TreeModel
     {
     public:
-        TreeModel()
-        {
-            gravity_ << 0., 0., 0., 0., 0., -9.81;
-        }
-        virtual ~TreeModel() {}
+        const Derived &derived() const { return *static_cast<const Derived *>(this); }
+        Derived &derived() { return *static_cast<Derived *>(this); }
 
         const int& getNumPositions() const { return position_index_; }
         const int& getNumDegreesOfFreedom() const { return velocity_index_; }
         int getNumActuatedDegreesOfFreedom() const { return velocity_index_ - unactuated_dofs_; }
 
-        virtual DMat<double> getMassMatrix() = 0;
-        virtual DVec<double> getBiasForceVector() = 0;
+        DMat<double> getMassMatrix() { return derived().getMassMatrix(); }
+        DVec<double> getBiasForceVector() { return derived().getBiasForceVector(); }
 
-        virtual int getNumBodies() const = 0;
+        int getNumBodies() const { return derived().getNumBodies(); }
 
-        virtual const Body &getBody(int index) const = 0;
-        virtual const TreeNodePtr getNodeContainingBody(int index) = 0;
+        const Body &getBody(int index) const { return derived().getBody(index); }
+        const TreeNodePtr getNodeContainingBody(int index) { return derived().getNodeContainingBody(index); }
 
         void setGravity(const Vec3<double> &g) { gravity_.tail<3>() = g; }
         SVec<double> getGravity() const { return gravity_; }
 
-        virtual void initializeExternalForces(
+        void initializeExternalForces(
             const std::vector<ExternalForceAndBodyIndexPair> &force_and_body_index_pairs = {});
 
         void forwardKinematics();
-        virtual void contactJacobians() = 0;
+        void contactJacobians() { derived().contactJacobians(); }
 
-        virtual DVec<double> forwardDynamics(const DVec<double> &tau) = 0;
-        virtual DVec<double> inverseDynamics(const DVec<double> &qdd) 
-        {
-            throw std::runtime_error("Inverse dynamics not implemented for this model");
-        }
+        DVec<double> forwardDynamics(const DVec<double> &tau) { return derived().forwardDynamics(tau); }
+        DVec<double> inverseDynamics(const DVec<double> &qdd) { return derived().inverseDynamics(qdd); }
 
-        virtual double applyLocalFrameTestForceAtContactPoint(const Vec3<double> &force,
+        double applyLocalFrameTestForceAtContactPoint(const Vec3<double> &force,
                                                               const string &contact_point_name,
                                                               DVec<double> &dstate_out)
         {
-            throw std::runtime_error("applyLocalFrameTestForce not implemented for this model");
+            return derived().applyLocalFrameTestForceAtContactPoint(force, contact_point_name, dstate_out);
         }
 
         const TreeNodePtr node(const int index) const { return nodes_[index]; }
@@ -71,7 +66,7 @@ namespace grbda
         void updateBiasForceVector();
         DVec<double> recursiveNewtonEulerAlgorithm(const DVec<double> &qdd);
 
-        virtual void resetCache();
+        void resetCache() { derived().resetCache(); }
 
         bool vectorContainsIndex(const std::vector<int> vec, const int index);
 
@@ -93,6 +88,13 @@ namespace grbda
         bool kinematics_updated_ = false;
         bool mass_matrix_updated_ = false;
         bool bias_force_updated_ = false;
+
+    private:
+        TreeModel()
+        {
+            gravity_ << 0., 0., 0., 0., 0., -9.81;
+        }
+        friend Derived;
     };
 
 } // namespace grbda

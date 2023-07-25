@@ -74,7 +74,7 @@ namespace grbda
         for (const auto &contact_point : cluster_tree_model.contactPoints())
         {
             contact_points_.push_back(contact_point);
-        }    
+        }
     }
 
     void ReflectedInertiaTreeModel::initializeIndependentStates(const DVec<double> &y,
@@ -91,7 +91,9 @@ namespace grbda
 
     void ReflectedInertiaTreeModel::resetCache()
     {
-        TreeModel::resetCache();
+        kinematics_updated_ = false;
+        mass_matrix_updated_ = false;
+        bias_force_updated_ = false;
         articulated_bodies_updated_ = false;
     }
 

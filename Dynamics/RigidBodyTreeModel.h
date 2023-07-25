@@ -59,7 +59,7 @@ namespace grbda
      * Class to represent a floating base rigid body model with rotors and ground
      * contacts. No concept of state.
      */
-    class RigidBodyTreeModel : public TreeModel
+    class RigidBodyTreeModel : public TreeModel<RigidBodyTreeModel>
     {
     public:
         EIGEN_MAKE_ALIGNED_OPERATOR_NEW
@@ -93,22 +93,22 @@ namespace grbda
 
         /////////////////////////////////////
 
-        int getNumBodies() const override { return (int)rigid_body_nodes_.size(); }
+        int getNumBodies() const { return (int)rigid_body_nodes_.size(); }
 
         // TOOD(@MatthewChignoli): I don't really like these functions...
-        const Body &getBody(int index) const override { return rigid_body_nodes_[index]->body_; }
-        const TreeNodePtr getNodeContainingBody(int index) override { return rigid_body_nodes_[index]; }
+        const Body &getBody(int index) const { return rigid_body_nodes_[index]->body_; }
+        const TreeNodePtr getNodeContainingBody(int index) { return rigid_body_nodes_[index]; }
 
         void initializeState(const DVec<double> &q, const DVec<double> &qd);
 
         void updateLoopConstraints();
 
-        void contactJacobians() override;
+        void contactJacobians();
 
-        DVec<double> forwardDynamics(const DVec<double> &tau) override;
+        DVec<double> forwardDynamics(const DVec<double> &tau);
 
-        DMat<double> getMassMatrix() override;
-        DVec<double> getBiasForceVector() override;
+        DMat<double> getMassMatrix();
+        DVec<double> getBiasForceVector();
 
         DVec<double> qddToYdd(DVec<double> qdd) const
         {
@@ -132,9 +132,11 @@ namespace grbda
         void extractLoopClosureFunctionsFromClusterModel(const ClusterTreeModel &cluster_tree_model);
         void extractContactPointsFromClusterModel(const ClusterTreeModel &cluster_tree_model);
 
-        void resetCache() override
+        void resetCache()
         {
-            TreeModel::resetCache();
+            kinematics_updated_ = false;
+            mass_matrix_updated_ = false;
+            bias_force_updated_ = false;
             loop_constraints_updated_ = false;
         }
 
@@ -153,6 +155,8 @@ namespace grbda
         Timer timer_;
         RigidBodyTreeTimingStatistics timing_statistics_;
 #endif
+
+        friend class TreeModel<RigidBodyTreeModel>;
     };
 
 } // namespace grbda

@@ -15,7 +15,7 @@ namespace grbda
      * Class to represent a floating base rigid body model with rotors and ground
      * contacts. No concept of state.
      */
-    class ReflectedInertiaTreeModel : public TreeModel
+    class ReflectedInertiaTreeModel : public TreeModel<ReflectedInertiaTreeModel>
     {
     public:
         EIGEN_MAKE_ALIGNED_OPERATOR_NEW
@@ -39,34 +39,34 @@ namespace grbda
 
         /////////////////////////////////////
 
-        int getNumBodies() const override { return (int)reflected_inertia_nodes_.size(); }
+        int getNumBodies() const { return (int)reflected_inertia_nodes_.size(); }
 
-        const Body &getBody(int spanning_tree_index) const override;
-        const TreeNodePtr getNodeContainingBody(int spanning_tree_index) override;
+        const Body &getBody(int spanning_tree_index) const;
+        const TreeNodePtr getNodeContainingBody(int spanning_tree_index);
         int getIndexOfParentNodeForBody(const int spanning_tree_index);
 
         const DVec<int> &getIndependentCoordinateIndices() const { return independent_coord_indices_; }
 
         void initializeIndependentStates(const DVec<double> &y, const DVec<double> &yd);
 
-        void contactJacobians() override;
+        void contactJacobians();
 
-        DVec<double> forwardDynamics(const DVec<double> &tau) override;
-        DVec<double> inverseDynamics(const DVec<double> &ydd) override;
+        DVec<double> forwardDynamics(const DVec<double> &tau);
+        DVec<double> inverseDynamics(const DVec<double> &ydd);
 
         double applyLocalFrameTestForceAtContactPoint(const Vec3<double> &force,
                                                       const string &contact_point_name,
-                                                      DVec<double> &dstate_out) override;
+                                                      DVec<double> &dstate_out);
 
-        DMat<double> getMassMatrix() override;
-        DVec<double> getBiasForceVector() override;
+        DMat<double> getMassMatrix();
+        DVec<double> getBiasForceVector();
 
     private:
         void extractRigidBodiesAndJointsFromClusterModel(const ClusterTreeModel &cluster_tree_model);
         void extractIndependentCoordinatesFromClusterModel(const ClusterTreeModel &cluster_tree_model);
         void extractContactPointsFromClusterModel(const ClusterTreeModel &cluster_tree_model);
 
-        void resetCache() override;
+        void resetCache();
 
         DVec<double> forwardDynamicsWithoutOffDiag(const DVec<double> &tau);
         DVec<double> forwardDynamicsWithOffDiag(const DVec<double> &tau);
@@ -82,6 +82,8 @@ namespace grbda
         bool articulated_bodies_updated_ = false;
 
         const bool use_off_diagonal_terms_;
+
+        friend class TreeModel<ReflectedInertiaTreeModel>;
     };
 
 } // namespace grbda

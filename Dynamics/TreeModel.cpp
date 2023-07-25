@@ -1,9 +1,14 @@
 #include "TreeModel.h"
 
+#include "ClusterTreeModel.h"
+#include "RigidBodyTreeModel.h"
+#include "ReflectedInertiaTreeModel.h"
+
 namespace grbda
 {
 
-    void TreeModel::forwardKinematics()
+    template <typename Derived>
+    void TreeModel<Derived>::forwardKinematics()
     {
         if (kinematics_updated_)
             return;
@@ -36,7 +41,8 @@ namespace grbda
         kinematics_updated_ = true;
     }
 
-    void TreeModel::contactPointForwardKinematics()
+    template <typename Derived>
+    void TreeModel<Derived>::contactPointForwardKinematics()
     {
         for (auto &cp : contact_points_)
         {
@@ -52,7 +58,8 @@ namespace grbda
         }
     }
 
-    void TreeModel::compositeRigidBodyAlgorithm()
+    template <typename Derived>
+    void TreeModel<Derived>::compositeRigidBodyAlgorithm()
     {
         if (mass_matrix_updated_)
             return;
@@ -98,7 +105,8 @@ namespace grbda
         mass_matrix_updated_ = true;
     }
 
-    void TreeModel::updateBiasForceVector()
+    template <typename Derived>
+    void TreeModel<Derived>::updateBiasForceVector()
     {
         if (bias_force_updated_)
             return;
@@ -108,7 +116,8 @@ namespace grbda
         bias_force_updated_ = true;
     }
 
-    DVec<double> TreeModel::recursiveNewtonEulerAlgorithm(const DVec<double> &qdd)
+    template <typename Derived>
+    DVec<double> TreeModel<Derived>::recursiveNewtonEulerAlgorithm(const DVec<double> &qdd)
     {
         forwardKinematics();
 
@@ -162,7 +171,8 @@ namespace grbda
         return tau;
     }
 
-    void TreeModel::initializeExternalForces(
+    template <typename Derived>
+    void TreeModel<Derived>::initializeExternalForces(
         const std::vector<ExternalForceAndBodyIndexPair> &force_and_body_index_pairs)
     {
         // Clear previous external forces
@@ -188,16 +198,14 @@ namespace grbda
         resetCache();
     }
 
-    void TreeModel::resetCache()
-    {
-        kinematics_updated_ = false;
-        mass_matrix_updated_ = false;
-        bias_force_updated_ = false;
-    }
-
-    bool TreeModel::vectorContainsIndex(const std::vector<int> vec, const int index)
+    template <typename Derived>
+    bool TreeModel<Derived>::vectorContainsIndex(const std::vector<int> vec, const int index)
     {
         return std::find(vec.begin(), vec.end(), index) != vec.end();
     }
+
+    template class TreeModel<ClusterTreeModel>;
+    template class TreeModel<RigidBodyTreeModel>;
+    template class TreeModel<ReflectedInertiaTreeModel>;
 
 } // namespace grbda

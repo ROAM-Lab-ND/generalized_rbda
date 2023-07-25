@@ -80,7 +80,7 @@ namespace grbda
      * Class to represent a floating base rigid body model with rotors and ground
      * contacts. No concept of state.
      */
-    class ClusterTreeModel : public TreeModel
+    class ClusterTreeModel : public TreeModel<ClusterTreeModel>
     {
     public:
         EIGEN_MAKE_ALIGNED_OPERATOR_NEW
@@ -104,7 +104,7 @@ namespace grbda
         void resetExternalForces();
         void resetCalculationFlags() { resetCache(); }
 
-        void contactJacobians() override;
+        void contactJacobians();
         const std::unordered_map<std::string, int> &contacts() const;
         const Vec3<double> &pGC(const string &cp_name) const;
         const Vec3<double> &vGC(const string &cp_name) const;
@@ -142,7 +142,7 @@ namespace grbda
 
         void initializeState(const ModelState &model_state);
 
-        int getNumBodies() const override { return (int)bodies_.size(); }
+        int getNumBodies() const { return (int)bodies_.size(); }
 
         // NOTE: A body's "cluster ancestor" is the nearest member in the body's supporting tree
         // that belongs to a different cluster. This function is only intended to be run when
@@ -168,8 +168,8 @@ namespace grbda
 
         int getIndexOfParentClusterFromBodies(const vector<Body> &bodies);
 
-        const Body &getBody(int index) const override { return bodies_[index]; }
-        const TreeNodePtr getNodeContainingBody(int index) override
+        const Body &getBody(int index) const { return bodies_[index]; }
+        const TreeNodePtr getNodeContainingBody(int index)
         {
             return nodes_[getIndexOfClusterContainingBody(index)];
         }
@@ -189,14 +189,14 @@ namespace grbda
             return cluster_nodes_[cluster_name_to_cluster_index_.at(cluster_name)];
         }
 
-        DVec<double> inverseDynamics(const DVec<double> &qdd) override;
-        DVec<double> forwardDynamics(const DVec<double> &tau) override;
+        DVec<double> inverseDynamics(const DVec<double> &qdd);
+        DVec<double> forwardDynamics(const DVec<double> &tau);
         double applyLocalFrameTestForceAtContactPoint(const Vec3<double> &force,
                                                       const string &contact_point_name,
-                                                      DVec<double> &dstate_out) override;
+                                                      DVec<double> &dstate_out);
 
-        DMat<double> getMassMatrix() override;
-        DVec<double> getBiasForceVector() override;
+        DMat<double> getMassMatrix();
+        DVec<double> getBiasForceVector();
 
 #ifdef TIMING_STATS
         const ClusterTreeTimingStatistics &getTimingStatistics() const
@@ -212,7 +212,7 @@ namespace grbda
         optional<int> searchClustersForBody(const int body_index);
 
         void resizeSystemMatrices();
-        void resetCache() override;
+        void resetCache();
 
         void updateArticulatedBodies();
         void updateForcePropagators();
@@ -239,6 +239,7 @@ namespace grbda
         ClusterTreeTimingStatistics timing_statistics_;
 #endif
 
+        friend class TreeModel<ClusterTreeModel>;
         friend class RigidBodyTreeModel;
         friend class ReflectedInertiaTreeModel;
     };

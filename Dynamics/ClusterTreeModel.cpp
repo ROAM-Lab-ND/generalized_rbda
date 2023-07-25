@@ -256,7 +256,9 @@ namespace grbda
 
     void ClusterTreeModel::resetCache()
     {
-        TreeModel::resetCache();
+        kinematics_updated_ = false;
+        mass_matrix_updated_ = false;
+        bias_force_updated_ = false;
         articulated_bodies_updated_ = false;
         force_propagators_updated_ = false;
         qdd_effects_updated_ = false;
