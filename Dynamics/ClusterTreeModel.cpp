@@ -171,9 +171,9 @@ namespace grbda
         ModelState model_state;
         int pos_idx = 0;
         int vel_idx = nq;
-        for (size_t i(0); i < clusters().size(); i++)
+        for (size_t i(0); i < clusterVariants().size(); i++)
         {
-            const auto &joint = cluster(i).joint_;
+            const auto &joint = getJoint(clusterVariant(i));
 
             const int &num_pos = joint->numPositions();
             const int &num_vel = joint->numVelocities();
