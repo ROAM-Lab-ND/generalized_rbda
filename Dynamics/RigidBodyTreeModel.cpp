@@ -32,9 +32,9 @@ namespace grbda
         const ClusterTreeModel &cluster_tree_model)
     {
         int body_index = 0;
-        for (const ClusterTreeModel::NodeType &cluster : cluster_tree_model.clusters())
+        for (const ClusterTreeModel::NodeTypeVariants &cluster : cluster_tree_model.clusterVariants())
         {
-            for (const auto &body_and_joint : cluster.bodiesAndJoints())
+            for (const auto &body_and_joint : bodiesAndJoints(cluster))
             {
                 const Body &body = body_and_joint.first;
                 const auto &joint = body_and_joint.second;
@@ -54,9 +54,9 @@ namespace grbda
         const ClusterTreeModel &cluster_tree_model)
     {
 
-        for (const ClusterTreeModel::NodeType &cluster : cluster_tree_model.clusters())
+        for (const ClusterTreeModel::NodeTypeVariants &cluster : cluster_tree_model.clusterVariants())
         {
-            loop_constraints_.push_back(cluster.joint_->cloneLoopConstraint());
+            loop_constraints_.push_back(getJoint(cluster)->cloneLoopConstraint());
         }
     }
 

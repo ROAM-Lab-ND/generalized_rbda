@@ -46,10 +46,10 @@ protected:
         DVec<double> spanning_joint_pos = DVec<double>::Zero(0);
         DVec<double> spanning_joint_vel = DVec<double>::Zero(0);
 
-        for (const ClusterTreeModel::NodeType &cluster : cluster_models.at(robot_idx).clusters())
+        for (const ClusterTreeModel::NodeTypeVariants &cluster : cluster_models.at(robot_idx).clusterVariants())
         {
-            JointState joint_state = cluster.joint_->randomJointState();
-            JointState spanning_joint_state = cluster.joint_->toSpanningTreeState(joint_state);
+            JointState joint_state = getJoint(cluster)->randomJointState();
+            JointState spanning_joint_state = getJoint(cluster)->toSpanningTreeState(joint_state);
 
             spanning_joint_pos = appendEigenVector(spanning_joint_pos,
                                                    spanning_joint_state.position);
@@ -65,9 +65,9 @@ protected:
 
         // Check for NaNs
         bool nan_detected = false;
-        for (const ClusterTreeModel::NodeType &cluster : this->cluster_models[robot_idx].clusters())
+        for (const ClusterTreeModel::NodeTypeVariants &cluster : cluster_models.at(robot_idx).clusterVariants())
         {
-            if (cluster.joint_state_.position.hasNaN())
+            if (getJointState(cluster).position.hasNaN())
             {
                 nan_detected = true;
                 break;

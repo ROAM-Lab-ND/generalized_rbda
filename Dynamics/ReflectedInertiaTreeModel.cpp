@@ -17,12 +17,11 @@ namespace grbda
     void ReflectedInertiaTreeModel::extractRigidBodiesAndJointsFromClusterModel(
         const ClusterTreeModel &cluster_tree_model)
     {
-        for (const ClusterTreeModel::NodeType &cluster : cluster_tree_model.clusters())
+        for (const ClusterTreeModel::NodeTypeVariants &cluster : cluster_tree_model.clusterVariants())
         {
-            const int &nv = cluster.num_velocities_;
+            const int nv = numVelocities(cluster);
             DMat<double> cluster_reflected_inertia = DMat<double>::Zero(nv, nv);
-            for (const auto &link_joint_and_ref_inertia :
-                 cluster.bodiesJointsAndReflectedInertias())
+            for (const auto &link_joint_and_ref_inertia : bodiesJointsAndReflectedInertias(cluster))
             {
                 const Body &link = std::get<0>(link_joint_and_ref_inertia);
                 const auto link_joint = std::get<1>(link_joint_and_ref_inertia);
@@ -50,9 +49,9 @@ namespace grbda
         const ClusterTreeModel &cluster_tree_model)
     {
         spanning_tree_to_independent_coords_conversion_ = DMat<double>::Zero(0, 0);
-        for (const ClusterTreeModel::NodeType &cluster : cluster_tree_model.clusters())
+        for (const ClusterTreeModel::NodeTypeVariants &cluster : cluster_tree_model.clusterVariants())
         {
-            const auto joint = cluster.joint_;
+            const auto joint = getJoint(cluster);
             spanning_tree_to_independent_coords_conversion_ =
                 appendEigenMatrix(spanning_tree_to_independent_coords_conversion_,
                                   joint->spanningTreeToIndependentCoordsConversion());

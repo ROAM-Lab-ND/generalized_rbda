@@ -170,6 +170,7 @@ namespace grbda
             num_output_bodies_++;
         }
 
+        // TODO(@MatthewChignoli): I think this function is not necessary. We can just use the bracket operator
         const SpatialTransform &
         GeneralizedAbsoluteSpatialTransform::getTransformForOutputBody(int output_body_index) const
         {

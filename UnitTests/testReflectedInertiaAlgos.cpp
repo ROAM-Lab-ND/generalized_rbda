@@ -23,9 +23,9 @@ protected:
         ModelState model_state;
         independent_joint_pos_ = DVec<double>::Zero(0);
         independent_joint_vel_ = DVec<double>::Zero(0);
-        for (const ClusterTreeModel::NodeType &cluster : cluster_model.clusters())
+        for (const ClusterTreeModel::NodeTypeVariants &cluster : cluster_model.clusterVariants())
         {
-            JointState joint_state = cluster.joint_->randomJointState();
+            JointState joint_state = getJoint(cluster)->randomJointState();
 
             if (joint_state.position.isSpanning() || joint_state.velocity.isSpanning())
                 throw std::runtime_error("Initializing reflected inertia model requires all independent coordinates");
@@ -46,9 +46,9 @@ protected:
 
         // Check for NaNs
         bool nan_detected = false;
-        for (const ClusterTreeModel::NodeType &cluster : this->cluster_model.clusters())
+        for (const ClusterTreeModel::NodeTypeVariants &cluster : cluster_model.clusterVariants())
         {
-            if (cluster.joint_state_.position.hasNaN())
+            if (getJointState(cluster).position.hasNaN())
             {
                 nan_detected = true;
                 break;
@@ -108,10 +108,11 @@ TYPED_TEST(ReflectedInertiaDynamicsAlgosTest, ForwardKinematics)
         // Verify spatial velocity agreement of bodies
         DVec<double> v_cluster = DVec<double>::Zero(6 * this->cluster_model.getNumBodies());
         int i = 0;
-        for (const ClusterTreeModel::NodeType &cluster : this->cluster_model.clusters())
+        for (const ClusterTreeModel::NodeTypeVariants &cluster : this->cluster_model.clusterVariants())
         {
-            v_cluster.segment(i, cluster.motion_subspace_dimension_) = cluster.v_;
-            i += cluster.motion_subspace_dimension_;
+            const int msd = motionSubspaceDimension(cluster);
+            v_cluster.segment(i, msd) = velocity(cluster);
+            i += msd;
         }
 
         DVec<double> v_links = DVec<double>::Zero(6 * this->reflected_inertia_model.getNumBodies());

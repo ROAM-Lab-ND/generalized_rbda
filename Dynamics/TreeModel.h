@@ -8,6 +8,8 @@
 #include "Utils/Utilities/SpatialTransforms.h"
 #include "Utils/Utilities/utilities.h"
 
+#include "Nodes/TreeNodeVisitors.h"
+
 #include "Nodes/ClusterTreeNode.h"
 #include "Nodes/ReflectedInertiaTreeNode.h"
 #include "Nodes/RigidBodyTreeNode.h"
@@ -15,6 +17,7 @@
 namespace grbda
 {
 
+    // TODO(@MatthewChignoli): Break this trait stuff out into a separate file
     class ClusterTreeModel;
     class RigidBodyTreeModel;
     class ReflectedInertiaTreeModel;
@@ -26,18 +29,21 @@ namespace grbda
     struct BaseTraits<ClusterTreeModel>
     {
         typedef ClusterTreeNode<> NodeType;
+        typedef boost::variant<ClusterTreeNode<>> NodeTypeVariants;
     };
 
     template <>
     struct BaseTraits<RigidBodyTreeModel>
     {
         typedef RigidBodyTreeNode NodeType;
+        typedef boost::variant<RigidBodyTreeNode> NodeTypeVariants;
     };
 
     template <>
     struct BaseTraits<ReflectedInertiaTreeModel>
     {
         typedef ReflectedInertiaTreeNode NodeType;
+        typedef boost::variant<ReflectedInertiaTreeNode> NodeTypeVariants;
     };
 
     // TODO(@MatthewChignoli): I should not need to pass both templates. I should somehow be able to get the NodeType from Derived (Pinocchio knows how to do this)
@@ -46,6 +52,7 @@ namespace grbda
     {
     public:
         typedef typename BaseTraits<Derived>::NodeType NodeType;
+        typedef typename BaseTraits<Derived>::NodeTypeVariants NodeTypeVariants;
 
         const Derived &derived() const { return *static_cast<const Derived *>(this); }
         Derived &derived() { return *static_cast<Derived *>(this); }
@@ -66,9 +73,17 @@ namespace grbda
             return derived().getNodeContainingBody(index);
         }
 
+        // TODO(@MatthewChignoli): Implement these for derived classes (what is the behavior when they are not implemented?)
+        NodeTypeVariants &getNodeVariantContainingBody(int index)
+        {
+            return derived().getNodeVariantContainingBody(index);
+        }
+
         void setGravity(const Vec3<double> &g) { gravity_.tail<3>() = g; }
         SVec<double> getGravity() const { return gravity_; }
 
+
+        // TODO(@MatthewChignoli): What is the relationship between this function and the setExternalForces function that the cluster tree model has?
         void initializeExternalForces(
             const std::vector<ExternalForceAndBodyIndexPair> &force_and_body_index_pairs = {});
 
@@ -88,6 +103,10 @@ namespace grbda
         NodeType &node(const int index) { return nodes_[index]; }
         const NodeType &node(const int index) const { return nodes_[index]; }
         const std::vector<NodeType> &nodes() const { return nodes_; }
+
+        NodeTypeVariants &nodeVariant(const int index) { return nodes_variants_[index]; }
+        const NodeTypeVariants &nodeVariant(const int index) const { return nodes_variants_[index]; }
+        const std::vector<NodeTypeVariants> &nodeVariants() const { return nodes_variants_; }
 
         const std::vector<ContactPoint> &contactPoints() const { return contact_points_; }
         const ContactPoint &contactPoint(const int index) const { return contact_points_[index]; }
@@ -116,6 +135,7 @@ namespace grbda
         int unactuated_dofs_ = 0;
 
         std::vector<NodeType> nodes_;
+        std::vector<NodeTypeVariants> nodes_variants_;
         std::vector<int> indices_of_nodes_experiencing_external_forces_;
 
         std::vector<ContactPoint> contact_points_;

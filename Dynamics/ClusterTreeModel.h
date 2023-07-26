@@ -7,6 +7,7 @@
 
 #include "TreeModel.h"
 #include "Dynamics/Nodes/ClusterTreeNode.h"
+#include "Dynamics/Nodes/ClusterTreeNodeVisitors.h"
 #ifdef TIMING_STATS
 #include "Utils/Utilities/Timer.h"
 #endif
@@ -17,6 +18,7 @@ namespace grbda
     using namespace std;
     using namespace ori;
     using namespace spatial;
+    using namespace ClusterNodeVisitors;
 
 #ifdef TIMING_STATS
     struct ClusterTreeTimingStatistics
@@ -84,6 +86,7 @@ namespace grbda
         EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
         typedef TreeModel<ClusterTreeModel>::NodeType NodeType;
+        typedef TreeModel<ClusterTreeModel>::NodeTypeVariants NodeTypeVariants;
 
         ClusterTreeModel()
         {
@@ -127,10 +130,6 @@ namespace grbda
 
         Body registerBody(const string name, const SpatialInertia<double> inertia,
                           const string parent_name, const SpatialTransform Xtree);
-        // TODO(@MatthewChignoli): need to clean this up, should have to make all of these vectors we we are only appending one body. Right now the append body function is silly. Because That function creates a body (by registering it), but it also requires a generalized joint... which requires a body...
-        void appendBody(const string name, const SpatialInertia<double> inertia,
-                        const string parent_name, const SpatialTransform Xtree,
-                        shared_ptr<GeneralizedJoints::Base> joint);
         void appendRegisteredBodiesAsCluster(const string name,
                                              shared_ptr<GeneralizedJoints::Base> joint);
         void appendContactPoint(const string body_name,
@@ -150,9 +149,7 @@ namespace grbda
         // body.cluster_ancestor_index_
         int getClusterAncestorIndexFromParent(const int body_index);
 
-        int getSubIndexWithinClusterForBody(const Body &body) const;
         int getSubIndexWithinClusterForBody(const int body_index) const;
-        int getSubIndexWithinClusterForBody(const string &body_name) const;
 
         int getNumBodiesInCluster(const NodeType &cluster) const;
         int getNumBodiesInCluster(const int cluster_index) const;
@@ -162,9 +159,14 @@ namespace grbda
         int getIndexOfClusterContainingBody(const int body_index);
         int getIndexOfClusterContainingBody(const string &body_name);
 
+        // TODO(@MatthewChignoli): Aren't these the same as get node containing? Should clean that up later
         NodeType &getClusterContainingBody(const Body &body);
         NodeType &getClusterContainingBody(const int body_index);
         NodeType &getClusterContainingBody(const string &body_name);
+
+        NodeTypeVariants &getClusterVarContainingBody(const Body &body);
+        NodeTypeVariants &getClusterVarContainingBody(const int body_index);
+        NodeTypeVariants &getClusterVarContainingBody(const string &body_name);
 
         int getIndexOfParentClusterFromBodies(const vector<Body> &bodies);
 
@@ -173,9 +175,15 @@ namespace grbda
         {
             return nodes_[getIndexOfClusterContainingBody(index)];
         }
+        NodeTypeVariants &getNodeVariantContainingBody(int index)
+        {
+            return nodes_variants_[getIndexOfClusterContainingBody(index)];
+        }
 
         const vector<Body> &bodies() const { return bodies_; }
+        // TODO(@MatthewChignoli): delete
         const vector<NodeType> &clusters() const { return nodes_; }
+        const vector<NodeTypeVariants> &clusterVariants() const { return nodes_variants_; }
 
         const Body &body(const int body_index) const { return bodies_[body_index]; }
         const Body &body(const string body_name) const
@@ -183,6 +191,7 @@ namespace grbda
             return bodies_[body_name_to_body_index_.at(body_name)];
         }
 
+        // TODO(@MatthewChignoli): delete
         const NodeType &cluster(const int cluster_index) const
         {
             return nodes_[cluster_index];
@@ -190,6 +199,15 @@ namespace grbda
         const NodeType &cluster(const string &cluster_name) const
         {
             return nodes_[cluster_name_to_cluster_index_.at(cluster_name)];
+        }
+
+        const NodeTypeVariants &clusterVariant(const int cluster_index) const
+        {
+            return nodes_variants_[cluster_index];
+        }
+        const NodeTypeVariants &clusterVariant(const string &cluster_name) const
+        {
+            return nodes_variants_[cluster_name_to_cluster_index_.at(cluster_name)];
         }
 
         DVec<double> inverseDynamics(const DVec<double> &qdd);
@@ -209,9 +227,9 @@ namespace grbda
 #endif
 
     private:
-        void checkValidParentClusterForBodiesInCluster(const NodeType &cluster);
-        void checkValidParentClusterForBodiesInCluster(const int cluster_index);
-        void checkValidParentClusterForBodiesInCluster(const string &cluster_nam);
+        // void checkValidParentClusterForBodiesInCluster(const NodeType &cluster);
+        void checkValidParentClusterForBodiesInCluster(const NodeTypeVariants &cluster);
+
         optional<int> searchClustersForBody(const int body_index);
 
         void resizeSystemMatrices();
