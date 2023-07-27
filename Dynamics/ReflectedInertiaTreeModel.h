@@ -19,7 +19,7 @@ namespace grbda
     public:
         EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
-        typedef TreeModel<ReflectedInertiaTreeModel>::NodeTypeVariants NodeTypeVariants;
+        typedef TreeModel<ReflectedInertiaTreeModel>::NodeType NodeType;
 
         ReflectedInertiaTreeModel(const ClusterTreeModel &cluster_tree_model,
                                   bool use_off_diagonal_terms = true);
@@ -40,10 +40,10 @@ namespace grbda
 
         /////////////////////////////////////
 
-        int getNumBodies() const { return (int)nodes_variants_.size(); }
+        int getNumBodies() const { return (int)nodes_.size(); }
 
         const Body &getBody(int spanning_tree_index) const;
-        NodeTypeVariants &getNodeVariantContainingBody(int spanning_tree_index);
+        NodeType &getNodeContainingBody(int spanning_tree_index);
 
         int getIndexOfParentNodeForBody(const int spanning_tree_index);
 

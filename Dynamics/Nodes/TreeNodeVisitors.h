@@ -11,137 +11,137 @@ namespace grbda
 {
     using namespace spatial;
 
-    template <typename NodeTypeVariants>
+    template <typename NodeType>
     struct IndexVisitor : public boost::static_visitor<int>
     {
-        template <typename NodeType>
-        int operator()(const NodeType &node) const
+        template <typename T>
+        int operator()(const T &node) const
         {
             return node.index_;
         }
 
-        static int run(const NodeTypeVariants &node)
+        static int run(const NodeType &node)
         {
             return boost::apply_visitor(IndexVisitor(), node);
         }
     };
 
-    template <typename NodeTypeVariants>
-    inline int index(const NodeTypeVariants &node)
+    template <typename NodeType>
+    inline int index(const NodeType &node)
     {
-        return IndexVisitor<NodeTypeVariants>::run(node);
+        return IndexVisitor<NodeType>::run(node);
     }
 
-    template <typename NodeTypeVariants>
+    template <typename NodeType>
     struct ParentIndexVisitor : public boost::static_visitor<int>
     {
-        template <typename NodeType>
-        int operator()(const NodeType &node) const
+        template <typename T>
+        int operator()(const T &node) const
         {
             return node.parent_index_;
         }
 
-        static int run(const NodeTypeVariants &node)
+        static int run(const NodeType &node)
         {
             return boost::apply_visitor(ParentIndexVisitor(), node);
         }
     };
 
-    template <typename NodeTypeVariants>
-    inline int parentIndex(const NodeTypeVariants &node)
+    template <typename NodeType>
+    inline int parentIndex(const NodeType &node)
     {
-        return ParentIndexVisitor<NodeTypeVariants>::run(node);
+        return ParentIndexVisitor<NodeType>::run(node);
     }
 
-    template <typename NodeTypeVariants>
+    template <typename NodeType>
     struct VelocityVisitor : public boost::static_visitor<const DVec<double> &>
     {
-        template <typename NodeType>
-        const DVec<double> &operator()(const NodeType &node) const
+        template <typename T>
+        const DVec<double> &operator()(const T &node) const
         {
             return node.v_;
         }
 
-        static const DVec<double> &run(const NodeTypeVariants &node)
+        static const DVec<double> &run(const NodeType &node)
         {
             return boost::apply_visitor(VelocityVisitor(), node);
         }
     };
 
-    template <typename NodeTypeVariants>
-    inline const DVec<double> &velocity(const NodeTypeVariants &node)
+    template <typename NodeType>
+    inline const DVec<double> &velocity(const NodeType &node)
     {
-        return VelocityVisitor<NodeTypeVariants>::run(node);
+        return VelocityVisitor<NodeType>::run(node);
     }
 
-    template <typename NodeTypeVariants>
+    template <typename NodeType>
     struct XaVisitor : public boost::static_visitor<const GeneralizedAbsoluteSpatialTransform &>
     {
-        template <typename NodeType>
-        const GeneralizedAbsoluteSpatialTransform &operator()(const NodeType &node) const
+        template <typename T>
+        const GeneralizedAbsoluteSpatialTransform &operator()(const T &node) const
         {
             return node.Xa_;
         }
 
-        static const GeneralizedAbsoluteSpatialTransform& run(const NodeTypeVariants &node)
+        static const GeneralizedAbsoluteSpatialTransform& run(const NodeType &node)
         {
             return boost::apply_visitor(XaVisitor(), node);
         }
     };
 
-    template <typename NodeTypeVariants>
-    inline const GeneralizedAbsoluteSpatialTransform& Xa(const NodeTypeVariants &node)
+    template <typename NodeType>
+    inline const GeneralizedAbsoluteSpatialTransform& Xa(const NodeType &node)
     {
-        return XaVisitor<NodeTypeVariants>::run(node);
+        return XaVisitor<NodeType>::run(node);
     }
 
-    template <typename NodeTypeVariants>
+    template <typename NodeType>
     struct SetJointStateVisitor : public boost::static_visitor<>
     {
         JointState joint_state_;
 
         SetJointStateVisitor(const JointState &joint_state) : joint_state_(joint_state) {}
 
-        template <typename NodeType>
-        void operator()(NodeType &node) const
+        template <typename T>
+        void operator()(T &node) const
         {
             node.joint_state_ = joint_state_;
         }
 
-        static void run(NodeTypeVariants &node, const JointState &joint_state)
+        static void run(NodeType &node, const JointState &joint_state)
         {
             boost::apply_visitor(SetJointStateVisitor(joint_state), node);
         }
     };
 
-    template <typename NodeTypeVariants>
-    inline void setJointState(NodeTypeVariants &node, JointState joint_state)
+    template <typename NodeType>
+    inline void setJointState(NodeType &node, JointState joint_state)
     {
-        SetJointStateVisitor<NodeTypeVariants>::run(node, joint_state);
+        SetJointStateVisitor<NodeType>::run(node, joint_state);
     }
 
-    template <typename NodeTypeVariants>
+    template <typename NodeType>
     struct GetJointStateVisitor : public boost::static_visitor<const JointState>
     {
-        template <typename NodeType>
-        const JointState operator()(const NodeType &node) const
+        template <typename T>
+        const JointState operator()(const T &node) const
         {
             return node.joint_state_;
         }
 
-        static const JointState run(const NodeTypeVariants &node)
+        static const JointState run(const NodeType &node)
         {
             return boost::apply_visitor(GetJointStateVisitor(), node);
         }
     };
 
-    template <typename NodeTypeVariants>
-    inline const JointState getJointState(const NodeTypeVariants &node)
+    template <typename NodeType>
+    inline const JointState getJointState(const NodeType &node)
     {
-        return GetJointStateVisitor<NodeTypeVariants>::run(node);
+        return GetJointStateVisitor<NodeType>::run(node);
     }
 
-    template <typename NodeTypeVariants>
+    template <typename NodeType>
     struct ForwardKinematicsVisitor : public boost::static_visitor<>
     {
         // TODO(@MatthewChignoli): Pinocchio does something with fusion and algo...
@@ -152,8 +152,8 @@ namespace grbda
                                  const GeneralizedAbsoluteSpatialTransform &Xa_parent)
             : v_parent_(v_parent), Xa_parent_(Xa_parent) {}
 
-        template <typename NodeType>
-        void operator()(NodeType &node) const
+        template <typename T>
+        void operator()(T &node) const
         {
             node.updateKinematics();
             node.v_ = node.Xup_.transformMotionVector(v_parent_) + node.vJ();
@@ -162,25 +162,25 @@ namespace grbda
                       generalMotionCrossProduct(node.v_, node.vJ());
         }
 
-        static void run(NodeTypeVariants &node, const DVec<double> &v_parent,
+        static void run(NodeType &node, const DVec<double> &v_parent,
                         const GeneralizedAbsoluteSpatialTransform &Xa_parent)
         {
             boost::apply_visitor(ForwardKinematicsVisitor(v_parent, Xa_parent), node);
         }
     };
 
-    template <typename NodeTypeVariants>
-    inline void nodeKinematics(NodeTypeVariants &node, const DVec<double> &v_parent,
+    template <typename NodeType>
+    inline void nodeKinematics(NodeType &node, const DVec<double> &v_parent,
                                const GeneralizedAbsoluteSpatialTransform &Xa_parent)
     {
-        ForwardKinematicsVisitor<NodeTypeVariants>::run(node, v_parent, Xa_parent);
+        ForwardKinematicsVisitor<NodeType>::run(node, v_parent, Xa_parent);
     }
 
-    template <typename NodeTypeVariants>
+    template <typename NodeType>
     struct ForwardKinematicsNoParentVisitor : public boost::static_visitor<>
     {
-        template <typename NodeType>
-        void operator()(NodeType &node) const
+        template <typename T>
+        void operator()(T &node) const
         {
             node.updateKinematics();
             node.v_ = node.vJ();
@@ -189,70 +189,70 @@ namespace grbda
                       generalMotionCrossProduct(node.v_, node.vJ());
         }
 
-        static void run(NodeTypeVariants &node)
+        static void run(NodeType &node)
         {
             boost::apply_visitor(ForwardKinematicsNoParentVisitor(), node);
         }
     };
 
-    template <typename NodeTypeVariants>
-    inline void nodeKinematics(NodeTypeVariants &node)
+    template <typename NodeType>
+    inline void nodeKinematics(NodeType &node)
     {
-        ForwardKinematicsNoParentVisitor<NodeTypeVariants>::run(node);
+        ForwardKinematicsNoParentVisitor<NodeType>::run(node);
     }
 
     // TODO(@MatthewChignoli): Are these totally necessary?
-    template <typename NodeTypeVariants>
+    template <typename NodeType>
     struct GetAbsoluteTransformForBodyVisitor : public boost::static_visitor<SpatialTransform>
     {
         const Body &body_;
 
         GetAbsoluteTransformForBodyVisitor(const Body &body) : body_(body) {}
 
-        template <typename NodeType>
-        SpatialTransform operator()(const NodeType &node) const
+        template <typename T>
+        SpatialTransform operator()(const T &node) const
         {
             return node.getAbsoluteTransformForBody(body_);
         }
 
-        static SpatialTransform run(const NodeTypeVariants &node, const Body &body)
+        static SpatialTransform run(const NodeType &node, const Body &body)
         {
             return boost::apply_visitor(GetAbsoluteTransformForBodyVisitor(body), node);
         }
     };
 
-    template <typename NodeTypeVariants>
-    inline SpatialTransform getAbsoluteTransformForBody(NodeTypeVariants &node, const Body &body)
+    template <typename NodeType>
+    inline SpatialTransform getAbsoluteTransformForBody(NodeType &node, const Body &body)
     {
-        return GetAbsoluteTransformForBodyVisitor<NodeTypeVariants>::run(node, body);
+        return GetAbsoluteTransformForBodyVisitor<NodeType>::run(node, body);
     }
 
-    template <typename NodeTypeVariants>
+    template <typename NodeType>
     struct GetVelocityForBodyVisitor : public boost::static_visitor<DVec<double>>
     {
         const Body &body_;
 
         GetVelocityForBodyVisitor(const Body &body) : body_(body) {}
 
-        template <typename NodeType>
-        DVec<double> operator()(const NodeType &node) const
+        template <typename T>
+        DVec<double> operator()(const T &node) const
         {
             return node.getVelocityForBody(body_);
         }
 
-        static DVec<double> run(const NodeTypeVariants &node, const Body &body)
+        static DVec<double> run(const NodeType &node, const Body &body)
         {
             return boost::apply_visitor(GetVelocityForBodyVisitor(body), node);
         }
     };
 
-    template <typename NodeTypeVariants>
-    inline DVec<double> getVelocityForBody(NodeTypeVariants &node, const Body &body)
+    template <typename NodeType>
+    inline DVec<double> getVelocityForBody(NodeType &node, const Body &body)
     {
-        return GetVelocityForBodyVisitor<NodeTypeVariants>::run(node, body);
+        return GetVelocityForBodyVisitor<NodeType>::run(node, body);
     }
 
-    template <typename NodeTypeVariants>
+    template <typename NodeType>
     struct ApplyForceToBodyVisitor : public boost::static_visitor<>
     {
         const SVec<double> &force_;
@@ -261,338 +261,338 @@ namespace grbda
         ApplyForceToBodyVisitor(const SVec<double> &force, const Body &body)
             : force_(force), body_(body) {}
 
-        template <typename NodeType>
-        void operator()(NodeType &node) const
+        template <typename T>
+        void operator()(T &node) const
         {
             node.applyForceToBody(force_, body_);
         }
 
-        static void run(NodeTypeVariants &node, const SVec<double> &force, const Body &body)
+        static void run(NodeType &node, const SVec<double> &force, const Body &body)
         {
             boost::apply_visitor(ApplyForceToBodyVisitor(force, body), node);
         }
     };
 
-    template <typename NodeTypeVariants>    
-    inline void applyForceToBody(NodeTypeVariants &node, const SVec<double> &force, const Body &body)
+    template <typename NodeType>    
+    inline void applyForceToBody(NodeType &node, const SVec<double> &force, const Body &body)
     {
-        ApplyForceToBodyVisitor<NodeTypeVariants>::run(node, force, body);
+        ApplyForceToBodyVisitor<NodeType>::run(node, force, body);
     }
 
-    template <typename NodeTypeVariants>
+    template <typename NodeType>
     struct ResetCompositeRigidBodyInertiaVisitor : public boost::static_visitor<>
     {
-        template <typename NodeType>
-        void operator()(NodeType &node) const
+        template <typename T>
+        void operator()(T &node) const
         {
             node.Ic_ = node.I_;
         }
 
-        static void run(NodeTypeVariants &node)
+        static void run(NodeType &node)
         {
             boost::apply_visitor(ResetCompositeRigidBodyInertiaVisitor(), node);
         }
     };
 
-    template <typename NodeTypeVariants>
-    inline void resetCompositeRigidBodyInertia(NodeTypeVariants &node)
+    template <typename NodeType>
+    inline void resetCompositeRigidBodyInertia(NodeType &node)
     {
-        ResetCompositeRigidBodyInertiaVisitor<NodeTypeVariants>::run(node);
+        ResetCompositeRigidBodyInertiaVisitor<NodeType>::run(node);
     }
 
-    template <typename NodeTypeVariants>
+    template <typename NodeType>
     struct PosIndexVisitor : public boost::static_visitor<int>
     {
-        template <typename NodeType>
-        int operator()(const NodeType &node) const
+        template <typename T>
+        int operator()(const T &node) const
         {
             return node.position_index_;
         }
 
-        static int run(const NodeTypeVariants &node)
+        static int run(const NodeType &node)
         {
             return boost::apply_visitor(PosIndexVisitor(), node);
         }
     };
 
-    template <typename NodeTypeVariants>
-    inline int positionIndex(NodeTypeVariants &node)
+    template <typename NodeType>
+    inline int positionIndex(NodeType &node)
     {
-        return PosIndexVisitor<NodeTypeVariants>::run(node);
+        return PosIndexVisitor<NodeType>::run(node);
     }
 
-    template <typename NodeTypeVariants>
+    template <typename NodeType>
     struct NumPositionsVisitor : public boost::static_visitor<int>
     {
-        template <typename NodeType>
-        int operator()(const NodeType &node) const
+        template <typename T>
+        int operator()(const T &node) const
         {
             return node.num_positions_;
         }
 
-        static int run(const NodeTypeVariants &node)
+        static int run(const NodeType &node)
         {
             return boost::apply_visitor(NumPositionsVisitor(), node);
         }
     };
 
-    template <typename NodeTypeVariants>
-    inline int numPositions(NodeTypeVariants &node)
+    template <typename NodeType>
+    inline int numPositions(NodeType &node)
     {
-        return NumPositionsVisitor<NodeTypeVariants>::run(node);
+        return NumPositionsVisitor<NodeType>::run(node);
     }
 
-    template <typename NodeTypeVariants>
+    template <typename NodeType>
     struct VelIndexVisitor : public boost::static_visitor<int>
     {
-        template <typename NodeType>
-        int operator()(const NodeType &node) const
+        template <typename T>
+        int operator()(const T &node) const
         {
             return node.velocity_index_;
         }
 
-        static int run(const NodeTypeVariants &node)
+        static int run(const NodeType &node)
         {
             return boost::apply_visitor(VelIndexVisitor(), node);
         }
     };
 
-    template <typename NodeTypeVariants>
-    inline int velocityIndex(NodeTypeVariants &node)
+    template <typename NodeType>
+    inline int velocityIndex(NodeType &node)
     {
-        return VelIndexVisitor<NodeTypeVariants>::run(node);
+        return VelIndexVisitor<NodeType>::run(node);
     }
 
-    template <typename NodeTypeVariants>
+    template <typename NodeType>
     struct NumVelocitiesVisitor : public boost::static_visitor<int>
     {
-        template <typename NodeType>
-        int operator()(const NodeType &node) const
+        template <typename T>
+        int operator()(const T &node) const
         {
             return node.num_velocities_;
         }
 
-        static int run(const NodeTypeVariants &node)
+        static int run(const NodeType &node)
         {
             return boost::apply_visitor(NumVelocitiesVisitor(), node);
         }
     };
 
-    template <typename NodeTypeVariants>
-    inline int numVelocities(NodeTypeVariants &node)
+    template <typename NodeType>
+    inline int numVelocities(NodeType &node)
     {
-        return NumVelocitiesVisitor<NodeTypeVariants>::run(node);
+        return NumVelocitiesVisitor<NodeType>::run(node);
     }
 
-    template <typename NodeTypeVariants>
+    template <typename NodeType>
     struct CompositeInertiaVisitor : public boost::static_visitor<DMat<double> &>
     {
-        template <typename NodeType>
-        DMat<double> &operator()(NodeType &node) const
+        template <typename T>
+        DMat<double> &operator()(T &node) const
         {
             return node.Ic_;
         }
 
-        static DMat<double> &run(NodeTypeVariants &node)
+        static DMat<double> &run(NodeType &node)
         {
             return boost::apply_visitor(CompositeInertiaVisitor(), node);
         }
     };
 
-    template <typename NodeTypeVariants>
+    template <typename NodeType>
     struct MotionSubspaceDimVisitor : public boost::static_visitor<int>
     {
-        template <typename NodeType>
-        int operator()(const NodeType &node) const
+        template <typename T>
+        int operator()(const T &node) const
         {
             return node.motion_subspace_dimension_;
         }
 
-        static int run(const NodeTypeVariants &node)
+        static int run(const NodeType &node)
         {
             return boost::apply_visitor(MotionSubspaceDimVisitor(), node);
         }
     };
 
-    template <typename NodeTypeVariants>
-    inline int motionSubspaceDimension(const NodeTypeVariants &node)
+    template <typename NodeType>
+    inline int motionSubspaceDimension(const NodeType &node)
     {
-        return MotionSubspaceDimVisitor<NodeTypeVariants>::run(node);
+        return MotionSubspaceDimVisitor<NodeType>::run(node);
     }
 
-    template <typename NodeTypeVariants>
-    inline DMat<double> &compositeInertia(NodeTypeVariants &node)
+    template <typename NodeType>
+    inline DMat<double> &compositeInertia(NodeType &node)
     {
-        return CompositeInertiaVisitor<NodeTypeVariants>::run(node);
+        return CompositeInertiaVisitor<NodeType>::run(node);
     }
 
-    template <typename NodeTypeVariants>
+    template <typename NodeType>
     struct MotionSubspaceVisitor : public boost::static_visitor<const DMat<double> &>
     {
-        template <typename NodeType>
-        const DMat<double> &operator()(NodeType &node) const
+        template <typename T>
+        const DMat<double> &operator()(T &node) const
         {
             return node.S();
         }
 
-        static const DMat<double> &run(NodeTypeVariants &node)
+        static const DMat<double> &run(NodeType &node)
         {
             return boost::apply_visitor(MotionSubspaceVisitor(), node);
         }
     };
 
-    template <typename NodeTypeVariants>
-    inline const DMat<double> &motionSubspace(NodeTypeVariants &node)
+    template <typename NodeType>
+    inline const DMat<double> &motionSubspace(NodeType &node)
     {
-        return MotionSubspaceVisitor<NodeTypeVariants>::run(node);
+        return MotionSubspaceVisitor<NodeType>::run(node);
     }
 
-    template <typename NodeTypeVariants>
+    template <typename NodeType>
     struct XupVisitor : public boost::static_visitor<const GeneralizedSpatialTransform &>
     {
-        template <typename NodeType>
-        const GeneralizedSpatialTransform &operator()(const NodeType &node) const
+        template <typename T>
+        const GeneralizedSpatialTransform &operator()(const T &node) const
         {
             return node.Xup_;
         }
 
-        static const GeneralizedSpatialTransform &run(const NodeTypeVariants &node)
+        static const GeneralizedSpatialTransform &run(const NodeType &node)
         {
             return boost::apply_visitor(XupVisitor(), node);
         }
     };
 
-    template <typename NodeTypeVariants>
-    inline const GeneralizedSpatialTransform &Xup(NodeTypeVariants &node)
+    template <typename NodeType>
+    inline const GeneralizedSpatialTransform &Xup(NodeType &node)
     {
-        return XupVisitor<NodeTypeVariants>::run(node);
+        return XupVisitor<NodeType>::run(node);
     }
 
-    template <typename NodeTypeVariants>
+    template <typename NodeType>
     struct AccelerationVisitor : public boost::static_visitor<DVec<double> &>
     {
-        template <typename NodeType>
-        DVec<double> &operator()(NodeType &node) const
+        template <typename T>
+        DVec<double> &operator()(T &node) const
         {
             return node.a_;
         }
 
-        static DVec<double> &run(NodeTypeVariants &node)
+        static DVec<double> &run(NodeType &node)
         {
             return boost::apply_visitor(AccelerationVisitor(), node);
         }
     };
 
-    template <typename NodeTypeVariants>
-    inline DVec<double> &acceleration(NodeTypeVariants &node)
+    template <typename NodeType>
+    inline DVec<double> &acceleration(NodeType &node)
     {
-        return AccelerationVisitor<NodeTypeVariants>::run(node);
+        return AccelerationVisitor<NodeType>::run(node);
     }
 
-    template <typename NodeTypeVariants>
+    template <typename NodeType>
     struct VelocityProductVisitor : public boost::static_visitor<DVec<double> &>
     {
-        template <typename NodeType>
-        DVec<double> &operator()(NodeType &node) const
+        template <typename T>
+        DVec<double> &operator()(T &node) const
         {
             return node.c_;
         }
 
-        static DVec<double> &run(NodeTypeVariants &node)
+        static DVec<double> &run(NodeType &node)
         {
             return boost::apply_visitor(VelocityProductVisitor(), node);
         }
     };
 
-    template <typename NodeTypeVariants>
-    inline DVec<double> &velocityProduct(NodeTypeVariants &node)
+    template <typename NodeType>
+    inline DVec<double> &velocityProduct(NodeType &node)
     {
-        return VelocityProductVisitor<NodeTypeVariants>::run(node);
+        return VelocityProductVisitor<NodeType>::run(node);
     }
 
-    template <typename NodeTypeVariants>
+    template <typename NodeType>
     struct SetForceFromAccelerationVisitor : public boost::static_visitor<>
     {
-        template <typename NodeType>
-        void operator()(NodeType &node) const
+        template <typename T>
+        void operator()(T &node) const
         {
             const DVec<double> Iv = node.I_ * node.v_;
             node.f_ = node.I_ * node.a_ + generalForceCrossProduct(node.v_, Iv);
         }
 
-        static void run(NodeTypeVariants &node)
+        static void run(NodeType &node)
         {
             boost::apply_visitor(SetForceFromAccelerationVisitor(), node);
         }
     };
 
-    template <typename NodeTypeVariants>
-    inline void setForceFromAcceleration(NodeTypeVariants &node)
+    template <typename NodeType>
+    inline void setForceFromAcceleration(NodeType &node)
     {
-        SetForceFromAccelerationVisitor<NodeTypeVariants>::run(node);
+        SetForceFromAccelerationVisitor<NodeType>::run(node);
     }
 
-    template <typename NodeTypeVariants>
+    template <typename NodeType>
     struct NetForceVisitor : public boost::static_visitor<DVec<double> &>
     {
-        template <typename NodeType>
-        DVec<double> &operator()(NodeType &node) const
+        template <typename T>
+        DVec<double> &operator()(T &node) const
         {
             return node.f_;
         }
 
-        static DVec<double> &run(NodeTypeVariants &node)
+        static DVec<double> &run(NodeType &node)
         {
             return boost::apply_visitor(NetForceVisitor(), node);
         }
     };
 
-    template <typename NodeTypeVariants>
-    inline DVec<double> &netForce(NodeTypeVariants &node)
+    template <typename NodeType>
+    inline DVec<double> &netForce(NodeType &node)
     {
-        return NetForceVisitor<NodeTypeVariants>::run(node);
+        return NetForceVisitor<NodeType>::run(node);
     }
 
-    template <typename NodeTypeVariants>
+    template <typename NodeType>
     struct NameVisitor : public boost::static_visitor<const string &>
     {
-        template <typename NodeType>
-        const string &operator()(NodeType &node) const
+        template <typename T>
+        const string &operator()(T &node) const
         {
             return node.name_;
         }
 
-        static const string &run(NodeTypeVariants &node)
+        static const string &run(NodeType &node)
         {
             return boost::apply_visitor(NameVisitor(), node);
         }
     };
 
-    template <typename NodeTypeVariants>
-    inline const string &name(NodeTypeVariants &node)
+    template <typename NodeType>
+    inline const string &name(NodeType &node)
     {
-        return NameVisitor<NodeTypeVariants>::run(node);
+        return NameVisitor<NodeType>::run(node);
     }
 
-    template <typename NodeTypeVariants>
+    template <typename NodeType>
     struct ExternalForceVisitor : public boost::static_visitor<DVec<double> &>
     {
-        template <typename NodeType>
-        DVec<double> &operator()(NodeType &node) const
+        template <typename T>
+        DVec<double> &operator()(T &node) const
         {
             return node.f_ext_;
         }
 
-        static DVec<double> &run(NodeTypeVariants &node)
+        static DVec<double> &run(NodeType &node)
         {
             return boost::apply_visitor(ExternalForceVisitor(), node);
         }
     };
 
-    template <typename NodeTypeVariants>
-    inline DVec<double> &externalForce(NodeTypeVariants &node)
+    template <typename NodeType>
+    inline DVec<double> &externalForce(NodeType &node)
     {
-        return ExternalForceVisitor<NodeTypeVariants>::run(node);
+        return ExternalForceVisitor<NodeType>::run(node);
     }
 
 }

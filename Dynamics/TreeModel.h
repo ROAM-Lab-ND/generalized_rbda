@@ -28,27 +28,26 @@ namespace grbda
     template <>
     struct BaseTraits<ClusterTreeModel>
     {
-        typedef boost::variant<ClusterTreeNode<>> NodeTypeVariants;
+        typedef boost::variant<ClusterTreeNode<>> NodeType;
     };
 
     template <>
     struct BaseTraits<RigidBodyTreeModel>
     {
-        typedef boost::variant<RigidBodyTreeNode> NodeTypeVariants;
+        typedef boost::variant<RigidBodyTreeNode> NodeType;
     };
 
     template <>
     struct BaseTraits<ReflectedInertiaTreeModel>
     {
-        typedef boost::variant<ReflectedInertiaTreeNode> NodeTypeVariants;
+        typedef boost::variant<ReflectedInertiaTreeNode> NodeType;
     };
 
-    // TODO(@MatthewChignoli): I should not need to pass both templates. I should somehow be able to get the NodeType from Derived (Pinocchio knows how to do this)
     template <typename Derived>
     class TreeModel
     {
     public:
-        typedef typename BaseTraits<Derived>::NodeTypeVariants NodeTypeVariants;
+        typedef typename BaseTraits<Derived>::NodeType NodeType;
 
         const Derived &derived() const { return *static_cast<const Derived *>(this); }
         Derived &derived() { return *static_cast<Derived *>(this); }
@@ -63,10 +62,9 @@ namespace grbda
         int getNumBodies() const { return derived().getNumBodies(); }
         const Body &getBody(int index) const { return derived().getBody(index); }
 
-        // TODO(@MatthewChignoli): Implement these for derived classes (what is the behavior when they are not implemented?)
-        NodeTypeVariants &getNodeVariantContainingBody(int index)
+        NodeType &getNodeContainingBody(int index)
         {
-            return derived().getNodeVariantContainingBody(index);
+            return derived().getNodeContainingBody(index);
         }
 
         void setGravity(const Vec3<double> &g) { gravity_.tail<3>() = g; }
@@ -89,10 +87,7 @@ namespace grbda
             return derived().applyLocalFrameTestForceAtContactPoint(force, contact_point_name, dstate_out);
         }
 
-        NodeTypeVariants &nodeVariant(const int index) { return nodes_variants_[index]; }
-        const NodeTypeVariants &nodeVariant(const int index) const { return nodes_variants_[index]; }
-        const std::vector<NodeTypeVariants> &nodeVariants() const { return nodes_variants_; }
-
+        const std::vector<NodeType> &nodes() const { return nodes_; }
         const std::vector<ContactPoint> &contactPoints() const { return contact_points_; }
         const ContactPoint &contactPoint(const int index) const { return contact_points_[index]; }
         const ContactPoint &contactPoint(const std::string &name) const
@@ -119,7 +114,7 @@ namespace grbda
         int velocity_index_ = 0;
         int unactuated_dofs_ = 0;
 
-        std::vector<NodeTypeVariants> nodes_variants_;
+        std::vector<NodeType> nodes_;
         std::vector<int> indices_of_nodes_experiencing_external_forces_;
 
         std::vector<ContactPoint> contact_points_;

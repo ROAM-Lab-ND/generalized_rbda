@@ -26,7 +26,7 @@ void runTelloBenchmark(std::ofstream &file)
         // Set random state
         ModelState model_state;
         bool nan_detected = false;
-        for (const ClusterTreeModel::NodeTypeVariants &cluster : cluster_model.clusterVariants())
+        for (const ClusterTreeModel::NodeType &cluster : cluster_model.nodes())
         {
             JointState joint_state = getJoint(cluster)->randomJointState();
             if (joint_state.position.hasNaN())

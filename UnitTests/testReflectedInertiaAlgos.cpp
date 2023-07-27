@@ -24,7 +24,7 @@ protected:
         ModelState model_state;
         independent_joint_pos_ = DVec<double>::Zero(0);
         independent_joint_vel_ = DVec<double>::Zero(0);
-        for (const ClusterTreeModel::NodeTypeVariants &cluster : cluster_model.clusterVariants())
+        for (const ClusterTreeModel::NodeType &cluster : cluster_model.nodes())
         {
             JointState joint_state = getJoint(cluster)->randomJointState();
 
@@ -47,7 +47,7 @@ protected:
 
         // Check for NaNs
         bool nan_detected = false;
-        for (const ClusterTreeModel::NodeTypeVariants &cluster : cluster_model.clusterVariants())
+        for (const ClusterTreeModel::NodeType &cluster : cluster_model.nodes())
         {
             if (getJointState(cluster).position.hasNaN())
             {
@@ -109,7 +109,7 @@ TYPED_TEST(ReflectedInertiaDynamicsAlgosTest, ForwardKinematics)
         // Verify spatial velocity agreement of bodies
         DVec<double> v_cluster = DVec<double>::Zero(6 * this->cluster_model.getNumBodies());
         int i = 0;
-        for (const ClusterTreeModel::NodeTypeVariants &cluster : this->cluster_model.clusterVariants())
+        for (const ClusterTreeModel::NodeType &cluster : this->cluster_model.nodes())
         {
             const int msd = motionSubspaceDimension(cluster);
             v_cluster.segment(i, msd) = velocity(cluster);
@@ -118,7 +118,7 @@ TYPED_TEST(ReflectedInertiaDynamicsAlgosTest, ForwardKinematics)
 
         DVec<double> v_links = DVec<double>::Zero(6 * this->reflected_inertia_model.getNumBodies());
         i = 0;
-        for (const ReflectedInertiaTreeModel::NodeTypeVariants &node : this->reflected_inertia_model.nodeVariants())
+        for (const ReflectedInertiaTreeModel::NodeType &node : this->reflected_inertia_model.nodes())
         {
             v_links.segment<6>(i) = velocity(node);
             i += 6;

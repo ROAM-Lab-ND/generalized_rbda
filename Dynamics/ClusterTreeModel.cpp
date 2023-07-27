@@ -40,15 +40,15 @@ namespace grbda
             getIndexOfParentClusterFromBodies(bodies_in_current_cluster_);
         const int num_bodies_in_parent_cluster = getNumBodiesInCluster(parent_cluster_index);
 
-        const int cluster_index = (int)nodes_variants_.size();
+        const int cluster_index = (int)nodes_.size();
         cluster_name_to_cluster_index_[name] = cluster_index;
 
         ClusterTreeNode<> node(cluster_index, name, bodies_in_current_cluster_, joint,
                                parent_cluster_index, num_bodies_in_parent_cluster,
                                position_index_, velocity_index_);
-        nodes_variants_.push_back(node);
+        nodes_.push_back(node);
 
-        checkValidParentClusterForBodiesInCluster(nodes_variants_.back());
+        checkValidParentClusterForBodiesInCluster(nodes_.back());
 
         position_index_ += joint->numPositions();
         velocity_index_ += joint->numVelocities();
@@ -64,10 +64,10 @@ namespace grbda
         printf("** Clusters **\n");
 
         // New Version
-        for (const NodeTypeVariants &cluster : nodes_variants_)
+        for (const NodeType &cluster : nodes_)
         {
             int parent = parentIndex(cluster);
-            string parent_name = parent > -1 ? name(nodes_variants_[parent])
+            string parent_name = parent > -1 ? name(nodes_[parent])
                                              : "ground";
 
             printf("Cluster: %s (%s)\n", name(cluster).c_str(), parent_name.c_str());
@@ -93,7 +93,7 @@ namespace grbda
         return C_;
     }
 
-    void ClusterTreeModel::checkValidParentClusterForBodiesInCluster(const NodeTypeVariants &cluster)
+    void ClusterTreeModel::checkValidParentClusterForBodiesInCluster(const NodeType &cluster)
     {
         const int cluster_index = index(cluster);
         const int parent_cluster_index = parentIndex(cluster);
@@ -115,7 +115,7 @@ namespace grbda
         H_ = DMat<double>::Zero(num_degrees_of_freedom, num_degrees_of_freedom);
         C_ = DVec<double>::Zero(num_degrees_of_freedom);
 
-        for (NodeTypeVariants &cluster_var : nodes_variants_)
+        for (NodeType &cluster_var : nodes_)
         {
             qddSubtree(cluster_var).setZero(num_degrees_of_freedom, numVelocities(cluster_var));
         }
@@ -171,9 +171,9 @@ namespace grbda
         ModelState model_state;
         int pos_idx = 0;
         int vel_idx = nq;
-        for (size_t i(0); i < clusterVariants().size(); i++)
+        for (size_t i(0); i < nodes().size(); i++)
         {
-            const auto &joint = getJoint(clusterVariant(i));
+            const auto &joint = getJoint(nodes()[i]);
 
             const int &num_pos = joint->numPositions();
             const int &num_vel = joint->numVelocities();
@@ -194,7 +194,7 @@ namespace grbda
     void ClusterTreeModel::initializeState(const ModelState &model_state)
     {
         size_t i = 0;
-        for (NodeTypeVariants &cluster_var : nodes_variants_)
+        for (NodeType &cluster_var : nodes_)
         {
             setJointState(cluster_var, model_state.at(i));
             i++;
@@ -206,7 +206,7 @@ namespace grbda
     void ClusterTreeModel::resetExternalForces()
     {
         for (const int index : indices_of_nodes_experiencing_external_forces_)
-            externalForce(nodes_variants_[index]).setZero();
+            externalForce(nodes_[index]).setZero();
         indices_of_nodes_experiencing_external_forces_.clear();
 
         resetCache();
@@ -215,7 +215,7 @@ namespace grbda
     void ClusterTreeModel::setExternalForces(const string &body_name, const SVec<double> &force)
     {
         const Body &body_i = body(body_name);
-        NodeTypeVariants &node_var = nodes_variants_[getIndexOfClusterContainingBody(body_i.index_)];
+        NodeType &node_var = nodes_[getIndexOfClusterContainingBody(body_i.index_)];
         applyForceToBody(node_var, force, body_i);
 
         // Add index to vector if vector does not already contain this cluster
@@ -249,7 +249,7 @@ namespace grbda
         const int subindex_within_cluster = body(body_name).sub_index_within_cluster_;
 
         forwardKinematics();
-        const SpatialTransform &X = Xa(nodes_variants_[cluster_idx])[subindex_within_cluster];
+        const SpatialTransform &X = Xa(nodes_[cluster_idx])[subindex_within_cluster];
         const Mat6<double> Xai = invertSXform(X.toMatrix());
         Vec3<double> link_pos = sXFormPoint(Xai, Vec3<double>::Zero());
         return link_pos;
@@ -261,7 +261,7 @@ namespace grbda
         const int subindex_within_cluster = body(body_name).sub_index_within_cluster_;
 
         forwardKinematics();
-        const SpatialTransform &X = Xa(nodes_variants_[cluster_idx])[subindex_within_cluster];
+        const SpatialTransform &X = Xa(nodes_[cluster_idx])[subindex_within_cluster];
         Mat3<double> Rai = X.getRotation();
         Rai.transposeInPlace();
         return Rai;
@@ -274,7 +274,7 @@ namespace grbda
 
         forwardKinematics();
         const Mat3<double> Rai = getOrientation(body_name);
-        const DVec<double> &v_cluster = velocity(nodes_variants_[cluster_idx]);
+        const DVec<double> &v_cluster = velocity(nodes_[cluster_idx]);
         const SVec<double> v = v_cluster.segment<6>(6 * subindex_within_cluster);
         return Rai * spatialToLinearVelocity(v, Vec3<double>::Zero());
     }
@@ -286,7 +286,7 @@ namespace grbda
 
         forwardKinematics();
         const Mat3<double> Rai = getOrientation(body_name);
-        const DVec<double> &v_cluster = velocity(nodes_variants_[cluster_idx]);
+        const DVec<double> &v_cluster = velocity(nodes_[cluster_idx]);
         const SVec<double> v = v_cluster.segment<6>(6 * subindex_within_cluster);
         return Rai * v.head<3>();
     }
@@ -334,7 +334,7 @@ namespace grbda
 
     int ClusterTreeModel::getNumBodiesInCluster(const int cluster_index) const
     {
-        return cluster_index >= 0 ? ClusterNodeVisitors::bodies(nodes_variants_[cluster_index]).size() : 1;
+        return cluster_index >= 0 ? ClusterNodeVisitors::bodies(nodes_[cluster_index]).size() : 1;
     }
 
 
@@ -398,8 +398,8 @@ namespace grbda
 
     optional<int> ClusterTreeModel::searchClustersForBody(const int body_index)
     {
-        for (size_t i = 0; i < nodes_variants_.size(); i++)
-            if (containsBody(nodes_variants_[i], body_index))
+        for (size_t i = 0; i < nodes_.size(); i++)
+            if (containsBody(nodes_[i], body_index))
             {
                 body_index_to_cluster_index_[body_index] = i;
                 return i;
@@ -407,26 +407,11 @@ namespace grbda
         return nullopt;
     }
 
-    ClusterTreeModel::NodeTypeVariants &ClusterTreeModel::getClusterVarContainingBody(const int body_index)
-    {
-        return nodes_variants_[getIndexOfClusterContainingBody(body_index)];
-    }
-
-    ClusterTreeModel::NodeTypeVariants &ClusterTreeModel::getClusterVarContainingBody(const Body &body)
-    {
-        return nodes_variants_[getIndexOfClusterContainingBody(body)];
-    }
-
-    ClusterTreeModel::NodeTypeVariants &ClusterTreeModel::getClusterVarContainingBody(const string &body_name)
-    {
-        return nodes_variants_[getIndexOfClusterContainingBody(body_name)];
-    }
-
     DVec<double> ClusterTreeModel::localCartesianForceAtPointToWorldPluckerForceOnCluster(
         const Vec3<double> &force, const ContactPoint &contact_point)
     {
         const Body &body = bodies_[contact_point.body_index_];
-        const NodeTypeVariants &cluster = getClusterVarContainingBody(contact_point.body_index_);
+        const NodeType &cluster = getNodeContainingBody(contact_point.body_index_);
 
         const SpatialTransform &X = Xa(cluster)[body.sub_index_within_cluster_];
         const Mat3<double> Rai = X.getRotation().transpose();

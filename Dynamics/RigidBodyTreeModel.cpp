@@ -20,7 +20,7 @@ namespace grbda
             forward_dynamics_method_ = FwdDynMethod::LagrangeMultiplierEigen;
             std::cout << "LagrangeMultiplierCustom is not currently supported. Switching to LagrangeMultiplierEigen." << std::endl;
 
-            // for (const NodeTypeVariants &node : nodes_variants_)
+            // for (const NodeType &node : nodes_)
             // {
             //     if (getJoint(node)->numVelocities() > 1)
             //     {
@@ -37,14 +37,14 @@ namespace grbda
         const ClusterTreeModel &cluster_tree_model)
     {
         int body_index = 0;
-        for (const ClusterTreeModel::NodeTypeVariants &cluster : cluster_tree_model.clusterVariants())
+        for (const ClusterTreeModel::NodeType &cluster : cluster_tree_model.nodes())
         {
             for (const auto &body_and_joint : ClusterNodeVisitors::bodiesAndJoints(cluster))
             {
                 const Body &body = body_and_joint.first;
                 const auto &joint = body_and_joint.second;
                 RigidBodyTreeNode node(body, joint, position_index_, velocity_index_);
-                nodes_variants_.push_back(node);
+                nodes_.push_back(node);
                 body_name_to_body_index_[body.name_] = body_index++;
 
                 position_index_ += joint->numPositions();
@@ -59,7 +59,7 @@ namespace grbda
         const ClusterTreeModel &cluster_tree_model)
     {
 
-        for (const ClusterTreeModel::NodeTypeVariants &cluster : cluster_tree_model.clusterVariants())
+        for (const ClusterTreeModel::NodeType &cluster : cluster_tree_model.nodes())
         {
             loop_constraints_.push_back(ClusterNodeVisitors::getJoint(cluster)->cloneLoopConstraint());
         }
@@ -75,7 +75,7 @@ namespace grbda
 
     void RigidBodyTreeModel::initializeState(const DVec<double> &q, const DVec<double> &qd)
     {
-        for (NodeTypeVariants &node : nodes_variants_)
+        for (NodeType &node : nodes_)
         {
             JointCoordinate position(q.segment(positionIndex(node), numPositions(node)), false);
             JointCoordinate velocity(qd.segment(velocityIndex(node), numVelocities(node)), false);
@@ -105,7 +105,7 @@ namespace grbda
     {
         // TODO(@MatthewChignoli): Helper function that gets node given the name?
         const int &body_idx = body_name_to_body_index_.at(body_name);
-        const NodeTypeVariants& rigid_body_node = getNodeVariantContainingBody(body_idx);
+        const NodeType& rigid_body_node = getNodeContainingBody(body_idx);
 
         forwardKinematics();
         const SpatialTransform &X =  Xa(rigid_body_node)[0];
@@ -116,7 +116,7 @@ namespace grbda
     Mat3<double> RigidBodyTreeModel::getOrientation(const string &body_name)
     {
         const int &body_idx = body_name_to_body_index_.at(body_name);
-        const NodeTypeVariants& rigid_body_node = getNodeVariantContainingBody(body_idx);
+        const NodeType& rigid_body_node = getNodeContainingBody(body_idx);
 
         forwardKinematics();
         const SpatialTransform &X =  Xa(rigid_body_node)[0];
@@ -128,7 +128,7 @@ namespace grbda
     Vec3<double> RigidBodyTreeModel::getLinearVelocity(const string &body_name)
     {
         const int &body_idx = body_name_to_body_index_.at(body_name);
-        const NodeTypeVariants& rigid_body_node = getNodeVariantContainingBody(body_idx);
+        const NodeType& rigid_body_node = getNodeContainingBody(body_idx);
 
         forwardKinematics();
         const Mat3<double> Rai = getOrientation(body_name);
@@ -139,7 +139,7 @@ namespace grbda
     Vec3<double> RigidBodyTreeModel::getAngularVelocity(const string &body_name)
     {
         const int &body_idx = body_name_to_body_index_.at(body_name);
-        const NodeTypeVariants& rigid_body_node = getNodeVariantContainingBody(body_idx);
+        const NodeType& rigid_body_node = getNodeContainingBody(body_idx);
 
         forwardKinematics();
         const Mat3<double> Rai = getOrientation(body_name);

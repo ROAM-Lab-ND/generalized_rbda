@@ -15,17 +15,17 @@ namespace grbda
         if (kinematics_updated_)
             return;
 
-        for (NodeTypeVariants &node_var : nodes_variants_)
+        for (NodeType &node : nodes_)
         {
-            const int parent_index = parentIndex(node_var);
+            const int parent_index = parentIndex(node);
             if (parent_index >= 0)
             {
-                const NodeTypeVariants &parent_node_var = nodes_variants_[parent_index];
-                nodeKinematics(node_var, velocity(parent_node_var), Xa(parent_node_var));
+                const NodeType &parent_node_var = nodes_[parent_index];
+                nodeKinematics(node, velocity(parent_node_var), Xa(parent_node_var));
             }
             else
             {
-                nodeKinematics(node_var);
+                nodeKinematics(node);
             }
         }
 
@@ -41,7 +41,7 @@ namespace grbda
         for (auto &cp : contact_points_)
         {
             const Body &body = getBody(cp.body_index_);
-            const NodeTypeVariants &node = getNodeVariantContainingBody(cp.body_index_);
+            const NodeType &node = getNodeContainingBody(cp.body_index_);
 
             const SpatialTransform Xa = getAbsoluteTransformForBody(node, body);
             const SVec<double> v_body = getVelocityForBody(node, body);
@@ -62,19 +62,19 @@ namespace grbda
         forwardKinematics();
 
         // Forward Pass
-        for (NodeTypeVariants &node_var : nodes_variants_)
-            resetCompositeRigidBodyInertia(node_var);
+        for (NodeType &node : nodes_)
+            resetCompositeRigidBodyInertia(node);
 
-        for (int i = (int)nodes_variants_.size() - 1; i >= 0; i--)
+        for (int i = (int)nodes_.size() - 1; i >= 0; i--)
         {
-            NodeTypeVariants &node_var_i = nodes_variants_[i];
+            NodeType &node_var_i = nodes_[i];
             const int vel_idx_i = velocityIndex(node_var_i);
             const int num_vel_i = numVelocities(node_var_i);
             const int parent_index = parentIndex(node_var_i);
 
             if (parent_index >= 0)
             {
-                NodeTypeVariants &parent_node_var = nodes_variants_[parent_index];
+                NodeType &parent_node_var = nodes_[parent_index];
                 compositeInertia(parent_node_var) +=
                     Xup(node_var_i).inverseTransformSpatialInertia(compositeInertia(node_var_i));
             }
@@ -86,16 +86,16 @@ namespace grbda
             H_.block(vel_idx_i, vel_idx_i, num_vel_i, num_vel_i) = S.transpose() * F;
 
             int j = i;
-            while (parentIndex(nodes_variants_[j]) > -1)
+            while (parentIndex(nodes_[j]) > -1)
             {
-                F = Xup(nodes_variants_[j]).inverseTransformForceSubspace(F);
+                F = Xup(nodes_[j]).inverseTransformForceSubspace(F);
 
-                j = parentIndex(nodes_variants_[j]);
-                const int vel_idx_j = velocityIndex(nodes_variants_[j]);
-                const int num_vel_j = numVelocities(nodes_variants_[j]);
+                j = parentIndex(nodes_[j]);
+                const int vel_idx_j = velocityIndex(nodes_[j]);
+                const int num_vel_j = numVelocities(nodes_[j]);
 
                 H_.block(vel_idx_i, vel_idx_j, num_vel_i, num_vel_j) =
-                    F.transpose() * motionSubspace(nodes_variants_[j]);
+                    F.transpose() * motionSubspace(nodes_[j]);
                 H_.block(vel_idx_j, vel_idx_i, num_vel_j, num_vel_i) =
                     H_.block(vel_idx_i, vel_idx_j, num_vel_i, num_vel_j).transpose();
             }
@@ -123,16 +123,16 @@ namespace grbda
         DVec<double> tau = DVec<double>::Zero(qdd.rows());
 
         // Forward Pass
-        for (NodeTypeVariants &node_var : nodes_variants_)
+        for (NodeType &node : nodes_)
         {
-            const int vel_idx = velocityIndex(node_var);
-            const int num_vel = numVelocities(node_var);
-            const int parent_index = parentIndex(node_var);
+            const int vel_idx = velocityIndex(node);
+            const int num_vel = numVelocities(node);
+            const int parent_index = parentIndex(node);
 
             DVec<double> parent_accel;
             if (parent_index >= 0)
             {
-                NodeTypeVariants &parent_node_var = nodes_variants_[parent_index];
+                NodeType &parent_node_var = nodes_[parent_index];
                 parent_accel = acceleration(parent_node_var);
             }
             else
@@ -140,36 +140,36 @@ namespace grbda
                 parent_accel = -gravity_;
             }
 
-            acceleration(node_var) = Xup(node_var).transformMotionVector(parent_accel) +
-                                     motionSubspace(node_var) * qdd.segment(vel_idx, num_vel) +
-                                     velocityProduct(node_var);
+            acceleration(node) = Xup(node).transformMotionVector(parent_accel) +
+                                     motionSubspace(node) * qdd.segment(vel_idx, num_vel) +
+                                     velocityProduct(node);
 
-            setForceFromAcceleration(node_var);
+            setForceFromAcceleration(node);
         }
 
         // Account for external forces in bias force
         for (int index : indices_of_nodes_experiencing_external_forces_)
         {
-            NodeTypeVariants &node = nodes_variants_[index];
+            NodeType &node = nodes_[index];
             netForce(node) -= Xa(node).transformExternalForceVector(externalForce(node));
         }
 
         // Backward Pass
-        for (int i = (int)nodes_variants_.size() - 1; i >= 0; i--)
+        for (int i = (int)nodes_.size() - 1; i >= 0; i--)
         {
-            NodeTypeVariants &node_var = nodes_variants_[i];
-            const int vel_idx = velocityIndex(node_var);
-            const int num_vel = numVelocities(node_var);
-            const int parent_index = parentIndex(node_var);
+            NodeType &node = nodes_[i];
+            const int vel_idx = velocityIndex(node);
+            const int num_vel = numVelocities(node);
+            const int parent_index = parentIndex(node);
 
-            const DVec<double> &net_force = netForce(node_var);
+            const DVec<double> &net_force = netForce(node);
 
-            tau.segment(vel_idx, num_vel) = motionSubspace(node_var).transpose() * net_force;
+            tau.segment(vel_idx, num_vel) = motionSubspace(node).transpose() * net_force;
 
             if (parent_index >= 0)
             {
-                NodeTypeVariants &parent_node_var = nodes_variants_[parent_index];
-                netForce(parent_node_var) += Xup(node_var).inverseTransformForceVector(net_force);
+                NodeType &parent_node_var = nodes_[parent_index];
+                netForce(parent_node_var) += Xup(node).inverseTransformForceVector(net_force);
             }
         }
 
@@ -183,7 +183,7 @@ namespace grbda
 
         // Clear previous external forces
         for (const int index : indices_of_nodes_experiencing_external_forces_)
-            externalForce(nodes_variants_[index]).setZero();
+            externalForce(nodes_[index]).setZero();
 
         // Apply forces to nodes
         indices_of_nodes_experiencing_external_forces_.clear();
@@ -193,7 +193,7 @@ namespace grbda
             const int body_index = force_and_body_index.index_;
 
             const auto &body = getBody(body_index);
-            NodeTypeVariants &node = getNodeVariantContainingBody(body_index);
+            NodeType &node = getNodeContainingBody(body_index);
             applyForceToBody(node, force, body);
 
             // Add index to vector if vector does not already contain this cluster

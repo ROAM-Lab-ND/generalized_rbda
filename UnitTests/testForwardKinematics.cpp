@@ -21,7 +21,7 @@ protected:
         model_state.clear();
         DVec<double> spanning_joint_pos = DVec<double>::Zero(0);
         DVec<double> spanning_joint_vel = DVec<double>::Zero(0);
-        for (const ClusterTreeModel::NodeTypeVariants &cluster : cluster_model.clusterVariants())
+        for (const ClusterTreeModel::NodeType &cluster : cluster_model.nodes())
         {
             JointState joint_state = getJoint(cluster)->randomJointState();
             JointState spanning_joint_state = getJoint(cluster)->toSpanningTreeState(joint_state);
@@ -38,7 +38,7 @@ protected:
 
         // Check for NaNs
         bool nan_detected = false;
-        for (const ClusterTreeModel::NodeTypeVariants &cluster : cluster_model.clusterVariants())
+        for (const ClusterTreeModel::NodeType &cluster : cluster_model.nodes())
         {
             if (getJointState(cluster).position.hasNaN())
             {
@@ -143,9 +143,9 @@ TYPED_TEST(RigidBodyKinemaitcsTest, ForwardKinematics)
 
             // Verify that jacobians produce the same cartesian velocity
             Vec6<double> J_qdot = Vec6<double>::Zero();
-            for (size_t i = 0; i < this->cluster_model.clusterVariants().size(); i++)
+            for (size_t i = 0; i < this->cluster_model.nodes().size(); i++)
             {
-                const ClusterTreeModel::NodeTypeVariants& cluster = this->cluster_model.clusterVariant(i);
+                const ClusterTreeModel::NodeType& cluster = this->cluster_model.nodes()[i];
                 const int vel_idx = velocityIndex(cluster);
                 const int num_vel = numVelocities(cluster);
                 J_qdot += J_cp_cluster.middleCols(vel_idx, num_vel) * this->model_state[i].velocity;
@@ -173,7 +173,7 @@ TYPED_TEST(RigidBodyKinemaitcsTest, MotionSubspaceApparentDerivative)
         }
         this->cluster_model.forwardKinematics();
 
-        for (const ClusterTreeModel::NodeTypeVariants &cluster : this->cluster_model.clusterVariants())
+        for (const ClusterTreeModel::NodeType &cluster : this->cluster_model.nodes())
         {
             auto joint = getJoint(cluster);
             JointState joint_state = getJointState(cluster);

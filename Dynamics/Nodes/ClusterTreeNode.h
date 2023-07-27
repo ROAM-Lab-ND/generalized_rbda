@@ -6,7 +6,7 @@
 namespace grbda
 {
 
-    // TODO(@MatthewChignoli): We will need to provide the generalized joint type as a template to this class. Which means that we will have to change ClusterTreeModel::NodeType to std::variant<ClusterTreeNode<Free>, ClusterTreeNode<Revolute>, etc>. And so then we will need to setup the system of std::get_if and std::visit cases to handle with the fast that ClusterTreeNode has a variant type whereas the others are direct access to the types.
+    // TODO(@MatthewChignoli): We will need to provide the generalized joint type as a template to this class
 
     template <typename GenJointType = GeneralizedJoints::Base>
     struct ClusterTreeNode : TreeNode<ClusterTreeNode<>>

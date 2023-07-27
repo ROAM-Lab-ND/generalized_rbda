@@ -13,7 +13,7 @@ namespace grbda
             D6Mat<double> J_spanning = D6Mat<double>::Zero(6, getNumDegreesOfFreedom());
 
             const size_t &i = cp.body_index_;
-            const NodeTypeVariants& node_i = getNodeVariantContainingBody(i);
+            const NodeType& node_i = getNodeContainingBody(i);
             const SpatialTransform& X = Xa(node_i)[0];
             const Mat3<double> R_link_to_world = X.getRotation().transpose();
             Mat6<double> Xout = createSXform(R_link_to_world, cp.local_offset_);
@@ -21,7 +21,7 @@ namespace grbda
             int j = (int)i;
             while (j > -1)
             {
-                const NodeTypeVariants& node_j = getNodeVariantContainingBody(j);
+                const NodeType& node_j = getNodeContainingBody(j);
                 const int &vel_idx = velocityIndex(node_j);
                 const int &num_vel = numVelocities(node_j);
 

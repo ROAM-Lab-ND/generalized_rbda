@@ -36,7 +36,7 @@ void runBenchmark(std::ofstream &file)
             ModelState model_state;
             DVec<double> independent_joint_pos = DVec<double>::Zero(0);
             DVec<double> independent_joint_vel = DVec<double>::Zero(0);
-            for (const ClusterTreeModel::NodeTypeVariants &cluster : cluster_model.clusterVariants())
+            for (const ClusterTreeModel::NodeType &cluster : cluster_model.nodes())
             {
                 JointState joint_state = getJoint(cluster)->randomJointState();
                 if (joint_state.position.isSpanning() || joint_state.velocity.isSpanning())

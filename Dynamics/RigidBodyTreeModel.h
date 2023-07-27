@@ -63,7 +63,7 @@ namespace grbda
     public:
         EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
-        typedef TreeModel<RigidBodyTreeModel>::NodeTypeVariants NodeTypeVariants;
+        typedef TreeModel<RigidBodyTreeModel>::NodeType NodeType;
 
         RigidBodyTreeModel(const ClusterTreeModel &cluster_tree_model,
                            const FwdDynMethod fd_method = FwdDynMethod::Projection);
@@ -94,15 +94,12 @@ namespace grbda
 
         /////////////////////////////////////
 
-        int getNumBodies() const { return (int)nodes_variants_.size(); }
-
-        // TOOD(@MatthewChignoli): I don't really like these functions...
-        const Body &getBody(int index) const { return RigidBodyNodeVisitors::getBody(nodes_variants_[index]); }
-        
-        NodeTypeVariants &getNodeVariantContainingBody(int index)
+        int getNumBodies() const { return (int)nodes_.size(); }
+        const Body &getBody(int index) const
         {
-            return nodes_variants_[index];
+            return RigidBodyNodeVisitors::getBody(nodes_[index]);
         }
+        NodeType &getNodeContainingBody(int index) { return nodes_[index]; }
 
         void initializeState(const DVec<double> &q, const DVec<double> &qd);
 

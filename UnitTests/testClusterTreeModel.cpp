@@ -39,7 +39,7 @@ TYPED_TEST(ClusterTreeModelTest, SetState)
     ModelState model_state;
     DVec<double> q(0);
     DVec<double> qd(0);
-    for (const ClusterTreeModel::NodeTypeVariants &cluster : this->cluster_model.clusterVariants())
+    for (const ClusterTreeModel::NodeType &cluster : this->cluster_model.nodes())
     {
         model_state.push_back(getJoint(cluster)->randomJointState());
         q = appendEigenVector(q, model_state.back().position);
@@ -58,7 +58,7 @@ TYPED_TEST(ClusterTreeModelTest, SetState)
         this->cluster_model.forwardKinematics();
 
         std::vector<DVec<double>> link_velocities_set_state;
-        for (const ClusterTreeModel::NodeTypeVariants &cluster : this->cluster_model.clusterVariants())
+        for (const ClusterTreeModel::NodeType &cluster : this->cluster_model.nodes())
         {
             link_velocities_set_state.push_back(velocity(cluster));
         }
@@ -76,7 +76,7 @@ TYPED_TEST(ClusterTreeModelTest, SetState)
         this->cluster_model.forwardKinematics();
 
         std::vector<DVec<double>> link_velocities_initialize_state;
-        for (const ClusterTreeModel::NodeTypeVariants &cluster : this->cluster_model.clusterVariants())
+        for (const ClusterTreeModel::NodeType &cluster : this->cluster_model.nodes())
         {
             link_velocities_initialize_state.push_back(velocity(cluster));
         }

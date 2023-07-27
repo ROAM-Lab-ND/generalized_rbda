@@ -19,7 +19,7 @@ namespace grbda
     void ReflectedInertiaTreeModel::extractRigidBodiesAndJointsFromClusterModel(
         const ClusterTreeModel &cluster_tree_model)
     {
-        for (const ClusterTreeModel::NodeTypeVariants &cluster : cluster_tree_model.clusterVariants())
+        for (const ClusterTreeModel::NodeType &cluster : cluster_tree_model.nodes())
         {
             const int nv = numVelocities(cluster);
             DMat<double> cluster_reflected_inertia = DMat<double>::Zero(nv, nv);
@@ -29,11 +29,11 @@ namespace grbda
                 const auto link_joint = std::get<1>(link_joint_and_ref_inertia);
                 const DMat<double> &reflected_inertia = std::get<2>(link_joint_and_ref_inertia);
 
-                const int node_index = (int)nodes_variants_.size();
+                const int node_index = (int)nodes_.size();
                 const int parent_node_index = getIndexOfParentNodeForBody(link.parent_index_);
                 ReflectedInertiaTreeNode node(node_index, link, link_joint, parent_node_index,
                                               position_index_, velocity_index_);
-                nodes_variants_.push_back(node);
+                nodes_.push_back(node);
 
                 cluster_reflected_inertia += reflected_inertia;
 
@@ -51,7 +51,7 @@ namespace grbda
         const ClusterTreeModel &cluster_tree_model)
     {
         spanning_tree_to_independent_coords_conversion_ = DMat<double>::Zero(0, 0);
-        for (const ClusterTreeModel::NodeTypeVariants &cluster : cluster_tree_model.clusterVariants())
+        for (const ClusterTreeModel::NodeType &cluster : cluster_tree_model.nodes())
         {
             const auto joint = ClusterNodeVisitors::getJoint(cluster);
             spanning_tree_to_independent_coords_conversion_ =
@@ -79,7 +79,7 @@ namespace grbda
                                                                 const DVec<double> &yd)
     {
 
-        for (NodeTypeVariants &node : nodes_variants_)
+        for (NodeType &node : nodes_)
         {
             JointCoordinate position(y.segment(positionIndex(node), numPositions(node)), false);
             JointCoordinate velocity(yd.segment(velocityIndex(node), numVelocities(node)), false);
@@ -124,16 +124,16 @@ namespace grbda
     // inertia model: body.index_ = nodes[body.index_].index_
     const Body &ReflectedInertiaTreeModel::getBody(int spanning_tree_index) const
     {
-        for (const NodeTypeVariants &link_node : nodes_variants_)
+        for (const NodeType &link_node : nodes_)
             if (getLink(link_node).index_ == spanning_tree_index)
                 return getLink(link_node);
         throw std::runtime_error("1That body does not exist in the link and rotor tree model");
     }
 
-    ReflectedInertiaTreeModel::NodeTypeVariants &
-    ReflectedInertiaTreeModel::getNodeVariantContainingBody(int spanning_tree_index)
+    ReflectedInertiaTreeModel::NodeType &
+    ReflectedInertiaTreeModel::getNodeContainingBody(int spanning_tree_index)
     {
-        for (NodeTypeVariants &link_node : nodes_variants_)
+        for (NodeType &link_node : nodes_)
             if (getLink(link_node).index_ == spanning_tree_index)
                 return link_node;
         throw std::runtime_error("3That body does not exist in the link and rotor tree model");
@@ -144,7 +144,7 @@ namespace grbda
         if (spanning_tree_index == -1)
             return -1;
         else
-            return index(getNodeVariantContainingBody(spanning_tree_index));
+            return index(getNodeContainingBody(spanning_tree_index));
     }
 
     void ReflectedInertiaTreeModel::contactJacobians()
@@ -154,7 +154,7 @@ namespace grbda
         for (ContactPoint &cp : contact_points_)
         {
             const size_t &i = cp.body_index_;
-            const NodeTypeVariants &node_i = getNodeVariantContainingBody(i);
+            const NodeType &node_i = getNodeContainingBody(i);
             const SpatialTransform &X = Xa(node_i)[0];
             const Mat3<double> R_link_to_world = X.getRotation().transpose();
             Mat6<double> Xout = createSXform(R_link_to_world, cp.local_offset_);
@@ -162,7 +162,7 @@ namespace grbda
             int j = index(node_i);
             while (j > -1)
             {
-                const NodeTypeVariants &node_j = nodes_variants_[j];
+                const NodeType &node_j = nodes_[j];
                 const int vel_idx = velocityIndex(node_j);
                 const int num_vel = numVelocities(node_j);
 
@@ -206,35 +206,33 @@ namespace grbda
         DVec<double> qdd = DVec<double>::Zero(getNumDegreesOfFreedom());
 
         // Forward Pass - Articulated body bias force
-        for (NodeTypeVariants &link_node : nodes_variants_)
+        for (NodeType &link_node : nodes_)
         {
             updateArticulatedBiasForce(link_node);
-            // link_node.pA_ = generalForceCrossProduct(link_node.v_, DVec<double>(link_node.I_ * link_node.v_));
         }
 
         // Account for external forces in bias force
         for (int link_node_index : indices_of_nodes_experiencing_external_forces_)
         {
-            NodeTypeVariants& link_node = nodes_variants_[link_node_index];
+            NodeType& link_node = nodes_[link_node_index];
             pA(link_node) -= Xa(link_node).transformExternalForceVector(externalForce(link_node));
         }
 
         // Backward pass - Gauss principal of least constraint
-        for (int i = (int)nodes_variants_.size() - 1; i >= 0; i--)
+        for (int i = (int)nodes_.size() - 1; i >= 0; i--)
         {
-            NodeTypeVariants &link_node = nodes_variants_[i];
+            NodeType &link_node = nodes_[i];
             const int vel_idx = velocityIndex(link_node);
             const int num_vel = numVelocities(link_node);
             const int parent_idx = parentIndex(link_node); 
             const auto joint = getJoint(link_node);
 
-            // link_node.u_ = tau.segment(vel_idx, num_vel) - joint->S().transpose() * link_node.pA_;
             u(link_node) = tau.segment(vel_idx, num_vel) - joint->S().transpose() * pA(link_node);
 
             // Articulated body bias force recursion
             if (parent_idx >= 0)
             {
-                NodeTypeVariants &parent_link_node = nodes_variants_[parent_idx];
+                NodeType &parent_link_node = nodes_[parent_idx];
 
                 const Mat6<double> Ia = IA(link_node) -
                                         U(link_node) * D_inv(link_node) * U(link_node).transpose();
@@ -247,7 +245,7 @@ namespace grbda
         }
 
         // Forward Pass - Joint accelerations
-        for (NodeTypeVariants &link_node : nodes_variants_)
+        for (NodeType &link_node : nodes_)
         {
             const int vel_idx = velocityIndex(link_node);
             const int num_vel = numVelocities(link_node);
@@ -257,7 +255,7 @@ namespace grbda
             SVec<double> a_temp;
             if (parent_idx >= 0)
             {
-                NodeTypeVariants &parent_link_node = nodes_variants_[parent_idx];
+                NodeType &parent_link_node = nodes_[parent_idx];
                 a_temp = Xup(link_node).transformMotionVector(acceleration(parent_link_node)) +
                          velocityProduct(link_node);
             }
@@ -283,16 +281,15 @@ namespace grbda
         forwardKinematics();
 
         // Forward pass
-        for (NodeTypeVariants &link_node : nodes_variants_)
+        for (NodeType &link_node : nodes_)
         {
-            // link_node.IA_ = link_node.I_;
             resetArticulatedInertia(link_node);
         }
 
         // Backward pass (Gauss principal of least constraint)
-        for (int i = (int)nodes_variants_.size() - 1; i >= 0; i--)
+        for (int i = (int)nodes_.size() - 1; i >= 0; i--)
         {
-            NodeTypeVariants &link_node = nodes_variants_[i];
+            NodeType &link_node = nodes_[i];
             const auto joint = getJoint(link_node);
 
             const int vel_idx = velocityIndex(link_node);   
@@ -307,7 +304,7 @@ namespace grbda
             // Articulated body inertia recursion
             if (parent_index >= 0)
             {
-                NodeTypeVariants &parent_link_node = nodes_variants_[parent_index];
+                NodeType &parent_link_node = nodes_[parent_index];
                 const DMat<double> Ia = IA(link_node) -
                                         U(link_node) * D_inv(link_node) * U(link_node).transpose();
                 IA(parent_link_node) += Xup(link_node).inverseTransformSpatialInertia(Ia);

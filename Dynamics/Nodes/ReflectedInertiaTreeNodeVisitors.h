@@ -8,196 +8,196 @@ namespace grbda
     namespace ReflectedInertiaNodeVisitors
     {
 
-        template <typename NodeTypeVariants>
+        template <typename NodeType>
         struct GetLinkVisitor : public boost::static_visitor<const Body &>
         {
-            template <typename NodeType>
-            const Body &operator()(const NodeType &node) const
+            template <typename T>
+            const Body &operator()(const T &node) const
             {
                 return node.link_;
             }
 
-            static const Body &run(const NodeTypeVariants &node)
+            static const Body &run(const NodeType &node)
             {
                 return boost::apply_visitor(GetLinkVisitor(), node);
             }
         };
 
-        template <typename NodeTypeVariants>
-        inline const Body &getLink(const NodeTypeVariants &node)
+        template <typename NodeType>
+        inline const Body &getLink(const NodeType &node)
         {
-            return GetLinkVisitor<NodeTypeVariants>::run(node);
+            return GetLinkVisitor<NodeType>::run(node);
         }
 
-        template <typename NodeTypeVariants>
+        template <typename NodeType>
         struct GetJointVisitor : public boost::static_visitor<std::shared_ptr<Joints::Base>>
         {
-            template <typename NodeType>
-            std::shared_ptr<Joints::Base> operator()(const NodeType &node) const
+            template <typename T>
+            std::shared_ptr<Joints::Base> operator()(const T &node) const
             {
                 return node.joint_;
             }
 
-            static std::shared_ptr<Joints::Base> run(const NodeTypeVariants &node)
+            static std::shared_ptr<Joints::Base> run(const NodeType &node)
             {
                 return boost::apply_visitor(GetJointVisitor(), node);
             }
         };
 
-        template <typename NodeTypeVariants>
-        inline std::shared_ptr<Joints::Base> getJoint(const NodeTypeVariants &node)
+        template <typename NodeType>
+        inline std::shared_ptr<Joints::Base> getJoint(const NodeType &node)
         {
-            return GetJointVisitor<NodeTypeVariants>::run(node);
+            return GetJointVisitor<NodeType>::run(node);
         }
 
         // TODO(@MatthewChignoli): Some of this stuff is shared with ClusterTreeNodeVisitors and RigidsTreeNodeVisitors... how to make common and reduce redundancy?
-        template <typename NodeTypeVariants>
+        template <typename NodeType>
         struct UpdateArticulatedBiasForceVisitor : public boost::static_visitor<>
         {
-            template <typename NodeType>
-            void operator()(NodeType &node) const
+            template <typename T>
+            void operator()(T &node) const
             {
                 const DVec<double> Iv = node.I_ * node.v_;
                 node.pA_ = generalForceCrossProduct(node.v_, Iv);
             }
 
-            static void run(NodeTypeVariants &node)
+            static void run(NodeType &node)
             {
                 boost::apply_visitor(UpdateArticulatedBiasForceVisitor(), node);
             }
         };
 
-        template <typename NodeTypeVariants>
-        inline void updateArticulatedBiasForce(NodeTypeVariants &node)
+        template <typename NodeType>
+        inline void updateArticulatedBiasForce(NodeType &node)
         {
-            UpdateArticulatedBiasForceVisitor<NodeTypeVariants>::run(node);
+            UpdateArticulatedBiasForceVisitor<NodeType>::run(node);
         }
 
-        template <typename NodeTypeVariants>
+        template <typename NodeType>
         struct ArticulatedInertiaVisitor : public boost::static_visitor<Mat6<double> &>
         {
-            template <typename NodeType>
-            Mat6<double> &operator()(NodeType &node) const
+            template <typename T>
+            Mat6<double> &operator()(T &node) const
             {
                 return node.IA_;
             }
 
-            static Mat6<double> &run(NodeTypeVariants &node)
+            static Mat6<double> &run(NodeType &node)
             {
                 return boost::apply_visitor(ArticulatedInertiaVisitor(), node);
             }
         };
 
-        template <typename NodeTypeVariants>
-        inline Mat6<double> &IA(NodeTypeVariants &node)
+        template <typename NodeType>
+        inline Mat6<double> &IA(NodeType &node)
         {
-            return ArticulatedInertiaVisitor<NodeTypeVariants>::run(node);
+            return ArticulatedInertiaVisitor<NodeType>::run(node);
         }
 
-        template <typename NodeTypeVariants>
+        template <typename NodeType>
         struct ArticulatedBiasForceVisitor : public boost::static_visitor<SVec<double> &>
         {
-            template <typename NodeType>
-            SVec<double> &operator()(NodeType &node) const
+            template <typename T>
+            SVec<double> &operator()(T &node) const
             {
                 return node.pA_;
             }
 
-            static SVec<double> &run(NodeTypeVariants &node)
+            static SVec<double> &run(NodeType &node)
             {
                 return boost::apply_visitor(ArticulatedBiasForceVisitor(), node);
             }
         };
 
-        template <typename NodeTypeVariants>
-        inline SVec<double> &pA(NodeTypeVariants &node)
+        template <typename NodeType>
+        inline SVec<double> &pA(NodeType &node)
         {
-            return ArticulatedBiasForceVisitor<NodeTypeVariants>::run(node);
+            return ArticulatedBiasForceVisitor<NodeType>::run(node);
         }
 
-        template <typename NodeTypeVariants>
+        template <typename NodeType>
         struct UVisitor : public boost::static_visitor<D6Mat<double> &>
         {
-            template <typename NodeType>
-            D6Mat<double> &operator()(NodeType &node) const
+            template <typename T>
+            D6Mat<double> &operator()(T &node) const
             {
                 return node.U_;
             }
 
-            static D6Mat<double> &run(NodeTypeVariants &node)
+            static D6Mat<double> &run(NodeType &node)
             {
                 return boost::apply_visitor(UVisitor(), node);
             }
         };
 
-        template <typename NodeTypeVariants>
-        inline D6Mat<double> &U(NodeTypeVariants &node)
+        template <typename NodeType>
+        inline D6Mat<double> &U(NodeType &node)
         {
-            return UVisitor<NodeTypeVariants>::run(node);
+            return UVisitor<NodeType>::run(node);
         }
 
-        template <typename NodeTypeVariants>
+        template <typename NodeType>
         struct uVisitor : public boost::static_visitor<DVec<double> &>
         {
-            template <typename NodeType>
-            DVec<double> &operator()(NodeType &node) const
+            template <typename T>
+            DVec<double> &operator()(T &node) const
             {
                 return node.u_;
             }
 
-            static DVec<double> &run(NodeTypeVariants &node)
+            static DVec<double> &run(NodeType &node)
             {
                 return boost::apply_visitor(uVisitor(), node);
             }
         };
 
-        template <typename NodeTypeVariants>
-        inline DVec<double> &u(NodeTypeVariants &node)
+        template <typename NodeType>
+        inline DVec<double> &u(NodeType &node)
         {
-            return uVisitor<NodeTypeVariants>::run(node);
+            return uVisitor<NodeType>::run(node);
         }
 
-        template <typename NodeTypeVariants>
+        template <typename NodeType>
         struct D_invVisitor
             : public boost::static_visitor<DMat<double> &>
         {
-            template <typename NodeType>
-            DMat<double> &operator()(NodeType &node) const
+            template <typename T>
+            DMat<double> &operator()(T &node) const
             {
                 return node.D_inv_;
             }
 
-            static DMat<double> &run(NodeTypeVariants &node)
+            static DMat<double> &run(NodeType &node)
             {
                 return boost::apply_visitor(D_invVisitor(), node);
             }
         };
 
-        template <typename NodeTypeVariants>
-        inline DMat<double> &D_inv(NodeTypeVariants &node)
+        template <typename NodeType>
+        inline DMat<double> &D_inv(NodeType &node)
         {
-            return D_invVisitor<NodeTypeVariants>::run(node);
+            return D_invVisitor<NodeType>::run(node);
         }
 
-        template <typename NodeTypeVariants>
+        template <typename NodeType>
         struct ResetArticulatedInertiaVisitor : public boost::static_visitor<>
         {
-            template <typename NodeType>
-            void operator()(NodeType &node) const
+            template <typename T>
+            void operator()(T &node) const
             {
                 node.IA_= node.I_;
             }
 
-            static void run(NodeTypeVariants &node)
+            static void run(NodeType &node)
             {
                 boost::apply_visitor(ResetArticulatedInertiaVisitor(), node);
             }
         };
 
-        template <typename NodeTypeVariants>
-        inline void resetArticulatedInertia(NodeTypeVariants &node)
+        template <typename NodeType>
+        inline void resetArticulatedInertia(NodeType &node)
         {
-            ResetArticulatedInertiaVisitor<NodeTypeVariants>::run(node);
+            ResetArticulatedInertiaVisitor<NodeType>::run(node);
         }
 
     } // namespace ReflectedInertiaNodeVisitors
