@@ -31,9 +31,8 @@ namespace grbda
 
                 const int node_index = (int)nodes_variants_.size();
                 const int parent_node_index = getIndexOfParentNodeForBody(link.parent_index_);
-                NodeType node(node_index, link, link_joint, parent_node_index,
+                ReflectedInertiaTreeNode node(node_index, link, link_joint, parent_node_index,
                                               position_index_, velocity_index_);
-                // nodes_.push_back(node);
                 nodes_variants_.push_back(node);
 
                 cluster_reflected_inertia += reflected_inertia;
@@ -129,15 +128,6 @@ namespace grbda
             if (getLink(link_node).index_ == spanning_tree_index)
                 return getLink(link_node);
         throw std::runtime_error("1That body does not exist in the link and rotor tree model");
-    }
-
-    ReflectedInertiaTreeModel::NodeType &
-    ReflectedInertiaTreeModel::getNodeContainingBody(int spanning_tree_index)
-    {
-        for (NodeType &link_node : nodes_)
-            if (link_node.link_.index_ == spanning_tree_index)
-                return link_node;
-        throw std::runtime_error("2That body does not exist in the link and rotor tree model");
     }
 
     ReflectedInertiaTreeModel::NodeTypeVariants &

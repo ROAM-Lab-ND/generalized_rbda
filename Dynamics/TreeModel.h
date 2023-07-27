@@ -28,21 +28,18 @@ namespace grbda
     template <>
     struct BaseTraits<ClusterTreeModel>
     {
-        typedef ClusterTreeNode<> NodeType;
         typedef boost::variant<ClusterTreeNode<>> NodeTypeVariants;
     };
 
     template <>
     struct BaseTraits<RigidBodyTreeModel>
     {
-        typedef RigidBodyTreeNode NodeType;
         typedef boost::variant<RigidBodyTreeNode> NodeTypeVariants;
     };
 
     template <>
     struct BaseTraits<ReflectedInertiaTreeModel>
     {
-        typedef ReflectedInertiaTreeNode NodeType;
         typedef boost::variant<ReflectedInertiaTreeNode> NodeTypeVariants;
     };
 
@@ -51,7 +48,6 @@ namespace grbda
     class TreeModel
     {
     public:
-        typedef typename BaseTraits<Derived>::NodeType NodeType;
         typedef typename BaseTraits<Derived>::NodeTypeVariants NodeTypeVariants;
 
         const Derived &derived() const { return *static_cast<const Derived *>(this); }
@@ -65,13 +61,7 @@ namespace grbda
         DVec<double> getBiasForceVector() { return derived().getBiasForceVector(); }
 
         int getNumBodies() const { return derived().getNumBodies(); }
-
         const Body &getBody(int index) const { return derived().getBody(index); }
-
-        NodeType &getNodeContainingBody(int index)
-        {
-            return derived().getNodeContainingBody(index);
-        }
 
         // TODO(@MatthewChignoli): Implement these for derived classes (what is the behavior when they are not implemented?)
         NodeTypeVariants &getNodeVariantContainingBody(int index)
@@ -81,7 +71,6 @@ namespace grbda
 
         void setGravity(const Vec3<double> &g) { gravity_.tail<3>() = g; }
         SVec<double> getGravity() const { return gravity_; }
-
 
         // TODO(@MatthewChignoli): What is the relationship between this function and the setExternalForces function that the cluster tree model has?
         void initializeExternalForces(
@@ -99,10 +88,6 @@ namespace grbda
         {
             return derived().applyLocalFrameTestForceAtContactPoint(force, contact_point_name, dstate_out);
         }
-
-        NodeType &node(const int index) { return nodes_[index]; }
-        const NodeType &node(const int index) const { return nodes_[index]; }
-        const std::vector<NodeType> &nodes() const { return nodes_; }
 
         NodeTypeVariants &nodeVariant(const int index) { return nodes_variants_[index]; }
         const NodeTypeVariants &nodeVariant(const int index) const { return nodes_variants_[index]; }
@@ -134,7 +119,6 @@ namespace grbda
         int velocity_index_ = 0;
         int unactuated_dofs_ = 0;
 
-        std::vector<NodeType> nodes_;
         std::vector<NodeTypeVariants> nodes_variants_;
         std::vector<int> indices_of_nodes_experiencing_external_forces_;
 
@@ -152,6 +136,5 @@ namespace grbda
         }
         friend Derived;
     };
-
 
 } // namespace grbda

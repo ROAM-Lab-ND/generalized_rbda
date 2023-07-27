@@ -8,6 +8,7 @@
 #include "Utils/Utilities/Timer.h"
 
 using namespace grbda;
+using namespace grbda::ClusterNodeVisitors;
 
 template <class T>
 void runBenchmark(std::ofstream &file)
@@ -38,9 +39,9 @@ void runBenchmark(std::ofstream &file)
             ModelState model_state;
             DVec<double> independent_joint_pos = DVec<double>::Zero(0);
             DVec<double> independent_joint_vel = DVec<double>::Zero(0);
-            for (const ClusterTreeModel::NodeType &cluster : cl_model.clusters())
+            for (const ClusterTreeModel::NodeTypeVariants &cluster : cl_model.clusterVariants())
             {
-                JointState joint_state = cluster.joint_->randomJointState();
+                JointState joint_state = getJoint(cluster)->randomJointState();
                 if (joint_state.position.isSpanning() || joint_state.velocity.isSpanning())
                     throw std::runtime_error("Initializing reflected inertia model requires all independent coordinates");
 
@@ -68,9 +69,9 @@ void runBenchmark(std::ofstream &file)
             const double lambda_inv_approx =
                 rf_model.applyLocalFrameTestForceAtContactPoint(test_force, cp_name, dstate_approx);
             const double lambda_inv_diag =
-                rf_diag_model.applyLocalFrameTestForceAtContactPoint(test_force, cp_name,dstate_diag);
+                rf_diag_model.applyLocalFrameTestForceAtContactPoint(test_force, cp_name, dstate_diag);
 
-            rf_lambda_inv_error += std::fabs(lambda_inv - lambda_inv_approx); 
+            rf_lambda_inv_error += std::fabs(lambda_inv - lambda_inv_approx);
             rf_diag_lambda_inv_error += std::fabs(lambda_inv - lambda_inv_diag);
 
             rf_dstate_error += (dstate - dstate_approx).norm();
@@ -82,10 +83,10 @@ void runBenchmark(std::ofstream &file)
     const size_t num_dof = robot.getNumDofs();
     const int num_samples = num_robot_samples * num_state_samples;
     file << num_dof << ","
-            << rf_lambda_inv_error / num_samples << ","
-            << rf_diag_lambda_inv_error / num_samples << ","
-            << rf_dstate_error / num_samples << ","
-            << rf_diag_dstate_error / num_samples << std::endl;
+         << rf_lambda_inv_error / num_samples << ","
+         << rf_diag_lambda_inv_error / num_samples << ","
+         << rf_dstate_error / num_samples << ","
+         << rf_diag_dstate_error / num_samples << std::endl;
 
     std::cout << "Finished benchmark for robot with " << num_dof << " dofs" << std::endl;
 }

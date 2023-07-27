@@ -12,6 +12,10 @@ namespace grbda
         class LTL : public DMat<double>
         {
         public:
+            LTL() 
+            {
+                throw std::runtime_error("LTL() is not implemented");
+            }
             LTL(DMat<double> H, const std::vector<RigidBodyTreeNode> &nodes);
 
             DVec<double> product(const DVec<double> &x) const;

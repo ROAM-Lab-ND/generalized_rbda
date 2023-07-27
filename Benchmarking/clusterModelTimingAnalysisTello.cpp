@@ -7,6 +7,7 @@
 #include "Utils/Utilities/Timer.h"
 
 using namespace grbda;
+using namespace grbda::ClusterNodeVisitors;
 
 void runTelloBenchmark(std::ofstream &file)
 {
@@ -25,21 +26,21 @@ void runTelloBenchmark(std::ofstream &file)
         // Set random state
         ModelState model_state;
         bool nan_detected = false;
-        for (const ClusterTreeModel::NodeType &cluster : cluster_model.clusters())
+        for (const ClusterTreeModel::NodeTypeVariants &cluster : cluster_model.clusterVariants())
         {
-	    JointState joint_state = cluster.joint_->randomJointState();
-	    if (joint_state.position.hasNaN())
-	    {
-		nan_detected = true;
-		break;
-	    }
+            JointState joint_state = getJoint(cluster)->randomJointState();
+            if (joint_state.position.hasNaN())
+            {
+                nan_detected = true;
+                break;
+            }
             model_state.push_back(joint_state);
         }
-	if (nan_detected)
-	{
-	    i--;
-	    continue;
-	}
+        if (nan_detected)
+        {
+            i--;
+            continue;
+        }
 
         cluster_model.initializeState(model_state);
 

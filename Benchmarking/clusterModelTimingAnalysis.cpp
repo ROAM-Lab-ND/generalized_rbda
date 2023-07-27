@@ -7,6 +7,7 @@
 #include "Utils/Utilities/Timer.h"
 
 using namespace grbda;
+using namespace grbda::ClusterNodeVisitors;
 
 template <class T>
 void runBenchmark(std::ofstream &file, const std::string &id)
@@ -28,9 +29,9 @@ void runBenchmark(std::ofstream &file, const std::string &id)
 
             // Set random state
             ModelState model_state;
-            for (const ClusterTreeModel::NodeType &cluster : cluster_model.clusters())
+            for (const ClusterTreeModel::NodeTypeVariants &cluster : cluster_model.clusterVariants())
             {
-                model_state.push_back(cluster.joint_->randomJointState());
+                model_state.push_back(getJoint(cluster)->randomJointState());
             }
 
             cluster_model.initializeState(model_state);

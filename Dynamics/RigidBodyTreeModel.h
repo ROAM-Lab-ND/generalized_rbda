@@ -63,7 +63,6 @@ namespace grbda
     public:
         EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
-        typedef TreeModel<RigidBodyTreeModel>::NodeType NodeType;
         typedef TreeModel<RigidBodyTreeModel>::NodeTypeVariants NodeTypeVariants;
 
         RigidBodyTreeModel(const ClusterTreeModel &cluster_tree_model,
@@ -99,7 +98,6 @@ namespace grbda
 
         // TOOD(@MatthewChignoli): I don't really like these functions...
         const Body &getBody(int index) const { return RigidBodyNodeVisitors::getBody(nodes_variants_[index]); }
-        NodeType &getNodeContainingBody(int index) { return nodes_[index]; }
         
         NodeTypeVariants &getNodeVariantContainingBody(int index)
         {

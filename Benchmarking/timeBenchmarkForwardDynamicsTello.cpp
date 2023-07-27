@@ -8,6 +8,7 @@
 #include "Utils/Utilities/Timer.h"
 
 using namespace grbda;
+using namespace grbda::ClusterNodeVisitors;
 
 void runTelloBenchmark(std::ofstream &file, const bool include_forces)
 {
@@ -43,20 +44,20 @@ void runTelloBenchmark(std::ofstream &file, const bool include_forces)
         DVec<double> spanning_joint_vel = DVec<double>::Zero(0);
 
         bool nan_detected = false;
-        for (const ClusterTreeModel::NodeType &cluster : cluster_model.clusters())
+        for (const ClusterTreeModel::NodeTypeVariants &cluster : cluster_model.clusterVariants())
         {
-            JointState joint_state = cluster.joint_->randomJointState();
+            JointState joint_state = getJoint(cluster)->randomJointState();
             if (joint_state.position.hasNaN())
             {
                 nan_detected = true;
                 break;
             }
-            JointState spanning_joint_state = cluster.joint_->toSpanningTreeState(joint_state);
+            JointState spanning_joint_state = getJoint(cluster)->toSpanningTreeState(joint_state);
 
             DVec<double> independent_joint_pos_i;
             DVec<double> independent_joint_vel_i;
-            if (cluster.joint_->type() == GeneralizedJointTypes::TelloHipDifferential ||
-                cluster.joint_->type() == GeneralizedJointTypes::TelloKneeAnkleDifferential)
+            if (getJoint(cluster)->type() == GeneralizedJointTypes::TelloHipDifferential ||
+                getJoint(cluster)->type() == GeneralizedJointTypes::TelloKneeAnkleDifferential)
             {
                 independent_joint_pos_i = spanning_joint_state.position.tail<2>();
                 independent_joint_vel_i = spanning_joint_state.velocity.tail<2>();
@@ -115,7 +116,6 @@ void runTelloBenchmark(std::ofstream &file, const bool include_forces)
         timer.start();
         reflected_inertia_model.forwardDynamics(tau);
         t_reflected_inertia += timer.getMs();
-
     }
 
     file << t_cluster / num_state_samples << ","

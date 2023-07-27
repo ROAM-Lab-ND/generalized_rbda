@@ -8,9 +8,10 @@
 #include "Utils/Utilities/Timer.h"
 
 using namespace grbda;
+using namespace grbda::ClusterNodeVisitors;
 
 template <class T>
-void runBenchmark(std::ofstream &file, const std::string& id, const bool include_forces)
+void runBenchmark(std::ofstream &file, const std::string &id, const bool include_forces)
 {
     Timer timer;
     double t_cluster = 0.;
@@ -46,18 +47,18 @@ void runBenchmark(std::ofstream &file, const std::string& id, const bool include
             DVec<double> independent_joint_vel = DVec<double>::Zero(0);
             DVec<double> spanning_joint_pos = DVec<double>::Zero(0);
             DVec<double> spanning_joint_vel = DVec<double>::Zero(0);
-            for (const ClusterTreeModel::NodeType &cluster : cluster_model.clusters())
+            for (const ClusterTreeModel::NodeTypeVariants &cluster : cluster_model.clusterVariants())
             {
-                JointState joint_state = cluster.joint_->randomJointState();
+                JointState joint_state = getJoint(cluster)->randomJointState();
                 if (joint_state.position.isSpanning() || joint_state.velocity.isSpanning())
                     throw std::runtime_error("Initializing reflected inertia model requires all independent coordinates");
-                    
+
                 independent_joint_pos = appendEigenVector(independent_joint_pos,
                                                           joint_state.position);
                 independent_joint_vel = appendEigenVector(independent_joint_vel,
                                                           joint_state.velocity);
 
-                JointState spanning_joint_state = cluster.joint_->toSpanningTreeState(joint_state);
+                JointState spanning_joint_state = getJoint(cluster)->toSpanningTreeState(joint_state);
                 spanning_joint_pos = appendEigenVector(spanning_joint_pos,
                                                        spanning_joint_state.position);
                 spanning_joint_vel = appendEigenVector(spanning_joint_vel,
@@ -127,7 +128,7 @@ const std::string path_to_data = "../Benchmarking/data/Timing_";
 void runRevoluteWithRotorBenchmark(const bool include_forces)
 {
     std::cout << "** Revolute With Rotor Benchmark **" << std::endl;
- 
+
     std::ofstream rev_file;
     rev_file.open(path_to_data + "RevoluteChain.csv");
 

@@ -70,7 +70,8 @@ namespace grbda
 #ifdef TIMING_STATS
             timer_.start();
 #endif
-            factorization::LTL L(H_, nodes_);
+            // factorization::LTL L(H_, nodes_);
+            factorization::LTL L;
 #ifdef TIMING_STATS
             timing_statistics_.ltl_factorization_time = timer_.getMs();
             timer_.start();

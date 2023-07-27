@@ -84,7 +84,6 @@ namespace grbda
     public:
         EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
-        typedef TreeModel<ClusterTreeModel>::NodeType NodeType;
         typedef TreeModel<ClusterTreeModel>::NodeTypeVariants NodeTypeVariants;
 
         ClusterTreeModel()
@@ -150,7 +149,6 @@ namespace grbda
 
         int getSubIndexWithinClusterForBody(const int body_index) const;
 
-        int getNumBodiesInCluster(const NodeType &cluster) const;
         int getNumBodiesInCluster(const int cluster_index) const;
         int getNumBodiesInCluster(const string &cluster_name) const;
 
@@ -159,10 +157,6 @@ namespace grbda
         int getIndexOfClusterContainingBody(const string &body_name);
 
         // TODO(@MatthewChignoli): Aren't these the same as get node containing? Should clean that up later
-        NodeType &getClusterContainingBody(const Body &body);
-        NodeType &getClusterContainingBody(const int body_index);
-        NodeType &getClusterContainingBody(const string &body_name);
-
         NodeTypeVariants &getClusterVarContainingBody(const Body &body);
         NodeTypeVariants &getClusterVarContainingBody(const int body_index);
         NodeTypeVariants &getClusterVarContainingBody(const string &body_name);
@@ -170,10 +164,6 @@ namespace grbda
         int getIndexOfParentClusterFromBodies(const vector<Body> &bodies);
 
         const Body &getBody(int index) const { return bodies_[index]; }
-        NodeType &getNodeContainingBody(int index)
-        {
-            return nodes_[getIndexOfClusterContainingBody(index)];
-        }
         NodeTypeVariants &getNodeVariantContainingBody(int index)
         {
             return nodes_variants_[getIndexOfClusterContainingBody(index)];
@@ -181,23 +171,13 @@ namespace grbda
 
         const vector<Body> &bodies() const { return bodies_; }
         // TODO(@MatthewChignoli): delete
-        const vector<NodeType> &clusters() const { return nodes_; }
+        // const vector<NodeType> &clusters() const { return nodes_; }
         const vector<NodeTypeVariants> &clusterVariants() const { return nodes_variants_; }
 
         const Body &body(const int body_index) const { return bodies_[body_index]; }
         const Body &body(const string body_name) const
         {
             return bodies_[body_name_to_body_index_.at(body_name)];
-        }
-
-        // TODO(@MatthewChignoli): delete
-        const NodeType &cluster(const int cluster_index) const
-        {
-            return nodes_[cluster_index];
-        }
-        const NodeType &cluster(const string &cluster_name) const
-        {
-            return nodes_[cluster_name_to_cluster_index_.at(cluster_name)];
         }
 
         const NodeTypeVariants &clusterVariant(const int cluster_index) const

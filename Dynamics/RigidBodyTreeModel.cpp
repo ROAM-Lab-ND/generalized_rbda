@@ -43,8 +43,7 @@ namespace grbda
             {
                 const Body &body = body_and_joint.first;
                 const auto &joint = body_and_joint.second;
-                NodeType node(body, joint, position_index_, velocity_index_);
-                // nodes_.push_back(node);
+                RigidBodyTreeNode node(body, joint, position_index_, velocity_index_);
                 nodes_variants_.push_back(node);
                 body_name_to_body_index_[body.name_] = body_index++;
 

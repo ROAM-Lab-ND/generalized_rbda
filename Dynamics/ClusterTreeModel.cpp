@@ -43,10 +43,9 @@ namespace grbda
         const int cluster_index = (int)nodes_variants_.size();
         cluster_name_to_cluster_index_[name] = cluster_index;
 
-        NodeType node(cluster_index, name, bodies_in_current_cluster_, joint,
-                      parent_cluster_index, num_bodies_in_parent_cluster,
-                      position_index_, velocity_index_);
-        // nodes_.push_back(node);
+        ClusterTreeNode<> node(cluster_index, name, bodies_in_current_cluster_, joint,
+                               parent_cluster_index, num_bodies_in_parent_cluster,
+                               position_index_, velocity_index_);
         nodes_variants_.push_back(node);
 
         checkValidParentClusterForBodiesInCluster(nodes_variants_.back());
@@ -338,10 +337,6 @@ namespace grbda
         return cluster_index >= 0 ? ClusterNodeVisitors::bodies(nodes_variants_[cluster_index]).size() : 1;
     }
 
-    int ClusterTreeModel::getNumBodiesInCluster(const NodeType &cluster) const
-    {
-        return getNumBodiesInCluster(cluster.index_);
-    }
 
     int ClusterTreeModel::getNumBodiesInCluster(const string &cluster_name) const
     {
@@ -410,21 +405,6 @@ namespace grbda
                 return i;
             }
         return nullopt;
-    }
-
-    ClusterTreeModel::NodeType &ClusterTreeModel::getClusterContainingBody(const int body_index)
-    {
-        return nodes_[getIndexOfClusterContainingBody(body_index)];
-    }
-
-    ClusterTreeModel::NodeType &ClusterTreeModel::getClusterContainingBody(const Body &body)
-    {
-        return nodes_[getIndexOfClusterContainingBody(body)];
-    }
-
-    ClusterTreeModel::NodeType &ClusterTreeModel::getClusterContainingBody(const string &body_name)
-    {
-        return nodes_[getIndexOfClusterContainingBody(body_name)];
     }
 
     ClusterTreeModel::NodeTypeVariants &ClusterTreeModel::getClusterVarContainingBody(const int body_index)
