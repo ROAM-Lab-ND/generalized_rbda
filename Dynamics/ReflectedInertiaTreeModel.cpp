@@ -53,10 +53,10 @@ namespace grbda
         spanning_tree_to_independent_coords_conversion_ = DMat<double>::Zero(0, 0);
         for (const ClusterTreeModel::NodeType &cluster : cluster_tree_model.nodes())
         {
-            const auto joint = ClusterNodeVisitors::getJoint(cluster);
+            // const auto joint = ClusterNodeVisitors::getJoint(cluster);
             spanning_tree_to_independent_coords_conversion_ =
                 appendEigenMatrix(spanning_tree_to_independent_coords_conversion_,
-                                  joint->spanningTreeToIndependentCoordsConversion());
+                                  ClusterNodeVisitors::spanningToIndependent(cluster));
         }
 
         const int num_spanning_coords = spanning_tree_to_independent_coords_conversion_.cols();

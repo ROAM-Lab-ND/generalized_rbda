@@ -47,10 +47,10 @@ protected:
         DVec<double> spanning_joint_pos = DVec<double>::Zero(0);
         DVec<double> spanning_joint_vel = DVec<double>::Zero(0);
 
-        for (const ClusterTreeModel::NodeType &cluster : cluster_models.at(robot_idx).nodes())
+        for (ClusterTreeModel::NodeType &cluster : cluster_models.at(robot_idx).nodes())
         {
-            JointState joint_state = getJoint(cluster)->randomJointState();
-            JointState spanning_joint_state = getJoint(cluster)->toSpanningTreeState(joint_state);
+            JointState joint_state = randomJointState(cluster);
+            JointState spanning_joint_state = toSpanningTreeState(cluster,joint_state);
 
             spanning_joint_pos = appendEigenVector(spanning_joint_pos,
                                                    spanning_joint_state.position);

@@ -2,6 +2,7 @@
 
 namespace grbda
 {
+    using namespace GeneralizedJoints;
 
     template <size_t N, size_t M>
     ClusterTreeModel RevoluteChainMultipleRotorsPerLink<N, M>::buildRandomClusterTreeModel() const
@@ -37,8 +38,8 @@ namespace grbda
             }
 
             // Cluster
-            auto cluster_joint = std::make_shared<GeneralizedJoints::RevoluteWithMultipleRotorsJoint>(
-                link, rotors, link_joint_axis, rotor_axes, gear_ratios);
+            RevoluteWithMultipleRotorsJoint cluster_joint(link, rotors, link_joint_axis,
+                                                          rotor_axes, gear_ratios);
             const std::string cluster_name = "cluster-" + std::to_string(i);
             model.appendRegisteredBodiesAsCluster(cluster_name, cluster_joint);
 

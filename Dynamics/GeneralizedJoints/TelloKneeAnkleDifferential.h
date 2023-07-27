@@ -34,7 +34,7 @@ namespace grbda
 	    }
 	    virtual ~TelloKneeAnkleDifferential() {}
 
-	    GeneralizedJointTypes type() const override { return GeneralizedJointTypes::TelloKneeAnkleDifferential; }
+	    GeneralizedJointTypes type() const { return GeneralizedJointTypes::TelloKneeAnkleDifferential; }
 	};
 
     }

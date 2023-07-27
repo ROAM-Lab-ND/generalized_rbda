@@ -29,33 +29,41 @@ namespace grbda
     namespace GeneralizedJoints
     {
 
+        template <typename Derived>
         class Base
         {
         public:
             EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
-            Base(int num_bodies, int num_independent_positions, int num_independent_velocities,
-                 bool position_is_spanning, bool velocity_is_spanning);
-            virtual ~Base() {}
+            const Derived &derived() const { return *static_cast<const Derived *>(this); }
+            Derived &derived() { return *static_cast<Derived *>(this); }
 
-            virtual GeneralizedJointTypes type() const = 0;
+            GeneralizedJointTypes type() const { return derived().type(); }
 
-            virtual void updateKinematics(const JointState &joint_state) = 0;
+            void updateKinematics(const JointState &joint_state)
+            {
+                return derived().updateKinematics(joint_state);
+            }
 
-            virtual void computeSpatialTransformFromParentToCurrentCluster(
-                GeneralizedSpatialTransform &Xup) const = 0;
+            void computeSpatialTransformFromParentToCurrentCluster(
+                GeneralizedSpatialTransform &Xup) const
+            {
+                derived().computeSpatialTransformFromParentToCurrentCluster(Xup);
+            }
 
             const std::vector<JointPtr> singleJoints() const { return single_joints_; };
 
-            virtual std::vector<std::tuple<Body, JointPtr, DMat<double>>>
+            std::vector<std::tuple<Body, JointPtr, DMat<double>>>
             bodiesJointsAndReflectedInertias() const
             {
+                // TODO(@MatthewChignoli): What if derived class does not implement this?
+                // return derived().bodiesJointsAndReflectedInertias();
                 throw std::runtime_error("Reflected Inertia not setup for this generalized joint type");
             }
 
             const int &numPositions() const { return num_positions_; }
             const int &numVelocities() const { return num_velocities_; }
-            virtual int numUnactuatedVelocities() const { return 0; }
+            int numUnactuatedVelocities() const { return 0; }
 
             const bool &positionIsSpanning() const { return position_is_spanning_; }
             const bool &velocityIsSpanning() const { return velocity_is_spanning_; }
@@ -116,6 +124,11 @@ namespace grbda
             std::vector<JointPtr> single_joints_;
 
             DMat<double> spanning_tree_to_independent_coords_conversion_;
+
+        private:
+            Base(int num_bodies, int num_independent_positions, int num_independent_velocities,
+                 bool position_is_spanning, bool velocity_is_spanning);
+            friend Derived;
         };
 
     }

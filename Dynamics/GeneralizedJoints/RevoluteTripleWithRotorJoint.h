@@ -19,24 +19,24 @@ namespace grbda
             double belt_ratio_;
         };
 
-        class RevoluteTripleWithRotor : public Base
+        class RevoluteTripleWithRotor : public Base<RevoluteTripleWithRotor>
         {
         public:
             RevoluteTripleWithRotor(std::vector<ParallelBeltTransmissionModule> modules);
             virtual ~RevoluteTripleWithRotor() {}
 
-            GeneralizedJointTypes type() const override
+            GeneralizedJointTypes type() const
             {
                 return GeneralizedJointTypes::RevoluteTripleWithRotor;
             }
 
-            void updateKinematics(const JointState &joint_state) override;
+            void updateKinematics(const JointState &joint_state);
 
             void computeSpatialTransformFromParentToCurrentCluster(
-                GeneralizedSpatialTransform &Xup) const override;
+                GeneralizedSpatialTransform &Xup) const;
 
             std::vector<std::tuple<Body, JointPtr, DMat<double>>>
-            bodiesJointsAndReflectedInertias() const override;
+            bodiesJointsAndReflectedInertias() const;
 
         private:
             JointPtr link_1_joint_;

@@ -8,7 +8,7 @@ namespace grbda
     namespace GeneralizedJoints
     {
 
-        class RevolutePairWithRotor : public Base
+        class RevolutePairWithRotor : public Base<RevolutePairWithRotor>
         {
         public:
             RevolutePairWithRotor(Body &link_1, Body &link_2, Body &rotor_1, Body &rotor_2,
@@ -18,18 +18,18 @@ namespace grbda
                                   double belt_ratio_1, double belt_ratio_2);
             virtual ~RevolutePairWithRotor() {}
 
-            GeneralizedJointTypes type() const override
+            GeneralizedJointTypes type() const
             {
                 return GeneralizedJointTypes::RevolutePairWithRotor;
             }
 
-            void updateKinematics(const JointState &joint_state) override;
+            void updateKinematics(const JointState &joint_state);
                                   
             void computeSpatialTransformFromParentToCurrentCluster(
-                GeneralizedSpatialTransform &Xup) const override;
+                GeneralizedSpatialTransform &Xup) const;
 
             std::vector<std::tuple<Body, JointPtr, DMat<double>>>
-            bodiesJointsAndReflectedInertias() const override;
+            bodiesJointsAndReflectedInertias() const;
 
         private:
             JointPtr link_1_joint_;

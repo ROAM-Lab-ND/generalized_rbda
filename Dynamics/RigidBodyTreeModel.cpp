@@ -61,7 +61,8 @@ namespace grbda
 
         for (const ClusterTreeModel::NodeType &cluster : cluster_tree_model.nodes())
         {
-            loop_constraints_.push_back(ClusterNodeVisitors::getJoint(cluster)->cloneLoopConstraint());
+            // loop_constraints_.push_back(ClusterNodeVisitors::getJoint(cluster)->cloneLoopConstraint());
+            loop_constraints_.push_back(ClusterNodeVisitors::cloneLoopConstraint(cluster));
         }
     }
 

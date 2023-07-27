@@ -41,7 +41,7 @@ TYPED_TEST(ClusterTreeModelTest, SetState)
     DVec<double> qd(0);
     for (const ClusterTreeModel::NodeType &cluster : this->cluster_model.nodes())
     {
-        model_state.push_back(getJoint(cluster)->randomJointState());
+        model_state.push_back(randomJointState(cluster));
         q = appendEigenVector(q, model_state.back().position);
         qd = appendEigenVector(qd, model_state.back().velocity);
     }

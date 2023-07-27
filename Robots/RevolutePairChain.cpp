@@ -2,6 +2,7 @@
 
 namespace grbda
 {
+    using namespace GeneralizedJoints;
 
     template <size_t N>
     ClusterTreeModel RevolutePairChain<N>::buildRandomClusterTreeModel() const
@@ -27,8 +28,7 @@ namespace grbda
 
             // Cluster
             const std::string cluster_name = "cluster-" + std::to_string(i);
-            auto joint = std::make_shared<GeneralizedJoints::RevolutePair>(
-                linkA, linkB, linkA_joint_axis, linkB_joint_axis);
+            RevolutePair joint(linkA, linkB, linkA_joint_axis, linkB_joint_axis);
 
             model.appendRegisteredBodiesAsCluster(cluster_name, joint);
 
@@ -99,9 +99,7 @@ namespace grbda
 
             // Cluster
             const std::string cluster_name = "cluster-" + std::to_string(i);
-            auto joint = std::make_shared<GeneralizedJoints::RevolutePair>(
-                linkA, linkB, axis, axis);
-
+            RevolutePair joint(linkA, linkB, axis, axis);
             model.appendRegisteredBodiesAsCluster(cluster_name, joint);
 
             parent_name = linkB_name;

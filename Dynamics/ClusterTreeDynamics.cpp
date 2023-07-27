@@ -102,9 +102,9 @@ namespace grbda
             const int vel_idx = velocityIndex(cluster);
             const int num_vel = numVelocities(cluster);
             const int parent_index = parentIndex(cluster);
-            const auto joint = getJoint(cluster);
+            // const auto joint = getJoint(cluster);
 
-            u(cluster) = tau.segment(vel_idx, num_vel) - joint->S().transpose() * pA(cluster);
+            u(cluster) = tau.segment(vel_idx, num_vel) - motionSubspace(cluster).transpose() * pA(cluster);
             D_inv_u(cluster) = D_inv(cluster).solve(u(cluster));
 
             // Articulated body bias force recursion
@@ -129,7 +129,7 @@ namespace grbda
             const int vel_idx = velocityIndex(cluster);
             const int num_vel = numVelocities(cluster);
             const int parent_index = parentIndex(cluster);
-            const auto joint = getJoint(cluster);
+            // const auto joint = getJoint(cluster);
 
             DVec<double> a_temp;
             if (parent_index >= 0)
@@ -143,7 +143,7 @@ namespace grbda
                 a_temp = Xup(cluster).transformMotionVector(-gravity_) + velocityProduct(cluster);
             }
             qdd.segment(vel_idx, num_vel) = D_inv_u(cluster) - D_inv_UT(cluster) * a_temp;
-            acceleration(cluster) = a_temp + joint->S() * qdd.segment(vel_idx, num_vel);
+            acceleration(cluster) = a_temp + motionSubspace(cluster) * qdd.segment(vel_idx, num_vel);
         }
 #ifdef TIMING_STATS
         timing_statistics_.forward_pass2_time = timer_.getMs();
@@ -176,12 +176,13 @@ namespace grbda
         {
             NodeType &cluster = nodes_[i];
             const int parent_index = parentIndex(cluster);
-            const auto joint = getJoint(cluster);
+            // const auto joint = getJoint(cluster);
+            const DMat<double>& S = motionSubspace(cluster);
 #ifdef TIMING_STATS
             double start_time_D = timer_.getMs();
 #endif
-            U(cluster) = IA(cluster) * joint->S();
-            const DMat<double> D = joint->S().transpose() * U(cluster);
+            U(cluster) = IA(cluster) * S;
+            const DMat<double> D = S.transpose() * U(cluster);
             updateDinv(cluster, D);
             D_inv_UT(cluster) = D_inv(cluster).solve(U(cluster).transpose());
 #ifdef TIMING_STATS
@@ -239,9 +240,9 @@ namespace grbda
             NodeType &cluster = nodes_[j];
             const int vel_idx = velocityIndex(cluster);
             const int num_vel = numVelocities(cluster);
-            const auto joint = getJoint(cluster);
+            // const auto joint = getJoint(cluster);
 
-            const DVec<double> tmp = joint->S().transpose() * f;
+            const DVec<double> tmp = motionSubspace(cluster).transpose() * f;
             lambda_inv += tmp.dot(D_inv(cluster).solve(tmp));
 
             dstate_out += qddSubtree(cluster) * D_inv(cluster).solve(tmp);
@@ -263,9 +264,9 @@ namespace grbda
 
         for (NodeType &cluster : nodes_)
         {
-            const auto joint = getJoint(cluster);
+            // const auto joint = getJoint(cluster);
             const DMat<double> X = Xup(cluster).toMatrix();
-            ChiUp(cluster) = X - joint->S() * D_inv_UT(cluster) * X;
+            ChiUp(cluster) = X - motionSubspace(cluster) * D_inv_UT(cluster) * X;
         }
 
         force_propagators_updated_ = true;
@@ -283,12 +284,12 @@ namespace grbda
             const int vel_idx = velocityIndex(cluster);
             const int num_vel = numVelocities(cluster);
             const int parent_index = parentIndex(cluster);
-            const auto joint = getJoint(cluster);
+            // const auto joint = getJoint(cluster);
 
             qddSubtree(cluster).middleRows(vel_idx, num_vel).setIdentity();
 
             // Compute Psi
-            const DMat<double> S = joint->S();
+            const DMat<double> S = motionSubspace(cluster);
             const DMat<double> Psi =
                 S.transpose().completeOrthogonalDecomposition().pseudoInverse();
 
@@ -299,9 +300,9 @@ namespace grbda
             while (j > -1)
             {
                 NodeType &parent_cluster = nodes_[j];
-                const auto parent_joint = getJoint(parent_cluster);
+                // const auto parent_joint = getJoint(parent_cluster);
 
-                qddSubtree(parent_cluster).middleRows(vel_idx, num_vel) = F.transpose() * parent_joint->S();
+                qddSubtree(parent_cluster).middleRows(vel_idx, num_vel) = F.transpose() * motionSubspace(parent_cluster);
 
                 F = ChiUp(parent_cluster).transpose() * F;
                 j = parentIndex(parent_cluster);

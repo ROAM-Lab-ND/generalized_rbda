@@ -17,7 +17,7 @@ namespace grbda
 							  const CasadiHelperFunctions &IK_pos_helpers,
 							  const CasadiHelperFunctions &IK_vel_helpers);
 
-			std::shared_ptr<Base> clone() const override;
+			std::shared_ptr<Base> clone() const;
 
 			DVec<double> gamma(const JointCoordinate &joint_pos) const override;
 
@@ -36,7 +36,7 @@ namespace grbda
 	namespace GeneralizedJoints
 	{
 
-		class TelloDifferential : public Base
+		class TelloDifferential : public Base<TelloDifferential>
 		{
 		public:
 			TelloDifferential(Body &rotor_1, Body &rotor_2, Body &link_1, Body &link_2,
@@ -44,15 +44,15 @@ namespace grbda
 							  CoordinateAxis joint_axis_1, CoordinateAxis joint_axis_2);
 			virtual ~TelloDifferential() {}
 
-			void updateKinematics(const JointState &joint_state) override;
+			void updateKinematics(const JointState &joint_state);
 
 			void computeSpatialTransformFromParentToCurrentCluster(
-				GeneralizedSpatialTransform &Xup) const override;
+				GeneralizedSpatialTransform &Xup) const;
 
 			std::vector<std::tuple<Body, JointPtr, DMat<double>>>
-			bodiesJointsAndReflectedInertias() const override;
+			bodiesJointsAndReflectedInertias() const;
 
-			JointState randomJointState() const override;
+			JointState randomJointState() const;
 
 		protected:
 			std::shared_ptr<LoopConstraint::TelloDifferential> tello_constraint_;

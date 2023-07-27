@@ -4,7 +4,6 @@
 
 namespace grbda
 {
-
     template <size_t N>
     class RevolutePairChainWithRotor : public SerialChain
     {

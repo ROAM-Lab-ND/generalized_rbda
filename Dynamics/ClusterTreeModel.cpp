@@ -32,32 +32,6 @@ namespace grbda
         return body;
     }
 
-    // TODO(@MatthewChignoli): This function will eventually be templated on the type of joint
-    void ClusterTreeModel::appendRegisteredBodiesAsCluster(
-        const string name, shared_ptr<GeneralizedJoints::Base> joint)
-    {
-        const int parent_cluster_index =
-            getIndexOfParentClusterFromBodies(bodies_in_current_cluster_);
-        const int num_bodies_in_parent_cluster = getNumBodiesInCluster(parent_cluster_index);
-
-        const int cluster_index = (int)nodes_.size();
-        cluster_name_to_cluster_index_[name] = cluster_index;
-
-        ClusterTreeNode<> node(cluster_index, name, bodies_in_current_cluster_, joint,
-                               parent_cluster_index, num_bodies_in_parent_cluster,
-                               position_index_, velocity_index_);
-        nodes_.push_back(node);
-
-        checkValidParentClusterForBodiesInCluster(nodes_.back());
-
-        position_index_ += joint->numPositions();
-        velocity_index_ += joint->numVelocities();
-        unactuated_dofs_ += joint->numUnactuatedVelocities();
-
-        resizeSystemMatrices();
-        bodies_in_current_cluster_.clear();
-    }
-
     void ClusterTreeModel::print() const
     {
         printf("\nCluster Tree Model:\n");
@@ -173,13 +147,13 @@ namespace grbda
         int vel_idx = nq;
         for (size_t i(0); i < nodes().size(); i++)
         {
-            const auto &joint = getJoint(nodes()[i]);
+            const NodeType &cluster = nodes()[i];
 
-            const int &num_pos = joint->numPositions();
-            const int &num_vel = joint->numVelocities();
+            const int &num_pos = numPositions(cluster);
+            const int &num_vel = numVelocities(cluster);
 
-            JointState joint_state(joint->positionIsSpanning(),
-                                   joint->velocityIsSpanning());
+            JointState joint_state(positionIsSpanning(cluster),
+                                   velocityIsSpanning(cluster));
             joint_state.position = state.segment(pos_idx, num_pos);
             joint_state.velocity = state.segment(vel_idx, num_vel);
             model_state.push_back(joint_state);

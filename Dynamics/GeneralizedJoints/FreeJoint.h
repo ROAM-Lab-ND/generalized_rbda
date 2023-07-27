@@ -28,25 +28,25 @@ namespace grbda
     namespace GeneralizedJoints
     {
 
-        class Free : public Base
+        class Free : public Base<Free>
         {
         public:
             Free(const Body &body);
             virtual ~Free() {}
 
-            GeneralizedJointTypes type() const override { return GeneralizedJointTypes::Free; }
+            GeneralizedJointTypes type() const { return GeneralizedJointTypes::Free; }
 
-            int numUnactuatedVelocities() const override { return 6; }
+            int numUnactuatedVelocities() const { return 6; }
 
-            void updateKinematics(const JointState &joint_state) override;
+            void updateKinematics(const JointState &joint_state);
 
             void computeSpatialTransformFromParentToCurrentCluster(
-                GeneralizedSpatialTransform &Xup) const override;
+                GeneralizedSpatialTransform &Xup) const;
 
             std::vector<std::tuple<Body, JointPtr, DMat<double>>>
-            bodiesJointsAndReflectedInertias() const override;
+            bodiesJointsAndReflectedInertias() const;
 
-            JointState randomJointState() const override;
+            JointState randomJointState() const;
 
         private:
             const Body body_;

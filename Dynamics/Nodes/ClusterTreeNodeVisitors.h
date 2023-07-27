@@ -2,6 +2,7 @@
 
 #include <vector>
 #include <boost/variant.hpp>
+#include <type_traits>
 
 #include "Dynamics/Body.h"
 #include "Dynamics/GeneralizedJoints/GeneralizedJointTypes.h"
@@ -104,26 +105,207 @@ namespace grbda
             UpdateArticulatedBiasForceVisitor<NodeType>::run(node);
         }
 
+        // TODO(@MatthewChignoli): Should probably return a reference...
         // TODO(@MatthewChignoli): This should be templated on multiple things? Because the return type is different for different node types
+
+        // TODO(@MatthewChignoli): I don't think we will be able to access the joint directly... that sucks
+        // template <typename NodeType>
+        // struct JointVisitor : public boost::static_visitor<auto>
+        // {
+        //     template <typename T>
+        //     typename T::GenJointType operator()(T &node) const
+        //     {
+        //         return node.joint_;
+        //     }
+
+        //     static auto run(NodeType &node)
+        //     {
+        //         return boost::apply_visitor(JointVisitor(), node);
+        //     }
+        // };
+
+        // template <typename NodeType>
+        // inline auto getJoint(NodeType &node)
+        // {
+        //     return JointVisitor<NodeType>::run(node);
+        // }
+
         template <typename NodeType>
-        struct JointVisitor : public boost::static_visitor<std::shared_ptr<GeneralizedJoints::Base>>
+        struct PositionIsSpanningVisitor : public boost::static_visitor<bool>
         {
             template <typename T>
-            std::shared_ptr<GeneralizedJoints::Base> operator()(T &node) const
+            bool operator()(const T &node) const
             {
-                return node.joint_;
+                return node.joint_.positionIsSpanning();
             }
 
-            static std::shared_ptr<GeneralizedJoints::Base> run(NodeType &node)
+            static bool run(const NodeType &node)
             {
-                return boost::apply_visitor(JointVisitor(), node);
+                return boost::apply_visitor(PositionIsSpanningVisitor(), node);
             }
         };
 
         template <typename NodeType>
-        inline std::shared_ptr<GeneralizedJoints::Base> getJoint(NodeType &node)
+        inline bool positionIsSpanning(const NodeType &node)
         {
-            return JointVisitor<NodeType>::run(node);
+            return PositionIsSpanningVisitor<NodeType>::run(node);
+        }
+
+        template <typename NodeType>
+        struct VelocityIsSpanningVisitor : public boost::static_visitor<bool>
+        {
+            template <typename T>
+            bool operator()(const T &node) const
+            {
+                return node.joint_.velocityIsSpanning();
+            }
+
+            static bool run(const NodeType &node)
+            {
+                return boost::apply_visitor(VelocityIsSpanningVisitor(), node);
+            }
+        };
+
+        template <typename NodeType>
+        inline bool velocityIsSpanning(const NodeType &node)
+        {
+            return VelocityIsSpanningVisitor<NodeType>::run(node);
+        }
+
+        template <typename NodeType>
+        struct CloneLoopConstraintVisitor
+            : public boost::static_visitor<std::shared_ptr<LoopConstraint::Base>>
+        {
+            template <typename T>
+            std::shared_ptr<LoopConstraint::Base> operator()(const T &node) const
+            {
+                return node.joint_.cloneLoopConstraint();
+            }
+
+            static std::shared_ptr<LoopConstraint::Base> run(const NodeType &node)
+            {
+                return boost::apply_visitor(CloneLoopConstraintVisitor(), node);
+            }
+        };
+
+        template <typename NodeType>
+        inline std::shared_ptr<LoopConstraint::Base> cloneLoopConstraint(const NodeType &node)
+        {
+            return CloneLoopConstraintVisitor<NodeType>::run(node);
+        }
+
+        template <typename NodeType>
+        struct SpanningToIndependentVisitor : public boost::static_visitor<const DMat<double> &>
+        {
+            template <typename T>
+            const DMat<double> &operator()(const T &node) const
+            {
+                return node.joint_.spanningTreeToIndependentCoordsConversion();
+            }
+
+            static const DMat<double> &run(const NodeType &node)
+            {
+                return boost::apply_visitor(SpanningToIndependentVisitor(), node);
+            }
+        };
+
+        template <typename NodeType>
+        inline const DMat<double> &spanningToIndependent(const NodeType &node)
+        {
+            return SpanningToIndependentVisitor<NodeType>::run(node);
+        }
+
+        template <typename NodeType>
+        struct RandomJointStateVisitor : public boost::static_visitor<JointState>
+        {
+            template <typename T>
+            JointState operator()(const T &node) const
+            {
+                return node.joint_.randomJointState();
+            }
+
+            static JointState run(const NodeType &node)
+            {
+                return boost::apply_visitor(RandomJointStateVisitor(), node);
+            }
+        };
+
+        template <typename NodeType>
+        inline JointState randomJointState(const NodeType &node)
+        {
+            return RandomJointStateVisitor<NodeType>::run(node);
+        }
+
+        template <typename NodeType>
+        struct ToSpanningTreStateVisitor : public boost::static_visitor<JointState>
+        {
+            const JointState &joint_state_;
+
+            ToSpanningTreStateVisitor(const JointState &joint_state) : joint_state_(joint_state) {}
+
+            template <typename T>
+            JointState operator()(T &node) const
+            {
+                return node.joint_.toSpanningTreeState(joint_state_);
+            }
+
+            static JointState run(NodeType &node, const JointState &joint_state)
+            {
+                return boost::apply_visitor(ToSpanningTreStateVisitor(joint_state), node);
+            }
+        };
+
+        template <typename NodeType>
+        inline JointState toSpanningTreeState(NodeType &node, const JointState &joint_state)
+        {
+            return ToSpanningTreStateVisitor<NodeType>::run(node, joint_state);
+        }
+
+        template <typename NodeType>
+        struct UpdateJointKinematicsVisitor : public boost::static_visitor<>
+        {
+            const JointState &joint_state_;
+
+            UpdateJointKinematicsVisitor(const JointState &joint_state)
+                : joint_state_(joint_state) {}
+
+            template <typename T>
+            void operator()(T &node) const
+            {
+                node.joint_.updateKinematics(joint_state_);
+            }
+
+            static void run(NodeType &node, const JointState &joint_state)
+            {
+                boost::apply_visitor(UpdateJointKinematicsVisitor(joint_state), node);
+            }
+        };
+
+        template <typename NodeType>
+        inline void updateJointKinematics(NodeType &node, const JointState &joint_state)
+        {
+            UpdateJointKinematicsVisitor<NodeType>::run(node, joint_state);
+        }
+
+        template <typename NodeType>
+        struct GetJointTypeVisitor : public boost::static_visitor<GeneralizedJointTypes>
+        {
+            template <typename T>
+            GeneralizedJointTypes operator()(const T &node) const
+            {
+                return node.joint_.type();
+            }
+
+            static GeneralizedJointTypes run(const NodeType &node)
+            {
+                return boost::apply_visitor(GetJointTypeVisitor(), node);
+            }
+        };
+
+        template <typename NodeType>
+        inline GeneralizedJointTypes getJointType(const NodeType &node)
+        {
+            return GetJointTypeVisitor<NodeType>::run(node);
         }
 
         template <typename NodeType>
@@ -323,7 +505,7 @@ namespace grbda
             template <typename T>
             void operator()(T &node) const
             {
-                node.IA_= node.I_;
+                node.IA_ = node.I_;
             }
 
             static void run(NodeType &node)
@@ -341,9 +523,9 @@ namespace grbda
         template <typename NodeType>
         struct UpdateDinvVisitor : public boost::static_visitor<>
         {
-            const DMat<double>& D_;
+            const DMat<double> &D_;
 
-            UpdateDinvVisitor(const DMat<double>& D) : D_(D) {}
+            UpdateDinvVisitor(const DMat<double> &D) : D_(D) {}
 
             template <typename T>
             void operator()(T &node) const
@@ -351,14 +533,14 @@ namespace grbda
                 node.updateDinv(D_);
             }
 
-            static void run(NodeType &node, const DMat<double>& D)
+            static void run(NodeType &node, const DMat<double> &D)
             {
                 boost::apply_visitor(UpdateDinvVisitor(D), node);
             }
         };
 
         template <typename NodeType>
-        inline void updateDinv(NodeType &node, const DMat<double>& D)
+        inline void updateDinv(NodeType &node, const DMat<double> &D)
         {
             UpdateDinvVisitor<NodeType>::run(node, D);
         }
@@ -413,8 +595,8 @@ namespace grbda
         template <typename NodeType>
         struct IntegratePositionVisitor : public boost::static_visitor<JointCoordinate>
         {
-            const JointState& joint_state_;
-            const double& dt_;
+            const JointState &joint_state_;
+            const double &dt_;
 
             IntegratePositionVisitor(const JointState &joint_state, const double &dt)
                 : joint_state_(joint_state), dt_(dt) {}
@@ -436,7 +618,6 @@ namespace grbda
         {
             return IntegratePositionVisitor<NodeType>::run(node, joint_state, dt);
         }
-
 
     }
 

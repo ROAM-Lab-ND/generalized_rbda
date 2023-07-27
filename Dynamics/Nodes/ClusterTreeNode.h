@@ -8,20 +8,20 @@ namespace grbda
 
     // TODO(@MatthewChignoli): We will need to provide the generalized joint type as a template to this class
 
-    template <typename GenJointType = GeneralizedJoints::Base>
-    struct ClusterTreeNode : TreeNode<ClusterTreeNode<>>
+    template <typename GenJointType>
+    struct ClusterTreeNode : TreeNode<ClusterTreeNode<GenJointType>>
     {
         EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
         ClusterTreeNode(int index, std::string name, std::vector<Body> &bodies,
-                        std::shared_ptr<GenJointType> joint, int parent_index,
-                        int num_parent_bodies, int position_index, int velocity_index);
+                        GenJointType joint, int parent_index, int num_parent_bodies,
+                        int position_index, int velocity_index);
 
         void updateKinematics();
         void updateDinv(const DMat<double> &D);
-        const DVec<double> &vJ() const { return joint_->vJ(); }
-        const DMat<double> &S() const { return joint_->S(); }
-        const DMat<double> &S_ring() const { return joint_->S_ring(); }
+        const DVec<double> &vJ() const { return joint_.vJ(); }
+        const DMat<double> &S() const { return joint_.S(); }
+        const DMat<double> &S_ring() const { return joint_.S_ring(); }
 
         // ISSUE #14
         // TODO(@MatthewChignoli): Should this actually be a virtual function in TreeNode.h?
@@ -33,7 +33,7 @@ namespace grbda
             }
             else if (joint_state.position.isSpanning())
             {
-                joint_state.position += joint_->G() * joint_state.velocity * dt;
+                joint_state.position += joint_.G() * joint_state.velocity * dt;
             }
             else if (joint_state.velocity.isSpanning())
             {
@@ -58,7 +58,7 @@ namespace grbda
         std::vector<std::tuple<Body, JointPtr, DMat<double>>> bodiesJointsAndReflectedInertias() const;
 
         const std::vector<Body> bodies_;
-        std::shared_ptr<GenJointType> joint_;
+        GenJointType joint_;
 
         // Featherstone quantities
         DMat<double> IA_;                                // articulated body inertia

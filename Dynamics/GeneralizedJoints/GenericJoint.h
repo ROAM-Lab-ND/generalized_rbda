@@ -1,43 +1,43 @@
-#pragma once
+// #pragma once
 
-#include "GeneralizedJoint.h"
+// #include "GeneralizedJoint.h"
 
-namespace grbda
-{
-    // TODO(@MatthewChignoli): This class is not unit tested at the moment
+// namespace grbda
+// {
+//     // TODO(@MatthewChignoli): This class is not unit tested at the moment
 
-    // TODO(@MatthewChignoli): Add a unit test that compares generic joint versions to specialized versions. For example, compare revolute pair with rotor as a generic joint to the specialized joint class.
+//     // TODO(@MatthewChignoli): Add a unit test that compares generic joint versions to specialized versions. For example, compare revolute pair with rotor as a generic joint to the specialized joint class.
 
-    namespace GeneralizedJoints
-    {
+//     namespace GeneralizedJoints
+//     {
 
-        class Generic : public Base
-        {
-        public:
-            Generic(const std::vector<Body> &bodies, const std::vector<JointPtr> &joints,
-                    const shared_ptr<const LoopConstraint::Base> &loop_constraint);
+//         class Generic : public Base<Generic>
+//         {
+//         public:
+//             Generic(const std::vector<Body> &bodies, const std::vector<JointPtr> &joints,
+//                     const shared_ptr<const LoopConstraint::Base> &loop_constraint);
 
-            GeneralizedJointTypes type() const override { return GeneralizedJointTypes::Generic; }
+//             GeneralizedJointTypes type() const { return GeneralizedJointTypes::Generic; }
 
-            void updateKinematics(const JointState &joint_state) override;
+//             void updateKinematics(const JointState &joint_state);
                                   
-            void computeSpatialTransformFromParentToCurrentCluster(
-                GeneralizedSpatialTransform &Xup) const override;
+//             void computeSpatialTransformFromParentToCurrentCluster(
+//                 GeneralizedSpatialTransform &Xup) const;
 
-        private:
-            void extractConnectivity();
+//         private:
+//             void extractConnectivity();
 
-            bool bodyInCurrentCluster(const int body_index) const;
-            const Body &getBody(const int body_index) const;
+//             bool bodyInCurrentCluster(const int body_index) const;
+//             const Body &getBody(const int body_index) const;
 
-            const std::vector<Body> bodies_;
+//             const std::vector<Body> bodies_;
 
-            DMat<double> S_spanning_tree_;
-            DMat<double> Xup_spanning_tree_;
-            DMat<double> Xup_ring_spanning_tree_;
-            DMat<bool> connectivity_;
-        };
+//             DMat<double> S_spanning_tree_;
+//             DMat<double> Xup_spanning_tree_;
+//             DMat<double> Xup_ring_spanning_tree_;
+//             DMat<bool> connectivity_;
+//         };
 
-    }
+//     }
 
-} // namespace grbda
+// } // namespace grbda

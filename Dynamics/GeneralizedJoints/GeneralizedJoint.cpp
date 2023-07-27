@@ -1,4 +1,5 @@
-#include "GeneralizedJoint.h"
+// #include "GeneralizedJoint.h"
+#include "GeneralizedJointTypes.h"
 
 namespace grbda
 {
@@ -6,8 +7,9 @@ namespace grbda
     namespace GeneralizedJoints
     {
 
-        Base::Base(int num_bodies, int num_positions, int num_velocities,
-                   bool position_is_spanning, bool velocity_is_spanning)
+        template <typename Derived>
+        Base<Derived>::Base(int num_bodies, int num_positions, int num_velocities,
+                            bool position_is_spanning, bool velocity_is_spanning)
             : num_bodies_(num_bodies),
               num_positions_(num_positions),
               num_velocities_(num_velocities),
@@ -21,7 +23,8 @@ namespace grbda
             vJ_ = DVec<double>::Zero(motion_subspace_dimension);
         }
 
-        JointState Base::toSpanningTreeState(const JointState &joint_state)
+        template <typename Derived>
+        JointState Base<Derived>::toSpanningTreeState(const JointState &joint_state)
         {
             JointState spanning_joint_state(true, true);
 
@@ -48,7 +51,8 @@ namespace grbda
             return spanning_joint_state;
         }
 
-        JointState Base::randomJointState() const
+        template <typename Derived>
+        JointState Base<Derived>::randomJointState() const
         {
             JointState joint_state(position_is_spanning_, velocity_is_spanning_);
             joint_state.position = DVec<double>::Random(numPositions());
@@ -56,6 +60,15 @@ namespace grbda
             return joint_state;
         }
 
+        template class Base<Free>;
+        template class Base<Revolute>;
+        template class Base<RevolutePair>;
+        template class Base<RevolutePairWithRotor>;
+        template class Base<RevoluteTripleWithRotor>;
+        template class Base<RevoluteWithMultipleRotorsJoint>;
+        template class Base<RevoluteWithRotor>;
+        template class Base<TelloDifferential>;
+        // template class Base<TelloKneeAnkleDifferential>;
     }
 
 } // namespace grbda

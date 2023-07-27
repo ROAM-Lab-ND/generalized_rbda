@@ -32,7 +32,7 @@ namespace grbda
 	    }
 	    virtual ~TelloHipDifferential() {}
 
-	    GeneralizedJointTypes type() const override { return GeneralizedJointTypes::TelloHipDifferential; }
+	    GeneralizedJointTypes type() const { return GeneralizedJointTypes::TelloHipDifferential; }
 
 	};
 

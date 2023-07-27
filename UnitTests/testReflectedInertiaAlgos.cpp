@@ -24,9 +24,9 @@ protected:
         ModelState model_state;
         independent_joint_pos_ = DVec<double>::Zero(0);
         independent_joint_vel_ = DVec<double>::Zero(0);
-        for (const ClusterTreeModel::NodeType &cluster : cluster_model.nodes())
+        for (ClusterTreeModel::NodeType &cluster : cluster_model.nodes())
         {
-            JointState joint_state = getJoint(cluster)->randomJointState();
+            JointState joint_state = randomJointState(cluster);
 
             if (joint_state.position.isSpanning() || joint_state.velocity.isSpanning())
                 throw std::runtime_error("Initializing reflected inertia model requires all independent coordinates");
@@ -47,7 +47,7 @@ protected:
 
         // Check for NaNs
         bool nan_detected = false;
-        for (const ClusterTreeModel::NodeType &cluster : cluster_model.nodes())
+        for (ClusterTreeModel::NodeType &cluster : cluster_model.nodes())
         {
             if (getJointState(cluster).position.hasNaN())
             {

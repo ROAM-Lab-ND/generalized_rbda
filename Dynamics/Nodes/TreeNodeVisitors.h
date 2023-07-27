@@ -448,6 +448,27 @@ namespace grbda
     }
 
     template <typename NodeType>
+    struct MotionSubspaceRingVisitor : public boost::static_visitor<const DMat<double> &>
+    {
+        template <typename T>
+        const DMat<double> &operator()(T &node) const
+        {
+            return node.S_ring();
+        }
+
+        static const DMat<double> &run(NodeType &node)
+        {
+            return boost::apply_visitor(MotionSubspaceRingVisitor(), node);
+        }
+    };
+
+    template <typename NodeType>
+    inline const DMat<double> &motionSubspaceRing(NodeType &node)
+    {
+        return MotionSubspaceRingVisitor<NodeType>::run(node);
+    }
+
+    template <typename NodeType>
     struct XupVisitor : public boost::static_visitor<const GeneralizedSpatialTransform &>
     {
         template <typename T>

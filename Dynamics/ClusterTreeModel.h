@@ -128,8 +128,33 @@ namespace grbda
 
         Body registerBody(const string name, const SpatialInertia<double> inertia,
                           const string parent_name, const SpatialTransform Xtree);
-        void appendRegisteredBodiesAsCluster(const string name,
-                                             shared_ptr<GeneralizedJoints::Base> joint);
+
+        // TODO(@MatthewChignoli): Move to cpp? But then we need explicit instantiation...
+        template <typename GenJointType>
+        void appendRegisteredBodiesAsCluster(const string name, GenJointType joint)
+        {
+            const int parent_cluster_index =
+                getIndexOfParentClusterFromBodies(bodies_in_current_cluster_);
+            const int num_bodies_in_parent_cluster = getNumBodiesInCluster(parent_cluster_index);
+
+            const int cluster_index = (int)nodes_.size();
+            cluster_name_to_cluster_index_[name] = cluster_index;
+
+            ClusterTreeNode<GenJointType> node(cluster_index, name, bodies_in_current_cluster_, joint,
+                                               parent_cluster_index, num_bodies_in_parent_cluster,
+                                               position_index_, velocity_index_);
+            nodes_.push_back(node);
+
+            checkValidParentClusterForBodiesInCluster(nodes_.back());
+
+            position_index_ += joint.numPositions();
+            velocity_index_ += joint.numVelocities();
+            unactuated_dofs_ += joint.numUnactuatedVelocities();
+
+            resizeSystemMatrices();
+            bodies_in_current_cluster_.clear();
+        }
+
         void appendContactPoint(const string body_name,
                                 const Vec3<double> &local_offset,
                                 const string contact_point_name);

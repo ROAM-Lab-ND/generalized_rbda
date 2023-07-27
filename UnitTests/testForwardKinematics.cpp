@@ -21,10 +21,10 @@ protected:
         model_state.clear();
         DVec<double> spanning_joint_pos = DVec<double>::Zero(0);
         DVec<double> spanning_joint_vel = DVec<double>::Zero(0);
-        for (const ClusterTreeModel::NodeType &cluster : cluster_model.nodes())
+        for (ClusterTreeModel::NodeType &cluster : cluster_model.nodes())
         {
-            JointState joint_state = getJoint(cluster)->randomJointState();
-            JointState spanning_joint_state = getJoint(cluster)->toSpanningTreeState(joint_state);
+            JointState joint_state = randomJointState(cluster);
+            JointState spanning_joint_state = toSpanningTreeState(cluster, joint_state);
 
             spanning_joint_pos = appendEigenVector(spanning_joint_pos,
                                                    spanning_joint_state.position);
@@ -38,7 +38,7 @@ protected:
 
         // Check for NaNs
         bool nan_detected = false;
-        for (const ClusterTreeModel::NodeType &cluster : cluster_model.nodes())
+        for (ClusterTreeModel::NodeType &cluster : cluster_model.nodes())
         {
             if (getJointState(cluster).position.hasNaN())
             {
@@ -173,9 +173,9 @@ TYPED_TEST(RigidBodyKinemaitcsTest, MotionSubspaceApparentDerivative)
         }
         this->cluster_model.forwardKinematics();
 
-        for (const ClusterTreeModel::NodeType &cluster : this->cluster_model.nodes())
+        for (ClusterTreeModel::NodeType &cluster : this->cluster_model.nodes())
         {
-            auto joint = getJoint(cluster);
+            // auto joint = getJoint(cluster);
             JointState joint_state = getJointState(cluster);
 
             // ISSUE #14
@@ -184,19 +184,19 @@ TYPED_TEST(RigidBodyKinemaitcsTest, MotionSubspaceApparentDerivative)
                 continue;
             }
 
-            DMat<double> S_ring = joint->S_ring();
+            DMat<double> S_ring = motionSubspaceRing(cluster);
 
             JointState q_plus_joint_state = joint_state;
             q_plus_joint_state.position = integratePosition(cluster, joint_state, dt);
             q_plus_joint_state.velocity = joint_state.velocity;
-            joint->updateKinematics(q_plus_joint_state);
-            DMat<double> S_plus = joint->S();
+            updateJointKinematics(cluster, q_plus_joint_state);
+            DMat<double> S_plus = motionSubspace(cluster);
 
             JointState q_minus_joint_state = joint_state;
             q_minus_joint_state.position = integratePosition(cluster, joint_state, -dt);
             q_minus_joint_state.velocity = joint_state.velocity;
-            joint->updateKinematics(q_minus_joint_state);
-            DMat<double> S_minus = joint->S();
+            updateJointKinematics(cluster, q_minus_joint_state);
+            DMat<double> S_minus = motionSubspace(cluster);
 
             DMat<double> S_ring_fd = (S_plus - S_minus) / (2 * dt);
 

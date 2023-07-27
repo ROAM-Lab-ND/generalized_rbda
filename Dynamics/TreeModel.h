@@ -28,7 +28,16 @@ namespace grbda
     template <>
     struct BaseTraits<ClusterTreeModel>
     {
-        typedef boost::variant<ClusterTreeNode<>> NodeType;
+        typedef boost::variant<ClusterTreeNode<GeneralizedJoints::Free>,
+                               ClusterTreeNode<GeneralizedJoints::Revolute>,
+                               ClusterTreeNode<GeneralizedJoints::RevolutePair>,
+                               ClusterTreeNode<GeneralizedJoints::RevolutePairWithRotor>,
+                               ClusterTreeNode<GeneralizedJoints::RevoluteTripleWithRotor>,
+                               ClusterTreeNode<GeneralizedJoints::RevoluteWithRotor>,
+                               ClusterTreeNode<GeneralizedJoints::RevoluteWithMultipleRotorsJoint>,
+                               ClusterTreeNode<GeneralizedJoints::TelloHipDifferential>,
+                               ClusterTreeNode<GeneralizedJoints::TelloKneeAnkleDifferential>>
+            NodeType;
     };
 
     template <>
@@ -87,6 +96,7 @@ namespace grbda
             return derived().applyLocalFrameTestForceAtContactPoint(force, contact_point_name, dstate_out);
         }
 
+        std::vector<NodeType> &nodes() { return nodes_; }
         const std::vector<NodeType> &nodes() const { return nodes_; }
         const std::vector<ContactPoint> &contactPoints() const { return contact_points_; }
         const ContactPoint &contactPoint(const int index) const { return contact_points_[index]; }

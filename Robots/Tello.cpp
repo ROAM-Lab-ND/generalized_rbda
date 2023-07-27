@@ -2,6 +2,7 @@
 
 namespace grbda
 {
+    using namespace GeneralizedJoints;
 
     ClusterTreeModel Tello::buildClusterTreeModel() const
     {
@@ -17,7 +18,7 @@ namespace grbda
             torso_CoM, torso_inertia};
         auto torso = model.registerBody(torso_name, torso_spatial_inertia, torso_parent_name,
                                         SpatialTransform{});
-        auto torso_generalized_joint = std::make_shared<GeneralizedJoints::Free>(torso);
+        Free torso_generalized_joint(torso);
         model.appendRegisteredBodiesAsCluster(torso_name, torso_generalized_joint);
 
         std::vector<std::string> sides = {"left","right"};
@@ -58,7 +59,7 @@ namespace grbda
             // Hip clamp cluster
             const std::string hip_clamp_cluster_name = side + "-hip-clamp";
             const int gear_ratio = 1;
-            auto hip_clamp_generalized_joint = std::make_shared<GeneralizedJoints::RevoluteWithRotor>(
+            RevoluteWithRotor hip_clamp_generalized_joint(
                 hip_clamp, hip_clamp_rotor, CoordinateAxis::Z, CoordinateAxis::Z, gear_ratio);
             model.appendRegisteredBodiesAsCluster(hip_clamp_cluster_name, hip_clamp_generalized_joint);
 
@@ -112,7 +113,7 @@ namespace grbda
 
             // Hip differential cluster
             const std::string hip_differential_cluster_name = side + "-hip-differential";
-            auto hip_differential_generalized_joint = std::make_shared<GeneralizedJoints::TelloHipDifferential>(
+            TelloHipDifferential hip_differential_generalized_joint(
                 hip_rotor_1, hip_rotor_2, gimbal, thigh, CoordinateAxis::Z, CoordinateAxis::Z,
                 CoordinateAxis::X, CoordinateAxis::Y);
             model.appendRegisteredBodiesAsCluster(hip_differential_cluster_name,
@@ -172,7 +173,7 @@ namespace grbda
 
             // Hip differential cluster
             const std::string knee_ankle_differential_cluster_name = side + "-knee-ankle-differential";
-            auto knee_ankle_differential_generalized_joint = std::make_shared<GeneralizedJoints::TelloKneeAnkleDifferential>(
+            TelloKneeAnkleDifferential knee_ankle_differential_generalized_joint(
                 knee_ankle_rotor_1, knee_ankle_rotor_2, shin, foot,
                 CoordinateAxis::Z, CoordinateAxis::Z, CoordinateAxis::Y, CoordinateAxis::Y);
             model.appendRegisteredBodiesAsCluster(knee_ankle_differential_cluster_name,

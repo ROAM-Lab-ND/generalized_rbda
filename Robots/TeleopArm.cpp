@@ -2,6 +2,7 @@
 
 namespace grbda
 {
+    using namespace GeneralizedJoints;
 
     ClusterTreeModel TeleopArm::buildClusterTreeModel() const
     {
@@ -21,11 +22,10 @@ namespace grbda
                                              base_rotor_parent_name_, base_rotor_Xtree);
 
         // Base Cluster
-        auto base_cluster_generalized_joint =
-            std::make_shared<GeneralizedJoints::RevoluteWithRotor>(base, base_rotor,
-                                                                   CoordinateAxis::Z,
-                                                                   CoordinateAxis::Z,
-                                                                   base_rotor_gear_ratio_);
+        RevoluteWithRotor base_cluster_generalized_joint(base, base_rotor,
+                                                         CoordinateAxis::Z,
+                                                         CoordinateAxis::Z,
+                                                         base_rotor_gear_ratio_);
 
         model.appendRegisteredBodiesAsCluster(base_cluster_name_, base_cluster_generalized_joint);
 
@@ -44,10 +44,10 @@ namespace grbda
                                                     shoulder_rx_rotor_Xtree);
 
         // Shoulder Rx Cluster
-        auto shoulder_rx_cluster_generalized_joint =
-            std::make_shared<GeneralizedJoints::RevoluteWithRotor>(
-                shoulder_rx_link, shoulder_rx_rotor, CoordinateAxis::X, CoordinateAxis::X,
-                shoulder_rx_rotor_gear_ratio_);
+        RevoluteWithRotor shoulder_rx_cluster_generalized_joint(shoulder_rx_link, shoulder_rx_rotor,
+                                                                CoordinateAxis::X,
+                                                                CoordinateAxis::X,
+                                                                shoulder_rx_rotor_gear_ratio_);
 
         model.appendRegisteredBodiesAsCluster(shoulder_rx_cluster_name_,
                                               shoulder_rx_cluster_generalized_joint);
@@ -67,10 +67,11 @@ namespace grbda
                                                     shoulder_ry_rotor_Xtree);
 
         // Shoulder Ry Cluster
-        auto shoulder_ry_cluster_generalized_joint =
-            std::make_shared<GeneralizedJoints::RevoluteWithRotor>(
-                shoulder_ry_link, shoulder_ry_rotor, CoordinateAxis::X, CoordinateAxis::X,
-                shoulder_ry_rotor_gear_ratio_);
+        RevoluteWithRotor shoulder_ry_cluster_generalized_joint(shoulder_ry_link,
+                                                                shoulder_ry_rotor,
+                                                                CoordinateAxis::X, 
+                                                                CoordinateAxis::X,
+                                                                shoulder_ry_rotor_gear_ratio_);
 
         model.appendRegisteredBodiesAsCluster(shoulder_ry_cluster_name_,
                                               shoulder_ry_cluster_generalized_joint);
@@ -133,8 +134,7 @@ namespace grbda
                                         wrist_roll_rotor_gear_ratio_,
                                         wrist_roll_rotor_belt_ratio_});
 
-        auto upper_arm_cluster_generalized_joint =
-            std::make_shared<GeneralizedJoints::RevoluteTripleWithRotor>(triple_joint_modules);
+        RevoluteTripleWithRotor upper_arm_cluster_generalized_joint(triple_joint_modules);
 
         model.appendRegisteredBodiesAsCluster(upper_arm_cluster_name_,
                                               upper_arm_cluster_generalized_joint);
@@ -150,8 +150,9 @@ namespace grbda
                                                 gripper_rotor_parent_name_, gripper_rotor_Xtree);
 
         // Gripper Cluster
-        auto gripper_cluster_generalized_joint = std::make_shared<GeneralizedJoints::RevoluteWithRotor>(
-            gripper, gripper_rotor, CoordinateAxis::X, CoordinateAxis::X, gripper_rotor_gear_ratio_);
+        RevoluteWithRotor gripper_cluster_generalized_joint(gripper, gripper_rotor,
+                                                            CoordinateAxis::X, CoordinateAxis::X,
+                                                            gripper_rotor_gear_ratio_);
 
         model.appendRegisteredBodiesAsCluster(gripper_cluster_name_,
                                               gripper_cluster_generalized_joint);
