@@ -9,6 +9,7 @@ namespace grbda
 
     using namespace ori;
     using namespace spatial;
+    using namespace ClusterNodeVisitors;
 
     void ClusterTreeModel::contactJacobians()
     {

@@ -5,6 +5,7 @@
 #include "Robots/RobotTypes.h"
 
 using namespace grbda;
+using namespace grbda::ClusterNodeVisitors;
 
 static const double tol = 1e-10;
 

@@ -2,6 +2,7 @@
 
 #include "ClusterTreeModel.h"
 #include "Dynamics/Nodes/ReflectedInertiaTreeNode.h"
+#include "Dynamics/Nodes/ReflectedInertiaTreeNodeVisitors.h"
 
 namespace grbda
 {
@@ -19,6 +20,7 @@ namespace grbda
         EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
         typedef TreeModel<ReflectedInertiaTreeModel>::NodeType NodeType;
+        typedef TreeModel<ReflectedInertiaTreeModel>::NodeTypeVariants NodeTypeVariants;
 
         ReflectedInertiaTreeModel(const ClusterTreeModel &cluster_tree_model,
                                   bool use_off_diagonal_terms = true);
@@ -39,10 +41,12 @@ namespace grbda
 
         /////////////////////////////////////
 
-        int getNumBodies() const { return (int)nodes_.size(); }
+        int getNumBodies() const { return (int)nodes_variants_.size(); }
 
         const Body &getBody(int spanning_tree_index) const;
         NodeType& getNodeContainingBody(int spanning_tree_index);
+        NodeTypeVariants &getNodeVariantContainingBody(int spanning_tree_index);
+
         int getIndexOfParentNodeForBody(const int spanning_tree_index);
 
         const DVec<int> &getIndependentCoordinateIndices() const { return independent_coord_indices_; }

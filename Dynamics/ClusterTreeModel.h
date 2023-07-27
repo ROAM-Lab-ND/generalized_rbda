@@ -18,7 +18,6 @@ namespace grbda
     using namespace std;
     using namespace ori;
     using namespace spatial;
-    using namespace ClusterNodeVisitors;
 
 #ifdef TIMING_STATS
     struct ClusterTreeTimingStatistics

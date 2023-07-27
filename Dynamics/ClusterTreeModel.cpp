@@ -9,6 +9,7 @@ namespace grbda
 
     using namespace ori;
     using namespace spatial;
+    using namespace ClusterNodeVisitors;
 
     Body ClusterTreeModel::registerBody(const string name, const SpatialInertia<double> inertia,
                                         const string parent_name, const SpatialTransform Xtree)

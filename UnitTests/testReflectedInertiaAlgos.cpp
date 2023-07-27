@@ -6,6 +6,7 @@
 #include "Utils/Utilities/Timer.h"
 
 using namespace grbda;
+using namespace grbda::ClusterNodeVisitors;
 
 static const double tol = 1e-5;
 
@@ -117,9 +118,9 @@ TYPED_TEST(ReflectedInertiaDynamicsAlgosTest, ForwardKinematics)
 
         DVec<double> v_links = DVec<double>::Zero(6 * this->reflected_inertia_model.getNumBodies());
         i = 0;
-        for (const ReflectedInertiaTreeNode &node : this->reflected_inertia_model.nodes())
+        for (const ReflectedInertiaTreeModel::NodeTypeVariants &node : this->reflected_inertia_model.nodeVariants())
         {
-            v_links.segment<6>(i) = node.v_;
+            v_links.segment<6>(i) = velocity(node);
             i += 6;
         }
 

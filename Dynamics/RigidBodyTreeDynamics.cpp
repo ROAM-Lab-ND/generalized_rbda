@@ -13,25 +13,25 @@ namespace grbda
             D6Mat<double> J_spanning = D6Mat<double>::Zero(6, getNumDegreesOfFreedom());
 
             const size_t &i = cp.body_index_;
-            const NodeType& node_i = getNodeContainingBody(i);
-            const SpatialTransform& Xa = node_i.Xa_[0];
-            const Mat3<double> R_link_to_world = Xa.getRotation().transpose();
+            const NodeTypeVariants& node_i = getNodeVariantContainingBody(i);
+            const SpatialTransform& X = Xa(node_i)[0];
+            const Mat3<double> R_link_to_world = X.getRotation().transpose();
             Mat6<double> Xout = createSXform(R_link_to_world, cp.local_offset_);
 
             int j = (int)i;
             while (j > -1)
             {
-                const NodeType& node_j = getNodeContainingBody(j);
-                const int &vel_idx = node_j.velocity_index_;
-                const int &num_vel = node_j.num_velocities_;
+                const NodeTypeVariants& node_j = getNodeVariantContainingBody(j);
+                const int &vel_idx = velocityIndex(node_j);
+                const int &num_vel = numVelocities(node_j);
 
-                const D6Mat<double> &S = node_j.S();
+                const D6Mat<double> &S = motionSubspace(node_j);
                 J_spanning.middleCols(vel_idx, num_vel) = Xout * S;
 
-                const Mat6<double> Xup = node_j.Xup_[0].toMatrix();
-                Xout = Xout * Xup;
+                const Mat6<double> Xup_j = Xup(node_j)[0].toMatrix();
+                Xout = Xout * Xup_j;
 
-                j = node_j.parent_index_;
+                j = parentIndex(node_j);
             }
 
             cp.jacobian_ = J_spanning * loop_constraints_.G();

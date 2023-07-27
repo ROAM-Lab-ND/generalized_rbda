@@ -1,6 +1,7 @@
 #pragma once
 
 #include "ClusterTreeModel.h"
+#include "Nodes/RigidBodyTreeNodeVisitors.h"
 #include "Factorization.h"
 #ifdef TIMING_STATS
 #include "Utils/Utilities/Timer.h"
@@ -63,6 +64,7 @@ namespace grbda
         EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
         typedef TreeModel<RigidBodyTreeModel>::NodeType NodeType;
+        typedef TreeModel<RigidBodyTreeModel>::NodeTypeVariants NodeTypeVariants;
 
         RigidBodyTreeModel(const ClusterTreeModel &cluster_tree_model,
                            const FwdDynMethod fd_method = FwdDynMethod::Projection);
@@ -93,11 +95,16 @@ namespace grbda
 
         /////////////////////////////////////
 
-        int getNumBodies() const { return (int)nodes_.size(); }
+        int getNumBodies() const { return (int)nodes_variants_.size(); }
 
         // TOOD(@MatthewChignoli): I don't really like these functions...
-        const Body &getBody(int index) const { return nodes_[index].body_; }
+        const Body &getBody(int index) const { return RigidBodyNodeVisitors::getBody(nodes_variants_[index]); }
         NodeType &getNodeContainingBody(int index) { return nodes_[index]; }
+        
+        NodeTypeVariants &getNodeVariantContainingBody(int index)
+        {
+            return nodes_variants_[index];
+        }
 
         void initializeState(const DVec<double> &q, const DVec<double> &qd);
 

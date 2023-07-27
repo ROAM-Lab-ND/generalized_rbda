@@ -301,6 +301,48 @@ namespace grbda
     }
 
     template <typename NodeTypeVariants>
+    struct PosIndexVisitor : public boost::static_visitor<int>
+    {
+        template <typename NodeType>
+        int operator()(const NodeType &node) const
+        {
+            return node.position_index_;
+        }
+
+        static int run(const NodeTypeVariants &node)
+        {
+            return boost::apply_visitor(PosIndexVisitor(), node);
+        }
+    };
+
+    template <typename NodeTypeVariants>
+    inline int positionIndex(NodeTypeVariants &node)
+    {
+        return PosIndexVisitor<NodeTypeVariants>::run(node);
+    }
+
+    template <typename NodeTypeVariants>
+    struct NumPositionsVisitor : public boost::static_visitor<int>
+    {
+        template <typename NodeType>
+        int operator()(const NodeType &node) const
+        {
+            return node.num_positions_;
+        }
+
+        static int run(const NodeTypeVariants &node)
+        {
+            return boost::apply_visitor(NumPositionsVisitor(), node);
+        }
+    };
+
+    template <typename NodeTypeVariants>
+    inline int numPositions(NodeTypeVariants &node)
+    {
+        return NumPositionsVisitor<NodeTypeVariants>::run(node);
+    }
+
+    template <typename NodeTypeVariants>
     struct VelIndexVisitor : public boost::static_visitor<int>
     {
         template <typename NodeType>

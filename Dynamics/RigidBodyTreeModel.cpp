@@ -2,6 +2,7 @@
 
 namespace grbda
 {
+    using namespace RigidBodyNodeVisitors;
 
     RigidBodyTreeModel::RigidBodyTreeModel(const ClusterTreeModel &cluster_tree_model,
                                            const FwdDynMethod fd_method)
@@ -15,16 +16,20 @@ namespace grbda
 
         if (forward_dynamics_method_ == FwdDynMethod::LagrangeMultiplierCustom)
         {
-            for (const NodeType &node : nodes_)
-            {
-                if (node.joint_->numVelocities() > 1)
-                {
-                    // ISSUE #14
-                    std::cout << "LagrangeMultiplierCustom is not supported for joints with more than 1 DOF. Switching to LagrangeMultiplierEigen." << std::endl;
-                    forward_dynamics_method_ = FwdDynMethod::LagrangeMultiplierEigen;
-                    break;
-                }
-            }
+
+            forward_dynamics_method_ = FwdDynMethod::LagrangeMultiplierEigen;
+            std::cout << "LagrangeMultiplierCustom is not currently supported. Switching to LagrangeMultiplierEigen." << std::endl;
+
+            // for (const NodeTypeVariants &node : nodes_variants_)
+            // {
+            //     if (getJoint(node)->numVelocities() > 1)
+            //     {
+            //         // ISSUE #14
+            //         std::cout << "LagrangeMultiplierCustom is not supported for joints with more than 1 DOF. Switching to LagrangeMultiplierEigen." << std::endl;
+            //         forward_dynamics_method_ = FwdDynMethod::LagrangeMultiplierEigen;
+            //         break;
+            //     }
+            // }
         }
     }
 
@@ -34,12 +39,13 @@ namespace grbda
         int body_index = 0;
         for (const ClusterTreeModel::NodeTypeVariants &cluster : cluster_tree_model.clusterVariants())
         {
-            for (const auto &body_and_joint : bodiesAndJoints(cluster))
+            for (const auto &body_and_joint : ClusterNodeVisitors::bodiesAndJoints(cluster))
             {
                 const Body &body = body_and_joint.first;
                 const auto &joint = body_and_joint.second;
                 NodeType node(body, joint, position_index_, velocity_index_);
-                nodes_.push_back(node);
+                // nodes_.push_back(node);
+                nodes_variants_.push_back(node);
                 body_name_to_body_index_[body.name_] = body_index++;
 
                 position_index_ += joint->numPositions();
@@ -56,7 +62,7 @@ namespace grbda
 
         for (const ClusterTreeModel::NodeTypeVariants &cluster : cluster_tree_model.clusterVariants())
         {
-            loop_constraints_.push_back(getJoint(cluster)->cloneLoopConstraint());
+            loop_constraints_.push_back(ClusterNodeVisitors::getJoint(cluster)->cloneLoopConstraint());
         }
     }
 
@@ -70,10 +76,11 @@ namespace grbda
 
     void RigidBodyTreeModel::initializeState(const DVec<double> &q, const DVec<double> &qd)
     {
-        for (NodeType &node : nodes_)
+        for (NodeTypeVariants &node : nodes_variants_)
         {
-            node.joint_state_.position = q.segment(node.position_index_, node.num_positions_);
-            node.joint_state_.velocity = qd.segment(node.velocity_index_, node.num_velocities_);
+            JointCoordinate position(q.segment(positionIndex(node), numPositions(node)), false);
+            JointCoordinate velocity(qd.segment(velocityIndex(node), numVelocities(node)), false);
+            setJointState(node, JointState(position, velocity));
         }
 
         q_ = q;
@@ -99,22 +106,22 @@ namespace grbda
     {
         // TODO(@MatthewChignoli): Helper function that gets node given the name?
         const int &body_idx = body_name_to_body_index_.at(body_name);
-        const NodeType& rigid_body_node = getNodeContainingBody(body_idx);
+        const NodeTypeVariants& rigid_body_node = getNodeVariantContainingBody(body_idx);
 
         forwardKinematics();
-        const SpatialTransform &Xa = rigid_body_node.Xa_[0];
-        const Mat6<double> Xai = invertSXform(Xa.toMatrix().cast<double>());
+        const SpatialTransform &X =  Xa(rigid_body_node)[0];
+        const Mat6<double> Xai = invertSXform(X.toMatrix());
         return sXFormPoint(Xai, Vec3<double>::Zero());
     }
 
     Mat3<double> RigidBodyTreeModel::getOrientation(const string &body_name)
     {
         const int &body_idx = body_name_to_body_index_.at(body_name);
-        const NodeType& rigid_body_node = getNodeContainingBody(body_idx);
+        const NodeTypeVariants& rigid_body_node = getNodeVariantContainingBody(body_idx);
 
         forwardKinematics();
-        const SpatialTransform &Xa = rigid_body_node.Xa_[0];
-        Mat3<double> Rai = Xa.getRotation();
+        const SpatialTransform &X =  Xa(rigid_body_node)[0];
+        Mat3<double> Rai = X.getRotation();
         Rai.transposeInPlace();
         return Rai;
     }
@@ -122,22 +129,22 @@ namespace grbda
     Vec3<double> RigidBodyTreeModel::getLinearVelocity(const string &body_name)
     {
         const int &body_idx = body_name_to_body_index_.at(body_name);
-        const NodeType rigid_body_node = getNodeContainingBody(body_idx);
+        const NodeTypeVariants& rigid_body_node = getNodeVariantContainingBody(body_idx);
 
         forwardKinematics();
         const Mat3<double> Rai = getOrientation(body_name);
-        const SVec<double> v = rigid_body_node.v_.head<6>();
+        const SVec<double> v = velocity(rigid_body_node).head<6>();
         return Rai * spatialToLinearVelocity(v, Vec3<double>::Zero());
     }
 
     Vec3<double> RigidBodyTreeModel::getAngularVelocity(const string &body_name)
     {
         const int &body_idx = body_name_to_body_index_.at(body_name);
-        const NodeType& rigid_body_node = getNodeContainingBody(body_idx);
+        const NodeTypeVariants& rigid_body_node = getNodeVariantContainingBody(body_idx);
 
         forwardKinematics();
         const Mat3<double> Rai = getOrientation(body_name);
-        const SVec<double> v = rigid_body_node.v_.head<6>();
+        const SVec<double> v = velocity(rigid_body_node).head<6>();
         return Rai * v.head<3>();
     }
 
