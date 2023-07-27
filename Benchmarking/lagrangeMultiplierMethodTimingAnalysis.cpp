@@ -18,7 +18,7 @@ void runBenchmark(std::ofstream &file, const std::string &id)
     for (int i = 0; i < num_robot_samples; i++)
     {
         T robot = T(true);
-        const ClusterTreeModel cluster_model = robot.buildClusterTreeModel();
+        ClusterTreeModel cluster_model = robot.buildClusterTreeModel();
         RigidBodyTreeModel lagrange_mult_model{cluster_model,
                                                FwdDynMethod::LagrangeMultiplierCustom};
 

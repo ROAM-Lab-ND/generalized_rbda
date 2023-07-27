@@ -21,12 +21,24 @@ saveas(gcf, [path_to_figures, 'Passes_RevolutePairChain.png'])
 function plotTimingStats(data, robot_name)
 
     figure
-    bar(data(:, 1), data(:, 2:end), 'stacked')
+    subplot(1,2,1)
+    bar(data(:, 1), data(:, 2:end-3), 'stacked')
     legend('Forward Kinematics', 'Update Articulated Bodies', 'Foward Pass 1', 'External Forces', 'Backward Pass', 'Forward Pass 2', 'Interpreter', 'latex','Location','northwest')
 
     xlabel('Number of Joints','Interpreter','latex')
     ylabel('Time (ms)','Interpreter','latex')
     title(['Forward Dynamics Timing for ', robot_name],'Interpreter','latex')
+    grid on
+    set(gca, 'FontSize', 14)
+    set(gca,'TickLabelInterpreter','latex')
+
+    subplot(1,2,2)
+    bar(data(:, 1), data(:, end-2:end-1), 'stacked')
+    legend('Inverse Transform Ia', 'Update And Solve D', 'Interpreter', 'latex','Location','northwest')
+
+    xlabel('Number of Joints','Interpreter','latex')
+    ylabel('Time (ms)','Interpreter','latex')
+    title(['Updating Articulated Bodies Timing for ', robot_name],'Interpreter','latex')
     grid on
     set(gca, 'FontSize', 14)
     set(gca,'TickLabelInterpreter','latex')
