@@ -130,8 +130,7 @@ namespace grbda
 
         //
         Vec3<double> _hipRzRotorLocation = Vec3<double>(-0.00842837, -0.082, -0.041593);
-        Vec3<double> _hipRxRotorLocation = Vec3<double>(0., 0., 0.);
-        // Vec3<double> _hipRxRotorLocation = Vec3<double>(-0.0827, 0.0, -0.066436);
+        Vec3<double> _hipRxRotorLocation = Vec3<double>(-0.0827, 0.0, -0.066436);
         Vec3<double> _hipRyRotorLocation = Vec3<double>(0.071, 0.024, 0.0);
         Vec3<double> _kneeRotorLocation = Vec3<double>(0.013, -0.0497, -0.0178);
         Vec3<double> _ankleRotorLocation = Vec3<double>(0., 0., 0.);

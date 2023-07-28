@@ -6,3 +6,4 @@
 #include "RevoluteChainWithAndWithoutRotor.hpp"
 #include "Tello.hpp"
 #include "MIT_Humanoid.hpp"
+#include "MiniCheetah.hpp"
