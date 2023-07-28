@@ -4,28 +4,11 @@ path_to_data = '../Benchmarking/data/';
 path_to_figures = '../Benchmarking/figures/';
 
 % Tello
-tello = readmatrix([path_to_data, 'Timing_Tello.csv']);
-plotForwardDynamics(tello, 'Tello')
-saveas(gcf, [path_to_figures, 'Timing_Tello.png'])
-
 tello = readmatrix([path_to_data, 'CL_Tello.csv']);
 plotTimingStats(tello, 'Tello')
 saveas(gcf, [path_to_figures, 'CL_Tello.png'])
 plotPassTiming(tello, 'Tello')
 saveas(gcf, [path_to_figures, 'CL_Passes_Tello.png'])
-
-%% Helper Function
-function plotForwardDynamics(data, robot_name)
-    figure
-    x = categorical({'Cluster-Based','Lagrange Multipliers','Projection'});
-    x = reordercats(x,{'Cluster-Based','Lagrange Multipliers','Projection'});
-    bar(x, diag(data(:,[1 3 4]),0),'stacked')
-    ylabel('Computation Time (ms)', 'Interpreter', 'latex')
-    title(['Forward Dynamics - ', robot_name], 'Interpreter', 'latex')
-    set(gca, 'Fontsize', 12)
-    set(gca, 'TickLabelInterpreter', 'latex')
-
-end
 
 function plotTimingStats(data, robot_name)
     figure

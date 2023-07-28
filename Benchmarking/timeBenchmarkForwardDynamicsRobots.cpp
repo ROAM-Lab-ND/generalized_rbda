@@ -9,7 +9,8 @@
 
 using namespace grbda;
 
-void runTelloBenchmark(std::ofstream &file, const bool include_forces)
+template <typename RobotType>
+void runTelloBenchmark(std::ofstream &file)
 {
     Timer timer;
     double t_cluster = 0.;
@@ -20,7 +21,7 @@ void runTelloBenchmark(std::ofstream &file, const bool include_forces)
 
     const int num_state_samples = 1000;
 
-    Tello robot = Tello();
+    RobotType robot;
     ClusterTreeModel cluster_model = robot.buildClusterTreeModel();
     RigidBodyTreeModel lg_custom_mult_model{cluster_model,
                                             FwdDynMethod::LagrangeMultiplierCustom};
@@ -97,25 +98,24 @@ void runTelloBenchmark(std::ofstream &file, const bool include_forces)
         // Forward Dynamics
         DVec<double> tau = DVec<double>::Random(nv);
         timer.start();
-        cluster_model.forwardDynamics(tau);
+        DVec<double> ydd_cluster = cluster_model.forwardDynamics(tau);
         t_cluster += timer.getMs();
 
         timer.start();
-        lg_custom_mult_model.forwardDynamics(tau);
+        DVec<double> qdd_lg_custom = lg_custom_mult_model.forwardDynamics(tau);
         t_lg_custom += timer.getMs();
 
         timer.start();
-        lg_eigen_mult_model.forwardDynamics(tau);
+        DVec<double> qdd_lg_eigen = lg_eigen_mult_model.forwardDynamics(tau);
         t_lg_eigen += timer.getMs();
 
         timer.start();
-        projection_model.forwardDynamics(tau);
+        DVec<double> qdd_proj = projection_model.forwardDynamics(tau);
         t_projection += timer.getMs();
 
         timer.start();
         reflected_inertia_model.forwardDynamics(tau);
         t_reflected_inertia += timer.getMs();
-
     }
 
     file << t_cluster / num_state_samples << ","
@@ -129,15 +129,12 @@ void runTelloBenchmark(std::ofstream &file, const bool include_forces)
 
 int main()
 {
-    const bool include_forces = false;
     const std::string path_to_data = "../Benchmarking/data/";
 
-    std::cout << "** Tello Benchmark **" << std::endl;
-
-    std::ofstream tello_file;
-    tello_file.open(path_to_data + "Timing_Tello.csv");
-
-    runTelloBenchmark(tello_file, include_forces);
-
-    tello_file.close();
+    std::ofstream robots_file;
+    robots_file.open(path_to_data + "Timing_Robots.csv");
+    runTelloBenchmark<Tello>(robots_file);
+    runTelloBenchmark<MIT_Humanoid>(robots_file);
+    // TODO(@MatthewChignoli): add mini cheetah and others?
+    robots_file.close();
 }
