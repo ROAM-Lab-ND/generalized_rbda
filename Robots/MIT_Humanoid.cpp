@@ -2,6 +2,7 @@
 
 namespace grbda
 {
+    using namespace GeneralizedJoints;
 
     ClusterTreeModel MIT_Humanoid::buildClusterTreeModel() const
     {
@@ -15,7 +16,7 @@ namespace grbda
         const SpatialInertia<double> torsoInertia(_torsoMass, _torsoCOM, _torsoRotInertia);
         Body torso = model.registerBody(torso_name, torsoInertia, torso_parent_name,
                                         spatial::SpatialTransform{});
-        auto torso_generalized_joint = std::make_shared<GeneralizedJoints::Free>(torso);
+        Free torso_generalized_joint(torso);
         model.appendRegisteredBodiesAsCluster(torso_name, torso_generalized_joint);
 
         Vec3<double> torsoDims(_torsoLength, _torsoWidth, _torsoHeight);
@@ -47,7 +48,7 @@ namespace grbda
             Body hip_rz_rotor = model.registerBody(hip_rz_rotor_name, hip_rz_rotor_inertia,
                                                    hip_rz_parent_name, xtreeHipRzRotor);
 
-            auto hip_rz_generalized_joint = std::make_shared<GeneralizedJoints::RevoluteWithRotor>(hip_rz_link, hip_rz_rotor, CoordinateAxis::Z, CoordinateAxis::Z, _hipRzGearRatio);
+            RevoluteWithRotor hip_rz_generalized_joint(hip_rz_link, hip_rz_rotor, CoordinateAxis::Z, CoordinateAxis::Z, _hipRzGearRatio);
             model.appendRegisteredBodiesAsCluster(hip_rz_name, hip_rz_generalized_joint);
 
             // HipRx
@@ -73,7 +74,7 @@ namespace grbda
             Body hip_rx_rotor = model.registerBody(hip_rx_rotor_name, hip_rx_rotor_inertia,
                                                    hip_rx_parent_name, xtreeHipRxRotor);
 
-            auto hip_rx_generalized_joint = std::make_shared<GeneralizedJoints::RevoluteWithRotor>(hip_rx_link, hip_rx_rotor, CoordinateAxis::X, CoordinateAxis::X, _hipRxGearRatio);
+            RevoluteWithRotor hip_rx_generalized_joint(hip_rx_link, hip_rx_rotor, CoordinateAxis::X, CoordinateAxis::X, _hipRxGearRatio);
             model.appendRegisteredBodiesAsCluster(hip_rx_name, hip_rx_generalized_joint);
 
             // HipRy
@@ -101,7 +102,7 @@ namespace grbda
             Body hip_ry_rotor = model.registerBody(hip_ry_rotor_name, hip_ry_rotor_inertia,
                                                    hip_ry_parent_name, xtreeHipRyRotor);
 
-            auto hip_ry_generalized_joint = std::make_shared<GeneralizedJoints::RevoluteWithRotor>(hip_ry_link, hip_ry_rotor, CoordinateAxis::Y, CoordinateAxis::Y, _hipRyGearRatio);
+            RevoluteWithRotor hip_ry_generalized_joint(hip_ry_link, hip_ry_rotor, CoordinateAxis::Y, CoordinateAxis::Y, _hipRyGearRatio);
             model.appendRegisteredBodiesAsCluster(hip_ry_name, hip_ry_generalized_joint);
 
             const std::string knee_contact_name = withLeftRightSigns("knee_contact", legID);
@@ -152,7 +153,7 @@ namespace grbda
 
             // Cluster
             const std::string knee_and_ankle_name = withLeftRightSigns("knee_and_ankle", legID);
-            auto knee_and_ankle_generalized_joint = std::make_shared<GeneralizedJoints::RevolutePairWithRotor>(
+            RevolutePairWithRotor knee_and_ankle_generalized_joint(
                 knee_link, ankle_link, knee_rotor, ankle_rotor,
                 CoordinateAxis::Y, CoordinateAxis::Y, CoordinateAxis::Y, CoordinateAxis::Y,
                 _kneeGearRatio / _kneeBeltRatio,
@@ -201,7 +202,7 @@ namespace grbda
                                                         shoulder_ry_parent_name,
                                                         xtreeShoulderRyRotor);
 
-            auto shoulder_ry_generalized_joint = std::make_shared<GeneralizedJoints::RevoluteWithRotor>(shoulder_ry_link, shoulder_ry_rotor, CoordinateAxis::Y, CoordinateAxis::Y, _shoulderRyGearRatio);
+            RevoluteWithRotor shoulder_ry_generalized_joint(shoulder_ry_link, shoulder_ry_rotor, CoordinateAxis::Y, CoordinateAxis::Y, _shoulderRyGearRatio);
             model.appendRegisteredBodiesAsCluster(shoulder_ry_name, shoulder_ry_generalized_joint);
 
             // ShoulderRx
@@ -230,7 +231,7 @@ namespace grbda
                                                         shoulder_rx_parent_name,
                                                         xtreeShoulderRxRotor);
 
-            auto shoulder_rx_generalized_joint = std::make_shared<GeneralizedJoints::RevoluteWithRotor>(shoulder_rx_link, shoulder_rx_rotor, CoordinateAxis::X, CoordinateAxis::X, _shoulderRxGearRatio);
+            RevoluteWithRotor shoulder_rx_generalized_joint(shoulder_rx_link, shoulder_rx_rotor, CoordinateAxis::X, CoordinateAxis::X, _shoulderRxGearRatio);
             model.appendRegisteredBodiesAsCluster(shoulder_rx_name, shoulder_rx_generalized_joint);
 
             // ShoulderRz
@@ -259,7 +260,7 @@ namespace grbda
                                                         shoulder_rz_parent_name,
                                                         xtreeShoulderRzRotor);
 
-            auto shoulder_rz_generalized_joint = std::make_shared<GeneralizedJoints::RevoluteWithRotor>(shoulder_rz_link, shoulder_rz_rotor, CoordinateAxis::Z, CoordinateAxis::Z, _shoulderRzGearRatio);
+            RevoluteWithRotor shoulder_rz_generalized_joint(shoulder_rz_link, shoulder_rz_rotor, CoordinateAxis::Z, CoordinateAxis::Z, _shoulderRzGearRatio);
             model.appendRegisteredBodiesAsCluster(shoulder_rz_name, shoulder_rz_generalized_joint);
 
             // Elbow
@@ -283,7 +284,7 @@ namespace grbda
             Body elbow_rotor = model.registerBody(elbow_rotor_name, elbow_rotor_inertia,
                                                   elbow_parent_name, xtreeElbowRotor);
 
-            auto elbow_generalized_joint = std::make_shared<GeneralizedJoints::RevoluteWithRotor>(elbow_link, elbow_rotor, CoordinateAxis::Y, CoordinateAxis::Y, _elbowGearRatio);
+            RevoluteWithRotor elbow_generalized_joint(elbow_link, elbow_rotor, CoordinateAxis::Y, CoordinateAxis::Y, _elbowGearRatio);
             model.appendRegisteredBodiesAsCluster(elbow_name, elbow_generalized_joint);
 
             const std::string elbow_contact_name = withLeftRightSigns("elbow_contact", armID);

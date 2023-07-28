@@ -2,6 +2,7 @@
 
 namespace grbda
 {
+    using namespace GeneralizedJoints;
 
     ClusterTreeModel MiniCheetah::buildClusterTreeModel() const
     {
@@ -15,7 +16,7 @@ namespace grbda
         const SpatialInertia<double> torsoInertia(_bodyMass, _bodyCOM, _bodyRotationalInertia);
         Body torso = model.registerBody(torso_name, torsoInertia, torso_parent_name,
                                         spatial::SpatialTransform{});
-        auto torso_generalized_joint = std::make_shared<GeneralizedJoints::Free>(torso);
+        Free torso_generalized_joint(torso);
         model.appendRegisteredBodiesAsCluster(torso_name, torso_generalized_joint);
 
         Vec3<double> torsoDims(_bodyLength, _bodyWidth, _bodyHeight);
@@ -44,7 +45,7 @@ namespace grbda
             Body abad_rotor = model.registerBody(abad_rotor_name, abad_rotor_inertia,
                                                  abad_parent_name, xtree_abad_rotor);
 
-            auto abad_generalized_joint = std::make_shared<GeneralizedJoints::RevoluteWithRotor>(abad_link, abad_rotor, CoordinateAxis::X, CoordinateAxis::X, _abadGearRatio);
+            RevoluteWithRotor abad_generalized_joint(abad_link, abad_rotor, CoordinateAxis::X, CoordinateAxis::X, _abadGearRatio);
             model.appendRegisteredBodiesAsCluster(abad_name, abad_generalized_joint);
 
             // Hp Joint
@@ -67,7 +68,7 @@ namespace grbda
             Body hip_rotor = model.registerBody(hip_rotor_name, hip_rotor_inertia,
                                                 hip_parent_name, xtree_hip_rotor);
 
-            auto hip_generalized_joint = std::make_shared<GeneralizedJoints::RevoluteWithRotor>(hip_link, hip_rotor, CoordinateAxis::Y, CoordinateAxis::Y, _hipGearRatio);
+            RevoluteWithRotor hip_generalized_joint(hip_link, hip_rotor, CoordinateAxis::Y, CoordinateAxis::Y, _hipGearRatio);
             model.appendRegisteredBodiesAsCluster(hip_name, hip_generalized_joint);
 
             const std::string hip_contact_name = withLegSigns("hip_contact", legID);
@@ -96,7 +97,7 @@ namespace grbda
             Body knee_rotor = model.registerBody(knee_rotor_name, knee_rotor_inertia,
                                                  knee_parent_name, xtree_knee_rotor);
 
-            auto knee_generalized_joint = std::make_shared<GeneralizedJoints::RevoluteWithRotor>(knee_link, knee_rotor, CoordinateAxis::Y, CoordinateAxis::Y, _kneeGearRatio);
+            RevoluteWithRotor knee_generalized_joint(knee_link, knee_rotor, CoordinateAxis::Y, CoordinateAxis::Y, _kneeGearRatio);
             model.appendRegisteredBodiesAsCluster(knee_name, knee_generalized_joint);
 
             const std::string foot_contact_name = withLegSigns("foot_contact", legID);
