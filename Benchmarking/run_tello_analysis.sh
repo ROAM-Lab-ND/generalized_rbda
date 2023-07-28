@@ -14,7 +14,6 @@ fi
 
 # Run the C++ binary if the flag is set to 1
 if [[ $run_cpp -eq 1 ]]; then
-    ./bin/time_benchmark_tello
     ./bin/cluster_model_timing_analysis_tello
 fi
 
