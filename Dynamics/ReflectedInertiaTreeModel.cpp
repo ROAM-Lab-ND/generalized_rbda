@@ -184,7 +184,11 @@ namespace grbda
 
     DVec<double> ReflectedInertiaTreeModel::inverseDynamics(const DVec<double> &ydd)
     {
-        return getMassMatrix() * ydd + getBiasForceVector();
+        if (use_off_diagonal_terms_)
+            return recursiveNewtonEulerAlgorithm(ydd) + reflected_inertia_ * ydd;
+        else
+            return recursiveNewtonEulerAlgorithm(ydd) +
+                   reflected_inertia_.diagonal().asDiagonal() * ydd;
     }
 
     DVec<double> ReflectedInertiaTreeModel::forwardDynamicsWithOffDiag(const DVec<double> &tau)

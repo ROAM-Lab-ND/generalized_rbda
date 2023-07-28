@@ -1,9 +1,7 @@
 #include <iostream>
 #include <fstream>
 
-#include "Dynamics/RigidBodyTreeModel.h"
 #include "Dynamics/ReflectedInertiaTreeModel.h"
-
 #include "Robots/RobotTypes.h"
 #include "Utils/Utilities/Timer.h"
 
@@ -14,22 +12,13 @@ void runBenchmark(std::ofstream &file)
 {
     Timer timer;
     double t_cluster = 0.;
-    double t_lg_custom = 0.;
-    double t_lg_eigen = 0.;
-    double t_projection = 0.;
     double t_reflected_inertia = 0.;
 
     const int num_state_samples = 1000;
 
     RobotType robot;
     ClusterTreeModel cluster_model = robot.buildClusterTreeModel();
-    RigidBodyTreeModel lg_custom_mult_model{cluster_model,
-                                            FwdDynMethod::LagrangeMultiplierCustom};
-    RigidBodyTreeModel lg_eigen_mult_model{cluster_model,
-                                           FwdDynMethod::LagrangeMultiplierEigen};
-    RigidBodyTreeModel projection_model{cluster_model,
-                                        FwdDynMethod::Projection};
-    ReflectedInertiaTreeModel reflected_inertia_model(cluster_model, true);
+    ReflectedInertiaTreeModel reflected_inertia_model(cluster_model, false);
 
     const int nq = cluster_model.getNumPositions();
     const int nv = cluster_model.getNumDegreesOfFreedom();
@@ -89,39 +78,21 @@ void runBenchmark(std::ofstream &file)
         }
 
         cluster_model.initializeState(model_state);
-        lg_custom_mult_model.initializeState(spanning_joint_pos, spanning_joint_vel);
-        lg_eigen_mult_model.initializeState(spanning_joint_pos, spanning_joint_vel);
-        projection_model.initializeState(spanning_joint_pos, spanning_joint_vel);
         reflected_inertia_model.initializeIndependentStates(independent_joint_pos,
                                                             independent_joint_vel);
 
         // Forward Dynamics
-        DVec<double> tau = DVec<double>::Random(nv);
+        DVec<double> qdd = DVec<double>::Random(nv);
         timer.start();
-        DVec<double> ydd_cluster = cluster_model.forwardDynamics(tau);
+        cluster_model.inverseDynamics(qdd);
         t_cluster += timer.getMs();
 
         timer.start();
-        DVec<double> qdd_lg_custom = lg_custom_mult_model.forwardDynamics(tau);
-        t_lg_custom += timer.getMs();
-
-        timer.start();
-        DVec<double> qdd_lg_eigen = lg_eigen_mult_model.forwardDynamics(tau);
-        t_lg_eigen += timer.getMs();
-
-        timer.start();
-        DVec<double> qdd_proj = projection_model.forwardDynamics(tau);
-        t_projection += timer.getMs();
-
-        timer.start();
-        reflected_inertia_model.forwardDynamics(tau);
+        reflected_inertia_model.inverseDynamics(qdd);
         t_reflected_inertia += timer.getMs();
     }
 
     file << t_cluster / num_state_samples << ","
-         << t_lg_custom / num_state_samples << ","
-         << t_lg_eigen / num_state_samples << ","
-         << t_projection / num_state_samples << ","
          << t_reflected_inertia / num_state_samples << std::endl;
 
     std::cout << "Finished benchmark for robot" << std::endl;
@@ -129,9 +100,9 @@ void runBenchmark(std::ofstream &file)
 
 int main()
 {
-    const std::string path_to_data = "../Benchmarking/data/TimingFD_";
+    const std::string path_to_data = "../Benchmarking/data/TimingID_";
 
-    std::cout << "\n\n**Starting Forward Dynamics Timing Benchmark for Robots**" << std::endl;
+    std::cout << "\n\n**Starting Inverse Dynamics Timing Benchmark for Robots**" << std::endl;
     std::ofstream robots_file;
     robots_file.open(path_to_data + "Robots.csv");
     runBenchmark<Tello>(robots_file);

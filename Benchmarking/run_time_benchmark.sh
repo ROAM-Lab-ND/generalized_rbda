@@ -14,8 +14,9 @@ fi
 
 # Run the C++ binary if the flag is set to 1
 if [[ $run_cpp -eq 1 ]]; then
-    ./bin/time_benchmark
-    ./bin/time_benchmark_robots
+    # ./bin/time_benchmark
+    ./bin/time_benchmarkFD_robots
+    ./bin/time_benchmarkID_robots
 fi
 
 # Run MATLAB and execute the script to plot the results
