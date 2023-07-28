@@ -5,3 +5,4 @@
 #include "RevoluteChainMultiplerRotorsPerLink.hpp"
 #include "RevoluteChainWithAndWithoutRotor.hpp"
 #include "Tello.hpp"
+#include "MIT_Humanoid.hpp"
