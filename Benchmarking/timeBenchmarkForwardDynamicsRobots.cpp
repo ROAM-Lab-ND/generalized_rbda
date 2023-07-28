@@ -10,7 +10,7 @@
 using namespace grbda;
 
 template <typename RobotType>
-void runTelloBenchmark(std::ofstream &file)
+void runBenchmark(std::ofstream &file)
 {
     Timer timer;
     double t_cluster = 0.;
@@ -133,8 +133,8 @@ int main()
 
     std::ofstream robots_file;
     robots_file.open(path_to_data + "Timing_Robots.csv");
-    runTelloBenchmark<Tello>(robots_file);
-    runTelloBenchmark<MIT_Humanoid>(robots_file);
-    // TODO(@MatthewChignoli): add mini cheetah and others?
+    runBenchmark<Tello>(robots_file);
+    runBenchmark<MIT_Humanoid>(robots_file);
+    runBenchmark<MiniCheetah>(robots_file);
     robots_file.close();
 }

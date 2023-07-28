@@ -24,8 +24,7 @@ void runBenchmark(std::ofstream &file, const std::string& id, const bool include
 
     for (int i = 0; i < num_robot_samples; i++)
     {
-        // T robot = T(true);
-        T robot;
+        T robot = T(true);
         ClusterTreeModel cluster_model = robot.buildClusterTreeModel();
         RigidBodyTreeModel lg_custom_mult_model{cluster_model,
                                                 FwdDynMethod::LagrangeMultiplierCustom};
@@ -140,7 +139,6 @@ void runRevoluteWithRotorBenchmark(const bool include_forces)
     runBenchmark<RevoluteChainWithRotor<16>>(rev_file, "16", include_forces);
     runBenchmark<RevoluteChainWithRotor<20>>(rev_file, "20", include_forces);
     runBenchmark<RevoluteChainWithRotor<24>>(rev_file, "24", include_forces);
-    runBenchmark<MIT_Humanoid>(rev_file, "30", include_forces);
 
     rev_file.close();
 }

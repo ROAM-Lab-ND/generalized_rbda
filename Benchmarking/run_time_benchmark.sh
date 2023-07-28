@@ -19,4 +19,4 @@ if [[ $run_cpp -eq 1 ]]; then
 fi
 
 # Run MATLAB and execute the script to plot the results
-matlab -nodisplay -nosplash -nodesktop -r "try, addpath('../Benchmarking'); time_benchmark; catch ME, disp(ME.message), exit(1), end; exit(0);"
+matlab -nodisplay -nosplash -nodesktop -r "try, addpath('../Benchmarking'); time_benchmark; catch ME, disp(ME.message), exit(1), end; try; time_benchmark_robots; catch ME, disp(ME.message), exit(1), end; exit(0);"
