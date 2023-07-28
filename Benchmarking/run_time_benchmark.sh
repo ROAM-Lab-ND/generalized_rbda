@@ -15,7 +15,8 @@ fi
 # Run the C++ binary if the flag is set to 1
 if [[ $run_cpp -eq 1 ]]; then
     ./bin/time_benchmark
+    ./bin/time_benchmark_robots
 fi
 
 # Run MATLAB and execute the script to plot the results
-matlab -nodisplay -nosplash -nodesktop -r "try, addpath('../Benchmarking'); time_benchmark; catch ME, disp(ME.message), exit(1), end; exit(0);"
+matlab -nodisplay -nosplash -nodesktop -r "try, addpath('../Benchmarking'); time_benchmark; catch ME, disp(ME.message), exit(1), end; try; time_benchmark_robots; catch ME, disp(ME.message), exit(1), end; exit(0);"
