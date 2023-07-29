@@ -48,6 +48,11 @@ namespace grbda
 
         H_ = DMat<double>::Zero(velocity_index_, velocity_index_);
         C_ = DVec<double>::Zero(velocity_index_);
+
+        // Resize system matrices
+        for (auto &node : reflected_inertia_nodes_)
+            node->qdd_for_subtree_due_to_subtree_root_joint_qdd
+                .setZero(getNumDegreesOfFreedom(), node->num_velocities_);
     }
 
     void ReflectedInertiaTreeModel::extractIndependentCoordinatesFromClusterModel(
@@ -75,7 +80,7 @@ namespace grbda
         for (const auto &contact_point : cluster_tree_model.contactPoints())
         {
             contact_points_.push_back(contact_point);
-        }    
+        }
     }
 
     void ReflectedInertiaTreeModel::initializeIndependentStates(const DVec<double> &y,
@@ -94,6 +99,8 @@ namespace grbda
     {
         TreeModel::resetCache();
         articulated_bodies_updated_ = false;
+        force_propagators_updated_ = false;
+        qdd_effects_updated_ = false;
     }
 
     DMat<double> ReflectedInertiaTreeModel::getMassMatrix()
@@ -335,13 +342,143 @@ namespace grbda
     double ReflectedInertiaTreeModel::applyLocalFrameTestForceAtContactPoint(
         const Vec3<double> &force, const std::string &contact_point_name, DVec<double> &dstate_out)
     {
-        // ISSUE #23
-        const D3Mat<double> J = contactJacobian(contact_point_name).bottomRows<3>();
+        switch (rotor_inertia_approximation_)
+        {
+        case RotorInertiaApproximation::NONE:
+            return inverseOpSpaceInertiaEFPA(force, contact_point_name, dstate_out, false);
+        case RotorInertiaApproximation::DIAGONAL:
+            return inverseOpSpaceInertiaEFPA(force, contact_point_name, dstate_out, true);
+        case RotorInertiaApproximation::BLOCK_DIAGONAL:
+            return inverseOpSpaceInertiaHinv(force, contact_point_name, dstate_out);
+        default:
+            throw std::runtime_error("Unknown rotor inertia approximation");
+        }
+    }
+
+    double ReflectedInertiaTreeModel::inverseOpSpaceInertiaEFPA(const Vec3<double> &force,
+                                                                const std::string &cp_name,
+                                                                DVec<double> &dstate_out,
+                                                                bool use_reflected_inertia)
+    {
+        const int contact_point_index = contact_name_to_contact_index_.at(cp_name);
+        const ContactPoint &contact_point = contact_points_[contact_point_index];
+
+        forwardKinematics();
+        updateArticulatedBodies(use_reflected_inertia);
+        updateForcePropagators(use_reflected_inertia);
+        updateQddEffects(use_reflected_inertia);
+
+        dstate_out = DVec<double>::Zero(getNumDegreesOfFreedom());
+
+        SVec<double> f = localCartesianForceAtPointToWorldPluckerForceOnCluster(force,
+                                                                                contact_point);
+        double lambda_inv = 0.;
+
+        // from tips to base
+        int j = getNodeContainingBody(contact_point.body_index_)->index_;
+        while (j > -1)
+        {
+            const auto &node = reflected_inertia_nodes_[j];
+            const int vel_idx = node->velocity_index_;
+            const int num_vel = node->num_velocities_;
+            const auto joint = node->joint_;
+
+            DVec<double> tmp = joint->S().transpose() * f;
+            lambda_inv += tmp.dot(node->D_inv_ * tmp);
+
+            dstate_out +=
+                node->qdd_for_subtree_due_to_subtree_root_joint_qdd * node->D_inv_ * tmp;
+
+            f = node->ChiUp_.transpose() * f;
+
+            j = node->parent_index_;
+        }
+
+        return lambda_inv;
+    }
+
+    double ReflectedInertiaTreeModel::inverseOpSpaceInertiaHinv(const Vec3<double> &force,
+                                                                const std::string &cp_name,
+                                                                DVec<double> &dstate_out)
+    {
+        const D3Mat<double> J = contactJacobian(cp_name).bottomRows<3>();
         const DMat<double> H = getMassMatrix();
         const DMat<double> H_inv = H.inverse();
         const DMat<double> inv_ops_inertia = J * H_inv * J.transpose();
         dstate_out = H_inv * (J.transpose() * force);
         return force.dot(inv_ops_inertia * force);
+    }
+
+    void ReflectedInertiaTreeModel::updateForcePropagators(bool use_reflected_inertia)
+    {
+        if (force_propagators_updated_)
+            return;
+
+        updateArticulatedBodies(use_reflected_inertia);
+
+        for (auto &node : reflected_inertia_nodes_)
+        {
+            const auto joint = node->joint_;
+            const DMat<double> Xup = node->Xup_.toMatrix();
+            node->ChiUp_ = Xup - joint->S() * node->D_inv_ * node->U_.transpose() * Xup;
+        }
+
+        force_propagators_updated_ = true;
+    }
+
+    void ReflectedInertiaTreeModel::updateQddEffects(bool use_reflected_inertia)
+    {
+        if (qdd_effects_updated_)
+            return;
+
+        updateForcePropagators(use_reflected_inertia);
+
+        for (auto &node : reflected_inertia_nodes_)
+        {
+            const int &vel_idx = node->velocity_index_;
+            const int &num_vel = node->num_velocities_;
+            const auto joint = node->joint_;
+
+            node->qdd_for_subtree_due_to_subtree_root_joint_qdd
+                .middleRows(vel_idx, num_vel)
+                .setIdentity();
+
+            // Compute Psi
+            const D6Mat<double> &S = joint->S();
+            D6Mat<double> Psi = S.transpose().completeOrthogonalDecomposition().pseudoInverse();
+
+            D6Mat<double> F =
+                (node->ChiUp_.transpose() - node->Xup_.toMatrix().transpose()) * Psi;
+
+            int j = node->parent_index_;
+            while (j > -1)
+            {
+                auto parent_node = reflected_inertia_nodes_[j];
+                const auto parent_joint = parent_node->joint_;
+
+                parent_node->qdd_for_subtree_due_to_subtree_root_joint_qdd
+                    .middleRows(vel_idx, num_vel) = F.transpose() * parent_joint->S();
+
+                F = parent_node->ChiUp_.transpose() * F;
+                j = parent_node->parent_index_;
+            }
+        }
+
+        qdd_effects_updated_ = true;
+    }
+
+    SVec<double> ReflectedInertiaTreeModel::localCartesianForceAtPointToWorldPluckerForceOnCluster(
+        const Vec3<double> &force, const ContactPoint &contact_point)
+    {
+        const auto node = getNodeContainingBody(contact_point.body_index_);
+        const auto &Xa = node->Xa_[0];
+        Mat3<double> Rai = Xa.getRotation().transpose();
+        SpatialTransform X_cartesian_to_plucker{Rai, contact_point.local_offset_};
+
+        SVec<double> spatial_force = SVec<double>::Zero();
+        spatial_force.tail<3>() = force;
+
+        return X_cartesian_to_plucker.inverseTransformForceVector(spatial_force);
     }
 
 } // namespace grbda

@@ -282,7 +282,7 @@ namespace grbda
                 .setIdentity();
 
             // Compute Psi
-            const DMat<double> S = joint->S();
+            const DMat<double>& S = joint->S();
             DMat<double> Psi = S.transpose().completeOrthogonalDecomposition().pseudoInverse();
 
             DMat<double> F =

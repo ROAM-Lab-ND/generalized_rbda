@@ -80,6 +80,18 @@ namespace grbda
         DVec<double> forwardDynamicsHinv(const DVec<double> &tau);
         void updateArticulatedBodies(bool use_reflected_inertia);
 
+        double inverseOpSpaceInertiaEFPA(const Vec3<double> &force,
+                                         const string &contact_point_name,
+                                         DVec<double> &dstate_out,
+                                         bool use_reflected_inertia);
+        double inverseOpSpaceInertiaHinv(const Vec3<double> &force,
+                                         const string &contact_point_name,
+                                         DVec<double> &dstate_out);
+        void updateForcePropagators(bool use_reflected_inertia);
+        void updateQddEffects(bool use_reflected_inertia);
+        SVec<double> localCartesianForceAtPointToWorldPluckerForceOnCluster(
+            const Vec3<double> &force, const ContactPoint &contact_point);
+
         std::vector<ReflectedInertiaTreeNodePtr> reflected_inertia_nodes_;
 
         DMat<double> reflected_inertia_;
@@ -88,8 +100,9 @@ namespace grbda
         DVec<int> independent_coord_indices_;
 
         bool articulated_bodies_updated_ = false;
+        bool force_propagators_updated_ = false;
+        bool qdd_effects_updated_ = false;
 
-        // const bool use_off_diagonal_terms_;
         const RotorInertiaApproximation rotor_inertia_approximation_;
     };
 
