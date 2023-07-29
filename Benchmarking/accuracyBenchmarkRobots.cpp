@@ -219,7 +219,7 @@ void runApplyTestForceBenchmark(std::ofstream &file, const std::string contact_p
 int main()
 {
     // Inverse Dynamics Benchmark
-    std::cout << "\n\n**Starting Inverse Dynamics Timing Benchmark for Robots**" << std::endl;
+    std::cout << "\n\n**Starting Inverse Dynamics Accuracy Benchmark for Robots**" << std::endl;
     std::string path_to_data = "../Benchmarking/data/AccuracyID_";
     std::ofstream id_file;
     id_file.open(path_to_data + "Robots.csv");
@@ -229,7 +229,7 @@ int main()
     id_file.close();
 
     // Forward Dynamics Benchmark
-    std::cout << "\n\n**Starting Forward Dynamics Timing Benchmark for Robots**" << std::endl;
+    std::cout << "\n\n**Starting Forward Dynamics Accuracy Benchmark for Robots**" << std::endl;
     path_to_data = "../Benchmarking/data/AccuracyFD_";
     std::ofstream fd_file;
     fd_file.open(path_to_data + "Robots.csv");
@@ -239,7 +239,7 @@ int main()
     fd_file.close();
 
     // Apply Test Force Benchmark
-    std::cout << "\n\n**Starting Apply Test Force Timing Benchmark for Robots**" << std::endl;
+    std::cout << "\n\n**Starting Apply Test Force Accuracy Benchmark for Robots**" << std::endl;
     path_to_data = "../Benchmarking/data/AccuracyATF_";
     std::ofstream atf_file;
     atf_file.open(path_to_data + "Robots.csv");
