@@ -17,7 +17,7 @@ if [[ $run_cpp -eq 1 ]]; then
     # ./bin/accuracy_benchmark_fd
     # ./bin/accuracy_benchmark_id
     # ./bin/accuracy_benchmark_atf
-    ./bin/accuracy_benchmarkID_robots
+    ./bin/accuracy_benchmark_robots
 fi
 
 # Run MATLAB and execute the script to plot the results

@@ -1,11 +1,8 @@
 add_executable(time_benchmark timeBenchmarkForwardDynamics.cpp)
 target_link_libraries(time_benchmark dyna-utils robots)
 
-add_executable(time_benchmarkFD_robots timeBenchmarkForwardDynamicsRobots.cpp)
-target_link_libraries(time_benchmarkFD_robots dyna-utils robots)
-
-add_executable(time_benchmarkID_robots timeBenchmarkInverseDynamicsRobots.cpp)
-target_link_libraries(time_benchmarkID_robots dyna-utils robots)
+add_executable(time_benchmark_robots timeBenchmarkRobots.cpp)
+target_link_libraries(time_benchmark_robots dyna-utils robots)
 
 add_executable(accuracy_benchmark_fd accuracyBenchmarkForwardDynamics.cpp)
 target_link_libraries(accuracy_benchmark_fd dyna-utils robots)
@@ -16,8 +13,8 @@ target_link_libraries(accuracy_benchmark_id dyna-utils robots)
 add_executable(accuracy_benchmark_atf accuracyBenchmarkApplyTestForce.cpp)
 target_link_libraries(accuracy_benchmark_atf dyna-utils robots)
 
-add_executable(accuracy_benchmarkID_robots accuracyBenchmarkInverseDynamicsRobots.cpp)
-target_link_libraries(accuracy_benchmarkID_robots dyna-utils robots)
+add_executable(accuracy_benchmark_robots accuracyBenchmarkRobots.cpp)
+target_link_libraries(accuracy_benchmark_robots dyna-utils robots)
 
 if(TIMING_STATS)
     add_executable(lg_mult_timing_analysis lagrangeMultiplierMethodTimingAnalysis.cpp)

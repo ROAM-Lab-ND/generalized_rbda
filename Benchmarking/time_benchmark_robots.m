@@ -44,7 +44,7 @@ ylim([0 max(data, [], 'all') * 1.2])
 saveas(gcf, [path_to_figures, 'Robots.png'])
 
 %% Inverse Dynamics
-close all; clear; clc;
+clear;
 path_to_data = '../Benchmarking/data/TimingID_';
 path_to_figures = '../Benchmarking/figures/TimingID_';
 
