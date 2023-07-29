@@ -32,7 +32,8 @@ void runBenchmark(std::ofstream &file, const std::string& id, const bool include
                                                FwdDynMethod::LagrangeMultiplierEigen};
         RigidBodyTreeModel projection_model{cluster_model,
                                             FwdDynMethod::Projection};
-        ReflectedInertiaTreeModel reflected_inertia_model{cluster_model, false};
+        ReflectedInertiaTreeModel reflected_inertia_model{cluster_model,
+                                                          RotorInertiaApproximation::DIAGONAL};
 
         const int nq = cluster_model.getNumPositions();
         const int nv = cluster_model.getNumDegreesOfFreedom();

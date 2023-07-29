@@ -3,9 +3,10 @@
 namespace grbda
 {
 
-    ReflectedInertiaTreeModel::ReflectedInertiaTreeModel(const ClusterTreeModel &cluster_tree_model,
-                                                         bool use_off_diagonal_terms)
-        : TreeModel(), use_off_diagonal_terms_(use_off_diagonal_terms)
+    ReflectedInertiaTreeModel::ReflectedInertiaTreeModel(
+        const ClusterTreeModel &cluster_tree_model,
+        RotorInertiaApproximation rotor_inertia_approximation)
+        : TreeModel(), rotor_inertia_approximation_(rotor_inertia_approximation)
     {
         gravity_ = cluster_tree_model.getGravity();
 
@@ -99,14 +100,18 @@ namespace grbda
     {
         compositeRigidBodyAlgorithm();
 
-        if (use_off_diagonal_terms_)
+        switch (rotor_inertia_approximation_)
         {
+        case RotorInertiaApproximation::NONE:
+            break;
+
+        case RotorInertiaApproximation::DIAGONAL:
+            H_ += reflected_inertia_.diagonal().asDiagonal();
+            break;
+
+        case RotorInertiaApproximation::BLOCK_DIAGONAL:
             H_ += reflected_inertia_;
-        }
-        else
-        {
-            const DMat<double> reflected_inertia_diag = reflected_inertia_.diagonal().asDiagonal();
-            H_ += reflected_inertia_diag;
+            break;
         }
 
         return H_;
@@ -176,22 +181,36 @@ namespace grbda
 
     DVec<double> ReflectedInertiaTreeModel::forwardDynamics(const DVec<double> &tau)
     {
-        if (use_off_diagonal_terms_)
-            return forwardDynamicsWithOffDiag(tau);
-        else
-            return forwardDynamicsWithoutOffDiag(tau);
+        switch (rotor_inertia_approximation_)
+        {
+        case RotorInertiaApproximation::NONE:
+            return forwardDynamicsABA(tau, false);
+        case RotorInertiaApproximation::DIAGONAL:
+            return forwardDynamicsABA(tau, true);
+        case RotorInertiaApproximation::BLOCK_DIAGONAL:
+            return forwardDynamicsHinv(tau);
+        default:
+            throw std::runtime_error("Invalid rotor inertia approximation");
+        }
     }
 
     DVec<double> ReflectedInertiaTreeModel::inverseDynamics(const DVec<double> &ydd)
     {
-        if (use_off_diagonal_terms_)
-            return recursiveNewtonEulerAlgorithm(ydd) + reflected_inertia_ * ydd;
-        else
+        switch (rotor_inertia_approximation_)
+        {
+        case RotorInertiaApproximation::NONE:
+            return recursiveNewtonEulerAlgorithm(ydd);
+        case RotorInertiaApproximation::DIAGONAL:
             return recursiveNewtonEulerAlgorithm(ydd) +
                    reflected_inertia_.diagonal().asDiagonal() * ydd;
+        case RotorInertiaApproximation::BLOCK_DIAGONAL:
+            return recursiveNewtonEulerAlgorithm(ydd) + reflected_inertia_ * ydd;
+        default:
+            throw std::runtime_error("Invalid rotor inertia approximation");
+        }
     }
 
-    DVec<double> ReflectedInertiaTreeModel::forwardDynamicsWithOffDiag(const DVec<double> &tau)
+    DVec<double> ReflectedInertiaTreeModel::forwardDynamicsHinv(const DVec<double> &tau)
     {
         compositeRigidBodyAlgorithm();
         updateBiasForceVector();
@@ -199,11 +218,12 @@ namespace grbda
         return qdd_ref_inertia;
     }
 
-    DVec<double> ReflectedInertiaTreeModel::forwardDynamicsWithoutOffDiag(const DVec<double> &tau)
+    DVec<double> ReflectedInertiaTreeModel::forwardDynamicsABA(const DVec<double> &tau,
+                                                               bool use_reflected_inertia)
     {
         // Forward dynamics via Articulated Body Algorithm
         forwardKinematics();
-        updateArticulatedBodies();
+        updateArticulatedBodies(use_reflected_inertia);
 
         DVec<double> qdd = DVec<double>::Zero(getNumDegreesOfFreedom());
 
@@ -270,7 +290,7 @@ namespace grbda
         return qdd;
     }
 
-    void ReflectedInertiaTreeModel::updateArticulatedBodies()
+    void ReflectedInertiaTreeModel::updateArticulatedBodies(bool use_reflected_inertia)
     {
         if (articulated_bodies_updated_)
             return;
@@ -293,8 +313,9 @@ namespace grbda
             const int num_vel = link_node->num_velocities_;
 
             link_node->U_ = link_node->IA_ * joint->S();
-            const DMat<double> D = joint->S().transpose() * link_node->U_ +
-                                   reflected_inertia_.block(vel_idx, vel_idx, num_vel, num_vel);
+            DMat<double> D = joint->S().transpose() * link_node->U_;
+            if (use_reflected_inertia)
+                D += reflected_inertia_.block(vel_idx, vel_idx, num_vel, num_vel);
             link_node->D_inv_ = D.inverse();
 
             // Articulated body inertia recursion

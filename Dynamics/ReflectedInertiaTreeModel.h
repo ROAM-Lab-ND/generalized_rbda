@@ -11,6 +11,13 @@ namespace grbda
 
     using ReflectedInertiaTreeNodePtr = std::shared_ptr<ReflectedInertiaTreeNode>;
 
+    enum class RotorInertiaApproximation
+    {
+        NONE,
+        DIAGONAL,
+        BLOCK_DIAGONAL,
+    };
+
     /*!
      * Class to represent a floating base rigid body model with rotors and ground
      * contacts. No concept of state.
@@ -21,7 +28,8 @@ namespace grbda
         EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
         ReflectedInertiaTreeModel(const ClusterTreeModel &cluster_tree_model,
-                                  bool use_off_diagonal_terms = true);
+                                  RotorInertiaApproximation rotor_inertia_approximation =
+                                      RotorInertiaApproximation::NONE);
 
         // TODO(@MatthewChignoli): These are functions and members shared with FloatingBaseModel. Not sure how I want to deal with them moving forward. It's unclear which parts of Robot-Software need to change for compatiblity with GRBDA and which parts of GRBDA need to change for compatibility with Robot-Software. Should these functions be abstraced to TreeModel since ClusterTreeModel also uses them?
         Vec3<double> getPosition(const string &body_name);
@@ -68,9 +76,9 @@ namespace grbda
 
         void resetCache() override;
 
-        DVec<double> forwardDynamicsWithoutOffDiag(const DVec<double> &tau);
-        DVec<double> forwardDynamicsWithOffDiag(const DVec<double> &tau);
-        void updateArticulatedBodies();
+        DVec<double> forwardDynamicsABA(const DVec<double> &tau, bool use_reflected_inertia);
+        DVec<double> forwardDynamicsHinv(const DVec<double> &tau);
+        void updateArticulatedBodies(bool use_reflected_inertia);
 
         std::vector<ReflectedInertiaTreeNodePtr> reflected_inertia_nodes_;
 
@@ -81,7 +89,8 @@ namespace grbda
 
         bool articulated_bodies_updated_ = false;
 
-        const bool use_off_diagonal_terms_;
+        // const bool use_off_diagonal_terms_;
+        const RotorInertiaApproximation rotor_inertia_approximation_;
     };
 
 } // namespace grbda

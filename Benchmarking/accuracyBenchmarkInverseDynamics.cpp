@@ -22,8 +22,8 @@ void runBenchmark(std::ofstream &file)
     {
         T robot = T(true);
         ClusterTreeModel cluster_model = robot.buildClusterTreeModel();
-        ReflectedInertiaTreeModel reflected_inertia_model{cluster_model, true};
-        ReflectedInertiaTreeModel reflected_inertia_diag_model{cluster_model, false};
+        ReflectedInertiaTreeModel reflected_inertia_model{cluster_model, RotorInertiaApproximation::BLOCK_DIAGONAL};
+        ReflectedInertiaTreeModel reflected_inertia_diag_model{cluster_model, RotorInertiaApproximation::DIAGONAL};
 
         const int nq = cluster_model.getNumPositions();
         const int nv = cluster_model.getNumDegreesOfFreedom();

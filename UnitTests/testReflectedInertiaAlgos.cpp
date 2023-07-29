@@ -15,8 +15,8 @@ class ReflectedInertiaDynamicsAlgosTest : public testing::Test
 protected:
     ReflectedInertiaDynamicsAlgosTest()
         : cluster_model(robot.buildClusterTreeModel()),
-          reflected_inertia_model{cluster_model, true},
-          reflected_inertia_diag_model{cluster_model, false} {}
+          reflected_inertia_model{cluster_model, RotorInertiaApproximation::BLOCK_DIAGONAL},
+          reflected_inertia_diag_model{cluster_model, RotorInertiaApproximation::DIAGONAL} {}
 
     bool initializeRandomStates()
     {
