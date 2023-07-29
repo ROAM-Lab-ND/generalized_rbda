@@ -40,6 +40,17 @@ TYPED_TEST(ClusterTreeModelTest, SetState)
     DVec<double> qd(0);
     for (const auto &cluster : this->cluster_model.clusters())
     {
+        JointState joint_state;
+        bool nan_in_joint_state = true;
+        while (nan_in_joint_state)
+        {
+            joint_state = cluster->joint_->randomJointState();
+            if (!joint_state.position.hasNaN())
+            {
+                nan_in_joint_state = false;
+            }
+        }
+
         model_state.push_back(cluster->joint_->randomJointState());
         q = appendEigenVector(q, model_state.back().position);
         qd = appendEigenVector(qd, model_state.back().velocity);

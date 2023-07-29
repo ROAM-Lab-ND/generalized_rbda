@@ -149,34 +149,35 @@ namespace grbda
             return getNodeContainingBody(spanning_tree_index)->index_;
     }
 
-    void ReflectedInertiaTreeModel::contactJacobians()
+    const D6Mat<double> &ReflectedInertiaTreeModel::contactJacobian(const std::string &cp_name)
     {
         forwardKinematics();
 
-        for (ContactPoint &cp : contact_points_)
+        ContactPoint &cp = contact_points_[contact_name_to_contact_index_.at(cp_name)];
+
+        const size_t &i = cp.body_index_;
+        const auto node_i = getNodeContainingBody(i);
+        const SpatialTransform Xa = node_i->Xa_[0];
+        const Mat3<double> R_link_to_world = Xa.getRotation().transpose();
+        Mat6<double> Xout = createSXform(R_link_to_world, cp.local_offset_);
+
+        int j = node_i->index_;
+        while (j > -1)
         {
-            const size_t &i = cp.body_index_;
-            const auto node_i = getNodeContainingBody(i);
-            const SpatialTransform Xa = node_i->Xa_[0];
-            const Mat3<double> R_link_to_world = Xa.getRotation().transpose();
-            Mat6<double> Xout = createSXform(R_link_to_world, cp.local_offset_);
+            const auto node_j = reflected_inertia_nodes_[j];
+            const int &vel_idx = node_j->velocity_index_;
+            const int &num_vel = node_j->num_velocities_;
 
-            int j = node_i->index_;
-            while (j > -1)
-            {
-                const auto node_j = reflected_inertia_nodes_[j];
-                const int &vel_idx = node_j->velocity_index_;
-                const int &num_vel = node_j->num_velocities_;
+            const D6Mat<double> &S = node_j->S();
+            cp.jacobian_.middleCols(vel_idx, num_vel) = Xout * S;
 
-                const D6Mat<double> &S = node_j->S();
-                cp.jacobian_.middleCols(vel_idx, num_vel) = Xout * S;
+            const Mat6<double> Xup = node_j->Xup_[0].toMatrix();
+            Xout = Xout * Xup;
 
-                const Mat6<double> Xup = node_j->Xup_[0].toMatrix();
-                Xout = Xout * Xup;
-
-                j = node_j->parent_index_;
-            }
+            j = node_j->parent_index_;
         }
+
+        return cp.jacobian_;
     }
 
     DVec<double> ReflectedInertiaTreeModel::forwardDynamics(const DVec<double> &tau)
@@ -334,14 +335,8 @@ namespace grbda
     double ReflectedInertiaTreeModel::applyLocalFrameTestForceAtContactPoint(
         const Vec3<double> &force, const std::string &contact_point_name, DVec<double> &dstate_out)
     {
-        forwardKinematics();
-        contactJacobians();
-
-        const int contact_point_index = contact_name_to_contact_index_.at(contact_point_name);
-        const ContactPoint &contact_point = contact_points_[contact_point_index];
-
         // ISSUE #23
-        const D3Mat<double> J = contact_point.jacobian_.bottomRows<3>();
+        const D3Mat<double> J = contactJacobian(contact_point_name).bottomRows<3>();
         const DMat<double> H = getMassMatrix();
         const DMat<double> H_inv = H.inverse();
         const DMat<double> inv_ops_inertia = J * H_inv * J.transpose();

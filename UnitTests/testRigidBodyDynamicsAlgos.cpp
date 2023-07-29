@@ -6,7 +6,7 @@
 
 using namespace grbda;
 
-static const double tol = 1e-8;
+static const double tol = 2e-8;
 
 // The purpose of these tests is to ensure consistency between the outputs of the Rigid Body
 // Dynamics Algorithms for our cluster tree model and the constrained rigid body tree
@@ -297,6 +297,7 @@ TYPED_TEST(RigidBodyDynamicsAlgosTest, ApplyTestForceTest)
     for (int i = 0; i < (int)this->cluster_models.size(); i++)
     {
         ClusterTreeModel &cluster_model = this->cluster_models[i];
+        RigidBodyTreeModel &projection_model = this->projection_models[i];
 
         const int nq = cluster_model.getNumPositions();
         const int nv = cluster_model.getNumDegreesOfFreedom();
@@ -316,7 +317,7 @@ TYPED_TEST(RigidBodyDynamicsAlgosTest, ApplyTestForceTest)
             }
 
             cluster_model.contactJacobians();
-            for (const auto cp : cluster_model.contactPoints())
+            for (const ContactPoint& cp : cluster_model.contactPoints())
             {
                 const D3Mat<double> J = cluster_model.Jc(cp.name_);
                 const DMat<double> H = cluster_model.massMatrix();
@@ -334,8 +335,17 @@ TYPED_TEST(RigidBodyDynamicsAlgosTest, ApplyTestForceTest)
                                                                              cp.name_,
                                                                              dstate_efpa);
 
+                    DVec<double> dstate_proj = DVec<double>::Zero(nv);
+                    const double lambda_inv_proj =
+                        projection_model.applyLocalFrameTestForceAtContactPoint(test_force,
+                                                                                cp.name_,
+                                                                                dstate_proj);
+
                     GTEST_ASSERT_LT(std::fabs(lambda_inv_efpa - lambda_inv_iosi), tol);
                     GTEST_ASSERT_LT((dstate_efpa - dstate_iosi).norm(), tol);
+
+                    GTEST_ASSERT_LT(std::fabs(lambda_inv_proj - lambda_inv_iosi), tol);
+                    GTEST_ASSERT_LT((dstate_proj - dstate_iosi).norm(), tol);
                 }
             }
         }

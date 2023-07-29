@@ -3,39 +3,38 @@
 namespace grbda
 {
 
-    void RigidBodyTreeModel::contactJacobians()
+    const D6Mat<double> &RigidBodyTreeModel::contactJacobian(const std::string &cp_name)
     {
         forwardKinematics();
         updateLoopConstraints();
 
-        for (ContactPoint &cp : contact_points_)
+        D6Mat<double> J_spanning = D6Mat<double>::Zero(6, getNumDegreesOfFreedom());
+
+        ContactPoint &cp = contact_points_[contact_name_to_contact_index_.at(cp_name)];
+        const size_t &i = cp.body_index_;
+        const auto node_i = getNodeContainingBody(i);
+        const SpatialTransform Xa = node_i->Xa_[0];
+        const Mat3<double> R_link_to_world = Xa.getRotation().transpose();
+        Mat6<double> Xout = createSXform(R_link_to_world, cp.local_offset_);
+
+        int j = (int)i;
+        while (j > -1)
         {
-            D6Mat<double> J_spanning = D6Mat<double>::Zero(6, getNumDegreesOfFreedom());
+            const auto node_j = getNodeContainingBody(j);
+            const int &vel_idx = node_j->velocity_index_;
+            const int &num_vel = node_j->num_velocities_;
 
-            const size_t &i = cp.body_index_;
-            const auto node_i = getNodeContainingBody(i);
-            const SpatialTransform Xa = node_i->Xa_[0];
-            const Mat3<double> R_link_to_world = Xa.getRotation().transpose();
-            Mat6<double> Xout = createSXform(R_link_to_world, cp.local_offset_);
+            const D6Mat<double> &S = node_j->S();
+            J_spanning.middleCols(vel_idx, num_vel) = Xout * S;
 
-            int j = (int)i;
-            while (j > -1)
-            {
-                const auto node_j = getNodeContainingBody(j);
-                const int &vel_idx = node_j->velocity_index_;
-                const int &num_vel = node_j->num_velocities_;
+            const Mat6<double> Xup = node_j->Xup_[0].toMatrix();
+            Xout = Xout * Xup;
 
-                const D6Mat<double> &S = node_j->S();
-                J_spanning.middleCols(vel_idx, num_vel) = Xout * S;
-
-                const Mat6<double> Xup = node_j->Xup_[0].toMatrix();
-                Xout = Xout * Xup;
-
-                j = node_j->parent_index_;
-            }
-
-            cp.jacobian_ = J_spanning * loop_constraints_.G();
+            j = node_j->parent_index_;
         }
+
+        cp.jacobian_ = J_spanning * loop_constraints_.G();
+        return cp.jacobian_;
     }
 
     DVec<double> RigidBodyTreeModel::forwardDynamics(const DVec<double> &tau)
@@ -51,8 +50,8 @@ namespace grbda
         {
             // Based on Method 3 in Featherstone Ch 8.5
             const DMat<double> &G = loop_constraints_.G();
-            const DMat<double>& G_transpose = loop_constraints_.G_transpose();
-            const DVec<double>& g = loop_constraints_.g();
+            const DMat<double> &G_transpose = loop_constraints_.G_transpose();
+            const DVec<double> &g = loop_constraints_.g();
 
             const DMat<double> A = G_transpose * H_ * G;
             const DVec<double> b = tau - G_transpose * (C_ + H_ * g);
@@ -136,6 +135,17 @@ namespace grbda
         default:
             throw std::runtime_error("Invalid forward dynamics method specified.");
         }
+    }
+
+    double RigidBodyTreeModel::applyLocalFrameTestForceAtContactPoint(
+        const Vec3<double> &force, const string &contact_point_name, DVec<double> &dstate_out)
+    {
+        const D3Mat<double> J = contactJacobian(contact_point_name).bottomRows<3>();
+        const DMat<double> H = getMassMatrix();
+        const DMat<double> H_inv = H.inverse();
+        const DMat<double> inv_ops_inertia = J * H_inv * J.transpose();
+        dstate_out = H_inv * (J.transpose() * force);
+        return force.dot(inv_ops_inertia * force);
     }
 
 } // namespace grbda

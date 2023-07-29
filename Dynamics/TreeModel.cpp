@@ -52,6 +52,18 @@ namespace grbda
         }
     }
 
+    void TreeModel::contactJacobians()
+    {
+        if (contact_jacobians_updated_)
+            return;
+
+        for (auto &contact_point : contact_points_)
+        {
+            contactJacobian(contact_point.name_);
+        }
+        contact_jacobians_updated_ = true;
+    }
+
     void TreeModel::compositeRigidBodyAlgorithm()
     {
         if (mass_matrix_updated_)
@@ -193,6 +205,7 @@ namespace grbda
         kinematics_updated_ = false;
         mass_matrix_updated_ = false;
         bias_force_updated_ = false;
+        contact_jacobians_updated_ = false;
     }
 
     bool TreeModel::vectorContainsIndex(const std::vector<int> vec, const int index)

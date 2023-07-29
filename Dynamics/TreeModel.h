@@ -40,7 +40,9 @@ namespace grbda
             const std::vector<ExternalForceAndBodyIndexPair> &force_and_body_index_pairs = {});
 
         void forwardKinematics();
-        virtual void contactJacobians() = 0;
+
+        virtual const D6Mat<double>& contactJacobian(const std::string &cp_name) = 0;
+        void contactJacobians();
 
         virtual DVec<double> forwardDynamics(const DVec<double> &tau) = 0;
         virtual DVec<double> inverseDynamics(const DVec<double> &qdd) 
@@ -50,10 +52,7 @@ namespace grbda
 
         virtual double applyLocalFrameTestForceAtContactPoint(const Vec3<double> &force,
                                                               const string &contact_point_name,
-                                                              DVec<double> &dstate_out)
-        {
-            throw std::runtime_error("applyLocalFrameTestForce not implemented for this model");
-        }
+                                                              DVec<double> &dstate_out) = 0;
 
         const TreeNodePtr node(const int index) const { return nodes_[index]; }
         const std::vector<TreeNodePtr> &nodes() const { return nodes_; }
@@ -93,6 +92,7 @@ namespace grbda
         bool kinematics_updated_ = false;
         bool mass_matrix_updated_ = false;
         bool bias_force_updated_ = false;
+        bool contact_jacobians_updated_ = false;
     };
 
 } // namespace grbda

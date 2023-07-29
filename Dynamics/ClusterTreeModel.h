@@ -104,7 +104,7 @@ namespace grbda
         void resetExternalForces();
         void resetCalculationFlags() { resetCache(); }
 
-        void contactJacobians() override;
+        const D6Mat<double>& contactJacobian(const std::string &cp_name) override;
         const std::unordered_map<std::string, int> &contacts() const;
         const Vec3<double> &pGC(const string &cp_name) const;
         const Vec3<double> &vGC(const string &cp_name) const;

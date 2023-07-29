@@ -10,40 +10,39 @@ namespace grbda
     using namespace ori;
     using namespace spatial;
 
-    void ClusterTreeModel::contactJacobians()
+    const D6Mat<double>& ClusterTreeModel::contactJacobian(const std::string &cp_name)
     {
         forwardKinematics();
 
-        for (ContactPoint &cp : contact_points_)
+        ContactPoint &cp = contact_points_[contact_name_to_contact_index_.at(cp_name)];
+        const size_t i = cp.body_index_;
+        const Body &body_i = body(i);
+        const auto &cluster_i = getClusterContainingBody(body_i);
+        const int &subindex_within_cluster_i = body_i.sub_index_within_cluster_;
+
+        const SpatialTransform Xa = cluster_i->Xa_[subindex_within_cluster_i];
+        const Mat3<double> &R_link_to_world = Xa.getRotation().transpose();
+        Mat6<double> Xout = createSXform(R_link_to_world, cp.local_offset_);
+
+        int j = (int)i;
+        while (j > -1)
         {
-            const size_t i = cp.body_index_;
+            const Body &body_j = body(j);
+            const auto &cluster_j = getClusterContainingBody(body_j);
+            const int &subindex_within_cluster_j = body_j.sub_index_within_cluster_;
+            const int &vel_idx = cluster_j->velocity_index_;
+            const int &num_vel = cluster_j->num_velocities_;
 
-            const Body &body_i = body(i);
-            const auto &cluster_i = getClusterContainingBody(body_i);
-            const int &subindex_within_cluster_i = body_i.sub_index_within_cluster_;
+            D6Mat<double> S = cluster_j->S().middleRows<6>(6 * subindex_within_cluster_j);
+            cp.jacobian_.middleCols(vel_idx, num_vel) = Xout * S;
 
-            const SpatialTransform Xa = cluster_i->Xa_[subindex_within_cluster_i];
-            const Mat3<double> &R_link_to_world = Xa.getRotation().transpose();
-            Mat6<double> Xout = createSXform(R_link_to_world, cp.local_offset_);
+            Mat6<double> Xup = cluster_j->Xup_[subindex_within_cluster_j].toMatrix();
+            Xout = Xout * Xup;
 
-            int j = (int)i;
-            while (j > -1)
-            {
-                const Body &body_j = body(j);
-                const auto &cluster_j = getClusterContainingBody(body_j);
-                const int &subindex_within_cluster_j = body_j.sub_index_within_cluster_;
-                const int &vel_idx = cluster_j->velocity_index_;
-                const int &num_vel = cluster_j->num_velocities_;
-
-                D6Mat<double> S = cluster_j->S().middleRows<6>(6 * subindex_within_cluster_j);
-                cp.jacobian_.middleCols(vel_idx, num_vel) = Xout * S;
-
-                Mat6<double> Xup = cluster_j->Xup_[subindex_within_cluster_j].toMatrix();
-                Xout = Xout * Xup;
-
-                j = body_j.cluster_ancestor_index_;
-            }
+            j = body_j.cluster_ancestor_index_;
         }
+
+        return cp.jacobian_;
     }
 
     DVec<double> ClusterTreeModel::inverseDynamics(const DVec<double> &qdd)
