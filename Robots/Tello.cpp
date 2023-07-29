@@ -177,6 +177,14 @@ namespace grbda
                 CoordinateAxis::Z, CoordinateAxis::Z, CoordinateAxis::Y, CoordinateAxis::Y);
             model.appendRegisteredBodiesAsCluster(knee_ankle_differential_cluster_name,
                                                   knee_ankle_differential_generalized_joint);
+
+            // Append contact points for the feet
+            const std::string toe_contact_name = side + "-toe_contact";
+            const std::string heel_contact_name = side + "-heel_contact";
+            model.appendContactPoint(foot_name, Vec3<double>(_footToeLength, 0, -_footHeight),
+                                     toe_contact_name);
+            model.appendContactPoint(foot_name, Vec3<double>(-_footHeelLength, 0, -_footHeight),
+                                     heel_contact_name);
         }
 
         return model;

@@ -120,6 +120,10 @@ namespace grbda
 	const double knee_ankle_rotor_2_mass = 1.;
 	const Vec3<double> knee_ankle_rotor_2_CoM = Vec3<double>{0., 0., 0.};
 	const Mat3<double> knee_ankle_rotor_2_inertia = (Mat3<double>() << 0., 0., 0., 0., 0., 0., 0., 0., 0.003).finished();
+
+	const double _footToeLength = 0.1;
+    const double _footHeelLength = 0.05;
+    const double _footHeight = 0.041;
     };
 
 } // namespace grbda

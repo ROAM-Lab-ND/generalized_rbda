@@ -137,7 +137,6 @@ void runForwardDynamicsBenchmark(std::ofstream &file)
     const int num_samples = 1000;
     for (double alpha = 0.; alpha < 1.; alpha += alpha_rate)
     {
-        // double fd_error = 0.;
         double fd_diag_error = 0.;
         double fd_none_error = 0.;
 
@@ -167,6 +166,56 @@ void runForwardDynamicsBenchmark(std::ofstream &file)
     }
 }
 
+template <typename RobotType>
+void runApplyTestForceBenchmark(std::ofstream &file, const std::string contact_point)
+{
+    RobotType robot;
+    ClusterTreeModel model_cl = robot.buildClusterTreeModel();
+    ReflectedInertiaTreeModel model_rf(model_cl, RotorInertiaApproximation::BLOCK_DIAGONAL);
+    ReflectedInertiaTreeModel model_rf_diag(model_cl, RotorInertiaApproximation::DIAGONAL);
+    ReflectedInertiaTreeModel model_rf_none(model_cl, RotorInertiaApproximation::NONE);
+
+    const int nv = model_cl.getNumDegreesOfFreedom();
+
+    const double max_force = 200.;
+    const double alpha_rate = 0.1;
+    const int num_samples = 1000;
+    for (double alpha = 0.; alpha < 1.; alpha += alpha_rate)
+    {
+        double dstate_diag_error = 0.;
+        double dstate_none_error = 0.;
+
+        for (int j = 0; j < num_samples; j++)
+        {
+            bool nan_detected = setRandomStates(model_cl, model_rf, model_rf_diag, model_rf_none);
+            if (nan_detected)
+            {
+                j--;
+                continue;
+            }
+
+            // Apply Test Force
+            Vec3<double> force = alpha * max_force * Vec3<double>::Random();
+            DVec<double> dstate_cluster;
+            model_cl.applyLocalFrameTestForceAtContactPoint(force, contact_point,
+                                                            dstate_cluster);
+            DVec<double> dstate_diag_approx;
+            model_rf_diag.applyLocalFrameTestForceAtContactPoint(force, contact_point,
+                                                                 dstate_diag_approx);
+            DVec<double> dstate_none_approx;
+            model_rf_none.applyLocalFrameTestForceAtContactPoint(force, contact_point,
+                                                                 dstate_none_approx);
+
+            dstate_diag_error += (dstate_cluster - dstate_diag_approx).norm();
+            dstate_none_error += (dstate_cluster - dstate_none_approx).norm();
+        }
+
+        file << alpha << ","
+             << dstate_none_error / num_samples << ","
+             << dstate_diag_error / num_samples << std::endl;
+    }
+}
+
 int main()
 {
     // Inverse Dynamics Benchmark
@@ -179,7 +228,6 @@ int main()
     runInverseDynamicsBenchmark<MiniCheetah>(id_file);
     id_file.close();
 
-
     // Forward Dynamics Benchmark
     std::cout << "\n\n**Starting Forward Dynamics Timing Benchmark for Robots**" << std::endl;
     path_to_data = "../Benchmarking/data/AccuracyFD_";
@@ -190,4 +238,13 @@ int main()
     runForwardDynamicsBenchmark<MiniCheetah>(fd_file);
     fd_file.close();
 
+    // Apply Test Force Benchmark
+    std::cout << "\n\n**Starting Apply Test Force Timing Benchmark for Robots**" << std::endl;
+    path_to_data = "../Benchmarking/data/AccuracyATF_";
+    std::ofstream atf_file;
+    atf_file.open(path_to_data + "Robots.csv");
+    runApplyTestForceBenchmark<Tello>(atf_file, "left-toe_contact");
+    runApplyTestForceBenchmark<MIT_Humanoid>(atf_file, "left_toe_contact");
+    runApplyTestForceBenchmark<MiniCheetah>(atf_file, "FL_foot_contact");
+    atf_file.close();
 }
