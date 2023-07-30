@@ -32,6 +32,8 @@ xlabel('Robot')
 ylabel('Time (ms)')
 title('Forward Dynamics Benchmark')
 legend('Location', 'best')
+grid on
+set(gca,'Fontsize',18)
 
 % Set the x-axis tick labels
 xticks(x)
@@ -75,6 +77,8 @@ xlabel('Robot')
 ylabel('Time (ms)')
 title('Inverse Dynamics Benchmark')
 legend('Location', 'best')
+grid on
+set(gca,'Fontsize',18)
 
 % Set the x-axis tick labels
 xticks(x)
@@ -119,6 +123,8 @@ xlabel('Robot')
 ylabel('Time (ms)')
 title('Apply Test Force Benchmark')
 legend('Location', 'best')
+grid on
+set(gca,'Fontsize',18)
 
 % Set the x-axis tick labels
 xticks(x)

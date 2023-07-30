@@ -105,7 +105,8 @@ function lgd = compareInvDynAccuracy(data, robot_name, color, lgd)
 
     grid on
     xlabel('Percent of Max Acceleration', 'Interpreter', 'latex')
-    ylabel('Inverse Dynamics Error ($N\cdot m$)', 'Interpreter', 'latex')
+    ylabel('$\tau$ Error ($N\cdot m$)', 'Interpreter', 'latex')
+    title('Inverse Dynamics Error')
     legend(lgd, 'Location', 'Best', 'Interpreter', 'latex')
     set(gca, 'Fontsize', 20)
     set(gca, 'TickLabelInterpreter', 'latex')
@@ -119,7 +120,7 @@ function lgd = compareFwdDynAccuracy(data, robot_name, color, lgd)
     hold on
     lgd = [lgd, [robot_name, ' - Unconstrained']];
 
-    tol = 5;
+    tol = 80;
     if ~isApproxEqual(data(:, 2), data(:, 3), tol)
         semilogy(data(:, 1), data(:, 3), [color, '^--'], 'Linewidth', lw, 'MarkerSize', ms)
         lgd = [lgd, [robot_name, ' - Rotor Inertia Approx']];
@@ -127,7 +128,8 @@ function lgd = compareFwdDynAccuracy(data, robot_name, color, lgd)
 
     grid on
     xlabel('Percent of Max Torque', 'Interpreter', 'latex')
-    ylabel('Forward Dynamics Error ($rad/s^2$)', 'Interpreter', 'latex')
+    ylabel('$\ddot{q}$ Rrror (rad/$s^2$)', 'Interpreter', 'latex')
+    title('Forward Dynamics Error')
     legend(lgd, 'Location', 'Best', 'Interpreter', 'latex')
     set(gca, 'Fontsize', 20)
     set(gca, 'TickLabelInterpreter', 'latex')
@@ -141,7 +143,7 @@ function lgd = compareApplyTestForceAccuracy(data, robot_name, color, lgd)
     hold on
     lgd = [lgd, [robot_name, ' - Unconstrained']];
 
-    tol = 5;
+    tol = 50;
     if ~isApproxEqual(data(:, 2), data(:, 3), tol)
         semilogy(data(:, 1), data(:, 3), [color, '^--'], 'Linewidth', lw, 'MarkerSize', ms)
         lgd = [lgd, [robot_name, ' - Rotor Inertia Approx']];
@@ -149,7 +151,8 @@ function lgd = compareApplyTestForceAccuracy(data, robot_name, color, lgd)
 
     grid on
     xlabel('Percent of Max Force', 'Interpreter', 'latex')
-    ylabel('Apply Test Force Error ($rad/s^2$)', 'Interpreter', 'latex')
+    ylabel('$\Delta \dot{q}$ Error (rad/$s$)', 'Interpreter', 'latex')
+    title('Apply Test Force Error')
     legend(lgd, 'Location', 'Best', 'Interpreter', 'latex')
     set(gca, 'Fontsize', 20)
     set(gca, 'TickLabelInterpreter', 'latex')
