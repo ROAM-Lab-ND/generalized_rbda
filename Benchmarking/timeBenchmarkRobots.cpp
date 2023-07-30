@@ -248,6 +248,7 @@ int main()
     std::ofstream fd_file;
     fd_file.open(path_to_data + "Robots.csv");
     runForwardDynamicsBenchmark<Tello>(fd_file);
+    runForwardDynamicsBenchmark<TelloWithArms>(fd_file);
     runForwardDynamicsBenchmark<MIT_Humanoid>(fd_file);
     runForwardDynamicsBenchmark<MiniCheetah>(fd_file);
     fd_file.close();
@@ -257,6 +258,7 @@ int main()
     std::ofstream id_file;
     id_file.open(path_to_data + "Robots.csv");
     runInverseDynamicsBenchmark<Tello>(id_file);
+    runInverseDynamicsBenchmark<TelloWithArms>(fd_file);
     runInverseDynamicsBenchmark<MIT_Humanoid>(id_file);
     runInverseDynamicsBenchmark<MiniCheetah>(id_file);
     id_file.close();

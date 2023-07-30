@@ -35,7 +35,7 @@ legend('Location', 'best')
 
 % Set the x-axis tick labels
 xticks(x)
-xticklabels({'Tello', 'Humanoid', 'Mini Cheetah'})
+xticklabels({'Tello', 'TelloWithArms', 'Humanoid', 'Mini Cheetah'})
 
 % Adjust the y-axis limits
 ylim([0 max(data, [], 'all') * 1.2])
@@ -78,7 +78,7 @@ legend('Location', 'best')
 
 % Set the x-axis tick labels
 xticks(x)
-xticklabels({'Tello', 'Humanoid', 'Mini Cheetah'})
+xticklabels({'Tello', 'TelloWithArms', 'Humanoid', 'Mini Cheetah'})
 
 % Adjust the y-axis limits
 ylim([0 max(data, [], 'all') * 1.2])
@@ -122,7 +122,7 @@ legend('Location', 'best')
 
 % Set the x-axis tick labels
 xticks(x)
-xticklabels({'Tello', 'Humanoid', 'Mini Cheetah'})
+xticklabels({'Tello', 'TelloWithArms', 'Humanoid', 'Mini Cheetah'})
 
 % Adjust the y-axis limits
 ylim([0 max(data, [], 'all') * 1.2])

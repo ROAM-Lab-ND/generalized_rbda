@@ -5,5 +5,6 @@
 #include "RevoluteChainMultiplerRotorsPerLink.hpp"
 #include "RevoluteChainWithAndWithoutRotor.hpp"
 #include "Tello.hpp"
+#include "TelloWithArms.hpp"
 #include "MIT_Humanoid.hpp"
 #include "MiniCheetah.hpp"
