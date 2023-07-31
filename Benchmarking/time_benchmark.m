@@ -61,7 +61,7 @@ function compareTimes(data, robot_name)
     end
     set(gca, 'Fontsize', 16)
     set(gca, 'TickLabelInterpreter', 'latex')
-    axis([0 25 0 0.16])
+    axis([0 25 0 0.3])
 end
 
 function compareMultipleRotorTimes(data)

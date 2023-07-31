@@ -258,7 +258,7 @@ int main()
     std::ofstream id_file;
     id_file.open(path_to_data + "Robots.csv");
     runInverseDynamicsBenchmark<Tello>(id_file);
-    runInverseDynamicsBenchmark<TelloWithArms>(fd_file);
+    runInverseDynamicsBenchmark<TelloWithArms>(id_file);
     runInverseDynamicsBenchmark<MIT_Humanoid>(id_file);
     runInverseDynamicsBenchmark<MiniCheetah>(id_file);
     id_file.close();
@@ -269,6 +269,7 @@ int main()
     std::ofstream atf_file;
     atf_file.open(path_to_data + "Robots.csv");
     runApplyTestForceBenchmark<Tello>(atf_file, "left-toe_contact");
+    runApplyTestForceBenchmark<TelloWithArms>(atf_file, "left-toe_contact");
     runApplyTestForceBenchmark<MIT_Humanoid>(atf_file, "left_toe_contact");
     runApplyTestForceBenchmark<MiniCheetah>(atf_file, "FL_foot_contact");
     atf_file.close();
