@@ -70,7 +70,7 @@ bool setRandomStates(ClusterTreeModel &cf_model,
 }
 
 template <typename RobotType>
-void runInverseDynamicsBenchmark(std::ofstream &file)
+void runInverseDynamicsBenchmark(std::ofstream &file, const double max_torque)
 {
     RobotType robot;
     ClusterTreeModel model_cl = robot.buildClusterTreeModel();
@@ -80,10 +80,9 @@ void runInverseDynamicsBenchmark(std::ofstream &file)
 
     const int nv = model_cl.getNumDegreesOfFreedom();
 
-    const double max_torque = 55.;
     const double alpha_rate = 0.1;
-    const int num_samples = 1000;
-    for (double alpha = 0.; alpha < 1.; alpha += alpha_rate)
+    const int num_samples = 500;
+    for (double alpha = 0.; alpha <= 1.; alpha += alpha_rate)
     {
         double id_error = 0.;
         double id_diag_error = 0.;
@@ -122,7 +121,7 @@ void runInverseDynamicsBenchmark(std::ofstream &file)
 }
 
 template <typename RobotType>
-void runForwardDynamicsBenchmark(std::ofstream &file)
+void runForwardDynamicsBenchmark(std::ofstream &file, const double max_torque)
 {
     RobotType robot;
     ClusterTreeModel model_cl = robot.buildClusterTreeModel();
@@ -132,10 +131,9 @@ void runForwardDynamicsBenchmark(std::ofstream &file)
 
     const int nv = model_cl.getNumDegreesOfFreedom();
 
-    const double max_torque = 55.;
     const double alpha_rate = 0.1;
-    const int num_samples = 1000;
-    for (double alpha = 0.; alpha < 1.; alpha += alpha_rate)
+    const int num_samples = 500;
+    for (double alpha = 0.; alpha <= 1.; alpha += alpha_rate)
     {
         double fd_diag_error = 0.;
         double fd_none_error = 0.;
@@ -167,7 +165,8 @@ void runForwardDynamicsBenchmark(std::ofstream &file)
 }
 
 template <typename RobotType>
-void runApplyTestForceBenchmark(std::ofstream &file, const std::string contact_point)
+void runApplyTestForceBenchmark(std::ofstream &file, const std::string contact_point,
+                                const double max_force)
 {
     RobotType robot;
     ClusterTreeModel model_cl = robot.buildClusterTreeModel();
@@ -177,10 +176,10 @@ void runApplyTestForceBenchmark(std::ofstream &file, const std::string contact_p
 
     const int nv = model_cl.getNumDegreesOfFreedom();
 
-    const double max_force = 200.;
     const double alpha_rate = 0.1;
-    const int num_samples = 1000;
-    for (double alpha = 0.; alpha < 1.; alpha += alpha_rate)
+    const double offset = 0.01;
+    const int num_samples = 500;
+    for (double alpha = offset; alpha <= (1. + offset); alpha += alpha_rate)
     {
         double dstate_diag_error = 0.;
         double dstate_none_error = 0.;
@@ -223,9 +222,10 @@ int main()
     std::string path_to_data = "../Benchmarking/data/AccuracyID_";
     std::ofstream id_file;
     id_file.open(path_to_data + "Robots.csv");
-    runInverseDynamicsBenchmark<Tello>(id_file);
-    runInverseDynamicsBenchmark<MIT_Humanoid>(id_file);
-    runInverseDynamicsBenchmark<MiniCheetah>(id_file);
+    runInverseDynamicsBenchmark<TelloWithArms>(id_file, 30.);
+    // runInverseDynamicsBenchmark<Tello>(id_file);
+    runInverseDynamicsBenchmark<MIT_Humanoid>(id_file, 30.);
+    runInverseDynamicsBenchmark<MiniCheetah>(id_file, 15.);
     id_file.close();
 
     // Forward Dynamics Benchmark
@@ -233,9 +233,10 @@ int main()
     path_to_data = "../Benchmarking/data/AccuracyFD_";
     std::ofstream fd_file;
     fd_file.open(path_to_data + "Robots.csv");
-    runForwardDynamicsBenchmark<Tello>(fd_file);
-    runForwardDynamicsBenchmark<MIT_Humanoid>(fd_file);
-    runForwardDynamicsBenchmark<MiniCheetah>(fd_file);
+    runForwardDynamicsBenchmark<TelloWithArms>(fd_file, 30.);
+    // runForwardDynamicsBenchmark<Tello>(fd_file);
+    runForwardDynamicsBenchmark<MIT_Humanoid>(fd_file, 30.);
+    runForwardDynamicsBenchmark<MiniCheetah>(fd_file, 15.);
     fd_file.close();
 
     // Apply Test Force Benchmark
@@ -243,8 +244,9 @@ int main()
     path_to_data = "../Benchmarking/data/AccuracyATF_";
     std::ofstream atf_file;
     atf_file.open(path_to_data + "Robots.csv");
-    runApplyTestForceBenchmark<Tello>(atf_file, "left-toe_contact");
-    runApplyTestForceBenchmark<MIT_Humanoid>(atf_file, "left_toe_contact");
-    runApplyTestForceBenchmark<MiniCheetah>(atf_file, "FL_foot_contact");
+    runApplyTestForceBenchmark<TelloWithArms>(atf_file, "left-toe_contact", 100.);
+    // runApplyTestForceBenchmark<Tello>(atf_file, "left-toe_contact");
+    runApplyTestForceBenchmark<MIT_Humanoid>(atf_file, "left_toe_contact", 100.);
+    runApplyTestForceBenchmark<MiniCheetah>(atf_file, "FL_foot_contact", 50.);
     atf_file.close();
 }

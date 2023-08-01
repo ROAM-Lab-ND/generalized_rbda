@@ -1,112 +1,136 @@
 %% Inverse Dynamics
 close all; clear; clc;
 
+% Define RGB colors
+purple = [0.5, 0.0, 1.0];
+dark_green = [0.0, 0.5, 0.0];
+gold = [0.8, 0.6, 0.0];
+
 path_to_data = '../Benchmarking/data/AccuracyID_';
 path_to_figures = '../Benchmarking/figures/AccuracyID_';
 
 data = readmatrix([path_to_data, 'Robots.csv']);
 
-alpha = unique(data(:,1));
+alpha = unique(data(:, 1));
 rows_per_dataset = length(alpha);
 
-datasets = cell(length(data(:,1)) / rows_per_dataset, 1);
-robot_names = {'Tello','Humanoid','Mini Cheetah'};
+datasets = cell(length(data(:, 1)) / rows_per_dataset, 1);
+robot_names = {'Tello', 'MIT Humanoid', 'Mini Cheetah'};
 
 for i = 1:length(datasets)
-    datasets{i} = data((i-1)*rows_per_dataset + 1:i*rows_per_dataset, :);
+    datasets{i} = data((i - 1) * rows_per_dataset + 1:i * rows_per_dataset, :);
 end
 
 figure
-colors = {'r', 'g', 'b'};
+
+colors = {purple, dark_green, gold};
 lgd = {};
+
 for i = 1:length(datasets)
     robot_name = robot_names{i};
     lgd = compareInvDynAccuracy(datasets{i}, robot_name, colors{i}, lgd);
 end
+
 saveas(gcf, [path_to_figures, 'Robots.png'])
 
 %% Forward Dynamics
 clear;
+
+% Define RGB colors
+purple = [0.5, 0.0, 1.0];
+dark_green = [0.0, 0.5, 0.0];
+gold = [0.8, 0.6, 0.0];
 
 path_to_data = '../Benchmarking/data/AccuracyFD_';
 path_to_figures = '../Benchmarking/figures/AccuracyFD_';
 
 data = readmatrix([path_to_data, 'Robots.csv']);
 
-alpha = unique(data(:,1));
+alpha = unique(data(:, 1));
 rows_per_dataset = length(alpha);
 
-datasets = cell(length(data(:,1)) / rows_per_dataset, 1);
-robot_names = {'Tello','Humanoid','Mini Cheetah'};
+datasets = cell(length(data(:, 1)) / rows_per_dataset, 1);
+robot_names = {'Tello', 'MIT Humanoid', 'Mini Cheetah'};
 
 for i = 1:length(datasets)
-    datasets{i} = data((i-1)*rows_per_dataset + 1:i*rows_per_dataset, :);
+    datasets{i} = data((i - 1) * rows_per_dataset + 1:i * rows_per_dataset, :);
 end
 
 figure
-colors = {'r', 'g', 'b'};
+colors = {purple, dark_green, gold};
 lgd = {};
+
 for i = 1:length(datasets)
     robot_name = robot_names{i};
     lgd = compareFwdDynAccuracy(datasets{i}, robot_name, colors{i}, lgd);
 end
+
 saveas(gcf, [path_to_figures, 'Robots.png'])
 
 %% Apply Test Force
 clear;
+
+% Define RGB colors
+purple = [0.5, 0.0, 1.0];
+dark_green = [0.0, 0.5, 0.0];
+gold = [0.8, 0.6, 0.0];
 
 path_to_data = '../Benchmarking/data/AccuracyATF_';
 path_to_figures = '../Benchmarking/figures/AccuracyATF_';
 
 data = readmatrix([path_to_data, 'Robots.csv']);
 
-alpha = unique(data(:,1));
+alpha = unique(data(:, 1));
 rows_per_dataset = length(alpha);
 
-datasets = cell(length(data(:,1)) / rows_per_dataset, 1);
-robot_names = {'Tello','Humanoid','Mini Cheetah'};
+datasets = cell(length(data(:, 1)) / rows_per_dataset, 1);
+robot_names = {'Tello', 'MIT Humanoid', 'Mini Cheetah'};
 
 for i = 1:length(datasets)
-    datasets{i} = data((i-1)*rows_per_dataset + 1:i*rows_per_dataset, :);
+    datasets{i} = data((i - 1) * rows_per_dataset + 1:i * rows_per_dataset, :);
 end
 
 figure
-colors = {'r', 'g', 'b'};
+colors = {purple, dark_green, gold};
 lgd = {};
+
 for i = 1:length(datasets)
     robot_name = robot_names{i};
     lgd = compareApplyTestForceAccuracy(datasets{i}, robot_name, colors{i}, lgd);
 end
+
 saveas(gcf, [path_to_figures, 'Robots.png'])
 
 %% Helper Functions
 function lgd = compareInvDynAccuracy(data, robot_name, color, lgd)
     lw = 2.0;
-    ms = 10.0;
+    ms = 8.0;
 
-    semilogy(data(:,1), data(:,2), [color,'o-'], 'Linewidth', lw, 'MarkerSize', ms)
+    semilogy(data(:, 1), data(:, 2), 'o-', 'Linewidth', lw, 'MarkerSize', ms, 'Color', color)
     hold on
 
     % add to the legend
     lgd = [lgd, [robot_name, ' - Unconstrained']];
 
     tol = 5;
+
     if ~isApproxEqual(data(:, 2), data(:, 3), tol)
-        semilogy(data(:, 1), data(:, 3), [color, '^--'], 'Linewidth', lw, 'MarkerSize', ms)
-        lgd = [lgd, [robot_name, ' - Diagonal Approx']];
 
         if ~isApproxEqual(data(:, 3), data(:, 4), tol)
-            semilogy(data(:, 1), data(:, 4), [color, '*:'], 'Linewidth', lw, 'MarkerSize', ms)
-            lgd = [lgd, [robot_name, ' - Block Diagonal Approx']];
+            semilogy(data(:, 1), data(:, 4), '^--', 'Linewidth', lw, 'MarkerSize', ms, 'Color', color)
+
+        else
+            semilogy(data(:, 1), data(:, 3), '^--', 'Linewidth', lw, 'MarkerSize', ms, 'Color', color)
 
         end
+
+        lgd = [lgd, [robot_name, ' - Approximate']];
 
     end
 
     grid on
     xlabel('Percent of Max Acceleration', 'Interpreter', 'latex')
-    ylabel('$\tau$ Error ($N\cdot m$)', 'Interpreter', 'latex')
-    title('Inverse Dynamics Error')
+    ylabel('$\tau$ Error ($Nm$)', 'Interpreter', 'latex')
     legend(lgd, 'Location', 'Best', 'Interpreter', 'latex')
     set(gca, 'Fontsize', 20)
     set(gca, 'TickLabelInterpreter', 'latex')
@@ -114,22 +138,22 @@ end
 
 function lgd = compareFwdDynAccuracy(data, robot_name, color, lgd)
     lw = 2.0;
-    ms = 10.0;
+    ms = 8.0;
 
-    semilogy(data(:,1), data(:,2), [color,'o-'], 'Linewidth', lw, 'MarkerSize', ms)
+    semilogy(data(:, 1), data(:, 2), 'o-', 'Linewidth', lw, 'MarkerSize', ms, 'Color', color)
     hold on
     lgd = [lgd, [robot_name, ' - Unconstrained']];
 
-    tol = 80;
+    tol = 5000;
+
     if ~isApproxEqual(data(:, 2), data(:, 3), tol)
-        semilogy(data(:, 1), data(:, 3), [color, '^--'], 'Linewidth', lw, 'MarkerSize', ms)
-        lgd = [lgd, [robot_name, ' - Rotor Inertia Approx']];
+        semilogy(data(:, 1), data(:, 3), '^--', 'Linewidth', lw, 'MarkerSize', ms, 'Color', color)
+        lgd = [lgd, [robot_name, ' - Approximate']];
     end
 
     grid on
     xlabel('Percent of Max Torque', 'Interpreter', 'latex')
-    ylabel('$\ddot{q}$ Rrror (rad/$s^2$)', 'Interpreter', 'latex')
-    title('Forward Dynamics Error')
+    ylabel('$\ddot{q}$ Errror (rad/$s^2$)', 'Interpreter', 'latex')
     legend(lgd, 'Location', 'Best', 'Interpreter', 'latex')
     set(gca, 'Fontsize', 20)
     set(gca, 'TickLabelInterpreter', 'latex')
@@ -137,25 +161,26 @@ end
 
 function lgd = compareApplyTestForceAccuracy(data, robot_name, color, lgd)
     lw = 2.0;
-    ms = 10.0;
+    ms = 8.0;
 
-    semilogy(data(:,1), data(:,2), [color,'o-'], 'Linewidth', lw, 'MarkerSize', ms)
+    semilogy(data(:, 1), data(:, 2), 'o-', 'Linewidth', lw, 'MarkerSize', ms, 'Color', color)
     hold on
     lgd = [lgd, [robot_name, ' - Unconstrained']];
 
     tol = 50;
+
     if ~isApproxEqual(data(:, 2), data(:, 3), tol)
-        semilogy(data(:, 1), data(:, 3), [color, '^--'], 'Linewidth', lw, 'MarkerSize', ms)
-        lgd = [lgd, [robot_name, ' - Rotor Inertia Approx']];
+        semilogy(data(:, 1), data(:, 3), '^--', 'Linewidth', lw, 'MarkerSize', ms, 'Color', color)
+        lgd = [lgd, [robot_name, ' - Approximate']];
     end
 
     grid on
     xlabel('Percent of Max Force', 'Interpreter', 'latex')
     ylabel('$\Delta \dot{q}$ Error (rad/$s$)', 'Interpreter', 'latex')
-    title('Apply Test Force Error')
     legend(lgd, 'Location', 'Best', 'Interpreter', 'latex')
     set(gca, 'Fontsize', 20)
     set(gca, 'TickLabelInterpreter', 'latex')
+    axis([0 1.05 1e-2 1e5])
 end
 
 function result = isApproxEqual(a, b, tolerance)
