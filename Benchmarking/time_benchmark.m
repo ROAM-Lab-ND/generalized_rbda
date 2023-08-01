@@ -7,14 +7,14 @@ path_to_figures = '../Benchmarking/figures/Timing_';
 figure
 
 % Revolute Chain
+figure
 revolute_chain_with_rotors = readmatrix([path_to_data, 'RevoluteChain.csv']);
-subplot(1, 2, 1)
-compareTimes(revolute_chain_with_rotors, 'Revolute w/ Rotor')
+compareTimes(revolute_chain_with_rotors)
 
 % Revolute Pair Chain
+figure
 revolute_pair_chain_with_rotors = readmatrix([path_to_data, 'RevolutePairChain.csv']);
-subplot(1, 2, 2)
-compareTimes(revolute_pair_chain_with_rotors, 'Revolute Pair w/ Rotors')
+compareTimes(revolute_pair_chain_with_rotors)
 
 saveas(gcf, [path_to_figures, 'RevoluteChains.png'])
 
@@ -36,7 +36,7 @@ function [rows, cols] = getSubplotRowsAndCols(num_plots)
     cols = ceil(num_plots / rows);
 end
 
-function compareTimes(data, robot_name)
+function compareTimes(data)
     
     plot_both_lg = false;
 
@@ -53,7 +53,6 @@ function compareTimes(data, robot_name)
 
     xlabel('Degrees of Freedom', 'Interpreter', 'latex')
     ylabel('Computation Time (ms)', 'Interpreter', 'latex')
-    title(robot_name, 'Interpreter', 'latex')
     if plot_both_lg
         legend({'Cluster-Based', 'Lagrange Multipliers (Custom)', 'Lagrange Multipliers (Eigen)', 'Projection', 'Original ABA'}, 'Location', 'Best', 'Interpreter', 'latex')
     else

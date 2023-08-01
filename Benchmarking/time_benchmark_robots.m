@@ -22,22 +22,22 @@ groupWidth = 0.6;
 barWidth = groupWidth / num_algos;
 offset = 0.5 * barWidth;
 
-bar(x - 3 * offset, data(:, 5), barWidth, 'y', 'DisplayName', 'ABA w/ Reflected Inertia');
-bar(x - offset, data(:, 1), barWidth, 'r', 'DisplayName', 'Cluster-Based ABA');
+bar(x - 3 * offset, data(:, 5), barWidth, 'y', 'DisplayName', 'ABA');
+bar(x - offset, data(:, 1), barWidth, 'r', 'DisplayName', 'C-ABA');
 bar(x + offset, data(:, 4), barWidth, 'b', 'DisplayName', 'Projection Method');
 bar(x + 3 * offset, data(:, 3), barWidth, 'g', 'DisplayName', 'Lagrange Multipler Method');
 
 % Customize the plot
-xlabel('Robot')
-ylabel('Time (ms)')
-title('Forward Dynamics Benchmark')
+ylabel('Time (ms)','Interpreter','latex')
 legend('Location', 'best')
 grid on
 set(gca,'Fontsize',18)
+set(gca,'TickLabelInterpreter','latex')
+set(gca,'FontName','Times New Roman')
 
 % Set the x-axis tick labels
 xticks(x)
-xticklabels({'Tello', 'TelloWithArms', 'Humanoid', 'Mini Cheetah'})
+xticklabels({'Mini Cheetah', 'Tello', 'MIT Humanoid', 'Tello w/ Arms'})
 
 % Adjust the y-axis limits
 ylim([0 max(data, [], 'all') * 1.2])
@@ -69,20 +69,21 @@ groupWidth = 0.6;
 barWidth = groupWidth / num_algos;
 offset = 0.5 * barWidth;
 
-bar(x - offset, data(:, 2), barWidth, 'y', 'DisplayName', 'RNEA w/ Reflected Inertia');
-bar(x + offset, data(:, 1), barWidth, 'r', 'DisplayName', 'Cluster-Based RNEA');
+bar(x - 2 * offset, data(:, 3), barWidth, 'y', 'DisplayName', 'Approximate RNEA');
+bar(x, data(:, 1), barWidth, 'r', 'DisplayName', 'C-RNEA');
+bar(x + 2 * offset, data(:, 2), barWidth, 'b', 'DisplayName', 'Projected RNEA');
 
 % Customize the plot
-xlabel('Robot')
-ylabel('Time (ms)')
-title('Inverse Dynamics Benchmark')
+ylabel('Time (ms)','Interpreter','latex')
 legend('Location', 'best')
 grid on
 set(gca,'Fontsize',18)
+set(gca,'TickLabelInterpreter','latex')
+set(gca,'FontName','Times New Roman')
 
 % Set the x-axis tick labels
 xticks(x)
-xticklabels({'Tello', 'TelloWithArms', 'Humanoid', 'Mini Cheetah'})
+xticklabels({'Mini Cheetah', 'Tello', 'MIT Humanoid', 'Tello w/ Arms'})
 
 % Adjust the y-axis limits
 ylim([0 max(data, [], 'all') * 1.2])
@@ -114,21 +115,21 @@ groupWidth = 0.6;
 barWidth = groupWidth / num_algos;
 offset = 0.5 * barWidth;
 
-bar(x - 2 * offset, data(:, 3), barWidth, 'y', 'DisplayName', 'EFPA w/ Reflected Inertia');
-bar(x, data(:, 2), barWidth, 'r', 'DisplayName', 'Cluster-Based EFPA');
-bar(x + 2 * offset, data(:, 1), barWidth, 'b', 'DisplayName', 'Projection Method');
+bar(x - 2 * offset, data(:, 3), barWidth, 'y', 'DisplayName', 'EFPA');
+bar(x, data(:, 2), barWidth, 'r', 'DisplayName', 'C-EFPA');
+bar(x + 2 * offset, data(:, 1), barWidth, 'b', 'DisplayName', 'Projected IOSI');
 
 % Customize the plot
-xlabel('Robot')
-ylabel('Time (ms)')
-title('Apply Test Force Benchmark')
+ylabel('Time (ms)'  ,'Interpreter','latex')
 legend('Location', 'best')
 grid on
 set(gca,'Fontsize',18)
+set(gca,'TickLabelInterpreter','latex')
+set(gca,'FontName','Times New Roman')
 
 % Set the x-axis tick labels
 xticks(x)
-xticklabels({'Tello', 'TelloWithArms', 'Humanoid', 'Mini Cheetah'})
+xticklabels({'Mini Cheetah', 'Tello', 'MIT Humanoid', 'Tello w/ Arms'})
 
 % Adjust the y-axis limits
 ylim([0 max(data, [], 'all') * 1.2])

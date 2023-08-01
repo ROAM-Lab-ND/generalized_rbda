@@ -137,6 +137,16 @@ namespace grbda
         }
     }
 
+    DVec<double> RigidBodyTreeModel::inverseDynamics(const DVec<double> &ydd)
+    {
+        forwardKinematics();
+        updateLoopConstraints();
+
+        const DVec<double> qdd_spanning = loop_constraints_.G() * ydd + loop_constraints_.g();
+        const DVec<double> tau_id = recursiveNewtonEulerAlgorithm(qdd_spanning);
+        return loop_constraints_.G_transpose() * tau_id;
+    }
+
     double RigidBodyTreeModel::applyLocalFrameTestForceAtContactPoint(
         const Vec3<double> &force, const string &contact_point_name, DVec<double> &dstate_out)
     {

@@ -45,10 +45,7 @@ namespace grbda
         void contactJacobians();
 
         virtual DVec<double> forwardDynamics(const DVec<double> &tau) = 0;
-        virtual DVec<double> inverseDynamics(const DVec<double> &qdd) 
-        {
-            throw std::runtime_error("Inverse dynamics not implemented for this model");
-        }
+        virtual DVec<double> inverseDynamics(const DVec<double> &qdd) = 0;
 
         virtual double applyLocalFrameTestForceAtContactPoint(const Vec3<double> &force,
                                                               const string &contact_point_name,

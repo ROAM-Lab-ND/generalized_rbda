@@ -106,6 +106,7 @@ namespace grbda
         const D6Mat<double>& contactJacobian(const std::string &cp_name) override;
 
         DVec<double> forwardDynamics(const DVec<double> &tau) override;
+        DVec<double> inverseDynamics(const DVec<double> &ydd) override;
 
         double applyLocalFrameTestForceAtContactPoint(const Vec3<double> &force,
                                                       const string &contact_point_name,
