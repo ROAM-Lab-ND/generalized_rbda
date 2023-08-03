@@ -38,14 +38,16 @@ namespace grbda
             {
                 const auto &body = body_and_joint.first;
                 const auto &joint = body_and_joint.second;
-                auto node = std::make_shared<RigidBodyTreeNode>(body, joint, position_index_,
-                                                                velocity_index_);
+                auto node = std::make_shared<RigidBodyTreeNode>(body, joint,
+                                                                position_index_, velocity_index_,
+                                                                motion_subspace_index_);
                 rigid_body_nodes_.push_back(node);
                 nodes_.push_back(node);
                 body_name_to_body_index_[body.name_] = body_index++;
 
                 position_index_ += joint->numPositions();
                 velocity_index_ += joint->numVelocities();
+                motion_subspace_index_ += 6;
             }
         }
         H_ = DMat<double>::Zero(velocity_index_, velocity_index_);

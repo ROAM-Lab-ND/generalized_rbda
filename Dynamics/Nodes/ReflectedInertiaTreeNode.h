@@ -14,7 +14,8 @@ namespace grbda
     {
         ReflectedInertiaTreeNode(const int index, const Body &link,
                                  const std::shared_ptr<Joints::Base> &joint, const int parent_index,
-                                 const int position_index, const int velocity_index);
+                                 const int position_index, const int velocity_index, 
+                                 const int motion_subspace_index);
 
         void updateKinematics() override;
         const DVec<double> &vJ() const override { return vJ_; }

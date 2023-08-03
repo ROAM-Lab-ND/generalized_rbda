@@ -253,7 +253,6 @@ namespace grbda
     }
 
     // TODO(@MatthewChignoli): If we put all of the code in the header file, we don't have to worry about this nonsense
-    template class RevoluteChainWithRotor<1ul>;
     template class RevoluteChainWithRotor<2ul>;
     template class RevoluteChainWithRotor<4ul>;
     template class RevoluteChainWithRotor<6ul>;

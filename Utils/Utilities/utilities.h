@@ -47,7 +47,7 @@ namespace grbda
 
   /*!
    * Finds the greatest common element between two vectors and throws an exception if none is found.
-   * NOTE: This function assumes that the vectors are sorted in ascending order.
+   * NOTE: This function assumes that the vectors are sorted in descending order.
    */
   template <typename T>
   int greatestCommonElement(const std::vector<T> &vec1, const std::vector<T> &vec2)

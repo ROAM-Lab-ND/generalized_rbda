@@ -13,11 +13,13 @@ namespace grbda
 
     struct TreeNode
     {
-        TreeNode(int index, std::string name, int parent_index, int motion_subspace_dimension,
-                 int num_parent_bodies, int position_index, int num_positions,
+        TreeNode(int index, std::string name, int parent_index, int num_parent_bodies, 
+                 int motion_subspace_index, int motion_subspace_dimension,
+                 int position_index, int num_positions,
                  int velocity_index, int num_velocities)
             : position_index_(position_index), num_positions_(num_positions),
               velocity_index_(velocity_index), num_velocities_(num_velocities),
+              motion_subspace_index_(motion_subspace_index),
               motion_subspace_dimension_(motion_subspace_dimension),
               index_(index), name_(name), parent_index_(parent_index),
               Xup_(num_parent_bodies)
@@ -44,10 +46,7 @@ namespace grbda
         const int num_positions_;
         const int velocity_index_;
         const int num_velocities_;
-
-        // TODO(@MatthewChignoli): This is a hack for now, should add to the constructor
-        int op_space_index_;
-
+        const int motion_subspace_index_;
         const int motion_subspace_dimension_;
 
         const int index_;

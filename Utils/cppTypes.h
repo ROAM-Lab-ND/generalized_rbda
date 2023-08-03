@@ -155,9 +155,15 @@ namespace grbda
     template <typename T>
     using DVec = typename Eigen::Matrix<T, Eigen::Dynamic, 1>;
 
+    template <typename T>
+    using DVecRef = typename Eigen::Ref<DVec<T>>;
+
     // Dynamically sized matrix
     template <typename T>
     using DMat = typename Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>;
+
+    template <typename T>
+    using DMatRef = typename Eigen::Ref<DMat<T>>;
 
     // Dynamically sized matrix with spatial vector columns
     template <typename T>

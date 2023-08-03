@@ -52,18 +52,16 @@ namespace grbda
         auto node = make_shared<ClusterTreeNode>(cluster_index, name, bodies_in_current_cluster_,
                                                  joint, parent_cluster_index,
                                                  num_bodies_in_parent_cluster,
-                                                 position_index_, velocity_index_);
+                                                 position_index_, velocity_index_, 
+                                                 motion_subspace_index_);
         cluster_nodes_.push_back(node);
         nodes_.push_back(node);
-
-        // TODO(@MatthewChignoli): Pass this to the node constructor instead
-        node->op_space_index_ = op_space_index_;
 
         checkValidParentClusterForBodiesInCluster(cluster_nodes_.back());
 
         position_index_ += joint->numPositions();
         velocity_index_ += joint->numVelocities();
-        op_space_index_ += node->motion_subspace_dimension_;
+        motion_subspace_index_ += node->motion_subspace_dimension_;
         unactuated_dofs_ += joint->numUnactuatedVelocities();
 
         resizeSystemMatrices();

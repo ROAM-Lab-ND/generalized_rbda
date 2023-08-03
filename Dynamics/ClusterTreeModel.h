@@ -104,7 +104,7 @@ namespace grbda
         void resetExternalForces();
         void resetCalculationFlags() { resetCache(); }
 
-        const D6Mat<double>& contactJacobian(const std::string &cp_name) override;
+        const D6Mat<double> &contactJacobian(const std::string &cp_name) override;
         const std::unordered_map<std::string, int> &contacts() const;
         const Vec3<double> &pGC(const string &cp_name) const;
         const Vec3<double> &vGC(const string &cp_name) const;
@@ -135,10 +135,9 @@ namespace grbda
                                              shared_ptr<GeneralizedJoints::Base> joint);
 
         void appendContactPoint(const string body_name,
-                                        const Vec3<double> &local_offset,
-                                        const string contact_point_name);
+                                const Vec3<double> &local_offset,
+                                const string contact_point_name);
         void appendContactBox(const string body_name, const Vec3<double> &box_dimensions);
-
 
         // Should we have to register and then append registered? Seems silly.
         void appendEndEffector(const vector<ContactPoint> &contact_points,
@@ -195,7 +194,7 @@ namespace grbda
             return cluster_nodes_[cluster_name_to_cluster_index_.at(cluster_name)];
         }
 
-        const D6Mat<double>& BodyJacobian(const std::string &cp_name);
+        const D6Mat<double> &bodyJacobian(const std::string &cp_name);
 
         DVec<double> inverseDynamics(const DVec<double> &qdd) override;
         DVec<double> forwardDynamics(const DVec<double> &tau) override;

@@ -10,9 +10,11 @@ namespace grbda
     {
         EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
+        typedef std::shared_ptr<GeneralizedJoints::Base> GenJointPtr;
+
         ClusterTreeNode(int index, std::string name, std::vector<Body> &bodies,
-                        std::shared_ptr<GeneralizedJoints::Base> joint, int parent_index,
-                        int num_parent_bodies, int position_index, int velocity_index);
+                        GenJointPtr joint, int parent_index, int num_parent_bodies,
+                        int position_index, int velocity_index, int motion_ss_index);
 
         void updateKinematics() override;
         void updateDinv(const DMat<double> &D);
@@ -67,7 +69,6 @@ namespace grbda
         DVec<double> D_inv_u_;                           // D_inv_ * u_;
         DMat<double> Ia_;
 
-        // TODO(@MatthewChignoli): Should any of this be common? I don't think so because RigidBodyTreeModel does not use it
         DMat<double> ChiUp_;
         DMat<double> qdd_for_subtree_due_to_subtree_root_joint_qdd;
         DMat<double> K_;

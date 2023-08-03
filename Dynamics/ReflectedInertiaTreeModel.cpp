@@ -34,7 +34,8 @@ namespace grbda
                 auto node = std::make_shared<ReflectedInertiaTreeNode>(node_index, link, link_joint,
                                                                        parent_node_index,
                                                                        position_index_,
-                                                                       velocity_index_);
+                                                                       velocity_index_,
+                                                                       motion_subspace_index_);
                 reflected_inertia_nodes_.push_back(node);
                 nodes_.push_back(node);
 
@@ -42,6 +43,7 @@ namespace grbda
 
                 position_index_ += link_joint->numPositions();
                 velocity_index_ += link_joint->numVelocities();
+                motion_subspace_index_ += 6;
             }
             reflected_inertia_ = appendEigenMatrix(reflected_inertia_, cluster_reflected_inertia);
         }

@@ -11,7 +11,8 @@ namespace grbda
     struct RigidBodyTreeNode : TreeNode
     {
         RigidBodyTreeNode(const Body &body, const std::shared_ptr<Joints::Base> &joint,
-                          const int position_index, const int velocity_index);
+                          const int position_index, const int velocity_index,
+                          const int motion_subspace_index);
 
         void updateKinematics() override;
         const DVec<double> &vJ() const override { return vJ_; }

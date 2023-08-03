@@ -125,10 +125,6 @@ typedef Types<
     RevoluteChainWithAndWithoutRotor<8ul, 0ul>>
     Robots;
 
-// typedef Types<MiniCheetah> Robots;
-// typedef Types<RevoluteChainWithRotor<2>> Robots;
-// typedef Types<RevolutePairChainWithRotor<2>> Robots;
-
 TYPED_TEST_SUITE(RigidBodyDynamicsAlgosTest, Robots);
 
 TYPED_TEST(RigidBodyDynamicsAlgosTest, MassMatrix)
@@ -393,7 +389,7 @@ TYPED_TEST(RigidBodyDynamicsAlgosTest, LambdaInv)
     for (int i = 0; i < (int)cluster_model.contactPoints().size(); i++)
     {
         const ContactPoint &cp = cluster_model.contactPoints()[i];
-        J_stacked.middleRows<6>(6 * i) = cluster_model.BodyJacobian(cp.name_);
+        J_stacked.middleRows<6>(6 * i) = cluster_model.bodyJacobian(cp.name_);
     }
 
     DMat<double> J_Hinv_JT = J_stacked * H_inv * J_stacked.transpose();

@@ -82,7 +82,7 @@ namespace grbda
 
         int position_index_ = 0;
         int velocity_index_ = 0;
-        int op_space_index_ = 0;
+        int motion_subspace_index_ = 0;
         int unactuated_dofs_ = 0;
 
         std::vector<TreeNodePtr> nodes_;

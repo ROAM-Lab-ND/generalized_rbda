@@ -7,8 +7,10 @@ namespace grbda
                                                        const std::shared_ptr<Joints::Base> &joint,
                                                        const int parent_index,
                                                        const int position_index,
-                                                       const int velocity_index)
-        : TreeNode(index, link.name_, parent_index, 6, 1,
+                                                       const int velocity_index,
+                                                       const int motion_subspace_index)
+        : TreeNode(index, link.name_, parent_index, 1,
+                   motion_subspace_index, 6,
                    position_index, joint->numPositions(),
                    velocity_index, joint->numVelocities()),
           link_(link), joint_(joint), Xtree_(link.Xtree_)
