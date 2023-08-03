@@ -74,6 +74,7 @@ namespace grbda
 
         virtual void resetCache();
 
+        int getNearestSharedSupportingNode(const std::pair<int, int> &contact_pt_indices);
         bool vectorContainsIndex(const std::vector<int> vec, const int index);
 
         SVec<double> gravity_;

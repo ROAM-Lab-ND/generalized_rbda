@@ -79,11 +79,46 @@ namespace grbda
         const ClusterTreeModel &cluster_tree_model)
     {
         contact_name_to_contact_index_ = cluster_tree_model.contact_name_to_contact_index_;
+
+        int contact_point_index = 0;
         for (const auto &contact_point : cluster_tree_model.contactPoints())
         {
             contact_points_.push_back(contact_point);
             if (contact_point.is_end_effector_)
+            {
                 num_end_effectors_++;
+
+                ContactPoint &end_effector = contact_points_.back();
+                end_effector.supporting_nodes_.clear();
+                end_effector.ChiUp_.clear();
+
+                // Keep track of which nodes support this new end effector
+                int i = getNodeContainingBody(end_effector.body_index_)->index_;
+                while (i > -1)
+                {
+                    auto &node = reflected_inertia_nodes_[i];
+                    node->supported_end_effectors_.push_back(contact_point_index);
+                    end_effector.supporting_nodes_.push_back(i);
+                    i = node->parent_index_;
+                }
+
+                // Initialize the force propagators for this end effector
+                for (int j = 0; j < (int)reflected_inertia_nodes_.size(); j++)
+                {
+                    end_effector.ChiUp_.push_back(DMat<double>::Zero(0, 0));
+                }
+
+                // Get the nearest shared supporting node for every existing end effector
+                for (int k = 0; k < (int)contact_points_.size() - 1; k++)
+                {
+                    if (!contact_points_[k].is_end_effector_)
+                        continue;
+                    std::pair<int, int> cp_pair(k, contact_point_index);
+                    const int nearest_shared_support = getNearestSharedSupportingNode(cp_pair);
+                    reflected_inertia_nodes_[nearest_shared_support]->nearest_supported_ee_pairs_.push_back(cp_pair);
+                }
+            }
+            contact_point_index++;
         }
     }
 
@@ -114,18 +149,12 @@ namespace grbda
         switch (rotor_inertia_approximation_)
         {
         case RotorInertiaApproximation::NONE:
-            break;
-
+            return H_;
         case RotorInertiaApproximation::DIAGONAL:
-            H_ += reflected_inertia_.diagonal().asDiagonal();
-            break;
-
+            return H_ + DMat<double>(reflected_inertia_.diagonal().asDiagonal());
         case RotorInertiaApproximation::BLOCK_DIAGONAL:
-            H_ += reflected_inertia_;
-            break;
+            return H_ + reflected_inertia_;
         }
-
-        return H_;
     }
 
     DVec<double> ReflectedInertiaTreeModel::getBiasForceVector()
@@ -191,6 +220,35 @@ namespace grbda
         return cp.jacobian_;
     }
 
+    const D6Mat<double> &ReflectedInertiaTreeModel::bodyJacobian(const std::string &cp_name)
+    {
+        forwardKinematics();
+
+        ContactPoint &cp = contact_points_[contact_name_to_contact_index_.at(cp_name)];
+
+        const size_t &i = cp.body_index_;
+        const auto node_i = getNodeContainingBody(i);
+        Mat6<double> Xout = createSXform(Mat3<double>::Identity(), cp.local_offset_);
+
+        int j = node_i->index_;
+        while (j > -1)
+        {
+            const auto node_j = reflected_inertia_nodes_[j];
+            const int &vel_idx = node_j->velocity_index_;
+            const int &num_vel = node_j->num_velocities_;
+
+            const D6Mat<double> &S = node_j->S();
+            cp.jacobian_.middleCols(vel_idx, num_vel) = Xout * S;
+
+            const Mat6<double> Xup = node_j->Xup_[0].toMatrix();
+            Xout = Xout * Xup;
+
+            j = node_j->parent_index_;
+        }
+
+        return cp.jacobian_;
+    }
+
     DVec<double> ReflectedInertiaTreeModel::forwardDynamics(const DVec<double> &tau)
     {
         switch (rotor_inertia_approximation_)
@@ -217,6 +275,21 @@ namespace grbda
                    reflected_inertia_.diagonal().asDiagonal() * ydd;
         case RotorInertiaApproximation::BLOCK_DIAGONAL:
             return recursiveNewtonEulerAlgorithm(ydd) + reflected_inertia_ * ydd;
+        default:
+            throw std::runtime_error("Invalid rotor inertia approximation");
+        }
+    }
+
+    DMat<double> ReflectedInertiaTreeModel::inverseOperationalSpaceInertiaMatrices()
+    {
+        switch (rotor_inertia_approximation_)
+        {
+        case RotorInertiaApproximation::NONE:
+            return inverseOpSpaceInertiaEFPA(false);
+        case RotorInertiaApproximation::DIAGONAL:
+            return inverseOpSpaceInertiaEFPA(true);
+        case RotorInertiaApproximation::BLOCK_DIAGONAL:
+            return inverseOpSpaceInertiaHinv();
         default:
             throw std::runtime_error("Invalid rotor inertia approximation");
         }
@@ -349,20 +422,20 @@ namespace grbda
         switch (rotor_inertia_approximation_)
         {
         case RotorInertiaApproximation::NONE:
-            return inverseOpSpaceInertiaEFPA(force, contact_point_name, dstate_out, false);
+            return applyTestForceEFPA(force, contact_point_name, dstate_out, false);
         case RotorInertiaApproximation::DIAGONAL:
-            return inverseOpSpaceInertiaEFPA(force, contact_point_name, dstate_out, true);
+            return applyTestForceEFPA(force, contact_point_name, dstate_out, true);
         case RotorInertiaApproximation::BLOCK_DIAGONAL:
-            return inverseOpSpaceInertiaHinv(force, contact_point_name, dstate_out);
+            return applyTestForceHinv(force, contact_point_name, dstate_out);
         default:
             throw std::runtime_error("Unknown rotor inertia approximation");
         }
     }
 
-    double ReflectedInertiaTreeModel::inverseOpSpaceInertiaEFPA(const Vec3<double> &force,
-                                                                const std::string &cp_name,
-                                                                DVec<double> &dstate_out,
-                                                                bool use_reflected_inertia)
+    double ReflectedInertiaTreeModel::applyTestForceEFPA(const Vec3<double> &force,
+                                                         const std::string &cp_name,
+                                                         DVec<double> &dstate_out,
+                                                         bool use_reflected_inertia)
     {
         const int contact_point_index = contact_name_to_contact_index_.at(cp_name);
         const ContactPoint &contact_point = contact_points_[contact_point_index];
@@ -401,9 +474,9 @@ namespace grbda
         return lambda_inv;
     }
 
-    double ReflectedInertiaTreeModel::inverseOpSpaceInertiaHinv(const Vec3<double> &force,
-                                                                const std::string &cp_name,
-                                                                DVec<double> &dstate_out)
+    double ReflectedInertiaTreeModel::applyTestForceHinv(const Vec3<double> &force,
+                                                         const std::string &cp_name,
+                                                         DVec<double> &dstate_out)
     {
         const D3Mat<double> J = contactJacobian(cp_name).bottomRows<3>();
         const DMat<double> H = getMassMatrix();
@@ -483,6 +556,157 @@ namespace grbda
         spatial_force.tail<3>() = force;
 
         return X_cartesian_to_plucker.inverseTransformForceVector(spatial_force);
+    }
+
+    DMat<double> ReflectedInertiaTreeModel::inverseOpSpaceInertiaEFPA(bool use_reflected_inertia)
+    {
+        // Based on the EFPA from "https://www3.nd.edu/~pwensing/Papers/WensingFeatherstoneOrin12-ICRA.pdf"
+
+        forwardKinematics();
+        updateArticulatedBodies(use_reflected_inertia);
+        updateForcePropagators(use_reflected_inertia);
+
+        // Reset Force Propagators for the end-effectors
+        for (ContactPoint &cp : contact_points_)
+        {
+            if (!cp.is_end_effector_)
+                continue;
+            const auto &node = getNodeContainingBody(cp.body_index_);
+            cp.ChiUp_[node->index_] = createSXform(Mat3<double>::Identity(), cp.local_offset_);
+        }
+
+        // Backward Pass to compute K and propagate the force propagators for the end-effectors
+        for (int i = (int)reflected_inertia_nodes_.size() - 1; i >= 0; i--)
+        {
+            auto &node = reflected_inertia_nodes_[i];
+            const DMat<double> &S = node->S();
+            node->K_ = S * node->D_inv_ * S.transpose();
+
+            const int &parent_index = node->parent_index_;
+            if (parent_index >= 0)
+            {
+                for (const int &cp_index : node->supported_end_effectors_)
+                {
+                    ContactPoint &cp = contact_points_[cp_index];
+                    cp.ChiUp_[parent_index] = cp.ChiUp_[i] * node->ChiUp_;
+                }
+            }
+        }
+
+        // TODO(@MatthewChignoli): Right now, this step assumes every operational space has
+        // dimension 6
+        const int num_bodies = reflected_inertia_nodes_.size();
+        DMat<double> lambda_inv = DMat<double>::Zero(6 * num_end_effectors_,
+                                                     6 * num_end_effectors_);
+        DMat<double> lambda_inv_tmp = DMat<double>::Zero(6 * num_bodies,
+                                                         6 * num_end_effectors_);
+
+        // Forward Pass
+        DMat<double> lambda_inv_prev;
+        for (auto &node : reflected_inertia_nodes_)
+        {
+            const int &node_index = node->index_;          // "i" in Table 1 of the paper
+            const int &parent_index = node->parent_index_; // "p(i)"" in Table 1 of the paper
+
+            const int &mss_index = node->motion_subspace_index_;
+            const int &mss_dim = node->motion_subspace_dimension_;
+
+            for (const int &cp_index : node->supported_end_effectors_)
+            {
+                const ContactPoint &contact_point = contact_points_[cp_index];
+                const int &k = contact_point.end_effector_index_; // "k" in Table 1 of the paper
+
+                // TODO(@MatthewChignoli): Here is an instance of where we assume all output dimensions are 6
+                const int ee_output_dim = 6;
+
+                if (parent_index > -1)
+                {
+                    const auto &parent_node = reflected_inertia_nodes_[parent_index];
+                    const int &parent_mss_index = parent_node->motion_subspace_index_;
+                    const int &parent_mss_dim = parent_node->motion_subspace_dimension_;
+                    // TODO(@MatthewChignoli): Here is an instance of where we assume all output dimensions are 6
+                    lambda_inv_prev = lambda_inv_tmp.block(parent_mss_index, 6 * k,
+                                                           parent_mss_dim, ee_output_dim);
+                }
+                else
+                    lambda_inv_prev = DMat<double>::Zero(mss_dim, ee_output_dim);
+
+                // TODO(@MatthewChignoli): Here is an instance of where we assume all output dimensions are 6
+                DMatRef<double> lambda_inv_tmp_ik = lambda_inv_tmp.block(mss_index, 6 * k,
+                                                                         mss_dim, ee_output_dim);
+                lambda_inv_tmp_ik = node->ChiUp_ * lambda_inv_prev +
+                                    node->K_ * contact_point.ChiUp_[node_index].transpose();
+            }
+
+            for (const std::pair<int, int> &cp_pair : node->nearest_supported_ee_pairs_)
+            {
+                const ContactPoint &cp1 = contact_points_[cp_pair.first];
+                const ContactPoint &cp2 = contact_points_[cp_pair.second];
+
+                const int &k1 = cp1.end_effector_index_; // "k1" in Table 1 of the paper
+                const int &k2 = cp2.end_effector_index_; // "k2" in Table 1 of the paper
+
+                // TODO(@MatthewChignoli): Here is an instance of where we assume all output dimensions are 6
+                const int ee1_output_dim = 6;
+                const int ee2_output_dim = 6;
+
+                // TODO(@MatthewChignoli): Here is an instance of where we assume all output dimensions are 6
+                DMatRef<double> lambda_inv_k1k2 = lambda_inv.block(6 * k1, 6 * k2,
+                                                                   ee1_output_dim, ee2_output_dim);
+                const DMat<double> &ChiUp_k1i = cp1.ChiUp_[node_index];
+                DMatRef<double> lambda_inv_tmp_ik2 = lambda_inv_tmp.block(mss_index, 6 * k2,
+                                                                          mss_dim, ee2_output_dim);
+                lambda_inv_k1k2 = ChiUp_k1i * lambda_inv_tmp_ik2;
+
+                // TODO(@MatthewChignoli): Here is an instance of where we assume all output dimensions are 6
+                DMatRef<double> lambda_inv_k2k1 = lambda_inv.block(6 * k2, 6 * k1,
+                                                                   ee2_output_dim, ee1_output_dim);
+                lambda_inv_k2k1 = lambda_inv_k1k2.transpose();
+            }
+        }
+
+        // And now do the diagonal blocks
+        for (int i = 0; i < (int)contact_points_.size(); i++)
+        {
+            const ContactPoint &cp = contact_points_[i];
+
+            if (!cp.is_end_effector_)
+                continue;
+
+            const int &k = cp.end_effector_index_; // "k" in Table 1 of the paper
+            // TODO(@MatthewChignoli): Here is an instance of where we assume all output dimensions are 6
+            const int &ee_output_dim = 6;
+
+            const int node_index = getNodeContainingBody(cp.body_index_)->index_;
+            const auto &node = reflected_inertia_nodes_[node_index];
+            const int &mss_index = node->motion_subspace_index_;
+            const int &mss_dim = node->motion_subspace_dimension_;
+
+            // TODO(@MatthewChignoli): Here is an instance of where we assume all output dimensions are 6
+            DMatRef<double> lambda_inv_kk = lambda_inv.block(6 * k, 6 * k,
+                                                             ee_output_dim, ee_output_dim);
+            const DMat<double> &ChiUp_kp = cp.ChiUp_[node_index];
+            DMatRef<double> lambda_inv_tmp_pk = lambda_inv_tmp.block(mss_index, 6 * k,
+                                                                     mss_dim, ee_output_dim);
+            lambda_inv_kk = ChiUp_kp * lambda_inv_tmp_pk;
+        }
+        return lambda_inv;
+    }
+
+    DMat<double> ReflectedInertiaTreeModel::inverseOpSpaceInertiaHinv()
+    {
+        const DMat<double> H = getMassMatrix();
+        DMat<double> J_stacked = DMat<double>::Zero(6 * getNumEndEffectors(),
+                                                    getNumDegreesOfFreedom());
+        int ee_cnt = 0;
+        for (int i = 0; i < (int)contact_points_.size(); i++)
+        {
+            const ContactPoint &cp = contact_points_[i];
+            if (!cp.is_end_effector_)
+                continue;
+            J_stacked.middleRows<6>(6 * ee_cnt++) = bodyJacobian(cp.name_);
+        }
+        return J_stacked * H.inverse() * J_stacked.transpose();
     }
 
 } // namespace grbda

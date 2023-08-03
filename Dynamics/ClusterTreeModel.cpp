@@ -91,7 +91,8 @@ namespace grbda
         {
             const int parent = contact_point.body_index_;
             string parent_name = bodies_.at(parent).name_;
-            printf("Contact Point: %s (%s)\n", contact_point.name_.c_str(), parent_name.c_str());
+            string type = contact_point.is_end_effector_ ? "End Effector" : "Contact Point";
+            printf("%s: %s (%s)\n", type.c_str(), contact_point.name_.c_str(), parent_name.c_str());
         }
     }
 
@@ -181,7 +182,7 @@ namespace grbda
             i = cluster_nodes_[i]->parent_index_;
         }
 
-        // Initialize the force propagators for this contact point
+        // Initialize the force propagators for this end effector
         for (int j = 0; j < (int)cluster_nodes_.size(); j++)
         {
             contact_point.ChiUp_.push_back(DMat<double>::Zero(0, 0));
@@ -193,7 +194,7 @@ namespace grbda
             if (!contact_points_[k].is_end_effector_)
                 continue; 
             std::pair<int, int> cp_pair(k, contact_point_index);
-            const int nearest_shared_support = getNearestSharedSupportingCluster(cp_pair);
+            const int nearest_shared_support = getNearestSharedSupportingNode(cp_pair);
             cluster_nodes_[nearest_shared_support]->nearest_supported_ee_pairs_.push_back(cp_pair);
         }
     }
@@ -488,14 +489,6 @@ namespace grbda
                 return i;
             }
         return nullopt;
-    }
-
-    int ClusterTreeModel::getNearestSharedSupportingCluster(
-        const std::pair<int, int> &cp_indices)
-    {
-        const ContactPoint &cp_i = contact_points_[cp_indices.first];
-        const ContactPoint &cp_j = contact_points_[cp_indices.second];
-        return greatestCommonElement(cp_i.supporting_nodes_, cp_j.supporting_nodes_);
     }
 
     ClusterTreeNodePtr ClusterTreeModel::getClusterContainingBody(const int body_index)

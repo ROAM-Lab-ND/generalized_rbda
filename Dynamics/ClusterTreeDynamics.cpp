@@ -333,7 +333,6 @@ namespace grbda
         qdd_effects_updated_ = true;
     }
 
-    // TODO(@MatthewChignoli): We don't want every contact point to be a computed as part of the operatational space, so how can we do that selectively?
     DMat<double> ClusterTreeModel::inverseOperationalSpaceInertiaMatrices()
     {
         // Based on the EFPA from "https://www3.nd.edu/~pwensing/Papers/WensingFeatherstoneOrin12-ICRA.pdf"
@@ -361,7 +360,7 @@ namespace grbda
         for (int i = (int)cluster_nodes_.size() - 1; i >= 0; i--)
         {
             auto &cluster = cluster_nodes_[i];
-            const DMat<double> &S = cluster->joint_->S();
+            const DMat<double> &S = cluster->S();
             cluster->K_ = S * cluster->D_inv_.solve(S.transpose());
 
             const int &parent_index = cluster->parent_index_;

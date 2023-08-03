@@ -208,6 +208,13 @@ namespace grbda
         contact_jacobians_updated_ = false;
     }
 
+    int TreeModel::getNearestSharedSupportingNode(const std::pair<int, int> &cp_indices)
+    {
+        const ContactPoint &cp_i = contact_points_[cp_indices.first];
+        const ContactPoint &cp_j = contact_points_[cp_indices.second];
+        return greatestCommonElement(cp_i.supporting_nodes_, cp_j.supporting_nodes_);
+    }
+
     bool TreeModel::vectorContainsIndex(const std::vector<int> vec, const int index)
     {
         return std::find(vec.begin(), vec.end(), index) != vec.end();

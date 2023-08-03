@@ -216,8 +216,6 @@ namespace grbda
         void checkValidParentClusterForBodiesInCluster(const string &cluster_nam);
         optional<int> searchClustersForBody(const int body_index);
 
-        int getNearestSharedSupportingCluster(const std::pair<int, int> &contact_pt_indices);
-
         void resizeSystemMatrices();
         void resetCache() override;
 

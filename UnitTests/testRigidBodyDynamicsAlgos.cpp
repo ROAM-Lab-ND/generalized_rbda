@@ -360,39 +360,48 @@ TYPED_TEST(RigidBodyDynamicsAlgosTest, ApplyTestForceTest)
 
 TYPED_TEST(RigidBodyDynamicsAlgosTest, LambdaInv)
 {
-    // TODO(@MatthewChignoli): Write description
-    
-    bool nan_detected_in_state = this->initializeRandomStates(0);
-    while (nan_detected_in_state)
+    // This test compares the computation of the inverse operational space inertia matrix using
+    // (1) the Extended-Force-Propagator Algorithm and (2) the Jacobian & Mass Matrix method
+
+    const int num_tests_per_robot = 20;
+    for (int i = 0; i < (int)this->cluster_models.size(); i++)
     {
-        nan_detected_in_state = this->initializeRandomStates(0);
+        ClusterTreeModel &cluster_model = this->cluster_models[i];
+
+        for (int j = 0; j < num_tests_per_robot; j++)
+        {
+            bool nan_detected_in_state = this->initializeRandomStates(i);
+            if (nan_detected_in_state)
+            {
+                j--;
+                continue;
+            }
+
+            if (cluster_model.getNumEndEffectors() == 0)
+            {
+                std::cout << "No end effectors in cluster model. Skipping test." << std::endl;
+                return;
+            }
+
+            // EFPA
+            const DMat<double> lambda_inv = cluster_model.inverseOperationalSpaceInertiaMatrices();
+
+            // J H^-1 J^T
+            const DMat<double> H = cluster_model.massMatrix();
+            DMat<double> J_stacked = DMat<double>::Zero(6 * cluster_model.getNumEndEffectors(),
+                                                        cluster_model.getNumDegreesOfFreedom());
+            int ee_cnt = 0;
+            for (int k = 0; k < (int)cluster_model.contactPoints().size(); k++)
+            {
+                const ContactPoint &cp = cluster_model.contactPoint(k);
+                if (!cp.is_end_effector_)
+                    continue;
+                J_stacked.middleRows<6>(6 * ee_cnt++) = cluster_model.bodyJacobian(cp.name_);
+            }
+            DMat<double> J_Hinv_JT = J_stacked * H.inverse() * J_stacked.transpose();
+
+            // Compare
+            GTEST_ASSERT_LT((lambda_inv - J_Hinv_JT).norm(), tol);
+        }
     }
-
-    ClusterTreeModel &cluster_model = this->cluster_models[0];
-    if (cluster_model.getNumEndEffectors() == 0)
-    {
-        std::cout << "No end effectors in cluster model. Skipping test." << std::endl;
-        return;
-    }
-
-    // EFPA
-    const DMat<double> lambda_inv = cluster_model.inverseOperationalSpaceInertiaMatrices();
-
-    // J H^-1 J^T
-    const DMat<double> H = cluster_model.massMatrix();
-    const DMat<double> H_inv = H.inverse();
-    DMat<double> J_stacked = DMat<double>::Zero(6 * cluster_model.getNumEndEffectors(),
-                                                cluster_model.getNumDegreesOfFreedom());
-    int ee_cnt = 0;
-    for (int i = 0; i < (int)cluster_model.contactPoints().size(); i++)
-    {
-        const ContactPoint &cp = cluster_model.contactPoints()[i];
-        if (!cp.is_end_effector_)
-            continue;
-        J_stacked.middleRows<6>(6 * ee_cnt++) = cluster_model.bodyJacobian(cp.name_);
-    }
-    DMat<double> J_Hinv_JT = J_stacked * H_inv * J_stacked.transpose();
-
-    // Compare
-    GTEST_ASSERT_LT((lambda_inv - J_Hinv_JT).norm(), tol);
 }

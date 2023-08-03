@@ -37,9 +37,12 @@ namespace grbda
         D6Mat<double> U_;    // helper variable for ABA
         DMat<double> D_inv_; // helper variable for ABA
         DVec<double> u_;     // helper variable for ABA
+
         Mat6<double> ChiUp_; // Articulated transform
         DMat<double> qdd_for_subtree_due_to_subtree_root_joint_qdd;
-
+        DMat<double> K_;
+        std::vector<int> supported_end_effectors_;
+        std::vector<std::pair<int, int>> nearest_supported_ee_pairs_;
     };
 
 } // namespace grbda
