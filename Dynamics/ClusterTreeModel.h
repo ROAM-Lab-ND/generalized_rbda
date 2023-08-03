@@ -133,10 +133,16 @@ namespace grbda
                         shared_ptr<GeneralizedJoints::Base> joint);
         void appendRegisteredBodiesAsCluster(const string name,
                                              shared_ptr<GeneralizedJoints::Base> joint);
-        void appendContactPoint(const string body_name,
-                                const Vec3<double> &local_offset,
-                                const string contact_point_name);
+
+        ContactPoint appendContactPoint(const string body_name,
+                                        const Vec3<double> &local_offset,
+                                        const string contact_point_name);
         void appendContactBox(const string body_name, const Vec3<double> &box_dimensions);
+
+
+        // Should we have to register and then append registered? Seems silly.
+        void appendEndEffector(const vector<ContactPoint> &contact_points,
+                               const string end_effector_name);
 
         void print() const;
 
@@ -176,6 +182,7 @@ namespace grbda
 
         const vector<Body> &bodies() const { return bodies_; }
         const vector<ClusterTreeNodePtr> &clusters() const { return cluster_nodes_; }
+        const vector<ClusterEndEffector> &endEffectors() const { return cluster_end_effectors_; }
 
         const Body &body(const int body_index) const { return bodies_[body_index]; }
         const Body &body(const string body_name) const
@@ -189,8 +196,11 @@ namespace grbda
             return cluster_nodes_[cluster_name_to_cluster_index_.at(cluster_name)];
         }
 
+        const D6Mat<double>& BodyJacobian(const std::string &cp_name);
+
         DVec<double> inverseDynamics(const DVec<double> &qdd) override;
         DVec<double> forwardDynamics(const DVec<double> &tau) override;
+        DMat<double> inverseOperationalSpaceInertiaMatrices() override;
         double applyLocalFrameTestForceAtContactPoint(const Vec3<double> &force,
                                                       const string &contact_point_name,
                                                       DVec<double> &dstate_out) override;
@@ -211,6 +221,8 @@ namespace grbda
         void checkValidParentClusterForBodiesInCluster(const string &cluster_nam);
         optional<int> searchClustersForBody(const int body_index);
 
+        int getNearestSharedSupportingCluster(const std::pair<int, int> &contact_pt_indices);
+
         void resizeSystemMatrices();
         void resetCache() override;
 
@@ -223,6 +235,7 @@ namespace grbda
 
         vector<Body> bodies_;
         vector<ClusterTreeNodePtr> cluster_nodes_;
+        vector<ClusterEndEffector> cluster_end_effectors_;
 
         vector<Body> bodies_in_current_cluster_;
 

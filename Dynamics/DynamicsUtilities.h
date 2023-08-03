@@ -31,4 +31,21 @@ namespace grbda
         D6Mat<double> jacobian_;
     };
 
+    // We can make an cluster-end-effector-nodes
+    // What will this need?
+    struct ClusterEndEffector
+    {
+        ClusterEndEffector(const int cluster_index,
+                           const GeneralizedSpatialTransform &X_offset,
+                           const std::string name)
+            : cluster_index_(cluster_index), X_offset_(X_offset), name_(name) {}
+
+        const int cluster_index_;
+        const GeneralizedSpatialTransform X_offset_;
+        const std::string name_;
+
+        std::vector<int> supporting_clusters_;
+        std::vector<DMat<double>> ChiUp_;
+    };
+
 } // namespace grbda

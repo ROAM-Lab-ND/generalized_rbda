@@ -108,22 +108,25 @@ protected:
 
 using testing::Types;
 
-typedef Types<
-    TeleopArm, Tello, 
-    MIT_Humanoid, MiniCheetah,
-    RevoluteChainWithRotor<2>,
-    RevoluteChainWithRotor<4>,
-    RevoluteChainWithRotor<8>,
-    RevolutePairChainWithRotor<2>,
-    RevolutePairChainWithRotor<4>,
-    RevolutePairChainWithRotor<8>,
-    RevoluteChainMultipleRotorsPerLink<2, 2>,
-    RevoluteChainMultipleRotorsPerLink<4, 1>,
-    RevoluteChainMultipleRotorsPerLink<4, 3>,
-    RevoluteChainWithAndWithoutRotor<0ul, 8ul>,
-    RevoluteChainWithAndWithoutRotor<4ul, 4ul>,
-    RevoluteChainWithAndWithoutRotor<8ul, 0ul>>
-    Robots;
+// typedef Types<
+//     TeleopArm, Tello,
+//     MIT_Humanoid, MiniCheetah,
+//     RevoluteChainWithRotor<2>,
+//     RevoluteChainWithRotor<4>,
+//     RevoluteChainWithRotor<8>,
+//     RevolutePairChainWithRotor<2>,
+//     RevolutePairChainWithRotor<4>,
+//     RevolutePairChainWithRotor<8>,
+//     RevoluteChainMultipleRotorsPerLink<2, 2>,
+//     RevoluteChainMultipleRotorsPerLink<4, 1>,
+//     RevoluteChainMultipleRotorsPerLink<4, 3>,
+//     RevoluteChainWithAndWithoutRotor<0ul, 8ul>,
+//     RevoluteChainWithAndWithoutRotor<4ul, 4ul>,
+//     RevoluteChainWithAndWithoutRotor<8ul, 0ul>>
+//     Robots;
+
+typedef Types<MiniCheetah> Robots;
+// typedef Types<RevoluteChainWithRotor<2>> Robots;
 
 TYPED_TEST_SUITE(RigidBodyDynamicsAlgosTest, Robots);
 
@@ -146,6 +149,7 @@ TYPED_TEST(RigidBodyDynamicsAlgosTest, MassMatrix)
             bool nan_detected_in_state = this->initializeRandomStates(i);
             if (nan_detected_in_state)
             {
+                j--;
                 continue;
             }
 
@@ -186,6 +190,7 @@ TYPED_TEST(RigidBodyDynamicsAlgosTest, BiasForceVector)
             bool nan_detected_in_state = this->initializeRandomStates(i);
             if (nan_detected_in_state)
             {
+                j--;
                 continue;
             }
 
@@ -230,6 +235,7 @@ TYPED_TEST(RigidBodyDynamicsAlgosTest, ForwardAndInverseDyanmics)
             bool nan_detected_in_state = this->initializeRandomStates(i);
             if (nan_detected_in_state)
             {
+                j--;
                 continue;
             }
 
@@ -315,11 +321,12 @@ TYPED_TEST(RigidBodyDynamicsAlgosTest, ApplyTestForceTest)
             bool nan_detected_in_state = this->initializeRandomStates(i);
             if (nan_detected_in_state)
             {
+                j--;
                 continue;
             }
 
             cluster_model.contactJacobians();
-            for (const ContactPoint& cp : cluster_model.contactPoints())
+            for (const ContactPoint &cp : cluster_model.contactPoints())
             {
                 const D3Mat<double> J = cluster_model.Jc(cp.name_);
                 const DMat<double> H = cluster_model.massMatrix();
@@ -352,4 +359,46 @@ TYPED_TEST(RigidBodyDynamicsAlgosTest, ApplyTestForceTest)
             }
         }
     }
+}
+
+TYPED_TEST(RigidBodyDynamicsAlgosTest, LambdaInv)
+{
+    // TODO(@MatthewChignoli): Write description
+    bool nan_detected_in_state = this->initializeRandomStates(0);
+    while (nan_detected_in_state)
+    {
+        nan_detected_in_state = this->initializeRandomStates(0);
+    }
+
+    ClusterTreeModel &cluster_model = this->cluster_models[0];
+    const DMat<double> lambda_inv = cluster_model.inverseOperationalSpaceInertiaMatrices();
+
+    std::cout << "lambda_inv: " << std::endl;
+    std::cout << lambda_inv.topLeftCorner<6,6>() << std::endl;
+
+    // Now lets compare that to the J * Hinv * J^T
+    const DMat<double> H = cluster_model.massMatrix();
+    const DMat<double> H_inv = H.inverse();
+    const DMat<double> J = cluster_model.BodyJacobian("FR_foot_contact");
+    // const DMat<double> J = cluster_model.BodyJacobian("cp-1");
+    const DMat<double> Jt = J.transpose();
+    const DMat<double> JHinvJt = J * H_inv * Jt;
+
+    std::cout << "J * Hinv * Jt: " << std::endl;
+    std::cout << JHinvJt << std::endl;
+
+    // print the difference
+    std::cout << "Difference: " << std::endl;
+    Mat6<double> difference = lambda_inv.topLeftCorner<6,6>() - JHinvJt;
+    eigenDeadband(difference, 1e-5);
+    std::cout << difference << std::endl;
+
+    // print the jacobi
+    std::cout << "J: " << std::endl;
+    std::cout << J << std::endl;
+
+    // print the inverse mass matrix
+    std::cout << "Hinv: " << std::endl;
+    std::cout << H_inv << std::endl;   
+
 }

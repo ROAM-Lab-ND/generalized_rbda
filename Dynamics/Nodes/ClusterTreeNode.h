@@ -67,8 +67,12 @@ namespace grbda
         DVec<double> D_inv_u_;                           // D_inv_ * u_;
         DMat<double> Ia_;
 
+        // TODO(@MatthewChignoli): Should any of this be common? I don't think so because RigidBodyTreeModel does not use it
         DMat<double> ChiUp_;
         DMat<double> qdd_for_subtree_due_to_subtree_root_joint_qdd;
+        DMat<double> K_;
+        std::vector<int> supported_end_effectors_;
+        std::vector<std::pair<int, int>> nearest_supported_pairs_;
     };
 
 } // namespace grbda

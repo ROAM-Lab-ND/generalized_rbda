@@ -45,6 +45,9 @@ namespace grbda
         const int velocity_index_;
         const int num_velocities_;
 
+        // TODO(@MatthewChignoli): This is a hack for now, should add to the constructor
+        int op_space_index_;
+
         const int motion_subspace_dimension_;
 
         const int index_;

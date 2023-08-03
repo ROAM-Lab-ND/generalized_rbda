@@ -47,6 +47,10 @@ namespace grbda
         virtual DVec<double> forwardDynamics(const DVec<double> &tau) = 0;
         virtual DVec<double> inverseDynamics(const DVec<double> &qdd) = 0;
 
+        virtual DMat<double> inverseOperationalSpaceInertiaMatrices()
+        {
+            throw std::runtime_error("inverseOperationalSpaceInertia not implemented for this model");
+        }
         virtual double applyLocalFrameTestForceAtContactPoint(const Vec3<double> &force,
                                                               const string &contact_point_name,
                                                               DVec<double> &dstate_out) = 0;
@@ -78,6 +82,7 @@ namespace grbda
 
         int position_index_ = 0;
         int velocity_index_ = 0;
+        int op_space_index_ = 0;
         int unactuated_dofs_ = 0;
 
         std::vector<TreeNodePtr> nodes_;

@@ -111,7 +111,11 @@ namespace grbda
     {
         const std::string cp_name = "cp-" + std::to_string(i);
         const Vec3<double> cp_local_offset = Vec3<double>::Random();
-        model.appendContactPoint(link_name, cp_local_offset, cp_name);
+        ContactPoint cp = model.appendContactPoint(link_name, cp_local_offset, cp_name);
+
+        std::vector<ContactPoint> cps{cp};
+        model.appendEndEffector(cps, cp_name);
+
     }
 
     template <size_t N>
@@ -253,6 +257,7 @@ namespace grbda
     }
 
     // TODO(@MatthewChignoli): If we put all of the code in the header file, we don't have to worry about this nonsense
+    template class RevoluteChainWithRotor<1ul>;
     template class RevoluteChainWithRotor<2ul>;
     template class RevoluteChainWithRotor<4ul>;
     template class RevoluteChainWithRotor<6ul>;
