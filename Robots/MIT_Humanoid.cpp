@@ -164,10 +164,15 @@ namespace grbda
             // Contact Points
             const std::string toe_contact_name = withLeftRightSigns("toe_contact", legID);
             const std::string heel_contact_name = withLeftRightSigns("heel_contact", legID);
-            model.appendEndEffector(ankle_link_name,
-                                     Vec3<double>(_footToeLength, 0, -_footHeight),
-                                     toe_contact_name);
-            model.appendEndEffector(ankle_link_name,
+            if (legID == 0)
+                model.appendEndEffector(ankle_link_name,
+                                        Vec3<double>(_footToeLength, 0, -_footHeight),
+                                        toe_contact_name);
+            else
+                model.appendContactPoint(ankle_link_name,
+                                         Vec3<double>(_footToeLength, 0, -_footHeight),
+                                         toe_contact_name);
+            model.appendContactPoint(ankle_link_name,
                                      Vec3<double>(-_footHeelLength, 0, -_footHeight),
                                      heel_contact_name);
         }
@@ -289,8 +294,8 @@ namespace grbda
             const std::string elbow_contact_name = withLeftRightSigns("elbow_contact", armID);
             const std::string hand_contact_name = withLeftRightSigns("hand_contact", armID);
             model.appendContactPoint(elbow_link_name, Vec3<double>(0, 0, 0), elbow_contact_name);
-            model.appendEndEffector(elbow_link_name, Vec3<double>(0, 0, -_lowerArmLength),
-                                     hand_contact_name);
+            model.appendContactPoint(elbow_link_name, Vec3<double>(0, 0, -_lowerArmLength),
+                                    hand_contact_name);
         }
 
         return model;

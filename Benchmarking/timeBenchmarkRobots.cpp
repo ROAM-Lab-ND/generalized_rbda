@@ -198,6 +198,55 @@ void runInverseDynamicsBenchmark(std::ofstream &file)
 }
 
 template <typename RobotType>
+void runInverseOperationalSpaceInertiaBenchmark(std::ofstream &file)
+{
+    Timer timer;
+    double t_cluster = 0.;
+    double t_projection = 0.;
+    double t_reflected_inertia = 0.;
+
+    RobotType robot;
+    ClusterTreeModel cluster_model = robot.buildClusterTreeModel();
+    RigidBodyTreePtr projection_model =
+        std::make_shared<RigidBodyTreeModel>(cluster_model, FwdDynMethod::Projection);
+    ReflectedInertiaTreePtr reflected_inertia_model =
+        std::make_shared<ReflectedInertiaTreeModel>(cluster_model,
+                                                    RotorInertiaApproximation::DIAGONAL);
+    std::vector<RigidBodyTreePtr> rigid_body_models{projection_model};
+    std::vector<ReflectedInertiaTreePtr> ref_inertia_models{reflected_inertia_model};
+
+    const int num_state_samples = 1000;
+    const int nv = cluster_model.getNumDegreesOfFreedom();
+    for (int j = 0; j < num_state_samples; j++)
+    {
+        bool nan_detected = setRandomStates(cluster_model, rigid_body_models, ref_inertia_models);
+        if (nan_detected)
+        {
+            j--;
+            continue;
+        }
+
+        timer.start();
+        cluster_model.inverseOperationalSpaceInertiaMatrix();
+        t_cluster += timer.getMs();
+
+        timer.start();
+        projection_model->inverseOperationalSpaceInertiaMatrix();
+        t_projection += timer.getMs();
+
+        timer.start();
+        reflected_inertia_model->inverseOperationalSpaceInertiaMatrix();
+        t_reflected_inertia += timer.getMs();
+    }
+
+    file << t_cluster / num_state_samples << ","
+         << t_projection / num_state_samples << ","
+         << t_reflected_inertia / num_state_samples << std::endl;
+
+    std::cout << "Finished benchmark for robot" << std::endl;
+}
+
+template <typename RobotType>
 void runApplyTestForceBenchmark(std::ofstream &file, const std::string& contact_point)
 {
     Timer timer;
@@ -271,7 +320,16 @@ int main()
     runInverseDynamicsBenchmark<TelloWithArms>(id_file);
     id_file.close();
 
-    // Apply Test Force Benchmark
+    std::cout << "\n\n**Starting Inv OSIM Timing Benchmark for Robots**" << std::endl;
+    path_to_data = "../Benchmarking/data/TimingIOSIM_";
+    std::ofstream iosim_file;
+    iosim_file.open(path_to_data + "Robots.csv");
+    runInverseOperationalSpaceInertiaBenchmark<MiniCheetah>(iosim_file);
+    runInverseOperationalSpaceInertiaBenchmark<Tello>(iosim_file);
+    runInverseOperationalSpaceInertiaBenchmark<MIT_Humanoid>(iosim_file);
+    runInverseOperationalSpaceInertiaBenchmark<TelloWithArms>(iosim_file);
+    iosim_file.close();
+
     std::cout << "\n\n**Starting Apply Test Force Timing Benchmark for Robots**" << std::endl;
     path_to_data = "../Benchmarking/data/TimingATF_";
     std::ofstream atf_file;

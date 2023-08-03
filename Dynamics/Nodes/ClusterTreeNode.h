@@ -72,6 +72,8 @@ namespace grbda
         DMat<double> ChiUp_;
         DMat<double> qdd_for_subtree_due_to_subtree_root_joint_qdd;
         DMat<double> K_;
+        DMat<double> L_;
+        DMat<double> Xup_matrix;
     };
 
 } // namespace grbda

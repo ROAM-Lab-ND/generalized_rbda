@@ -31,6 +31,11 @@ namespace grbda
         double update_and_solve_D_time = 0.0;
         double reset_IA_time = 0.0;
 
+        double update_force_propagators_time = 0.0;
+        double reset_ee_force_propagators_time = 0.0;
+        double efpa_backward_pass_time = 0.0;
+        double efpa_forward_pass_time = 0.0;
+        
         void zero()
         {
             forward_kinematics_time = 0.0;
@@ -42,6 +47,11 @@ namespace grbda
             invert_xform_spatial_inertia_time = 0.0;
             update_and_solve_D_time = 0.0;
             reset_IA_time = 0.0;
+
+            update_force_propagators_time = 0.0;
+            reset_ee_force_propagators_time = 0.0;
+            efpa_backward_pass_time = 0.0;
+            efpa_forward_pass_time = 0.0;
         }
 
         ClusterTreeTimingStatistics &operator+=(const ClusterTreeTimingStatistics &other)
@@ -55,6 +65,12 @@ namespace grbda
             invert_xform_spatial_inertia_time += other.invert_xform_spatial_inertia_time;
             update_and_solve_D_time += other.update_and_solve_D_time;
             reset_IA_time += other.reset_IA_time;
+
+            update_force_propagators_time += other.update_force_propagators_time;
+            reset_ee_force_propagators_time += other.reset_ee_force_propagators_time;
+            efpa_backward_pass_time += other.efpa_backward_pass_time;
+            efpa_forward_pass_time += other.efpa_forward_pass_time;
+
             return *this;
         }
 
@@ -69,6 +85,12 @@ namespace grbda
             invert_xform_spatial_inertia_time /= scalar;
             update_and_solve_D_time /= scalar;
             reset_IA_time /= scalar;
+
+            update_force_propagators_time /= scalar;
+            reset_ee_force_propagators_time /= scalar;
+            efpa_backward_pass_time /= scalar;
+            efpa_forward_pass_time /= scalar;
+            
             return *this;
         }
     };

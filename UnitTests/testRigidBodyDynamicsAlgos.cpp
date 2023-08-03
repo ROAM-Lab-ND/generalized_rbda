@@ -109,7 +109,7 @@ protected:
 using testing::Types;
 
 typedef Types<
-    TeleopArm, Tello,
+    TeleopArm, Tello, TelloWithArms,
     MIT_Humanoid, MiniCheetah,
     RevoluteChainWithRotor<2>,
     RevoluteChainWithRotor<4>,

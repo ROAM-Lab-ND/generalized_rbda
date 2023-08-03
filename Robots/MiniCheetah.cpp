@@ -101,7 +101,11 @@ namespace grbda
 
             const std::string foot_contact_name = withLegSigns("foot_contact", legID);
             const Vec3<double> foot_contact_offset = withLegSigns(Vec3<double>(0, -_kneeLinkY_offset, -_kneeLinkLength), legID);
-            model.appendEndEffector(knee_link_name, foot_contact_offset, foot_contact_name);
+
+            if (legID == 0)
+                model.appendEndEffector(knee_link_name, foot_contact_offset, foot_contact_name);
+            else
+                model.appendContactPoint(knee_link_name, foot_contact_offset, foot_contact_name);
 
             sideSign *= -1;
         }
