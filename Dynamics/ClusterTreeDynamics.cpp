@@ -45,9 +45,11 @@ namespace grbda
         return cp.jacobian_;
     }
 
-    const D6Mat<double> &ClusterTreeModel::bodyJacobian(const std::string &cp_name)
+    D6Mat<double> ClusterTreeModel::bodyJacobian(const std::string &cp_name)
     {
         forwardKinematics();
+
+        D6Mat<double> J = D6Mat<double>::Zero(6, getNumDegreesOfFreedom());
 
         ContactPoint &cp = contact_points_[contact_name_to_contact_index_.at(cp_name)];
         Mat6<double> Xout = createSXform(Mat3<double>::Identity(), cp.local_offset_);
@@ -62,7 +64,7 @@ namespace grbda
             const int &num_vel = cluster_j->num_velocities_;
 
             D6Mat<double> S = cluster_j->S().middleRows<6>(6 * subindex_within_cluster_j);
-            cp.jacobian_.middleCols(vel_idx, num_vel) = Xout * S;
+            J.middleCols(vel_idx, num_vel) = Xout * S;
 
             Mat6<double> Xup = cluster_j->Xup_[subindex_within_cluster_j].toMatrix();
             Xout = Xout * Xup;
@@ -70,7 +72,7 @@ namespace grbda
             j = body_j.cluster_ancestor_index_;
         }
 
-        return cp.jacobian_;
+        return J;
     }
 
     DVec<double> ClusterTreeModel::inverseDynamics(const DVec<double> &qdd)
@@ -333,7 +335,7 @@ namespace grbda
         qdd_effects_updated_ = true;
     }
 
-    DMat<double> ClusterTreeModel::inverseOperationalSpaceInertiaMatrices()
+    DMat<double> ClusterTreeModel::inverseOperationalSpaceInertiaMatrix()
     {
         // Based on the EFPA from "https://www3.nd.edu/~pwensing/Papers/WensingFeatherstoneOrin12-ICRA.pdf"
 

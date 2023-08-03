@@ -57,13 +57,12 @@ namespace grbda
 
         void initializeIndependentStates(const DVec<double> &y, const DVec<double> &yd);
 
-        // TODO(@MatthewChignoli): Should bodyJacobian be common in TreeModel?
-        const D6Mat<double> &bodyJacobian(const std::string &cp_name);
+        D6Mat<double> bodyJacobian(const std::string &cp_name) override;
         const D6Mat<double>& contactJacobian(const std::string &cp_name) override;
 
         DVec<double> forwardDynamics(const DVec<double> &tau) override;
         DVec<double> inverseDynamics(const DVec<double> &ydd) override;
-        DMat<double> inverseOperationalSpaceInertiaMatrices() override;
+        DMat<double> inverseOperationalSpaceInertiaMatrix() override;
 
         double applyLocalFrameTestForceAtContactPoint(const Vec3<double> &force,
                                                       const string &contact_point_name,

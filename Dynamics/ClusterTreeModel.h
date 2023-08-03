@@ -191,11 +191,11 @@ namespace grbda
             return cluster_nodes_[cluster_name_to_cluster_index_.at(cluster_name)];
         }
 
-        const D6Mat<double> &bodyJacobian(const std::string &cp_name);
+        D6Mat<double> bodyJacobian(const std::string &cp_name) override;
 
         DVec<double> inverseDynamics(const DVec<double> &qdd) override;
         DVec<double> forwardDynamics(const DVec<double> &tau) override;
-        DMat<double> inverseOperationalSpaceInertiaMatrices() override;
+        DMat<double> inverseOperationalSpaceInertiaMatrix() override;
         double applyLocalFrameTestForceAtContactPoint(const Vec3<double> &force,
                                                       const string &contact_point_name,
                                                       DVec<double> &dstate_out) override;

@@ -64,8 +64,11 @@ namespace grbda
         DMat<double> I_;  // spatial inertia
         DMat<double> Ic_; // compisite rigid body inertia
 
-        GeneralizedSpatialTransform Xup_;        // spatial transform from parent to child
-        GeneralizedAbsoluteSpatialTransform Xa_; // spatial transform from world frame to current frame
+        GeneralizedSpatialTransform Xup_;        // spatial xform from parent to child
+        GeneralizedAbsoluteSpatialTransform Xa_; // spatial xform from world frame to current frame
+
+        std::vector<int> supported_end_effectors_;
+        std::vector<std::pair<int, int>> nearest_supported_ee_pairs_;
     };
 
 } // namespace grbda

@@ -37,6 +37,37 @@ namespace grbda
         return cp.jacobian_;
     }
 
+    D6Mat<double> RigidBodyTreeModel::bodyJacobian(const std::string &cp_name)
+    {
+        forwardKinematics();
+        updateLoopConstraints();
+
+        D6Mat<double> J_spanning = D6Mat<double>::Zero(6, getNumDegreesOfFreedom());
+
+        ContactPoint &cp = contact_points_[contact_name_to_contact_index_.at(cp_name)];
+        const size_t &i = cp.body_index_;
+        const auto node_i = getNodeContainingBody(i);
+        Mat6<double> Xout = createSXform(Mat3<double>::Identity(), cp.local_offset_);
+
+        int j = (int)i;
+        while (j > -1)
+        {
+            const auto node_j = getNodeContainingBody(j);
+            const int &vel_idx = node_j->velocity_index_;
+            const int &num_vel = node_j->num_velocities_;
+
+            const D6Mat<double> &S = node_j->S();
+            J_spanning.middleCols(vel_idx, num_vel) = Xout * S;
+
+            const Mat6<double> Xup = node_j->Xup_[0].toMatrix();
+            Xout = Xout * Xup;
+
+            j = node_j->parent_index_;
+        }
+
+        return J_spanning * loop_constraints_.G();
+    }
+
     DVec<double> RigidBodyTreeModel::forwardDynamics(const DVec<double> &tau)
     {
         forwardKinematics();
@@ -145,6 +176,24 @@ namespace grbda
         const DVec<double> qdd_spanning = loop_constraints_.G() * ydd + loop_constraints_.g();
         const DVec<double> tau_id = recursiveNewtonEulerAlgorithm(qdd_spanning);
         return loop_constraints_.G_transpose() * tau_id;
+    }
+
+    DMat<double> RigidBodyTreeModel::inverseOperationalSpaceInertiaMatrix()
+    {
+        // TODO(@MatthewChignoli): Implement the lagrange multipler based method
+
+        const DMat<double> H = getMassMatrix();
+        DMat<double> J_stacked = DMat<double>::Zero(6 * getNumEndEffectors(), H.rows());
+
+        int ee_cnt = 0;
+        for (int i = 0; i < (int)contact_points_.size(); i++)
+        {
+            const ContactPoint &cp = contact_points_[i];
+            if (!cp.is_end_effector_)
+                continue;
+            J_stacked.middleRows<6>(6 * ee_cnt++) = bodyJacobian(cp.name_);
+        }
+        return J_stacked * H.inverse() * J_stacked.transpose();
     }
 
     double RigidBodyTreeModel::applyLocalFrameTestForceAtContactPoint(

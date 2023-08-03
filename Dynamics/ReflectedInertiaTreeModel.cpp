@@ -220,12 +220,13 @@ namespace grbda
         return cp.jacobian_;
     }
 
-    const D6Mat<double> &ReflectedInertiaTreeModel::bodyJacobian(const std::string &cp_name)
+    D6Mat<double> ReflectedInertiaTreeModel::bodyJacobian(const std::string &cp_name)
     {
         forwardKinematics();
 
-        ContactPoint &cp = contact_points_[contact_name_to_contact_index_.at(cp_name)];
+        D6Mat<double> J = D6Mat<double>::Zero(6, getNumDegreesOfFreedom());
 
+        ContactPoint &cp = contact_points_[contact_name_to_contact_index_.at(cp_name)];
         const size_t &i = cp.body_index_;
         const auto node_i = getNodeContainingBody(i);
         Mat6<double> Xout = createSXform(Mat3<double>::Identity(), cp.local_offset_);
@@ -238,7 +239,7 @@ namespace grbda
             const int &num_vel = node_j->num_velocities_;
 
             const D6Mat<double> &S = node_j->S();
-            cp.jacobian_.middleCols(vel_idx, num_vel) = Xout * S;
+            J.middleCols(vel_idx, num_vel) = Xout * S;
 
             const Mat6<double> Xup = node_j->Xup_[0].toMatrix();
             Xout = Xout * Xup;
@@ -246,7 +247,7 @@ namespace grbda
             j = node_j->parent_index_;
         }
 
-        return cp.jacobian_;
+        return J;
     }
 
     DVec<double> ReflectedInertiaTreeModel::forwardDynamics(const DVec<double> &tau)
@@ -280,7 +281,7 @@ namespace grbda
         }
     }
 
-    DMat<double> ReflectedInertiaTreeModel::inverseOperationalSpaceInertiaMatrices()
+    DMat<double> ReflectedInertiaTreeModel::inverseOperationalSpaceInertiaMatrix()
     {
         switch (rotor_inertia_approximation_)
         {

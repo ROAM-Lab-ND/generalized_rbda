@@ -287,7 +287,7 @@ TYPED_TEST(ReflectedInertiaDynamicsAlgosTest, LambdaInv)
 
         for (auto &model : models)
         {
-            const DMat<double> lambda_inv = model.inverseOperationalSpaceInertiaMatrices();
+            const DMat<double> lambda_inv = model.inverseOperationalSpaceInertiaMatrix();
 
             const DMat<double> H = model.getMassMatrix();
             DMat<double> J_stacked = DMat<double>::Zero(6 * model.getNumEndEffectors(),

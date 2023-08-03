@@ -68,11 +68,46 @@ namespace grbda
         const ClusterTreeModel &cluster_tree_model)
     {
         contact_name_to_contact_index_ = cluster_tree_model.contact_name_to_contact_index_;
+
+        int contact_point_index = 0;
         for (const auto &contact_point : cluster_tree_model.contactPoints())
         {
             contact_points_.push_back(contact_point);
             if (contact_point.is_end_effector_)
+            {
                 num_end_effectors_++;
+
+                ContactPoint &end_effector = contact_points_.back();
+                end_effector.supporting_nodes_.clear();
+                end_effector.ChiUp_.clear();
+
+                // Keep track of which nodes support this new end effector
+                int i = getNodeContainingBody(end_effector.body_index_)->index_;
+                while (i > -1)
+                {
+                    auto &node = rigid_body_nodes_[i];
+                    node->supported_end_effectors_.push_back(contact_point_index);
+                    end_effector.supporting_nodes_.push_back(i);
+                    i = node->parent_index_;
+                }
+
+                // Initialize the force propagators for this end effector
+                for (int j = 0; j < (int)rigid_body_nodes_.size(); j++)
+                {
+                    end_effector.ChiUp_.push_back(DMat<double>::Zero(0, 0));
+                }
+
+                // Get the nearest shared supporting node for every existing end effector
+                for (int k = 0; k < (int)contact_points_.size() - 1; k++)
+                {
+                    if (!contact_points_[k].is_end_effector_)
+                        continue;
+                    std::pair<int, int> cp_pair(k, contact_point_index);
+                    const int nearest_shared_support = getNearestSharedSupportingNode(cp_pair);
+                    rigid_body_nodes_[nearest_shared_support]->nearest_supported_ee_pairs_.push_back(cp_pair);
+                }
+            }
+            contact_point_index++;
         }
     }
 

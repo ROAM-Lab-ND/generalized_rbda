@@ -42,16 +42,13 @@ namespace grbda
 
         void forwardKinematics();
 
+        virtual D6Mat<double> bodyJacobian(const std::string &cp_name) = 0;
         virtual const D6Mat<double>& contactJacobian(const std::string &cp_name) = 0;
         void contactJacobians();
 
         virtual DVec<double> forwardDynamics(const DVec<double> &tau) = 0;
         virtual DVec<double> inverseDynamics(const DVec<double> &qdd) = 0;
-
-        virtual DMat<double> inverseOperationalSpaceInertiaMatrices()
-        {
-            throw std::runtime_error("inverseOperationalSpaceInertia not implemented for this model");
-        }
+        virtual DMat<double> inverseOperationalSpaceInertiaMatrix() = 0;
         virtual double applyLocalFrameTestForceAtContactPoint(const Vec3<double> &force,
                                                               const string &contact_point_name,
                                                               DVec<double> &dstate_out) = 0;
