@@ -71,8 +71,8 @@ namespace grbda
         DMat<double> ChiUp_;
         DMat<double> qdd_for_subtree_due_to_subtree_root_joint_qdd;
         DMat<double> K_;
-        std::vector<int> supported_end_effectors_;
-        std::vector<std::pair<int, int>> nearest_supported_pairs_;
+        std::vector<int> supported_contact_points_;
+        std::vector<std::pair<int, int>> nearest_supported_cp_pairs_;
     };
 
 } // namespace grbda

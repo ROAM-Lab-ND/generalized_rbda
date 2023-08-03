@@ -19,7 +19,7 @@ namespace grbda
         model.appendRegisteredBodiesAsCluster(torso_name, torso_generalized_joint);
 
         Vec3<double> torsoDims(_bodyLength, _bodyWidth, _bodyHeight);
-        model.appendContactBox(torso_name, torsoDims);
+        // model.appendContactBox(torso_name, torsoDims);
 
         int sideSign = -1;
         for (int legID = 0; legID < 4; legID++)
@@ -70,8 +70,8 @@ namespace grbda
             auto hip_generalized_joint = std::make_shared<GeneralizedJoints::RevoluteWithRotor>(hip_link, hip_rotor, CoordinateAxis::Y, CoordinateAxis::Y, _hipGearRatio);
             model.appendRegisteredBodiesAsCluster(hip_name, hip_generalized_joint);
 
-            const std::string hip_contact_name = withLegSigns("hip_contact", legID);
-            model.appendContactPoint(hip_link_name, Vec3<double>(0, 0, 0), hip_contact_name);
+            // const std::string hip_contact_name = withLegSigns("hip_contact", legID);
+            // model.appendContactPoint(hip_link_name, Vec3<double>(0, 0, 0), hip_contact_name);
 
             const std::string knee_contact_name = withLegSigns("knee_contact", legID);
             model.appendContactPoint(hip_link_name, Vec3<double>(0, 0, -_hipLinkLength), knee_contact_name);
@@ -101,10 +101,7 @@ namespace grbda
 
             const std::string foot_contact_name = withLegSigns("foot_contact", legID);
             const Vec3<double> foot_contact_offset = withLegSigns(Vec3<double>(0, -_kneeLinkY_offset, -_kneeLinkLength), legID);
-            auto cp = model.appendContactPoint(knee_link_name, foot_contact_offset, foot_contact_name);
-
-            std::vector<ContactPoint> cps{cp};
-            model.appendEndEffector(cps, "foot");
+            model.appendContactPoint(knee_link_name, foot_contact_offset, foot_contact_name);
 
             sideSign *= -1;
         }

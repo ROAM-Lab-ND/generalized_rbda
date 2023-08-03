@@ -351,9 +351,15 @@ namespace grbda
         updateForcePropagators();
 
         // Reset Force Propagators
-        for (ClusterEndEffector &ee : cluster_end_effectors_)
+        for (ContactPoint &cp : contact_points_)
         {
-            ee.ChiUp_[ee.cluster_index_] = ee.X_offset_.toMatrix();
+            const Body& body = bodies_[cp.body_index_];
+            const auto& cluster = getClusterContainingBody(cp.body_index_);
+            const int& cluster_index = cluster->index_;
+
+            cp.ChiUp_[cluster_index] = DMat<double>::Zero(6, cluster->motion_subspace_dimension_);
+            cp.ChiUp_[cluster_index].middleCols<6>(6 * body.sub_index_within_cluster_) =
+                createSXform(Mat3<double>::Identity(), cp.local_offset_);
         }
 
         // Backward Pass
@@ -367,25 +373,29 @@ namespace grbda
             const int &parent_index = cluster->parent_index_;
             if (parent_index >= 0)
             {
-                for (const int &ee_index : cluster->supported_end_effectors_)
+                for (const int &cp_index : cluster->supported_contact_points_)
                 {
-                    ClusterEndEffector &ee = cluster_end_effectors_[ee_index];
-                    auto &ChiUp_extended = ee.ChiUp_;
+                    ContactPoint &cp = contact_points_[cp_index];
+                    auto &ChiUp_extended = cp.ChiUp_;
                     ChiUp_extended[parent_index] = ChiUp_extended[i] * cluster->ChiUp_;
                 }
             }
         }
 
+
+        // TODO(@MatthewChignoli): This part needs to be cleaned up, but I think for now we can make the following assumption
         const int num_bodies = bodies_.size();
-        int total_ee_output_dim = 0;
-        for (const ClusterEndEffector &ee : cluster_end_effectors_)
-        {
-            total_ee_output_dim += (6 * ee.X_offset_.getNumOutputBodies());
-        }
+        const int num_contacts = contact_points_.size();
+
+        // int total_ee_output_dim = 0;
+        // for (const ClusterEndEffector &ee : cluster_end_effectors_)
+        // {
+        //     total_ee_output_dim += (6 * ee.X_offset_.getNumOutputBodies());
+        // }
         // TODO(@MatthewChignoli): Only consider contact points or EE of interest?
 
-        DMat<double> lambda_inv = DMat<double>::Zero(total_ee_output_dim, total_ee_output_dim);
-        DMat<double> lambda_inv_tmp = DMat<double>::Zero(6 * num_bodies, total_ee_output_dim);
+        DMat<double> lambda_inv = DMat<double>::Zero(6 * num_contacts, 6 * num_contacts);
+        DMat<double> lambda_inv_tmp = DMat<double>::Zero(6 * num_bodies, 6 * num_contacts);
 
         // Forward Pass
         DMat<double> lambda_inv_prev;
@@ -398,67 +408,68 @@ namespace grbda
             const int &op_space_index = cluster->op_space_index_;
             const int &op_space_dim = cluster->motion_subspace_dimension_;
 
-            for (const int &ee_index : cluster->supported_end_effectors_)
+            for (const int &cp_index : cluster->supported_contact_points_)
             {
-                const ClusterEndEffector &end_effector = cluster_end_effectors_[ee_index];
+                const ContactPoint &contact_point = contact_points_[cp_index];
                 // TODO(@MatthewChignoli): assumes that all end effectors have the same output dimension, otherwise the indexing will be off. In other words, we should not have 6 * ee_index anywhere!!
-                const int ee_output_dim = 6 * end_effector.X_offset_.getNumOutputBodies();
+                const int cp_output_dim = 6;// * end_effector.X_offset_.getNumOutputBodies();
 
                 if (parent_index > -1)
                 {
                     const auto &parent_cluster = cluster_nodes_[parent_index];
                     const int &parent_op_space_index = parent_cluster->op_space_index_;
                     const int &parent_op_space_dim = parent_cluster->motion_subspace_dimension_;
-                    lambda_inv_prev = lambda_inv_tmp.block(parent_op_space_index, 6 * ee_index,
-                                                           parent_op_space_dim, ee_output_dim);
+                    lambda_inv_prev = lambda_inv_tmp.block(parent_op_space_index, 6 * cp_index,
+                                                           parent_op_space_dim, cp_output_dim);
                 }
                 else
-                    lambda_inv_prev = DMat<double>::Zero(op_space_dim, ee_output_dim);
+                    lambda_inv_prev = DMat<double>::Zero(op_space_dim, cp_output_dim);
 
-                lambda_inv_tmp.block(op_space_index, 6 * ee_index,
-                                     op_space_dim, ee_output_dim) =
+                lambda_inv_tmp.block(op_space_index, 6 * cp_index,
+                                     op_space_dim, cp_output_dim) =
                     cluster->ChiUp_ * lambda_inv_prev +
-                    cluster->K_ * end_effector.ChiUp_[cluster_index].transpose();
+                    cluster->K_ * contact_point.ChiUp_[cluster_index].transpose();
             }
 
             // For every pair of bodies that the current cluster is an ancestor of, we compute lambda_inv
-            for (const std::pair<int, int> &ee_pair : cluster->nearest_supported_pairs_)
+            for (const std::pair<int, int> &cp_pair : cluster->nearest_supported_cp_pairs_)
             {
-                const int &ee1_index = ee_pair.first;
-                const int &ee2_index = ee_pair.second;
+                const int &cp1_index = cp_pair.first;
+                const int &cp2_index = cp_pair.second;
 
-                const ClusterEndEffector &ee1 = cluster_end_effectors_[ee1_index];
-                const ClusterEndEffector &ee2 = cluster_end_effectors_[ee2_index];
+                const ContactPoint &cp1 = contact_points_[cp1_index];
+                const ContactPoint &cp2 = contact_points_[cp2_index];
 
-                const int ee1_output_dim = 6 * ee1.X_offset_.getNumOutputBodies();
-                const int ee2_output_dim = 6 * ee2.X_offset_.getNumOutputBodies();
+                const int cp1_output_dim = 6;// * cp1.X_offset_.getNumOutputBodies();
+                const int cp2_output_dim = 6;// * cp2.X_offset_.getNumOutputBodies();
 
-                lambda_inv.block(6 * ee1_index, 6 * ee2_index,
-                                 ee1_output_dim, ee2_output_dim) =
-                    cluster->ChiUp_ * lambda_inv_tmp.block(op_space_index, 6 * ee2_index,
-                                                           op_space_dim, ee2_output_dim);
+                lambda_inv.block(6 * cp1_index, 6 * cp2_index,
+                                 cp1_output_dim, cp2_output_dim) =
+                    cp1.ChiUp_[cluster_index] * lambda_inv_tmp.block(op_space_index, 6 * cp2_index,
+                                                                     op_space_dim, cp2_output_dim);
 
-                lambda_inv.block(6 * ee2_index, 6 * ee1_index,
-                                 ee2_output_dim, ee1_output_dim) =
-                    lambda_inv.block(6 * ee1_index, 6 * ee2_index,
-                                     ee1_output_dim, ee2_output_dim)
+                lambda_inv.block(6 * cp2_index, 6 * cp1_index,
+                                 cp2_output_dim, cp1_output_dim) =
+                    lambda_inv.block(6 * cp1_index, 6 * cp2_index,
+                                     cp1_output_dim, cp2_output_dim)
                         .transpose();
             }
         }
 
         // And now do the diagonal blocks
-        for (int k = 0; k < (int)cluster_end_effectors_.size(); k++)
+        for (int k = 0; k < (int)contact_points_.size(); k++)
         {
-            const ClusterEndEffector &ee = cluster_end_effectors_[k];
-            const int &ee_output_dim = 6 * ee.X_offset_.getNumOutputBodies();
+            const ContactPoint &cp = contact_points_[k];
+            const int &cp_output_dim = 6;// * cp.X_offset_.getNumOutputBodies();
 
-            const auto &cluster = cluster_nodes_[ee.cluster_index_];
+            const int cluster_index = getIndexOfClusterContainingBody(cp.body_index_);
+            const auto &cluster = cluster_nodes_[cluster_index];
             const int &op_space_index = cluster->op_space_index_;
             const int &op_space_dim = cluster->motion_subspace_dimension_;
 
-            lambda_inv.block(6 * k, 6 * k, ee_output_dim, ee_output_dim) =
-                ee.X_offset_.toMatrix() * lambda_inv_tmp.block(op_space_index, 6 * k,
-                                                               op_space_dim, ee_output_dim);
+            lambda_inv.block(6 * k, 6 * k, cp_output_dim, cp_output_dim) =
+                cp.ChiUp_[cluster_index] * lambda_inv_tmp.block(op_space_index, 6 * k,
+                                                                op_space_dim, cp_output_dim);
         }
         return lambda_inv;
     }

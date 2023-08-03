@@ -134,7 +134,7 @@ namespace grbda
         void appendRegisteredBodiesAsCluster(const string name,
                                              shared_ptr<GeneralizedJoints::Base> joint);
 
-        ContactPoint appendContactPoint(const string body_name,
+        void appendContactPoint(const string body_name,
                                         const Vec3<double> &local_offset,
                                         const string contact_point_name);
         void appendContactBox(const string body_name, const Vec3<double> &box_dimensions);
@@ -182,7 +182,6 @@ namespace grbda
 
         const vector<Body> &bodies() const { return bodies_; }
         const vector<ClusterTreeNodePtr> &clusters() const { return cluster_nodes_; }
-        const vector<ClusterEndEffector> &endEffectors() const { return cluster_end_effectors_; }
 
         const Body &body(const int body_index) const { return bodies_[body_index]; }
         const Body &body(const string body_name) const
@@ -235,7 +234,6 @@ namespace grbda
 
         vector<Body> bodies_;
         vector<ClusterTreeNodePtr> cluster_nodes_;
-        vector<ClusterEndEffector> cluster_end_effectors_;
 
         vector<Body> bodies_in_current_cluster_;
 

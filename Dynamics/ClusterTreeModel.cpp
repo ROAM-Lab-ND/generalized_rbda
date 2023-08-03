@@ -148,22 +148,42 @@ namespace grbda
         for (auto &contact_point : contact_points_)
         {
             contact_point.jacobian_.setZero(6, num_degrees_of_freedom);
-        }
-
-        for (ClusterEndEffector& end_effector : cluster_end_effectors_)
-        {
-            end_effector.ChiUp_.push_back(DMat<double>::Zero(0, 0));
+            contact_point.ChiUp_.push_back(DMat<double>::Zero(0, 0));
         }
     }
 
-    ContactPoint ClusterTreeModel::appendContactPoint(const string body_name,
+    void ClusterTreeModel::appendContactPoint(const string body_name,
                                                       const Vec3<double> &local_offset,
                                                       const string contact_point_name)
     {
         const int contact_point_index = (int)contact_points_.size();
         contact_name_to_contact_index_[contact_point_name] = contact_point_index;
-        return contact_points_.emplace_back(body_name_to_body_index_.at(body_name), local_offset,
-                                            contact_point_name, getNumDegreesOfFreedom());
+        contact_points_.emplace_back(body_name_to_body_index_.at(body_name), local_offset,
+                                     contact_point_name, getNumDegreesOfFreedom());
+        ContactPoint &contact_point = contact_points_.back();
+
+        // Keep track of which nodes support this new end effector
+        int i = getIndexOfClusterContainingBody(body_name_to_body_index_.at(body_name));
+        while (i > -1)
+        {
+            cluster_nodes_[i]->supported_contact_points_.push_back(contact_point_index);
+            contact_point.supporting_nodes_.push_back(i);
+            i = cluster_nodes_[i]->parent_index_;
+        }
+
+        // Initialize the force propagators for this contact point
+        for (int j = 0; j < (int)cluster_nodes_.size(); j++)
+        {
+            contact_point.ChiUp_.push_back(DMat<double>::Zero(0, 0));
+        }
+
+        // Get the nearest shared supporting cluster for every existing end effector
+        for (int k = 0; k < (int)contact_points_.size() - 1; k++)
+        {
+            std::pair<int, int> cp_pair(k, contact_point_index);
+            const int nearest_shared_support = getNearestSharedSupportingCluster(cp_pair);
+            cluster_nodes_[nearest_shared_support]->nearest_supported_cp_pairs_.push_back(cp_pair);
+        }
     }
 
     void ClusterTreeModel::appendContactBox(const string body_name, const Vec3<double> &dims)
@@ -178,55 +198,6 @@ namespace grbda
         appendContactPoint(body_name, V3d(-dims(0), dims(1), -dims(2)) / 2, "torso-contact-6");
         appendContactPoint(body_name, V3d(dims(0), -dims(1), -dims(2)) / 2, "torso-contact-7");
         appendContactPoint(body_name, V3d(-dims(0), -dims(1), -dims(2)) / 2, "torso-contact-8");
-    }
-
-    void ClusterTreeModel::appendEndEffector(const vector<ContactPoint> &contact_points,
-                                             const string end_effector_name)
-    {
-        // TODO(@MatthewChignoli): Kind of hacky to treat contact points and end effectors as separaete, but it seems necessary for now...
-
-        const int end_effector_index = (int)cluster_end_effectors_.size();
-        const int cluster_index = getIndexOfClusterContainingBody(contact_points[0].body_index_);
-        GeneralizedSpatialTransform X_offset(cluster_nodes_[cluster_index]->bodies().size());
-
-        for (const ContactPoint& cp : contact_points)
-        {
-            if (getIndexOfClusterContainingBody(cp.body_index_) != cluster_index)
-            {
-                throw std::runtime_error("[Append end effector] All contact points must be in the same cluster");
-            }
-
-            const SpatialTransform X_offset_i(Mat3<double>::Identity(), cp.local_offset_);
-            const int subindex = getSubIndexWithinClusterForBody(cp.body_index_);
-            X_offset.appendSpatialTransformWithClusterAncestorSubIndex(X_offset_i, subindex);
-        }
-
-        cluster_end_effectors_.emplace_back(cluster_index, X_offset, end_effector_name);
-        ClusterEndEffector &end_effector = cluster_end_effectors_.back();
-
-        // Keep track of which nodes support this new end effector
-        int i = cluster_index;
-        while (i > -1)
-        {
-            // TODO(@MatthewChignoli): Do we need to keep track both ways? Supporting and supported?
-            cluster_nodes_[i]->supported_end_effectors_.push_back(end_effector_index);
-            end_effector.supporting_clusters_.insert(end_effector.supporting_clusters_.begin(), i);
-            i = cluster_nodes_[i]->parent_index_;
-        }
-
-        // Initialize the force propagators and tmp vars for this end effector
-        for (int j = 0; j < (int)cluster_nodes_.size(); j++)
-        {
-            end_effector.ChiUp_.push_back(DMat<double>::Zero(0, 0));
-        }
-
-        // Get the nearest shared supporting cluster for every existing end effector
-        for (int k = 0; k < (int)cluster_end_effectors_.size() - 1; k++)
-        {
-            std::pair<int, int> ee_pair(k, end_effector_index);
-            const int nearest_shared_support = getNearestSharedSupportingCluster(ee_pair);
-            cluster_nodes_[nearest_shared_support]->nearest_supported_pairs_.push_back(ee_pair);
-        }
     }
 
     void ClusterTreeModel::addJointLim(size_t jointID, double joint_lim_value_lower,
@@ -501,11 +472,24 @@ namespace grbda
     }
 
     int ClusterTreeModel::getNearestSharedSupportingCluster(
-        const std::pair<int, int> &ee_indices)
+        const std::pair<int, int> &cp_indices)
     {
-        const ClusterEndEffector &ee_i = cluster_end_effectors_[ee_indices.first];
-        const ClusterEndEffector &ee_j = cluster_end_effectors_[ee_indices.second];
-        return greatestCommonElement(ee_i.supporting_clusters_, ee_j.supporting_clusters_);
+        const ContactPoint &cp_i = contact_points_[cp_indices.first];
+        const ContactPoint &cp_j = contact_points_[cp_indices.second];
+
+        // //print the supporting nodes of each contact point
+        // cout << "Supporting nodes of contact point " << cp_i.name_ << ": ";
+        // for (const int &node_idx : cp_i.supporting_nodes_)
+        //     cout << cluster_nodes_[node_idx]->name_ << std::endl;
+        // cout << "Supporting nodes of contact point " << cp_j.name_ << ": ";
+        // for (const int &node_idx : cp_j.supporting_nodes_)
+        //     cout << cluster_nodes_[node_idx]->name_ << std::endl;
+
+        // int out = greatestCommonElement(cp_i.supporting_nodes_, cp_j.supporting_nodes_);
+        // std::cout << "Nearest shared supporting cluster: " << cluster_nodes_[out]->name_ << std::endl;
+
+
+        return greatestCommonElement(cp_i.supporting_nodes_, cp_j.supporting_nodes_);
     }
 
     ClusterTreeNodePtr ClusterTreeModel::getClusterContainingBody(const int body_index)
