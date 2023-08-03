@@ -361,6 +361,7 @@ TYPED_TEST(RigidBodyDynamicsAlgosTest, ApplyTestForceTest)
 TYPED_TEST(RigidBodyDynamicsAlgosTest, LambdaInv)
 {
     // TODO(@MatthewChignoli): Write description
+    
     bool nan_detected_in_state = this->initializeRandomStates(0);
     while (nan_detected_in_state)
     {
@@ -368,53 +369,30 @@ TYPED_TEST(RigidBodyDynamicsAlgosTest, LambdaInv)
     }
 
     ClusterTreeModel &cluster_model = this->cluster_models[0];
-    if (cluster_model.contactPoints().size() == 0)
+    if (cluster_model.getNumEndEffectors() == 0)
     {
-        std::cout << "No contact points in cluster model. Skipping test." << std::endl;
+        std::cout << "No end effectors in cluster model. Skipping test." << std::endl;
         return;
     }
 
+    // EFPA
     const DMat<double> lambda_inv = cluster_model.inverseOperationalSpaceInertiaMatrices();
 
-    // std::cout << "lambda_inv: " << std::endl;
-    // std::cout << lambda_inv.topLeftCorner<6,6>() << std::endl;
-
-    // Now lets compare that to the J * Hinv * J^T
+    // J H^-1 J^T
     const DMat<double> H = cluster_model.massMatrix();
     const DMat<double> H_inv = H.inverse();
-
-    // So now we need to vertically stack the jacobians (how to do that?)
-    DMat<double> J_stacked = DMat<double>::Zero(6 * cluster_model.contactPoints().size(),
+    DMat<double> J_stacked = DMat<double>::Zero(6 * cluster_model.getNumEndEffectors(),
                                                 cluster_model.getNumDegreesOfFreedom());
+    int ee_cnt = 0;
     for (int i = 0; i < (int)cluster_model.contactPoints().size(); i++)
     {
         const ContactPoint &cp = cluster_model.contactPoints()[i];
-        J_stacked.middleRows<6>(6 * i) = cluster_model.bodyJacobian(cp.name_);
+        if (!cp.is_end_effector_)
+            continue;
+        J_stacked.middleRows<6>(6 * ee_cnt++) = cluster_model.bodyJacobian(cp.name_);
     }
-
     DMat<double> J_Hinv_JT = J_stacked * H_inv * J_stacked.transpose();
 
-    // std::cout << "lambda_inv: " << std::endl;
-    // std::cout << lambda_inv << std::endl;
-
-    // std::cout << "J_Hinv_JT: " << std::endl;
-    // std::cout << J_Hinv_JT << std::endl;
-
-    // // Print the difference
-    // // std::cout << "lambda_inv - J_Hinv_JT: " << std::endl;
-    // // std::cout << lambda_inv- J_Hinv_JT << std::endl;
-
-    // // Deaded and print the difference
-    // DMat<double> difference = lambda_inv - J_Hinv_JT;
-    // for (size_t i = 0; i < difference.rows(); i++)
-    // {
-    //   for (size_t j = 0; j < difference.cols(); j++)
-    //   {
-    //     difference(i, j) = deadband(difference(i, j), 1e-10);
-    //   }
-    // }
-    // std::cout << "lambda_inv - J_Hinv_JT: " << std::endl;
-    // std::cout << difference << std::endl;
-
+    // Compare
     GTEST_ASSERT_LT((lambda_inv - J_Hinv_JT).norm(), tol);
 }

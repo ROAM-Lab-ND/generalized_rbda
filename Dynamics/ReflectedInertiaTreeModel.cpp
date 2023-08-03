@@ -82,6 +82,8 @@ namespace grbda
         for (const auto &contact_point : cluster_tree_model.contactPoints())
         {
             contact_points_.push_back(contact_point);
+            if (contact_point.is_end_effector_)
+                num_end_effectors_++;
         }
     }
 

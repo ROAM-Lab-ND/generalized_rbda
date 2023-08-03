@@ -345,6 +345,9 @@ namespace grbda
         // Reset Force Propagators for the end-effectors
         for (ContactPoint &cp : contact_points_)
         {
+            if (!cp.is_end_effector_)
+                continue;
+
             const Body &body = bodies_[cp.body_index_];
             const auto &cluster = getClusterContainingBody(cp.body_index_);
 
@@ -364,7 +367,7 @@ namespace grbda
             const int &parent_index = cluster->parent_index_;
             if (parent_index >= 0)
             {
-                for (const int &cp_index : cluster->supported_contact_points_)
+                for (const int &cp_index : cluster->supported_end_effectors_)
                 {
                     ContactPoint &cp = contact_points_[cp_index];
                     cp.ChiUp_[parent_index] = cp.ChiUp_[i] * cluster->ChiUp_;
@@ -374,10 +377,10 @@ namespace grbda
 
         // TODO(@MatthewChignoli): Right now, this steps makes two assumptions. (1)  Every contact point is considered as part of the operational space and (2) every operational space has dimension 6
         const int num_bodies = bodies_.size();
-        const int num_contacts = contact_points_.size();
-
-        DMat<double> lambda_inv = DMat<double>::Zero(6 * num_contacts, 6 * num_contacts);
-        DMat<double> lambda_inv_tmp = DMat<double>::Zero(6 * num_bodies, 6 * num_contacts);
+        DMat<double> lambda_inv = DMat<double>::Zero(6 * num_end_effectors_,
+                                                     6 * num_end_effectors_);
+        DMat<double> lambda_inv_tmp = DMat<double>::Zero(6 * num_bodies,
+                                                         6 * num_end_effectors_);
 
         // Forward Pass
         DMat<double> lambda_inv_prev;
@@ -386,17 +389,16 @@ namespace grbda
             const int &cluster_index = cluster->index_;       // "i" in Table 1 of the paper
             const int &parent_index = cluster->parent_index_; // "p(i)"" in Table 1 of the paper
 
-            // TODO(@MatthewChignoli): We assume op space dim = motion subspace dim
             const int &mss_index = cluster->motion_subspace_index_;
             const int &mss_dim = cluster->motion_subspace_dimension_;
 
-            for (const int &cp_index : cluster->supported_contact_points_)
+            for (const int &cp_index : cluster->supported_end_effectors_)
             {
-                // cp_index is "k" in Table 1 of the paper
-
                 const ContactPoint &contact_point = contact_points_[cp_index];
+                const int& k = contact_point.end_effector_index_; // "k" in Table 1 of the paper
+
                 // TODO(@MatthewChignoli): Here is an instance of where we assume all output dimensions are 6
-                const int cp_output_dim = 6;
+                const int ee_output_dim = 6;
 
                 if (parent_index > -1)
                 {
@@ -404,49 +406,57 @@ namespace grbda
                     const int &parent_mss_index = parent_cluster->motion_subspace_index_;
                     const int &parent_mss_dim = parent_cluster->motion_subspace_dimension_;
                     // TODO(@MatthewChignoli): Here is an instance of where we assume all output dimensions are 6
-                    lambda_inv_prev = lambda_inv_tmp.block(parent_mss_index, 6 * cp_index,
-                                                           parent_mss_dim, cp_output_dim);
+                    lambda_inv_prev = lambda_inv_tmp.block(parent_mss_index, 6 * k,
+                                                           parent_mss_dim, ee_output_dim);
                 }
                 else
-                    lambda_inv_prev = DMat<double>::Zero(mss_dim, cp_output_dim);
+                    lambda_inv_prev = DMat<double>::Zero(mss_dim, ee_output_dim);
 
                 // TODO(@MatthewChignoli): Here is an instance of where we assume all output dimensions are 6
-                DMatRef<double> lambda_inv_tmp_ik = lambda_inv_tmp.block(mss_index, 6 * cp_index,
-                                                                         mss_dim, cp_output_dim);
+                DMatRef<double> lambda_inv_tmp_ik = lambda_inv_tmp.block(mss_index, 6 * k,
+                                                                         mss_dim, ee_output_dim);
                 lambda_inv_tmp_ik = cluster->ChiUp_ * lambda_inv_prev +
                                     cluster->K_ * contact_point.ChiUp_[cluster_index].transpose();
             }
 
-            for (const std::pair<int, int> &cp_pair : cluster->nearest_supported_cp_pairs_)
+            for (const std::pair<int, int> &cp_pair : cluster->nearest_supported_ee_pairs_)
             {
-                const int &cp1_index = cp_pair.first;  // "k1" in Table 1 of the paper
-                const int &cp2_index = cp_pair.second; // "k2" in Table 1 of the paper
+                const ContactPoint &cp1 = contact_points_[cp_pair.first];
+                const ContactPoint &cp2 = contact_points_[cp_pair.second];
+
+                const int &k1 = cp1.end_effector_index_; // "k1" in Table 1 of the paper
+                const int &k2 = cp2.end_effector_index_; // "k2" in Table 1 of the paper
 
                 // TODO(@MatthewChignoli): Here is an instance of where we assume all output dimensions are 6
-                const int cp1_output_dim = 6;
-                const int cp2_output_dim = 6;
+                const int ee1_output_dim = 6;
+                const int ee2_output_dim = 6;
 
                 // TODO(@MatthewChignoli): Here is an instance of where we assume all output dimensions are 6
-                DMatRef<double> lambda_inv_k1k2 = lambda_inv.block(6 * cp1_index, 6 * cp2_index,
-                                                                   cp1_output_dim, cp2_output_dim);
-                const DMat<double> &ChiUp_k1i = contact_points_[cp1_index].ChiUp_[cluster_index];
-                DMatRef<double> lambda_inv_tmp_ik2 = lambda_inv_tmp.block(mss_index, 6 * cp2_index,
-                                                                          mss_dim, cp2_output_dim);
+                DMatRef<double> lambda_inv_k1k2 = lambda_inv.block(6 * k1, 6 * k2,
+                                                                   ee1_output_dim, ee2_output_dim);
+                const DMat<double> &ChiUp_k1i = cp1.ChiUp_[cluster_index];
+                DMatRef<double> lambda_inv_tmp_ik2 = lambda_inv_tmp.block(mss_index, 6 * k2,
+                                                                          mss_dim, ee2_output_dim);
                 lambda_inv_k1k2 = ChiUp_k1i * lambda_inv_tmp_ik2;
 
                 // TODO(@MatthewChignoli): Here is an instance of where we assume all output dimensions are 6
-                DMatRef<double> lambda_inv_k2k1 = lambda_inv.block(6 * cp2_index, 6 * cp1_index,
-                                                                   cp2_output_dim, cp1_output_dim);
+                DMatRef<double> lambda_inv_k2k1 = lambda_inv.block(6 * k2, 6 * k1,
+                                                                   ee2_output_dim, ee1_output_dim);
                 lambda_inv_k2k1 = lambda_inv_k1k2.transpose();
             }
         }
 
         // And now do the diagonal blocks
-        for (int k = 0; k < (int)contact_points_.size(); k++)
+        for (int i = 0; i < (int)contact_points_.size(); i++)
         {
-            const ContactPoint &cp = contact_points_[k];
+            const ContactPoint &cp = contact_points_[i];
+
+            if (!cp.is_end_effector_)
+                continue;
+
+            const int &k = cp.end_effector_index_; // "k" in Table 1 of the paper
             // TODO(@MatthewChignoli): Here is an instance of where we assume all output dimensions are 6
-            const int &cp_output_dim = 6;
+            const int &ee_output_dim = 6;
 
             const int cluster_index = getIndexOfClusterContainingBody(cp.body_index_);
             const auto &cluster = cluster_nodes_[cluster_index];
@@ -455,10 +465,10 @@ namespace grbda
 
             // TODO(@MatthewChignoli): Here is an instance of where we assume all output dimensions are 6
             DMatRef<double> lambda_inv_kk = lambda_inv.block(6 * k, 6 * k,
-                                                             cp_output_dim, cp_output_dim);
+                                                             ee_output_dim, ee_output_dim);
             const DMat<double> &ChiUp_kp = cp.ChiUp_[cluster_index];
             DMatRef<double> lambda_inv_tmp_pk = lambda_inv_tmp.block(mss_index, 6 * k,
-                                                                     mss_dim, cp_output_dim);
+                                                                     mss_dim, ee_output_dim);
             lambda_inv_kk = ChiUp_kp * lambda_inv_tmp_pk;
         }
         return lambda_inv;

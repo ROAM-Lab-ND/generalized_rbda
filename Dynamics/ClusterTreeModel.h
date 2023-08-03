@@ -134,13 +134,10 @@ namespace grbda
         void appendRegisteredBodiesAsCluster(const string name,
                                              shared_ptr<GeneralizedJoints::Base> joint);
 
-        void appendContactPoint(const string body_name,
-                                const Vec3<double> &local_offset,
-                                const string contact_point_name);
+        void appendContactPoint(const string body_name, const Vec3<double> &local_offset,
+                                const string contact_point_name, const bool is_end_eff = false);
         void appendContactBox(const string body_name, const Vec3<double> &box_dimensions);
-
-        // Should we have to register and then append registered? Seems silly.
-        void appendEndEffector(const vector<ContactPoint> &contact_points,
+        void appendEndEffector(const string body_name, const Vec3<double> &local_offset,
                                const string end_effector_name);
 
         void print() const;

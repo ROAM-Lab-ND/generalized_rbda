@@ -69,7 +69,11 @@ namespace grbda
     {
         contact_name_to_contact_index_ = cluster_tree_model.contact_name_to_contact_index_;
         for (const auto &contact_point : cluster_tree_model.contactPoints())
+        {
             contact_points_.push_back(contact_point);
+            if (contact_point.is_end_effector_)
+                num_end_effectors_++;
+        }
     }
 
     void RigidBodyTreeModel::initializeState(const DVec<double> &q, const DVec<double> &qd)

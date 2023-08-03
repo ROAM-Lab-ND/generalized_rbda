@@ -29,30 +29,30 @@ typedef Types<
 
 TYPED_TEST_SUITE(ClusterTreeModelTest, Robots);
 
-TYPED_TEST(ClusterTreeModelTest, ContactPoints)
+TYPED_TEST(ClusterTreeModelTest, EndEffectors)
 {
     const int num_clusters = this->cluster_model.clusters().size();
-    const int num_cp = this->cluster_model.contactPoints().size();
-
     for (const auto &cp : this->cluster_model.contactPoints())
     {
+        if (!cp.is_end_effector_)
+            continue;
         ASSERT_EQ(cp.ChiUp_.size(), num_clusters);
     }
 
-    std::vector<int> supported_contact_points;
+    std::vector<int> supported_end_effectors;
     for (const auto &cluster : this->cluster_model.clusters())
     {
-        for (const auto &cp_index : cluster->supported_contact_points_)
+        for (const auto &cp_index : cluster->supported_end_effectors_)
         {
             // Check if contact point is already accounted for
-            auto it = std::find(supported_contact_points.begin(),
-                                supported_contact_points.end(), cp_index);
+            auto it = std::find(supported_end_effectors.begin(),
+                                supported_end_effectors.end(), cp_index);
             // If not, push it back
-            if (it == supported_contact_points.end())
-                supported_contact_points.push_back(cp_index);
+            if (it == supported_end_effectors.end())
+                supported_end_effectors.push_back(cp_index);
         }
     }
-    ASSERT_EQ(supported_contact_points.size(), this->cluster_model.contactPoints().size());
+    ASSERT_EQ(supported_end_effectors.size(), this->cluster_model.getNumEndEffectors());
 }
 
 TYPED_TEST(ClusterTreeModelTest, SetState)
