@@ -5,23 +5,20 @@ namespace grbda
 
 	namespace LoopConstraint
 	{
-		TelloDifferential::TelloDifferential(const CasadiHelperFunctions &G_helpers,
-											 const CasadiHelperFunctions &g_helpers,
-											 const CasadiHelperFunctions &k_helpers,
-											 const CasadiHelperFunctions &kikd_helpers,
+		TelloDifferential::TelloDifferential(const CasadiHelperFunctions &jacobian_helpers,
+											 const CasadiHelperFunctions &bias_helpers,
+                                             const CasadiHelperFunctions &G_dot_helpers,
 											 const CasadiHelperFunctions &IK_pos_helpers,
 											 const CasadiHelperFunctions &IK_vel_helpers)
-			: G_helpers_(G_helpers), g_helpers_(g_helpers),
-			  k_helpers_(k_helpers), kikd_helpers_(kikd_helpers),
-			  IK_pos_helpers_(IK_pos_helpers), IK_vel_helpers_(IK_vel_helpers)
+			: jacobian_helpers_(jacobian_helpers), bias_helpers_(bias_helpers),
+              G_dot_helpers_(G_dot_helpers), IK_pos_helpers_(IK_pos_helpers),
+              IK_vel_helpers_(IK_vel_helpers)
 		{
 			G_.setZero(4, 2);
+            G_dot_.setZero(4, 2);
 			K_.setZero(2, 4);
 			g_.setZero(4);
 			k_.setZero(2);
-
-			G_.topRows<2>() = DMat<double>::Identity(2, 2);
-			K_.rightCols<2>() = DMat<double>::Identity(2, 2);
 		}
 
 		std::shared_ptr<Base> TelloDifferential::clone() const
@@ -34,21 +31,18 @@ namespace grbda
 			throw std::runtime_error("Tello loop constraint does not have a gamma function");
 		}
 
-		void TelloDifferential::updateJacobians(const JointCoordinate &joint_pos)
+		void TelloDifferential::updateConstraintFromJointPos(const JointCoordinate &joint_pos)
 		{
 #ifdef DEBUG_MODE
 			if (!joint_pos.isSpanning())
 				throw std::runtime_error("[TelloDifferential] Position for updating constraint Jacobians must be spanning");
 #endif
 			vector<DVec<double>> arg = {joint_pos.head<2>(), joint_pos.tail<2>()};
-			Mat2<double> J_dy_2_dqd;
-			casadi_interface(arg, J_dy_2_dqd, G_helpers_);
-
-			G_.bottomRows<2>() = J_dy_2_dqd;
-			K_.leftCols<2>() = -G_.bottomRows<2>();
+            vector<Eigen::MatrixBase<DMat<double>>*> J = {&G_, &K_};
+			casadi_interface(arg, J, jacobian_helpers_);
 		}
 
-		void TelloDifferential::updateBiases(const JointState &joint_state)
+		void TelloDifferential::updateConstraintFromJointState(const JointState &joint_state)
 		{
 #ifdef DEBUG_MODE
 			if (!joint_state.position.isSpanning() || !joint_state.velocity.isSpanning())
@@ -59,8 +53,9 @@ namespace grbda
 			const DVec<double> &q_dot = joint_state.velocity;
 
 			vector<DVec<double>> arg = {q.head<2>(), q.tail<2>(), q_dot.head<2>(), q_dot.tail<2>()};
-			casadi_interface(arg, g_, g_helpers_);
-			casadi_interface(arg, k_, k_helpers_);
+            casadi_interface(arg, G_dot_, G_dot_helpers_);
+            vector<Eigen::MatrixBase<DVec<double>>*> b = {&g_, &k_};
+			casadi_interface(arg, b, bias_helpers_);
 		}
 
 	}
@@ -113,23 +108,13 @@ namespace grbda
 	    S_.block<6, 1>(18, 0) = X21_S1 * G.block<1, 1>(2, 0) + S2 * G.block<1, 1>(3, 0);
 	    S_.block<6, 1>(18, 1) = X21_S1 * G.block<1 ,1>(2, 1) + S2 * G.block<1, 1>(3, 1);
 
-	    // Given matrix abcd = [a b;c d] = G_.bottomRows(2) = -Kd.inv()*Ki,
-	    // calculate a_dot, b_dot, c_dot, d_dot for S_ring_
-	    vector<DVec<double>> arg = {q.head<2>(), q.tail<2>(), q_dot.head<2>(), q_dot.tail<2>()};
-	    Mat2<double> Ki, Kd, Ki_dot, Kd_dot;
-	    vector<Eigen::MatrixBase<Mat2<double>>*> K = {&Ki, &Kd, &Ki_dot, &Kd_dot};
-	    casadi_interface(arg, K, tello_constraint_->kikd_helpers_);
-
-	    const Mat2<double> Kd_inv = Kd.inverse();
-	    Mat2<double> abcd_dot = -Kd_inv * Ki_dot + Kd_inv * Kd_dot * Kd_inv * Ki;
-
-	    S_ring_.block<6, 1>(12, 0) = S1 * abcd_dot.block<1, 1>(0, 0);
-	    S_ring_.block<6, 1>(12, 1) = S1 * abcd_dot.block<1, 1>(0, 1);
-	    S_ring_.block<6, 1>(18, 0) = X21_S1 * abcd_dot.block<1, 1>(0, 0) +\
-					 S2 * abcd_dot.block<1, 1>(1, 0) +\
+	    S_ring_.block<6, 1>(12, 0) = S1 * (loop_constraint_->G_dot()).block<1, 1>(2, 0);
+	    S_ring_.block<6, 1>(12, 1) = S1 * (loop_constraint_->G_dot()).block<1, 1>(2, 1);
+	    S_ring_.block<6, 1>(18, 0) = X21_S1 * (loop_constraint_->G_dot()).block<1, 1>(2, 0) +\
+					 S2 * (loop_constraint_->G_dot()).block<1, 1>(3, 0) +\
 					 (-v2_rel_crm * X21_S1) * G.block<1, 1>(2, 0);
-	    S_ring_.block<6, 1>(18, 1) = X21_S1 * abcd_dot.block<1, 1>(0, 1) +\
-					 S2 * abcd_dot.block<1, 1>(1, 1) +\
+	    S_ring_.block<6, 1>(18, 1) = X21_S1 * (loop_constraint_->G_dot()).block<1, 1>(2, 1) +\
+					 S2 * (loop_constraint_->G_dot()).block<1, 1>(3, 1) +\
 					 (-v2_rel_crm * X21_S1) * G.block<1, 1>(2, 1);
 
 	    vJ_ = S_ * joint_state.velocity;

@@ -33,7 +33,7 @@ namespace grbda
             {
                 spanning_joint_state.position = joint_state.position;
             }
-            loop_constraint_->updateJacobians(spanning_joint_state.position);
+            loop_constraint_->updateConstraintFromJointPos(spanning_joint_state.position);
 
             if (!joint_state.velocity.isSpanning())
             {
@@ -43,7 +43,7 @@ namespace grbda
             {
                 spanning_joint_state.velocity = joint_state.velocity;
             }
-            loop_constraint_->updateBiases(spanning_joint_state);
+            loop_constraint_->updateConstraintFromJointState(spanning_joint_state);
 
             return spanning_joint_state;
         }

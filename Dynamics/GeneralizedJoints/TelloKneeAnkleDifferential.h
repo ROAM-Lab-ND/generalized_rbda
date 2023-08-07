@@ -18,18 +18,17 @@ namespace grbda
 				       : TelloDifferential(rotor_1, rotor_2, link_1, link_2,
 				       rotor_axis_1, rotor_axis_2, joint_axis_1, joint_axis_2)
 	    {
-		CasadiHelperFunctions G_helpers(tkad_J_dy_2_dqd, tkad_J_dy_2_dqd_sparsity_out,
-										tkad_J_dy_2_dqd_work);
-		CasadiHelperFunctions g_helpers(tkad_g, tkad_g_sparsity_out, tkad_g_work);
-		CasadiHelperFunctions k_helpers(tkad_k, tkad_k_sparsity_out, tkad_k_work);
-		CasadiHelperFunctions kikd_helpers(tkad_kikd, tkad_kikd_sparsity_out, tkad_kikd_work);
+		CasadiHelperFunctions jacobian_helpers(tkad_jacobian, tkad_jacobian_sparsity_out,
+										tkad_jacobian_work);
+		CasadiHelperFunctions bias_helpers(tkad_bias, tkad_bias_sparsity_out, tkad_bias_work);
+        CasadiHelperFunctions G_dot_helpers(tkad_G_dot, tkad_G_dot_sparsity_out, tkad_G_dot_work);
 		CasadiHelperFunctions IK_pos_helpers(tkad_IK_pos, tkad_IK_pos_sparsity_out,
 											 tkad_IK_pos_work);
 		CasadiHelperFunctions IK_vel_helpers(tkad_IK_vel, tkad_IK_vel_sparsity_out,
 											 tkad_IK_vel_work);
 
 		tello_constraint_ = std::make_shared<LoopConstraint::TelloDifferential>(
-			G_helpers, g_helpers, k_helpers, kikd_helpers, IK_pos_helpers, IK_vel_helpers);
+			jacobian_helpers, bias_helpers, G_dot_helpers, IK_pos_helpers, IK_vel_helpers);
 		loop_constraint_ = tello_constraint_;
 	    }
 	    virtual ~TelloKneeAnkleDifferential() {}

@@ -21,11 +21,12 @@ namespace grbda
             int numIndependentVel() const { return G_.cols(); }
             int numConstraints() const { return K_.rows(); }
 
-            virtual void updateJacobians(const JointCoordinate &joint_pos) = 0;
-            virtual void updateBiases(const JointState &joint_state) = 0;
+            virtual void updateConstraintFromJointPos(const JointCoordinate &joint_pos) = 0;
+            virtual void updateConstraintFromJointState(const JointState &joint_state) = 0;
 
             virtual DVec<double> gamma(const JointCoordinate &joint_pos) const = 0;
             const DMat<double> &G() const { return G_; }
+            const DMat<double> &G_dot() const { return G_dot_; }
             const DVec<double> &g() const { return g_; }
 
             const DMat<double> &K() const { return K_; }
@@ -33,6 +34,7 @@ namespace grbda
 
         protected:
             DMat<double> G_;
+            DMat<double> G_dot_;
             DVec<double> g_;
 
             DMat<double> K_;
@@ -45,8 +47,8 @@ namespace grbda
 
             std::shared_ptr<Base> clone() const override { return std::make_shared<Static>(*this); }
 
-            void updateJacobians(const JointCoordinate &joint_pos) override {}
-            void updateBiases(const JointState &joint_state) override {}
+            void updateConstraintFromJointPos(const JointCoordinate &joint_pos) override {}
+            void updateConstraintFromJointState(const JointState &joint_state) override {}
 
             DVec<double> gamma(const JointCoordinate &joint_pos) const override;
         };
@@ -56,6 +58,7 @@ namespace grbda
             DVec<double> gamma(const DVec<double> y) const;
 
             const DMat<double> &G() const { return G_; }
+            const DMat<double> &G_dot() const { return G_dot_; }
             const DVec<double> &g() const { return g_; }
 
             const DMat<double> &K() const { return K_; }
@@ -75,6 +78,7 @@ namespace grbda
             
             int span_pos_cnt_ = 0;
             DMat<double> G_ = DMat<double>::Zero(0, 0);
+            DMat<double> G_dot_ = DMat<double>::Zero(0, 0);
             DVec<double> g_ = DVec<double>::Zero(0);
 
             DMat<double> K_ = DMat<double>::Zero(0, 0);

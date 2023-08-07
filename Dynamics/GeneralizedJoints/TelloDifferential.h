@@ -10,10 +10,9 @@ namespace grbda
 	{
 		struct TelloDifferential : Base
 		{
-			TelloDifferential(const CasadiHelperFunctions &G_helpers,
-							  const CasadiHelperFunctions &g_helpers,
-							  const CasadiHelperFunctions &k_helpers,
-							  const CasadiHelperFunctions &kikd_helpers,
+			TelloDifferential(const CasadiHelperFunctions &jacobian_helpers,
+							  const CasadiHelperFunctions &bias_helpers,
+                              const CasadiHelperFunctions &G_dot_helpers,
 							  const CasadiHelperFunctions &IK_pos_helpers,
 							  const CasadiHelperFunctions &IK_vel_helpers);
 
@@ -21,13 +20,12 @@ namespace grbda
 
 			DVec<double> gamma(const JointCoordinate &joint_pos) const override;
 
-			void updateJacobians(const JointCoordinate &joint_pos) override;
-			void updateBiases(const JointState &joint_state) override;
+			void updateConstraintFromJointPos(const JointCoordinate &joint_pos) override;
+			void updateConstraintFromJointState(const JointState &joint_state) override;
 
-			const CasadiHelperFunctions G_helpers_;
-			const CasadiHelperFunctions g_helpers_;
-			const CasadiHelperFunctions k_helpers_;
-			const CasadiHelperFunctions kikd_helpers_;
+			const CasadiHelperFunctions jacobian_helpers_;
+			const CasadiHelperFunctions bias_helpers_;
+            const CasadiHelperFunctions G_dot_helpers_;
 			const CasadiHelperFunctions IK_pos_helpers_;
 			const CasadiHelperFunctions IK_vel_helpers_;
 		};

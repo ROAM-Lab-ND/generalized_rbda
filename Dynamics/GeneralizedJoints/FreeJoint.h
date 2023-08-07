@@ -16,8 +16,8 @@ namespace grbda
 
             std::shared_ptr<Base> clone() const override;
 
-            void updateJacobians(const JointCoordinate &joint_pos) override {}
-            void updateBiases(const JointState &joint_state) override {}
+            void updateConstraintFromJointPos(const JointCoordinate &joint_pos) override {}
+            void updateConstraintFromJointState(const JointState &joint_state) override {}
 
             DVec<double> gamma(const JointCoordinate &joint_pos) const override;
 
