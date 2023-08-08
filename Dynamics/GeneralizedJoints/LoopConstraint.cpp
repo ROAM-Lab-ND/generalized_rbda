@@ -112,8 +112,8 @@ namespace grbda
                 JointCoordinate position(q.segment(pos_cnt, n_span_pos), true);
                 JointCoordinate velocity(qd.segment(span_vel_cnt, n_span_vel), true);
                 JointState state(position, velocity);
-                constraint->updateConstraintFromJointPos(position);
-                constraint->updateConstraintFromJointState(state);
+                constraint->updateJacobians(position);
+                constraint->updateBiases(state);
 
                 G_.block(span_vel_cnt, ind_vel_cnt, n_span_vel, n_ind_vel) = constraint->G();
                 g_.segment(span_vel_cnt, n_span_vel) = constraint->g();

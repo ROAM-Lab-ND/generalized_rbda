@@ -267,7 +267,9 @@ namespace grbda
                     link_node->IA_ - link_node->U_ * link_node->D_inv_ * link_node->U_.transpose();
 
                 SVec<double> pa =
-                    link_node->pA_ + Ia * link_node->c_ + link_node->U_ * link_node->D_inv_ * link_node->u_;
+                    link_node->pA_ + Ia * 
+                    (link_node->cJ() + generalMotionCrossProduct(link_node->v_, link_node->vJ())) +
+                    link_node->U_ * link_node->D_inv_ * link_node->u_;
 
                 parent_link_node->pA_ += link_node->Xup_.inverseTransformForceVector(pa);
             }
@@ -284,11 +286,15 @@ namespace grbda
             if (link_node->parent_index_ >= 0)
             {
                 const auto parent_link_node = reflected_inertia_nodes_[link_node->parent_index_];
-                a_temp = link_node->Xup_.transformMotionVector(parent_link_node->a_) + link_node->c_;
+                a_temp = link_node->Xup_.transformMotionVector(parent_link_node->a_) +
+                link_node->cJ() + generalMotionCrossProduct(link_node->v_, link_node->vJ());
+
             }
             else
             {
-                a_temp = link_node->Xup_.transformMotionVector(-gravity_) + link_node->c_;
+                a_temp = link_node->Xup_.transformMotionVector(-gravity_) +
+                    link_node->cJ() + generalMotionCrossProduct(link_node->v_, link_node->vJ());
+
             }
             qdd.segment(vel_idx, num_vel) =
                 link_node->D_inv_ * (link_node->u_ - link_node->U_.transpose() * a_temp);

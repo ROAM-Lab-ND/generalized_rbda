@@ -15,10 +15,10 @@ namespace grbda
               velocity_is_spanning_(velocity_is_spanning)
         {
             const size_t motion_subspace_dimension = num_bodies * 6;
-            S_ = DMat<double>::Zero(motion_subspace_dimension, num_bodies);
-            S_dot_ = DMat<double>::Zero(motion_subspace_dimension, num_bodies);
+            S_ = DMat<double>::Zero(motion_subspace_dimension, num_velocities);
             Psi_ = DMat<double>::Zero(motion_subspace_dimension, num_velocities_);
             vJ_ = DVec<double>::Zero(motion_subspace_dimension);
+            cJ_ = DVec<double>::Zero(motion_subspace_dimension);
         }
 
         JointState Base::toSpanningTreeState(const JointState &joint_state)
@@ -33,7 +33,7 @@ namespace grbda
             {
                 spanning_joint_state.position = joint_state.position;
             }
-            loop_constraint_->updateConstraintFromJointPos(spanning_joint_state.position);
+            loop_constraint_->updateJacobians(spanning_joint_state.position);
 
             if (!joint_state.velocity.isSpanning())
             {
@@ -43,7 +43,7 @@ namespace grbda
             {
                 spanning_joint_state.velocity = joint_state.velocity;
             }
-            loop_constraint_->updateConstraintFromJointState(spanning_joint_state);
+            loop_constraint_->updateBiases(spanning_joint_state);
 
             return spanning_joint_state;
         }

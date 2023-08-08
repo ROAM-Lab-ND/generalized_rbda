@@ -19,8 +19,8 @@ namespace grbda
 
 			DVec<double> gamma(const JointCoordinate &joint_pos) const override;
 
-			void updateConstraintFromJointPos(const JointCoordinate &joint_pos) override;
-			void updateConstraintFromJointState(const JointState &joint_state) override;
+			void updateJacobians(const JointCoordinate &joint_pos) override;
+			void updateBiases(const JointState &joint_state) override;
 
 			const CasadiHelperFunctions jacobian_helpers_;
 			const CasadiHelperFunctions bias_helpers_;

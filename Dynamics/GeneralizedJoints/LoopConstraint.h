@@ -21,8 +21,8 @@ namespace grbda
             int numIndependentVel() const { return G_.cols(); }
             int numConstraints() const { return K_.rows(); }
 
-            virtual void updateConstraintFromJointPos(const JointCoordinate &joint_pos) = 0;
-            virtual void updateConstraintFromJointState(const JointState &joint_state) = 0;
+            virtual void updateJacobians(const JointCoordinate &joint_pos) = 0;
+            virtual void updateBiases(const JointState &joint_state) = 0;
 
             virtual DVec<double> gamma(const JointCoordinate &joint_pos) const = 0;
             const DMat<double> &G() const { return G_; }
@@ -45,8 +45,8 @@ namespace grbda
 
             std::shared_ptr<Base> clone() const override { return std::make_shared<Static>(*this); }
 
-            void updateConstraintFromJointPos(const JointCoordinate &joint_pos) override {}
-            void updateConstraintFromJointState(const JointState &joint_state) override {}
+            void updateJacobians(const JointCoordinate &joint_pos) override {}
+            void updateBiases(const JointState &joint_state) override {}
 
             DVec<double> gamma(const JointCoordinate &joint_pos) const override;
         };

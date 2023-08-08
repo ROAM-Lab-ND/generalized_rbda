@@ -18,7 +18,7 @@ namespace grbda
         void updateDinv(const DMat<double> &D);
         const DVec<double> &vJ() const override { return joint_->vJ(); }
         const DMat<double> &S() const override { return joint_->S(); }
-        const DMat<double> &S_dot() const override { return joint_->S_dot(); }
+        const DVec<double> &cJ() const override { return joint_->cJ(); }
 
         // ISSUE #14
         // TODO(@MatthewChignoli): Should this actually be a virtual function in TreeNode.h?

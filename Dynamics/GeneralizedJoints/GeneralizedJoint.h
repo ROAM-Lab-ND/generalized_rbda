@@ -61,9 +61,9 @@ namespace grbda
             const bool &velocityIsSpanning() const { return velocity_is_spanning_; }
 
             const DMat<double> &S() const { return S_; }
-            const DMat<double> &S_dot() const { return S_dot_; }
             const DMat<double> &Psi() const { return Psi_; }
             const DVec<double> &vJ() const { return vJ_; }
+            const DVec<double> &cJ() const { return cJ_; }
 
             std::shared_ptr<LoopConstraint::Base> cloneLoopConstraint() const
             {
@@ -108,9 +108,9 @@ namespace grbda
             const bool velocity_is_spanning_;
 
             DMat<double> S_;
-            DMat<double> S_dot_;
             DMat<double> Psi_;
             DVec<double> vJ_;
+            DVec<double> cJ_;
 
             std::shared_ptr<LoopConstraint::Base> loop_constraint_;
             std::vector<JointPtr> single_joints_;

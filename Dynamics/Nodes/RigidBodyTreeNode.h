@@ -16,7 +16,7 @@ namespace grbda
         void updateKinematics() override;
         const DVec<double> &vJ() const override { return vJ_; }
         const DMat<double> &S() const override { return joint_->S(); }
-        const DMat<double> &S_dot() const override { return joint_->S_dot(); }
+        const DVec<double> &cJ() const override { return joint_->cJ(); }
 
         const SpatialTransform &getAbsoluteTransformForBody(const Body &body) override;
         DVec<double> getVelocityForBody(const Body &body) override;
