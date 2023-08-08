@@ -26,7 +26,6 @@ namespace grbda
 
             virtual DVec<double> gamma(const JointCoordinate &joint_pos) const = 0;
             const DMat<double> &G() const { return G_; }
-            const DMat<double> &G_dot() const { return G_dot_; }
             const DVec<double> &g() const { return g_; }
 
             const DMat<double> &K() const { return K_; }
@@ -34,7 +33,6 @@ namespace grbda
 
         protected:
             DMat<double> G_;
-            DMat<double> G_dot_;
             DVec<double> g_;
 
             DMat<double> K_;
@@ -58,7 +56,6 @@ namespace grbda
             DVec<double> gamma(const DVec<double> y) const;
 
             const DMat<double> &G() const { return G_; }
-            const DMat<double> &G_dot() const { return G_dot_; }
             const DVec<double> &g() const { return g_; }
 
             const DMat<double> &K() const { return K_; }
@@ -78,7 +75,6 @@ namespace grbda
             
             int span_pos_cnt_ = 0;
             DMat<double> G_ = DMat<double>::Zero(0, 0);
-            DMat<double> G_dot_ = DMat<double>::Zero(0, 0);
             DVec<double> g_ = DVec<double>::Zero(0);
 
             DMat<double> K_ = DMat<double>::Zero(0, 0);

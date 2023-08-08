@@ -34,7 +34,7 @@ namespace grbda
         const JointCoordinate &jointVelocity() const { return joint_state_.velocity; }
         virtual const DVec<double> &vJ() const = 0;
         virtual const DMat<double> &S() const = 0;
-        virtual const DMat<double> &S_ring() const = 0;
+        virtual const DMat<double> &S_dot() const = 0;
 
         virtual const SpatialTransform &getAbsoluteTransformForBody(const Body &body) = 0;
         virtual DVec<double> getVelocityForBody(const Body &body) = 0;

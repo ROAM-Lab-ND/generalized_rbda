@@ -21,12 +21,11 @@ namespace grbda
 		CasadiHelperFunctions jacobian_helpers(thd_jacobian, thd_jacobian_sparsity_out,
 										thd_jacobian_work);
 		CasadiHelperFunctions bias_helpers(thd_bias, thd_bias_sparsity_out, thd_bias_work);
-        CasadiHelperFunctions G_dot_helpers(thd_G_dot, thd_G_dot_sparsity_out, thd_G_dot_work);
 		CasadiHelperFunctions IK_pos_helpers(thd_IK_pos, thd_IK_pos_sparsity_out, thd_IK_pos_work);
 		CasadiHelperFunctions IK_vel_helpers(thd_IK_vel, thd_IK_vel_sparsity_out, thd_IK_vel_work);
 
 		tello_constraint_ = std::make_shared<LoopConstraint::TelloDifferential>(
-			jacobian_helpers, bias_helpers, G_dot_helpers, IK_pos_helpers, IK_vel_helpers);
+			jacobian_helpers, bias_helpers, IK_pos_helpers, IK_vel_helpers);
 		loop_constraint_ = tello_constraint_;
 	    }
 	    virtual ~TelloHipDifferential() {}

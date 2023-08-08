@@ -7,15 +7,12 @@ namespace grbda
 	{
 		TelloDifferential::TelloDifferential(const CasadiHelperFunctions &jacobian_helpers,
 											 const CasadiHelperFunctions &bias_helpers,
-                                             const CasadiHelperFunctions &G_dot_helpers,
 											 const CasadiHelperFunctions &IK_pos_helpers,
 											 const CasadiHelperFunctions &IK_vel_helpers)
 			: jacobian_helpers_(jacobian_helpers), bias_helpers_(bias_helpers),
-              G_dot_helpers_(G_dot_helpers), IK_pos_helpers_(IK_pos_helpers),
-              IK_vel_helpers_(IK_vel_helpers)
+              IK_pos_helpers_(IK_pos_helpers), IK_vel_helpers_(IK_vel_helpers)
 		{
 			G_.setZero(4, 2);
-            G_dot_.setZero(4, 2);
 			K_.setZero(2, 4);
 			g_.setZero(4);
 			k_.setZero(2);
@@ -53,7 +50,6 @@ namespace grbda
 			const DVec<double> &q_dot = joint_state.velocity;
 
 			vector<DVec<double>> arg = {q.head<2>(), q.tail<2>(), q_dot.head<2>(), q_dot.tail<2>()};
-            casadi_interface(arg, G_dot_, G_dot_helpers_);
             vector<Eigen::MatrixBase<DVec<double>>*> b = {&g_, &k_};
 			casadi_interface(arg, b, bias_helpers_);
 		}
@@ -77,7 +73,9 @@ namespace grbda
 
 	    S_.block<6, 1>(0, 0) = rotor_1_joint_->S();
 	    S_.block<6, 1>(6, 1) = rotor_2_joint_->S();
-	}
+        S_.block<6, 1>(12, 2) = link_1_joint_->S();
+        S_.block<6, 1>(18, 3) = link_2_joint_->S();
+    }
 
 	void TelloDifferential::updateKinematics(const JointState &joint_state)
 	{
@@ -96,28 +94,15 @@ namespace grbda
 
 	    X21_ = link_2_joint_->XJ() * link_2_.Xtree_;
 
-	    const DMat<double>& S1 = link_1_joint_->S();
-	    const DMat<double> X21_S1 = X21_.transformMotionSubspace(S1);
-	    const DMat<double>& S2 = link_2_joint_->S();
-	    const DVec<double> v2_relative = S2 * q_dot[3];
+	    const DMat<double> X21_S1 = X21_.transformMotionSubspace(link_1_joint_->S());
+	    const DVec<double> v2_relative = link_2_joint_->S() * q_dot[3];
 	    const DMat<double> v2_rel_crm = generalMotionCrossMatrix(v2_relative);
 
-		const DMat<double> G = loop_constraint_->G();
-	    S_.block<6, 1>(12, 0) = S1 * G.block<1, 1>(2,0);
-	    S_.block<6, 1>(12, 1) = S1 * G.block<1, 1>(2, 1);
-	    S_.block<6, 1>(18, 0) = X21_S1 * G.block<1, 1>(2, 0) + S2 * G.block<1, 1>(3, 0);
-	    S_.block<6, 1>(18, 1) = X21_S1 * G.block<1 ,1>(2, 1) + S2 * G.block<1, 1>(3, 1);
+	    S_.block<6, 1>(18, 2) = X21_S1;
 
-	    S_ring_.block<6, 1>(12, 0) = S1 * (loop_constraint_->G_dot()).block<1, 1>(2, 0);
-	    S_ring_.block<6, 1>(12, 1) = S1 * (loop_constraint_->G_dot()).block<1, 1>(2, 1);
-	    S_ring_.block<6, 1>(18, 0) = X21_S1 * (loop_constraint_->G_dot()).block<1, 1>(2, 0) +\
-					 S2 * (loop_constraint_->G_dot()).block<1, 1>(3, 0) +\
-					 (-v2_rel_crm * X21_S1) * G.block<1, 1>(2, 0);
-	    S_ring_.block<6, 1>(18, 1) = X21_S1 * (loop_constraint_->G_dot()).block<1, 1>(2, 1) +\
-					 S2 * (loop_constraint_->G_dot()).block<1, 1>(3, 1) +\
-					 (-v2_rel_crm * X21_S1) * G.block<1, 1>(2, 1);
+        S_dot_.block<6,1,>(18, 2) = -v2_rel_crm * X21_S1;
 
-	    vJ_ = S_ * joint_state.velocity;
+	    vJ_ = S_ * G() * joint_state.velocity;
 	}
 
 	void TelloDifferential::computeSpatialTransformFromParentToCurrentCluster(

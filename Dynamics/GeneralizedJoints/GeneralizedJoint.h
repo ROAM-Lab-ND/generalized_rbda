@@ -61,7 +61,7 @@ namespace grbda
             const bool &velocityIsSpanning() const { return velocity_is_spanning_; }
 
             const DMat<double> &S() const { return S_; }
-            const DMat<double> &S_ring() const { return S_ring_; }
+            const DMat<double> &S_dot() const { return S_dot_; }
             const DMat<double> &Psi() const { return Psi_; }
             const DVec<double> &vJ() const { return vJ_; }
 
@@ -108,7 +108,7 @@ namespace grbda
             const bool velocity_is_spanning_;
 
             DMat<double> S_;
-            DMat<double> S_ring_;
+            DMat<double> S_dot_;
             DMat<double> Psi_;
             DVec<double> vJ_;
 

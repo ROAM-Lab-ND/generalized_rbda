@@ -34,7 +34,6 @@
 
 #include "thd_phi.h"
 #include "thd_G.h"
-#include "thd_G_dot.h"
 #include "thd_small_g.h"
 #include "thd_K.h"
 #include "thd_small_k.h"
@@ -46,7 +45,6 @@
 
 #include "tkad_phi.h"
 #include "tkad_G.h"
-#include "tkad_G_dot.h"
 #include "tkad_small_g.h"
 #include "tkad_K.h"
 #include "tkad_small_k.h"

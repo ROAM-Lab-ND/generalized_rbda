@@ -24,9 +24,9 @@ namespace grbda
                 node->Xa_ = node->Xup_.toAbsolute();
             }
 
-
             // ISSUE #9
-            node->c_ = node->S_ring() * node->joint_state_.velocity +
+            node->c_ = node->S_dot() * node->joint_.G() * node->joint_state_.velocity +
+                       node->S() * node->joint_.g() +
                        generalMotionCrossProduct(node->v_, node->vJ());
         }
 

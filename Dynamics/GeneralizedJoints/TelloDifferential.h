@@ -12,7 +12,6 @@ namespace grbda
 		{
 			TelloDifferential(const CasadiHelperFunctions &jacobian_helpers,
 							  const CasadiHelperFunctions &bias_helpers,
-                              const CasadiHelperFunctions &G_dot_helpers,
 							  const CasadiHelperFunctions &IK_pos_helpers,
 							  const CasadiHelperFunctions &IK_vel_helpers);
 
@@ -25,7 +24,6 @@ namespace grbda
 
 			const CasadiHelperFunctions jacobian_helpers_;
 			const CasadiHelperFunctions bias_helpers_;
-            const CasadiHelperFunctions G_dot_helpers_;
 			const CasadiHelperFunctions IK_pos_helpers_;
 			const CasadiHelperFunctions IK_vel_helpers_;
 		};

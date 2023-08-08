@@ -24,7 +24,7 @@ namespace grbda
             int numVelocities() const { return num_velocities_; }
 
             const DMat<double> &S() const { return S_; }
-            const DMat<double> &S_ring() const { return S_ring_; }
+            const DMat<double> &S_dot() const { return S_dot_; }
             const DMat<double> &Psi() const { return Psi_; }
             const SpatialTransform &XJ() const { return XJ_; }
 
@@ -34,7 +34,7 @@ namespace grbda
 
             SpatialTransform XJ_;
             DMat<double> S_;
-            DMat<double> S_ring_;
+            DMat<double> S_dot_;
             DMat<double> Psi_;
         };
 
@@ -44,7 +44,7 @@ namespace grbda
             Free() : Base(7, 6)
             {
                 S_ = D6Mat<double>::Identity(6, 6);
-                S_ring_ = D6Mat<double>::Zero(6, 6);
+                S_dot_ = D6Mat<double>::Zero(6, 6);
                 Psi_ = D6Mat<double>::Identity(6, 6);
             }
             ~Free() {}
@@ -64,7 +64,7 @@ namespace grbda
                 S_ = D6Mat<double>::Zero(6, 1);
                 S_.leftCols<1>() = jointMotionSubspace<double>(JointType::Revolute, axis);
 
-                S_ring_ = D6Mat<double>::Zero(6, 1);
+                S_dot_ = D6Mat<double>::Zero(6, 1);
 
                 Psi_ = D6Mat<double>::Zero(6, 1);
                 Psi_.leftCols<1>() = jointMotionSubspace<double>(JointType::Revolute, axis);

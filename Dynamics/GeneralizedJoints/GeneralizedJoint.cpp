@@ -15,8 +15,8 @@ namespace grbda
               velocity_is_spanning_(velocity_is_spanning)
         {
             const size_t motion_subspace_dimension = num_bodies * 6;
-            S_ = DMat<double>::Zero(motion_subspace_dimension, num_velocities_);
-            S_ring_ = DMat<double>::Zero(motion_subspace_dimension, num_velocities_);
+            S_ = DMat<double>::Zero(motion_subspace_dimension, num_bodies);
+            S_dot_ = DMat<double>::Zero(motion_subspace_dimension, num_bodies);
             Psi_ = DMat<double>::Zero(motion_subspace_dimension, num_velocities_);
             vJ_ = DVec<double>::Zero(motion_subspace_dimension);
         }
