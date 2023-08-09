@@ -27,11 +27,12 @@ namespace grbda
               is_end_effector_(true), end_effector_index_(end_effector_index),
               jacobian_(D6Mat<double>::Zero(6, num_jacobian_cols)) {}
 
-
-        ContactPoint(const ContactPoint& other)
+        ContactPoint(const ContactPoint &other)
             : body_index_(other.body_index_), local_offset_(other.local_offset_),
-            name_(other.name_), position_(other.position_), velocity_(other.velocity_),
-            jacobian_(other.jacobian_) {}
+              name_(other.name_), is_end_effector_(other.is_end_effector_),
+              end_effector_index_(other.end_effector_index_), position_(other.position_),
+              velocity_(other.velocity_), jacobian_(other.jacobian_),
+              supporting_nodes_(other.supporting_nodes_), ChiUp_(other.ChiUp_) {}
 
         ContactPoint &operator=(const ContactPoint &contact_point) { return *this; }
 
