@@ -16,9 +16,9 @@ namespace grbda
         {
             const size_t motion_subspace_dimension = num_bodies * 6;
             S_ = DMat<double>::Zero(motion_subspace_dimension, num_velocities_);
-            S_ring_ = DMat<double>::Zero(motion_subspace_dimension, num_velocities_);
             Psi_ = DMat<double>::Zero(motion_subspace_dimension, num_velocities_);
             vJ_ = DVec<double>::Zero(motion_subspace_dimension);
+            cJ_ = DVec<double>::Zero(motion_subspace_dimension);
         }
 
         JointState Base::toSpanningTreeState(const JointState &joint_state)
