@@ -8,8 +8,6 @@ namespace grbda
 
     struct ClusterTreeNode : TreeNode
     {
-        EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-
         typedef std::shared_ptr<GeneralizedJoints::Base> GenJointPtr;
 
         ClusterTreeNode(int index, std::string name, std::vector<Body> &bodies,
