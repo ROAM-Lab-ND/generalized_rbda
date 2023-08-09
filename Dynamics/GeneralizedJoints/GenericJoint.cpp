@@ -90,7 +90,8 @@ namespace grbda
                 }
             }
 
-            S_ring_ = Xup_ring_spanning_tree_ * S_spanning_tree_ * loop_constraint_->G();
+            cJ_ = Xup_ring_spanning_tree_ * S_spanning_tree_ * qd +
+                  Xup_spanning_tree_ * S_spanning_tree_ * loop_constraint_->g();
         }
 
         void Generic::computeSpatialTransformFromParentToCurrentCluster(

@@ -61,12 +61,13 @@ namespace grbda
             link_2_joint_->updateKinematics(q.segment<1>(3), qd.segment<1>(3));
 
             X21_ = link_2_joint_->XJ() * link_2_.Xtree_;
-
-            S_.block<6, 1>(18, 0) = X21_.transformMotionSubspace(link_1_joint_->S());
-
+            X21_S1 = X21_.transformMotionSubspace(link_1_joint_->S());
             const DVec<double> v2_relative = link_2_joint_->S() * qd[3];
-            S_ring_.block<6, 1>(18, 0) = -generalMotionCrossMatrix(v2_relative) *
-                                         X21_.transformMotionSubspace(link_1_joint_->S());
+
+            S_.block<6, 1>(18, 0) = X21_S1;
+
+            cJ_.segment<6>(18) = -generalMotionCrossMatrix(v2_relative) *
+                                 X21_S1;
 
             vJ_ = S_ * joint_state.velocity;
         }
