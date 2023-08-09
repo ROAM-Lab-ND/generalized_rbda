@@ -84,8 +84,8 @@ namespace grbda
             X31_ = X32_ * X21_;
 
             const DVec<double> v2_relative1 = link_2_joint_->S() * qd[1];
-            const DMat<double> X21_S1 = X21_.transformMotionSubspace(link_1__joint_->S());
-            const DMat<double> v3_relative1 = X32_.transformMotionVector(v2_relative1) +
+            const DMat<double> X21_S1 = X21_.transformMotionSubspace(link_1_joint_->S());
+            const DVec<double> v3_relative1 = X32_.transformMotionVector(v2_relative1) +
                                               link_3_joint_->S() * qd[2];
             const DMat<double> X31_S1 = X31_.transformMotionSubspace(link_1_joint_->S());
             const DVec<double> v3_relative2 = link_3_joint_->S() * qd[2];
@@ -95,13 +95,14 @@ namespace grbda
             S_.block<6, 1>(12, 0) = X31_S1;
             S_.block<6, 1>(12, 1) = X32_S2;
 
-            cJ_.segment<6>(6) = -generalMotionCrossMatrix(v2_relative1) * X21_S1 *
-                                qd.segment<1>(0);
-            cJ_.segment<6>(12) = -generalMotionCrossMatrix(v3_relative1) * X31_S1 *
-                                 qd.segment<1>(0) - generalMotionCrossMatrix(v3_relative2) *
-                                 X32_S2 * qd.segment<1>(1);
-
             vJ_ = S_ * joint_state.velocity;
+
+            cJ_.segment<6>(6) = -generalMotionCrossMatrix(v2_relative1) *
+                                X21_S1 * qd.segment<1>(0);
+            cJ_.segment<6>(12) = -generalMotionCrossMatrix(v3_relative1) *
+                                     X31_S1 * qd.segment<1>(0) -
+                                 generalMotionCrossMatrix(v3_relative2) *
+                                     X32_S2 * qd.segment<1>(1);
         }
 
         void RevoluteTripleWithRotor::computeSpatialTransformFromParentToCurrentCluster(

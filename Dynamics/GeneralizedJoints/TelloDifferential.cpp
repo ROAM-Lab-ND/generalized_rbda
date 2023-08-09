@@ -101,15 +101,15 @@ namespace grbda
         S_.block<6, 1>(12, 0) = S1 * G().block<1, 1>(2, 0);
         S_.block<6, 1>(12, 1) = S1 * G().block<1, 1>(2, 1);
         S_.block<6, 1>(18, 0) = X21_S1 * G().block<1, 1>(2, 1) + S2 * G().block<1, 1>(3, 0);
-        S_.block<6, 1>(18, 1) = X21_S1 * G.block<1, 1>(2, 1) + S2 * G.block<1, 1>(3, 1);
+        S_.block<6, 1>(18, 1) = X21_S1 * G().block<1, 1>(2, 1) + S2 * G().block<1, 1>(3, 1);
+	    
+		vJ_ = S_ * joint_state.velocity;
 
         cJ_.segment<6>(0) = rotor_1_joint_->S() * g().segment<1>(0);
         cJ_.segment<6>(6) = rotor_2_joint_->S() * g().segment<1>(1);
         cJ_.segment<6>(12) = S1 * g().segment<1>(2);
         cJ_.segment<6>(18) = -v2_rel_crm * X21_S1 * q_dot.segment<1>(2) +
                             X21_S1 * g().segment<1>(2) + S2 * g().segment<1>(3);
-
-	    vJ_ = S_ * joint_state.velocity;
 	}
 
 	void TelloDifferential::computeSpatialTransformFromParentToCurrentCluster(

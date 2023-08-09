@@ -29,6 +29,7 @@ namespace grbda
         std::shared_ptr<Joints::Base> joint_;
 
         DVec<double> vJ_;
+        DVec<double> cJ_ = DVec<double>::Zero(6);
         const SpatialTransform Xtree_;
 
         Mat6<double> IA_;    // articulated body inertia
