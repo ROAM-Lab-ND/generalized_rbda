@@ -141,7 +141,6 @@ namespace grbda
                 node->a_ = node->Xup_.transformMotionVector(-gravity_) +
                            node->S() * qdd.segment(vel_idx, num_vel) +
                            node->cJ() + node->avp_;
-
             }
 
             node->f_ = node->I_ * node->a_ +

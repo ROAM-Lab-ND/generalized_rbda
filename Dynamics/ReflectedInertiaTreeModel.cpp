@@ -286,14 +286,12 @@ namespace grbda
             {
                 const auto parent_link_node = reflected_inertia_nodes_[link_node->parent_index_];
                 a_temp = link_node->Xup_.transformMotionVector(parent_link_node->a_) +
-                link_node->cJ() + link_node->avp_;
-
+                         link_node->cJ() + link_node->avp_;
             }
             else
             {
                 a_temp = link_node->Xup_.transformMotionVector(-gravity_) +
-                    link_node->cJ() + link_node->avp_;
-
+                         link_node->cJ() + link_node->avp_;
             }
             qdd.segment(vel_idx, num_vel) =
                 link_node->D_inv_ * (link_node->u_ - link_node->U_.transpose() * a_temp);
