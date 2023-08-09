@@ -29,10 +29,10 @@ option(M1_BUILD "set compile options for Mac M1 chip" OFF)
 option(TIMING_STATS "log detailed timing statistics for algorithms" OFF)
 
 if(CMAKE_SYSTEM_NAME MATCHES Linux)
-  set(CMAKE_CXX_FLAGS "-O3 -no-pie -march=native -ggdb -Wall \
+  set(CMAKE_CXX_FLAGS "-O3 -march=native -ggdb -Wall \
   -Wextra -Wcast-align -Wdisabled-optimization -Wformat=2 \
   -Winit-self -Wmissing-include-dirs -Woverloaded-virtual \
-  -Wshadow -Wsign-promo -Werror -Wno-aligned-new -Wno-unused-but-set-variable \
+  -Wshadow -Wsign-promo \
   -Wno-sign-compare")
 
 elseif(APPLE)

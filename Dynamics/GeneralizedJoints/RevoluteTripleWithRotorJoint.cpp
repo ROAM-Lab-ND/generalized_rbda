@@ -83,24 +83,23 @@ namespace grbda
             X32_ = link_3_joint_->XJ() * link_3_.Xtree_;
             X31_ = X32_ * X21_;
 
-            S_.block<6, 1>(6, 0) = X21_.transformMotionSubspace(link_1_joint_->S());
-            S_.block<6, 1>(12, 0) = X31_.transformMotionSubspace(link_1_joint_->S());
-            S_.block<6, 1>(12, 1) = X32_.transformMotionSubspace(link_2_joint_->S());
-
             const DVec<double> v2_relative1 = link_2_joint_->S() * qd[1];
-            S_ring_.block<6, 1>(6, 0) = -generalMotionCrossMatrix(v2_relative1) *
-                                        X21_.transformMotionSubspace(link_1_joint_->S());
-
+            const DMat<double> X21_S1 = X21_.transformMotionSubspace(link_1_joint_->S());
             const DVec<double> v3_relative1 = X32_.transformMotionVector(v2_relative1) +
                                               link_3_joint_->S() * qd[2];
-            S_ring_.block<6, 1>(12, 0) = -generalMotionCrossMatrix(v3_relative1) *
-                                         X31_.transformMotionSubspace(link_1_joint_->S());
-
+            const DMat<double> X31_S1 = X31_.transformMotionSubspace(link_1_joint_->S());
             const DVec<double> v3_relative2 = link_3_joint_->S() * qd[2];
-            S_ring_.block<6, 1>(12, 1) = -generalMotionCrossMatrix(v3_relative2) *
-                                         X32_.transformMotionSubspace(link_2_joint_->S());
+            const DMat<double> X32_S2 = X32_.transformMotionSubspace(link_2_joint_->S());
+
+            S_.block<6, 1>(6, 0) = X21_S1;
+            S_.block<6, 1>(12, 0) = X31_S1;
+            S_.block<6, 1>(12, 1) = X32_S2;
 
             vJ_ = S_ * joint_state.velocity;
+
+            cJ_.segment<6>(6) = -generalMotionCrossMatrix(v2_relative1) * X21_S1 * qd[0];
+            cJ_.segment<6>(12) = -generalMotionCrossMatrix(v3_relative1) * X31_S1 * qd[0] -
+                                 generalMotionCrossMatrix(v3_relative2) * X32_S2 * qd[1];
         }
 
         void RevoluteTripleWithRotor::computeSpatialTransformFromParentToCurrentCluster(

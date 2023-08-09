@@ -183,7 +183,7 @@ TYPED_TEST(RigidBodyKinemaitcsTest, MotionSubspaceApparentDerivative)
                 continue;
             }
 
-            DMat<double> S_ring = joint->S_ring();
+            const DVec<double> cJ = joint->cJ();
 
             JointState q_plus_joint_state = cluster->joint_state_;
             q_plus_joint_state.position = cluster->integratePosition(joint_state, dt);
@@ -198,8 +198,9 @@ TYPED_TEST(RigidBodyKinemaitcsTest, MotionSubspaceApparentDerivative)
             DMat<double> S_minus = joint->S();
 
             DMat<double> S_ring_fd = (S_plus - S_minus) / (2 * dt);
+            DVec<double> cJ_fd = S_ring_fd * joint_state.velocity;
 
-            GTEST_ASSERT_LT((S_ring - S_ring_fd).norm(), 1e-3);
+            GTEST_ASSERT_LT((cJ - cJ_fd).norm(), tol);
         }
     }
 }

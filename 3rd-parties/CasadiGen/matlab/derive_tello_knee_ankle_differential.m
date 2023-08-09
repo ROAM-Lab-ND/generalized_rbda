@@ -40,42 +40,37 @@ function tkad = derive_tello_knee_ankle_differential_fn()
     % Differential kinematics (velocity)
     Ki = jacobian(phi,y); % (2,2)
     Kd = jacobian(phi,qd); % (2,2)
-
-    Ki_dot = jtimes(Ki,y,y_dot) + jtimes(Ki,qd,qd_dot); % (4,1)
-    Kd_dot = jtimes(Kd,y,y_dot) + jtimes(Kd,qd,qd_dot); % (4,1)
-    Ki_dot = reshape(Ki_dot,2,2); % (2,2)
-    Kd_dot = reshape(Kd_dot,2,2); % (2,2)
-
-    J_dy_2_dqd = -Kd\Ki;
+    J_dy_2_dqd = -Kd\Ki; % (2,2)
 
     % Get k = -K_dot * q_dot
-
     K = SX.zeros(2,4);
     K(1:end,3:end) = eye(2);
     K(1:end,1:2) = -J_dy_2_dqd;
-
     q = [y(1); y(2); qd(1); qd(2)];
     q_dot = [y_dot(1); y_dot(2); qd_dot(1); qd_dot(2)];
     K_qdot = K * q_dot;
     B = jtimes(K,q,q_dot);
     k = -jtimes(K_qdot,q,q_dot);
 
-    % Get g = G_dot * y_dot;
-
+    % Get G
     G = SX.zeros(4,2);
     G(1:2,1:2) = eye(2);
     G(3:end,1:2) = J_dy_2_dqd;
 
-    G_y_dot = G * y_dot;
-    g = jtimes(G_y_dot,qd,qd_dot) + jtimes(G_y_dot,y,y_dot);
+    % Get g = G_dot * y_dot
+    G_dot = jtimes(G,qd,qd_dot) + jtimes(G,y,y_dot); % (4,2)
+    g = G_dot * y_dot; % (4,1)
 
     % Casadi functions
     tkad.phi = Function('tkad_phi', {y,qd}, {phi});
-    tkad.kikd = Function('tkad_kikd',{y,qd,y_dot,qd_dot},{Ki,Kd,Ki_dot,Kd_dot});
-    tkad.J_dy_2_dqd = Function('tkad_J_dy_2_dqd', {y,qd}, {J_dy_2_dqd});
-    tkad.k = Function('tkad_k',{y,qd,y_dot,qd_dot},{k});
-    tkad.g = Function('tkad_g',{y,qd,y_dot,qd_dot},{g});
+    tkad.G = Function('tkad_G',{y,qd,y_dot,qd_dot}, {G});
+    tkad.G_dot = Function('tkad_G_dot',{y,qd,y_dot,qd_dot}, {G_dot});
+    tkad.g = Function('tkad_small_g',{y,qd,y_dot,qd_dot},{g});
+    tkad.K = Function('tkad_K',{y,qd,y_dot,qd_dot}, {K});
+    tkad.k = Function('tkad_small_k',{y,qd,y_dot,qd_dot},{k});
     tkad.IK_pos = Function('tkad_IK_pos', {qd}, {ik_y});
     tkad.IK_vel = Function('tkad_IK_vel', {qd,qd_dot}, {ik_y_dot});
     tkad.IK_acc = Function('tkad_IK_acc', {qd,qd_dot,qd_ddot},{ik_y_ddot});
+    tkad.jacobian = Function('tkad_jacobian', {y,qd}, {G, K});
+    tkad.bias = Function('tkad_bias', {y,qd,y_dot,qd_dot}, {g,k});
 

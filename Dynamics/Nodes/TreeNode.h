@@ -36,7 +36,7 @@ namespace grbda
         const JointCoordinate &jointVelocity() const { return joint_state_.velocity; }
         virtual const DVec<double> &vJ() const = 0;
         virtual const DMat<double> &S() const = 0;
-        virtual const DMat<double> &S_ring() const = 0;
+        virtual const DVec<double> &cJ() const = 0;
 
         virtual const SpatialTransform &getAbsoluteTransformForBody(const Body &body) = 0;
         virtual DVec<double> getVelocityForBody(const Body &body) = 0;
@@ -56,10 +56,10 @@ namespace grbda
         JointState joint_state_;
 
         DVec<double> v_;     // spatial velocity
-        DVec<double> c_;     // velocity-product acceleration
         DVec<double> a_;     // spatial acceleration
         DVec<double> f_;     // spatial force across joint
         DVec<double> f_ext_; // net external spatial force acting on the cluster
+        DVec<double> avp_;   // acceleration velocity product
 
         DMat<double> I_;  // spatial inertia
         DMat<double> Ic_; // compisite rigid body inertia

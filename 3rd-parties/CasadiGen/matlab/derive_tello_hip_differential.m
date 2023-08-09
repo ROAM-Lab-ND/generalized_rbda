@@ -44,42 +44,38 @@ function thd = derive_tello_hip_differential_fn()
     % Differential kinematics (velocity)
     Ki = jacobian(phi,y); % (2,2)
     Kd = jacobian(phi,qd); % (2,2)
-
-    Ki_dot = jtimes(Ki,y,y_dot) + jtimes(Ki,qd,qd_dot); % (4,1)
-    Kd_dot = jtimes(Kd,y,y_dot) + jtimes(Kd,qd,qd_dot); % (4,1)
-    Ki_dot = reshape(Ki_dot,2,2); % (2,2)
-    Kd_dot = reshape(Kd_dot,2,2); % (2,2)
-
-    J_dy_2_dqd = -Kd\Ki;
+    J_dy_2_dqd = -Kd\Ki; % (2,2)
 
     % Get k = -K_dot * q_dot
-
     K = SX.zeros(2,4);
     K(1:end,3:end) = eye(2);
     K(1:end,1:2) = -J_dy_2_dqd;
-
     q = [y(1); y(2); qd(1); qd(2)];
     q_dot = [y_dot(1); y_dot(2); qd_dot(1); qd_dot(2)];
     K_qdot = K * q_dot;
     B = jtimes(K,q,q_dot);
     k = -jtimes(K_qdot,q,q_dot);
 
-    % Get g = G_dot * y_dot;
-
+    % Get G
     G = SX.zeros(4,2);
     G(1:2,1:2) = eye(2);
     G(3:end,1:2) = J_dy_2_dqd;
 
-    G_y_dot = G * y_dot;
-    g = jtimes(G_y_dot,qd,qd_dot) + jtimes(G_y_dot,y,y_dot);
+    % Get g = G_dot * y_dot
+    G_dot = jtimes(G,qd,qd_dot) + jtimes(G,y,y_dot); % (4,2)
+    g = G_dot * y_dot; % (4,1)
 
     % Casadi functions
     thd.phi = Function('thd_phi', {y,qd}, {phi});
-    thd.kikd = Function('thd_kikd', {y,qd,y_dot,qd_dot}, {Ki,Kd,Ki_dot,Kd_dot});
-    thd.J_dy_2_dqd = Function('thd_J_dy_2_dqd', {y,qd}, {J_dy_2_dqd});
-    thd.k = Function('thd_k', {y,qd,y_dot,qd_dot}, {k});
-    thd.g = Function('thd_g', {y,qd,y_dot,qd_dot}, {g});
+    thd.G = Function('thd_G',{y,qd,y_dot,qd_dot}, {G});
+    thd.G_dot = Function('thd_G_dot',{y,qd,y_dot,qd_dot}, {G_dot});
+    thd.g = Function('thd_small_g', {y,qd,y_dot,qd_dot}, {g}); % CasADi function name is case insensitive
+    thd.K = Function('thd_K',{y,qd,y_dot,qd_dot}, {K});
+    thd.k = Function('thd_small_k', {y,qd,y_dot,qd_dot}, {k});
     thd.IK_pos = Function('thd_IK_pos', {qd}, {ik_y});
     thd.IK_vel = Function('thd_IK_vel', {qd,qd_dot}, {ik_y_dot});
-    thd.IK_acc = Function('thd_IK_acc', {qd,qd_dot,qd_ddot},{ik_y_ddot});
+    thd.IK_acc = Function('thd_IK_acc', {qd,qd_dot,qd_ddot}, {ik_y_ddot});
+    thd.jacobian = Function('thd_jacobian', {y,qd}, {G,K});
+    thd.bias = Function('thd_bias', {y,qd,y_dot,qd_dot}, {g,k});
+    
 

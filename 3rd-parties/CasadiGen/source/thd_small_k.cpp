@@ -11,7 +11,7 @@
   #define _CASADI_NAMESPACE_CONCAT(NS, ID) NS ## ID
   #define CASADI_PREFIX(ID) CASADI_NAMESPACE_CONCAT(CODEGEN_PREFIX, ID)
 #else
-  #define CASADI_PREFIX(ID) thd_k_ ## ID
+  #define CASADI_PREFIX(ID) thd_small_k_ ## ID
 #endif
 
 #include <math.h>
@@ -45,7 +45,7 @@
 
 static const casadi_int casadi_s0[6] = {2, 1, 0, 2, 0, 1};
 
-/* thd_k:(i0[2],i1[2],i2[2],i3[2])->(o0[2]) */
+/* thd_small_k:(i0[2],i1[2],i2[2],i3[2])->(o0[2]) */
 static int casadi_f0(const casadi_real** arg, casadi_real** res, casadi_int* iw, casadi_real* w, int mem) {
   casadi_real a0, a1, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a2, a20, a21, a22, a23, a24, a25, a26, a27, a28, a29, a3, a30, a31, a32, a33, a34, a35, a36, a37, a38, a39, a4, a40, a41, a42, a43, a44, a45, a46, a47, a48, a49, a5, a50, a51, a52, a53, a54, a55, a56, a57, a58, a59, a6, a60, a61, a62, a63, a64, a65, a66, a7, a8, a9;
   a0=arg[2]? arg[2][0] : 0;
@@ -534,45 +534,45 @@ static int casadi_f0(const casadi_real** arg, casadi_real** res, casadi_int* iw,
   return 0;
 }
 
-extern "C" CASADI_SYMBOL_EXPORT int thd_k(const casadi_real** arg, casadi_real** res, casadi_int* iw, casadi_real* w, int mem){
+extern "C" CASADI_SYMBOL_EXPORT int thd_small_k(const casadi_real** arg, casadi_real** res, casadi_int* iw, casadi_real* w, int mem){
   return casadi_f0(arg, res, iw, w, mem);
 }
 
-extern "C" CASADI_SYMBOL_EXPORT int thd_k_alloc_mem(void) {
+extern "C" CASADI_SYMBOL_EXPORT int thd_small_k_alloc_mem(void) {
   return 0;
 }
 
-extern "C" CASADI_SYMBOL_EXPORT int thd_k_init_mem(int mem) {
+extern "C" CASADI_SYMBOL_EXPORT int thd_small_k_init_mem(int mem) {
   return 0;
 }
 
-extern "C" CASADI_SYMBOL_EXPORT void thd_k_free_mem(int mem) {
+extern "C" CASADI_SYMBOL_EXPORT void thd_small_k_free_mem(int mem) {
 }
 
-extern "C" CASADI_SYMBOL_EXPORT int thd_k_checkout(void) {
+extern "C" CASADI_SYMBOL_EXPORT int thd_small_k_checkout(void) {
   return 0;
 }
 
-extern "C" CASADI_SYMBOL_EXPORT void thd_k_release(int mem) {
+extern "C" CASADI_SYMBOL_EXPORT void thd_small_k_release(int mem) {
 }
 
-extern "C" CASADI_SYMBOL_EXPORT void thd_k_incref(void) {
+extern "C" CASADI_SYMBOL_EXPORT void thd_small_k_incref(void) {
 }
 
-extern "C" CASADI_SYMBOL_EXPORT void thd_k_decref(void) {
+extern "C" CASADI_SYMBOL_EXPORT void thd_small_k_decref(void) {
 }
 
-extern "C" CASADI_SYMBOL_EXPORT casadi_int thd_k_n_in(void) { return 4;}
+extern "C" CASADI_SYMBOL_EXPORT casadi_int thd_small_k_n_in(void) { return 4;}
 
-extern "C" CASADI_SYMBOL_EXPORT casadi_int thd_k_n_out(void) { return 1;}
+extern "C" CASADI_SYMBOL_EXPORT casadi_int thd_small_k_n_out(void) { return 1;}
 
-extern "C" CASADI_SYMBOL_EXPORT casadi_real thd_k_default_in(casadi_int i) {
+extern "C" CASADI_SYMBOL_EXPORT casadi_real thd_small_k_default_in(casadi_int i) {
   switch (i) {
     default: return 0;
   }
 }
 
-extern "C" CASADI_SYMBOL_EXPORT const char* thd_k_name_in(casadi_int i) {
+extern "C" CASADI_SYMBOL_EXPORT const char* thd_small_k_name_in(casadi_int i) {
   switch (i) {
     case 0: return "i0";
     case 1: return "i1";
@@ -582,14 +582,14 @@ extern "C" CASADI_SYMBOL_EXPORT const char* thd_k_name_in(casadi_int i) {
   }
 }
 
-extern "C" CASADI_SYMBOL_EXPORT const char* thd_k_name_out(casadi_int i) {
+extern "C" CASADI_SYMBOL_EXPORT const char* thd_small_k_name_out(casadi_int i) {
   switch (i) {
     case 0: return "o0";
     default: return 0;
   }
 }
 
-extern "C" CASADI_SYMBOL_EXPORT const casadi_int* thd_k_sparsity_in(casadi_int i) {
+extern "C" CASADI_SYMBOL_EXPORT const casadi_int* thd_small_k_sparsity_in(casadi_int i) {
   switch (i) {
     case 0: return casadi_s0;
     case 1: return casadi_s0;
@@ -599,14 +599,14 @@ extern "C" CASADI_SYMBOL_EXPORT const casadi_int* thd_k_sparsity_in(casadi_int i
   }
 }
 
-extern "C" CASADI_SYMBOL_EXPORT const casadi_int* thd_k_sparsity_out(casadi_int i) {
+extern "C" CASADI_SYMBOL_EXPORT const casadi_int* thd_small_k_sparsity_out(casadi_int i) {
   switch (i) {
     case 0: return casadi_s0;
     default: return 0;
   }
 }
 
-extern "C" CASADI_SYMBOL_EXPORT int thd_k_work(casadi_int *sz_arg, casadi_int* sz_res, casadi_int *sz_iw, casadi_int *sz_w) {
+extern "C" CASADI_SYMBOL_EXPORT int thd_small_k_work(casadi_int *sz_arg, casadi_int* sz_res, casadi_int *sz_iw, casadi_int *sz_w) {
   if (sz_arg) *sz_arg = 4;
   if (sz_res) *sz_res = 1;
   if (sz_iw) *sz_iw = 0;
