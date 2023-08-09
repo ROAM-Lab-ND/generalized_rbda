@@ -108,7 +108,7 @@ namespace grbda
                 auto parent_cluster = cluster_nodes_[cluster->parent_index_];
 
                 const DVec<double> pa = cluster->pA_ + cluster->Ia_ *
-                                        (node->cJ() + generalMotionCrossProduct(node->v_, node->vJ())) +
+                                        (node->cJ() + node->avp_) +
                                         cluster->U_ * cluster->D_inv_u_;
 
                 parent_cluster->pA_ += cluster->Xup_.inverseTransformForceVector(pa);
@@ -131,12 +131,12 @@ namespace grbda
             {
                 const auto parent_cluster = cluster_nodes_[cluster->parent_index_];
                 a_temp = cluster->Xup_.transformMotionVector(parent_cluster->a_) +
-                         node->cJ() + generalMotionCrossProduct(node->v_, node->vJ());
+                         node->cJ() + node->avp_;
             }
             else
             {
                 a_temp = cluster->Xup_.transformMotionVector(-gravity_) +
-                         node->cJ() + generalMotionCrossProduct(node->v_, node->vJ());
+                         node->cJ() + node->avp_;
             }
             qdd.segment(vel_idx, num_vel) = cluster->D_inv_u_ - cluster->D_inv_UT_ * a_temp;
             cluster->a_ = a_temp + joint->S() * qdd.segment(vel_idx, num_vel);

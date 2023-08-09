@@ -57,6 +57,7 @@ namespace grbda
         DVec<double> a_;     // spatial acceleration
         DVec<double> f_;     // spatial force across joint
         DVec<double> f_ext_; // net external spatial force acting on the cluster
+        Dvec<double> avp_;   // acceleration velocity product
 
         DMat<double> I_;  // spatial inertia
         DMat<double> Ic_; // compisite rigid body inertia

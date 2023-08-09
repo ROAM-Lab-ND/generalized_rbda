@@ -23,6 +23,8 @@ namespace grbda
                 node->v_ = node->vJ();
                 node->Xa_ = node->Xup_.toAbsolute();
             }
+
+            node->avp_ = generalMotionCrossProduct(node->v_, node->vJ());
         }
 
         // TODO(@MatthewChignoli): Should we do contact kinematics every time we do kinematics?
@@ -132,13 +134,13 @@ namespace grbda
                 auto parent_node = nodes_[node->parent_index_];
                 node->a_ = node->Xup_.transformMotionVector(parent_node->a_) +
                            node->S() * qdd.segment(vel_idx, num_vel) +
-                           node->cJ() + generalMotionCrossProduct(node->v_, node->vJ());
+                           node->cJ() + node->avp_;
             }
             else
             {
                 node->a_ = node->Xup_.transformMotionVector(-gravity_) +
                            node->S() * qdd.segment(vel_idx, num_vel) +
-                           node->cJ() + generalMotionCrossProduct(node->v_, node->vJ());
+                           node->cJ() + node->avp_;
 
             }
 
