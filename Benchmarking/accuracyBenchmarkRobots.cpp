@@ -212,9 +212,9 @@ void runApplyTestForceBenchmark(std::ofstream &file, const std::string contact_p
 
     const int nv = model_cl.getNumDegreesOfFreedom();
 
-    const double alpha_rate = 0.25;
+    const double alpha_rate = 0.1;
     const double offset = 0.01;
-    const int num_samples_per_alpha = 100;
+    const int num_samples_per_alpha = 2000;
     for (double alpha = offset; alpha <= (1. + offset); alpha += alpha_rate)
     {
         double dstate_diag_error = 0.;
@@ -259,7 +259,6 @@ int main()
     std::ofstream id_file;
     id_file.open(path_to_data + "Robots.csv");
     runInverseDynamicsBenchmark<TelloWithArms>(id_file, 50.);
-    // runInverseDynamicsBenchmark<Tello>(id_file);
     runInverseDynamicsBenchmark<MIT_Humanoid>(id_file, 50.);
     runInverseDynamicsBenchmark<MiniCheetah>(id_file, 30.);
     id_file.close();
@@ -270,7 +269,6 @@ int main()
     std::ofstream fd_file;
     fd_file.open(path_to_data + "Robots.csv");
     runForwardDynamicsBenchmark<TelloWithArms>(fd_file, 50.);
-    // runForwardDynamicsBenchmark<Tello>(fd_file);
     runForwardDynamicsBenchmark<MIT_Humanoid>(fd_file, 50.);
     runForwardDynamicsBenchmark<MiniCheetah>(fd_file, 20.);
     fd_file.close();
@@ -281,7 +279,6 @@ int main()
     std::ofstream iosim_file;
     iosim_file.open(path_to_data + "Robots.csv");
     runInverseOperationalSpaceInertiaBenchmark<TelloWithArms>(iosim_file);
-    // runInverseOperationalSpaceInertiaBenchmark<Tello>(iosim_file);
     runInverseOperationalSpaceInertiaBenchmark<MIT_Humanoid>(iosim_file);
     runInverseOperationalSpaceInertiaBenchmark<MiniCheetah>(iosim_file);
     iosim_file.close();
@@ -292,7 +289,6 @@ int main()
     std::ofstream atf_file;
     atf_file.open(path_to_data + "Robots.csv");
     runApplyTestForceBenchmark<TelloWithArms>(atf_file, "left-toe_contact", 500.);
-    // runApplyTestForceBenchmark<Tello>(atf_file, "left-toe_contact");
     runApplyTestForceBenchmark<MIT_Humanoid>(atf_file, "left_toe_contact", 500.);
     runApplyTestForceBenchmark<MiniCheetah>(atf_file, "FL_foot_contact", 150.);
     atf_file.close();

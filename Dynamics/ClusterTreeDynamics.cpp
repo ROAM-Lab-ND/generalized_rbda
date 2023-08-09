@@ -289,8 +289,10 @@ namespace grbda
 
         for (auto &cluster : cluster_nodes_)
         {
-            const DMat<double> Xup = cluster->Xup_.toMatrix();
-            cluster->ChiUp_ = Xup - cluster->S() * cluster->D_inv_UT_ * Xup;
+            const int& mss_dim = cluster->motion_subspace_dimension_;
+            const DMat<double> L = DMat<double>::Identity(mss_dim, mss_dim) -
+                                   cluster->S() * cluster->D_inv_UT_;
+            cluster->ChiUp_ = cluster->Xup_.rightMultiplyMotionTransform(L);
         }
 
         force_propagators_updated_ = true;
@@ -307,14 +309,13 @@ namespace grbda
         {
             const int &vel_idx = cluster->velocity_index_;
             const int &num_vel = cluster->num_velocities_;
-            const auto joint = cluster->joint_;
 
             cluster->qdd_for_subtree_due_to_subtree_root_joint_qdd
                 .middleRows(vel_idx, num_vel)
                 .setIdentity();
 
             // Compute Psi
-            const DMat<double> &S = joint->S();
+            const DMat<double> &S = cluster->S();
             DMat<double> Psi = S.transpose().completeOrthogonalDecomposition().pseudoInverse();
 
             DMat<double> F =
@@ -324,10 +325,9 @@ namespace grbda
             while (j > -1)
             {
                 auto parent_cluster = cluster_nodes_[j];
-                const auto parent_joint = parent_cluster->joint_;
 
                 parent_cluster->qdd_for_subtree_due_to_subtree_root_joint_qdd
-                    .middleRows(vel_idx, num_vel) = F.transpose() * parent_joint->S();
+                    .middleRows(vel_idx, num_vel) = F.transpose() * parent_cluster->S();
 
                 F = parent_cluster->ChiUp_.transpose() * F;
                 j = parent_cluster->parent_index_;
@@ -337,25 +337,15 @@ namespace grbda
         qdd_effects_updated_ = true;
     }
 
-
     DMat<double> ClusterTreeModel::inverseOperationalSpaceInertiaMatrix()
     {
         // Based on the EFPA from "https://www3.nd.edu/~pwensing/Papers/WensingFeatherstoneOrin12-ICRA.pdf"
 
-#ifdef TIMING_STATS
-        timing_statistics_.zero();
-        timer_.start();
-#endif
         forwardKinematics();
         for (auto &cluster : cluster_nodes_)
         {
             cluster->IA_ = cluster->I_;
-            cluster->Xup_matrix = cluster->Xup_.toMatrix();
         }
-#ifdef TIMING_STATS
-        timing_statistics_.forward_kinematics_time += timer_.getMs();
-        timer_.start();
-#endif
 
         // Reset Force Propagators for the end-effectors
         for (ContactPoint &cp : contact_points_)
@@ -372,11 +362,6 @@ namespace grbda
             ChiUp.middleCols<6>(6 * body.sub_index_within_cluster_) = X_offset;
         }
 
-#ifdef TIMING_STATS
-        timing_statistics_.reset_ee_force_propagators_time += timer_.getMs();
-        timer_.start();
-#endif
-
         // Backward Pass to compute K and propagate the force propagators for the end-effectors
         for (int i = (int)cluster_nodes_.size() - 1; i >= 0; i--)
         {
@@ -386,14 +371,14 @@ namespace grbda
             const DMat<double> ST = S.transpose();
             cluster->K_ = S * (Eigen::LLT<DMat<double>>(ST * cluster->IA_ * S).solve(ST));
 
-            const int& mss_dim = cluster->motion_subspace_dimension_;
+            const int &mss_dim = cluster->motion_subspace_dimension_;
             cluster->L_ = DMat<double>::Identity(mss_dim, mss_dim) - cluster->K_ * cluster->IA_;
-            cluster->ChiUp_ = cluster->L_ * cluster->Xup_matrix;
+            cluster->ChiUp_ = cluster->Xup_.rightMultiplyMotionTransform(cluster->L_);
 
             const int &parent_index = cluster->parent_index_;
             if (parent_index >= 0)
             {
-                auto& parent_cluster = cluster_nodes_[parent_index];
+                auto &parent_cluster = cluster_nodes_[parent_index];
                 parent_cluster->IA_ +=
                     cluster->Xup_.inverseTransformSpatialInertia(cluster->L_.transpose() *
                                                                  cluster->IA_);
@@ -406,13 +391,7 @@ namespace grbda
             }
         }
 
-#ifdef TIMING_STATS
-        timing_statistics_.efpa_backward_pass_time += timer_.getMs();
-        timer_.start();
-#endif
-
-        // TODO(@MatthewChignoli): Right now, this steps assumes every operational space has
-        // dimension 6
+        // TODO(@MatthewChignoli): Remove the assumption that every operational space has size 6
         const int num_bodies = bodies_.size();
         DMat<double> lambda_inv = DMat<double>::Zero(6 * num_end_effectors_,
                                                      6 * num_end_effectors_);
@@ -434,7 +413,6 @@ namespace grbda
                 const ContactPoint &contact_point = contact_points_[cp_index];
                 const int &k = contact_point.end_effector_index_; // "k" in Table 1 of the paper
 
-                // TODO(@MatthewChignoli): Here is an instance of where we assume all output dimensions are 6
                 const int ee_output_dim = 6;
 
                 if (parent_index > -1)
@@ -442,14 +420,14 @@ namespace grbda
                     const auto &parent_cluster = cluster_nodes_[parent_index];
                     const int &parent_mss_index = parent_cluster->motion_subspace_index_;
                     const int &parent_mss_dim = parent_cluster->motion_subspace_dimension_;
-                    // TODO(@MatthewChignoli): Here is an instance of where we assume all output dimensions are 6
                     lambda_inv_prev = lambda_inv_tmp.block(parent_mss_index, 6 * k,
                                                            parent_mss_dim, ee_output_dim);
                 }
                 else
+                {
                     lambda_inv_prev = DMat<double>::Zero(mss_dim, ee_output_dim);
+                }
 
-                // TODO(@MatthewChignoli): Here is an instance of where we assume all output dimensions are 6
                 lambda_inv_tmp.block(mss_index, 6 * k, mss_dim, ee_output_dim) =
                     cluster->ChiUp_ * lambda_inv_prev +
                     cluster->K_ * contact_point.ChiUp_[cluster_index].transpose();
@@ -463,17 +441,14 @@ namespace grbda
                 const int &k1 = cp1.end_effector_index_; // "k1" in Table 1 of the paper
                 const int &k2 = cp2.end_effector_index_; // "k2" in Table 1 of the paper
 
-                // TODO(@MatthewChignoli): Here is an instance of where we assume all output dimensions are 6
                 const int ee1_output_dim = 6;
                 const int ee2_output_dim = 6;
 
-                // TODO(@MatthewChignoli): Here is an instance of where we assume all output dimensions are 6
                 lambda_inv.block(6 * k1, 6 * k2, ee1_output_dim, ee2_output_dim) =
                     cp1.ChiUp_[cluster_index] *
                     lambda_inv_tmp.block(mss_index, 6 * k2, mss_dim, ee2_output_dim);
 
-                // TODO(@MatthewChignoli): Here is an instance of where we assume all output dimensions are 6
-                lambda_inv.block(6 * k2, 6 * k1,ee2_output_dim, ee1_output_dim) =
+                lambda_inv.block(6 * k2, 6 * k1, ee2_output_dim, ee1_output_dim) =
                     lambda_inv.block(6 * k1, 6 * k2, ee1_output_dim, ee2_output_dim).transpose();
             }
         }
@@ -487,7 +462,6 @@ namespace grbda
                 continue;
 
             const int &k = cp.end_effector_index_; // "k" in Table 1 of the paper
-            // TODO(@MatthewChignoli): Here is an instance of where we assume all output dimensions are 6
             const int &ee_output_dim = 6;
 
             const int cluster_index = getIndexOfClusterContainingBody(cp.body_index_);
@@ -495,15 +469,10 @@ namespace grbda
             const int &mss_index = cluster->motion_subspace_index_;
             const int &mss_dim = cluster->motion_subspace_dimension_;
 
-            // TODO(@MatthewChignoli): Here is an instance of where we assume all output dimensions are 6
             lambda_inv.block(6 * k, 6 * k, ee_output_dim, ee_output_dim) =
                 cp.ChiUp_[cluster_index] *
                 lambda_inv_tmp.block(mss_index, 6 * k, mss_dim, ee_output_dim);
         }
-
-#ifdef TIMING_STATS
-        timing_statistics_.efpa_forward_pass_time += timer_.getMs();
-#endif
 
         return lambda_inv;
     }

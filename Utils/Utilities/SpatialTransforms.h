@@ -98,10 +98,10 @@ namespace grbda
             GeneralizedSpatialTransform operator*(const GeneralizedSpatialTransform &X_in) const;
             GeneralizedAbsoluteSpatialTransform operator*(const GeneralizedAbsoluteSpatialTransform &X_in) const;
 
-        private:
             DMat<double> rightMultiplyMotionTransform(const DMat<double> &M_in) const;
             DMat<double> leftMultiplyForceTransform(const DMat<double> &M_in) const;
 
+        private:
             int num_output_bodies_ = 0;
             const int num_parent_bodies_ = 0;
             std::vector<std::pair<SpatialTransform, int>> transforms_and_parent_subindices_;

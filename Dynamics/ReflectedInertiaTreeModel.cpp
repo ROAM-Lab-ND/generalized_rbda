@@ -597,8 +597,7 @@ namespace grbda
             }
         }
 
-        // TODO(@MatthewChignoli): Right now, this step assumes every operational space has
-        // dimension 6
+        // TODO(@MatthewChignoli): Remove the assumption that every operational space has size 6
         const int num_bodies = reflected_inertia_nodes_.size();
         DMat<double> lambda_inv = DMat<double>::Zero(6 * num_end_effectors_,
                                                      6 * num_end_effectors_);
@@ -620,7 +619,6 @@ namespace grbda
                 const ContactPoint &contact_point = contact_points_[cp_index];
                 const int &k = contact_point.end_effector_index_; // "k" in Table 1 of the paper
 
-                // TODO(@MatthewChignoli): Here is an instance of where we assume all output dimensions are 6
                 const int ee_output_dim = 6;
 
                 if (parent_index > -1)
@@ -628,18 +626,17 @@ namespace grbda
                     const auto &parent_node = reflected_inertia_nodes_[parent_index];
                     const int &parent_mss_index = parent_node->motion_subspace_index_;
                     const int &parent_mss_dim = parent_node->motion_subspace_dimension_;
-                    // TODO(@MatthewChignoli): Here is an instance of where we assume all output dimensions are 6
                     lambda_inv_prev = lambda_inv_tmp.block(parent_mss_index, 6 * k,
                                                            parent_mss_dim, ee_output_dim);
                 }
                 else
+                {
                     lambda_inv_prev = DMat<double>::Zero(mss_dim, ee_output_dim);
+                }
 
-                // TODO(@MatthewChignoli): Here is an instance of where we assume all output dimensions are 6
-                DMatRef<double> lambda_inv_tmp_ik = lambda_inv_tmp.block(mss_index, 6 * k,
-                                                                         mss_dim, ee_output_dim);
-                lambda_inv_tmp_ik = node->ChiUp_ * lambda_inv_prev +
-                                    node->K_ * contact_point.ChiUp_[node_index].transpose();
+                lambda_inv_tmp.block(mss_index, 6 * k, mss_dim, ee_output_dim) =
+                    node->ChiUp_ * lambda_inv_prev +
+                    node->K_ * contact_point.ChiUp_[node_index].transpose();
             }
 
             for (const std::pair<int, int> &cp_pair : node->nearest_supported_ee_pairs_)
@@ -650,22 +647,15 @@ namespace grbda
                 const int &k1 = cp1.end_effector_index_; // "k1" in Table 1 of the paper
                 const int &k2 = cp2.end_effector_index_; // "k2" in Table 1 of the paper
 
-                // TODO(@MatthewChignoli): Here is an instance of where we assume all output dimensions are 6
                 const int ee1_output_dim = 6;
                 const int ee2_output_dim = 6;
 
-                // TODO(@MatthewChignoli): Here is an instance of where we assume all output dimensions are 6
-                DMatRef<double> lambda_inv_k1k2 = lambda_inv.block(6 * k1, 6 * k2,
-                                                                   ee1_output_dim, ee2_output_dim);
-                const DMat<double> &ChiUp_k1i = cp1.ChiUp_[node_index];
-                DMatRef<double> lambda_inv_tmp_ik2 = lambda_inv_tmp.block(mss_index, 6 * k2,
-                                                                          mss_dim, ee2_output_dim);
-                lambda_inv_k1k2 = ChiUp_k1i * lambda_inv_tmp_ik2;
+                lambda_inv.block(6 * k1, 6 * k2, ee1_output_dim, ee2_output_dim) =
+                    cp1.ChiUp_[node_index] *
+                    lambda_inv_tmp.block(mss_index, 6 * k2, mss_dim, ee2_output_dim);
 
-                // TODO(@MatthewChignoli): Here is an instance of where we assume all output dimensions are 6
-                DMatRef<double> lambda_inv_k2k1 = lambda_inv.block(6 * k2, 6 * k1,
-                                                                   ee2_output_dim, ee1_output_dim);
-                lambda_inv_k2k1 = lambda_inv_k1k2.transpose();
+                lambda_inv.block(6 * k2, 6 * k1, ee2_output_dim, ee1_output_dim) =
+                    lambda_inv.block(6 * k1, 6 * k2, ee1_output_dim, ee2_output_dim).transpose();
             }
         }
 
@@ -678,7 +668,6 @@ namespace grbda
                 continue;
 
             const int &k = cp.end_effector_index_; // "k" in Table 1 of the paper
-            // TODO(@MatthewChignoli): Here is an instance of where we assume all output dimensions are 6
             const int &ee_output_dim = 6;
 
             const int node_index = getNodeContainingBody(cp.body_index_)->index_;
@@ -686,13 +675,9 @@ namespace grbda
             const int &mss_index = node->motion_subspace_index_;
             const int &mss_dim = node->motion_subspace_dimension_;
 
-            // TODO(@MatthewChignoli): Here is an instance of where we assume all output dimensions are 6
-            DMatRef<double> lambda_inv_kk = lambda_inv.block(6 * k, 6 * k,
-                                                             ee_output_dim, ee_output_dim);
-            const DMat<double> &ChiUp_kp = cp.ChiUp_[node_index];
-            DMatRef<double> lambda_inv_tmp_pk = lambda_inv_tmp.block(mss_index, 6 * k,
-                                                                     mss_dim, ee_output_dim);
-            lambda_inv_kk = ChiUp_kp * lambda_inv_tmp_pk;
+            lambda_inv.block(6 * k, 6 * k, ee_output_dim, ee_output_dim) =
+                cp.ChiUp_[node_index] *
+                lambda_inv_tmp.block(mss_index, 6 * k, mss_dim, ee_output_dim);
         }
         return lambda_inv;
     }
