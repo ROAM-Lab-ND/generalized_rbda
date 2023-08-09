@@ -22,6 +22,8 @@ bool setRandomStates(ClusterTreeModel &cf_model,
     for (const auto &cluster : cf_model.clusters())
     {
         JointState joint_state = cluster->joint_->randomJointState();
+        joint_state.velocity *= 10.;
+
         if (joint_state.position.hasNaN())
         {
             return true;
@@ -81,8 +83,7 @@ void runInverseDynamicsBenchmark(std::ofstream &file, const double max_torque)
     const int nv = model_cl.getNumDegreesOfFreedom();
 
     const double alpha_rate = 0.1;
-    const int num_samples_per_alpha = 500;
-    int total_samples = 0;
+    const int num_samples_per_alpha = 2000.;
     for (double alpha = 0.; alpha <= 1.; alpha += alpha_rate)
     {
         double id_error = 0.;
@@ -112,14 +113,12 @@ void runInverseDynamicsBenchmark(std::ofstream &file, const double max_torque)
             id_error += (tau_cluster - tau_approx).norm();
             id_diag_error += (tau_cluster - tau_diag_approx).norm();
             id_none_error += (tau_cluster - tau_none_approx).norm();
-
-            total_samples++;
         }
 
         file << alpha << ","
-             << id_none_error / total_samples << ","
-             << id_diag_error / total_samples << ","
-             << id_error / total_samples << std::endl;
+             << id_none_error / num_samples_per_alpha << ","
+             << id_diag_error / num_samples_per_alpha << ","
+             << id_error / num_samples_per_alpha << std::endl;
     }
 }
 
@@ -135,8 +134,7 @@ void runForwardDynamicsBenchmark(std::ofstream &file, const double max_torque)
     const int nv = model_cl.getNumDegreesOfFreedom();
 
     const double alpha_rate = 0.1;
-    const int num_samples_per_alpha = 500;
-    int total_samples = 0;
+    const int num_samples_per_alpha = 2000;
     for (double alpha = 0.; alpha <= 1.; alpha += alpha_rate)
     {
         double fd_diag_error = 0.;
@@ -160,13 +158,11 @@ void runForwardDynamicsBenchmark(std::ofstream &file, const double max_torque)
 
             fd_diag_error += (qdd_cluster - qdd_diag_approx).norm();
             fd_none_error += (qdd_cluster - qdd_none_approx).norm();
-
-            total_samples++;
         }
 
         file << alpha << ","
-             << fd_none_error / total_samples << ","
-             << fd_diag_error / total_samples << std::endl;
+             << fd_none_error / num_samples_per_alpha << ","
+             << fd_diag_error / num_samples_per_alpha << std::endl;
     }
 }
 
@@ -182,7 +178,7 @@ void runInverseOperationalSpaceInertiaBenchmark(std::ofstream &file)
     double lambda_inv_diag_error = 0.;
     double lambda_inv_none_error = 0.;
 
-    const int num_samples = 500;
+    const int num_samples = 2000;
     for (int j = 0; j < num_samples; j++)
     {
         bool nan_detected = setRandomStates(model_cl, model_rf, model_rf_diag, model_rf_none);
@@ -216,10 +212,9 @@ void runApplyTestForceBenchmark(std::ofstream &file, const std::string contact_p
 
     const int nv = model_cl.getNumDegreesOfFreedom();
 
-    const double alpha_rate = 0.1;
+    const double alpha_rate = 0.25;
     const double offset = 0.01;
-    const int num_samples_per_alpha = 500;
-    int total_samples = 0;
+    const int num_samples_per_alpha = 100;
     for (double alpha = offset; alpha <= (1. + offset); alpha += alpha_rate)
     {
         double dstate_diag_error = 0.;
@@ -248,13 +243,11 @@ void runApplyTestForceBenchmark(std::ofstream &file, const std::string contact_p
 
             dstate_diag_error += (dstate_cluster - dstate_diag_approx).norm();
             dstate_none_error += (dstate_cluster - dstate_none_approx).norm();
-
-            total_samples++;
         }
 
         file << alpha << ","
-             << dstate_none_error / total_samples << ","
-             << dstate_diag_error / total_samples << std::endl;
+             << dstate_none_error / num_samples_per_alpha << ","
+             << dstate_diag_error / num_samples_per_alpha << std::endl;
     }
 }
 
@@ -265,10 +258,10 @@ int main()
     std::string path_to_data = "../Benchmarking/data/AccuracyID_";
     std::ofstream id_file;
     id_file.open(path_to_data + "Robots.csv");
-    runInverseDynamicsBenchmark<TelloWithArms>(id_file, 30.);
+    runInverseDynamicsBenchmark<TelloWithArms>(id_file, 50.);
     // runInverseDynamicsBenchmark<Tello>(id_file);
-    runInverseDynamicsBenchmark<MIT_Humanoid>(id_file, 30.);
-    runInverseDynamicsBenchmark<MiniCheetah>(id_file, 15.);
+    runInverseDynamicsBenchmark<MIT_Humanoid>(id_file, 50.);
+    runInverseDynamicsBenchmark<MiniCheetah>(id_file, 30.);
     id_file.close();
 
     // Forward Dynamics Benchmark
@@ -276,10 +269,10 @@ int main()
     path_to_data = "../Benchmarking/data/AccuracyFD_";
     std::ofstream fd_file;
     fd_file.open(path_to_data + "Robots.csv");
-    runForwardDynamicsBenchmark<TelloWithArms>(fd_file, 30.);
+    runForwardDynamicsBenchmark<TelloWithArms>(fd_file, 50.);
     // runForwardDynamicsBenchmark<Tello>(fd_file);
-    runForwardDynamicsBenchmark<MIT_Humanoid>(fd_file, 30.);
-    runForwardDynamicsBenchmark<MiniCheetah>(fd_file, 15.);
+    runForwardDynamicsBenchmark<MIT_Humanoid>(fd_file, 50.);
+    runForwardDynamicsBenchmark<MiniCheetah>(fd_file, 20.);
     fd_file.close();
 
     // Inverse Operational Space Inertia Matrix Benchmark
@@ -298,9 +291,9 @@ int main()
     path_to_data = "../Benchmarking/data/AccuracyATF_";
     std::ofstream atf_file;
     atf_file.open(path_to_data + "Robots.csv");
-    runApplyTestForceBenchmark<TelloWithArms>(atf_file, "left-toe_contact", 100.);
+    runApplyTestForceBenchmark<TelloWithArms>(atf_file, "left-toe_contact", 500.);
     // runApplyTestForceBenchmark<Tello>(atf_file, "left-toe_contact");
-    runApplyTestForceBenchmark<MIT_Humanoid>(atf_file, "left_toe_contact", 100.);
-    runApplyTestForceBenchmark<MiniCheetah>(atf_file, "FL_foot_contact", 50.);
+    runApplyTestForceBenchmark<MIT_Humanoid>(atf_file, "left_toe_contact", 500.);
+    runApplyTestForceBenchmark<MiniCheetah>(atf_file, "FL_foot_contact", 150.);
     atf_file.close();
 }
