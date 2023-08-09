@@ -92,24 +92,23 @@ namespace grbda
 
 	    X21_ = link_2_joint_->XJ() * link_2_.Xtree_;
 
-        const DMat<double>& S1 = link_1_joint_->S();
-	    const DMat<double> X21_S1 = X21_.transformMotionSubspace(link_1_joint_->S());
-        const DMat<double>& S2 = link_2_joint_->S();
-	    const DVec<double> v2_relative = link_2_joint_->S() * q_dot[3];
+		const DMat<double> &S1 = link_1_joint_->S();
+		const DMat<double> X21_S1 = X21_.transformMotionSubspace(S1);
+		const DMat<double> &S2 = link_2_joint_->S();
+		const DVec<double> v2_relative = S2 * q_dot[3];
 	    const DMat<double> v2_rel_crm = generalMotionCrossMatrix(v2_relative);
 
-        S_.block<6, 1>(12, 0) = S1 * G().block<1, 1>(2, 0);
-        S_.block<6, 1>(12, 1) = S1 * G().block<1, 1>(2, 1);
-        S_.block<6, 1>(18, 0) = X21_S1 * G().block<1, 1>(2, 1) + S2 * G().block<1, 1>(3, 0);
-        S_.block<6, 1>(18, 1) = X21_S1 * G().block<1, 1>(2, 1) + S2 * G().block<1, 1>(3, 1);
+        S_.block<6, 1>(12, 0) = S1 * G()(2, 0);
+        S_.block<6, 1>(12, 1) = S1 * G()(2, 1);
+        S_.block<6, 1>(18, 0) = X21_S1 * G()(2, 0) + S2 * G()(3, 0);
+        S_.block<6, 1>(18, 1) = X21_S1 * G()(2, 1) + S2 * G()(3, 1);
 	    
 		vJ_ = S_ * joint_state.velocity;
 
-        cJ_.segment<6>(0) = rotor_1_joint_->S() * g().segment<1>(0);
-        cJ_.segment<6>(6) = rotor_2_joint_->S() * g().segment<1>(1);
-        cJ_.segment<6>(12) = S1 * g().segment<1>(2);
-        cJ_.segment<6>(18) = -v2_rel_crm * X21_S1 * q_dot.segment<1>(2) +
-                            X21_S1 * g().segment<1>(2) + S2 * g().segment<1>(3);
+        cJ_.segment<6>(0) = rotor_1_joint_->S() * g()[0];
+        cJ_.segment<6>(6) = rotor_2_joint_->S() * g()[1];
+        cJ_.segment<6>(12) = S1 * g()[2];
+        cJ_.segment<6>(18) = -v2_rel_crm * X21_S1 * q_dot[2] + X21_S1 * g()[2] + S2 * g()[3];
 	}
 
 	void TelloDifferential::computeSpatialTransformFromParentToCurrentCluster(

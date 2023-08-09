@@ -97,12 +97,9 @@ namespace grbda
 
             vJ_ = S_ * joint_state.velocity;
 
-            cJ_.segment<6>(6) = -generalMotionCrossMatrix(v2_relative1) *
-                                X21_S1 * qd.segment<1>(0);
-            cJ_.segment<6>(12) = -generalMotionCrossMatrix(v3_relative1) *
-                                     X31_S1 * qd.segment<1>(0) -
-                                 generalMotionCrossMatrix(v3_relative2) *
-                                     X32_S2 * qd.segment<1>(1);
+            cJ_.segment<6>(6) = -generalMotionCrossMatrix(v2_relative1) * X21_S1 * qd[0];
+            cJ_.segment<6>(12) = -generalMotionCrossMatrix(v3_relative1) * X31_S1 * qd[0] -
+                                 generalMotionCrossMatrix(v3_relative2) * X32_S2 * qd[1];
         }
 
         void RevoluteTripleWithRotor::computeSpatialTransformFromParentToCurrentCluster(

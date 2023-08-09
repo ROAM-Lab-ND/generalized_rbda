@@ -64,7 +64,7 @@ namespace grbda
             const DVec<double> v2_relative = link_2_joint_->S() * qd[3];
 
             S_.block<6, 1>(18, 0) = X21_.transformMotionSubspace(link_1_joint_->S());
-            
+
             vJ_ = S_ * joint_state.velocity;
 
             cJ_.segment<6>(18) = -generalMotionCrossMatrix(v2_relative) *
