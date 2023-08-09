@@ -175,8 +175,8 @@ void runInverseOperationalSpaceInertiaBenchmark(std::ofstream &file)
     ReflectedInertiaTreeModel model_rf_diag(model_cl, RotorInertiaApproximation::DIAGONAL);
     ReflectedInertiaTreeModel model_rf_none(model_cl, RotorInertiaApproximation::NONE);
 
-    double lambda_inv_diag_error = 0.;
-    double lambda_inv_none_error = 0.;
+    double lambda_inv_diag_rel_error = 0.;
+    double lambda_inv_none_rel_error = 0.;
 
     const int num_samples = 2000;
     for (int j = 0; j < num_samples; j++)
@@ -192,12 +192,12 @@ void runInverseOperationalSpaceInertiaBenchmark(std::ofstream &file)
         const DMat<double> lambda_inv_diag = model_rf_diag.inverseOperationalSpaceInertiaMatrix();
         const DMat<double> lambda_inv_none = model_rf_none.inverseOperationalSpaceInertiaMatrix();
 
-        lambda_inv_diag_error += (lambda_inv - lambda_inv_diag).norm();
-        lambda_inv_none_error += (lambda_inv - lambda_inv_none).norm();
+        lambda_inv_diag_rel_error += (lambda_inv - lambda_inv_diag).norm() / lambda_inv.norm();
+        lambda_inv_none_rel_error += (lambda_inv - lambda_inv_none).norm() / lambda_inv.norm();
     }
 
-    file << lambda_inv_none_error / num_samples << ","
-         << lambda_inv_diag_error / num_samples << std::endl;
+    file << lambda_inv_none_rel_error / num_samples << ","
+         << lambda_inv_diag_rel_error / num_samples << std::endl;
 }
 
 template <typename RobotType>

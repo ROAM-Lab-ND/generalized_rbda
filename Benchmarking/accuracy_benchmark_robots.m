@@ -15,7 +15,7 @@ alpha = unique(data(:, 1));
 rows_per_dataset = length(alpha);
 
 datasets = cell(length(data(:, 1)) / rows_per_dataset, 1);
-robot_names = {'Tello', 'MIT Humanoid', 'Mini Cheetah'};
+robot_names = {'Tello Humanoid', 'MIT Humanoid', 'Mini Cheetah'};
 
 for i = 1:length(datasets)
     datasets{i} = data((i - 1) * rows_per_dataset + 1:i * rows_per_dataset, :);
@@ -50,7 +50,7 @@ alpha = unique(data(:, 1));
 rows_per_dataset = length(alpha);
 
 datasets = cell(length(data(:, 1)) / rows_per_dataset, 1);
-robot_names = {'Tello', 'MIT Humanoid', 'Mini Cheetah'};
+robot_names = {'Tello Humanoid', 'MIT Humanoid', 'Mini Cheetah'};
 
 for i = 1:length(datasets)
     datasets{i} = data((i - 1) * rows_per_dataset + 1:i * rows_per_dataset, :);
@@ -84,7 +84,7 @@ alpha = unique(data(:, 1));
 rows_per_dataset = length(alpha);
 
 datasets = cell(length(data(:, 1)) / rows_per_dataset, 1);
-robot_names = {'Tello', 'MIT Humanoid', 'Mini Cheetah'};
+robot_names = {'Tello Humanoid', 'MIT Humanoid', 'Mini Cheetah'};
 
 for i = 1:length(datasets)
     datasets{i} = data((i - 1) * rows_per_dataset + 1:i * rows_per_dataset, :);
@@ -129,6 +129,7 @@ function lgd = compareInvDynAccuracy(data, robot_name, color, lgd)
     end
 
     grid on
+    axis([-inf inf 1e-2 5e3])
     xlabel('Percent of Max Acceleration', 'Interpreter', 'latex')
     ylabel('$\tau$ Error ($Nm$)', 'Interpreter', 'latex')
     legend(lgd, 'Location', 'Best', 'Interpreter', 'latex')
@@ -152,6 +153,7 @@ function lgd = compareFwdDynAccuracy(data, robot_name, color, lgd)
     end
 
     grid on
+    axis([-inf inf 1e0 3e5])
     xlabel('Percent of Max Torque', 'Interpreter', 'latex')
     ylabel('$\ddot{q}$ Errror (rad/$s^2$)', 'Interpreter', 'latex')
     legend(lgd, 'Location', 'Best', 'Interpreter', 'latex')
@@ -180,7 +182,7 @@ function lgd = compareApplyTestForceAccuracy(data, robot_name, color, lgd)
     legend(lgd, 'Location', 'Best', 'Interpreter', 'latex')
     set(gca, 'Fontsize', 20)
     set(gca, 'TickLabelInterpreter', 'latex')
-    axis([0 1.05 1e-2 1e5])
+    axis([-inf inf 1e-2 2e5])
 end
 
 function result = isApproxEqual(a, b, tolerance)

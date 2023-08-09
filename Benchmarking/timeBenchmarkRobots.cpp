@@ -306,45 +306,45 @@ int main()
     std::string path_to_data = "../Benchmarking/data/TimingFD_";
     std::ofstream fd_file;
     fd_file.open(path_to_data + "Robots.csv");
+    runForwardDynamicsBenchmark<RevoluteChainWithRotor<N_CHAIN>>(fd_file);
+    runForwardDynamicsBenchmark<RevolutePairChainWithRotor<N_CHAIN>>(fd_file);
     runForwardDynamicsBenchmark<MiniCheetah>(fd_file);
     runForwardDynamicsBenchmark<MIT_Humanoid>(fd_file);
     runForwardDynamicsBenchmark<TelloWithArms>(fd_file);
-    runForwardDynamicsBenchmark<RevoluteChainWithRotor<N_CHAIN>>(fd_file);
-    runForwardDynamicsBenchmark<RevolutePairChainWithRotor<N_CHAIN>>(fd_file);
     fd_file.close();
 
     std::cout << "\n\n**Starting Inverse Dynamics Timing Benchmark for Robots**" << std::endl;
     path_to_data = "../Benchmarking/data/TimingID_";
     std::ofstream id_file;
     id_file.open(path_to_data + "Robots.csv");
+    runInverseDynamicsBenchmark<RevoluteChainWithRotor<N_CHAIN>>(id_file);
+    runInverseDynamicsBenchmark<RevolutePairChainWithRotor<N_CHAIN>>(id_file);
     runInverseDynamicsBenchmark<MiniCheetah>(id_file);
     runInverseDynamicsBenchmark<MIT_Humanoid>(id_file);
     runInverseDynamicsBenchmark<TelloWithArms>(id_file);
-    runInverseDynamicsBenchmark<RevoluteChainWithRotor<N_CHAIN>>(id_file);
-    runInverseDynamicsBenchmark<RevolutePairChainWithRotor<N_CHAIN>>(id_file);
     id_file.close();
 
     std::cout << "\n\n**Starting Inv OSIM Timing Benchmark for Robots**" << std::endl;
     path_to_data = "../Benchmarking/data/TimingIOSIM_";
     std::ofstream iosim_file;
     iosim_file.open(path_to_data + "Robots.csv");
+    runInverseOperationalSpaceInertiaBenchmark<RevoluteChainWithRotor<N_CHAIN>>(iosim_file);
+    runInverseOperationalSpaceInertiaBenchmark<RevolutePairChainWithRotor<N_CHAIN>>(iosim_file);
     runInverseOperationalSpaceInertiaBenchmark<MiniCheetah>(iosim_file);
     runInverseOperationalSpaceInertiaBenchmark<MIT_Humanoid>(iosim_file);
     runInverseOperationalSpaceInertiaBenchmark<TelloWithArms>(iosim_file);
-    runInverseOperationalSpaceInertiaBenchmark<RevoluteChainWithRotor<N_CHAIN>>(iosim_file);
-    runInverseOperationalSpaceInertiaBenchmark<RevolutePairChainWithRotor<N_CHAIN>>(iosim_file);
     iosim_file.close();
 
     std::cout << "\n\n**Starting Apply Test Force Timing Benchmark for Robots**" << std::endl;
     path_to_data = "../Benchmarking/data/TimingATF_";
     std::ofstream atf_file;
     atf_file.open(path_to_data + "Robots.csv");
+    std::string rev_chain_cp = "cp-" + std::to_string(N_CHAIN - 1);
+    runApplyTestForceBenchmark<RevoluteChainWithRotor<N_CHAIN>>(atf_file, rev_chain_cp);
+    std::string rev_pair_chain_cp = "cp-B-" + std::to_string(N_CHAIN / 2 - 1);
+    runApplyTestForceBenchmark<RevolutePairChainWithRotor<N_CHAIN>>(atf_file, rev_pair_chain_cp);
     runApplyTestForceBenchmark<MiniCheetah>(atf_file, "FL_foot_contact");
     runApplyTestForceBenchmark<MIT_Humanoid>(atf_file, "left_toe_contact");
     runApplyTestForceBenchmark<TelloWithArms>(atf_file, "left-toe_contact");
-    std::string rev_chain_cp = "cp-" + std::to_string(N_CHAIN - 1);
-    runApplyTestForceBenchmark<RevoluteChainWithRotor<N_CHAIN>>(atf_file, rev_chain_cp);
-    std::string rev_pair_chain_cp = "cp-" + std::to_string(N_CHAIN / 2 - 1);
-    runApplyTestForceBenchmark<RevolutePairChainWithRotor<N_CHAIN>>(atf_file, rev_pair_chain_cp);
     atf_file.close();
 }
