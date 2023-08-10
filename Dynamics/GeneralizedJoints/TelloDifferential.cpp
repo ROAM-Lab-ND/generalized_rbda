@@ -62,7 +62,8 @@ namespace grbda
 	TelloDifferential::TelloDifferential(
 	    Body &rotor_1, Body &rotor_2, Body &link_1, Body &link_2,
 	    CoordinateAxis rotor_axis_1, CoordinateAxis rotor_axis_2,
-	    CoordinateAxis joint_axis_1, CoordinateAxis joint_axis_2)
+	    CoordinateAxis joint_axis_1, CoordinateAxis joint_axis_2,
+        double gear_ratio)
 	    : Base(4, 4, 2, true, false), rotor_1_(rotor_1), rotor_2_(rotor_2),
 	    link_1_(link_1), link_2_(link_2)
 	{
@@ -71,8 +72,8 @@ namespace grbda
 	    link_1_joint_ = single_joints_.emplace_back(new Joints::Revolute(joint_axis_1));
 	    link_2_joint_ = single_joints_.emplace_back(new Joints::Revolute(joint_axis_2));
 
-        S_.block<6, 1>(0, 0) = rotor_1_joint_->S();
-        S_.block<6, 1>(6, 1) = rotor_2_joint_->S();
+        S_.block<6, 1>(0, 0) = gear_ratio * rotor_1_joint_->S();
+        S_.block<6, 1>(6, 1) = gear_ratio * rotor_2_joint_->S();
     }
 
 	void TelloDifferential::updateKinematics(const JointState &joint_state)
