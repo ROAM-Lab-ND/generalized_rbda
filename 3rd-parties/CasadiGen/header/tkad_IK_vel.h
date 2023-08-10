@@ -32,4 +32,4 @@ extern "C" int tkad_IK_vel_work(casadi_int *sz_arg, casadi_int* sz_res, casadi_i
 #define tkad_IK_vel_SZ_ARG 2
 #define tkad_IK_vel_SZ_RES 1
 #define tkad_IK_vel_SZ_IW 0
-#define tkad_IK_vel_SZ_W 21
+#define tkad_IK_vel_SZ_W 22

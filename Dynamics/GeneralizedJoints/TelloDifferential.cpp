@@ -133,15 +133,15 @@ namespace grbda
 
 	    // Position
 	    std::vector<DVec<double>> dependent_state = {DVec<double>::Random(2)};
-	    Vec2<double> y = Vec2<double>::Zero(2);
-	    casadi_interface(dependent_state, y, tello_constraint_->IK_pos_helpers_);
-	    joint_state.position << y, dependent_state[0];
+	    Vec2<double> independent_pos = Vec2<double>::Zero(2);
+	    casadi_interface(dependent_state, independent_pos, tello_constraint_->IK_pos_helpers_);
+	    joint_state.position << independent_pos, dependent_state[0];
 
 	    // Velocity
 	    dependent_state.push_back(DVec<double>::Random(2));
-	    Vec2<double> y_dot = Vec2<double>::Zero(2);
-	    casadi_interface(dependent_state, y_dot, tello_constraint_->IK_vel_helpers_);
-	    joint_state.velocity << y_dot;
+	    Vec2<double> independent_vel = Vec2<double>::Zero(2);
+	    casadi_interface(dependent_state, independent_vel, tello_constraint_->IK_vel_helpers_);
+	    joint_state.velocity << independent_vel;
 
 	    return joint_state;
 	}
