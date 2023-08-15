@@ -106,7 +106,7 @@ function lgd = compareInvDynAccuracy(data, robot_name, color, lgd)
     lw = 2.0;
     ms = 8.0;
 
-    semilogy(data(:, 1), data(:, 2), 'o-', 'Linewidth', lw, 'MarkerSize', ms, 'Color', color)
+    semilogy(100.*data(:, 1), data(:, 2), 'o-', 'Linewidth', lw, 'MarkerSize', ms, 'Color', color)
     hold on
 
     % add to the legend
@@ -117,10 +117,10 @@ function lgd = compareInvDynAccuracy(data, robot_name, color, lgd)
     if ~isApproxEqual(data(:, 2), data(:, 3), tol)
 
         if ~isApproxEqual(data(:, 3), data(:, 4), tol)
-            semilogy(data(:, 1), data(:, 4), '^--', 'Linewidth', lw, 'MarkerSize', ms, 'Color', color)
+            semilogy(100.*data(:, 1), data(:, 4), '^--', 'Linewidth', lw, 'MarkerSize', ms, 'Color', color)
 
         else
-            semilogy(data(:, 1), data(:, 3), '^--', 'Linewidth', lw, 'MarkerSize', ms, 'Color', color)
+            semilogy(100.*data(:, 1), data(:, 3), '^--', 'Linewidth', lw, 'MarkerSize', ms, 'Color', color)
 
         end
 
@@ -132,7 +132,7 @@ function lgd = compareInvDynAccuracy(data, robot_name, color, lgd)
     axis([-inf inf 1e-2 5e3])
     xlabel('Percent of Max Acceleration', 'Interpreter', 'latex')
     ylabel('$\tau$ Error ($Nm$)', 'Interpreter', 'latex')
-    legend(lgd, 'Location', 'Best', 'Interpreter', 'latex')
+    legend(lgd, 'Location', 'EastOutside', 'Interpreter', 'latex')
     set(gca, 'Fontsize', 20)
     set(gca, 'TickLabelInterpreter', 'latex')
 end
@@ -141,14 +141,14 @@ function lgd = compareFwdDynAccuracy(data, robot_name, color, lgd)
     lw = 2.0;
     ms = 8.0;
 
-    semilogy(data(:, 1), data(:, 2), 'o-', 'Linewidth', lw, 'MarkerSize', ms, 'Color', color)
+    semilogy(100.*data(:, 1), data(:, 2), 'o-', 'Linewidth', lw, 'MarkerSize', ms, 'Color', color)
     hold on
     lgd = [lgd, [robot_name, ' - Unconstrained']];
 
     tol = 5000;
 
     if ~isApproxEqual(data(:, 2), data(:, 3), tol)
-        semilogy(data(:, 1), data(:, 3), '^--', 'Linewidth', lw, 'MarkerSize', ms, 'Color', color)
+        semilogy(100.*data(:, 1), data(:, 3), '^--', 'Linewidth', lw, 'MarkerSize', ms, 'Color', color)
         lgd = [lgd, [robot_name, ' - Approximate']];
     end
 
@@ -156,7 +156,7 @@ function lgd = compareFwdDynAccuracy(data, robot_name, color, lgd)
     axis([-inf inf 1e0 3e5])
     xlabel('Percent of Max Torque', 'Interpreter', 'latex')
     ylabel('$\ddot{q}$ Errror (rad/$s^2$)', 'Interpreter', 'latex')
-    legend(lgd, 'Location', 'Best', 'Interpreter', 'latex')
+    legend(lgd, 'Location', 'EastOutside', 'Interpreter', 'latex')
     set(gca, 'Fontsize', 20)
     set(gca, 'TickLabelInterpreter', 'latex')
 end
@@ -165,14 +165,14 @@ function lgd = compareApplyTestForceAccuracy(data, robot_name, color, lgd)
     lw = 2.0;
     ms = 8.0;
 
-    semilogy(data(:, 1), data(:, 2), 'o-', 'Linewidth', lw, 'MarkerSize', ms, 'Color', color)
+    semilogy(100.*data(:, 1), data(:, 2), 'o-', 'Linewidth', lw, 'MarkerSize', ms, 'Color', color)
     hold on
     lgd = [lgd, [robot_name, ' - Unconstrained']];
 
     tol = 50;
 
     if ~isApproxEqual(data(:, 2), data(:, 3), tol)
-        semilogy(data(:, 1), data(:, 3), '^--', 'Linewidth', lw, 'MarkerSize', ms, 'Color', color)
+        semilogy(100.*data(:, 1), data(:, 3), '^--', 'Linewidth', lw, 'MarkerSize', ms, 'Color', color)
         lgd = [lgd, [robot_name, ' - Approximate']];
     end
 

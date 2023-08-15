@@ -40,15 +40,15 @@ function compareTimes(data)
     
     plot_both_lg = false;
 
-    plot(data(:, 1), data(:, 2), 'ro-', 'Linewidth', 2.0, 'MarkerSize', 10.)
+    plot(data(:, 1), data(:, 6), 'yo-', 'Linewidth', 2.0, 'MarkerSize', 10.,'MarkerFaceColor','y')
     hold on
-    plot(data(:, 1), data(:, 3), 'go-', 'Linewidth', 2.0, 'MarkerSize', 10.)
+    plot(data(:, 1), data(:, 2), 'ro-', 'Linewidth', 2.0, 'MarkerSize', 10.,'MarkerFaceColor','r')
+    plot(data(:, 1), data(:, 3), 'go-', 'Linewidth', 2.0, 'MarkerSize', 10.,'MarkerFaceColor','g')
     if plot_both_lg
         plot(data(:, 1), data(:, 4), 'go--', 'Linewidth', 2.0, 'MarkerSize', 10.)
     end
-    plot(data(:, 1), data(:, 5), 'bo-', 'Linewidth', 2.0, 'MarkerSize', 10.)
-    plot(data(:, 1), data(:, 6), 'ko-', 'Linewidth', 2.0, 'MarkerSize', 10.)
-
+    plot(data(:, 1), data(:, 5), 'bo-', 'Linewidth', 2.0, 'MarkerSize', 10.,'MarkerFaceColor','b')
+    
     grid on
 
     xlabel('Degrees of Freedom', 'Interpreter', 'latex')

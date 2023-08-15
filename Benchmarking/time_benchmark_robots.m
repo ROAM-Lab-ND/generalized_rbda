@@ -18,7 +18,7 @@ figure
 hold on
 
 % Define the width of each bar group
-groupWidth = 0.6;
+groupWidth = 1.0;
 barWidth = groupWidth / num_algos;
 offset = 0.5 * barWidth;
 
@@ -65,11 +65,11 @@ figure
 hold on
 
 % Define the width of each bar group
-groupWidth = 0.6;
+groupWidth = 0.75;
 barWidth = groupWidth / num_algos;
 offset = 0.5 * barWidth;
 
-bar(x - 2 * offset, data(:, 3), barWidth, 'y', 'DisplayName', 'Approximate RNEA');
+bar(x - 2 * offset, data(:, 3), barWidth, 'y', 'DisplayName', 'RNEA');
 bar(x, data(:, 1), barWidth, 'r', 'DisplayName', 'C-RNEA');
 bar(x + 2 * offset, data(:, 2), barWidth, 'b', 'DisplayName', 'Projected RNEA');
 
@@ -111,7 +111,7 @@ figure
 hold on
 
 % Define the width of each bar group
-groupWidth = 0.6;
+groupWidth = 0.75;
 barWidth = groupWidth / num_algos;
 offset = 0.5 * barWidth;
 
