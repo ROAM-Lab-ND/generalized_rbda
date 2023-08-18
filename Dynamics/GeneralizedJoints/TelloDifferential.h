@@ -66,6 +66,8 @@ namespace grbda
 			const Body rotor_2_;
 			const Body link_1_;
 			const Body link_2_;
+
+            const double gear_ratio_;
 		};
 
 	}

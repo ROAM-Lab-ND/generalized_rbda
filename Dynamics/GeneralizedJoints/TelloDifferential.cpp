@@ -65,7 +65,7 @@ namespace grbda
 	    CoordinateAxis joint_axis_1, CoordinateAxis joint_axis_2,
         double gear_ratio)
 	    : Base(4, 4, 2, true, false), rotor_1_(rotor_1), rotor_2_(rotor_2),
-	    link_1_(link_1), link_2_(link_2)
+	    link_1_(link_1), link_2_(link_2), gear_ratio_(gear_ratio)
 	{
 	    rotor_1_joint_ = single_joints_.emplace_back(new Joints::Revolute(rotor_axis_1));
 	    rotor_2_joint_ = single_joints_.emplace_back(new Joints::Revolute(rotor_axis_2));
@@ -134,15 +134,16 @@ namespace grbda
 
 	    // Position
 	    std::vector<DVec<double>> dependent_state = {DVec<double>::Random(2)};
-	    Vec2<double> independent_pos = Vec2<double>::Zero(2);
-	    casadi_interface(dependent_state, independent_pos, tello_constraint_->IK_pos_helpers_);
+	    Vec2<double> minimal_pos = Vec2<double>::Zero(2);
+	    casadi_interface(dependent_state, minimal_pos, tello_constraint_->IK_pos_helpers_);
+        Vec2<double> independent_pos = gear_ratio_ * minimal_pos;
 	    joint_state.position << independent_pos, dependent_state[0];
 
 	    // Velocity
 	    dependent_state.push_back(DVec<double>::Random(2));
-	    Vec2<double> independent_vel = Vec2<double>::Zero(2);
-	    casadi_interface(dependent_state, independent_vel, tello_constraint_->IK_vel_helpers_);
-	    joint_state.velocity << independent_vel;
+	    Vec2<double> minimal_vel = Vec2<double>::Zero(2);
+	    casadi_interface(dependent_state, minimal_vel, tello_constraint_->IK_vel_helpers_);
+	    joint_state.velocity << minimal_vel;
 
 	    return joint_state;
 	}

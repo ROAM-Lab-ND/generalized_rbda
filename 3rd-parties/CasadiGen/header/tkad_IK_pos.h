@@ -32,4 +32,4 @@ extern "C" int tkad_IK_pos_work(casadi_int *sz_arg, casadi_int* sz_res, casadi_i
 #define tkad_IK_pos_SZ_ARG 1
 #define tkad_IK_pos_SZ_RES 1
 #define tkad_IK_pos_SZ_IW 0
-#define tkad_IK_pos_SZ_W 9
+#define tkad_IK_pos_SZ_W 8
