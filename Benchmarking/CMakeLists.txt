@@ -10,6 +10,9 @@ target_link_libraries(accuracy_benchmark_fd dyna-utils robots)
 add_executable(accuracy_benchmark_id accuracyBenchmarkInverseDynamics.cpp)
 target_link_libraries(accuracy_benchmark_id dyna-utils robots)
 
+add_executable(accuracy_benchmark_atf accuracyBenchmarkApplyTestForce.cpp)
+target_link_libraries(accuracy_benchmark_atf dyna-utils robots)
+
 if(TIMING_STATS)
     add_executable(lg_mult_timing_analysis lagrangeMultiplierMethodTimingAnalysis.cpp)
     target_link_libraries(lg_mult_timing_analysis dyna-utils robots)

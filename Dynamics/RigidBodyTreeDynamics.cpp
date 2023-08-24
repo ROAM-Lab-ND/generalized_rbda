@@ -3,6 +3,40 @@
 namespace grbda
 {
 
+    void RigidBodyTreeModel::contactJacobians()
+    {
+        forwardKinematics();
+
+        for (ContactPoint &cp : contact_points_)
+        {
+            D6Mat<double> J_spanning = D6Mat<double>::Zero(6, getNumDegreesOfFreedom());
+
+            const size_t &i = cp.body_index_;
+            const auto node_i = getNodeContainingBody(i);
+            const SpatialTransform Xa = node_i->Xa_[0];
+            const Mat3<double> R_link_to_world = Xa.getRotation().transpose();
+            Mat6<double> Xout = createSXform(R_link_to_world, cp.local_offset_);
+
+            int j = (int)i;
+            while (j > -1)
+            {
+                const auto node_j = getNodeContainingBody(j);
+                const int &vel_idx = node_j->velocity_index_;
+                const int &num_vel = node_j->num_velocities_;
+
+                const D6Mat<double> &S = node_j->S();
+                J_spanning.middleCols(vel_idx, num_vel) = Xout * S;
+
+                const Mat6<double> Xup = node_j->Xup_[0].toMatrix();
+                Xout = Xout * Xup;
+
+                j = node_j->parent_index_;
+            }
+
+            cp.jacobian_ = J_spanning * G_;
+        }
+    }
+
     DVec<double> RigidBodyTreeModel::forwardDynamics(const DVec<double> &tau)
     {
         forwardKinematics();

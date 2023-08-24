@@ -72,7 +72,9 @@ namespace grbda
     {
         contact_name_to_contact_index_ = cluster_tree_model.contact_name_to_contact_index_;
         for (const auto &contact_point : cluster_tree_model.contactPoints())
+        {
             contact_points_.push_back(contact_point);
+        }    
     }
 
     void ReflectedInertiaTreeModel::initializeIndependentStates(const DVec<double> &y,
@@ -96,7 +98,18 @@ namespace grbda
     DMat<double> ReflectedInertiaTreeModel::getMassMatrix()
     {
         compositeRigidBodyAlgorithm();
-        return H_ + reflected_inertia_;
+
+        if (use_off_diagonal_terms_)
+        {
+            H_ += reflected_inertia_;
+        }
+        else
+        {
+            const DMat<double> reflected_inertia_diag = reflected_inertia_.diagonal().asDiagonal();
+            H_ += reflected_inertia_diag;
+        }
+
+        return H_;
     }
 
     DVec<double> ReflectedInertiaTreeModel::getBiasForceVector()
@@ -131,6 +144,36 @@ namespace grbda
             return getNodeContainingBody(spanning_tree_index)->index_;
     }
 
+    void ReflectedInertiaTreeModel::contactJacobians()
+    {
+        forwardKinematics();
+
+        for (ContactPoint &cp : contact_points_)
+        {
+            const size_t &i = cp.body_index_;
+            const auto node_i = getNodeContainingBody(i);
+            const SpatialTransform Xa = node_i->Xa_[0];
+            const Mat3<double> R_link_to_world = Xa.getRotation().transpose();
+            Mat6<double> Xout = createSXform(R_link_to_world, cp.local_offset_);
+
+            int j = node_i->index_;
+            while (j > -1)
+            {
+                const auto node_j = reflected_inertia_nodes_[j];
+                const int &vel_idx = node_j->velocity_index_;
+                const int &num_vel = node_j->num_velocities_;
+
+                const D6Mat<double> &S = node_j->S();
+                cp.jacobian_.middleCols(vel_idx, num_vel) = Xout * S;
+
+                const Mat6<double> Xup = node_j->Xup_[0].toMatrix();
+                Xout = Xout * Xup;
+
+                j = node_j->parent_index_;
+            }
+        }
+    }
+
     DVec<double> ReflectedInertiaTreeModel::forwardDynamics(const DVec<double> &tau)
     {
         if (use_off_diagonal_terms_)
@@ -141,10 +184,7 @@ namespace grbda
 
     DVec<double> ReflectedInertiaTreeModel::inverseDynamics(const DVec<double> &ydd)
     {
-        if (use_off_diagonal_terms_)
-            return inverseDynamicsWithOffDiag(ydd);
-        else
-            return inverseDynamicsWithoutOffDiag(ydd);
+        return getMassMatrix() * ydd + getBiasForceVector();
     }
 
     DVec<double> ReflectedInertiaTreeModel::forwardDynamicsWithOffDiag(const DVec<double> &tau)
@@ -266,23 +306,22 @@ namespace grbda
         articulated_bodies_updated_ = true;
     }
 
-    DVec<double> ReflectedInertiaTreeModel::inverseDynamicsWithOffDiag(const DVec<double> &ydd)
+    double ReflectedInertiaTreeModel::applyLocalFrameTestForceAtContactPoint(
+        const Vec3<double> &force, const std::string &contact_point_name, DVec<double> &dstate_out)
     {
-        compositeRigidBodyAlgorithm();
-        updateBiasForceVector();
+        forwardKinematics();
+        contactJacobians();
 
-        DVec<double> tau_ref_inertia = (H_ + reflected_inertia_) * ydd + C_;
-        return tau_ref_inertia;
-    }
+        const int contact_point_index = contact_name_to_contact_index_.at(contact_point_name);
+        const ContactPoint &contact_point = contact_points_[contact_point_index];
 
-    DVec<double> ReflectedInertiaTreeModel::inverseDynamicsWithoutOffDiag(const DVec<double> &ydd)
-    {
-        compositeRigidBodyAlgorithm();
-        updateBiasForceVector();
-
-        const DMat<double> reflected_inertia_diag = reflected_inertia_.diagonal().asDiagonal();
-        DVec<double> tau_ref_inertia = (H_ + reflected_inertia_diag) * ydd + C_;
-        return tau_ref_inertia;
+        // ISSUE #23
+        const D3Mat<double> J = contact_point.jacobian_.bottomRows<3>();
+        const DMat<double> H = getMassMatrix();
+        const DMat<double> H_inv = H.inverse();
+        const DMat<double> inv_ops_inertia = J * H_inv * J.transpose();
+        dstate_out = H_inv * (J.transpose() * force);
+        return force.dot(inv_ops_inertia * force);
     }
 
 } // namespace grbda

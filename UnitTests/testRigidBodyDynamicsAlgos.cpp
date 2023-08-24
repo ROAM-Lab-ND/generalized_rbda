@@ -6,7 +6,7 @@
 
 using namespace grbda;
 
-static const double tol = 1e-5;
+static const double tol = 1e-8;
 
 // The purpose of these tests is to ensure consistency between the outputs of the Rigid Body
 // Dynamics Algorithms for our cluster tree model and the constrained rigid body tree
@@ -130,12 +130,12 @@ TYPED_TEST(RigidBodyDynamicsAlgosTest, MassMatrix)
 {
     // This test compares mass matrices as computed by the cluster based model versus the rigid body
     // tree model, specifically via the projection method
-    
+
     const int num_tests_per_robot = 20;
     for (int i = 0; i < (int)this->cluster_models.size(); i++)
     {
-        ClusterTreeModel& cluster_model = this->cluster_models.at(i);
-        RigidBodyTreeModel& projection_model = this->projection_models.at(i);
+        ClusterTreeModel &cluster_model = this->cluster_models.at(i);
+        RigidBodyTreeModel &projection_model = this->projection_models.at(i);
 
         const int nq = cluster_model.getNumPositions();
         const int nv = cluster_model.getNumDegreesOfFreedom();
@@ -290,37 +290,58 @@ TYPED_TEST(RigidBodyDynamicsAlgosTest, ForwardAndInverseDyanmics)
     this->printAverageComputationTimes(num_tests);
 }
 
-// GTEST_TEST(OpenChain2DoF, ApplyTestForceTest)
-// {
-//     Openchain2DoF model_lagrange{};
-//     ClusterTreeModel model_featherstone = model_lagrange.buildClusterTreeModel();
+TYPED_TEST(RigidBodyDynamicsAlgosTest, ApplyTestForceTest)
+{
+    // This test validates that the Extended Force Propagator Algorithm works as expected.
+    // We compare the elements of the inverse operational space inertia matrix (lambda_inv) and the
+    // resulting change in joint state (dstate) as computed by the Extended Force Propagator
+    // Algorithm to the same quantities computed by the classic J H^-1 J^T method.
 
-//     // Set random state
-//     DVec<double> state = Vec4<double>::Random();
-//     model_lagrange.setState(state);
-//     model_featherstone.initializeIndependentStates(state.head<2>(), state.tail<2>());
+    const int num_tests_per_robot = 20;
+    for (int i = 0; i < (int)this->cluster_models.size(); i++)
+    {
+        ClusterTreeModel &cluster_model = this->cluster_models[i];
 
-//     model_lagrange._UpdateDynamics_ABA(Vec2<double>::Zero());
-//     Mat3<double> inv_ops_inertia = model_lagrange.inverse_operational_space_inertia_matrix();
+        const int nq = cluster_model.getNumPositions();
+        const int nv = cluster_model.getNumDegreesOfFreedom();
 
-//     Vec3<double> test_force = Vec3<double>{1., 0., 0.};
-//     DVec<double> dstate_out;
+        std::vector<Vec3<double>> test_forces;
+        test_forces.push_back(Vec3<double>{1., 0., 0.});
+        test_forces.push_back(Vec3<double>{0., 1., 0.});
+        test_forces.push_back(Vec3<double>{0., 0., 1.});
 
-//     double lambda_inv_x =
-//         model_featherstone.applyLocalFrameTestForceAtConactPoint(Vec3<double>{1., 0., 0.},
-//                                                                  "tip-of-link-2",
-//                                                                  dstate_out);
-//     GTEST_ASSERT_LT(fabs(inv_ops_inertia(0, 0) - lambda_inv_x), tol);
+        for (int j = 0; j < num_tests_per_robot; j++)
+        {
+            // Set random state
+            bool nan_detected_in_state = this->initializeRandomStates(i);
+            if (nan_detected_in_state)
+            {
+                continue;
+            }
 
-//     double lambda_inv_y =
-//         model_featherstone.applyLocalFrameTestForceAtConactPoint(Vec3<double>{0., 1., 0.},
-//                                                                  "tip-of-link-2",
-//                                                                  dstate_out);
-//     GTEST_ASSERT_LT(fabs(inv_ops_inertia(1, 1) - lambda_inv_y), tol);
+            cluster_model.contactJacobians();
+            for (const auto cp : cluster_model.contactPoints())
+            {
+                const D3Mat<double> J = cluster_model.Jc(cp.name_);
+                const DMat<double> H = cluster_model.massMatrix();
+                const DMat<double> H_inv = H.inverse();
+                const DMat<double> inv_ops_inertia = J * H_inv * J.transpose();
 
-//     double lambda_inv_z =
-//         model_featherstone.applyLocalFrameTestForceAtConactPoint(Vec3<double>{0., 0., 1.},
-//                                                                  "tip-of-link-2",
-//                                                                  dstate_out);
-//     GTEST_ASSERT_LT(fabs(inv_ops_inertia(2, 2) - lambda_inv_z), tol);
-// }
+                for (const Vec3<double> &test_force : test_forces)
+                {
+                    const DVec<double> dstate_iosi = H_inv * (J.transpose() * test_force);
+                    const double lambda_inv_iosi = test_force.dot(inv_ops_inertia * test_force);
+
+                    DVec<double> dstate_efpa = DVec<double>::Zero(nv);
+                    const double lambda_inv_efpa =
+                        cluster_model.applyLocalFrameTestForceAtContactPoint(test_force,
+                                                                             cp.name_,
+                                                                             dstate_efpa);
+
+                    GTEST_ASSERT_LT(std::fabs(lambda_inv_efpa - lambda_inv_iosi), tol);
+                    GTEST_ASSERT_LT((dstate_efpa - dstate_iosi).norm(), tol);
+                }
+            }
+        }
+    }
+}

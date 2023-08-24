@@ -17,7 +17,7 @@ protected:
 
     bool initializeRandomStates()
     {
-        ModelState model_state;
+        model_state.clear();
         DVec<double> spanning_joint_pos = DVec<double>::Zero(0);
         DVec<double> spanning_joint_vel = DVec<double>::Zero(0);
         for (const auto &cluster : cluster_model.clusters())
@@ -51,6 +51,8 @@ protected:
     T robot;
     ClusterTreeModel cluster_model;
     RigidBodyTreeModel rigid_body_model;
+
+    ModelState model_state;
 };
 
 using testing::Types;
@@ -58,6 +60,8 @@ using testing::Types;
 typedef Types<
     RevoluteChainWithRotor<2>,
     RevoluteChainWithRotor<4>,
+    RevolutePairChain<2>,
+    RevolutePairChain<4>,
     RevolutePairChainWithRotor<2>,
     RevolutePairChainWithRotor<4>,
     RevoluteChainMultipleRotorsPerLink<2, 2>,
@@ -114,17 +118,38 @@ TYPED_TEST(RigidBodyKinemaitcsTest, ForwardKinematics)
         GTEST_ASSERT_EQ(this->cluster_model.contactPoints().size(),
                         this->rigid_body_model.contactPoints().size());
 
+        this->cluster_model.contactJacobians();
+        this->rigid_body_model.contactJacobians();
         for (int j = 0; j < (int)this->cluster_model.contactPoints().size(); j++)
         {
+            const ContactPoint &cluster_cp = this->cluster_model.contactPoint(j);
+            const ContactPoint &rigid_body_cp = this->rigid_body_model.contactPoint(j);
+
             // Verify positions
-            Vec3<double> p_cp_cluster = this->cluster_model.contactPoint(j).position_;
-            Vec3<double> p_cp_rigid_body = this->rigid_body_model.contactPoint(j).position_;
+            const Vec3<double> p_cp_cluster = cluster_cp.position_;
+            const Vec3<double> p_cp_rigid_body = rigid_body_cp.position_;
             GTEST_ASSERT_LT((p_cp_cluster - p_cp_rigid_body).norm(), tol);
 
             // Verify velocities
-            Vec3<double> v_cp_cluster = this->cluster_model.contactPoint(j).velocity_;
-            Vec3<double> v_cp_rigid_body = this->rigid_body_model.contactPoint(j).velocity_;
+            const Vec3<double> v_cp_cluster = cluster_cp.velocity_;
+            const Vec3<double> v_cp_rigid_body = rigid_body_cp.velocity_;
             GTEST_ASSERT_LT((v_cp_cluster - v_cp_rigid_body).norm(), tol);
+
+            // Verify jacobians
+            const D6Mat<double> J_cp_cluster = cluster_cp.jacobian_;
+            const D6Mat<double> J_cp_rigid_body = rigid_body_cp.jacobian_;
+            GTEST_ASSERT_LT((J_cp_cluster - J_cp_rigid_body).norm(), tol);
+
+            // Verify that jacobians produce the same cartesian velocity
+            Vec6<double> J_qdot = Vec6<double>::Zero();
+            for (size_t i = 0; i < this->cluster_model.clusters().size(); i++)
+            {
+                const auto cluster = this->cluster_model.cluster(i);
+                const int &vel_idx = cluster->velocity_index_;
+                const int &num_vel = cluster->num_velocities_;
+                J_qdot += J_cp_cluster.middleCols(vel_idx, num_vel) * this->model_state[i].velocity;
+            }
+            GTEST_ASSERT_LT((J_qdot.tail<3>() - v_cp_cluster).norm(), tol);
         }
     }
 }

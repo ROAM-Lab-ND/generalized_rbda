@@ -171,23 +171,6 @@ namespace grbda
   }
 
   /*!
-   * Custom version of the std::unordered_map class
-   */
-  template <typename T1, typename T2>
-  class UnorderedMap : public std::unordered_map<T1, T2>
-  {
-  public:
-    UnorderedMap() {}
-    ~UnorderedMap() {}
-
-    void checkForKey(const T1 key) const
-    {
-      if (this->count(key) <= 0)
-        throw std::runtime_error("Key not found in map");
-    }
-  };
-
-  /*!
    * Convert a floating point number to a string.  Is preferable over
    * std::to_string because this uses scientific notation and won't truncate
    * small/large numbers.

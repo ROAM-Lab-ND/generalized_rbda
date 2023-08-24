@@ -17,13 +17,13 @@ namespace grbda
             {
                 Vec2<double> q;
                 q[0] = y[0];
-                q[1] = y[1] - y[0];
+                q[1] = y[1];
                 return q;
             };
 
             G_ = DMat<double>::Zero(2, 2);
             G_ << 1., 0.,
-                -1., 1.;
+                0., 1.;
 
             g_ = DVec<double>::Zero(2);
 
@@ -59,8 +59,7 @@ namespace grbda
 
             X21_ = link_2_joint_->XJ() * link_2_.Xtree_;
 
-            S_.block<6, 1>(6, 0) = X21_.transformMotionSubspace(link_1_joint_->S()) -
-                                   link_2_joint_->S();
+            S_.block<6, 1>(6, 0) = X21_.transformMotionSubspace(link_1_joint_->S());
 
             const DVec<double> v2_relative = link_2_joint_->S() * qd[1];
             S_ring_.block<6, 1>(6, 0) = -generalMotionCrossMatrix(v2_relative) *

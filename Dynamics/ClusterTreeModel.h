@@ -82,7 +82,7 @@ namespace grbda
         void resetExternalForces();
         void resetCalculationFlags() { resetCache(); }
 
-        void contactJacobians();
+        void contactJacobians() override;
         const std::unordered_map<std::string, int> &contacts() const;
         const Vec3<double> &pGC(const string &cp_name) const;
         const Vec3<double> &vGC(const string &cp_name) const;
@@ -169,9 +169,9 @@ namespace grbda
 
         DVec<double> inverseDynamics(const DVec<double> &qdd) override;
         DVec<double> forwardDynamics(const DVec<double> &tau) override;
-        double applyLocalFrameTestForceAtConactPoint(const Vec3<double> &force,
-                                                     const string &contact_point_name,
-                                                     DVec<double> &dstate_out);
+        double applyLocalFrameTestForceAtContactPoint(const Vec3<double> &force,
+                                                      const string &contact_point_name,
+                                                      DVec<double> &dstate_out) override;
 
         DMat<double> getMassMatrix() override;
         DVec<double> getBiasForceVector() override;
@@ -204,9 +204,9 @@ namespace grbda
 
         vector<Body> bodies_in_current_cluster_;
 
-        UnorderedMap<string, int> body_name_to_body_index_;
-        UnorderedMap<string, int> cluster_name_to_cluster_index_;
-        UnorderedMap<int, int> body_index_to_cluster_index_;
+        std::unordered_map<string, int> body_name_to_body_index_;
+        std::unordered_map<string, int> cluster_name_to_cluster_index_;
+        std::unordered_map<int, int> body_index_to_cluster_index_;
 
         bool articulated_bodies_updated_ = false;
         bool force_propagators_updated_ = false;

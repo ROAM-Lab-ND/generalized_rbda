@@ -93,8 +93,6 @@ namespace grbda
 
         /////////////////////////////////////
 
-
-
         int getNumBodies() const override { return (int)rigid_body_nodes_.size(); }
 
         // TOOD(@MatthewChignoli): I don't really like these functions...
@@ -102,6 +100,8 @@ namespace grbda
         const TreeNodePtr getNodeContainingBody(int index) override { return rigid_body_nodes_[index]; }
 
         void initializeState(const DVec<double> &q, const DVec<double> &qd);
+
+        void contactJacobians() override;
 
         DVec<double> forwardDynamics(const DVec<double> &tau) override;
 
@@ -138,7 +138,7 @@ namespace grbda
 
         std::vector<RigidBodyTreeNodePtr> rigid_body_nodes_;
 
-        UnorderedMap<string, int> body_name_to_body_index_;
+        std::unordered_map<string, int> body_name_to_body_index_;
 
 #ifdef TIMING_STATS
         Timer timer_;

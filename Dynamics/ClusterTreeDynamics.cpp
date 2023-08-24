@@ -184,74 +184,48 @@ namespace grbda
                                             const Vec3<double> &force_ics_at_contact,
                                             DVec<double> &dstate_out)
     {
-        return applyLocalFrameTestForceAtConactPoint(force_ics_at_contact, cp_name, dstate_out);
+        return applyLocalFrameTestForceAtContactPoint(force_ics_at_contact, cp_name, dstate_out);
     }
 
     double
-    ClusterTreeModel::applyLocalFrameTestForceAtConactPoint(const Vec3<double> &force,
-                                                            const std::string &contact_point_name,
-                                                            DVec<double> &dstate_out)
+    ClusterTreeModel::applyLocalFrameTestForceAtContactPoint(const Vec3<double> &force,
+                                                             const std::string &contact_point_name,
+                                                             DVec<double> &dstate_out)
     {
-        // ISSUE #185 (old repo): Find bug in reduced order algo for inverse op space inertia
-
-        // contact_name_to_contact_index_.checkForKey(contact_point_name);
-        // const int contact_point_index = contact_name_to_contact_index_[contact_point_name];
-        // const ContactPoint &contact_point = contact_points_[contact_point_index];
-
-        // std::cout << "Entered applyLocalFrameTestForceAtConactPoint" << std::endl;
-
-        // forwardKinematics();
-        // updateArticulatedBodies();
-        // std::cout << "Updated articulated bodies" << std::endl;
-        // updateForcePropagators();
-        // std::cout << "Updated force propagators" << std::endl;
-        // updateQddEffects();
-        // std::cout << "Updated qdd effects" << std::endl;
-
-        // std::cout << "Did all of the updates" << std::endl;
-
-        // dstate_out = DVec<double>::Zero(getNumDegreesOfFreedom());
-
-        // DVec<double> f = localCartesianForceAtPointToWorldPluckerForceOnCluster(force, contact_point);
-        // Vec1<double> lambda_inv = Vec1<double>::Zero();
-
-        // // from tips to base
-        // int j = getIndexOfClusterContainingBody(contact_point.body_index_);
-        // while (j > -1)
-        // {
-        //     const auto &cluster = cluster_nodes_[j];
-        //     const int vel_idx = cluster->velocity_index_;
-        //     const int num_vel = cluster->num_velocities_;
-        //     const auto joint = cluster->joint_;
-
-        //     D1Mat<double> tmp = D1Mat<double>::Zero(1, num_vel);
-        //     tmp = f.transpose() * joint->S();
-        //     lambda_inv += tmp * cluster->D_inv_ * tmp;
-
-        //     dstate_out +=
-        //         cluster->qdd_for_subtree_due_to_subtree_root_joint_qdd *
-        //         cluster->D_inv_ * tmp.transpose();
-
-        //     f = cluster->ChiUp_.transpose() * f;
-
-        //     j = cluster->parent_index_;
-        // }
-
-        // std::cout << "finsihed applyLocalFrameTestForceAtConactPoint" << std::endl;
-
-        // return lambda_inv[0];
+        const int contact_point_index = contact_name_to_contact_index_.at(contact_point_name);
+        const ContactPoint &contact_point = contact_points_[contact_point_index];
 
         forwardKinematics();
-        massMatrix();
-        contactJacobians();
+        updateArticulatedBodies();
+        updateForcePropagators();
+        updateQddEffects();
 
-        D3Mat<double> J = Jc(contact_point_name);
-        DMat<double> H_inv = H_.inverse();
+        dstate_out = DVec<double>::Zero(getNumDegreesOfFreedom());
 
-        DMat<double> op_space_inertia = J * H_inv * J.transpose();
-        double lambda_inv = force.transpose() * op_space_inertia * force;
+        DVec<double> f = localCartesianForceAtPointToWorldPluckerForceOnCluster(force,
+                                                                                contact_point);
+        double lambda_inv = 0.;
 
-        dstate_out = H_inv * (J.transpose() * force);
+        // from tips to base
+        int j = getIndexOfClusterContainingBody(contact_point.body_index_);
+        while (j > -1)
+        {
+            const auto &cluster = cluster_nodes_[j];
+            const int vel_idx = cluster->velocity_index_;
+            const int num_vel = cluster->num_velocities_;
+            const auto joint = cluster->joint_;
+
+            DVec<double> tmp = joint->S().transpose() * f;
+            lambda_inv += tmp.dot(cluster->D_inv_.solve(tmp));
+
+            dstate_out +=
+                cluster->qdd_for_subtree_due_to_subtree_root_joint_qdd * cluster->D_inv_.solve(tmp);
+
+            f = cluster->ChiUp_.transpose() * f;
+
+            j = cluster->parent_index_;
+        }
+
         return lambda_inv;
     }
 
@@ -265,9 +239,8 @@ namespace grbda
         for (auto &cluster : cluster_nodes_)
         {
             const auto joint = cluster->joint_;
-            cluster->ChiUp_ =
-                cluster->Xup_.toMatrix() -
-                joint->S() * (cluster->D_inv_.solve(cluster->U_.transpose())) * cluster->Xup_.toMatrix();
+            const DMat<double> Xup = cluster->Xup_.toMatrix();
+            cluster->ChiUp_ = Xup - joint->S() * cluster->D_inv_UT_ * Xup;
         }
 
         force_propagators_updated_ = true;
@@ -282,24 +255,29 @@ namespace grbda
 
         for (auto &cluster : cluster_nodes_)
         {
-            const int vel_idx = cluster->velocity_index_;
-            const int num_vel = cluster->num_velocities_;
+            const int &vel_idx = cluster->velocity_index_;
+            const int &num_vel = cluster->num_velocities_;
             const auto joint = cluster->joint_;
 
             cluster->qdd_for_subtree_due_to_subtree_root_joint_qdd
                 .middleRows(vel_idx, num_vel)
                 .setIdentity();
+
+            // Compute Psi
+            const DMat<double> S = joint->S();
+            DMat<double> Psi = S.transpose().completeOrthogonalDecomposition().pseudoInverse();
+
             DMat<double> F =
-                (cluster->ChiUp_.transpose() - cluster->Xup_.toMatrix().transpose()) * joint->Psi();
+                (cluster->ChiUp_.transpose() - cluster->Xup_.toMatrix().transpose()) * Psi;
 
             int j = cluster->parent_index_;
             while (j > -1)
             {
                 auto parent_cluster = cluster_nodes_[j];
-                const auto parent_joint = cluster->joint_;
+                const auto parent_joint = parent_cluster->joint_;
 
                 parent_cluster->qdd_for_subtree_due_to_subtree_root_joint_qdd
-                    .middleRows(vel_idx, num_vel) = parent_joint->S().transpose() * F;
+                    .middleRows(vel_idx, num_vel) = F.transpose() * parent_joint->S();
 
                 F = parent_cluster->ChiUp_.transpose() * F;
                 j = parent_cluster->parent_index_;
