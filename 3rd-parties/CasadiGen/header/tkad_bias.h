@@ -32,4 +32,4 @@ extern "C" int tkad_bias_work(casadi_int *sz_arg, casadi_int* sz_res, casadi_int
 #define tkad_bias_SZ_ARG 4
 #define tkad_bias_SZ_RES 2
 #define tkad_bias_SZ_IW 0
-#define tkad_bias_SZ_W 35
+#define tkad_bias_SZ_W 38

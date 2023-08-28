@@ -1,3 +1,18 @@
+/**
+ * @file TelloDifferential.h
+ *
+ * @brief Implementation of generalized joint for differential
+ * mechanism (hip differential and knee-ankle differential)
+ * found in Tello.
+ *
+ * Maximal coordinate consists of the spanning tree coordinates:
+ * - 2x pre-gearbox rotor coordinates (independent coordinates)
+ * - 2x joint link coordinate (dependent coordinates)
+ *
+ * Minimal coordinate consists of:
+ * - 2x post-gearbox rotor coordinates
+ */
+
 #pragma once
 
 #include "GeneralizedJoint.h"
@@ -37,7 +52,8 @@ namespace grbda
 		public:
 			TelloDifferential(Body &rotor_1, Body &rotor_2, Body &link_1, Body &link_2,
 							  CoordinateAxis rotor_axis_1, CoordinateAxis rotor_axis_2,
-							  CoordinateAxis joint_axis_1, CoordinateAxis joint_axis_2);
+							  CoordinateAxis joint_axis_1, CoordinateAxis joint_axis_2,
+                              double gear_ratio);
 			virtual ~TelloDifferential() {}
 
 			void updateKinematics(const JointState &joint_state) override;
@@ -65,6 +81,8 @@ namespace grbda
 			const Body rotor_2_;
 			const Body link_1_;
 			const Body link_2_;
+
+            const double gear_ratio_;
 		};
 
 	}

@@ -32,4 +32,4 @@ extern "C" int thd_bias_work(casadi_int *sz_arg, casadi_int* sz_res, casadi_int 
 #define thd_bias_SZ_ARG 4
 #define thd_bias_SZ_RES 2
 #define thd_bias_SZ_IW 0
-#define thd_bias_SZ_W 91
+#define thd_bias_SZ_W 95

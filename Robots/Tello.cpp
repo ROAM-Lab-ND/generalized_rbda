@@ -57,7 +57,6 @@ namespace grbda
 
             // Hip clamp cluster
             const std::string hip_clamp_cluster_name = side + "-hip-clamp";
-            const int gear_ratio = 1;
             auto hip_clamp_generalized_joint = std::make_shared<GeneralizedJoints::RevoluteWithRotor>(
                 hip_clamp, hip_clamp_rotor, CoordinateAxis::Z, CoordinateAxis::Z, gear_ratio);
             model.appendRegisteredBodiesAsCluster(hip_clamp_cluster_name, hip_clamp_generalized_joint);
@@ -114,7 +113,7 @@ namespace grbda
             const std::string hip_differential_cluster_name = side + "-hip-differential";
             auto hip_differential_generalized_joint = std::make_shared<GeneralizedJoints::TelloHipDifferential>(
                 hip_rotor_1, hip_rotor_2, gimbal, thigh, CoordinateAxis::Z, CoordinateAxis::Z,
-                CoordinateAxis::X, CoordinateAxis::Y);
+                CoordinateAxis::X, CoordinateAxis::Y, gear_ratio);
             model.appendRegisteredBodiesAsCluster(hip_differential_cluster_name,
                                                   hip_differential_generalized_joint);
 
@@ -174,7 +173,8 @@ namespace grbda
             const std::string knee_ankle_differential_cluster_name = side + "-knee-ankle-differential";
             auto knee_ankle_differential_generalized_joint = std::make_shared<GeneralizedJoints::TelloKneeAnkleDifferential>(
                 knee_ankle_rotor_1, knee_ankle_rotor_2, shin, foot,
-                CoordinateAxis::Z, CoordinateAxis::Z, CoordinateAxis::Y, CoordinateAxis::Y);
+                CoordinateAxis::Z, CoordinateAxis::Z, CoordinateAxis::Y, CoordinateAxis::Y,
+                gear_ratio);
             model.appendRegisteredBodiesAsCluster(knee_ankle_differential_cluster_name,
                                                   knee_ankle_differential_generalized_joint);
 
