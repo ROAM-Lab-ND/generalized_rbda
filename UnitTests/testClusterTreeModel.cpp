@@ -77,7 +77,7 @@ TYPED_TEST(ClusterTreeModelTest, SetState)
             }
         }
 
-        model_state.push_back(cluster->joint_->randomJointState());
+        model_state.push_back(joint_state);
         q = appendEigenVector(q, model_state.back().position);
         qd = appendEigenVector(qd, model_state.back().velocity);
     }
