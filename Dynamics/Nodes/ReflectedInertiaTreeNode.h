@@ -14,7 +14,8 @@ namespace grbda
     {
         ReflectedInertiaTreeNode(const int index, const Body &link,
                                  const std::shared_ptr<Joints::Base> &joint, const int parent_index,
-                                 const int position_index, const int velocity_index);
+                                 const int position_index, const int velocity_index, 
+                                 const int motion_subspace_index);
 
         void updateKinematics() override;
         const DVec<double> &vJ() const override { return vJ_; }
@@ -37,9 +38,10 @@ namespace grbda
         D6Mat<double> U_;    // helper variable for ABA
         DMat<double> D_inv_; // helper variable for ABA
         DVec<double> u_;     // helper variable for ABA
+
         Mat6<double> ChiUp_; // Articulated transform
         DMat<double> qdd_for_subtree_due_to_subtree_root_joint_qdd;
-
+        DMat<double> K_;
     };
 
 } // namespace grbda

@@ -1,6 +1,9 @@
 add_executable(time_benchmark timeBenchmarkForwardDynamics.cpp)
 target_link_libraries(time_benchmark dyna-utils robots)
 
+add_executable(time_benchmark_iosim timeBenchmarkInverseOSIM.cpp)
+target_link_libraries(time_benchmark_iosim dyna-utils robots)
+
 add_executable(time_benchmark_robots timeBenchmarkRobots.cpp)
 target_link_libraries(time_benchmark_robots dyna-utils robots)
 

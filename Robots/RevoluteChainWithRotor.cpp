@@ -111,7 +111,10 @@ namespace grbda
     {
         const std::string cp_name = "cp-" + std::to_string(i);
         const Vec3<double> cp_local_offset = Vec3<double>::Random();
-        model.appendContactPoint(link_name, cp_local_offset, cp_name);
+        if (i == N - 1)
+            model.appendEndEffector(link_name, cp_local_offset, cp_name);
+        else
+            model.appendContactPoint(link_name, cp_local_offset, cp_name);
     }
 
     template <size_t N>

@@ -109,7 +109,7 @@ protected:
 using testing::Types;
 
 typedef Types<
-    TeleopArm, Tello, 
+    TeleopArm, Tello, TelloWithArms,
     MIT_Humanoid, MiniCheetah,
     RevoluteChainWithRotor<2>,
     RevoluteChainWithRotor<4>,
@@ -146,6 +146,7 @@ TYPED_TEST(RigidBodyDynamicsAlgosTest, MassMatrix)
             bool nan_detected_in_state = this->initializeRandomStates(i);
             if (nan_detected_in_state)
             {
+                j--;
                 continue;
             }
 
@@ -186,6 +187,7 @@ TYPED_TEST(RigidBodyDynamicsAlgosTest, BiasForceVector)
             bool nan_detected_in_state = this->initializeRandomStates(i);
             if (nan_detected_in_state)
             {
+                j--;
                 continue;
             }
 
@@ -230,6 +232,7 @@ TYPED_TEST(RigidBodyDynamicsAlgosTest, ForwardAndInverseDyanmics)
             bool nan_detected_in_state = this->initializeRandomStates(i);
             if (nan_detected_in_state)
             {
+                j--;
                 continue;
             }
 
@@ -288,12 +291,46 @@ TYPED_TEST(RigidBodyDynamicsAlgosTest, ForwardAndInverseDyanmics)
     this->printAverageComputationTimes(num_tests);
 }
 
+TYPED_TEST(RigidBodyDynamicsAlgosTest, LambdaInv)
+{
+    // This test validates that the generalized Extended-Force-Propagator Algorithm works as
+    // expected by comparing it to the output of the projection model-based approach which computes
+    // J * (G^T * H * G)^-1 * J^T
+
+    const int num_tests_per_robot = 20;
+    for (int i = 0; i < (int)this->cluster_models.size(); i++)
+    {
+        ClusterTreeModel &cluster_model = this->cluster_models[i];
+        RigidBodyTreeModel &proj_model = this->projection_models[i];
+
+        for (int j = 0; j < num_tests_per_robot; j++)
+        {
+            bool nan_detected_in_state = this->initializeRandomStates(i);
+            if (nan_detected_in_state)
+            {
+                j--;
+                continue;
+            }
+
+            if (cluster_model.getNumEndEffectors() == 0)
+            {
+                std::cout << "No end effectors in cluster model. Skipping test." << std::endl;
+                return;
+            }
+
+            const DMat<double> lambda_inv = cluster_model.inverseOperationalSpaceInertiaMatrix();
+            const DMat<double> lambda_inv_proj = proj_model.inverseOperationalSpaceInertiaMatrix();
+            GTEST_ASSERT_LT((lambda_inv - lambda_inv_proj).norm(), tol);
+        }
+    }
+}
+
 TYPED_TEST(RigidBodyDynamicsAlgosTest, ApplyTestForceTest)
 {
-    // This test validates that the Extended Force Propagator Algorithm works as expected.
+    // This test validates that the generalized Apply Test Force Algorithm works as expected.
     // We compare the elements of the inverse operational space inertia matrix (lambda_inv) and the
-    // resulting change in joint state (dstate) as computed by the Extended Force Propagator
-    // Algorithm to the same quantities computed by the classic J H^-1 J^T method.
+    // resulting change in joint state (dstate) as computed by the Apply Test Force Algorithm
+    // (which is based on the EFPA) to the same quantities computed by the classic J H^-1 J^T
 
     const int num_tests_per_robot = 20;
     for (int i = 0; i < (int)this->cluster_models.size(); i++)
@@ -315,11 +352,12 @@ TYPED_TEST(RigidBodyDynamicsAlgosTest, ApplyTestForceTest)
             bool nan_detected_in_state = this->initializeRandomStates(i);
             if (nan_detected_in_state)
             {
+                j--;
                 continue;
             }
 
             cluster_model.contactJacobians();
-            for (const ContactPoint& cp : cluster_model.contactPoints())
+            for (const ContactPoint &cp : cluster_model.contactPoints())
             {
                 const D3Mat<double> J = cluster_model.Jc(cp.name_);
                 const DMat<double> H = cluster_model.massMatrix();

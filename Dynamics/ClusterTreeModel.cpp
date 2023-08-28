@@ -52,7 +52,8 @@ namespace grbda
         auto node = make_shared<ClusterTreeNode>(cluster_index, name, bodies_in_current_cluster_,
                                                  joint, parent_cluster_index,
                                                  num_bodies_in_parent_cluster,
-                                                 position_index_, velocity_index_);
+                                                 position_index_, velocity_index_,
+                                                 motion_subspace_index_);
         cluster_nodes_.push_back(node);
         nodes_.push_back(node);
 
@@ -60,6 +61,7 @@ namespace grbda
 
         position_index_ += joint->numPositions();
         velocity_index_ += joint->numVelocities();
+        motion_subspace_index_ += node->motion_subspace_dimension_;
         unactuated_dofs_ += joint->numUnactuatedVelocities();
 
         resizeSystemMatrices();
@@ -89,7 +91,8 @@ namespace grbda
         {
             const int parent = contact_point.body_index_;
             string parent_name = bodies_.at(parent).name_;
-            printf("Contact Point: %s (%s)\n", contact_point.name_.c_str(), parent_name.c_str());
+            string type = contact_point.is_end_effector_ ? "End Effector" : "Contact Point";
+            printf("%s: %s (%s)\n", type.c_str(), contact_point.name_.c_str(), parent_name.c_str());
         }
     }
 
@@ -142,17 +145,58 @@ namespace grbda
                 .setZero(num_degrees_of_freedom, cluster->num_velocities_);
 
         for (auto &contact_point : contact_points_)
+        {
             contact_point.jacobian_.setZero(6, num_degrees_of_freedom);
+            if (!contact_point.is_end_effector_)
+                continue;
+            contact_point.ChiUp_.push_back(DMat<double>::Zero(0, 0));
+        }
     }
 
     void ClusterTreeModel::appendContactPoint(const string body_name,
                                               const Vec3<double> &local_offset,
-                                              const string contact_point_name)
+                                              const string contact_point_name,
+                                              const bool is_end_effector)
     {
         const int contact_point_index = (int)contact_points_.size();
         contact_name_to_contact_index_[contact_point_name] = contact_point_index;
+
+        if (!is_end_effector)
+        {
+            contact_points_.emplace_back(body_name_to_body_index_.at(body_name), local_offset,
+                                         contact_point_name, getNumDegreesOfFreedom());
+            return;
+        }
+
         contact_points_.emplace_back(body_name_to_body_index_.at(body_name), local_offset,
-                                     contact_point_name, getNumDegreesOfFreedom());
+                                     contact_point_name, getNumDegreesOfFreedom(),
+                                     num_end_effectors_++);
+        ContactPoint &contact_point = contact_points_.back();
+
+        // Keep track of which nodes support this new end effector
+        int i = getIndexOfClusterContainingBody(body_name_to_body_index_.at(body_name));
+        while (i > -1)
+        {
+            cluster_nodes_[i]->supported_end_effectors_.push_back(contact_point_index);
+            contact_point.supporting_nodes_.push_back(i);
+            i = cluster_nodes_[i]->parent_index_;
+        }
+
+        // Initialize the force propagators for this end effector
+        for (int j = 0; j < (int)cluster_nodes_.size(); j++)
+        {
+            contact_point.ChiUp_.push_back(DMat<double>::Zero(0, 0));
+        }
+
+        // Get the nearest shared supporting cluster for every existing end effector
+        for (int k = 0; k < (int)contact_points_.size() - 1; k++)
+        {
+            if (!contact_points_[k].is_end_effector_)
+                continue; 
+            std::pair<int, int> cp_pair(k, contact_point_index);
+            const int nearest_shared_support = getNearestSharedSupportingNode(cp_pair);
+            cluster_nodes_[nearest_shared_support]->nearest_supported_ee_pairs_.push_back(cp_pair);
+        }
     }
 
     void ClusterTreeModel::appendContactBox(const string body_name, const Vec3<double> &dims)
@@ -167,6 +211,13 @@ namespace grbda
         appendContactPoint(body_name, V3d(-dims(0), dims(1), -dims(2)) / 2, "torso-contact-6");
         appendContactPoint(body_name, V3d(dims(0), -dims(1), -dims(2)) / 2, "torso-contact-7");
         appendContactPoint(body_name, V3d(-dims(0), -dims(1), -dims(2)) / 2, "torso-contact-8");
+    }
+
+    void ClusterTreeModel::appendEndEffector(const string body_name,
+                                             const Vec3<double> &local_offset,
+                                             const string end_effector_name)
+    {
+        appendContactPoint(body_name, local_offset, end_effector_name, true);
     }
 
     void ClusterTreeModel::addJointLim(size_t jointID, double joint_lim_value_lower,

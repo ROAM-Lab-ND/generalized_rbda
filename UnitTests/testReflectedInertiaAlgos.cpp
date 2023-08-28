@@ -98,6 +98,7 @@ TYPED_TEST(ReflectedInertiaDynamicsAlgosTest, ForwardKinematics)
         bool nan_detected_in_state = this->initializeRandomStates();
         if (nan_detected_in_state)
         {
+            k--;
             continue;
         }
 
@@ -177,6 +178,7 @@ TYPED_TEST(ReflectedInertiaDynamicsAlgosTest, CompareFwdDynAgainstLagrangianDeri
         bool nan_detected_in_state = this->initializeRandomStates();
         if (nan_detected_in_state)
         {
+            i--;
             continue;
         }
 
@@ -232,6 +234,7 @@ TYPED_TEST(ReflectedInertiaDynamicsAlgosTest, CompareInvDynAgainstLagrangianDeri
         bool nan_detected_in_state = this->initializeRandomStates();
         if (nan_detected_in_state)
         {
+            i--;
             continue;
         }
 
@@ -258,5 +261,48 @@ TYPED_TEST(ReflectedInertiaDynamicsAlgosTest, CompareInvDynAgainstLagrangianDeri
             this->robot.inverseDynamicsReflectedInertia(this->independent_joint_pos_,
                                                         this->independent_joint_vel_, ydd);
         GTEST_ASSERT_LT((tau_rf1 - tau_rf2).norm(), tol);
+    }
+}
+
+TYPED_TEST(ReflectedInertiaDynamicsAlgosTest, LambdaInv)
+{
+    // This test compares the computation of the inverse operational space inertia matrix for both
+    // reflected inertia models using (1) the Extended-Force-Propagator Algorithm and (2) the
+    // traditional Jacobian & Mass Matrix method
+
+    const int num_tests = 100;
+    for (int i = 0; i < num_tests; i++)
+    {
+        const int nv = this->cluster_model.getNumDegreesOfFreedom();
+
+        bool nan_detected_in_state = this->initializeRandomStates();
+        if (nan_detected_in_state)
+        {
+            i--;
+            continue;
+        }
+
+        std::vector<ReflectedInertiaTreeModel> models{this->reflected_inertia_model,
+                                                      this->reflected_inertia_diag_model};
+
+        for (auto &model : models)
+        {
+            const DMat<double> lambda_inv = model.inverseOperationalSpaceInertiaMatrix();
+
+            const DMat<double> H = model.getMassMatrix();
+            DMat<double> J_stacked = DMat<double>::Zero(6 * model.getNumEndEffectors(),
+                                                        model.getNumDegreesOfFreedom());
+            int ee_cnt = 0;
+            for (int k = 0; k < (int)model.contactPoints().size(); k++)
+            {
+                const ContactPoint &cp = model.contactPoint(k);
+                if (!cp.is_end_effector_)
+                    continue;
+                J_stacked.middleRows<6>(6 * ee_cnt++) = model.bodyJacobian(cp.name_);
+            }
+            DMat<double> J_Hinv_JT = J_stacked * H.inverse() * J_stacked.transpose();
+
+            GTEST_ASSERT_LT((lambda_inv - J_Hinv_JT).norm(), tol);
+        }
     }
 }

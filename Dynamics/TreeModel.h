@@ -24,6 +24,7 @@ namespace grbda
         const int& getNumPositions() const { return position_index_; }
         const int& getNumDegreesOfFreedom() const { return velocity_index_; }
         int getNumActuatedDegreesOfFreedom() const { return velocity_index_ - unactuated_dofs_; }
+        const int& getNumEndEffectors() const { return num_end_effectors_; }
 
         virtual DMat<double> getMassMatrix() = 0;
         virtual DVec<double> getBiasForceVector() = 0;
@@ -41,12 +42,13 @@ namespace grbda
 
         void forwardKinematics();
 
+        virtual D6Mat<double> bodyJacobian(const std::string &cp_name) = 0;
         virtual const D6Mat<double>& contactJacobian(const std::string &cp_name) = 0;
         void contactJacobians();
 
         virtual DVec<double> forwardDynamics(const DVec<double> &tau) = 0;
         virtual DVec<double> inverseDynamics(const DVec<double> &qdd) = 0;
-
+        virtual DMat<double> inverseOperationalSpaceInertiaMatrix() = 0;
         virtual double applyLocalFrameTestForceAtContactPoint(const Vec3<double> &force,
                                                               const string &contact_point_name,
                                                               DVec<double> &dstate_out) = 0;
@@ -69,6 +71,7 @@ namespace grbda
 
         virtual void resetCache();
 
+        int getNearestSharedSupportingNode(const std::pair<int, int> &contact_pt_indices);
         bool vectorContainsIndex(const std::vector<int> vec, const int index);
 
         SVec<double> gravity_;
@@ -78,7 +81,9 @@ namespace grbda
 
         int position_index_ = 0;
         int velocity_index_ = 0;
+        int motion_subspace_index_ = 0;
         int unactuated_dofs_ = 0;
+        int num_end_effectors_ = 0;
 
         std::vector<TreeNodePtr> nodes_;
         std::vector<int> indices_of_nodes_experiencing_external_forces_;

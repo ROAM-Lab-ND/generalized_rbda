@@ -57,10 +57,12 @@ namespace grbda
 
         void initializeIndependentStates(const DVec<double> &y, const DVec<double> &yd);
 
+        D6Mat<double> bodyJacobian(const std::string &cp_name) override;
         const D6Mat<double>& contactJacobian(const std::string &cp_name) override;
 
         DVec<double> forwardDynamics(const DVec<double> &tau) override;
         DVec<double> inverseDynamics(const DVec<double> &ydd) override;
+        DMat<double> inverseOperationalSpaceInertiaMatrix() override;
 
         double applyLocalFrameTestForceAtContactPoint(const Vec3<double> &force,
                                                       const string &contact_point_name,
@@ -80,13 +82,14 @@ namespace grbda
         DVec<double> forwardDynamicsHinv(const DVec<double> &tau);
         void updateArticulatedBodies(bool use_reflected_inertia);
 
-        double inverseOpSpaceInertiaEFPA(const Vec3<double> &force,
-                                         const string &contact_point_name,
-                                         DVec<double> &dstate_out,
-                                         bool use_reflected_inertia);
-        double inverseOpSpaceInertiaHinv(const Vec3<double> &force,
-                                         const string &contact_point_name,
-                                         DVec<double> &dstate_out);
+        DMat<double> inverseOpSpaceInertiaEFPA(bool use_reflected_inertia);
+        DMat<double> inverseOpSpaceInertiaHinv();
+
+        double applyTestForceEFPA(const Vec3<double> &force, const string &contact_point_name,
+                                  DVec<double> &dstate_out, bool use_reflected_inertia);
+        double applyTestForceHinv(const Vec3<double> &force, const string &contact_point_name,
+                                  DVec<double> &dstate_out);
+
         void updateForcePropagators(bool use_reflected_inertia);
         void updateQddEffects(bool use_reflected_inertia);
         SVec<double> localCartesianForceAtPointToWorldPluckerForceOnCluster(

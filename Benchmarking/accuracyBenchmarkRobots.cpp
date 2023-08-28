@@ -22,6 +22,8 @@ bool setRandomStates(ClusterTreeModel &cf_model,
     for (const auto &cluster : cf_model.clusters())
     {
         JointState joint_state = cluster->joint_->randomJointState();
+        joint_state.velocity *= 10.;
+
         if (joint_state.position.hasNaN())
         {
             return true;
@@ -81,14 +83,14 @@ void runInverseDynamicsBenchmark(std::ofstream &file, const double max_torque)
     const int nv = model_cl.getNumDegreesOfFreedom();
 
     const double alpha_rate = 0.1;
-    const int num_samples = 500;
+    const int num_samples_per_alpha = 2000.;
     for (double alpha = 0.; alpha <= 1.; alpha += alpha_rate)
     {
         double id_error = 0.;
         double id_diag_error = 0.;
         double id_none_error = 0.;
 
-        for (int j = 0; j < num_samples; j++)
+        for (int j = 0; j < num_samples_per_alpha; j++)
         {
             bool nan_detected = setRandomStates(model_cl, model_rf, model_rf_diag, model_rf_none);
             if (nan_detected)
@@ -114,9 +116,9 @@ void runInverseDynamicsBenchmark(std::ofstream &file, const double max_torque)
         }
 
         file << alpha << ","
-             << id_none_error / num_samples << ","
-             << id_diag_error / num_samples << ","
-             << id_error / num_samples << std::endl;
+             << id_none_error / num_samples_per_alpha << ","
+             << id_diag_error / num_samples_per_alpha << ","
+             << id_error / num_samples_per_alpha << std::endl;
     }
 }
 
@@ -132,13 +134,13 @@ void runForwardDynamicsBenchmark(std::ofstream &file, const double max_torque)
     const int nv = model_cl.getNumDegreesOfFreedom();
 
     const double alpha_rate = 0.1;
-    const int num_samples = 500;
+    const int num_samples_per_alpha = 2000;
     for (double alpha = 0.; alpha <= 1.; alpha += alpha_rate)
     {
         double fd_diag_error = 0.;
         double fd_none_error = 0.;
 
-        for (int j = 0; j < num_samples; j++)
+        for (int j = 0; j < num_samples_per_alpha; j++)
         {
             bool nan_detected = setRandomStates(model_cl, model_rf, model_rf_diag, model_rf_none);
             if (nan_detected)
@@ -159,9 +161,43 @@ void runForwardDynamicsBenchmark(std::ofstream &file, const double max_torque)
         }
 
         file << alpha << ","
-             << fd_none_error / num_samples << ","
-             << fd_diag_error / num_samples << std::endl;
+             << fd_none_error / num_samples_per_alpha << ","
+             << fd_diag_error / num_samples_per_alpha << std::endl;
     }
+}
+
+template <typename RobotType>
+void runInverseOperationalSpaceInertiaBenchmark(std::ofstream &file)
+{
+    RobotType robot;
+    ClusterTreeModel model_cl = robot.buildClusterTreeModel();
+    ReflectedInertiaTreeModel model_rf(model_cl, RotorInertiaApproximation::BLOCK_DIAGONAL);
+    ReflectedInertiaTreeModel model_rf_diag(model_cl, RotorInertiaApproximation::DIAGONAL);
+    ReflectedInertiaTreeModel model_rf_none(model_cl, RotorInertiaApproximation::NONE);
+
+    double lambda_inv_diag_rel_error = 0.;
+    double lambda_inv_none_rel_error = 0.;
+
+    const int num_samples = 2000;
+    for (int j = 0; j < num_samples; j++)
+    {
+        bool nan_detected = setRandomStates(model_cl, model_rf, model_rf_diag, model_rf_none);
+        if (nan_detected)
+        {
+            j--;
+            continue;
+        }
+
+        const DMat<double> lambda_inv = model_cl.inverseOperationalSpaceInertiaMatrix();
+        const DMat<double> lambda_inv_diag = model_rf_diag.inverseOperationalSpaceInertiaMatrix();
+        const DMat<double> lambda_inv_none = model_rf_none.inverseOperationalSpaceInertiaMatrix();
+
+        lambda_inv_diag_rel_error += (lambda_inv - lambda_inv_diag).norm() / lambda_inv.norm();
+        lambda_inv_none_rel_error += (lambda_inv - lambda_inv_none).norm() / lambda_inv.norm();
+    }
+
+    file << lambda_inv_none_rel_error / num_samples << ","
+         << lambda_inv_diag_rel_error / num_samples << std::endl;
 }
 
 template <typename RobotType>
@@ -178,13 +214,13 @@ void runApplyTestForceBenchmark(std::ofstream &file, const std::string contact_p
 
     const double alpha_rate = 0.1;
     const double offset = 0.01;
-    const int num_samples = 500;
+    const int num_samples_per_alpha = 2000;
     for (double alpha = offset; alpha <= (1. + offset); alpha += alpha_rate)
     {
         double dstate_diag_error = 0.;
         double dstate_none_error = 0.;
 
-        for (int j = 0; j < num_samples; j++)
+        for (int j = 0; j < num_samples_per_alpha; j++)
         {
             bool nan_detected = setRandomStates(model_cl, model_rf, model_rf_diag, model_rf_none);
             if (nan_detected)
@@ -210,8 +246,8 @@ void runApplyTestForceBenchmark(std::ofstream &file, const std::string contact_p
         }
 
         file << alpha << ","
-             << dstate_none_error / num_samples << ","
-             << dstate_diag_error / num_samples << std::endl;
+             << dstate_none_error / num_samples_per_alpha << ","
+             << dstate_diag_error / num_samples_per_alpha << std::endl;
     }
 }
 
@@ -222,10 +258,9 @@ int main()
     std::string path_to_data = "../Benchmarking/data/AccuracyID_";
     std::ofstream id_file;
     id_file.open(path_to_data + "Robots.csv");
-    runInverseDynamicsBenchmark<TelloWithArms>(id_file, 30.);
-    // runInverseDynamicsBenchmark<Tello>(id_file);
-    runInverseDynamicsBenchmark<MIT_Humanoid>(id_file, 30.);
-    runInverseDynamicsBenchmark<MiniCheetah>(id_file, 15.);
+    runInverseDynamicsBenchmark<TelloWithArms>(id_file, 50.);
+    runInverseDynamicsBenchmark<MIT_Humanoid>(id_file, 50.);
+    runInverseDynamicsBenchmark<MiniCheetah>(id_file, 30.);
     id_file.close();
 
     // Forward Dynamics Benchmark
@@ -233,20 +268,28 @@ int main()
     path_to_data = "../Benchmarking/data/AccuracyFD_";
     std::ofstream fd_file;
     fd_file.open(path_to_data + "Robots.csv");
-    runForwardDynamicsBenchmark<TelloWithArms>(fd_file, 30.);
-    // runForwardDynamicsBenchmark<Tello>(fd_file);
-    runForwardDynamicsBenchmark<MIT_Humanoid>(fd_file, 30.);
-    runForwardDynamicsBenchmark<MiniCheetah>(fd_file, 15.);
+    runForwardDynamicsBenchmark<TelloWithArms>(fd_file, 50.);
+    runForwardDynamicsBenchmark<MIT_Humanoid>(fd_file, 50.);
+    runForwardDynamicsBenchmark<MiniCheetah>(fd_file, 20.);
     fd_file.close();
+
+    // Inverse Operational Space Inertia Matrix Benchmark
+    std::cout << "\n\n**Starting Inverse OSIM Accuracy Benchmark for Robots**" << std::endl;
+    path_to_data = "../Benchmarking/data/AccuracyIOSIM_";
+    std::ofstream iosim_file;
+    iosim_file.open(path_to_data + "Robots.csv");
+    runInverseOperationalSpaceInertiaBenchmark<TelloWithArms>(iosim_file);
+    runInverseOperationalSpaceInertiaBenchmark<MIT_Humanoid>(iosim_file);
+    runInverseOperationalSpaceInertiaBenchmark<MiniCheetah>(iosim_file);
+    iosim_file.close();
 
     // Apply Test Force Benchmark
     std::cout << "\n\n**Starting Apply Test Force Accuracy Benchmark for Robots**" << std::endl;
     path_to_data = "../Benchmarking/data/AccuracyATF_";
     std::ofstream atf_file;
     atf_file.open(path_to_data + "Robots.csv");
-    runApplyTestForceBenchmark<TelloWithArms>(atf_file, "left-toe_contact", 100.);
-    // runApplyTestForceBenchmark<Tello>(atf_file, "left-toe_contact");
-    runApplyTestForceBenchmark<MIT_Humanoid>(atf_file, "left_toe_contact", 100.);
-    runApplyTestForceBenchmark<MiniCheetah>(atf_file, "FL_foot_contact", 50.);
+    runApplyTestForceBenchmark<TelloWithArms>(atf_file, "left-toe_contact", 500.);
+    runApplyTestForceBenchmark<MIT_Humanoid>(atf_file, "left_toe_contact", 500.);
+    runApplyTestForceBenchmark<MiniCheetah>(atf_file, "FL_foot_contact", 150.);
     atf_file.close();
 }

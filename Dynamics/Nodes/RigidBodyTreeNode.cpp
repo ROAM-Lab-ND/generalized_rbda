@@ -3,9 +3,12 @@
 namespace grbda
 {
 
-    RigidBodyTreeNode::RigidBodyTreeNode(const Body &body, const std::shared_ptr<Joints::Base> &joint,
-                                         const int position_index, const int velocity_index)
-        : TreeNode(body.index_, body.name_, body.parent_index_, 6, 1,
+    RigidBodyTreeNode::RigidBodyTreeNode(const Body &body,
+                                         const std::shared_ptr<Joints::Base> &joint,
+                                         const int position_index, const int velocity_index,
+                                         const int motion_subspace_index)
+        : TreeNode(body.index_, body.name_, body.parent_index_, 1,
+                   motion_subspace_index, 6,
                    position_index, joint->numPositions(),
                    velocity_index, joint->numVelocities()),
           body_(body), joint_(joint), Xtree_(body.Xtree_)
