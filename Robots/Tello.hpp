@@ -13,8 +13,11 @@ namespace grbda
 	ClusterTreeModel buildClusterTreeModel() const override;
 
     private:
-	const double grav = 9.81;
+	const double grav = -9.81;
 
+    const Mat3<double> R_down = (Mat3<double>() << 1., 0., 0., 0., -1., 0., 0., 0., -1.).finished();
+    const Mat3<double> R_left = (Mat3<double>() << -1., 0., 0., 0., 0., 1., 0., 1., 0.).finished();
+    const Mat3<double> R_right = (Mat3<double>() << 1., 0., 0., 0., 0., 1., 0., -1., 0.).finished();
 	// Left leg
 	const Mat3<double> R_left_hip_clamp = Mat3<double>::Identity();
 	const Vec3<double> p_left_hip_clamp = Vec3<double>{0., 126e-3, -87e-3};
@@ -31,19 +34,19 @@ namespace grbda
 	const Mat3<double> R_left_foot = Mat3<double>::Identity();
 	const Vec3<double> p_left_foot = Vec3<double>{0., 0., -260e-3};
 
-	const Mat3<double> R_left_hip_clamp_rotor = Mat3<double>::Identity();
+	const Mat3<double> R_left_hip_clamp_rotor = R_down;
 	const Vec3<double> p_left_hip_clamp_rotor = Vec3<double>{0., 126e-3, -26e-3};
 
-	const Mat3<double> R_left_hip_rotor_1 = (Mat3<double>() << -1., 0., 0., 0., 0., 1., 0., 1., 0.).finished();
+	const Mat3<double> R_left_hip_rotor_1 = R_left;
 	const Vec3<double> p_left_hip_rotor_1 = Vec3<double>{0., 0.04, 0.};
 
-	const Mat3<double> R_left_hip_rotor_2 = R_left_hip_rotor_1;
+	const Mat3<double> R_left_hip_rotor_2 = R_right;
 	const Vec3<double> p_left_hip_rotor_2 = Vec3<double>{0., -0.04, 0.};
 
-	const Mat3<double> R_left_knee_ankle_rotor_1 = R_left_hip_rotor_1;
+	const Mat3<double> R_left_knee_ankle_rotor_1 = R_right;
 	const Vec3<double> p_left_knee_ankle_rotor_1 = Vec3<double>{0., 26.55e-3, 0.};
 
-	const Mat3<double> R_left_knee_ankle_rotor_2 = R_left_hip_rotor_1;
+	const Mat3<double> R_left_knee_ankle_rotor_2 = R_left;
 	const Vec3<double> p_left_knee_ankle_rotor_2 = Vec3<double>{0., -26.55e-3, 0.};
 
 	// Right leg
@@ -62,19 +65,19 @@ namespace grbda
 	const Mat3<double> R_right_foot = Mat3<double>::Identity();
 	const Vec3<double> p_right_foot = Vec3<double>{0., 0., -260e-3};
 
-	const Mat3<double> R_right_hip_clamp_rotor = Mat3<double>::Identity();
+	const Mat3<double> R_right_hip_clamp_rotor = R_down;
 	const Vec3<double> p_right_hip_clamp_rotor = Vec3<double>{0., -126e-3, -26e-3};
 
-	const Mat3<double> R_right_hip_rotor_1 = (Mat3<double>() << -1., 0., 0., 0., 0., 1., 0., 1., 0.).finished();
+	const Mat3<double> R_right_hip_rotor_1 = R_left;
 	const Vec3<double> p_right_hip_rotor_1 = Vec3<double>{0., 0.04, 0.};
 
-	const Mat3<double> R_right_hip_rotor_2 = R_right_hip_rotor_1;
+	const Mat3<double> R_right_hip_rotor_2 = R_right;
 	const Vec3<double> p_right_hip_rotor_2 = Vec3<double>{0., -0.04, 0.};
 
-	const Mat3<double> R_right_knee_ankle_rotor_1 = R_right_hip_rotor_1;
+	const Mat3<double> R_right_knee_ankle_rotor_1 = R_right;
 	const Vec3<double> p_right_knee_ankle_rotor_1 = Vec3<double>{0., 26.55e-3, 0.};
 
-	const Mat3<double> R_right_knee_ankle_rotor_2 = R_right_hip_rotor_1;
+	const Mat3<double> R_right_knee_ankle_rotor_2 = R_left;
 	const Vec3<double> p_right_knee_ankle_rotor_2 = Vec3<double>{0., -26.55e-3, 0.};
 
 	const double torso_mass = 2.3008;
@@ -103,25 +106,29 @@ namespace grbda
 	const Vec3<double> foot_CoM = Vec3<double>{0.0042, -0., -0.0251};
 	const Mat3<double> foot_inertia = (Mat3<double>() << 0.094e-3, -0., -0.0038e-3, -0., 0.1773e-3, 0., -0.0038e-3, 0., 0.0901e-3).finished();
 
-	const double hip_clamp_rotor_mass = 1.;
-	const Vec3<double> hip_clamp_rotor_CoM = Vec3<double>{0., 0., 0.};
-	const Mat3<double> hip_clamp_rotor_inertia = (Mat3<double>() << 0., 0., 0., 0., 0., 0., 0., 0., 0.003).finished();
+    const double rotor_mass = 0.07;
+    const Vec3<double> rotor_CoM = Vec3<double>::Zero();
+    const Mat3<double> rotor_inertia = (Mat3<double>() << 2.5984e-5, 0., 0., 0., 2.5984e-5, 0., 0., 0., 5.1512e-5).finished();
 
-	const double hip_rotor_1_mass = 1.;
-	const Vec3<double> hip_rotor_1_CoM = Vec3<double>{0., 0., 0.};
-	const Mat3<double> hip_rotor_1_inertia = (Mat3<double>() << 0., 0., 0., 0., 0., 0., 0., 0., 0.003).finished();
+	const double hip_clamp_rotor_mass = rotor_mass;
+	const Vec3<double> hip_clamp_rotor_CoM = rotor_CoM;
+	const Mat3<double> hip_clamp_rotor_inertia = rotor_inertia;
 
-	const double hip_rotor_2_mass = 1.;
-	const Vec3<double> hip_rotor_2_CoM = Vec3<double>{0., 0., 0.};
-	const Mat3<double> hip_rotor_2_inertia = (Mat3<double>() << 0., 0., 0., 0., 0., 0., 0., 0., 0.003).finished();
+	const double hip_rotor_1_mass = rotor_mass;
+	const Vec3<double> hip_rotor_1_CoM = rotor_CoM;
+	const Mat3<double> hip_rotor_1_inertia = rotor_inertia;
 
-	const double knee_ankle_rotor_1_mass = 1.;
-	const Vec3<double> knee_ankle_rotor_1_CoM = Vec3<double>{0., 0., 0.};
-	const Mat3<double> knee_ankle_rotor_1_inertia = (Mat3<double>() << 0., 0., 0., 0., 0., 0., 0., 0., 0.003).finished();
+	const double hip_rotor_2_mass = rotor_mass;
+	const Vec3<double> hip_rotor_2_CoM = rotor_CoM;
+	const Mat3<double> hip_rotor_2_inertia = rotor_inertia;
 
-	const double knee_ankle_rotor_2_mass = 1.;
-	const Vec3<double> knee_ankle_rotor_2_CoM = Vec3<double>{0., 0., 0.};
-	const Mat3<double> knee_ankle_rotor_2_inertia = (Mat3<double>() << 0., 0., 0., 0., 0., 0., 0., 0., 0.003).finished();
+	const double knee_ankle_rotor_1_mass = rotor_mass;
+	const Vec3<double> knee_ankle_rotor_1_CoM = rotor_CoM;
+	const Mat3<double> knee_ankle_rotor_1_inertia = rotor_inertia;
+
+	const double knee_ankle_rotor_2_mass = rotor_mass;
+	const Vec3<double> knee_ankle_rotor_2_CoM = rotor_CoM;
+	const Mat3<double> knee_ankle_rotor_2_inertia = rotor_inertia;
 
 	const double _footToeLength = 0.1;
     const double _footHeelLength = 0.05;
