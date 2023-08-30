@@ -154,6 +154,8 @@ namespace grbda
             return H_ + DMat<double>(reflected_inertia_.diagonal().asDiagonal());
         case RotorInertiaApproximation::BLOCK_DIAGONAL:
             return H_ + reflected_inertia_;
+        default:
+            throw std::runtime_error("Invalid rotor inertia approximation");
         }
     }
 

@@ -45,7 +45,6 @@ namespace grbda
         // get sparsity pattern
         const int_T *sppattern;
         const int_T *rowinfo, *colinfo;
-        int nnz;
 
         int nrow, ncol;
         for (size_t idx_res = 0; idx_res < sz_res; idx_res++)
@@ -56,7 +55,6 @@ namespace grbda
 
             colinfo = sppattern + 2;
             rowinfo = colinfo + ncol + 1;
-            nnz = colinfo[ncol];
 
             // copy data from res to RES
             int nzidx = 0;

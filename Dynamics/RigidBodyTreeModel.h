@@ -86,6 +86,7 @@ namespace grbda
             const int &nv = floor(state.size() / 2.0);
 
             const DVec<double> q = loop_constraints_.gamma(state.head(nq));
+            loop_constraints_.update(q);
             const DVec<double> qd = loop_constraints_.G() * state.tail(nv);
 
             initializeState(q, qd);

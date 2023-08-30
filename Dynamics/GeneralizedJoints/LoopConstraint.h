@@ -68,6 +68,7 @@ namespace grbda
 
             void push_back(const std::shared_ptr<Base> loop_constraint);
 
+            void update(DVec<double> q);
             void update(DVec<double> q, DVec<double> qd);
 
         private:

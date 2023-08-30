@@ -95,6 +95,36 @@ namespace grbda
             k_ = DVec<double>::Zero(K_.rows());
         }
 
+        // TODO(@MatthewChignoli): Kind of a sloppy way to do the overloading
+        void Collection::update(DVec<double> q)
+        {
+            int pos_cnt = 0;
+            int span_vel_cnt = 0;
+            int ind_vel_cnt = 0;
+            int cnstr_cnt = 0;
+
+            for (auto constraint : *this)
+            {
+                const int n_span_pos = constraint->numSpanningPos();
+                const int n_span_vel = constraint->numSpanningVel();
+                const int n_ind_vel = constraint->numIndependentVel();
+                const int n_cnstr = constraint->numConstraints();
+
+                JointCoordinate position(q.segment(pos_cnt, n_span_pos), true);
+                constraint->updateJacobians(position);
+
+                G_.block(span_vel_cnt, ind_vel_cnt, n_span_vel, n_ind_vel) = constraint->G();
+                K_.block(cnstr_cnt, span_vel_cnt, n_cnstr, n_span_vel) = constraint->K();
+
+                pos_cnt += n_span_pos;
+                span_vel_cnt += n_span_vel;
+                ind_vel_cnt += n_ind_vel;
+                cnstr_cnt += n_cnstr;
+            }
+
+            resetCache();
+        }
+
         void Collection::update(DVec<double> q, DVec<double> qd)
         {
             int pos_cnt = 0;
