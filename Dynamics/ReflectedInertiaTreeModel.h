@@ -32,10 +32,6 @@ namespace grbda
                                       RotorInertiaApproximation::NONE);
 
         // TODO(@MatthewChignoli): These are functions and members shared with FloatingBaseModel. Not sure how I want to deal with them moving forward. It's unclear which parts of Robot-Software need to change for compatiblity with GRBDA and which parts of GRBDA need to change for compatibility with Robot-Software. Should these functions be abstraced to TreeModel since ClusterTreeModel also uses them?
-        Vec3<double> getPosition(const string &body_name);
-        Mat3<double> getOrientation(const string &body_name);
-        Vec3<double> getLinearVelocity(const string &body_name);
-        Vec3<double> getAngularVelocity(const string &body_name);
 
         // TODO(@MatthewChignoli): We currently assume that the state is given as independent coordinates.
         void setState(const DVec<double> &state)
@@ -57,6 +53,23 @@ namespace grbda
 
         void initializeIndependentStates(const DVec<double> &y, const DVec<double> &yd);
 
+        Vec3<double> getPosition(const string &body_name) override
+        {
+            throw std::runtime_error("Not implemented");
+        }
+        Mat3<double> getOrientation(const string &body_name) override
+        {
+            throw std::runtime_error("Not implemented");
+        }
+        Vec3<double> getLinearVelocity(const string &body_name) override
+        {
+            throw std::runtime_error("Not implemented");
+        }
+        Vec3<double> getAngularVelocity(const string &body_name) override
+        {
+            throw std::runtime_error("Not implemented");
+        }
+
         D6Mat<double> bodyJacobian(const std::string &cp_name) override;
         const D6Mat<double>& contactJacobian(const std::string &cp_name) override;
 
@@ -64,9 +77,8 @@ namespace grbda
         DVec<double> inverseDynamics(const DVec<double> &ydd) override;
         DMat<double> inverseOperationalSpaceInertiaMatrix() override;
 
-        double applyLocalFrameTestForceAtContactPoint(const Vec3<double> &force,
-                                                      const string &contact_point_name,
-                                                      DVec<double> &dstate_out) override;
+        double applyTestForce(const string &contact_point_name,
+                              const Vec3<double> &force, DVec<double> &dstate_out) override;
 
         DMat<double> getMassMatrix() override;
         DVec<double> getBiasForceVector() override;

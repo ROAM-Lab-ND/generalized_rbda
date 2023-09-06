@@ -279,15 +279,15 @@ void runApplyTestForceBenchmark(std::ofstream &file, const std::string &contact_
         DVec<double> force = DVec<double>::Random(nv);
         DVec<double> dstate;
         timer.start();
-        cluster_model.applyLocalFrameTestForceAtContactPoint(force, contact_point, dstate);
+        cluster_model.applyTestForce(contact_point, force, dstate);
         t_cluster += timer.getMs();
 
         timer.start();
-        projection_model->applyLocalFrameTestForceAtContactPoint(force, contact_point, dstate);
+        projection_model->applyTestForce(contact_point, force, dstate);
         t_projection += timer.getMs();
 
         timer.start();
-        ref_inertia_model->applyLocalFrameTestForceAtContactPoint(force, contact_point, dstate);
+        ref_inertia_model->applyTestForce(contact_point, force, dstate);
         t_reflected_inertia += timer.getMs();
     }
 

@@ -232,14 +232,11 @@ void runApplyTestForceBenchmark(std::ofstream &file, const std::string contact_p
             // Apply Test Force
             Vec3<double> force = alpha * max_force * Vec3<double>::Random();
             DVec<double> dstate_cluster;
-            model_cl.applyLocalFrameTestForceAtContactPoint(force, contact_point,
-                                                            dstate_cluster);
+            model_cl.applyTestForce(contact_point, force, dstate_cluster);
             DVec<double> dstate_diag_approx;
-            model_rf_diag.applyLocalFrameTestForceAtContactPoint(force, contact_point,
-                                                                 dstate_diag_approx);
+            model_rf_diag.applyTestForce(contact_point, force, dstate_diag_approx);
             DVec<double> dstate_none_approx;
-            model_rf_none.applyLocalFrameTestForceAtContactPoint(force, contact_point,
-                                                                 dstate_none_approx);
+            model_rf_none.applyTestForce(contact_point, force, dstate_none_approx);
 
             dstate_diag_error += (dstate_cluster - dstate_diag_approx).norm();
             dstate_none_error += (dstate_cluster - dstate_none_approx).norm();

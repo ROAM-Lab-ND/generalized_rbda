@@ -230,38 +230,38 @@ namespace grbda
         _nJointLim++;
     }
 
-    void ClusterTreeModel::setState(const DVec<double> &state)
-    {
-        const int nq = getNumPositions();
-        const int nv = getNumDegreesOfFreedom();
+//     void ClusterTreeModel::setState(const DVec<double> &state)
+//     {
+//         const int nq = getNumPositions();
+//         const int nv = getNumDegreesOfFreedom();
 
-#ifdef DEBUG_MODE
-        if (state.size() != nq + nv)
-            throw runtime_error("State vector has incorrect size");
-#endif
+// #ifdef DEBUG_MODE
+//         if (state.size() != nq + nv)
+//             throw runtime_error("State vector has incorrect size");
+// #endif
 
-        ModelState model_state;
-        int pos_idx = 0;
-        int vel_idx = nq;
-        for (size_t i(0); i < clusters().size(); i++)
-        {
-            const auto &joint = cluster(i)->joint_;
+//         ModelState model_state;
+//         int pos_idx = 0;
+//         int vel_idx = nq;
+//         for (size_t i(0); i < clusters().size(); i++)
+//         {
+//             const auto &joint = cluster(i)->joint_;
 
-            const int &num_pos = joint->numPositions();
-            const int &num_vel = joint->numVelocities();
+//             const int &num_pos = joint->numPositions();
+//             const int &num_vel = joint->numVelocities();
 
-            JointState joint_state(joint->positionIsSpanning(),
-                                   joint->velocityIsSpanning());
-            joint_state.position = state.segment(pos_idx, num_pos);
-            joint_state.velocity = state.segment(vel_idx, num_vel);
-            model_state.push_back(joint_state);
+//             JointState joint_state(joint->positionIsSpanning(),
+//                                    joint->velocityIsSpanning());
+//             joint_state.position = state.segment(pos_idx, num_pos);
+//             joint_state.velocity = state.segment(vel_idx, num_vel);
+//             model_state.push_back(joint_state);
 
-            pos_idx += num_pos;
-            vel_idx += num_vel;
-        }
+//             pos_idx += num_pos;
+//             vel_idx += num_vel;
+//         }
 
-        initializeState(model_state);
-    }
+//         initializeState(model_state);
+//     }
 
     void ClusterTreeModel::initializeState(const ModelState &model_state)
     {

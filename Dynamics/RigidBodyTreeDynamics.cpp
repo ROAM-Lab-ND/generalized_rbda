@@ -196,8 +196,8 @@ namespace grbda
         return J_stacked * H.inverse() * J_stacked.transpose();
     }
 
-    double RigidBodyTreeModel::applyLocalFrameTestForceAtContactPoint(
-        const Vec3<double> &force, const string &contact_point_name, DVec<double> &dstate_out)
+    double RigidBodyTreeModel::applyTestForce(const string &contact_point_name,
+                                              const Vec3<double> &force, DVec<double> &dstate_out)
     {
         const D3Mat<double> J = contactJacobian(contact_point_name).bottomRows<3>();
         const DMat<double> H = getMassMatrix();

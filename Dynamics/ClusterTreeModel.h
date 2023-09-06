@@ -93,12 +93,9 @@ namespace grbda
         ~ClusterTreeModel() {}
 
         // TODO(@MatthewChignoli): These are functions and members shared with FloatingBaseModel. Not sure how I want to deal with them moving forward. It's unclear which parts of Robot-Software need to change for compatiblity with GRBDA and which parts of GRBDA need to change for compatibility with Robot-Software.
-        Vec3<double> getPosition(const string &body_name);
-        Mat3<double> getOrientation(const string &body_name);
-        Vec3<double> getLinearVelocity(const string &body_name);
-        Vec3<double> getAngularVelocity(const string &body_name);
+        
+        // void setState(const DVec<double> &state); // TODO(@MatthewChignoli): remove this
 
-        void setState(const DVec<double> &state);
         void setExternalForces(const string &body_name, const SVec<double> &force);
         void setExternalForces(const unordered_map<string, SVec<double>> &ext_forces = {});
         void resetExternalForces();
@@ -110,11 +107,6 @@ namespace grbda
         const Vec3<double> &vGC(const string &cp_name) const;
         const string &gcParent(const string &cp_name) const;
         D3Mat<double> Jc(const string &cp_name) const;
-
-        DMat<double> massMatrix() { return getMassMatrix(); }
-        double applyTestForce(const string &cp_name,
-                              const Vec3<double> &force_ics_at_contact,
-                              DVec<double> &dstate_out);
 
         void addJointLim(size_t jointID, double joint_lim_value_lower,
                          double joint_lim_value_upper);
@@ -191,14 +183,18 @@ namespace grbda
             return cluster_nodes_[cluster_name_to_cluster_index_.at(cluster_name)];
         }
 
+        Vec3<double> getPosition(const string &body_name) override;
+        Mat3<double> getOrientation(const string &body_name) override;
+        Vec3<double> getLinearVelocity(const string &body_name) override;
+        Vec3<double> getAngularVelocity(const string &body_name) override;
+
         D6Mat<double> bodyJacobian(const std::string &cp_name) override;
 
         DVec<double> inverseDynamics(const DVec<double> &qdd) override;
         DVec<double> forwardDynamics(const DVec<double> &tau) override;
         DMat<double> inverseOperationalSpaceInertiaMatrix() override;
-        double applyLocalFrameTestForceAtContactPoint(const Vec3<double> &force,
-                                                      const string &contact_point_name,
-                                                      DVec<double> &dstate_out) override;
+        double applyTestForce(const string &contact_point_name,
+                              const Vec3<double> &force, DVec<double> &dstate_out) override;
 
         DMat<double> getMassMatrix() override;
         DVec<double> getBiasForceVector() override;

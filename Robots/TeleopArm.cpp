@@ -8,7 +8,6 @@ namespace grbda
         ClusterTreeModel model{};
 
         Mat3<double> I3 = Mat3<double>::Identity();
-        Vec3<double> z3 = Vec3<double>::Zero();
 
         // Base
         SpatialTransform base_Xtree = SpatialTransform(I3, base_location_);

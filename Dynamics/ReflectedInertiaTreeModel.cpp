@@ -422,8 +422,8 @@ namespace grbda
         articulated_bodies_updated_ = true;
     }
 
-    double ReflectedInertiaTreeModel::applyLocalFrameTestForceAtContactPoint(
-        const Vec3<double> &force, const std::string &contact_point_name, DVec<double> &dstate_out)
+    double ReflectedInertiaTreeModel::applyTestForce(
+        const string &contact_point_name, const Vec3<double> &force, DVec<double> &dstate_out)
     {
         switch (rotor_inertia_approximation_)
         {

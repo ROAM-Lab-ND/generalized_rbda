@@ -63,12 +63,11 @@ void runBenchmark(std::ofstream &file)
             const Vec3<double> test_force = 50. * Vec3<double>::Random();
             const std::string cp_name = cl_model.contactPoints().back().name_;
 
-            const double lambda_inv =
-                cl_model.applyLocalFrameTestForceAtContactPoint(test_force, cp_name, dstate);
-            const double lambda_inv_approx =
-                rf_model.applyLocalFrameTestForceAtContactPoint(test_force, cp_name, dstate_approx);
-            const double lambda_inv_diag =
-                rf_diag_model.applyLocalFrameTestForceAtContactPoint(test_force, cp_name,dstate_diag);
+            const double lambda_inv = cl_model.applyTestForce(cp_name, test_force, dstate);
+            const double lambda_inv_approx = rf_model.applyTestForce(cp_name, test_force,
+                                                                     dstate_approx);
+            const double lambda_inv_diag = rf_diag_model.applyTestForce(cp_name, test_force,
+                                                                        dstate_diag);
 
             rf_lambda_inv_error += std::fabs(lambda_inv - lambda_inv_approx); 
             rf_diag_lambda_inv_error += std::fabs(lambda_inv - lambda_inv_diag);

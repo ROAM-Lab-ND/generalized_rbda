@@ -360,7 +360,7 @@ TYPED_TEST(RigidBodyDynamicsAlgosTest, ApplyTestForceTest)
             for (const ContactPoint &cp : cluster_model.contactPoints())
             {
                 const D3Mat<double> J = cluster_model.Jc(cp.name_);
-                const DMat<double> H = cluster_model.massMatrix();
+                const DMat<double> H = cluster_model.getMassMatrix();
                 const DMat<double> H_inv = H.inverse();
                 const DMat<double> inv_ops_inertia = J * H_inv * J.transpose();
 
@@ -371,15 +371,11 @@ TYPED_TEST(RigidBodyDynamicsAlgosTest, ApplyTestForceTest)
 
                     DVec<double> dstate_efpa = DVec<double>::Zero(nv);
                     const double lambda_inv_efpa =
-                        cluster_model.applyLocalFrameTestForceAtContactPoint(test_force,
-                                                                             cp.name_,
-                                                                             dstate_efpa);
+                        cluster_model.applyTestForce(cp.name_, test_force, dstate_efpa);
 
                     DVec<double> dstate_proj = DVec<double>::Zero(nv);
                     const double lambda_inv_proj =
-                        projection_model.applyLocalFrameTestForceAtContactPoint(test_force,
-                                                                                cp.name_,
-                                                                                dstate_proj);
+                        projection_model.applyTestForce(cp.name_, test_force, dstate_proj);
 
                     GTEST_ASSERT_LT(std::fabs(lambda_inv_efpa - lambda_inv_iosi), tol);
                     GTEST_ASSERT_LT((dstate_efpa - dstate_iosi).norm(), tol);
