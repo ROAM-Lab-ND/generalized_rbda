@@ -359,7 +359,7 @@ TYPED_TEST(RigidBodyDynamicsAlgosTest, ApplyTestForceTest)
             cluster_model.contactJacobians();
             for (const ContactPoint &cp : cluster_model.contactPoints())
             {
-                const D3Mat<double> J = cluster_model.Jc(cp.name_);
+                const D3Mat<double> J = cluster_model.contactJacobian(cp.name_).bottomRows<3>();
                 const DMat<double> H = cluster_model.getMassMatrix();
                 const DMat<double> H_inv = H.inverse();
                 const DMat<double> inv_ops_inertia = J * H_inv * J.transpose();

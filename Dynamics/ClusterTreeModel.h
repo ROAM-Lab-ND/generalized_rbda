@@ -93,27 +93,10 @@ namespace grbda
         ~ClusterTreeModel() {}
 
         // TODO(@MatthewChignoli): These are functions and members shared with FloatingBaseModel. Not sure how I want to deal with them moving forward. It's unclear which parts of Robot-Software need to change for compatiblity with GRBDA and which parts of GRBDA need to change for compatibility with Robot-Software.
-        
-        // void setState(const DVec<double> &state); // TODO(@MatthewChignoli): remove this
-
         void setExternalForces(const string &body_name, const SVec<double> &force);
         void setExternalForces(const unordered_map<string, SVec<double>> &ext_forces = {});
         void resetExternalForces();
         void resetCalculationFlags() { resetCache(); }
-
-        const D6Mat<double> &contactJacobian(const std::string &cp_name) override;
-        const std::unordered_map<std::string, int> &contacts() const;
-        const Vec3<double> &pGC(const string &cp_name) const;
-        const Vec3<double> &vGC(const string &cp_name) const;
-        const string &gcParent(const string &cp_name) const;
-        D3Mat<double> Jc(const string &cp_name) const;
-
-        void addJointLim(size_t jointID, double joint_lim_value_lower,
-                         double joint_lim_value_upper);
-        size_t _nJointLim = 0;
-        vector<size_t> _JointLimID;
-        vector<double> _JointLimValueLower;
-        vector<double> _JointLimValueUpper;
 
         /////////////////////////////////////
 
@@ -188,7 +171,9 @@ namespace grbda
         Vec3<double> getLinearVelocity(const string &body_name) override;
         Vec3<double> getAngularVelocity(const string &body_name) override;
 
+        // TODO(@MatthewChignoli): Different names for the these functions?
         D6Mat<double> bodyJacobian(const std::string &cp_name) override;
+        const D6Mat<double> &contactJacobian(const std::string &cp_name) override;
 
         DVec<double> inverseDynamics(const DVec<double> &qdd) override;
         DVec<double> forwardDynamics(const DVec<double> &tau) override;

@@ -220,15 +220,7 @@ namespace grbda
         appendContactPoint(body_name, local_offset, end_effector_name, true);
     }
 
-    void ClusterTreeModel::addJointLim(size_t jointID, double joint_lim_value_lower,
-                                       double joint_lim_value_upper)
-    {
 
-        _JointLimID.push_back(jointID);
-        _JointLimValueLower.push_back(joint_lim_value_lower);
-        _JointLimValueUpper.push_back(joint_lim_value_upper);
-        _nJointLim++;
-    }
 
 //     void ClusterTreeModel::setState(const DVec<double> &state)
 //     {
@@ -359,32 +351,6 @@ namespace grbda
         const DVec<double> &v_cluster = cluster_nodes_[cluster_idx]->v_;
         const SVec<double> v = v_cluster.segment<6>(6 * subindex_within_cluster);
         return Rai * v.head<3>();
-    }
-
-    const std::unordered_map<std::string, int> &ClusterTreeModel::contacts() const
-    {
-        return contact_name_to_contact_index_;
-    }
-
-    const Vec3<double> &ClusterTreeModel::pGC(const string &cp_name) const
-    {
-        return contactPoint(cp_name).position_;
-    }
-
-    const Vec3<double> &ClusterTreeModel::vGC(const string &cp_name) const
-    {
-        return contactPoint(cp_name).velocity_;
-    }
-
-    const string &ClusterTreeModel::gcParent(const string &cp_name) const
-    {
-        const int &body_index = contactPoint(cp_name).body_index_;
-        return bodies_.at(body_index).name_;
-    }
-
-    D3Mat<double> ClusterTreeModel::Jc(const string &cp_name) const
-    {
-        return contactPoint(cp_name).jacobian_.bottomRows<3>();
     }
 
     int ClusterTreeModel::getClusterAncestorIndexFromParent(const int body_index)

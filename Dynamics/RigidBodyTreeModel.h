@@ -73,23 +73,6 @@ namespace grbda
             forward_dynamics_method_ = fd_method;
         }
 
-        // TODO(@MatthewChignoli): These are functions and members shared with FloatingBaseModel. Not sure how I want to deal with them moving forward. It's unclear which parts of Robot-Software need to change for compatiblity with GRBDA and which parts of GRBDA need to change for compatibility with Robot-Software. Should these functions be abstraced to TreeModel since ClusterTreeModel also uses them?
-
-        // TODO(@MatthewChignoli): We currently assume that the state is given as independent coordinates.
-        void setState(const DVec<double> &state)
-        {
-            const int &nq = ceil(state.size() / 2.0);
-            const int &nv = floor(state.size() / 2.0);
-
-            const DVec<double> q = loop_constraints_.gamma(state.head(nq));
-            loop_constraints_.update(q);
-            const DVec<double> qd = loop_constraints_.G() * state.tail(nv);
-
-            initializeState(q, qd);
-        }
-
-        /////////////////////////////////////
-
         int getNumBodies() const override { return (int)rigid_body_nodes_.size(); }
 
         // TOOD(@MatthewChignoli): I don't really like these functions...

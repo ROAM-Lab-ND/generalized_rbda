@@ -31,18 +31,6 @@ namespace grbda
                                   RotorInertiaApproximation rotor_inertia_approximation =
                                       RotorInertiaApproximation::NONE);
 
-        // TODO(@MatthewChignoli): These are functions and members shared with FloatingBaseModel. Not sure how I want to deal with them moving forward. It's unclear which parts of Robot-Software need to change for compatiblity with GRBDA and which parts of GRBDA need to change for compatibility with Robot-Software. Should these functions be abstraced to TreeModel since ClusterTreeModel also uses them?
-
-        // TODO(@MatthewChignoli): We currently assume that the state is given as independent coordinates.
-        void setState(const DVec<double> &state)
-        {
-            const int &nq = ceil(state.size() / 2.0);
-            const int &nv = floor(state.size() / 2.0);
-            initializeIndependentStates(state.head(nq), state.tail(nv));
-        }
-
-        /////////////////////////////////////
-
         int getNumBodies() const override { return (int)reflected_inertia_nodes_.size(); }
 
         const Body &getBody(int spanning_tree_index) const override;
