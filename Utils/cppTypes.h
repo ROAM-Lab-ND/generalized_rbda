@@ -9,7 +9,6 @@
 #define GRBDA_CPPTYPES_H
 
 #include <vector>
-#include "cTypes.h"
 #include <eigen3/Eigen/Dense>
 
 namespace grbda

@@ -19,8 +19,6 @@
 #include <cmath>
 #include <iostream>
 #include <type_traits>
-
-#include "MathUtilities.h"
 #include "Utils/cppTypes.h"
 
 namespace grbda
@@ -39,6 +37,15 @@ namespace grbda
       Y,
       Z
     };
+
+    /*!
+     * Square a number
+     */
+    template <typename T>
+    T square(T a)
+    {
+      return a * a;
+    }
 
     /*!
      * Convert radians to degrees
