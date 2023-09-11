@@ -27,6 +27,8 @@ namespace grbda
 
             S_implict_.block<6, 1>(0, 0) = link_1_joint_->S();
             S_implict_.block<6, 1>(6, 1) = link_2_joint_->S();
+
+            S_ = S_implict_ * loop_constraint_->G();
         }
 
         void RevolutePair::updateKinematics(const JointState &joint_state)
@@ -45,14 +47,13 @@ namespace grbda
             X21_ = link_2_joint_->XJ() * link_2_.Xtree_;
             const DVec<double> v2_relative = link_2_joint_->S() * qd[1];
             S_implict_.block<6, 1>(6, 0) = X21_.transformMotionSubspace(link_1_joint_->S());
+            S_.block<6, 1>(6, 0) = X21_.transformMotionSubspace(link_1_joint_->S());
 
             S_implict_ring_.block<6, 1>(6, 0) = -generalMotionCrossMatrix(v2_relative) *
                                                 S_implict_.block<6, 1>(6, 0);
 
-            // TODO(@MatthewChignoli): Make all of these more efficeint by exploiting the sparsity in the loop constraint multiplications
-            S_ = S_implict_ * loop_constraint_->G();
             vJ_ = S_implict_ * qd;
-            cJ_ = S_implict_ring_ * qd + S_implict_ * loop_constraint_->g();
+            cJ_ = S_implict_ring_ * qd;
         }
 
         void RevolutePair::computeSpatialTransformFromParentToCurrentCluster(

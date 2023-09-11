@@ -79,6 +79,9 @@ namespace grbda
 		S_implict_.block<6, 1>(6, 1) = rotor_2_joint_->S();
 		S_implict_.block<6, 1>(12, 2) = link_1_joint_->S();
 		S_implict_.block<6, 1>(18, 3) = link_2_joint_->S();
+
+		S_.block<6, 1>(0, 0) = gear_ratio * rotor_1_joint_->S();
+        S_.block<6, 1>(6, 1) = gear_ratio * rotor_2_joint_->S();
 	}
 
 	void TelloDifferential::updateKinematics(const JointState &joint_state)
@@ -107,7 +110,12 @@ namespace grbda
 		S_implict_.block<6, 1>(18, 2) = X21_S1;
 		S_implict_ring_.block<6, 1>(18, 2) = -v2_rel_crm * X21_S1;
 
-		S_ = S_implict_ * loop_constraint_->G();
+		const DMat<double> G = loop_constraint_->G();
+		S_.block<6, 1>(12, 0) = G(2, 0) * S1;
+		S_.block<6, 1>(12, 1) = G(2, 1) * S1;
+		S_.block<6, 1>(18, 0) = G(2, 0) * X21_S1 + G(3, 0) * S2;
+		S_.block<6, 1>(18, 1) = G(2, 1) * X21_S1 + G(3, 1) * S2;
+
 		vJ_ = S_implict_ * q_dot;
 		cJ_ = S_implict_ring_ * q_dot + S_implict_ * loop_constraint_->g();
 	}

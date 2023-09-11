@@ -57,17 +57,7 @@ namespace grbda
             S_implict_.block<6, 1>(24, 4) = rotor_2_joint_->S();
             S_implict_.block<6, 1>(30, 5) = rotor_3_joint_->S();
 
-            // S_.block<6, 1>(0, 0) = link_1_joint_->S();
-            // S_.block<6, 1>(18, 0) = gr1 * br1 * rotor_1_joint_->S();
-            // S_.block<6, 1>(24, 0) = gr2 * br1 * rotor_2_joint_->S();
-            // S_.block<6, 1>(30, 0) = -gr3 * br1 * rotor_3_joint_->S();
-
-            // S_.block<6, 1>(6, 1) = link_2_joint_->S();
-            // S_.block<6, 1>(24, 1) = gr2 * br2 * rotor_2_joint_->S();
-            // S_.block<6, 1>(30, 1) = -gr3 * br2 * rotor_3_joint_->S();
-
-            // S_.block<6, 1>(12, 2) = link_3_joint_->S();
-            // S_.block<6, 1>(30, 2) = gr3 * br3 * rotor_3_joint_->S();
+            S_ = S_implict_ * loop_constraint_->G();
         }
 
         void RevoluteTripleWithRotor::updateKinematics(const JointState &joint_state)
@@ -103,13 +93,14 @@ namespace grbda
             S_implict_.block<6, 1>(12, 0) = X31_S1;
             S_implict_.block<6, 1>(12, 1) = X32_S2;
 
+            S_.topLeftCorner<18, 3>() = S_implict_.topLeftCorner<18, 3>();
+
             S_implict_ring_.block<6, 1>(6, 0) = -generalMotionCrossMatrix(v2_relative1) * X21_S1;
             S_implict_ring_.block<6, 1>(12, 0) = -generalMotionCrossMatrix(v3_relative1) * X31_S1;
             S_implict_ring_.block<6, 1>(12, 1) = -generalMotionCrossMatrix(v3_relative2) * X32_S2;
 
-            S_ = S_implict_ * loop_constraint_->G();
             vJ_ = S_implict_ * qd;
-            cJ_ = S_implict_ring_ * qd + S_implict_ * loop_constraint_->g();
+            cJ_ = S_implict_ring_ * qd;
         }
 
         void RevoluteTripleWithRotor::computeSpatialTransformFromParentToCurrentCluster(
