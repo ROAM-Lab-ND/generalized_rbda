@@ -72,9 +72,14 @@ namespace grbda
 	    link_1_joint_ = single_joints_.emplace_back(new Joints::Revolute(joint_axis_1));
 	    link_2_joint_ = single_joints_.emplace_back(new Joints::Revolute(joint_axis_2));
 
-        S_.block<6, 1>(0, 0) = gear_ratio * rotor_1_joint_->S();
-        S_.block<6, 1>(6, 1) = gear_ratio * rotor_2_joint_->S();
-    }
+		S_implict_ = DMat<double>::Zero(24, 4);
+		S_implict_ring_ = DMat<double>::Zero(24, 4);
+
+		S_implict_.block<6, 1>(0, 0) = rotor_1_joint_->S();
+		S_implict_.block<6, 1>(6, 1) = rotor_2_joint_->S();
+		S_implict_.block<6, 1>(12, 2) = link_1_joint_->S();
+		S_implict_.block<6, 1>(18, 3) = link_2_joint_->S();
+	}
 
 	void TelloDifferential::updateKinematics(const JointState &joint_state)
 	{
@@ -99,17 +104,12 @@ namespace grbda
 		const DVec<double> v2_relative = S2 * q_dot[3];
 	    const DMat<double> v2_rel_crm = generalMotionCrossMatrix(v2_relative);
 
-        S_.block<6, 1>(12, 0) = S1 * G()(2, 0);
-        S_.block<6, 1>(12, 1) = S1 * G()(2, 1);
-        S_.block<6, 1>(18, 0) = X21_S1 * G()(2, 0) + S2 * G()(3, 0);
-        S_.block<6, 1>(18, 1) = X21_S1 * G()(2, 1) + S2 * G()(3, 1);
-	    
-		vJ_ = S_ * joint_state.velocity;
+		S_implict_.block<6, 1>(18, 2) = X21_S1;
+		S_implict_ring_.block<6, 1>(18, 2) = -v2_rel_crm * X21_S1;
 
-        cJ_.segment<6>(0) = rotor_1_joint_->S() * g()[0];
-        cJ_.segment<6>(6) = rotor_2_joint_->S() * g()[1];
-        cJ_.segment<6>(12) = S1 * g()[2];
-        cJ_.segment<6>(18) = -v2_rel_crm * X21_S1 * q_dot[2] + X21_S1 * g()[2] + S2 * g()[3];
+		S_ = S_implict_ * loop_constraint_->G();
+		vJ_ = S_implict_ * q_dot;
+		cJ_ = S_implict_ring_ * q_dot + S_implict_ * loop_constraint_->g();
 	}
 
 	void TelloDifferential::computeSpatialTransformFromParentToCurrentCluster(

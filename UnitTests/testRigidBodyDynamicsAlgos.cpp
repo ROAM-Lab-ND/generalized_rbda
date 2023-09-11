@@ -56,6 +56,7 @@ protected:
             spanning_joint_vel = appendEigenVector(spanning_joint_vel,
                                                    spanning_joint_state.velocity);
             model_state.push_back(joint_state);
+            // model_state.push_back(spanning_joint_state);
         }
 
         cluster_models[robot_idx].initializeState(model_state);

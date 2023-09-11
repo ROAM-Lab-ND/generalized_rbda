@@ -26,8 +26,6 @@ namespace grbda
             S_.block<6, 1>(6, 0) = gear_ratio * rotor_joint_->S();
 
             Psi_.block<6, 1>(6, 0) = 1. / gear_ratio * rotor_joint_->S();
-
-            vJ_ = DVec<double>::Zero(12);
         }
 
         void RevoluteWithRotor::updateKinematics(const JointState &joint_state)

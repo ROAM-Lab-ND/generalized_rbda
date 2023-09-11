@@ -54,7 +54,7 @@ namespace grbda
 			TelloDifferential(Body &rotor_1, Body &rotor_2, Body &link_1, Body &link_2,
 							  CoordinateAxis rotor_axis_1, CoordinateAxis rotor_axis_2,
 							  CoordinateAxis joint_axis_1, CoordinateAxis joint_axis_2,
-                              double gear_ratio);
+							  double gear_ratio);
 			virtual ~TelloDifferential() {}
 
 			void updateKinematics(const JointState &joint_state) override;
@@ -83,7 +83,10 @@ namespace grbda
 			const Body link_1_;
 			const Body link_2_;
 
-            const double gear_ratio_;
+			DMat<double> S_implict_;
+			DMat<double> S_implict_ring_;
+
+			const double gear_ratio_;
 		};
 
 	}

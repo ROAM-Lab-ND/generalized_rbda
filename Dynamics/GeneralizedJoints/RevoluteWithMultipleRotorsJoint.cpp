@@ -69,8 +69,9 @@ namespace grbda
                 rotor_joints_[i]->updateKinematics(q.segment<1>(i + 1), qd.segment<1>(i + 1));
             }
 
-            S_ = Xup_spanning_tree_ * S_spanning_tree_ * G();
-            vJ_ = S_ * joint_state.velocity;
+            const DMat<double> S_explicit = Xup_spanning_tree_ * S_spanning_tree_; 
+            S_ = S_explicit * G();
+            vJ_ = S_explicit * qd;
         }
 
         void RevoluteWithMultipleRotorsJoint::computeSpatialTransformFromParentToCurrentCluster(

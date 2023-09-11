@@ -35,6 +35,9 @@ namespace grbda
 
             const Body link_1_;
             const Body link_2_;
+
+            DMat<double> S_implict_;
+            DMat<double> S_implict_ring_;
         };
 
     }

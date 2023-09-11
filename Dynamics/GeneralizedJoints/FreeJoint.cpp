@@ -36,7 +36,6 @@ namespace grbda
 
             S_.setIdentity();
             Psi_.setIdentity();
-            vJ_ = SVec<double>::Zero();
 
             single_joints_.emplace_back(new Joints::Free());
 
