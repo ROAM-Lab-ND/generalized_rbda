@@ -1,4 +1,5 @@
-#pragma once
+#ifndef GRBDA_ROBOTS_TELLO_H
+#define GRBDA_ROBOTS_TELLO_H
 
 #include "Robot.h"
 
@@ -136,3 +137,5 @@ namespace grbda
     };
 
 } // namespace grbda
+
+#endif // GRBDA_ROBOTS_TELLO_H

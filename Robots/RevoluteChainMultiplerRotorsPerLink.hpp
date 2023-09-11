@@ -1,4 +1,5 @@
-#pragma once
+#ifndef GRBDA_ROBOTS_REVOLUTE_CHAIN_MULTIPLE_ROTORS_PER_LINK_H
+#define GRBDA_ROBOTS_REVOLUTE_CHAIN_MULTIPLE_ROTORS_PER_LINK_H
 
 #include "SerialChain.hpp"
 
@@ -20,3 +21,5 @@ namespace grbda
     };
 
 } // namespace grbda
+
+#endif // GRBDA_ROBOTS_REVOLUTE_CHAIN_MULTIPLE_ROTORS_PER_LINK_H

@@ -1,4 +1,5 @@
-#pragma once
+#ifndef GRBDA_ROBOTS_MINI_CHEETAH_H
+#define GRBDA_ROBOTS_MINI_CHEETAH_H
 
 #include "Robot.h"
 
@@ -134,3 +135,5 @@ namespace grbda
     };
 
 };
+
+#endif // GRBDA_ROBOTS_MINI_CHEETAH_H

@@ -1,4 +1,5 @@
-#pragma once
+#ifndef GBRDA_TREE_NODE_H
+#define GBRDA_TREE_NODE_H
 
 #include <string>
 #include <memory>
@@ -72,3 +73,5 @@ namespace grbda
     };
 
 } // namespace grbda
+
+#endif // GBRDA_TREE_NODE_H

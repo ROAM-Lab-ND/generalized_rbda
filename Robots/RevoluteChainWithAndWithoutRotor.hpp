@@ -1,4 +1,5 @@
-#pragma once
+#ifndef GRBDA_ROBOTS_REVOLUTE_CHAIN_WITH_AND_WITHOUT_ROTOR_H
+#define GRBDA_ROBOTS_REVOLUTE_CHAIN_WITH_AND_WITHOUT_ROTOR_H
 
 #include "SerialChain.hpp"
 
@@ -21,3 +22,5 @@ namespace grbda
     };
 
 } // namespace grbda
+
+#endif // GRBDA_ROBOTS_REVOLUTE_CHAIN_WITH_AND_WITHOUT_ROTOR_H

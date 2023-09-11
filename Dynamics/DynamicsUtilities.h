@@ -1,4 +1,5 @@
-#pragma once
+#ifndef GRBDA_DYNAMICS_UTILITIES_H
+#define GRBDA_DYNAMICS_UTILITIES_H
 
 #include "Utils/cppTypes.h"
 
@@ -51,3 +52,5 @@ namespace grbda
     };
 
 } // namespace grbda
+
+#endif // GRBDA_DYNAMICS_UTILITIES_H

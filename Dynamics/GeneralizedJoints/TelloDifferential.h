@@ -13,7 +13,8 @@
  * - 2x post-gearbox rotor coordinates
  */
 
-#pragma once
+#ifndef GRBDA_GENERALIZED_JOINTS_TELLO_DIFFERENTIAL_H
+#define GRBDA_GENERALIZED_JOINTS_TELLO_DIFFERENTIAL_H
 
 #include "GeneralizedJoint.h"
 #include "3rd-parties/CasadiGen/header/CasadiGen.h"
@@ -88,3 +89,5 @@ namespace grbda
 	}
 
 } // namespace grbda
+
+#endif // GRBDA_GENERALIZED_JOINTS_TELLO_DIFFERENTIAL_H

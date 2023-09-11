@@ -3,8 +3,8 @@
  *
  */
 
-#ifndef GRDBA_SPATIALINERTIA_H
-#define GRDBA_SPATIALINERTIA_H
+#ifndef GRDBA_SPATIAL_INERTIA_H
+#define GRDBA_SPATIAL_INERTIA_H
 
 #include <cmath>
 #include <iostream>
@@ -193,4 +193,4 @@ namespace grbda
 
 } // namespace grbda
 
-#endif // GRBDA_SPATIALINERTIA_H
+#endif // GRBDA_SPATIAL_INERTIA_H

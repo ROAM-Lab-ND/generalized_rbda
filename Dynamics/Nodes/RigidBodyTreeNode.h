@@ -1,4 +1,5 @@
-#pragma once
+#ifndef GRBDA_RIGID_BODY_TREE_NODE_H
+#define GRBDA_RIGID_BODY_TREE_NODE_H
 
 #include "TreeNode.h"
 #include "Dynamics/Joints/Joint.h"
@@ -32,3 +33,5 @@ namespace grbda
     };
 
 } // namespace grbda
+
+#endif // GRBDA_RIGID_BODY_TREE_NODE_H

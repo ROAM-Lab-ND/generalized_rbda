@@ -1,4 +1,5 @@
-#pragma once
+#ifndef GRBDA_DYNAMICS_RIGID_BODY_TREE_MODEL_H
+#define GRBDA_DYNAMICS_RIGID_BODY_TREE_MODEL_H
 
 #include "ClusterTreeModel.h"
 #include "Factorization.h"
@@ -147,3 +148,5 @@ namespace grbda
     };
 
 } // namespace grbda
+
+#endif // GRBDA_DYNAMICS_RIGID_BODY_TREE_MODEL_H

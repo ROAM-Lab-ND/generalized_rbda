@@ -1,5 +1,5 @@
-#ifndef CASADIGEN_H
-#define CASADIGEN_H
+#ifndef GRBDA_CASADIGEN_H
+#define GRBDA_CASADIGEN_H
 
 #define int_T long long int
 
@@ -133,4 +133,4 @@ namespace grbda
 
 } // namespace grbda
 
-#endif // CASADIGEN_H
+#endif // GRBDA_CASADIGEN_H

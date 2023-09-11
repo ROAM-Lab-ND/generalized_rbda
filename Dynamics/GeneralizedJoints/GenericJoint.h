@@ -1,4 +1,5 @@
-#pragma once
+#ifndef GRBDA_GENERALIZED_JOINT_GENERIC_H
+#define GRBDA_GENERALIZED_JOINT_GENERIC_H
 
 #include "GeneralizedJoint.h"
 
@@ -41,3 +42,5 @@ namespace grbda
     }
 
 } // namespace grbda
+
+#endif // GRBDA_GENERALIZED_JOINT_GENERIC_H

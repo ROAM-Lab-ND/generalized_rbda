@@ -1,4 +1,5 @@
-#pragma once
+#ifndef GRBDA_GENERALIZED_JOINTS_TELLO_HIP_DIFFERENTIAL_H
+#define GRBDA_GENERALIZED_JOINTS_TELLO_HIP_DIFFERENTIAL_H
 
 #include "TelloDifferential.h"
 #include "3rd-parties/CasadiGen/header/CasadiGen.h"
@@ -39,3 +40,5 @@ namespace grbda
     }
 
 } // namespace grbda
+
+#endif // GRBDA_GENERALIZED_JOINTS_TELLO_HIP_DIFFERENTIAL_H

@@ -1,4 +1,5 @@
-#pragma once
+#ifndef GRBDA_JOINT_H
+#define GRBDA_JOINT_H
 
 #include "Utils/Utilities/SpatialTransforms.h"
 
@@ -78,3 +79,5 @@ namespace grbda
     }
 
 } // namespace grbda
+
+#endif // GRBDA_JOINT_H

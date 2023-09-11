@@ -1,6 +1,5 @@
-#pragma once
-
-#include <optional>
+#ifndef GRBDA_REFLECTED_INERTIA_TREE_NODE_H
+#define GRBDA_REFLECTED_INERTIA_TREE_NODE_H
 
 #include "TreeNode.h"
 #include "Dynamics/Joints/Joint.h"
@@ -45,3 +44,5 @@ namespace grbda
     };
 
 } // namespace grbda
+
+#endif // GRBDA_REFLECTED_INERTIA_TREE_NODE_H
