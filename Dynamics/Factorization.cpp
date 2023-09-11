@@ -6,20 +6,9 @@ namespace grbda
     namespace factorization
     {
 
-        LTL::LTL(DMat<double> H, const std::vector<std::shared_ptr<RigidBodyTreeNode>> &nodes)
-            : nodes_(nodes)
+        LTL::LTL(DMat<double> H, const std::vector<int> &expanded_tree_parent_indices)
+            : expanded_tree_parent_indices_(expanded_tree_parent_indices)
         {
-            // ISSUE #14
-            for (const auto& node : nodes)
-            {
-                if (node->joint_->numVelocities() > 1)
-                {
-                    std::cout << "Warning: slow factorization due to multi-dof joint" << std::endl;
-                    this->DMat<double>::operator=(DMat<double>::Zero(0, 0));
-                    return;
-                }
-            }
-
             for (int k = H.rows() - 1; k > -1; k--)
             {
                 H(k, k) = std::sqrt(H(k, k));

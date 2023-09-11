@@ -100,7 +100,7 @@ namespace grbda
 #ifdef TIMING_STATS
             timer_.start();
 #endif
-            factorization::LTL L(H_, rigid_body_nodes_);
+            factorization::LTL L(H_, expanded_tree_parent_indices_);
 #ifdef TIMING_STATS
             timing_statistics_.ltl_factorization_time = timer_.getMs();
             timer_.start();
