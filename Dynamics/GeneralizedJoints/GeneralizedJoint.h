@@ -58,8 +58,11 @@ namespace grbda
             const int &numVelocities() const { return num_velocities_; }
             virtual int numUnactuatedVelocities() const { return 0; }
 
+            // TODO(@MatthewChignoli): I think we can delete this stuff now
             const bool &positionIsSpanning() const { return position_is_spanning_; }
             const bool &velocityIsSpanning() const { return velocity_is_spanning_; }
+
+            virtual JointCoordinate integratePosition(JointState joint_state, double dt) const;
 
             const DMat<double> &S() const { return S_; }
             const DMat<double> &Psi() const { return Psi_; }

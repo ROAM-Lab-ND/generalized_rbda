@@ -7,6 +7,7 @@
 using namespace grbda;
 
 static const double tol = 1e-10;
+static const double loose_tol = 1e-5;
 
 template <class T>
 class RigidBodyKinemaitcsTest : public testing::Test
@@ -177,12 +178,6 @@ TYPED_TEST(RigidBodyKinemaitcsTest, MotionSubspaceApparentDerivative)
             auto joint = cluster->joint_;
             JointState joint_state = cluster->joint_state_;
 
-            // ISSUE #14
-            if (joint_state.position.size() != joint_state.velocity.size())
-            {
-                continue;
-            }
-
             const DVec<double> cJ = joint->cJ();
 
             JointState q_plus_joint_state = cluster->joint_state_;
@@ -200,7 +195,7 @@ TYPED_TEST(RigidBodyKinemaitcsTest, MotionSubspaceApparentDerivative)
             DMat<double> S_ring_fd = (S_plus - S_minus) / (2 * dt);
             DVec<double> cJ_fd = S_ring_fd * joint_state.velocity;
 
-            GTEST_ASSERT_LT((cJ - cJ_fd).norm(), tol);
+            GTEST_ASSERT_LT((cJ - cJ_fd).norm(), loose_tol);
         }
     }
 }

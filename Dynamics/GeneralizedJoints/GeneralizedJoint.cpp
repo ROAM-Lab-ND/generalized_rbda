@@ -48,6 +48,28 @@ namespace grbda
             return spanning_joint_state;
         }
 
+        JointCoordinate Base::integratePosition(JointState joint_state, double dt) const
+        {
+            if (joint_state.position.isSpanning() && joint_state.velocity.isSpanning())
+            {
+                joint_state.position += joint_state.velocity * dt;
+            }
+            else if (joint_state.position.isSpanning())
+            {
+                joint_state.position += G() * joint_state.velocity * dt;
+            }
+            else if (joint_state.velocity.isSpanning())
+            {
+                throw std::runtime_error("Velocity is spanning but position is not. This is not supported.");
+            }
+            else
+            {
+                joint_state.position += joint_state.velocity * dt;
+            }
+
+            return joint_state.position;
+        }
+
         JointState Base::randomJointState() const
         {
             JointState joint_state(position_is_spanning_, velocity_is_spanning_);
