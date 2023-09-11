@@ -40,7 +40,7 @@ protected:
         }
     }
 
-    bool initializeRandomStates(const int robot_idx)
+    bool initializeRandomStates(const int robot_idx, bool use_spanning_state)
     {
         ModelState model_state;
         DVec<double> spanning_joint_pos = DVec<double>::Zero(0);
@@ -55,8 +55,11 @@ protected:
                                                    spanning_joint_state.position);
             spanning_joint_vel = appendEigenVector(spanning_joint_vel,
                                                    spanning_joint_state.velocity);
-            model_state.push_back(joint_state);
-            // model_state.push_back(spanning_joint_state);
+
+            if (use_spanning_state)
+                model_state.push_back(spanning_joint_state);
+            else
+                model_state.push_back(joint_state);
         }
 
         cluster_models[robot_idx].initializeState(model_state);
@@ -144,7 +147,8 @@ TYPED_TEST(RigidBodyDynamicsAlgosTest, MassMatrix)
 
         for (int j = 0; j < num_tests_per_robot; j++)
         {
-            bool nan_detected_in_state = this->initializeRandomStates(i);
+            const bool use_spanning_state = i % 2 == 0;
+            bool nan_detected_in_state = this->initializeRandomStates(i, use_spanning_state);
             if (nan_detected_in_state)
             {
                 j--;
@@ -185,7 +189,8 @@ TYPED_TEST(RigidBodyDynamicsAlgosTest, BiasForceVector)
 
         for (int j = 0; j < num_tests_per_robot; j++)
         {
-            bool nan_detected_in_state = this->initializeRandomStates(i);
+            const bool use_spanning_state = i % 2 == 0;
+            bool nan_detected_in_state = this->initializeRandomStates(i, use_spanning_state);
             if (nan_detected_in_state)
             {
                 j--;
@@ -230,7 +235,8 @@ TYPED_TEST(RigidBodyDynamicsAlgosTest, ForwardAndInverseDyanmics)
         for (int j = 0; j < num_tests_per_robot; j++)
         {
             // Set random state
-            bool nan_detected_in_state = this->initializeRandomStates(i);
+            const bool use_spanning_state = i % 2 == 0;
+            bool nan_detected_in_state = this->initializeRandomStates(i, use_spanning_state);
             if (nan_detected_in_state)
             {
                 j--;
@@ -306,7 +312,8 @@ TYPED_TEST(RigidBodyDynamicsAlgosTest, LambdaInv)
 
         for (int j = 0; j < num_tests_per_robot; j++)
         {
-            bool nan_detected_in_state = this->initializeRandomStates(i);
+            const bool use_spanning_state = i % 2 == 0;
+            bool nan_detected_in_state = this->initializeRandomStates(i, use_spanning_state);
             if (nan_detected_in_state)
             {
                 j--;
@@ -350,7 +357,8 @@ TYPED_TEST(RigidBodyDynamicsAlgosTest, ApplyTestForceTest)
         for (int j = 0; j < num_tests_per_robot; j++)
         {
             // Set random state
-            bool nan_detected_in_state = this->initializeRandomStates(i);
+            const bool use_spanning_state = i % 2 == 0;
+            bool nan_detected_in_state = this->initializeRandomStates(i, use_spanning_state);
             if (nan_detected_in_state)
             {
                 j--;
