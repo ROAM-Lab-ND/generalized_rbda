@@ -131,7 +131,7 @@ namespace grbda
         }
     }
 
-    void RigidBodyTreeModel::initializeState(const DVec<double> &q, const DVec<double> &qd)
+    void RigidBodyTreeModel::setState(const DVec<double> &q, const DVec<double> &qd)
     {
         for (auto &node : rigid_body_nodes_)
         {
@@ -142,7 +142,7 @@ namespace grbda
         q_ = q;
         qd_ = qd;
 
-        initializeExternalForces();
+        setExternalForces();
     }
 
     void RigidBodyTreeModel::updateLoopConstraints()

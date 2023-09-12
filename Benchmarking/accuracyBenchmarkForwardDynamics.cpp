@@ -48,10 +48,10 @@ void runBenchmark(std::ofstream &file)
 
                 model_state.push_back(joint_state);
             }
-            cluster_model.initializeState(model_state);
-            reflected_inertia_model.initializeIndependentStates(independent_joint_pos,
+            cluster_model.setState(model_state);
+            reflected_inertia_model.setIndependentStates(independent_joint_pos,
                                                                 independent_joint_vel);
-            reflected_inertia_diag_model.initializeIndependentStates(independent_joint_pos,
+            reflected_inertia_diag_model.setIndependentStates(independent_joint_pos,
                                                                      independent_joint_vel);
 
             // Forward Dynamics

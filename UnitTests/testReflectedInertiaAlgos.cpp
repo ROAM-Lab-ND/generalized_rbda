@@ -37,10 +37,10 @@ protected:
             model_state.push_back(joint_state);
         }
 
-        cluster_model.initializeState(model_state);
-        reflected_inertia_model.initializeIndependentStates(independent_joint_pos_,
+        cluster_model.setState(model_state);
+        reflected_inertia_model.setIndependentStates(independent_joint_pos_,
                                                             independent_joint_vel_);
-        reflected_inertia_diag_model.initializeIndependentStates(independent_joint_pos_,
+        reflected_inertia_diag_model.setIndependentStates(independent_joint_pos_,
                                                                  independent_joint_vel_);
 
         // Check for NaNs
@@ -58,9 +58,9 @@ protected:
 
     void setForcesForAllModels(std::vector<ExternalForceAndBodyIndexPair> force_and_index_pairs)
     {
-        cluster_model.initializeExternalForces(force_and_index_pairs);
-        reflected_inertia_model.initializeExternalForces(force_and_index_pairs);
-        reflected_inertia_diag_model.initializeExternalForces(force_and_index_pairs);
+        cluster_model.setExternalForces(force_and_index_pairs);
+        reflected_inertia_model.setExternalForces(force_and_index_pairs);
+        reflected_inertia_diag_model.setExternalForces(force_and_index_pairs);
     }
 
     T robot = T(false);

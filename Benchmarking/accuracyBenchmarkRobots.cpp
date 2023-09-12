@@ -60,12 +60,12 @@ bool setRandomStates(ClusterTreeModel &cf_model,
         model_state.push_back(joint_state);
     }
 
-    cf_model.initializeState(model_state);
-    model_rf.initializeIndependentStates(independent_joint_pos,
+    cf_model.setState(model_state);
+    model_rf.setIndependentStates(independent_joint_pos,
                                          independent_joint_vel);
-    model_rf_diag.initializeIndependentStates(independent_joint_pos,
+    model_rf_diag.setIndependentStates(independent_joint_pos,
                                               independent_joint_vel);
-    model_rf_none.initializeIndependentStates(independent_joint_pos,
+    model_rf_none.setIndependentStates(independent_joint_pos,
                                               independent_joint_vel);
 
     return false;

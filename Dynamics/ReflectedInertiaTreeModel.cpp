@@ -122,7 +122,7 @@ namespace grbda
         }
     }
 
-    void ReflectedInertiaTreeModel::initializeIndependentStates(const DVec<double> &y,
+    void ReflectedInertiaTreeModel::setIndependentStates(const DVec<double> &y,
                                                                 const DVec<double> &yd)
     {
         for (auto &node : reflected_inertia_nodes_)
@@ -131,7 +131,7 @@ namespace grbda
             node->joint_state_.velocity = yd.segment(node->velocity_index_, node->num_velocities_);
         }
 
-        initializeExternalForces();
+        setExternalForces();
     }
 
     void ReflectedInertiaTreeModel::resetCache()

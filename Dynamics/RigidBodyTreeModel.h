@@ -81,7 +81,7 @@ namespace grbda
         const Body &getBody(int index) const override { return rigid_body_nodes_[index]->body_; }
         const TreeNodePtr getNodeContainingBody(int index) override { return rigid_body_nodes_[index]; }
 
-        void initializeState(const DVec<double> &q, const DVec<double> &qd);
+        void setState(const DVec<double> &q, const DVec<double> &qd);
 
         void updateLoopConstraints();
 

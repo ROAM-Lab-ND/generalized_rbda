@@ -51,9 +51,9 @@ void runBenchmark(std::ofstream &file)
 
                 model_state.push_back(joint_state);
             }
-            cl_model.initializeState(model_state);
-            rf_model.initializeIndependentStates(independent_joint_pos, independent_joint_vel);
-            rf_diag_model.initializeIndependentStates(independent_joint_pos, independent_joint_vel);
+            cl_model.setState(model_state);
+            rf_model.setIndependentStates(independent_joint_pos, independent_joint_vel);
+            rf_diag_model.setIndependentStates(independent_joint_pos, independent_joint_vel);
 
             // Apply Test Force
             DVec<double> dstate;

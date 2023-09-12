@@ -65,13 +65,13 @@ bool setRandomStates(ClusterTreeModel &cluster_model,
         model_state.push_back(joint_state);
     }
 
-    cluster_model.initializeState(model_state);
+    cluster_model.setState(model_state);
 
     for (RigidBodyTreePtr model : rigid_body_models)
-        model->initializeState(spanning_joint_pos, spanning_joint_vel);
+        model->setState(spanning_joint_pos, spanning_joint_vel);
 
     for (ReflectedInertiaTreePtr model : reflected_inertia_models)
-        model->initializeIndependentStates(independent_joint_pos, independent_joint_vel);
+        model->setIndependentStates(independent_joint_pos, independent_joint_vel);
 
     return false;
 }

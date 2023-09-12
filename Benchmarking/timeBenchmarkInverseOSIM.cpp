@@ -61,9 +61,9 @@ void runBenchmark(std::ofstream &file, const std::string& id)
                 model_state.push_back(joint_state);
             }
 
-            cluster_model.initializeState(model_state);
-            projection_model.initializeState(spanning_joint_pos, spanning_joint_vel);
-            reflected_inertia_model.initializeIndependentStates(independent_joint_pos,
+            cluster_model.setState(model_state);
+            projection_model.setState(spanning_joint_pos, spanning_joint_vel);
+            reflected_inertia_model.setIndependentStates(independent_joint_pos,
                                                                 independent_joint_vel);
 
             // Inverse Operational Space Inertia Matrix

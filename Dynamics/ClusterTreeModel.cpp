@@ -220,42 +220,7 @@ namespace grbda
         appendContactPoint(body_name, local_offset, end_effector_name, true);
     }
 
-
-
-//     void ClusterTreeModel::setState(const DVec<double> &state)
-//     {
-//         const int nq = getNumPositions();
-//         const int nv = getNumDegreesOfFreedom();
-
-// #ifdef DEBUG_MODE
-//         if (state.size() != nq + nv)
-//             throw runtime_error("State vector has incorrect size");
-// #endif
-
-//         ModelState model_state;
-//         int pos_idx = 0;
-//         int vel_idx = nq;
-//         for (size_t i(0); i < clusters().size(); i++)
-//         {
-//             const auto &joint = cluster(i)->joint_;
-
-//             const int &num_pos = joint->numPositions();
-//             const int &num_vel = joint->numVelocities();
-
-//             JointState joint_state(joint->positionIsSpanning(),
-//                                    joint->velocityIsSpanning());
-//             joint_state.position = state.segment(pos_idx, num_pos);
-//             joint_state.velocity = state.segment(vel_idx, num_vel);
-//             model_state.push_back(joint_state);
-
-//             pos_idx += num_pos;
-//             vel_idx += num_vel;
-//         }
-
-//         initializeState(model_state);
-//     }
-
-    void ClusterTreeModel::initializeState(const ModelState &model_state)
+    void ClusterTreeModel::setState(const ModelState &model_state)
     {
         size_t i = 0;
         for (auto &cluster : cluster_nodes_)
@@ -264,37 +229,7 @@ namespace grbda
             i++;
         }
 
-        resetExternalForces();
-    }
-
-    void ClusterTreeModel::resetExternalForces()
-    {
-        for (const int index : indices_of_nodes_experiencing_external_forces_)
-            nodes_[index]->f_ext_.setZero();
-        indices_of_nodes_experiencing_external_forces_.clear();
-
-        resetCache();
-    }
-
-    void ClusterTreeModel::setExternalForces(const string &body_name, const SVec<double> &force)
-    {
-        const auto &body_i = body(body_name);
-        const auto node = getNodeContainingBody(body_i.index_);
-        node->applyForceToBody(force, body_i);
-
-        // Add index to vector if vector does not already contain this cluster
-        if (!vectorContainsIndex(indices_of_nodes_experiencing_external_forces_, node->index_))
-            indices_of_nodes_experiencing_external_forces_.push_back(node->index_);
-    }
-
-    void ClusterTreeModel::setExternalForces(const unordered_map<string, SVec<double>> &ext_forces)
-    {
-        for (const auto &ext_force : ext_forces)
-        {
-            const string &body_name = ext_force.first;
-            const SVec<double> &force = ext_force.second;
-            setExternalForces(body_name, force);
-        }
+        setExternalForces();
     }
 
     void ClusterTreeModel::resetCache()

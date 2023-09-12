@@ -67,11 +67,11 @@ void runBenchmark(std::ofstream &file, const std::string& id, const bool include
                 model_state.push_back(joint_state);
             }
 
-            cluster_model.initializeState(model_state);
-            lg_custom_mult_model.initializeState(spanning_joint_pos, spanning_joint_vel);
-            lg_eigen_mult_model.initializeState(spanning_joint_pos, spanning_joint_vel);
-            projection_model.initializeState(spanning_joint_pos, spanning_joint_vel);
-            reflected_inertia_model.initializeIndependentStates(independent_joint_pos,
+            cluster_model.setState(model_state);
+            lg_custom_mult_model.setState(spanning_joint_pos, spanning_joint_vel);
+            lg_eigen_mult_model.setState(spanning_joint_pos, spanning_joint_vel);
+            projection_model.setState(spanning_joint_pos, spanning_joint_vel);
+            reflected_inertia_model.setIndependentStates(independent_joint_pos,
                                                                 independent_joint_vel);
 
             // TODO(@MatthewChignoli): Seems like including forces does not slow it down? That's strange
@@ -81,11 +81,11 @@ void runBenchmark(std::ofstream &file, const std::string& id, const bool include
                 std::vector<ExternalForceAndBodyIndexPair> force_and_index_pairs;
                 for (const auto &body : cluster_model.bodies())
                     force_and_index_pairs.emplace_back(body.index_, SVec<double>::Random());
-                cluster_model.initializeExternalForces(force_and_index_pairs);
-                lg_custom_mult_model.initializeExternalForces(force_and_index_pairs);
-                lg_eigen_mult_model.initializeExternalForces(force_and_index_pairs);
-                projection_model.initializeExternalForces(force_and_index_pairs);
-                reflected_inertia_model.initializeExternalForces(force_and_index_pairs);
+                cluster_model.setExternalForces(force_and_index_pairs);
+                lg_custom_mult_model.setExternalForces(force_and_index_pairs);
+                lg_eigen_mult_model.setExternalForces(force_and_index_pairs);
+                projection_model.setExternalForces(force_and_index_pairs);
+                reflected_inertia_model.setExternalForces(force_and_index_pairs);
             }
 
             // Forward Dynamics

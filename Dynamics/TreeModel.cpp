@@ -174,7 +174,7 @@ namespace grbda
         return tau;
     }
 
-    void TreeModel::initializeExternalForces(
+    void TreeModel::setExternalForces(
         const std::vector<ExternalForceAndBodyIndexPair> &force_and_body_index_pairs)
     {
         // Clear previous external forces

@@ -63,11 +63,11 @@ protected:
                 model_state.push_back(joint_state);
         }
 
-        cluster_models[robot_idx].initializeState(model_state);
-        generic_models[robot_idx].initializeState(model_state);
-        lg_mult_custom_models[robot_idx].initializeState(spanning_joint_pos, spanning_joint_vel);
-        lg_mult_eigen_models[robot_idx].initializeState(spanning_joint_pos, spanning_joint_vel);
-        projection_models[robot_idx].initializeState(spanning_joint_pos, spanning_joint_vel);
+        cluster_models[robot_idx].setState(model_state);
+        generic_models[robot_idx].setState(model_state);
+        lg_mult_custom_models[robot_idx].setState(spanning_joint_pos, spanning_joint_vel);
+        lg_mult_eigen_models[robot_idx].setState(spanning_joint_pos, spanning_joint_vel);
+        projection_models[robot_idx].setState(spanning_joint_pos, spanning_joint_vel);
 
         // Check for NaNs
         bool nan_detected = false;
@@ -85,11 +85,11 @@ protected:
     void setForcesForAllModels(std::vector<ExternalForceAndBodyIndexPair> force_and_index_pairs,
                                const int robot_idx)
     {
-        cluster_models[robot_idx].initializeExternalForces(force_and_index_pairs);
-        generic_models[robot_idx].initializeExternalForces(force_and_index_pairs);
-        lg_mult_custom_models[robot_idx].initializeExternalForces(force_and_index_pairs);
-        lg_mult_eigen_models[robot_idx].initializeExternalForces(force_and_index_pairs);
-        projection_models[robot_idx].initializeExternalForces(force_and_index_pairs);
+        cluster_models[robot_idx].setExternalForces(force_and_index_pairs);
+        generic_models[robot_idx].setExternalForces(force_and_index_pairs);
+        lg_mult_custom_models[robot_idx].setExternalForces(force_and_index_pairs);
+        lg_mult_eigen_models[robot_idx].setExternalForces(force_and_index_pairs);
+        projection_models[robot_idx].setExternalForces(force_and_index_pairs);
     }
 
     std::vector<T> robots;

@@ -93,14 +93,6 @@ namespace grbda
         }
         ~ClusterTreeModel() {}
 
-        // TODO(@MatthewChignoli): These are functions and members shared with FloatingBaseModel. Not sure how I want to deal with them moving forward. It's unclear which parts of Robot-Software need to change for compatiblity with GRBDA and which parts of GRBDA need to change for compatibility with Robot-Software.
-        void setExternalForces(const string &body_name, const SVec<double> &force);
-        void setExternalForces(const unordered_map<string, SVec<double>> &ext_forces = {});
-        void resetExternalForces();
-        void resetCalculationFlags() { resetCache(); }
-
-        /////////////////////////////////////
-
         Body registerBody(const string name, const SpatialInertia<double> inertia,
                           const string parent_name, const SpatialTransform Xtree);
         // TODO(@MatthewChignoli): need to clean this up, should have to make all of these vectors we we are only appending one body. Right now the append body function is silly. Because That function creates a body (by registering it), but it also requires a generalized joint... which requires a body...
@@ -118,7 +110,7 @@ namespace grbda
 
         void print() const;
 
-        void initializeState(const ModelState &model_state);
+        void setState(const ModelState &model_state);
 
         int getNumBodies() const override { return (int)bodies_.size(); }
 
@@ -192,7 +184,7 @@ namespace grbda
         }
 #endif
 
-    private:
+    protected:
         void checkValidParentClusterForBodiesInCluster(const ClusterTreeNodePtr cluster);
         void checkValidParentClusterForBodiesInCluster(const int cluster_index);
         void checkValidParentClusterForBodiesInCluster(const string &cluster_nam);

@@ -33,7 +33,7 @@ void runBenchmark(std::ofstream &file, const std::string &id)
                 model_state.push_back(cluster->joint_->randomJointState());
             }
 
-            cluster_model.initializeState(model_state);
+            cluster_model.setState(model_state);
 
             // Forward Dynamics
             DVec<double> tau = DVec<double>::Random(nv);

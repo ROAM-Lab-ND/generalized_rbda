@@ -40,7 +40,7 @@ namespace grbda
 
         const DVec<int> &getIndependentCoordinateIndices() const { return independent_coord_indices_; }
 
-        void initializeIndependentStates(const DVec<double> &y, const DVec<double> &yd);
+        void setIndependentStates(const DVec<double> &y, const DVec<double> &yd);
 
         Vec3<double> getPosition(const string &body_name) override
         {

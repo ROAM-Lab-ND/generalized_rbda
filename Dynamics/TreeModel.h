@@ -41,7 +41,7 @@ namespace grbda
         void setGravity(const Vec3<double> &g) { gravity_.tail<3>() = g; }
         SVec<double> getGravity() const { return gravity_; }
 
-        virtual void initializeExternalForces(
+        void setExternalForces(
             const std::vector<ExternalForceAndBodyIndexPair> &force_and_body_index_pairs = {});
 
         void forwardKinematics();
