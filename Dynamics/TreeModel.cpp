@@ -117,6 +117,7 @@ namespace grbda
         bias_force_updated_ = true;
     }
 
+    // TODO(@MatthewChignoli): This assume that qdd is non-spanning. So we need to make this clear?
     DVec<double> TreeModel::recursiveNewtonEulerAlgorithm(const DVec<double> &qdd)
     {
         forwardKinematics();
