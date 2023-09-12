@@ -4,7 +4,7 @@
 #include "Dynamics/ClusterTreeModel.h"
 
 #include "Robots/RobotTypes.h"
-#include "Utils/Utilities/Timer.h"
+#include "Utils/Timer.h"
 
 using namespace grbda;
 

@@ -2,7 +2,7 @@
 #define GRBDA_LOOP_CONSTRAINT_H
 
 #include <memory>
-#include "Utils/cppTypes.h"
+#include "Utils/StateRepresentation.h"
 
 namespace grbda
 {

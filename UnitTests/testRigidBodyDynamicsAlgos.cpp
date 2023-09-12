@@ -3,7 +3,7 @@
 #include "testHelpers.hpp"
 #include "Dynamics/RigidBodyTreeModel.h"
 #include "Robots/RobotTypes.h"
-#include "Utils/Utilities/Timer.h"
+#include "Utils/Timer.h"
 
 using namespace grbda;
 
