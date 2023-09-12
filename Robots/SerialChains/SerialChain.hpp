@@ -1,7 +1,7 @@
 #ifndef GRBDA_ROBOTS_SERIAL_CHAIN_H
 #define GRBDA_ROBOTS_SERIAL_CHAIN_H
 
-#include "Robot.h"
+#include "Robots/Robot.h"
 
 namespace grbda
 {
