@@ -135,24 +135,21 @@ protected:
 
 using testing::Types;
 
-// typedef Types<
-//     TeleopArm, Tello, TelloWithArms,
-//     MIT_Humanoid, MiniCheetah,
-//     RevoluteChainWithRotor<2>,
-//     RevoluteChainWithRotor<4>,
-//     RevoluteChainWithRotor<8>,
-//     RevolutePairChainWithRotor<2>,
-//     RevolutePairChainWithRotor<4>,
-//     RevolutePairChainWithRotor<8>,
-//     RevoluteChainMultipleRotorsPerLink<2, 2>,
-//     RevoluteChainMultipleRotorsPerLink<4, 1>,
-//     RevoluteChainMultipleRotorsPerLink<4, 3>,
-//     RevoluteChainWithAndWithoutRotor<0ul, 8ul>,
-//     RevoluteChainWithAndWithoutRotor<4ul, 4ul>,
-//     RevoluteChainWithAndWithoutRotor<8ul, 0ul>>
-//     Robots;
-
-typedef Types<TeleopArm>
+typedef Types<
+    TeleopArm, Tello, TelloWithArms,
+    MIT_Humanoid, MiniCheetah,
+    RevoluteChainWithRotor<2>,
+    RevoluteChainWithRotor<4>,
+    RevoluteChainWithRotor<8>,
+    RevolutePairChainWithRotor<2>,
+    RevolutePairChainWithRotor<4>,
+    RevolutePairChainWithRotor<8>,
+    RevoluteChainMultipleRotorsPerLink<2, 2>,
+    RevoluteChainMultipleRotorsPerLink<4, 1>,
+    RevoluteChainMultipleRotorsPerLink<4, 3>,
+    RevoluteChainWithAndWithoutRotor<0ul, 8ul>,
+    RevoluteChainWithAndWithoutRotor<4ul, 4ul>,
+    RevoluteChainWithAndWithoutRotor<8ul, 0ul>>
     Robots;
 
 TYPED_TEST_SUITE(RigidBodyDynamicsAlgosTest, Robots);

@@ -8,7 +8,7 @@ namespace grbda
     {
 
         Generic::Generic(const std::vector<Body> &bodies, const std::vector<JointPtr> &joints,
-                         shared_ptr<const LoopConstraint::Base> loop_constraint)
+                         shared_ptr<LoopConstraint::Base> loop_constraint)
             : Base((int)bodies.size(),
                    loop_constraint->numIndependentPos(), loop_constraint->numIndependentVel(),
                    false, false),
@@ -60,7 +60,7 @@ namespace grbda
                         const auto joint_k = single_joints_[k];
 
                         const Mat6<double> Xup_prev = Xup_spanning_tree_.block<6, 6>(6 * i, 6 * k);
-                        const Mat6<double> Xint = (joint_k->XJ() * body.Xtree_).toMatrix();
+                        const Mat6<double> Xint = (joint_k->XJ() * body_k.Xtree_).toMatrix();
                         Xup_spanning_tree_.block<6, 6>(6 * i, 6 * j) = Xup_prev * Xint;
                     }
                 }

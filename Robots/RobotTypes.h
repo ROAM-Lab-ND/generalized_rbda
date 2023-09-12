@@ -2,6 +2,7 @@
 #include "RevoluteChainWithRotor.hpp"
 #include "RevolutePairChain.hpp"
 #include "RevolutePairChainWithRotor.hpp"
+#include "RevoluteTripleChainWithRotor.hpp"
 #include "RevoluteChainMultiplerRotorsPerLink.hpp"
 #include "RevoluteChainWithAndWithoutRotor.hpp"
 #include "Tello.hpp"

@@ -65,6 +65,8 @@ typedef Types<
     RevolutePairChain<4>,
     RevolutePairChainWithRotor<2>,
     RevolutePairChainWithRotor<4>,
+    RevoluteTripleChainWithRotor<6>,
+    RevoluteTripleChainWithRotor<9>,
     RevoluteChainMultipleRotorsPerLink<2, 2>,
     RevoluteChainMultipleRotorsPerLink<4, 1>,
     RevoluteChainMultipleRotorsPerLink<4, 3>,

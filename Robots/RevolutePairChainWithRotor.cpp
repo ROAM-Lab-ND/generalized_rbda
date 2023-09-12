@@ -58,7 +58,7 @@ namespace grbda
             // Contact points
             appendContactPoints(model, i, linkA_name, linkB_name);
 
-            parent_name = linkA_name;
+            parent_name = linkB_name;
         }
 
         return model;
