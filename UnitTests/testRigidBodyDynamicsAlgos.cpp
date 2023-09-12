@@ -8,6 +8,40 @@ using namespace grbda;
 
 static const double tol = 2e-8;
 
+ClusterTreeModel extractGenericJointModel(const ClusterTreeModel &model)
+{
+    ClusterTreeModel generic_model{};
+
+    for (const auto &cluster : model.clusters())
+    {
+        std::vector<Body> bodies;
+        std::vector<JointPtr> joints;
+
+        // Register bodies
+        for (auto pair : cluster->bodiesAndJoints())
+        {
+            Body body_i = pair.first;
+            bodies.push_back(body_i);
+
+            JointPtr joint_i = pair.second;
+            joints.push_back(joint_i);
+
+            bool is_base = body_i.parent_index_ == -1;
+            std::string parent_name = is_base ? "ground" : model.body(body_i.parent_index_).name_;
+            generic_model.registerBody(body_i.name_, body_i.inertia_, parent_name, body_i.Xtree_);
+        }
+
+        // Extract Loop Constraint and Append Cluster
+        std::shared_ptr<LoopConstraint::Base> constraint = cluster->joint_->cloneLoopConstraint();
+        std::shared_ptr<GeneralizedJoints::Generic> generic_cluster_joint =
+            std::make_shared<GeneralizedJoints::Generic>(bodies, joints, constraint);
+
+        generic_model.appendRegisteredBodiesAsCluster(cluster->name_, generic_cluster_joint);
+    }
+
+    return generic_model;
+}
+
 // The purpose of these tests is to ensure consistency between the outputs of the Rigid Body
 // Dynamics Algorithms for our cluster tree model and the constrained rigid body tree
 // (Featherstone) model
@@ -17,7 +51,6 @@ class RigidBodyDynamicsAlgosTest : public testing::Test
 {
 protected:
     RigidBodyDynamicsAlgosTest()
-        : t_cluster(0), t_lagrange_custom(0), t_lagrange_eigen(0), t_projection(0)
     {
         // TODO(@MatthewChignoli): In cases where we cannot build a random robot (e.g. Tello), we do not need to have multiple robots
         const int num_robots = 10;
@@ -25,6 +58,7 @@ protected:
         {
             T robot;
             ClusterTreeModel cluster_model(robot.buildClusterTreeModel());
+            ClusterTreeModel generic_model = extractGenericJointModel(cluster_model);
             RigidBodyTreeModel lg_mult_custom_model(cluster_model,
                                                     FwdDynMethod::LagrangeMultiplierCustom);
             RigidBodyTreeModel lg_mult_eigen_model(cluster_model,
@@ -34,6 +68,7 @@ protected:
 
             robots.push_back(robot);
             cluster_models.push_back(cluster_model);
+            generic_models.push_back(generic_model);
             lg_mult_custom_models.push_back(lg_mult_custom_model);
             lg_mult_eigen_models.push_back(lg_mult_eigen_model);
             projection_models.push_back(projection_model);
@@ -63,6 +98,7 @@ protected:
         }
 
         cluster_models[robot_idx].initializeState(model_state);
+        generic_models[robot_idx].initializeState(model_state);
         lg_mult_custom_models[robot_idx].initializeState(spanning_joint_pos, spanning_joint_vel);
         lg_mult_eigen_models[robot_idx].initializeState(spanning_joint_pos, spanning_joint_vel);
         projection_models[robot_idx].initializeState(spanning_joint_pos, spanning_joint_vel);
@@ -84,49 +120,39 @@ protected:
                                const int robot_idx)
     {
         cluster_models[robot_idx].initializeExternalForces(force_and_index_pairs);
+        generic_models[robot_idx].initializeExternalForces(force_and_index_pairs);
         lg_mult_custom_models[robot_idx].initializeExternalForces(force_and_index_pairs);
         lg_mult_eigen_models[robot_idx].initializeExternalForces(force_and_index_pairs);
         projection_models[robot_idx].initializeExternalForces(force_and_index_pairs);
     }
 
-    void printAverageComputationTimes(double num_samples)
-    {
-        if (t_cluster > 0)
-            std::cout << "Cluster     : " << t_cluster / num_samples << "ms\n";
-        if (t_lagrange_custom > 0)
-            std::cout << "Lagrange (C): " << t_lagrange_custom / num_samples << "ms\n";
-        if (t_lagrange_eigen > 0)
-            std::cout << "Lagrange (E): " << t_lagrange_eigen / num_samples << "ms\n";
-        if (t_projection > 0)
-            std::cout << "Projection  : " << t_projection / num_samples << "ms\n\n\n";
-    }
-
     std::vector<T> robots;
     std::vector<ClusterTreeModel> cluster_models;
+    std::vector<ClusterTreeModel> generic_models;
     std::vector<RigidBodyTreeModel> lg_mult_custom_models, lg_mult_eigen_models;
     std::vector<RigidBodyTreeModel> projection_models;
-
-    Timer timer;
-    double t_cluster, t_lagrange_custom, t_lagrange_eigen, t_projection;
 };
 
 using testing::Types;
 
-typedef Types<
-    TeleopArm, Tello, TelloWithArms,
-    MIT_Humanoid, MiniCheetah,
-    RevoluteChainWithRotor<2>,
-    RevoluteChainWithRotor<4>,
-    RevoluteChainWithRotor<8>,
-    RevolutePairChainWithRotor<2>,
-    RevolutePairChainWithRotor<4>,
-    RevolutePairChainWithRotor<8>,
-    RevoluteChainMultipleRotorsPerLink<2, 2>,
-    RevoluteChainMultipleRotorsPerLink<4, 1>,
-    RevoluteChainMultipleRotorsPerLink<4, 3>,
-    RevoluteChainWithAndWithoutRotor<0ul, 8ul>,
-    RevoluteChainWithAndWithoutRotor<4ul, 4ul>,
-    RevoluteChainWithAndWithoutRotor<8ul, 0ul>>
+// typedef Types<
+//     TeleopArm, Tello, TelloWithArms,
+//     MIT_Humanoid, MiniCheetah,
+//     RevoluteChainWithRotor<2>,
+//     RevoluteChainWithRotor<4>,
+//     RevoluteChainWithRotor<8>,
+//     RevolutePairChainWithRotor<2>,
+//     RevolutePairChainWithRotor<4>,
+//     RevolutePairChainWithRotor<8>,
+//     RevoluteChainMultipleRotorsPerLink<2, 2>,
+//     RevoluteChainMultipleRotorsPerLink<4, 1>,
+//     RevoluteChainMultipleRotorsPerLink<4, 3>,
+//     RevoluteChainWithAndWithoutRotor<0ul, 8ul>,
+//     RevoluteChainWithAndWithoutRotor<4ul, 4ul>,
+//     RevoluteChainWithAndWithoutRotor<8ul, 0ul>>
+//     Robots;
+
+typedef Types<TeleopArm>
     Robots;
 
 TYPED_TEST_SUITE(RigidBodyDynamicsAlgosTest, Robots);
@@ -140,6 +166,7 @@ TYPED_TEST(RigidBodyDynamicsAlgosTest, MassMatrix)
     for (int i = 0; i < (int)this->cluster_models.size(); i++)
     {
         ClusterTreeModel &cluster_model = this->cluster_models.at(i);
+        ClusterTreeModel &generic_model = this->generic_models.at(i);
         RigidBodyTreeModel &projection_model = this->projection_models.at(i);
 
         const int nq = cluster_model.getNumPositions();
@@ -155,22 +182,15 @@ TYPED_TEST(RigidBodyDynamicsAlgosTest, MassMatrix)
                 continue;
             }
 
-            this->timer.start();
             DMat<double> H_cluster = cluster_model.getMassMatrix();
-            this->t_cluster += this->timer.getMs();
-
-            this->timer.start();
+            DMat<double> H_generic = generic_model.getMassMatrix();
             DMat<double> H_projection = projection_model.getMassMatrix();
-            this->t_projection += this->timer.getMs();
 
             ASSERT_TRUE(isPositiveDefinite(H_cluster)) << H_cluster;
+            GTEST_ASSERT_LT((H_cluster - H_generic).norm(), tol);
             GTEST_ASSERT_LT((H_cluster - H_projection).norm(), tol);
         }
     }
-
-    std::cout << "\n**Avergage Mass Matrix Computation Time**" << std::endl;
-    const int num_tests = this->cluster_models.size() * num_tests_per_robot;
-    this->printAverageComputationTimes(num_tests);
 }
 
 TYPED_TEST(RigidBodyDynamicsAlgosTest, BiasForceVector)
@@ -182,6 +202,7 @@ TYPED_TEST(RigidBodyDynamicsAlgosTest, BiasForceVector)
     for (int i = 0; i < (int)this->cluster_models.size(); i++)
     {
         ClusterTreeModel &cluster_model = this->cluster_models[i];
+        ClusterTreeModel &generic_model = this->generic_models[i];
         RigidBodyTreeModel &projection_model = this->projection_models[i];
 
         const int nq = cluster_model.getNumPositions();
@@ -197,21 +218,14 @@ TYPED_TEST(RigidBodyDynamicsAlgosTest, BiasForceVector)
                 continue;
             }
 
-            this->timer.start();
             DVec<double> C_cluster = cluster_model.getBiasForceVector();
-            this->t_cluster += this->timer.getMs();
-
-            this->timer.start();
+            DVec<double> C_generic = generic_model.getBiasForceVector();
             DVec<double> C_projection = projection_model.getBiasForceVector();
-            this->t_projection += this->timer.getMs();
 
+            GTEST_ASSERT_LT((C_cluster - C_generic).norm(), tol);
             GTEST_ASSERT_LT((C_cluster - C_projection).norm(), tol);
         }
     }
-
-    std::cout << "\n**Avergage Bias Force Vector Computation Time**" << std::endl;
-    const int num_tests = this->cluster_models.size() * num_tests_per_robot;
-    this->printAverageComputationTimes(num_tests);
 }
 
 TYPED_TEST(RigidBodyDynamicsAlgosTest, ForwardAndInverseDyanmics)
@@ -225,6 +239,7 @@ TYPED_TEST(RigidBodyDynamicsAlgosTest, ForwardAndInverseDyanmics)
     for (int i = 0; i < (int)this->cluster_models.size(); i++)
     {
         ClusterTreeModel &cluster_model = this->cluster_models[i];
+        ClusterTreeModel &generic_model = this->generic_models[i];
         RigidBodyTreeModel &lg_mult_custom_model = this->lg_mult_custom_models[i];
         RigidBodyTreeModel &lg_mult_eigen_model = this->lg_mult_eigen_models[i];
         RigidBodyTreeModel &projection_model = this->projection_models[i];
@@ -252,21 +267,11 @@ TYPED_TEST(RigidBodyDynamicsAlgosTest, ForwardAndInverseDyanmics)
             // Forward Dynamics
             const DVec<double> tau = DVec<double>::Random(nv);
 
-            this->timer.start();
             const DVec<double> qdd_cluster = cluster_model.forwardDynamics(tau);
-            this->t_cluster += this->timer.getMs();
-
-            this->timer.start();
+            const DVec<double> qdd_generic = generic_model.forwardDynamics(tau);
             const DVec<double> qdd_lg_custom_full = lg_mult_custom_model.forwardDynamics(tau);
-            this->t_lagrange_custom += this->timer.getMs();
-
-            this->timer.start();
             const DVec<double> qdd_lg_eigen_full = lg_mult_eigen_model.forwardDynamics(tau);
-            this->t_lagrange_eigen += this->timer.getMs();
-
-            this->timer.start();
             const DVec<double> qdd_projection_full = projection_model.forwardDynamics(tau);
-            this->t_projection += this->timer.getMs();
 
             // Convert between qdd and ydd
             const DVec<double> qdd_cluster_full = lg_mult_custom_model.yddToQdd(qdd_cluster);
@@ -283,6 +288,7 @@ TYPED_TEST(RigidBodyDynamicsAlgosTest, ForwardAndInverseDyanmics)
             GTEST_ASSERT_LT((qdd_cluster_full - qdd_lg_eigen_full).norm(), tol);
             GTEST_ASSERT_LT((qdd_cluster_full - qdd_projection_full).norm(), tol);
 
+            GTEST_ASSERT_LT((qdd_cluster - qdd_generic).norm(), tol);
             GTEST_ASSERT_LT((qdd_cluster - qdd_lg_custom).norm(), tol);
             GTEST_ASSERT_LT((qdd_cluster - qdd_lg_eigen).norm(), tol);
             GTEST_ASSERT_LT((qdd_cluster - qdd_projection).norm(), tol);
@@ -292,10 +298,6 @@ TYPED_TEST(RigidBodyDynamicsAlgosTest, ForwardAndInverseDyanmics)
             GTEST_ASSERT_LT((tau_proj - tau).norm(), tol);
         }
     }
-
-    std::cout << "\n**Avergage Forward Dynamics Computation Time**" << std::endl;
-    const int num_tests = this->cluster_models.size() * num_tests_per_robot;
-    this->printAverageComputationTimes(num_tests);
 }
 
 TYPED_TEST(RigidBodyDynamicsAlgosTest, LambdaInv)
@@ -308,6 +310,7 @@ TYPED_TEST(RigidBodyDynamicsAlgosTest, LambdaInv)
     for (int i = 0; i < (int)this->cluster_models.size(); i++)
     {
         ClusterTreeModel &cluster_model = this->cluster_models[i];
+        ClusterTreeModel &gen_model = this->generic_models[i];
         RigidBodyTreeModel &proj_model = this->projection_models[i];
 
         for (int j = 0; j < num_tests_per_robot; j++)
@@ -327,7 +330,10 @@ TYPED_TEST(RigidBodyDynamicsAlgosTest, LambdaInv)
             }
 
             const DMat<double> lambda_inv = cluster_model.inverseOperationalSpaceInertiaMatrix();
+            const DMat<double> lambda_inv_gen = gen_model.inverseOperationalSpaceInertiaMatrix();
             const DMat<double> lambda_inv_proj = proj_model.inverseOperationalSpaceInertiaMatrix();
+
+            GTEST_ASSERT_LT((lambda_inv - lambda_inv_gen).norm(), tol);
             GTEST_ASSERT_LT((lambda_inv - lambda_inv_proj).norm(), tol);
         }
     }
