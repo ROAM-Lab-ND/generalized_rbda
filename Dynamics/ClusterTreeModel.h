@@ -95,12 +95,18 @@ namespace grbda
 
         Body registerBody(const string name, const SpatialInertia<double> inertia,
                           const string parent_name, const SpatialTransform Xtree);
-        // TODO(@MatthewChignoli): need to clean this up, should have to make all of these vectors we we are only appending one body. Right now the append body function is silly. Because That function creates a body (by registering it), but it also requires a generalized joint... which requires a body...
-        void appendBody(const string name, const SpatialInertia<double> inertia,
-                        const string parent_name, const SpatialTransform Xtree,
-                        shared_ptr<GeneralizedJoints::Base> joint);
         void appendRegisteredBodiesAsCluster(const string name,
                                              shared_ptr<GeneralizedJoints::Base> joint);
+
+        // This function can be used when appending individual bodies to the model
+        template <typename T, typename... Args>
+        void appendBody(const string name, const SpatialInertia<double> inertia,
+                        const string parent_name, const SpatialTransform Xtree, Args&&... args)
+        {
+            Body body = registerBody(name, inertia, parent_name, Xtree);
+            shared_ptr<GeneralizedJoints::Base> joint = make_shared<T>(body, args...);
+            appendRegisteredBodiesAsCluster(name, joint);
+        }
 
         void appendContactPoint(const string body_name, const Vec3<double> &local_offset,
                                 const string contact_point_name, const bool is_end_eff = false);

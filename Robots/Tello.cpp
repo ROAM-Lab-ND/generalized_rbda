@@ -15,10 +15,8 @@ namespace grbda
         const std::string torso_parent_name = "ground";
         const SpatialInertia<double> torso_spatial_inertia = SpatialInertia<double>{torso_mass,
             torso_CoM, torso_inertia};
-        auto torso = model.registerBody(torso_name, torso_spatial_inertia, torso_parent_name,
-                                        SpatialTransform{});
-        auto torso_generalized_joint = std::make_shared<GeneralizedJoints::Free>(torso);
-        model.appendRegisteredBodiesAsCluster(torso_name, torso_generalized_joint);
+        model.appendBody<GeneralizedJoints::Free>(torso_name, torso_spatial_inertia,
+                                                  torso_parent_name, spatial::SpatialTransform{});
 
         std::vector<std::string> sides = {"left","right"};
         const std::string hip_clamp_parent_name = "torso";
