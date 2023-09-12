@@ -51,17 +51,19 @@ namespace grbda
 
                 joint->updateKinematics(q.segment(pos_idx, num_pos), qd.segment(vel_idx, num_vel));
 
+                int k = i;
                 for (int j = i - 1; j >= 0; j--)
                 {
                     if (connectivity_(i, j))
                     {
-                        const int k = j + 1;
                         const auto &body_k = bodies_[k];
                         const auto joint_k = single_joints_[k];
 
                         const Mat6<double> Xup_prev = Xup_spanning_tree_.block<6, 6>(6 * i, 6 * k);
                         const Mat6<double> Xint = (joint_k->XJ() * body_k.Xtree_).toMatrix();
                         Xup_spanning_tree_.block<6, 6>(6 * i, 6 * j) = Xup_prev * Xint;
+
+                        k = j;
                     }
                 }
 
