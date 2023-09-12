@@ -1,5 +1,6 @@
 #include "gtest/gtest.h"
 
+#include "testHelpers.hpp"
 #include "Dynamics/RigidBodyTreeModel.h"
 #include "Robots/RobotTypes.h"
 #include "Utils/Utilities/Timer.h"
@@ -7,40 +8,6 @@
 using namespace grbda;
 
 static const double tol = 2e-8;
-
-ClusterTreeModel extractGenericJointModel(const ClusterTreeModel &model)
-{
-    ClusterTreeModel generic_model{};
-
-    for (const auto &cluster : model.clusters())
-    {
-        std::vector<Body> bodies;
-        std::vector<JointPtr> joints;
-
-        // Register bodies
-        for (auto pair : cluster->bodiesAndJoints())
-        {
-            Body body_i = pair.first;
-            bodies.push_back(body_i);
-
-            JointPtr joint_i = pair.second;
-            joints.push_back(joint_i);
-
-            bool is_base = body_i.parent_index_ == -1;
-            std::string parent_name = is_base ? "ground" : model.body(body_i.parent_index_).name_;
-            generic_model.registerBody(body_i.name_, body_i.inertia_, parent_name, body_i.Xtree_);
-        }
-
-        // Extract Loop Constraint and Append Cluster
-        std::shared_ptr<LoopConstraint::Base> constraint = cluster->joint_->cloneLoopConstraint();
-        std::shared_ptr<GeneralizedJoints::Generic> generic_cluster_joint =
-            std::make_shared<GeneralizedJoints::Generic>(bodies, joints, constraint);
-
-        generic_model.appendRegisteredBodiesAsCluster(cluster->name_, generic_cluster_joint);
-    }
-
-    return generic_model;
-}
 
 // The purpose of these tests is to ensure consistency between the outputs of the Rigid Body
 // Dynamics Algorithms for our cluster tree model and the constrained rigid body tree
@@ -135,26 +102,24 @@ protected:
 
 using testing::Types;
 
-// typedef Types<
-//     TeleopArm, Tello, TelloWithArms,
-//     MIT_Humanoid, MiniCheetah,
-//     RevoluteChainWithRotor<2>,
-//     RevoluteChainWithRotor<4>,
-//     RevoluteChainWithRotor<8>,
-//     RevolutePairChainWithRotor<2>,
-//     RevolutePairChainWithRotor<4>,
-//     RevolutePairChainWithRotor<8>,
-//     RevoluteTripleChainWithRotor<3>,
-//     RevoluteTripleChainWithRotor<6>,
-//     RevoluteChainMultipleRotorsPerLink<2, 2>,
-//     RevoluteChainMultipleRotorsPerLink<4, 1>,
-//     RevoluteChainMultipleRotorsPerLink<4, 3>,
-//     RevoluteChainWithAndWithoutRotor<0ul, 8ul>,
-//     RevoluteChainWithAndWithoutRotor<4ul, 4ul>,
-//     RevoluteChainWithAndWithoutRotor<8ul, 0ul>>
-//     Robots;
-
-typedef Types<TelloWithArms> Robots;
+typedef Types<
+    TeleopArm, Tello, TelloWithArms,
+    MIT_Humanoid, MiniCheetah,
+    RevoluteChainWithRotor<2>,
+    RevoluteChainWithRotor<4>,
+    RevoluteChainWithRotor<8>,
+    RevolutePairChainWithRotor<2>,
+    RevolutePairChainWithRotor<4>,
+    RevolutePairChainWithRotor<8>,
+    RevoluteTripleChainWithRotor<3>,
+    RevoluteTripleChainWithRotor<6>,
+    RevoluteChainMultipleRotorsPerLink<2, 2>,
+    RevoluteChainMultipleRotorsPerLink<4, 1>,
+    RevoluteChainMultipleRotorsPerLink<4, 3>,
+    RevoluteChainWithAndWithoutRotor<0ul, 8ul>,
+    RevoluteChainWithAndWithoutRotor<4ul, 4ul>,
+    RevoluteChainWithAndWithoutRotor<8ul, 0ul>>
+    Robots;
 
 TYPED_TEST_SUITE(RigidBodyDynamicsAlgosTest, Robots);
 
