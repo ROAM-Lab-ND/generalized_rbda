@@ -135,8 +135,8 @@ TYPED_TEST(ReflectedInertiaDynamicsAlgosTest, ForwardKinematics)
         GTEST_ASSERT_EQ(this->cluster_model.contactPoints().size(),
                         this->reflected_inertia_model.contactPoints().size());
 
-        this->cluster_model.contactJacobians();
-        this->reflected_inertia_model.contactJacobians();
+        this->cluster_model.updateContactPointJacobians();
+        this->reflected_inertia_model.updateContactPointJacobians();
         for (int j = 0; j < (int)this->cluster_model.contactPoints().size(); j++)
         {
             const ContactPoint &cluster_cp = this->cluster_model.contactPoint(j);
@@ -297,7 +297,7 @@ TYPED_TEST(ReflectedInertiaDynamicsAlgosTest, LambdaInv)
                 const ContactPoint &cp = model.contactPoint(k);
                 if (!cp.is_end_effector_)
                     continue;
-                J_stacked.middleRows<6>(6 * ee_cnt++) = model.bodyJacobian(cp.name_);
+                J_stacked.middleRows<6>(6 * ee_cnt++) = model.contactJacobianBodyFrame(cp.name_);
             }
             DMat<double> J_Hinv_JT = J_stacked * H.inverse() * J_stacked.transpose();
 

@@ -336,17 +336,18 @@ TYPED_TEST(RigidBodyDynamicsAlgosTest, ApplyTestForceTest)
                 continue;
             }
 
-            cluster_model.contactJacobians();
+            cluster_model.updateContactPointJacobians();
             for (const ContactPoint &cp : cluster_model.contactPoints())
             {
-                const D3Mat<double> J = cluster_model.contactJacobian(cp.name_).bottomRows<3>();
+                const D6Mat<double> J = cluster_model.contactJacobianWorldFrame(cp.name_);
+                const D3Mat<double> J_lin = J.bottomRows<3>();
                 const DMat<double> H = cluster_model.getMassMatrix();
                 const DMat<double> H_inv = H.inverse();
-                const DMat<double> inv_ops_inertia = J * H_inv * J.transpose();
+                const DMat<double> inv_ops_inertia = J_lin * H_inv * J_lin.transpose();
 
                 for (const Vec3<double> &test_force : test_forces)
                 {
-                    const DVec<double> dstate_iosi = H_inv * (J.transpose() * test_force);
+                    const DVec<double> dstate_iosi = H_inv * (J_lin.transpose() * test_force);
                     const double lambda_inv_iosi = test_force.dot(inv_ops_inertia * test_force);
 
                     DVec<double> dstate_efpa = DVec<double>::Zero(nv);

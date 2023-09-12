@@ -134,8 +134,8 @@ TYPED_TEST(RigidBodyKinemaitcsTest, ForwardKinematics)
         GTEST_ASSERT_EQ(this->cluster_model.contactPoints().size(),
                         this->rigid_body_model.contactPoints().size());
 
-        this->cluster_model.contactJacobians();
-        this->rigid_body_model.contactJacobians();
+        this->cluster_model.updateContactPointJacobians();
+        this->rigid_body_model.updateContactPointJacobians();
         for (int j = 0; j < (int)this->cluster_model.contactPoints().size(); j++)
         {
             const ContactPoint &cluster_cp = this->cluster_model.contactPoint(j);

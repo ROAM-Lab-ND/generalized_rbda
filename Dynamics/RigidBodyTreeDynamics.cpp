@@ -3,7 +3,7 @@
 namespace grbda
 {
 
-    const D6Mat<double> &RigidBodyTreeModel::contactJacobian(const std::string &cp_name)
+    const D6Mat<double> &RigidBodyTreeModel::contactJacobianWorldFrame(const std::string &cp_name)
     {
         forwardKinematics();
         updateLoopConstraints();
@@ -37,7 +37,7 @@ namespace grbda
         return cp.jacobian_;
     }
 
-    D6Mat<double> RigidBodyTreeModel::bodyJacobian(const std::string &cp_name)
+    D6Mat<double> RigidBodyTreeModel::contactJacobianBodyFrame(const std::string &cp_name)
     {
         forwardKinematics();
         updateLoopConstraints();
@@ -191,7 +191,7 @@ namespace grbda
             const ContactPoint &cp = contact_points_[i];
             if (!cp.is_end_effector_)
                 continue;
-            J_stacked.middleRows<6>(6 * ee_cnt++) = bodyJacobian(cp.name_);
+            J_stacked.middleRows<6>(6 * ee_cnt++) = contactJacobianBodyFrame(cp.name_);
         }
         return J_stacked * H.inverse() * J_stacked.transpose();
     }
@@ -199,7 +199,7 @@ namespace grbda
     double RigidBodyTreeModel::applyTestForce(const string &contact_point_name,
                                               const Vec3<double> &force, DVec<double> &dstate_out)
     {
-        const D3Mat<double> J = contactJacobian(contact_point_name).bottomRows<3>();
+        const D3Mat<double> J = contactJacobianWorldFrame(contact_point_name).bottomRows<3>();
         const DMat<double> H = getMassMatrix();
         const DMat<double> H_inv = H.inverse();
         const DMat<double> inv_ops_inertia = J * H_inv * J.transpose();

@@ -10,7 +10,7 @@ namespace grbda
     using namespace ori;
     using namespace spatial;
 
-    const D6Mat<double> &ClusterTreeModel::contactJacobian(const std::string &cp_name)
+    const D6Mat<double> &ClusterTreeModel::contactJacobianWorldFrame(const std::string &cp_name)
     {
         forwardKinematics();
 
@@ -45,7 +45,7 @@ namespace grbda
         return cp.jacobian_;
     }
 
-    D6Mat<double> ClusterTreeModel::bodyJacobian(const std::string &cp_name)
+    D6Mat<double> ClusterTreeModel::contactJacobianBodyFrame(const std::string &cp_name)
     {
         forwardKinematics();
 

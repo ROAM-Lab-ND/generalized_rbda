@@ -46,9 +46,9 @@ namespace grbda
 
         void forwardKinematics();
 
-        virtual D6Mat<double> bodyJacobian(const std::string &cp_name) = 0;
-        virtual const D6Mat<double>& contactJacobian(const std::string &cp_name) = 0;
-        void contactJacobians();
+        void updateContactPointJacobians();
+        virtual D6Mat<double> contactJacobianBodyFrame(const std::string &cp_name) = 0;
+        virtual const D6Mat<double>& contactJacobianWorldFrame(const std::string &cp_name) = 0;
 
         virtual DVec<double> forwardDynamics(const DVec<double> &tau) = 0;
         virtual DVec<double> inverseDynamics(const DVec<double> &qdd) = 0;

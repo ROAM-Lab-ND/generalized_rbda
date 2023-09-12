@@ -49,14 +49,14 @@ namespace grbda
         }
     }
 
-    void TreeModel::contactJacobians()
+    void TreeModel::updateContactPointJacobians()
     {
         if (contact_jacobians_updated_)
             return;
 
         for (auto &contact_point : contact_points_)
         {
-            contactJacobian(contact_point.name_);
+            contactJacobianWorldFrame(contact_point.name_);
         }
         contact_jacobians_updated_ = true;
     }
