@@ -6,6 +6,8 @@ namespace grbda
     template <size_t N>
     ClusterTreeModel RevolutePairChainWithRotor<N>::buildRandomClusterTreeModel() const
     {
+        using namespace GeneralizedJoints;
+        
         ClusterTreeModel model{};
 
         std::string parent_name = "ground";
@@ -48,12 +50,10 @@ namespace grbda
             const int belt_ratioB = rand() % this->_gear_ratio_scale + 1;
 
             const std::string cluster_name = "cluster-" + std::to_string(i);
-            auto joint = std::make_shared<GeneralizedJoints::RevolutePairWithRotor>(
-                linkA, linkB, rotorA, rotorB, linkA_joint_axis, linkB_joint_axis,
+            model.appendRegisteredBodiesAsCluster<RevolutePairWithRotor>(
+                cluster_name, linkA, linkB, rotorA, rotorB, linkA_joint_axis, linkB_joint_axis,
                 rotorA_joint_axis, rotorB_joint_axis, gear_ratioA, gear_ratioB,
                 belt_ratioA, belt_ratioB);
-
-            model.appendRegisteredBodiesAsCluster(cluster_name, joint);
 
             // Contact points
             appendContactPoints(model, i, linkA_name, linkB_name);
@@ -67,6 +67,8 @@ namespace grbda
     template <size_t N>
     ClusterTreeModel RevolutePairChainWithRotor<N>::buildUniformClusterTreeModel() const
     {
+        using namespace GeneralizedJoints;
+        
         ClusterTreeModel model{};
 
         Mat3<double> I3 = Mat3<double>::Identity();
@@ -126,10 +128,9 @@ namespace grbda
 
             // Cluster
             const std::string cluster_name = "cluster-" + std::to_string(i);
-            auto joint = std::make_shared<GeneralizedJoints::RevolutePairWithRotor>(
-                linkA, linkB, rotorA, rotorB, axis, axis, axis, axis, gr, gr, br, br);
-
-            model.appendRegisteredBodiesAsCluster(cluster_name, joint);
+            model.appendRegisteredBodiesAsCluster<RevolutePairWithRotor>(
+                cluster_name, linkA, linkB, rotorA, rotorB, axis, axis, axis, axis,
+                gr, gr, br, br);
 
             // Contact points
             appendContactPoints(model, i, linkA_name, linkB_name);

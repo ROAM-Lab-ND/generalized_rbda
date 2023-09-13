@@ -6,6 +6,8 @@ namespace grbda
     template <size_t N>
     ClusterTreeModel RevoluteTripleChainWithRotor<N>::buildRandomClusterTreeModel() const
     {
+        using namespace GeneralizedJoints;
+        
         ClusterTreeModel model{};
 
         std::string parent_name = "ground";
@@ -57,7 +59,7 @@ namespace grbda
                                              parent_name, rotorC_Xtree);
 
             // Cluster
-            std::vector<GeneralizedJoints::ParallelBeltTransmissionModule> triple_joint_modules;
+            std::vector<ParallelBeltTransmissionModule> triple_joint_modules;
             triple_joint_modules.push_back({linkA, rotorA, linkA_joint_axis, rotorA_joint_axis,
                                             this->randomGearRatio(), this->randomGearRatio()});
             triple_joint_modules.push_back({linkB, rotorB, linkB_joint_axis, rotorB_joint_axis,
@@ -65,11 +67,9 @@ namespace grbda
             triple_joint_modules.push_back({linkC, rotorC, linkC_joint_axis, rotorC_joint_axis,
                                             this->randomGearRatio(), this->randomGearRatio()});
 
-            auto triple_joint =
-                std::make_shared<GeneralizedJoints::RevoluteTripleWithRotor>(triple_joint_modules);
-
             const std::string cluster_name = "cluster-" + std::to_string(i);
-            model.appendRegisteredBodiesAsCluster(cluster_name, triple_joint);
+            model.appendRegisteredBodiesAsCluster<RevoluteTripleWithRotor>(cluster_name,
+                                                                           triple_joint_modules);
 
             // Contact points
             appendContactPoints(model, i, linkA_name, linkB_name, linkC_name);
