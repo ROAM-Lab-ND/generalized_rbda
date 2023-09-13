@@ -31,15 +31,6 @@ namespace grbda
         return body;
     }
 
-    // void ClusterTreeModel::appendBody(const string name, const SpatialInertia<double> inertia,
-    //                                   const string parent_name, const SpatialTransform Xtree,
-    //                                   shared_ptr<GeneralizedJoints::Base> joint)
-    // {
-    //     throw runtime_error("No longer valid");
-    //     registerBody(name, inertia, parent_name, Xtree);
-    //     appendRegisteredBodiesAsCluster(name, joint);
-    // }
-
     void ClusterTreeModel::appendRegisteredBodiesAsCluster(
         const string name, shared_ptr<GeneralizedJoints::Base> joint)
     {

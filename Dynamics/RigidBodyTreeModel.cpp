@@ -160,7 +160,6 @@ namespace grbda
 
     Vec3<double> RigidBodyTreeModel::getPosition(const string &body_name)
     {
-        // TODO(@MatthewChignoli): Helper function that gets node given the name?
         const int &body_idx = body_name_to_body_index_.at(body_name);
         const TreeNodePtr rigid_body_node = getNodeContainingBody(body_idx);
 

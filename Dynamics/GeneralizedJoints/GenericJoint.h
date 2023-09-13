@@ -5,9 +5,6 @@
 
 namespace grbda
 {
-    // TODO(@MatthewChignoli): This class is not unit tested at the moment
-
-    // TODO(@MatthewChignoli): Add a unit test that compares generic joint versions to specialized versions. For example, compare revolute pair with rotor as a generic joint to the specialized joint class.
 
     namespace GeneralizedJoints
     {
@@ -21,7 +18,7 @@ namespace grbda
             GeneralizedJointTypes type() const override { return GeneralizedJointTypes::Generic; }
 
             void updateKinematics(const JointState &joint_state) override;
-                                  
+
             void computeSpatialTransformFromParentToCurrentCluster(
                 GeneralizedSpatialTransform &Xup) const override;
 

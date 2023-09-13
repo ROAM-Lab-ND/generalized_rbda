@@ -92,60 +92,29 @@ namespace grbda
 
         case FwdDynMethod::LagrangeMultiplierCustom:
         {
-            // TODO(@MatthewChignoli): In a future issue, we will implement this in a more efficient way since in theory it should be faster than the projection method
-
             // Based on Method 2 in Featherstone Ch 8.5 (using custom sparse factorization)
 
             // Factorize H into L^T*L
-#ifdef TIMING_STATS
-            timer_.start();
-#endif
             factorization::LTL L(H_, expanded_tree_parent_indices_);
-#ifdef TIMING_STATS
-            timing_statistics_.ltl_factorization_time = timer_.getMs();
-            timer_.start();
-#endif
 
             // Calculate tau_prime
             DVec<double> tau_full = loop_constraints_.G_tranpose_pinv() * tau;
             DVec<double> tau_prime = tau_full - C_;
-#ifdef TIMING_STATS
-            timing_statistics_.tau_prime_calc_time = timer_.getMs();
-            timer_.start();
-#endif
 
             // Calculate Y and z via back-subsition
             DMat<double> Y = L.inverseTransposeMatrixProduct(loop_constraints_.K_transpose());
             DVec<double> z = L.inverseTransposeProduct(tau_prime);
-#ifdef TIMING_STATS
-            timing_statistics_.Y_and_z_calc_time = timer_.getMs();
-            timer_.start();
-#endif
 
             // Calculate A and b
             DMat<double> A = Y.transpose() * Y;
             DVec<double> b = loop_constraints_.k() - Y.transpose() * z;
-#ifdef TIMING_STATS
-            timing_statistics_.A_and_b_time = timer_.getMs();
-            timer_.start();
-#endif
 
             // Solve Linear System A*lambda = b
             DVec<double> lambda = A.size() > 0 ? DVec<double>(A.colPivHouseholderQr().solve(b))
                                                : DVec<double>::Zero(0);
-#ifdef TIMING_STATS
-            timing_statistics_.lambda_solve_time = timer_.getMs();
-#endif
 
             // Solve for qdd using the factors from step 1
-#ifdef TIMING_STATS
-            timer_.start();
-            DVec<double> qdd = L.solve(tau_prime + loop_constraints_.K_transpose() * lambda);
-            timing_statistics_.qdd_solve_time = timer_.getMs();
-            return qdd;
-#else
             return L.solve(tau_prime + loop_constraints_.K_transpose() * lambda);
-#endif
         }
 
         case FwdDynMethod::LagrangeMultiplierEigen:
@@ -180,8 +149,6 @@ namespace grbda
 
     DMat<double> RigidBodyTreeModel::inverseOperationalSpaceInertiaMatrix()
     {
-        // TODO(@MatthewChignoli): Implement the lagrange multipler based method
-
         const DMat<double> H = getMassMatrix();
         DMat<double> J_stacked = DMat<double>::Zero(6 * getNumEndEffectors(), H.rows());
 
