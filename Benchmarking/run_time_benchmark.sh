@@ -1,5 +1,7 @@
 #!/bin/bash
 
+# TODO(@MatthewChignoli): Two arguments, the first tells which accuracy benchmark to run, the second tells whether not to run the C++ binary
+
 # Flag to determine whether to run the C++ binary (default is 1)
 run_cpp=1
 
