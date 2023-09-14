@@ -63,6 +63,17 @@ namespace grbda
             Xup[0] = single_joints_[0]->XJ();
         }
 
+        JointCoordinate Free::integratePosition(JointState joint_state, double dt) const
+        {
+            const Quat<double> quat = joint_state.position.tail<4>();
+            const DVec<double> &vel = joint_state.velocity;
+
+            joint_state.position.head<3>() += vel.tail<3>() * dt;
+            joint_state.position.tail<4>() = ori::integrateQuat(quat, vel.head<3>(), dt);
+
+            return joint_state.position;
+        }
+
         JointState Free::randomJointState() const
         {
             JointState joint_state(false, false);

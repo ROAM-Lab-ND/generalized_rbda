@@ -12,20 +12,6 @@ namespace grbda
         extractRigidBodiesAndJointsFromClusterModel(cluster_tree_model);
         extractLoopClosureFunctionsFromClusterModel(cluster_tree_model);
         extractContactPointsFromClusterModel(cluster_tree_model);
-
-        if (forward_dynamics_method_ == FwdDynMethod::LagrangeMultiplierCustom)
-        {
-            for (const auto &node : rigid_body_nodes_)
-            {
-                if (node->joint_->numVelocities() > 1)
-                {
-                    // ISSUE #14
-                    std::cout << "LagrangeMultiplierCustom is not supported for joints with more than 1 DOF. Switching to LagrangeMultiplierEigen." << std::endl;
-                    forward_dynamics_method_ = FwdDynMethod::LagrangeMultiplierEigen;
-                    break;
-                }
-            }
-        }
     }
 
     void RigidBodyTreeModel::extractRigidBodiesAndJointsFromClusterModel(
@@ -52,6 +38,40 @@ namespace grbda
         }
         H_ = DMat<double>::Zero(velocity_index_, velocity_index_);
         C_ = DVec<double>::Zero(velocity_index_);
+
+        extractExpandedTreeConnectivity();
+    }
+
+    void RigidBodyTreeModel::extractExpandedTreeConnectivity()
+    {
+        // Forward pass to initialize the expanded parent indices
+        for (const auto &node : rigid_body_nodes_)
+        {
+            for (int i = 0; i < node->joint_->numVelocities(); i++)
+            {
+                expanded_tree_parent_indices_.push_back(node->parent_index_);
+            }
+        }
+
+        // Backward pass to account for multi-dof joints
+        for (int i = rigid_body_nodes_.size() - 1; i > -1; i--)
+        {
+            const auto &node = rigid_body_nodes_[i];
+
+            int extra_dofs = 0;
+            int j = node->parent_index_;
+            while (j > -1)
+            {
+                const auto &parent_node = rigid_body_nodes_[j];
+                extra_dofs += parent_node->joint_->numVelocities() - 1;
+                j = parent_node->parent_index_;
+            }
+
+            for (int k = 0; k < node->joint_->numVelocities(); k++)
+            {
+                expanded_tree_parent_indices_.at(node->index_ + extra_dofs + k) = node->parent_index_ + extra_dofs + k;
+            }
+        }
     }
 
     void RigidBodyTreeModel::extractLoopClosureFunctionsFromClusterModel(

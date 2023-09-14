@@ -123,6 +123,7 @@ namespace grbda
         void extractRigidBodiesAndJointsFromClusterModel(const ClusterTreeModel &cluster_tree_model);
         void extractLoopClosureFunctionsFromClusterModel(const ClusterTreeModel &cluster_tree_model);
         void extractContactPointsFromClusterModel(const ClusterTreeModel &cluster_tree_model);
+        void extractExpandedTreeConnectivity();
 
         void resetCache() override
         {
@@ -137,6 +138,10 @@ namespace grbda
 
         std::vector<RigidBodyTreeNodePtr> rigid_body_nodes_;
         std::unordered_map<string, int> body_name_to_body_index_;
+
+        // NOTE: The expanded tree parent indices represent the parent indices for the connectivty 
+        // graph resulting from treating multi-dof joints as multiple single-dof joints.
+        std::vector<int> expanded_tree_parent_indices_;
 
         DVec<double> q_;
         DVec<double> qd_;
