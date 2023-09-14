@@ -31,28 +31,16 @@
 *.out
 *.app
 
-# Unity
-
 # Dynamics Engine's redundancies
-build*/
-*build/
-cmake-build-debug/
-*.casadi
-file_list.txt
 *.m~
 *.swp
 *.pyc
-.DS_Store
-tags
 *.cache
-.vscode/
-cmake-build-remote-lab/*
-cmake-build-default/*
-.ftpconfig
-.~lock.notes.odt#
-notes.odt
-/cmake-build-default/
-data/*
-eigen-3.3.7/
 **casadi/
-Benchmarking/old_figs/*
+*.casadi
+.vscode/
+.DS_Store
+build*/
+*build/
+Benchmarking/data/*
+Benchmarking/figures/*
