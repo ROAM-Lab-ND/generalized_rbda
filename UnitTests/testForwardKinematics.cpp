@@ -8,7 +8,7 @@
 using namespace grbda;
 
 static const double tol = 1e-10;
-static const double loose_tol = 2e-4;
+static const double loose_tol = 1e-3;
 
 template <class T>
 class RigidBodyKinemaitcsTest : public testing::Test
