@@ -1,7 +1,5 @@
 close all; clear; clc;
 
-% TODO(@MatthewChignoli): test all matlab plotting scripts
-
 path_to_data = '../Benchmarking/data/Timing_';
 path_to_figures = '../Benchmarking/figures/Timing_';
 
