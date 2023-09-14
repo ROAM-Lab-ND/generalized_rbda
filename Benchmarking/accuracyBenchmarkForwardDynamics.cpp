@@ -1,13 +1,12 @@
 #include <iostream>
 #include <fstream>
 
-#include "Dynamics/RigidBodyTreeModel.h"
-#include "Dynamics/ReflectedInertiaTreeModel.h"
-
+#include "BenchmarkingHelpers.hpp"
 #include "Robots/RobotTypes.h"
 #include "Utils/Timer.h"
 
 using namespace grbda;
+using namespace grbda::BenchmarkHelpers;
 
 template <class T>
 void runBenchmark(std::ofstream &file)
@@ -22,43 +21,33 @@ void runBenchmark(std::ofstream &file)
     {
         T robot = T(true);
         ClusterTreeModel cluster_model = robot.buildClusterTreeModel();
-        ReflectedInertiaTreeModel reflected_inertia_model{cluster_model, RotorInertiaApproximation::BLOCK_DIAGONAL};
-        ReflectedInertiaTreeModel reflected_inertia_diag_model{cluster_model, RotorInertiaApproximation::DIAGONAL};
+
+        ReflectedInertiaTreePtr reflected_inertia_model =
+            std::make_shared<ReflectedInertiaTreeModel>(cluster_model,
+                                                        RotorInertiaApproximation::BLOCK_DIAGONAL);
+        ReflectedInertiaTreePtr reflected_inertia_diag_model =
+            std::make_shared<ReflectedInertiaTreeModel>(cluster_model,
+                                                        RotorInertiaApproximation::DIAGONAL);
+        std::vector<ReflectedInertiaTreePtr> ref_inertia_models{reflected_inertia_model,
+                                                                reflected_inertia_diag_model};
 
         const int nq = cluster_model.getNumPositions();
         const int nv = cluster_model.getNumDegreesOfFreedom();
 
         for (int j = 0; j < num_state_samples; j++)
         {
-
-            // Set random state
-            ModelState model_state;
-            DVec<double> independent_joint_pos = DVec<double>::Zero(0);
-            DVec<double> independent_joint_vel = DVec<double>::Zero(0);
-            for (const auto &cluster : cluster_model.clusters())
+            bool nan_detected = setRandomStates(cluster_model, {}, ref_inertia_models);
+            if (nan_detected)
             {
-                JointState joint_state = cluster->joint_->randomJointState();
-                if (joint_state.position.isSpanning() || joint_state.velocity.isSpanning())
-                    throw std::runtime_error("Initializing reflected inertia model requires all independent coordinates");
-
-                independent_joint_pos = appendEigenVector(independent_joint_pos,
-                                                          joint_state.position);
-                independent_joint_vel = appendEigenVector(independent_joint_vel,
-                                                          joint_state.velocity);
-
-                model_state.push_back(joint_state);
+                j--;
+                continue;
             }
-            cluster_model.setState(model_state);
-            reflected_inertia_model.setIndependentStates(independent_joint_pos,
-                                                                independent_joint_vel);
-            reflected_inertia_diag_model.setIndependentStates(independent_joint_pos,
-                                                                     independent_joint_vel);
 
             // Forward Dynamics
             DVec<double> tau = DVec<double>::Random(nv);
             DVec<double> qdd_cluster = cluster_model.forwardDynamics(tau);
-            DVec<double> qdd_approx = reflected_inertia_model.forwardDynamics(tau);
-            DVec<double> qdd_diag_approx = reflected_inertia_diag_model.forwardDynamics(tau);
+            DVec<double> qdd_approx = reflected_inertia_model->forwardDynamics(tau);
+            DVec<double> qdd_diag_approx = reflected_inertia_diag_model->forwardDynamics(tau);
 
             rf_error += (qdd_cluster - qdd_approx).norm();
             rf_diag_error += (qdd_cluster - qdd_diag_approx).norm();

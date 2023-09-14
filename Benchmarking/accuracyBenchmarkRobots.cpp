@@ -1,84 +1,23 @@
 #include <iostream>
 #include <fstream>
 
-#include "Dynamics/ReflectedInertiaTreeModel.h"
-
+#include "BenchmarkingHelpers.hpp"
 #include "Robots/RobotTypes.h"
 #include "Utils/Timer.h"
 
 using namespace grbda;
-
-bool setRandomStates(ClusterTreeModel &cf_model,
-                     ReflectedInertiaTreeModel &model_rf,
-                     ReflectedInertiaTreeModel &model_rf_diag,
-                     ReflectedInertiaTreeModel &model_rf_none)
-{
-    ModelState model_state;
-    DVec<double> independent_joint_pos = DVec<double>::Zero(0);
-    DVec<double> independent_joint_vel = DVec<double>::Zero(0);
-    DVec<double> spanning_joint_pos = DVec<double>::Zero(0);
-    DVec<double> spanning_joint_vel = DVec<double>::Zero(0);
-
-    for (const auto &cluster : cf_model.clusters())
-    {
-        JointState joint_state = cluster->joint_->randomJointState();
-        joint_state.velocity *= 10.;
-
-        if (joint_state.position.hasNaN())
-        {
-            return true;
-        }
-
-        JointState spanning_joint_state = cluster->joint_->toSpanningTreeState(joint_state);
-
-        DVec<double> independent_joint_pos_i;
-        DVec<double> independent_joint_vel_i;
-        if (cluster->joint_->type() == GeneralizedJointTypes::TelloHipDifferential ||
-            cluster->joint_->type() == GeneralizedJointTypes::TelloKneeAnkleDifferential)
-        {
-            independent_joint_pos_i = spanning_joint_state.position.tail<2>();
-            independent_joint_vel_i = spanning_joint_state.velocity.tail<2>();
-        }
-        else
-        {
-            if (joint_state.position.isSpanning() || joint_state.velocity.isSpanning())
-                throw std::runtime_error("Initializing reflected inertia model requires all independent coordinates");
-            independent_joint_pos_i = joint_state.position;
-            independent_joint_vel_i = joint_state.velocity;
-        }
-
-        independent_joint_pos = appendEigenVector(independent_joint_pos,
-                                                  independent_joint_pos_i);
-        independent_joint_vel = appendEigenVector(independent_joint_vel,
-                                                  independent_joint_vel_i);
-
-        spanning_joint_pos = appendEigenVector(spanning_joint_pos,
-                                               spanning_joint_state.position);
-        spanning_joint_vel = appendEigenVector(spanning_joint_vel,
-                                               spanning_joint_state.velocity);
-
-        model_state.push_back(joint_state);
-    }
-
-    cf_model.setState(model_state);
-    model_rf.setIndependentStates(independent_joint_pos,
-                                         independent_joint_vel);
-    model_rf_diag.setIndependentStates(independent_joint_pos,
-                                              independent_joint_vel);
-    model_rf_none.setIndependentStates(independent_joint_pos,
-                                              independent_joint_vel);
-
-    return false;
-}
+using namespace grbda::BenchmarkHelpers;
 
 template <typename RobotType>
 void runInverseDynamicsBenchmark(std::ofstream &file, const double max_torque)
 {
     RobotType robot;
     ClusterTreeModel model_cl = robot.buildClusterTreeModel();
-    ReflectedInertiaTreeModel model_rf(model_cl, RotorInertiaApproximation::BLOCK_DIAGONAL);
-    ReflectedInertiaTreeModel model_rf_diag(model_cl, RotorInertiaApproximation::DIAGONAL);
-    ReflectedInertiaTreeModel model_rf_none(model_cl, RotorInertiaApproximation::NONE);
+
+    ReflectedInertiaTreePtr model_rf = std::make_shared<ReflectedInertiaTreeModel>(model_cl, RotorInertiaApproximation::BLOCK_DIAGONAL);
+    ReflectedInertiaTreePtr model_rf_diag = std::make_shared<ReflectedInertiaTreeModel>(model_cl, RotorInertiaApproximation::DIAGONAL);
+    ReflectedInertiaTreePtr model_rf_none = std::make_shared<ReflectedInertiaTreeModel>(model_cl, RotorInertiaApproximation::NONE);
+    std::vector<ReflectedInertiaTreePtr> ref_inertia_models{model_rf, model_rf_diag, model_rf_none};
 
     const int nv = model_cl.getNumDegreesOfFreedom();
 
@@ -92,7 +31,7 @@ void runInverseDynamicsBenchmark(std::ofstream &file, const double max_torque)
 
         for (int j = 0; j < num_samples_per_alpha; j++)
         {
-            bool nan_detected = setRandomStates(model_cl, model_rf, model_rf_diag, model_rf_none);
+            bool nan_detected = setRandomStates(model_cl, {}, ref_inertia_models);
             if (nan_detected)
             {
                 j--;
@@ -106,9 +45,9 @@ void runInverseDynamicsBenchmark(std::ofstream &file, const double max_torque)
 
             // Inverse Dynamics
             const DVec<double> tau_cluster = model_cl.inverseDynamics(qdd);
-            const DVec<double> tau_approx = model_rf.inverseDynamics(qdd);
-            const DVec<double> tau_diag_approx = model_rf_diag.inverseDynamics(qdd);
-            const DVec<double> tau_none_approx = model_rf_none.inverseDynamics(qdd);
+            const DVec<double> tau_approx = model_rf->inverseDynamics(qdd);
+            const DVec<double> tau_diag_approx = model_rf_diag->inverseDynamics(qdd);
+            const DVec<double> tau_none_approx = model_rf_none->inverseDynamics(qdd);
 
             id_error += (tau_cluster - tau_approx).norm();
             id_diag_error += (tau_cluster - tau_diag_approx).norm();
@@ -127,9 +66,10 @@ void runForwardDynamicsBenchmark(std::ofstream &file, const double max_torque)
 {
     RobotType robot;
     ClusterTreeModel model_cl = robot.buildClusterTreeModel();
-    ReflectedInertiaTreeModel model_rf(model_cl, RotorInertiaApproximation::BLOCK_DIAGONAL);
-    ReflectedInertiaTreeModel model_rf_diag(model_cl, RotorInertiaApproximation::DIAGONAL);
-    ReflectedInertiaTreeModel model_rf_none(model_cl, RotorInertiaApproximation::NONE);
+
+    ReflectedInertiaTreePtr model_rf_diag = std::make_shared<ReflectedInertiaTreeModel>(model_cl, RotorInertiaApproximation::DIAGONAL);
+    ReflectedInertiaTreePtr model_rf_none = std::make_shared<ReflectedInertiaTreeModel>(model_cl, RotorInertiaApproximation::NONE);
+    std::vector<ReflectedInertiaTreePtr> ref_inertia_models{model_rf_diag, model_rf_none};
 
     const int nv = model_cl.getNumDegreesOfFreedom();
 
@@ -142,7 +82,7 @@ void runForwardDynamicsBenchmark(std::ofstream &file, const double max_torque)
 
         for (int j = 0; j < num_samples_per_alpha; j++)
         {
-            bool nan_detected = setRandomStates(model_cl, model_rf, model_rf_diag, model_rf_none);
+            bool nan_detected = setRandomStates(model_cl, {}, ref_inertia_models);
             if (nan_detected)
             {
                 j--;
@@ -153,8 +93,8 @@ void runForwardDynamicsBenchmark(std::ofstream &file, const double max_torque)
             DVec<double> tau = alpha * max_torque * DVec<double>::Random(nv);
             tau.head<6>().setZero();
             const DVec<double> qdd_cluster = model_cl.forwardDynamics(tau);
-            const DVec<double> qdd_diag_approx = model_rf_diag.forwardDynamics(tau);
-            const DVec<double> qdd_none_approx = model_rf_none.forwardDynamics(tau);
+            const DVec<double> qdd_diag_approx = model_rf_diag->forwardDynamics(tau);
+            const DVec<double> qdd_none_approx = model_rf_none->forwardDynamics(tau);
 
             fd_diag_error += (qdd_cluster - qdd_diag_approx).norm();
             fd_none_error += (qdd_cluster - qdd_none_approx).norm();
@@ -171,9 +111,10 @@ void runInverseOperationalSpaceInertiaBenchmark(std::ofstream &file)
 {
     RobotType robot;
     ClusterTreeModel model_cl = robot.buildClusterTreeModel();
-    ReflectedInertiaTreeModel model_rf(model_cl, RotorInertiaApproximation::BLOCK_DIAGONAL);
-    ReflectedInertiaTreeModel model_rf_diag(model_cl, RotorInertiaApproximation::DIAGONAL);
-    ReflectedInertiaTreeModel model_rf_none(model_cl, RotorInertiaApproximation::NONE);
+
+    ReflectedInertiaTreePtr model_rf_diag = std::make_shared<ReflectedInertiaTreeModel>(model_cl, RotorInertiaApproximation::DIAGONAL);
+    ReflectedInertiaTreePtr model_rf_none = std::make_shared<ReflectedInertiaTreeModel>(model_cl, RotorInertiaApproximation::NONE);
+    std::vector<ReflectedInertiaTreePtr> ref_inertia_models{model_rf_diag, model_rf_none};
 
     double lambda_inv_diag_rel_error = 0.;
     double lambda_inv_none_rel_error = 0.;
@@ -181,7 +122,7 @@ void runInverseOperationalSpaceInertiaBenchmark(std::ofstream &file)
     const int num_samples = 2000;
     for (int j = 0; j < num_samples; j++)
     {
-        bool nan_detected = setRandomStates(model_cl, model_rf, model_rf_diag, model_rf_none);
+        bool nan_detected = setRandomStates(model_cl, {}, ref_inertia_models);
         if (nan_detected)
         {
             j--;
@@ -189,8 +130,8 @@ void runInverseOperationalSpaceInertiaBenchmark(std::ofstream &file)
         }
 
         const DMat<double> lambda_inv = model_cl.inverseOperationalSpaceInertiaMatrix();
-        const DMat<double> lambda_inv_diag = model_rf_diag.inverseOperationalSpaceInertiaMatrix();
-        const DMat<double> lambda_inv_none = model_rf_none.inverseOperationalSpaceInertiaMatrix();
+        const DMat<double> lambda_inv_diag = model_rf_diag->inverseOperationalSpaceInertiaMatrix();
+        const DMat<double> lambda_inv_none = model_rf_none->inverseOperationalSpaceInertiaMatrix();
 
         lambda_inv_diag_rel_error += (lambda_inv - lambda_inv_diag).norm() / lambda_inv.norm();
         lambda_inv_none_rel_error += (lambda_inv - lambda_inv_none).norm() / lambda_inv.norm();
@@ -206,9 +147,10 @@ void runApplyTestForceBenchmark(std::ofstream &file, const std::string contact_p
 {
     RobotType robot;
     ClusterTreeModel model_cl = robot.buildClusterTreeModel();
-    ReflectedInertiaTreeModel model_rf(model_cl, RotorInertiaApproximation::BLOCK_DIAGONAL);
-    ReflectedInertiaTreeModel model_rf_diag(model_cl, RotorInertiaApproximation::DIAGONAL);
-    ReflectedInertiaTreeModel model_rf_none(model_cl, RotorInertiaApproximation::NONE);
+
+    ReflectedInertiaTreePtr model_rf_diag = std::make_shared<ReflectedInertiaTreeModel>(model_cl, RotorInertiaApproximation::DIAGONAL);
+    ReflectedInertiaTreePtr model_rf_none = std::make_shared<ReflectedInertiaTreeModel>(model_cl, RotorInertiaApproximation::NONE);
+    std::vector<ReflectedInertiaTreePtr> ref_inertia_models{model_rf_diag, model_rf_none};
 
     const int nv = model_cl.getNumDegreesOfFreedom();
 
@@ -222,7 +164,7 @@ void runApplyTestForceBenchmark(std::ofstream &file, const std::string contact_p
 
         for (int j = 0; j < num_samples_per_alpha; j++)
         {
-            bool nan_detected = setRandomStates(model_cl, model_rf, model_rf_diag, model_rf_none);
+            bool nan_detected = setRandomStates(model_cl, {}, ref_inertia_models);
             if (nan_detected)
             {
                 j--;
@@ -234,9 +176,9 @@ void runApplyTestForceBenchmark(std::ofstream &file, const std::string contact_p
             DVec<double> dstate_cluster;
             model_cl.applyTestForce(contact_point, force, dstate_cluster);
             DVec<double> dstate_diag_approx;
-            model_rf_diag.applyTestForce(contact_point, force, dstate_diag_approx);
+            model_rf_diag->applyTestForce(contact_point, force, dstate_diag_approx);
             DVec<double> dstate_none_approx;
-            model_rf_none.applyTestForce(contact_point, force, dstate_none_approx);
+            model_rf_none->applyTestForce(contact_point, force, dstate_none_approx);
 
             dstate_diag_error += (dstate_cluster - dstate_diag_approx).norm();
             dstate_none_error += (dstate_cluster - dstate_none_approx).norm();

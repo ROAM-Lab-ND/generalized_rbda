@@ -8,10 +8,6 @@
 using namespace grbda;
 using namespace grbda::BenchmarkHelpers;
 
-// TODO(@MatthewChignoli): This should be a helper function shared with accuracy benchmarks
-
-// TODO(@MatthewChignoli): We could also just make a benchmark helper function that takes a lambda function as a parameter. And then we could heavily re-use that
-
 template <typename RobotType>
 void runForwardDynamicsBenchmark(std::ofstream &file)
 {
