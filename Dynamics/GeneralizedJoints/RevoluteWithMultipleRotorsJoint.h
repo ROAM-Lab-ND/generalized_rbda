@@ -38,8 +38,8 @@ namespace grbda
             const Body link_;
             std::vector<Body> rotors_;
 
-            DMat<double> S_spanning_tree_;
-            DMat<double> Xup_spanning_tree_;
+            DMat<double> X_inter_;
+            DMat<double> S_spanning_;
         };
 
     }
