@@ -171,7 +171,7 @@ namespace grbda
             auto foot = model.registerBody(foot_name, foot_spatial_inertia,
                                            foot_parent_name, foot_Xtree);
 
-            // Hip differential cluster
+            // Knee-ankle differential cluster
             const std::string knee_ankle_differential_cluster_name = side + "-knee-ankle-differential";
             auto knee_ankle_differential_generalized_joint = std::make_shared<GeneralizedJoints::TelloKneeAnkleDifferential>(
                 knee_ankle_rotor_1, knee_ankle_rotor_2, shin, foot,
