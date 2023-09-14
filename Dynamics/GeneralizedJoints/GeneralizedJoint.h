@@ -58,7 +58,7 @@ namespace grbda
             const int &numVelocities() const { return num_velocities_; }
             virtual int numUnactuatedVelocities() const { return 0; }
 
-            // TODO(@MatthewChignoli): I think we can delete this stuff now
+            // TODO(@MatthewChignoli): I think we can delete this stuff now. WHich means we can make the constructr simlper
             const bool &positionIsSpanning() const { return position_is_spanning_; }
             const bool &velocityIsSpanning() const { return velocity_is_spanning_; }
 
@@ -120,6 +120,25 @@ namespace grbda
             std::vector<JointPtr> single_joints_;
 
             DMat<double> spanning_tree_to_independent_coords_conversion_;
+        };
+
+        struct GearedTransmissionModule
+        {
+            Body body_;
+            Body rotor_;
+            CoordinateAxis joint_axis_;
+            CoordinateAxis rotor_axis_;
+            double gear_ratio_;
+        };
+
+        struct ParallelBeltTransmissionModule
+        {
+            Body body_;
+            Body rotor_;
+            CoordinateAxis joint_axis_;
+            CoordinateAxis rotor_axis_;
+            double gear_ratio_;
+            double belt_ratio_;
         };
 
     }

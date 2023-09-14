@@ -7,34 +7,33 @@ namespace grbda
     {
 
         RevoluteTripleWithRotor::RevoluteTripleWithRotor(
-            std::vector<ParallelBeltTransmissionModule> modules)
-            : Base(6, 3, 3, false, false), link_1_(modules[0].body_), link_2_(modules[1].body_),
-              link_3_(modules[2].body_), rotor_1_(modules[0].rotor_), rotor_2_(modules[1].rotor_),
-              rotor_3_(modules[2].rotor_)
+            const ParallelBeltTransmissionModule &module_1,
+            const ParallelBeltTransmissionModule &module_2,
+            const ParallelBeltTransmissionModule &module_3)
+            : Base(6, 3, 3, false, false), link_1_(module_1.body_), link_2_(module_2.body_),
+              link_3_(module_3.body_), rotor_1_(module_1.rotor_), rotor_2_(module_2.rotor_),
+              rotor_3_(module_3.rotor_)
         {
-            link_1_joint_ =
-                single_joints_.emplace_back(new Joints::Revolute(modules[0].joint_axis_));
-            link_2_joint_ =
-                single_joints_.emplace_back(new Joints::Revolute(modules[1].joint_axis_));
-            link_3_joint_ =
-                single_joints_.emplace_back(new Joints::Revolute(modules[2].joint_axis_));
+            link_1_joint_ = single_joints_.emplace_back(new Joints::Revolute(module_1.joint_axis_));
+            link_2_joint_ = single_joints_.emplace_back(new Joints::Revolute(module_2.joint_axis_));
+            link_3_joint_ = single_joints_.emplace_back(new Joints::Revolute(module_3.joint_axis_));
 
-            rotor_1_joint_ =
-                single_joints_.emplace_back(new Joints::Revolute(modules[0].rotor_axis_));
+            rotor_1_joint_ = 
+                single_joints_.emplace_back(new Joints::Revolute(module_1.rotor_axis_));
             rotor_2_joint_ =
-                single_joints_.emplace_back(new Joints::Revolute(modules[1].rotor_axis_));
+                single_joints_.emplace_back(new Joints::Revolute(module_2.rotor_axis_));
             rotor_3_joint_ =
-                single_joints_.emplace_back(new Joints::Revolute(modules[2].rotor_axis_));
+                single_joints_.emplace_back(new Joints::Revolute(module_3.rotor_axis_));
 
             spanning_tree_to_independent_coords_conversion_ = DMat<double>::Zero(3, 6);
             spanning_tree_to_independent_coords_conversion_.topLeftCorner<3, 3>().setIdentity();
 
-            const double &gr1 = modules[0].gear_ratio_;
-            const double &gr2 = modules[1].gear_ratio_;
-            const double &gr3 = modules[2].gear_ratio_;
-            const double &br1 = modules[0].belt_ratio_;
-            const double &br2 = modules[1].belt_ratio_;
-            const double &br3 = modules[2].belt_ratio_;
+            const double &gr1 = module_1.gear_ratio_;
+            const double &gr2 = module_2.gear_ratio_;
+            const double &gr3 = module_3.gear_ratio_;
+            const double &br1 = module_1.belt_ratio_;
+            const double &br2 = module_2.belt_ratio_;
+            const double &br3 = module_3.belt_ratio_;
 
             DMat<double> G = DMat<double>::Zero(6, 3);
             G.topRows<3>().setIdentity();

@@ -12,8 +12,8 @@ namespace grbda
         class RevoluteWithRotor : public Base
         {
         public:
-            RevoluteWithRotor(Body &link, Body &rotor, CoordinateAxis joint_axis,
-                              CoordinateAxis rotor_axis, double gear_ratio);
+            RevoluteWithRotor(GearedTransmissionModule &module);
+
             virtual ~RevoluteWithRotor() {}
 
             GeneralizedJointTypes type() const override { return GeneralizedJointTypes::RevoluteWithRotor; }
