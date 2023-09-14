@@ -168,7 +168,7 @@ namespace grbda
             auto foot = model.registerBody(foot_name, foot_spatial_inertia,
                                            foot_parent_name, foot_Xtree);
 
-            // Hip differential cluster
+            // Knee-ankle differential cluster
             const std::string knee_ankle_differential_cluster_name = side + "-knee-ankle-differential";
             model.appendRegisteredBodiesAsCluster<TelloKneeAnkleDifferential>(
                 knee_ankle_differential_cluster_name,
