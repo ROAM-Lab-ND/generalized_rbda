@@ -1,13 +1,12 @@
 #include <iostream>
 #include <fstream>
 
-#include "Dynamics/RigidBodyTreeModel.h"
-#include "Dynamics/ReflectedInertiaTreeModel.h"
-
+#include "BenchmarkingHelpers.hpp"
 #include "Robots/RobotTypes.h"
 #include "Utils/Timer.h"
 
 using namespace grbda;
+using namespace grbda::BenchmarkHelpers;
 
 template <class T>
 void runBenchmark(std::ofstream &file, const std::string& id)
@@ -24,47 +23,24 @@ void runBenchmark(std::ofstream &file, const std::string& id)
     {
         T robot = T(true);
         ClusterTreeModel cluster_model = robot.buildClusterTreeModel();
-        RigidBodyTreeModel projection_model{cluster_model,
-                                            FwdDynMethod::Projection};
-        ReflectedInertiaTreeModel reflected_inertia_model{cluster_model,
-                                                          RotorInertiaApproximation::DIAGONAL};
+        RigidBodyTreePtr projection_model =
+            std::make_shared<RigidBodyTreeModel>(cluster_model, FwdDynMethod::Projection);
+        ReflectedInertiaTreePtr reflected_inertia_model =
+            std::make_shared<ReflectedInertiaTreeModel>(cluster_model,
+                                                        RotorInertiaApproximation::DIAGONAL);
 
         const int nq = cluster_model.getNumPositions();
         const int nv = cluster_model.getNumDegreesOfFreedom();
 
         for (int j = 0; j < num_state_samples; j++)
         {
-
-            // Set random state
-            ModelState model_state;
-            DVec<double> independent_joint_pos = DVec<double>::Zero(0);
-            DVec<double> independent_joint_vel = DVec<double>::Zero(0);
-            DVec<double> spanning_joint_pos = DVec<double>::Zero(0);
-            DVec<double> spanning_joint_vel = DVec<double>::Zero(0);
-            for (const auto &cluster : cluster_model.clusters())
+            bool nan_detected = setRandomStates(cluster_model, projection_model,
+                                                reflected_inertia_model);
+            if (nan_detected)
             {
-                JointState joint_state = cluster->joint_->randomJointState();
-                if (joint_state.position.isSpanning() || joint_state.velocity.isSpanning())
-                    throw std::runtime_error("Initializing reflected inertia model requires all independent coordinates");
-                    
-                independent_joint_pos = appendEigenVector(independent_joint_pos,
-                                                          joint_state.position);
-                independent_joint_vel = appendEigenVector(independent_joint_vel,
-                                                          joint_state.velocity);
-
-                JointState spanning_joint_state = cluster->joint_->toSpanningTreeState(joint_state);
-                spanning_joint_pos = appendEigenVector(spanning_joint_pos,
-                                                       spanning_joint_state.position);
-                spanning_joint_vel = appendEigenVector(spanning_joint_vel,
-                                                       spanning_joint_state.velocity);
-
-                model_state.push_back(joint_state);
+                j--;
+                continue;
             }
-
-            cluster_model.setState(model_state);
-            projection_model.setState(spanning_joint_pos, spanning_joint_vel);
-            reflected_inertia_model.setIndependentStates(independent_joint_pos,
-                                                                independent_joint_vel);
 
             // Inverse Operational Space Inertia Matrix
             timer.start();
@@ -72,11 +48,11 @@ void runBenchmark(std::ofstream &file, const std::string& id)
             t_cluster += timer.getMs();
 
             timer.start();
-            projection_model.inverseOperationalSpaceInertiaMatrix();
+            projection_model->inverseOperationalSpaceInertiaMatrix();
             t_projection += timer.getMs();
 
             timer.start();
-            reflected_inertia_model.inverseOperationalSpaceInertiaMatrix();
+            reflected_inertia_model->inverseOperationalSpaceInertiaMatrix();
             t_approx += timer.getMs();
         }
     }

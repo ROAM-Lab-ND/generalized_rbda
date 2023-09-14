@@ -22,7 +22,6 @@ function [fwd_dyn, inv_dyn] = derive_revolute_pair_with_rotor(N)
     br = zeros(N, 1);
     g = -9.81;
 
-    % TODO(@MatthewChignoli): This is a strong reason to make these inputs to the casadi function
     for n = 1:N
         I(n) = 1.;
         Irot(n) = 0.0001;
