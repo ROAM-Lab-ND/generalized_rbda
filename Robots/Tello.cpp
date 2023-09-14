@@ -17,8 +17,8 @@ namespace grbda
         const std::string torso_parent_name = "ground";
         const SpatialInertia<double> torso_spatial_inertia = SpatialInertia<double>{torso_mass,
             torso_CoM, torso_inertia};
-        model.appendBody<GeneralizedJoints::Free>(torso_name, torso_spatial_inertia,
-                                                  torso_parent_name, spatial::SpatialTransform{});
+        model.appendBody<Free>(torso_name, torso_spatial_inertia,
+                               torso_parent_name, spatial::SpatialTransform{});
 
         std::vector<std::string> sides = {"left","right"};
         const std::string hip_clamp_parent_name = "torso";
@@ -57,9 +57,11 @@ namespace grbda
 
             // Hip clamp cluster
             const std::string hip_clamp_cluster_name = side + "-hip-clamp";
-            model.appendRegisteredBodiesAsCluster<RevoluteWithRotor>(
-                hip_clamp_cluster_name, hip_clamp, hip_clamp_rotor,
-                CoordinateAxis::Z, CoordinateAxis::Z, gear_ratio);
+            GearedTransmissionModule hip_clamp_module{hip_clamp, hip_clamp_rotor,
+                                                      CoordinateAxis::Z, CoordinateAxis::Z,
+                                                      gear_ratio};
+            model.appendRegisteredBodiesAsCluster<RevoluteWithRotor>(hip_clamp_cluster_name,
+                                                                     hip_clamp_module);
 
             // Hip differential rotor 1
             const SpatialTransform hip_rotor_1_Xtree = i == 0 ? SpatialTransform(R_left_hip_rotor_1,
