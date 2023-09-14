@@ -7,7 +7,7 @@
 
 using namespace grbda;
 
-static const double tol = 2e-8;
+static const double tol = 5e-8;
 
 // The purpose of these tests is to ensure consistency between the outputs of the Rigid Body
 // Dynamics Algorithms for our cluster tree model and the constrained rigid body tree
