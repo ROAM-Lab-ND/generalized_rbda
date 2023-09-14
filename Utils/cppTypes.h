@@ -180,6 +180,7 @@ namespace grbda
     template <typename T>
     using DVecFcn = std::function<DVec<T>(DVec<T>)>;
 
+    // TODO(@MatthewChignoli): Should these classes be moved elsewhere?
     class JointCoordinate : public DVec<double>
     {
     public:

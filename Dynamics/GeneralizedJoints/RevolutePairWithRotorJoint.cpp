@@ -36,13 +36,15 @@ namespace grbda
                 gear_ratio_2 * belt_ratio_1, 0, -1., net_ratio_2;
             loop_constraint_ = std::make_shared<LoopConstraint::Static>(G, K);
 
-            S_.block<6, 1>(0, 0) = link_1_joint_->S();
-            S_.block<6, 1>(6, 0) = net_ratio_1 * rotor_1_joint_->S();
-            S_.block<6, 1>(12, 0) = gear_ratio_2 * belt_ratio_1 * rotor_2_joint_->S();
-            S_.block<6, 1>(12, 1) = net_ratio_2 * rotor_2_joint_->S();
-            S_.block<6, 1>(18, 1) = link_2_joint_->S();
+            X_inter_S_span_ = DMat<double>::Zero(24, 4);
+            X_inter_S_span_ring_ = DMat<double>::Zero(24, 4);
 
-            vJ_ = DVec<double>::Zero(24);
+            X_inter_S_span_.block<6, 1>(0, 0) = link_1_joint_->S();
+            X_inter_S_span_.block<6, 1>(6, 1) = rotor_1_joint_->S();
+            X_inter_S_span_.block<6, 1>(12, 2) = rotor_2_joint_->S();
+            X_inter_S_span_.block<6, 1>(18, 3) = link_2_joint_->S();
+
+            S_ = X_inter_S_span_ * loop_constraint_->G();
         }
 
         void RevolutePairWithRotor::updateKinematics(const JointState &joint_state)
@@ -63,12 +65,14 @@ namespace grbda
             X21_ = link_2_joint_->XJ() * link_2_.Xtree_;
             const DVec<double> v2_relative = link_2_joint_->S() * qd[3];
 
-            S_.block<6, 1>(18, 0) = X21_.transformMotionSubspace(link_1_joint_->S());
+            X_inter_S_span_.block<6, 1>(18, 0) = X21_.transformMotionSubspace(link_1_joint_->S());
+            S_.block<6, 1>(18, 0) = X_inter_S_span_.block<6, 1>(18, 0);
 
-            vJ_ = S_ * joint_state.velocity;
+            X_inter_S_span_ring_.block<6, 1>(18, 0) = -generalMotionCrossMatrix(v2_relative) *
+                                                 X_inter_S_span_.block<6, 1>(18, 0);
 
-            cJ_.segment<6>(18) = -generalMotionCrossMatrix(v2_relative) *
-                                 S_.block<6, 1>(18, 0) * joint_state.velocity;
+            vJ_ = X_inter_S_span_ * qd;
+            cJ_ = X_inter_S_span_ring_ * qd;
         }
 
         void RevolutePairWithRotor::computeSpatialTransformFromParentToCurrentCluster(

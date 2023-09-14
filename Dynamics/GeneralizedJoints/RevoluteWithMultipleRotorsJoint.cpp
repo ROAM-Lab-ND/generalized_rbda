@@ -44,11 +44,11 @@ namespace grbda
 
             // TODO(@MatthewChignoli): How to compute Psi?
 
-            S_spanning_tree_ = DMat<double>::Zero(0, 0);
+            S_spanning_ = DMat<double>::Zero(0, 0);
             for (const auto &joint : single_joints_)
-                S_spanning_tree_ = appendEigenMatrix(S_spanning_tree_, joint->S());
+                S_spanning_ = appendEigenMatrix(S_spanning_, joint->S());
 
-            Xup_spanning_tree_ = DMat<double>::Identity(6 * num_bodies_, 6 * num_bodies_);
+            X_inter_ = DMat<double>::Identity(6 * num_bodies_, 6 * num_bodies_);
 
             vJ_ = DVec<double>::Zero(6 * (1 + num_rotors));
         }
@@ -69,8 +69,9 @@ namespace grbda
                 rotor_joints_[i]->updateKinematics(q.segment<1>(i + 1), qd.segment<1>(i + 1));
             }
 
-            S_ = Xup_spanning_tree_ * S_spanning_tree_ * G();
-            vJ_ = S_ * joint_state.velocity;
+            const DMat<double> X_inter_S_span = X_inter_ * S_spanning_; 
+            S_ = X_inter_S_span * G();
+            vJ_ = X_inter_S_span * qd;
         }
 
         void RevoluteWithMultipleRotorsJoint::computeSpatialTransformFromParentToCurrentCluster(

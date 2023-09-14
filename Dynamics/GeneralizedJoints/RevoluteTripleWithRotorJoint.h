@@ -57,6 +57,9 @@ namespace grbda
             const Body rotor_1_;
             const Body rotor_2_;
             const Body rotor_3_;
+
+            DMat<double> X_inter_S_span_;
+            DMat<double> X_inter_S_span_ring_;
         };
 
     }

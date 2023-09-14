@@ -25,7 +25,7 @@ namespace grbda
             }
 
             void updateKinematics(const JointState &joint_state) override;
-                                  
+
             void computeSpatialTransformFromParentToCurrentCluster(
                 GeneralizedSpatialTransform &Xup) const override;
 
@@ -44,6 +44,9 @@ namespace grbda
             const Body link_2_;
             const Body rotor_1_;
             const Body rotor_2_;
+
+            DMat<double> X_inter_S_span_;
+            DMat<double> X_inter_S_span_ring_;
         };
 
     }
