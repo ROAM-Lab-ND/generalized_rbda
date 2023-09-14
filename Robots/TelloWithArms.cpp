@@ -38,12 +38,9 @@ namespace grbda
                                                         shoulder_ry_rotor_inertia,
                                                         shoulder_ry_parent_name,
                                                         xtreeShoulderRyRotor);
-            model.appendRegisteredBodiesAsCluster<RevoluteWithRotor>(shoulder_ry_name,
-                                                                     shoulder_ry_link,
-                                                                     shoulder_ry_rotor,
-                                                                     CoordinateAxis::Y,
-                                                                     CoordinateAxis::Y,
-                                                                     _shoulderRyGearRatio);
+            model.appendRegisteredBodiesAsCluster<RevoluteWithRotor>(
+                shoulder_ry_name, shoulder_ry_link, shoulder_ry_rotor,
+                CoordinateAxis::Y, CoordinateAxis::Y, _shoulderRyGearRatio);
 
             // ShoulderRx
             const std::string shoulder_rx_parent_name = shoulder_ry_link_name;
@@ -70,12 +67,9 @@ namespace grbda
                                                         shoulder_rx_rotor_inertia,
                                                         shoulder_rx_parent_name,
                                                         xtreeShoulderRxRotor);
-            model.appendRegisteredBodiesAsCluster<RevoluteWithRotor>(shoulder_rx_name,
-                                                                     shoulder_rx_link,
-                                                                     shoulder_rx_rotor,
-                                                                     CoordinateAxis::X,
-                                                                     CoordinateAxis::X,
-                                                                     _shoulderRxGearRatio);
+            model.appendRegisteredBodiesAsCluster<RevoluteWithRotor>(
+                shoulder_rx_name, shoulder_rx_link, shoulder_rx_rotor,
+                CoordinateAxis::X, CoordinateAxis::X, _shoulderRxGearRatio);
 
             // ShoulderRz
             const std::string shoulder_rz_parent_name = shoulder_rx_link_name;
@@ -102,12 +96,9 @@ namespace grbda
                                                         shoulder_rz_rotor_inertia,
                                                         shoulder_rz_parent_name,
                                                         xtreeShoulderRzRotor);
-            model.appendRegisteredBodiesAsCluster<RevoluteWithRotor>(shoulder_rz_name,
-                                                                     shoulder_rz_link,
-                                                                     shoulder_rz_rotor,
-                                                                     CoordinateAxis::Z,
-                                                                     CoordinateAxis::Z,
-                                                                     _shoulderRzGearRatio);
+            model.appendRegisteredBodiesAsCluster<RevoluteWithRotor>(
+                shoulder_rz_name, shoulder_rz_link, shoulder_rz_rotor,
+                CoordinateAxis::Z, CoordinateAxis::Z, _shoulderRzGearRatio);
 
             // Elbow
             const std::string elbow_parent_name = shoulder_rz_link_name;
@@ -129,11 +120,9 @@ namespace grbda
                                                  elbow_parent_name, xtreeElbow);
             Body elbow_rotor = model.registerBody(elbow_rotor_name, elbow_rotor_inertia,
                                                   elbow_parent_name, xtreeElbowRotor);
-            model.appendRegisteredBodiesAsCluster<RevoluteWithRotor>(elbow_name, elbow_link,
-                                                                     elbow_rotor,
-                                                                     CoordinateAxis::Y,
-                                                                     CoordinateAxis::Y,
-                                                                     _elbowGearRatio);
+            model.appendRegisteredBodiesAsCluster<RevoluteWithRotor>(
+                elbow_name, elbow_link, elbow_rotor,
+                CoordinateAxis::Y, CoordinateAxis::Y, _elbowGearRatio);
 
             const std::string elbow_contact_name = withLeftRightSigns("elbow_contact", armID);
             const std::string hand_contact_name = withLeftRightSigns("hand_contact", armID);
