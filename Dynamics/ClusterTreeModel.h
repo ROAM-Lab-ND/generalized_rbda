@@ -1,4 +1,5 @@
-#pragma once
+#ifndef GRBDA_CLUSTER_TREE_MODEL_H
+#define GRBDA_CLUSTER_TREE_MODEL_H
 
 #include <string>
 #include <vector>
@@ -230,3 +231,5 @@ namespace grbda
     };
 
 } // namespace grbda
+
+#endif // GRBDA_CLUSTER_TREE_MODEL_H

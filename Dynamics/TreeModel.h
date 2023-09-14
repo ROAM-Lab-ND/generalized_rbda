@@ -1,4 +1,4 @@
-#pragma once
+#ifndef GRBDA_TREEMODEL_H
 
 #include "Body.h"
 #include "DynamicsUtilities.h"
@@ -104,3 +104,5 @@ namespace grbda
     };
 
 } // namespace grbda
+
+#endif // GRBDA_TREEMODEL_H

@@ -1,4 +1,5 @@
-#pragma once
+#ifndef GRBDA_GENERALIZED_JOINTS_FREE_JOINT_H
+#define GRBDA_GENERALIZED_JOINTS_FREE_JOINT_H
 
 #include "GeneralizedJoint.h"
 
@@ -20,7 +21,6 @@ namespace grbda
             void updateBiases(const JointState &joint_state) override {}
 
             DVec<double> gamma(const JointCoordinate &joint_pos) const override;
-
         };
 
     }
@@ -55,3 +55,5 @@ namespace grbda
     }
 
 } // namespace grbda
+
+#endif // GRBDA_GENERALIZED_JOINTS_FREE_JOINT_H

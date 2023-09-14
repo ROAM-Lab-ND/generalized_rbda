@@ -1,4 +1,4 @@
-#pragma once
+#ifndef GRBDA_DYNAMICS_FACTORIZATION_H
 
 #include "Dynamics/Nodes/RigidBodyTreeNode.h"
 
@@ -36,3 +36,5 @@ namespace grbda
     }
 
 } // namespace grbda
+
+#endif // GRBDA_DYNAMICS_FACTORIZATION_H

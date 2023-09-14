@@ -1,4 +1,5 @@
-#pragma once
+#ifndef GRBDA_BODY_H
+#define GRBDA_BODY_H
 
 #include <string>
 #include "Utils/Utilities/SpatialInertia.h"
@@ -41,3 +42,5 @@ namespace grbda
   };
 
 } // namespace grbda
+
+#endif // GRBDA_BODY_H

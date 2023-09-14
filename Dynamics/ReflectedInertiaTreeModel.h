@@ -1,4 +1,5 @@
-#pragma once
+#ifndef GRBDA_REFLECTED_INERTIA_TREE_MODEL_H
+#define GRBDA_REFLECTED_INERTIA_TREE_MODEL_H
 
 #include "ClusterTreeModel.h"
 #include "Dynamics/Nodes/ReflectedInertiaTreeNode.h"
@@ -110,3 +111,5 @@ namespace grbda
     };
 
 } // namespace grbda
+
+#endif // GRBDA_REFLECTED_INERTIA_TREE_MODEL_H

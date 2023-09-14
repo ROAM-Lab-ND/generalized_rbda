@@ -1,4 +1,5 @@
-#pragma once
+#ifndef GRBDA_GENERALIZED_JOINT_H
+#define GRBDA_GENERALIZED_JOINT_H
 
 #include <memory>
 
@@ -121,3 +122,5 @@ namespace grbda
     }
 
 } // namespace grbda
+
+#endif // GRBDA_GENERALIZED_JOINT_H

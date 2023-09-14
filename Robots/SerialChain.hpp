@@ -1,4 +1,5 @@
-#pragma once
+#ifndef GRBDA_ROBOTS_SERIAL_CHAIN_H
+#define GRBDA_ROBOTS_SERIAL_CHAIN_H
 
 #include "Robot.h"
 
@@ -40,3 +41,5 @@ namespace grbda
         };
 
 } // namespace grbda
+
+#endif // GRBDA_ROBOTS_SERIAL_CHAIN_H

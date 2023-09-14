@@ -1,4 +1,5 @@
-#pragma once
+#ifndef GRBDA_SPATIAL_TRANSFORMS_H
+#define GRBDA_SPATIAL_TRANSFORMS_H
 
 #include "orientation_tools.h"
 
@@ -110,3 +111,5 @@ namespace grbda
     } // namespace spatial
 
 } // namespace grbda
+
+#endif // GRBDA_SPATIAL_TRANSFORMS_H
