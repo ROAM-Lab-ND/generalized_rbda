@@ -7,21 +7,22 @@ path_to_figures = '../Benchmarking/figures/TimingIOSIM_';
 figure
 revolute_chain_with_rotors = readmatrix([path_to_data, 'RevoluteChain.csv']);
 compareTimes(revolute_chain_with_rotors)
+saveas(gcf, [path_to_figures, 'RevoluteChains.png'])
 
 % Revolute Pair Chain
 figure
 revolute_pair_chain_with_rotors = readmatrix([path_to_data, 'RevolutePairChain.csv']);
 compareTimes(revolute_pair_chain_with_rotors)
+saveas(gcf, [path_to_figures, 'RevolutePairChains.png'])
 
-% saveas(gcf, [path_to_figures, 'RevoluteChains.png'])
 
 %% Helper Function
 function compareTimes(data)
 
     hold on
-    plot(data(:, 1), data(:, 4), 'ko-', 'Linewidth', 2.0, 'MarkerSize', 10.)
-    plot(data(:, 1), data(:, 2), 'ro-', 'Linewidth', 2.0, 'MarkerSize', 10.)
-    plot(data(:, 1), data(:, 3), 'bo-', 'Linewidth', 2.0, 'MarkerSize', 10.)
+    plot(data(:, 1), data(:, 4), 'ko-', 'Linewidth', 2.0, 'MarkerSize', 10., 'MarkerFaceColor', 'k')
+    plot(data(:, 1), data(:, 2), 'ro-', 'Linewidth', 2.0, 'MarkerSize', 10., 'MarkerFaceColor', 'r')
+    plot(data(:, 1), data(:, 3), 'bo-', 'Linewidth', 2.0, 'MarkerSize', 10., 'MarkerFaceColor', 'b')
 
     grid on
 
