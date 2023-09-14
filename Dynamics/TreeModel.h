@@ -50,11 +50,15 @@ namespace grbda
         virtual const D6Mat<double>& contactJacobian(const std::string &cp_name) = 0;
         void contactJacobians();
 
+        // Returns independent (non-spanning) joint accelerations
         virtual DVec<double> forwardDynamics(const DVec<double> &tau) = 0;
+        
+        // Takes as input independent (non-spanning) joint accelerations
         virtual DVec<double> inverseDynamics(const DVec<double> &qdd) = 0;
+        
         virtual DMat<double> inverseOperationalSpaceInertiaMatrix() = 0;
 
-        // NOTE: The test force is expressed in the local frame
+        // The test force is expressed in the local frame
         virtual double applyTestForce(const string &contact_point_name,
                                       const Vec3<double> &force, DVec<double> &dstate_out) = 0;
 
