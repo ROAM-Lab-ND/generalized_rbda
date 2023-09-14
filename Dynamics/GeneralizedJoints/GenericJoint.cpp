@@ -8,16 +8,16 @@ namespace grbda
     {
 
         Generic::Generic(const std::vector<Body> &bodies, const std::vector<JointPtr> &joints,
-                         const shared_ptr<const LoopConstraint::Base> &loop_constraint)
+                         shared_ptr<LoopConstraint::Base> loop_constraint)
             : Base((int)bodies.size(),
                    loop_constraint->numIndependentPos(), loop_constraint->numIndependentVel(),
                    false, false),
               bodies_(bodies)
         {
+            loop_constraint_ = loop_constraint;
+
             for (auto &joint : joints)
                 single_joints_.push_back(joint);
-
-            loop_constraint_ = loop_constraint->clone();
 
             extractConnectivity();
 
@@ -59,9 +59,9 @@ namespace grbda
                         const auto &body_k = bodies_[k];
                         const auto joint_k = single_joints_[k];
 
-                        Xup_spanning_tree_.block<6, 6>(6 * i, 6 * j) =
-                            Xup_spanning_tree_.block<6, 6>(6 * i, 6 * k) *
-                            (joint_k->XJ() * body_k.Xtree_).toMatrix();
+                        const Mat6<double> Xup_prev = Xup_spanning_tree_.block<6, 6>(6 * i, 6 * k);
+                        const Mat6<double> Xint = (joint_k->XJ() * body_k.Xtree_).toMatrix();
+                        Xup_spanning_tree_.block<6, 6>(6 * i, 6 * j) = Xup_prev * Xint;
 
                         k = j;
                     }
@@ -71,8 +71,9 @@ namespace grbda
                 vel_idx += num_vel;
             }
 
-            S_ = Xup_spanning_tree_ * S_spanning_tree_ * loop_constraint_->G();
-            vJ_ = S_ * joint_state.velocity;
+            const DMat<double> S_implicit = Xup_spanning_tree_ * S_spanning_tree_;
+            S_ = S_implicit * loop_constraint_->G();
+            vJ_ = S_implicit * qd;
 
             for (int i = 0; i < num_bodies_; i++)
             {
@@ -81,17 +82,20 @@ namespace grbda
                 {
                     if (connectivity_(i, j))
                     {
-                        v_relative = Xup_spanning_tree_.block<6, 6>(6 * i, 6 * j) * vJ_.segment<6>(6 * j) -
-                                     vJ_.segment<6>(6 * i);
+                        const Mat6<double> Xup = Xup_spanning_tree_.block<6, 6>(6 * i, 6 * j);
+
+                        const SVec<double> v_parent = Xup * vJ_.segment<6>(6 * j);
+                        const SVec<double> v_child = vJ_.segment<6>(6 * i);
+                        v_relative = v_child - v_parent;
 
                         Xup_ring_spanning_tree_.block<6, 6>(6 * i, 6 * j) =
-                            motionCrossMatrix(v_relative) * Xup_spanning_tree_.block<6, 6>(6 * i, 6 * j);
+                            -motionCrossMatrix(v_relative) * Xup;
                     }
                 }
             }
 
             cJ_ = Xup_ring_spanning_tree_ * S_spanning_tree_ * qd +
-                  Xup_spanning_tree_ * S_spanning_tree_ * loop_constraint_->g();
+                  S_implicit * loop_constraint_->g();
         }
 
         void Generic::computeSpatialTransformFromParentToCurrentCluster(

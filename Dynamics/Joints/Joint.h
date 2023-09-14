@@ -19,6 +19,8 @@ namespace grbda
                 : num_positions_(num_positions), num_velocities_(num_velocities) {}
             virtual ~Base() {}
 
+            virtual std::shared_ptr<Base> clone() const = 0;
+
             virtual void updateKinematics(const DVec<double> &q, const DVec<double> &qd) = 0;
 
             int numPositions() const { return num_positions_; }
@@ -47,6 +49,8 @@ namespace grbda
             }
             ~Free() {}
 
+            std::shared_ptr<Base> clone() const override { return std::make_shared<Free>(*this); }
+
             void updateKinematics(const DVec<double> &q, const DVec<double> &qd) override
             {
                 XJ_ = SpatialTransform(quaternionToRotationMatrix(q.tail<4>()),
@@ -66,6 +70,11 @@ namespace grbda
                 Psi_.leftCols<1>() = jointMotionSubspace<double>(JointType::Revolute, axis);
             }
             ~Revolute() {}
+
+            std::shared_ptr<Base> clone() const override
+            {
+                return std::make_shared<Revolute>(*this);
+            }
 
             void updateKinematics(const DVec<double> &q, const DVec<double> &qd) override
             {

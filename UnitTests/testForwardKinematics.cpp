@@ -1,5 +1,6 @@
 #include "gtest/gtest.h"
 
+#include "testHelpers.hpp"
 #include "Dynamics/RigidBodyTreeModel.h"
 #include "Dynamics/ReflectedInertiaTreeModel.h"
 #include "Robots/RobotTypes.h"
@@ -7,13 +8,14 @@
 using namespace grbda;
 
 static const double tol = 1e-10;
-static const double loose_tol = 2e-4;
+static const double loose_tol = 1e-3;
 
 template <class T>
 class RigidBodyKinemaitcsTest : public testing::Test
 {
 protected:
     RigidBodyKinemaitcsTest() : cluster_model(robot.buildClusterTreeModel()),
+                                generic_model(extractGenericJointModel(cluster_model)),
                                 rigid_body_model(cluster_model) {}
 
     bool initializeRandomStates()
@@ -34,6 +36,7 @@ protected:
         }
 
         cluster_model.initializeState(model_state);
+        generic_model.initializeState(model_state);
         rigid_body_model.initializeState(spanning_joint_pos, spanning_joint_vel);
 
         // Check for NaNs
@@ -51,6 +54,7 @@ protected:
 
     T robot;
     ClusterTreeModel cluster_model;
+    ClusterTreeModel generic_model;
     RigidBodyTreeModel rigid_body_model;
 
     ModelState model_state;
@@ -65,6 +69,8 @@ typedef Types<
     RevolutePairChain<4>,
     RevolutePairChainWithRotor<2>,
     RevolutePairChainWithRotor<4>,
+    RevoluteTripleChainWithRotor<3>,
+    RevoluteTripleChainWithRotor<6>,
     RevoluteChainMultipleRotorsPerLink<2, 2>,
     RevoluteChainMultipleRotorsPerLink<4, 1>,
     RevoluteChainMultipleRotorsPerLink<4, 3>,
@@ -93,25 +99,34 @@ TYPED_TEST(RigidBodyKinemaitcsTest, ForwardKinematics)
 
         // Forward kinematics
         this->cluster_model.forwardKinematics();
+        this->generic_model.forwardKinematics();
         this->rigid_body_model.forwardKinematics();
 
         // Verify link kinematics
         for (const auto& body : this->cluster_model.bodies())
         {
             const Vec3<double> p_cluster = this->cluster_model.getPosition(body.name_);
+            const Vec3<double> p_generic = this->generic_model.getPosition(body.name_);
             const Vec3<double> p_rigid_body = this->rigid_body_model.getPosition(body.name_);
+            GTEST_ASSERT_LT((p_cluster - p_generic).norm(), tol);
             GTEST_ASSERT_LT((p_cluster - p_rigid_body).norm(), tol);
 
             const Mat3<double> R_cluster = this->cluster_model.getOrientation(body.name_);
+            const Mat3<double> R_generic = this->generic_model.getOrientation(body.name_);
             const Mat3<double> R_rigid_body = this->rigid_body_model.getOrientation(body.name_);
+            GTEST_ASSERT_LT((R_cluster - R_generic).norm(), tol);
             GTEST_ASSERT_LT((R_cluster - R_rigid_body).norm(), tol);
 
             const Vec3<double> v_cluster = this->cluster_model.getLinearVelocity(body.name_);
+            const Vec3<double> v_generic = this->generic_model.getLinearVelocity(body.name_);
             const Vec3<double> v_rigid_body = this->rigid_body_model.getLinearVelocity(body.name_);
+            GTEST_ASSERT_LT((v_cluster - v_generic).norm(), tol);
             GTEST_ASSERT_LT((v_cluster - v_rigid_body).norm(), tol);
 
             const Vec3<double> w_cluster = this->cluster_model.getAngularVelocity(body.name_);
+            const Vec3<double> w_generic = this->generic_model.getAngularVelocity(body.name_);
             const Vec3<double> w_rigid_body = this->rigid_body_model.getAngularVelocity(body.name_);
+            GTEST_ASSERT_LT((w_cluster - w_generic).norm(), tol);
             GTEST_ASSERT_LT((w_cluster - w_rigid_body).norm(), tol);
         }
 

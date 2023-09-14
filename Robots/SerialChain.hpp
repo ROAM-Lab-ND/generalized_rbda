@@ -36,6 +36,11 @@ namespace grbda
             return SpatialInertia<double>::createRandomInertia(1e-4);
         }
 
+        double randomGearRatio() const
+        {
+            return static_cast<double>(rand() % _gear_ratio_scale + 1);
+        }
+
         const bool _random_parameters;
         int _gear_ratio_scale = 5;
         };

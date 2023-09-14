@@ -65,7 +65,9 @@ namespace grbda
         std::vector<std::pair<Body, JointPtr>> bodies_and_joints;
         for (int i = 0; i < (int)bodies_.size(); i++)
         {
-            std::pair<Body, JointPtr> body_and_joint = std::make_pair(bodies_[i], single_joints[i]);
+            Body body = bodies_[i];
+            JointPtr joint = single_joints[i]->clone();
+            std::pair<Body, JointPtr> body_and_joint = std::make_pair(body, joint);
             bodies_and_joints.push_back(body_and_joint);
         }
         return bodies_and_joints;
