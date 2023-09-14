@@ -119,9 +119,9 @@ namespace grbda
         double _hipRzGearRatio = 6.0;
         double _hipRxGearRatio = 6.0;
         double _hipRyGearRatio = 6.0;
-        double _kneeGearRatio = 12.0;
+        double _kneeGearRatio = 6.0;
         double _kneeBeltRatio = 2.0;
-        double _ankleGearRatio = 12.0;
+        double _ankleGearRatio = 6.0;
         double _ankleBeltRatio = 2.0;
 
         double _shoulderRxGearRatio = 6.0;

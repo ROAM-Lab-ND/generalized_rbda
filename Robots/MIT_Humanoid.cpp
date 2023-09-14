@@ -158,19 +158,10 @@ namespace grbda
 
             // Cluster
             const std::string knee_and_ankle_name = withLeftRightSigns("knee_and_ankle", legID);
-            double true_knee_gear_ratio = _kneeGearRatio / _kneeBeltRatio;
-            double true_ankle_gear_ratio = _ankleGearRatio / _ankleBeltRatio;
-            model.appendRegisteredBodiesAsCluster<RevolutePairWithRotor>(knee_and_ankle_name,
-                                                                         knee_link, ankle_link,
-                                                                         knee_rotor, ankle_rotor,
-                                                                         CoordinateAxis::Y,
-                                                                         CoordinateAxis::Y,
-                                                                         CoordinateAxis::Y,
-                                                                         CoordinateAxis::Y,
-                                                                         true_knee_gear_ratio,
-                                                                         true_ankle_gear_ratio,
-                                                                         _kneeBeltRatio,
-                                                                         _ankleBeltRatio);
+            model.appendRegisteredBodiesAsCluster<RevolutePairWithRotor>(
+                knee_and_ankle_name, knee_link, ankle_link, knee_rotor, ankle_rotor,
+                CoordinateAxis::Y, CoordinateAxis::Y, CoordinateAxis::Y, CoordinateAxis::Y,
+                _kneeGearRatio, _ankleGearRatio, _kneeBeltRatio, _ankleBeltRatio);
 
             // Contact Points
             const std::string toe_contact_name = withLeftRightSigns("toe_contact", legID);
