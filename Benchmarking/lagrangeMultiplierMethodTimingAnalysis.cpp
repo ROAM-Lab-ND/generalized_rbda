@@ -44,7 +44,7 @@ void runBenchmark(std::ofstream &file, const std::string &id)
                 model_state.push_back(joint_state);
             }
 
-            lagrange_mult_model.initializeState(spanning_joint_pos, spanning_joint_vel);
+            lagrange_mult_model.setState(spanning_joint_pos, spanning_joint_vel);
 
             // Forward Dynamics
             DVec<double> tau = DVec<double>::Random(nv);

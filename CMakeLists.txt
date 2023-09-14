@@ -26,7 +26,6 @@ if(CMAKE_BUILD_TYPE STREQUAL "Debug")
 endif()
 
 option(M1_BUILD "set compile options for Mac M1 chip" OFF)
-option(TIMING_STATS "log detailed timing statistics for algorithms" OFF)
 
 if(CMAKE_SYSTEM_NAME MATCHES Linux)
   set(CMAKE_CXX_FLAGS "-O3 -march=native -ggdb -Wall \
@@ -49,10 +48,6 @@ elseif(APPLE)
 endif()
 
 set(CMAKE_C_FLAGS "-O3  -ggdb  -march=native -std=gnu99 -I.")
-
-if(TIMING_STATS)
-  add_definitions(-DTIMING_STATS)
-endif()
 
 #------------------------------------------------------------------------
 # Directory setup
@@ -98,6 +93,5 @@ message (" The project name/ Build Type: ${PROJECT_NAME}/${CMAKE_BUILD_TYPE}")
 message (" The system name: ${CMAKE_SYSTEM_NAME}")
 message (" The project source directory: ${PROJECT_SOURCE_DIR}")
 message (" The project binary directory: ${CMAKE_BINARY_DIR}")
-message (" Timing statistics: ${TIMING_STATS}")
 message ("--------------------------------------------------------------")
 message ("")

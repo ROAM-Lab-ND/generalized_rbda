@@ -42,12 +42,8 @@ namespace grbda
             const auto link_Xtree = randomSpatialRotation<double>();
             const auto link_inertia = randomLinkSpatialInertia();
             CoordinateAxis link_joint_axis = ori::randomCoordinateAxis<double>();
-            auto link = model.registerBody(link_name, link_inertia, prev_link_name, link_Xtree);
-
-            // Cluster
-            const std::string cluster_name = "cluster-" + std::to_string(i);
-            auto joint = std::make_shared<GeneralizedJoints::Revolute>(link, link_joint_axis);
-            model.appendRegisteredBodiesAsCluster(cluster_name, joint);
+            model.appendBody<GeneralizedJoints::Revolute>(link_name, link_inertia, prev_link_name,
+                                                          link_Xtree, link_joint_axis);
 
             prev_link_name = link_name;
         }

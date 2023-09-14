@@ -41,7 +41,7 @@ void runTelloBenchmark(std::ofstream &file)
 	    continue;
 	}
 
-        cluster_model.initializeState(model_state);
+        cluster_model.setState(model_state);
 
         // Forward Dynamics
         DVec<double> tau = DVec<double>::Random(nv);

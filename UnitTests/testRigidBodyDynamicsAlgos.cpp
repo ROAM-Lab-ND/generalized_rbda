@@ -63,11 +63,11 @@ protected:
                 model_state.push_back(joint_state);
         }
 
-        cluster_models[robot_idx].initializeState(model_state);
-        generic_models[robot_idx].initializeState(model_state);
-        lg_mult_custom_models[robot_idx].initializeState(spanning_joint_pos, spanning_joint_vel);
-        lg_mult_eigen_models[robot_idx].initializeState(spanning_joint_pos, spanning_joint_vel);
-        projection_models[robot_idx].initializeState(spanning_joint_pos, spanning_joint_vel);
+        cluster_models[robot_idx].setState(model_state);
+        generic_models[robot_idx].setState(model_state);
+        lg_mult_custom_models[robot_idx].setState(spanning_joint_pos, spanning_joint_vel);
+        lg_mult_eigen_models[robot_idx].setState(spanning_joint_pos, spanning_joint_vel);
+        projection_models[robot_idx].setState(spanning_joint_pos, spanning_joint_vel);
 
         // Check for NaNs
         bool nan_detected = false;
@@ -85,11 +85,11 @@ protected:
     void setForcesForAllModels(std::vector<ExternalForceAndBodyIndexPair> force_and_index_pairs,
                                const int robot_idx)
     {
-        cluster_models[robot_idx].initializeExternalForces(force_and_index_pairs);
-        generic_models[robot_idx].initializeExternalForces(force_and_index_pairs);
-        lg_mult_custom_models[robot_idx].initializeExternalForces(force_and_index_pairs);
-        lg_mult_eigen_models[robot_idx].initializeExternalForces(force_and_index_pairs);
-        projection_models[robot_idx].initializeExternalForces(force_and_index_pairs);
+        cluster_models[robot_idx].setExternalForces(force_and_index_pairs);
+        generic_models[robot_idx].setExternalForces(force_and_index_pairs);
+        lg_mult_custom_models[robot_idx].setExternalForces(force_and_index_pairs);
+        lg_mult_eigen_models[robot_idx].setExternalForces(force_and_index_pairs);
+        projection_models[robot_idx].setExternalForces(force_and_index_pairs);
     }
 
     std::vector<T> robots;
@@ -336,17 +336,18 @@ TYPED_TEST(RigidBodyDynamicsAlgosTest, ApplyTestForceTest)
                 continue;
             }
 
-            cluster_model.contactJacobians();
+            cluster_model.updateContactPointJacobians();
             for (const ContactPoint &cp : cluster_model.contactPoints())
             {
-                const D3Mat<double> J = cluster_model.contactJacobian(cp.name_).bottomRows<3>();
+                const D6Mat<double> J = cluster_model.contactJacobianWorldFrame(cp.name_);
+                const D3Mat<double> J_lin = J.bottomRows<3>();
                 const DMat<double> H = cluster_model.getMassMatrix();
                 const DMat<double> H_inv = H.inverse();
-                const DMat<double> inv_ops_inertia = J * H_inv * J.transpose();
+                const DMat<double> inv_ops_inertia = J_lin * H_inv * J_lin.transpose();
 
                 for (const Vec3<double> &test_force : test_forces)
                 {
-                    const DVec<double> dstate_iosi = H_inv * (J.transpose() * test_force);
+                    const DVec<double> dstate_iosi = H_inv * (J_lin.transpose() * test_force);
                     const double lambda_inv_iosi = test_force.dot(inv_ops_inertia * test_force);
 
                     DVec<double> dstate_efpa = DVec<double>::Zero(nv);

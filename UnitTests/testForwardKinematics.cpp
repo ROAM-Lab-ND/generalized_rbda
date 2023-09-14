@@ -35,9 +35,9 @@ protected:
             model_state.push_back(joint_state);
         }
 
-        cluster_model.initializeState(model_state);
-        generic_model.initializeState(model_state);
-        rigid_body_model.initializeState(spanning_joint_pos, spanning_joint_vel);
+        cluster_model.setState(model_state);
+        generic_model.setState(model_state);
+        rigid_body_model.setState(spanning_joint_pos, spanning_joint_vel);
 
         // Check for NaNs
         bool nan_detected = false;
@@ -134,8 +134,8 @@ TYPED_TEST(RigidBodyKinemaitcsTest, ForwardKinematics)
         GTEST_ASSERT_EQ(this->cluster_model.contactPoints().size(),
                         this->rigid_body_model.contactPoints().size());
 
-        this->cluster_model.contactJacobians();
-        this->rigid_body_model.contactJacobians();
+        this->cluster_model.updateContactPointJacobians();
+        this->rigid_body_model.updateContactPointJacobians();
         for (int j = 0; j < (int)this->cluster_model.contactPoints().size(); j++)
         {
             const ContactPoint &cluster_cp = this->cluster_model.contactPoint(j);

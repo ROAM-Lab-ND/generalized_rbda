@@ -81,7 +81,7 @@ namespace grbda
         const Body &getBody(int index) const override { return rigid_body_nodes_[index]->body_; }
         const TreeNodePtr getNodeContainingBody(int index) override { return rigid_body_nodes_[index]; }
 
-        void initializeState(const DVec<double> &q, const DVec<double> &qd);
+        void setState(const DVec<double> &q, const DVec<double> &qd);
 
         void updateLoopConstraints();
 
@@ -90,8 +90,8 @@ namespace grbda
         Vec3<double> getLinearVelocity(const string &body_name) override;
         Vec3<double> getAngularVelocity(const string &body_name) override;
 
-        D6Mat<double> bodyJacobian(const std::string &cp_name) override;
-        const D6Mat<double> &contactJacobian(const std::string &cp_name) override;
+        D6Mat<double> contactJacobianBodyFrame(const std::string &cp_name) override;
+        const D6Mat<double> &contactJacobianWorldFrame(const std::string &cp_name) override;
 
         DVec<double> forwardDynamics(const DVec<double> &tau) override;
         DVec<double> inverseDynamics(const DVec<double> &ydd) override;

@@ -131,7 +131,7 @@ namespace grbda
         }
     }
 
-    void RigidBodyTreeModel::initializeState(const DVec<double> &q, const DVec<double> &qd)
+    void RigidBodyTreeModel::setState(const DVec<double> &q, const DVec<double> &qd)
     {
         for (auto &node : rigid_body_nodes_)
         {
@@ -142,7 +142,7 @@ namespace grbda
         q_ = q;
         qd_ = qd;
 
-        initializeExternalForces();
+        setExternalForces();
     }
 
     void RigidBodyTreeModel::updateLoopConstraints()
@@ -160,7 +160,6 @@ namespace grbda
 
     Vec3<double> RigidBodyTreeModel::getPosition(const string &body_name)
     {
-        // TODO(@MatthewChignoli): Helper function that gets node given the name?
         const int &body_idx = body_name_to_body_index_.at(body_name);
         const TreeNodePtr rigid_body_node = getNodeContainingBody(body_idx);
 

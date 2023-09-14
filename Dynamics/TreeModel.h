@@ -41,14 +41,14 @@ namespace grbda
         void setGravity(const Vec3<double> &g) { gravity_.tail<3>() = g; }
         SVec<double> getGravity() const { return gravity_; }
 
-        virtual void initializeExternalForces(
+        void setExternalForces(
             const std::vector<ExternalForceAndBodyIndexPair> &force_and_body_index_pairs = {});
 
         void forwardKinematics();
 
-        virtual D6Mat<double> bodyJacobian(const std::string &cp_name) = 0;
-        virtual const D6Mat<double>& contactJacobian(const std::string &cp_name) = 0;
-        void contactJacobians();
+        void updateContactPointJacobians();
+        virtual D6Mat<double> contactJacobianBodyFrame(const std::string &cp_name) = 0;
+        virtual const D6Mat<double>& contactJacobianWorldFrame(const std::string &cp_name) = 0;
 
         // Returns independent (non-spanning) joint accelerations
         virtual DVec<double> forwardDynamics(const DVec<double> &tau) = 0;

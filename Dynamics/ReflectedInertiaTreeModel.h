@@ -40,7 +40,7 @@ namespace grbda
 
         const DVec<int> &getIndependentCoordinateIndices() const { return independent_coord_indices_; }
 
-        void initializeIndependentStates(const DVec<double> &y, const DVec<double> &yd);
+        void setIndependentStates(const DVec<double> &y, const DVec<double> &yd);
 
         Vec3<double> getPosition(const string &body_name) override
         {
@@ -59,8 +59,8 @@ namespace grbda
             throw std::runtime_error("Not implemented");
         }
 
-        D6Mat<double> bodyJacobian(const std::string &cp_name) override;
-        const D6Mat<double>& contactJacobian(const std::string &cp_name) override;
+        D6Mat<double> contactJacobianBodyFrame(const std::string &cp_name) override;
+        const D6Mat<double>& contactJacobianWorldFrame(const std::string &cp_name) override;
 
         DVec<double> forwardDynamics(const DVec<double> &tau) override;
         DVec<double> inverseDynamics(const DVec<double> &ydd) override;

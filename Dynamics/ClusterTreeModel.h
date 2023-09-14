@@ -8,9 +8,6 @@
 
 #include "TreeModel.h"
 #include "Dynamics/Nodes/ClusterTreeNode.h"
-#ifdef TIMING_STATS
-#include "Utils/Timer.h"
-#endif
 
 namespace grbda
 {
@@ -18,63 +15,6 @@ namespace grbda
     using namespace std;
     using namespace ori;
     using namespace spatial;
-
-#ifdef TIMING_STATS
-    struct ClusterTreeTimingStatistics
-    {
-        double forward_kinematics_time = 0.0;
-        double update_articulated_bodies_time = 0.0;
-        double forward_pass1_time = 0.0;
-        double external_force_time = 0.0;
-        double backward_pass_time = 0.0;
-        double forward_pass2_time = 0.0;
-        double invert_xform_spatial_inertia_time = 0.0;
-        double update_and_solve_D_time = 0.0;
-        double reset_IA_time = 0.0;
-
-        void zero()
-        {
-            forward_kinematics_time = 0.0;
-            update_articulated_bodies_time = 0.0;
-            forward_pass1_time = 0.0;
-            external_force_time = 0.0;
-            backward_pass_time = 0.0;
-            forward_pass2_time = 0.0;
-            invert_xform_spatial_inertia_time = 0.0;
-            update_and_solve_D_time = 0.0;
-            reset_IA_time = 0.0;
-        }
-
-        ClusterTreeTimingStatistics &operator+=(const ClusterTreeTimingStatistics &other)
-        {
-            forward_kinematics_time += other.forward_kinematics_time;
-            update_articulated_bodies_time += other.update_articulated_bodies_time;
-            forward_pass1_time += other.forward_pass1_time;
-            external_force_time += other.external_force_time;
-            backward_pass_time += other.backward_pass_time;
-            forward_pass2_time += other.forward_pass2_time;
-            invert_xform_spatial_inertia_time += other.invert_xform_spatial_inertia_time;
-            update_and_solve_D_time += other.update_and_solve_D_time;
-            reset_IA_time += other.reset_IA_time;
-            return *this;
-        }
-
-        ClusterTreeTimingStatistics &operator/=(const double &scalar)
-        {
-            forward_kinematics_time /= scalar;
-            update_articulated_bodies_time /= scalar;
-            forward_pass1_time /= scalar;
-            external_force_time /= scalar;
-            backward_pass_time /= scalar;
-            forward_pass2_time /= scalar;
-            invert_xform_spatial_inertia_time /= scalar;
-            update_and_solve_D_time /= scalar;
-            reset_IA_time /= scalar;
-            return *this;
-        }
-    };
-#endif
-
     using ClusterTreeNodePtr = std::shared_ptr<ClusterTreeNode>;
 
     /*!
@@ -93,22 +33,20 @@ namespace grbda
         }
         ~ClusterTreeModel() {}
 
-        // TODO(@MatthewChignoli): These are functions and members shared with FloatingBaseModel. Not sure how I want to deal with them moving forward. It's unclear which parts of Robot-Software need to change for compatiblity with GRBDA and which parts of GRBDA need to change for compatibility with Robot-Software.
-        void setExternalForces(const string &body_name, const SVec<double> &force);
-        void setExternalForces(const unordered_map<string, SVec<double>> &ext_forces = {});
-        void resetExternalForces();
-        void resetCalculationFlags() { resetCache(); }
-
-        /////////////////////////////////////
-
         Body registerBody(const string name, const SpatialInertia<double> inertia,
                           const string parent_name, const SpatialTransform Xtree);
-        // TODO(@MatthewChignoli): need to clean this up, should have to make all of these vectors we we are only appending one body. Right now the append body function is silly. Because That function creates a body (by registering it), but it also requires a generalized joint... which requires a body...
-        void appendBody(const string name, const SpatialInertia<double> inertia,
-                        const string parent_name, const SpatialTransform Xtree,
-                        shared_ptr<GeneralizedJoints::Base> joint);
         void appendRegisteredBodiesAsCluster(const string name,
                                              shared_ptr<GeneralizedJoints::Base> joint);
+
+        // This function can be used when appending individual bodies to the model
+        template <typename T, typename... Args>
+        void appendBody(const string name, const SpatialInertia<double> inertia,
+                        const string parent_name, const SpatialTransform Xtree, Args&&... args)
+        {
+            Body body = registerBody(name, inertia, parent_name, Xtree);
+            shared_ptr<GeneralizedJoints::Base> joint = make_shared<T>(body, args...);
+            appendRegisteredBodiesAsCluster(name, joint);
+        }
 
         void appendContactPoint(const string body_name, const Vec3<double> &local_offset,
                                 const string contact_point_name, const bool is_end_eff = false);
@@ -118,7 +56,7 @@ namespace grbda
 
         void print() const;
 
-        void initializeState(const ModelState &model_state);
+        void setState(const ModelState &model_state);
 
         int getNumBodies() const override { return (int)bodies_.size(); }
 
@@ -172,9 +110,8 @@ namespace grbda
         Vec3<double> getLinearVelocity(const string &body_name) override;
         Vec3<double> getAngularVelocity(const string &body_name) override;
 
-        // TODO(@MatthewChignoli): Different names for the these functions?
-        D6Mat<double> bodyJacobian(const std::string &cp_name) override;
-        const D6Mat<double> &contactJacobian(const std::string &cp_name) override;
+        D6Mat<double> contactJacobianBodyFrame(const std::string &cp_name) override;
+        const D6Mat<double> &contactJacobianWorldFrame(const std::string &cp_name) override;
 
         DVec<double> inverseDynamics(const DVec<double> &qdd) override;
         DVec<double> forwardDynamics(const DVec<double> &tau) override;
@@ -185,14 +122,7 @@ namespace grbda
         DMat<double> getMassMatrix() override;
         DVec<double> getBiasForceVector() override;
 
-#ifdef TIMING_STATS
-        const ClusterTreeTimingStatistics &getTimingStatistics() const
-        {
-            return timing_statistics_;
-        }
-#endif
-
-    private:
+    protected:
         void checkValidParentClusterForBodiesInCluster(const ClusterTreeNodePtr cluster);
         void checkValidParentClusterForBodiesInCluster(const int cluster_index);
         void checkValidParentClusterForBodiesInCluster(const string &cluster_nam);
@@ -220,11 +150,6 @@ namespace grbda
         bool articulated_bodies_updated_ = false;
         bool force_propagators_updated_ = false;
         bool qdd_effects_updated_ = false;
-
-#ifdef TIMING_STATS
-        Timer timer_;
-        ClusterTreeTimingStatistics timing_statistics_;
-#endif
 
         friend class RigidBodyTreeModel;
         friend class ReflectedInertiaTreeModel;
