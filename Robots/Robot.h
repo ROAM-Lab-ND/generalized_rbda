@@ -1,7 +1,7 @@
 #ifndef GRBDA_ROBOT_H
 #define GRBDA_ROBOT_H
 
-#include "3rd-parties/CasadiGen/header/CasadiGen.h"
+#include "Utils/CasadiGen/header/CasadiGen.h"
 #include "Dynamics/ClusterTreeModel.h"
 
 namespace grbda

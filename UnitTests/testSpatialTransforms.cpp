@@ -1,8 +1,8 @@
 #include "gtest/gtest.h"
 
 #include <eigen3/unsupported/Eigen/MatrixFunctions>
-#include "Utils/Utilities/SpatialInertia.h"
-#include "Utils/Utilities/SpatialTransforms.h"
+#include "Utils/SpatialInertia.h"
+#include "Utils/SpatialTransforms.h"
 
 namespace internal_helpers
 {

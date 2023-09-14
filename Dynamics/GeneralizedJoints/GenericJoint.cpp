@@ -1,5 +1,5 @@
 #include "GenericJoint.h"
-#include "Utils/Utilities/utilities.h"
+#include "Utils/Utilities.h"
 
 namespace grbda
 {

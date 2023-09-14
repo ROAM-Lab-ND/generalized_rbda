@@ -1,7 +1,7 @@
 #ifndef GRBDA_JOINT_H
 #define GRBDA_JOINT_H
 
-#include "Utils/Utilities/SpatialTransforms.h"
+#include "Utils/SpatialTransforms.h"
 
 namespace grbda
 {

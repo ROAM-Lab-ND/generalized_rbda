@@ -1,11 +1,10 @@
 #ifndef GRBDA_TREEMODEL_H
 
 #include "Body.h"
-#include "DynamicsUtilities.h"
 #include "Nodes/TreeNode.h"
-#include "Utils/Utilities/spatial.h"
-#include "Utils/Utilities/SpatialTransforms.h"
-#include "Utils/Utilities/utilities.h"
+#include "Utils/Spatial.h"
+#include "Utils/SpatialTransforms.h"
+#include "Utils/Utilities.h"
 
 namespace grbda
 {

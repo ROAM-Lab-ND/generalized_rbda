@@ -17,7 +17,7 @@
 #define GRBDA_GENERALIZED_JOINTS_TELLO_DIFFERENTIAL_H
 
 #include "GeneralizedJoint.h"
-#include "3rd-parties/CasadiGen/header/CasadiGen.h"
+#include "Utils/CasadiGen/header/CasadiGen.h"
 
 namespace grbda
 {

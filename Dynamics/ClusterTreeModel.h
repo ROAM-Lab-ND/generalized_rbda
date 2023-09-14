@@ -9,7 +9,7 @@
 #include "TreeModel.h"
 #include "Dynamics/Nodes/ClusterTreeNode.h"
 #ifdef TIMING_STATS
-#include "Utils/Utilities/Timer.h"
+#include "Utils/Timer.h"
 #endif
 
 namespace grbda

@@ -2,9 +2,10 @@
 #define GRBDA_DYNAMICS_RIGID_BODY_TREE_MODEL_H
 
 #include "ClusterTreeModel.h"
-#include "Factorization.h"
+#include "Nodes/RigidBodyTreeNode.h"
+#include "Utils/Factorization.h"
 #ifdef TIMING_STATS
-#include "Utils/Utilities/Timer.h"
+#include "Utils/Timer.h"
 #endif
 
 namespace grbda

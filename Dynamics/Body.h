@@ -2,8 +2,8 @@
 #define GRBDA_BODY_H
 
 #include <string>
-#include "Utils/Utilities/SpatialInertia.h"
-#include "Utils/Utilities/SpatialTransforms.h"
+#include "Utils/SpatialInertia.h"
+#include "Utils/SpatialTransforms.h"
 
 namespace grbda
 {

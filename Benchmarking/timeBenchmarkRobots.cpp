@@ -5,7 +5,7 @@
 #include "Dynamics/ReflectedInertiaTreeModel.h"
 
 #include "Robots/RobotTypes.h"
-#include "Utils/Utilities/Timer.h"
+#include "Utils/Timer.h"
 
 using namespace grbda;
 using RigidBodyTreePtr = std::shared_ptr<RigidBodyTreeModel>;
