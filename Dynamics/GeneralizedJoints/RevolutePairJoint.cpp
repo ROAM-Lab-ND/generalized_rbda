@@ -9,7 +9,7 @@ namespace grbda
         RevolutePair::RevolutePair(Body &link_1, Body &link_2,
                                    ori::CoordinateAxis joint_axis_1,
                                    ori::CoordinateAxis joint_axis_2)
-            : Base(2, 2, 2, false, false), link_1_(link_1), link_2_(link_2)
+            : Base(2, 2, 2), link_1_(link_1), link_2_(link_2)
         {
             link_1_joint_ = single_joints_.emplace_back(new Joints::Revolute(joint_axis_1));
             link_2_joint_ = single_joints_.emplace_back(new Joints::Revolute(joint_axis_2));
@@ -34,10 +34,6 @@ namespace grbda
 
         void RevolutePair::updateKinematics(const JointState &joint_state)
         {
-#ifdef DEBUG_MODE
-            jointStateCheck(joint_state);
-#endif
-
             const JointState spanning_joint_state = toSpanningTreeState(joint_state);
             const DVec<double> &q = spanning_joint_state.position;
             const DVec<double> &qd = spanning_joint_state.velocity;

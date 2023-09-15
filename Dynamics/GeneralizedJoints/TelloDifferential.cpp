@@ -66,7 +66,7 @@ namespace grbda
 			ori::CoordinateAxis rotor_axis_1, ori::CoordinateAxis rotor_axis_2,
 			ori::CoordinateAxis joint_axis_1, ori::CoordinateAxis joint_axis_2,
 			double gear_ratio)
-			: Base(4, 4, 2, true, false), rotor_1_(rotor_1), rotor_2_(rotor_2),
+			: Base(4, 4, 2), rotor_1_(rotor_1), rotor_2_(rotor_2),
 			  link_1_(link_1), link_2_(link_2), gear_ratio_(gear_ratio)
 		{
 			rotor_1_joint_ = single_joints_.emplace_back(new Joints::Revolute(rotor_axis_1));
@@ -88,10 +88,6 @@ namespace grbda
 
 		void TelloDifferential::updateKinematics(const JointState &joint_state)
 		{
-#ifdef DEBUG_MODE
-			jointStateCheck(joint_state);
-#endif
-
 			const JointState spanning_joint_state = toSpanningTreeState(joint_state);
 			const DVec<double> &q = spanning_joint_state.position;
 			const DVec<double> &q_dot = spanning_joint_state.velocity;
@@ -138,8 +134,8 @@ namespace grbda
 
 		JointState TelloDifferential::randomJointState() const
 		{
-			JointCoordinate joint_pos(DVec<double>::Zero(num_positions_), position_is_spanning_);
-			JointCoordinate joint_vel(DVec<double>::Zero(num_velocities_), velocity_is_spanning_);
+			JointCoordinate joint_pos(DVec<double>::Zero(num_positions_), true);
+			JointCoordinate joint_vel(DVec<double>::Zero(num_velocities_), false);
 			JointState joint_state(joint_pos, joint_vel);
 
 			// Position

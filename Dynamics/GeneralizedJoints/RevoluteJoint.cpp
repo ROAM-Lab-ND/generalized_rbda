@@ -6,7 +6,7 @@ namespace grbda
     {
 
         Revolute::Revolute(const Body &body, ori::CoordinateAxis joint_axis)
-            : Base(1, 1, 1, false, false), body_(body)
+            : Base(1, 1, 1), body_(body)
         {
             single_joints_.emplace_back(new Joints::Revolute(joint_axis));
 
@@ -23,10 +23,6 @@ namespace grbda
 
         void Revolute::updateKinematics(const JointState &joint_state)
         {
-#ifdef DEBUG_MODE
-            jointStateCheck(joint_state);
-#endif
-
             single_joints_[0]->updateKinematics(joint_state.position, joint_state.velocity);
             vJ_ = S_ * joint_state.velocity;
         }

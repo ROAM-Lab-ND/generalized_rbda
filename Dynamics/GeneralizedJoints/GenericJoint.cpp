@@ -10,8 +10,7 @@ namespace grbda
         Generic::Generic(const std::vector<Body> &bodies, const std::vector<JointPtr> &joints,
                          std::shared_ptr<LoopConstraint::Base> loop_constraint)
             : Base((int)bodies.size(),
-                   loop_constraint->numIndependentPos(), loop_constraint->numIndependentVel(),
-                   false, false),
+                   loop_constraint->numIndependentPos(), loop_constraint->numIndependentVel()),
               bodies_(bodies)
         {
             loop_constraint_ = loop_constraint;
@@ -31,10 +30,6 @@ namespace grbda
 
         void Generic::updateKinematics(const JointState &joint_state)
         {
-#ifdef DEBUG_MODE
-            jointStateCheck(joint_state);
-#endif
-
             const JointState spanning_joint_state = toSpanningTreeState(joint_state);
             const DVec<double> &q = spanning_joint_state.position;
             const DVec<double> &qd = spanning_joint_state.velocity;

@@ -10,7 +10,7 @@ namespace grbda
             Body &link, std::vector<Body> &rotors,
             ori::CoordinateAxis joint_axis, std::vector<ori::CoordinateAxis> &rotor_axes,
             std::vector<double> &gear_ratios)
-            : Base(1 + rotors.size(), 1, 1, false, false), link_(link), rotors_(rotors)
+            : Base(1 + rotors.size(), 1, 1), link_(link), rotors_(rotors)
         {
             const size_t num_rotors = rotors.size();
             if (num_rotors != rotor_axes.size() || num_rotors != gear_ratios.size())
@@ -53,10 +53,6 @@ namespace grbda
 
         void RevoluteWithMultipleRotorsJoint::updateKinematics(const JointState &joint_state)
         {
-#ifdef DEBUG_MODE
-            jointStateCheck(joint_state);
-#endif
-
             const JointState spanning_joint_state = toSpanningTreeState(joint_state);
             const DVec<double> &q = spanning_joint_state.position;
             const DVec<double> &qd = spanning_joint_state.velocity;

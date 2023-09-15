@@ -8,7 +8,7 @@ namespace grbda
 
         RevolutePairWithRotor::RevolutePairWithRotor(ParallelBeltTransmissionModule &module_1,
                                                      ParallelBeltTransmissionModule &module_2)
-            : Base(4, 2, 2, false, false), link1_(module_1.body_), link2_(module_2.body_),
+            : Base(4, 2, 2), link1_(module_1.body_), link2_(module_2.body_),
               rotor1_(module_1.rotor_), rotor2_(module_2.rotor_)
         {
             const double &gear_ratio_2 = module_2.gear_ratio_;
@@ -47,10 +47,6 @@ namespace grbda
 
         void RevolutePairWithRotor::updateKinematics(const JointState &joint_state)
         {
-#ifdef DEBUG_MODE
-            jointStateCheck(joint_state);
-#endif
-
             const JointState spanning_joint_state = toSpanningTreeState(joint_state);
             const DVec<double> &q = spanning_joint_state.position;
             const DVec<double> &qd = spanning_joint_state.velocity;
