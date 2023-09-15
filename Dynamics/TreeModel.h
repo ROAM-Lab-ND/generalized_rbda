@@ -81,6 +81,8 @@ namespace grbda
         void contactPointForwardKinematics();
         void compositeRigidBodyAlgorithm();
         void updateBiasForceVector();
+
+        // Takes as input independent (non-spanning) joint accelerations
         DVec<double> recursiveNewtonEulerAlgorithm(const DVec<double> &qdd);
 
         virtual void resetCache();

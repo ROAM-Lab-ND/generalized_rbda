@@ -64,6 +64,12 @@ namespace grbda
         for (const auto &cluster : cluster_tree_model.clusters())
         {
             const auto joint = cluster->joint_;
+
+            if (joint->spanningTreeToIndependentCoordsConversion().size() == 0)
+            {
+                throw std::runtime_error("Detected a joint that does not have a spanning tree to independent coordinates conversion matrix");
+            }
+
             spanning_tree_to_independent_coords_conversion_ =
                 appendEigenMatrix(spanning_tree_to_independent_coords_conversion_,
                                   joint->spanningTreeToIndependentCoordsConversion());
@@ -601,7 +607,6 @@ namespace grbda
             }
         }
 
-        // TODO(@MatthewChignoli): Remove the assumption that every operational space has size 6
         const int num_bodies = reflected_inertia_nodes_.size();
         DMat<double> lambda_inv = DMat<double>::Zero(6 * num_end_effectors_,
                                                      6 * num_end_effectors_);

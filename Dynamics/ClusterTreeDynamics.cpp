@@ -335,7 +335,6 @@ namespace grbda
             }
         }
 
-        // TODO(@MatthewChignoli): Remove the assumption that every operational space has size 6
         const int num_bodies = bodies_.size();
         DMat<double> lambda_inv = DMat<double>::Zero(6 * num_end_effectors_,
                                                      6 * num_end_effectors_);

@@ -14,7 +14,6 @@ namespace grbda
             link_1_joint_ = single_joints_.emplace_back(new Joints::Revolute(joint_axis_1));
             link_2_joint_ = single_joints_.emplace_back(new Joints::Revolute(joint_axis_2));
 
-            // ISSUE: #72 (old repo)
             spanning_tree_to_independent_coords_conversion_ = DMat<double>::Zero(0, 0);
 
             DMat<double> G = DMat<double>::Zero(2, 2);

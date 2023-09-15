@@ -23,7 +23,6 @@ namespace grbda
             void computeSpatialTransformFromParentToCurrentCluster(
                 spatial::GeneralizedTransform &Xup) const override;
 
-            // ISSUE: #72
             std::vector<std::tuple<Body, JointPtr, DMat<double>>>
             bodiesJointsAndReflectedInertias() const override;
 
