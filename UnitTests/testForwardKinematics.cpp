@@ -98,9 +98,9 @@ TYPED_TEST(RigidBodyKinemaitcsTest, ForwardKinematics)
         }
 
         // Forward kinematics
-        this->cluster_model.forwardKinematics();
-        this->generic_model.forwardKinematics();
-        this->rigid_body_model.forwardKinematics();
+        this->cluster_model.forwardKinematicsIncludingContactPoints();
+        this->generic_model.forwardKinematicsIncludingContactPoints();
+        this->rigid_body_model.forwardKinematicsIncludingContactPoints();
 
         // Verify link kinematics
         for (const auto& body : this->cluster_model.bodies())

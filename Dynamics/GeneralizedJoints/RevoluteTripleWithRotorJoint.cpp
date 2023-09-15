@@ -113,7 +113,6 @@ namespace grbda
                 throw std::runtime_error("[RevoluteTripleWithRotor] Xup must have 24 rows");
 #endif
 
-            // TODO(@MatthewChignoli): Could be some cost savings here by not recomputing the internal spatial transforms
             Xup[0] = link_1_joint_->XJ() * link_1_.Xtree_;
             Xup[1] = X21_ * Xup[0];
             Xup[2] = X31_ * Xup[0];

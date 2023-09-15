@@ -10,9 +10,7 @@ namespace grbda
     class RevoluteChainWithRotor : public SerialChain
     {
     public:
-        // TODO(@MatthewChignoli): I don't like passing this bool, I think a better option is to make a child class called "RandomRevoluteChainWithRotor"
-        RevoluteChainWithRotor(bool random_parameters = true)
-            : SerialChain(random_parameters) {}
+        RevoluteChainWithRotor(bool random_parameters = true) : SerialChain(random_parameters) {}
 
         size_t getNumDofs() const override { return N; }
 

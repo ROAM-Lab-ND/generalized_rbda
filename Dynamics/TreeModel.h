@@ -45,6 +45,11 @@ namespace grbda
             const std::vector<ExternalForceAndBodyIndexPair> &force_and_body_index_pairs = {});
 
         void forwardKinematics();
+        void forwardKinematicsIncludingContactPoints()
+        {
+            forwardKinematics();
+            contactPointForwardKinematics();
+        }
 
         void updateContactPointJacobians();
         virtual D6Mat<double> contactJacobianBodyFrame(const std::string &cp_name) = 0;
@@ -101,6 +106,7 @@ namespace grbda
         std::unordered_map<std::string, int> contact_name_to_contact_index_;
 
         bool kinematics_updated_ = false;
+        bool contact_point_kinematics_updated_ = false;
         bool mass_matrix_updated_ = false;
         bool bias_force_updated_ = false;
         bool contact_jacobians_updated_ = false;

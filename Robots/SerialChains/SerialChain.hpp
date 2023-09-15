@@ -9,8 +9,7 @@ namespace grbda
     class SerialChain : public Robot
     {
     public:
-        SerialChain(bool random_parameters = true)
-            : _random_parameters(random_parameters) {}
+        SerialChain(bool random_parameters = true) : _random_parameters(random_parameters) {}
 
         ClusterTreeModel buildClusterTreeModel() const override
         {

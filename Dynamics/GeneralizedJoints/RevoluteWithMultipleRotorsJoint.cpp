@@ -42,8 +42,6 @@ namespace grbda
             }
             loop_constraint_ = std::make_shared<LoopConstraint::Static>(G, K);
 
-            // TODO(@MatthewChignoli): How to compute Psi?
-
             S_spanning_ = DMat<double>::Zero(0, 0);
             for (const auto &joint : single_joints_)
                 S_spanning_ = appendEigenMatrix(S_spanning_, joint->S());

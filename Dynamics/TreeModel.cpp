@@ -27,14 +27,14 @@ namespace grbda
             node->avp_ = spatial::generalMotionCrossProduct(node->v_, node->vJ());
         }
 
-        // TODO(@MatthewChignoli): Should we do contact kinematics every time we do kinematics?
-        contactPointForwardKinematics();
-
         kinematics_updated_ = true;
     }
 
     void TreeModel::contactPointForwardKinematics()
     {
+        if (contact_point_kinematics_updated_)
+            return;
+
         for (auto &cp : contact_points_)
         {
             const auto &body = getBody(cp.body_index_);
@@ -47,6 +47,8 @@ namespace grbda
             cp.velocity_ = spatial::spatialToLinearVelocity(Xa.inverseTransformMotionVector(v_body),
                                                             cp.position_);
         }
+
+        contact_point_kinematics_updated_ = true;
     }
 
     void TreeModel::updateContactPointJacobians()
@@ -204,6 +206,7 @@ namespace grbda
     void TreeModel::resetCache()
     {
         kinematics_updated_ = false;
+        contact_point_kinematics_updated_ = false;
         mass_matrix_updated_ = false;
         bias_force_updated_ = false;
         contact_jacobians_updated_ = false;

@@ -185,7 +185,6 @@ namespace grbda
                                      heel_contact_name);
         }
 
-        // TODO(@MatthewChignoli): Add the arms
         for (int armID = 0; armID < 2; armID++)
         {
             // ShoulderRy
