@@ -13,9 +13,9 @@ namespace grbda
         ContactPoint &cp = contact_points_[contact_name_to_contact_index_.at(cp_name)];
         const size_t &i = cp.body_index_;
         const auto node_i = getNodeContainingBody(i);
-        const SpatialTransform Xa = node_i->Xa_[0];
+        const spatial::Transform Xa = node_i->Xa_[0];
         const Mat3<double> R_link_to_world = Xa.getRotation().transpose();
-        Mat6<double> Xout = createSXform(R_link_to_world, cp.local_offset_);
+        Mat6<double> Xout = spatial::createSXform(R_link_to_world, cp.local_offset_);
 
         int j = (int)i;
         while (j > -1)
@@ -47,7 +47,7 @@ namespace grbda
         ContactPoint &cp = contact_points_[contact_name_to_contact_index_.at(cp_name)];
         const size_t &i = cp.body_index_;
         const auto node_i = getNodeContainingBody(i);
-        Mat6<double> Xout = createSXform(Mat3<double>::Identity(), cp.local_offset_);
+        Mat6<double> Xout = spatial::createSXform(Mat3<double>::Identity(), cp.local_offset_);
 
         int j = (int)i;
         while (j > -1)

@@ -16,8 +16,8 @@ namespace grbda
           link_(link), joint_(joint), Xtree_(link.Xtree_)
     {
         I_ = link.inertia_.getMatrix();
-        Xup_.appendSpatialTransformWithClusterAncestorSubIndex(SpatialTransform{}, 0);
-        Xa_.appendSpatialTransform(SpatialTransform{});
+        Xup_.appendTransformWithClusterAncestorSubIndex(spatial::Transform{}, 0);
+        Xa_.appendTransform(spatial::Transform{});
     }
 
     void ReflectedInertiaTreeNode::updateKinematics()
@@ -27,7 +27,7 @@ namespace grbda
         vJ_ = joint_->S() * joint_state_.velocity;
     }
 
-    const SpatialTransform &ReflectedInertiaTreeNode::getAbsoluteTransformForBody(const Body &body)
+    const spatial::Transform &ReflectedInertiaTreeNode::getAbsoluteTransformForBody(const Body &body)
     {
         return Xa_[0];
     };

@@ -25,7 +25,7 @@ namespace grbda
             void updateKinematics(const JointState &joint_state) override;
 
             void computeSpatialTransformFromParentToCurrentCluster(
-                GeneralizedSpatialTransform &Xup) const override;
+                spatial::GeneralizedTransform &Xup) const override;
 
             std::vector<std::tuple<Body, JointPtr, DMat<double>>>
             bodiesJointsAndReflectedInertias() const override;
@@ -38,9 +38,9 @@ namespace grbda
             JointPtr rotor_2_joint_;
             JointPtr rotor_3_joint_;
 
-            SpatialTransform X21_;
-            SpatialTransform X32_;
-            SpatialTransform X31_;
+            spatial::Transform X21_;
+            spatial::Transform X32_;
+            spatial::Transform X31_;
 
             const Body link_1_;
             const Body link_2_;

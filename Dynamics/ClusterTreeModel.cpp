@@ -7,12 +7,10 @@
 namespace grbda
 {
 
-    using namespace ori;
-    using namespace spatial;
-
     Body ClusterTreeModel::registerBody(const std::string name,
                                         const SpatialInertia<double> inertia,
-                                        const std::string parent_name, const SpatialTransform Xtree)
+                                        const std::string parent_name,
+                                        const spatial::Transform Xtree)
     {
         const int body_index = (int)bodies_.size();
         body_name_to_body_index_[name] = body_index;
@@ -239,9 +237,9 @@ namespace grbda
         const int subindex_within_cluster = body(body_name).sub_index_within_cluster_;
 
         forwardKinematics();
-        const SpatialTransform &Xa = cluster_nodes_[cluster_idx]->Xa_[subindex_within_cluster];
-        const Mat6<double> Xai = invertSXform(Xa.toMatrix().cast<double>());
-        Vec3<double> link_pos = sXFormPoint(Xai, Vec3<double>::Zero());
+        const spatial::Transform &Xa = cluster_nodes_[cluster_idx]->Xa_[subindex_within_cluster];
+        const Mat6<double> Xai = spatial::invertSXform(Xa.toMatrix().cast<double>());
+        Vec3<double> link_pos = spatial::sXFormPoint(Xai, Vec3<double>::Zero());
         return link_pos;
     }
 
@@ -251,7 +249,7 @@ namespace grbda
         const int subindex_within_cluster = body(body_name).sub_index_within_cluster_;
 
         forwardKinematics();
-        const SpatialTransform &Xa = cluster_nodes_[cluster_idx]->Xa_[subindex_within_cluster];
+        const spatial::Transform &Xa = cluster_nodes_[cluster_idx]->Xa_[subindex_within_cluster];
         Mat3<double> Rai = Xa.getRotation();
         Rai.transposeInPlace();
         return Rai;
@@ -266,7 +264,7 @@ namespace grbda
         const Mat3<double> Rai = getOrientation(body_name);
         const DVec<double> &v_cluster = cluster_nodes_[cluster_idx]->v_;
         const SVec<double> v = v_cluster.segment<6>(6 * subindex_within_cluster);
-        return Rai * spatialToLinearVelocity(v, Vec3<double>::Zero());
+        return Rai * spatial::spatialToLinearVelocity(v, Vec3<double>::Zero());
     }
 
     Vec3<double> ClusterTreeModel::getAngularVelocity(const std::string &body_name)
@@ -408,7 +406,7 @@ namespace grbda
 
         const auto &Xa = cluster->Xa_.getTransformForOutputBody(body.sub_index_within_cluster_);
         Mat3<double> Rai = Xa.getRotation().transpose();
-        SpatialTransform X_cartesian_to_plucker{Rai, contact_point.local_offset_};
+        spatial::Transform X_cartesian_to_plucker{Rai, contact_point.local_offset_};
 
         SVec<double> spatial_force = SVec<double>::Zero();
         spatial_force.tail<3>() = force;

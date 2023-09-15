@@ -26,7 +26,7 @@ namespace grbda
             return joint_->integratePosition(joint_state, dt);
         }
 
-        const SpatialTransform &getAbsoluteTransformForBody(const Body &body) override;
+        const spatial::Transform &getAbsoluteTransformForBody(const Body &body) override;
         DVec<double> getVelocityForBody(const Body &body) override;
         void applyForceToBody(const SVec<double> &force, const Body &body) override;
 

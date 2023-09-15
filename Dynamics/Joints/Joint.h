@@ -9,9 +9,6 @@ namespace grbda
     namespace Joints
     {
 
-        using namespace ori;
-        using namespace spatial;
-
         class Base
         {
         public:
@@ -28,13 +25,13 @@ namespace grbda
 
             const DMat<double> &S() const { return S_; }
             const DMat<double> &Psi() const { return Psi_; }
-            const SpatialTransform &XJ() const { return XJ_; }
+            const spatial::Transform &XJ() const { return XJ_; }
 
         protected:
             const int num_positions_;
             const int num_velocities_;
 
-            SpatialTransform XJ_;
+            spatial::Transform XJ_;
             DMat<double> S_;
             DMat<double> Psi_;
         };
@@ -53,21 +50,23 @@ namespace grbda
 
             void updateKinematics(const DVec<double> &q, const DVec<double> &qd) override
             {
-                XJ_ = SpatialTransform(quaternionToRotationMatrix(q.tail<4>()),
-                                       q.head<3>());
+                XJ_ = spatial::Transform(ori::quaternionToRotationMatrix(q.tail<4>()),
+                                         q.head<3>());
             }
         };
 
         class Revolute : public Base
         {
         public:
-            Revolute(CoordinateAxis axis) : Base(1, 1), axis_(axis)
+            Revolute(ori::CoordinateAxis axis) : Base(1, 1), axis_(axis)
             {
+                spatial::JointType Rev = spatial::JointType::Revolute;
+
                 S_ = D6Mat<double>::Zero(6, 1);
-                S_.leftCols<1>() = jointMotionSubspace<double>(JointType::Revolute, axis);
+                S_.leftCols<1>() = spatial::jointMotionSubspace<double>(Rev, axis);
 
                 Psi_ = D6Mat<double>::Zero(6, 1);
-                Psi_.leftCols<1>() = jointMotionSubspace<double>(JointType::Revolute, axis);
+                Psi_.leftCols<1>() = spatial::jointMotionSubspace<double>(Rev, axis);
             }
             ~Revolute() {}
 
@@ -78,11 +77,11 @@ namespace grbda
 
             void updateKinematics(const DVec<double> &q, const DVec<double> &qd) override
             {
-                XJ_ = spatialRotation(axis_, q[0]);
+                XJ_ = spatial::spatialRotation<double>(axis_, q[0]);
             }
 
         private:
-            const CoordinateAxis axis_;
+            const ori::CoordinateAxis axis_;
         };
 
     }

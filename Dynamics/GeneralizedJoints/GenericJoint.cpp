@@ -89,7 +89,7 @@ namespace grbda
                         v_relative = v_child - v_parent;
 
                         Xup_ring_spanning_tree_.block<6, 6>(6 * i, 6 * j) =
-                            -motionCrossMatrix(v_relative) * Xup;
+                            -spatial::motionCrossMatrix(v_relative) * Xup;
                     }
                 }
             }
@@ -99,7 +99,7 @@ namespace grbda
         }
 
         void Generic::computeSpatialTransformFromParentToCurrentCluster(
-            GeneralizedSpatialTransform &Xup) const
+            spatial::GeneralizedTransform &Xup) const
         {
             for (int i = 0; i < num_bodies_; i++)
             {

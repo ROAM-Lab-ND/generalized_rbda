@@ -8,14 +8,11 @@ namespace grbda
 
     namespace spatial
     {
-        using namespace ori;
 
-        class SpatialTransform
+        class Transform
         {
         public:
-            EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-
-            SpatialTransform(const Mat3<double> &E = Mat3<double>::Identity(),
+            Transform(const Mat3<double> &E = Mat3<double>::Identity(),
                              const Vec3<double> &r = Vec3<double>::Zero());
 
             void setIdentity();
@@ -36,11 +33,11 @@ namespace grbda
             D6Mat<double> inverseTransformMotionSubspace(const D6Mat<double> &S_in) const;
             D6Mat<double> inverseTransformForceSubspace(const D6Mat<double> &F_in) const;
 
-            SpatialTransform operator*(const SpatialTransform &X_in) const;
+            Transform operator*(const Transform &X_in) const;
 
             const Mat3<double> &getRotation() const { return E_; }
             const Vec3<double> &getTranslation() const { return r_; }
-            Mat3<double> getSkewTranslationMatrix() const { return vectorToSkewMat(r_); }
+            Mat3<double> getSkewTranslationMatrix() const { return ori::vectorToSkewMat(r_); }
 
             Mat6<double> rightMultiplyMotionTransform(const Mat6<double> &M_in) const;
             Mat6<double> leftMultiplyForceTransform(const Mat6<double> &M_in) const;
@@ -50,42 +47,42 @@ namespace grbda
             Vec3<double> r_;
         };
 
-        class GeneralizedAbsoluteSpatialTransform
+        class GeneralizedAbsoluteTransform
         {
         public:
-            GeneralizedAbsoluteSpatialTransform(){};
+            GeneralizedAbsoluteTransform(){};
 
-            void appendSpatialTransform(const SpatialTransform &X);
+            void appendTransform(const Transform &X);
 
             int getNumOutputBodies() const { return num_output_bodies_; }
-            const SpatialTransform &getTransformForOutputBody(int output_body_index) const;
+            const Transform &getTransformForOutputBody(int output_body_index) const;
 
             DMat<double> toMatrix() const;
 
             DVec<double> transformExternalForceVector(const DVec<double> &f_in) const;
 
-            SpatialTransform &operator[](int output_body_index);
+            Transform &operator[](int output_body_index);
 
         private:
             int num_output_bodies_ = 0;
-            std::vector<SpatialTransform> transforms_;
+            std::vector<Transform> transforms_;
         };
 
-        class GeneralizedSpatialTransform
+        class GeneralizedTransform
         {
         public:
-            GeneralizedSpatialTransform(int num_parent_bodies);
+            GeneralizedTransform(int num_parent_bodies);
 
-            void appendSpatialTransformWithClusterAncestorSubIndex(const SpatialTransform &X,
+            void appendTransformWithClusterAncestorSubIndex(const Transform &X,
                                                                    const int subindex);
 
             int getNumOutputBodies() const { return num_output_bodies_; }
             int getNumParentBodies() const { return num_parent_bodies_; }
 
             DMat<double> toMatrix() const;
-            GeneralizedAbsoluteSpatialTransform toAbsolute() const;
+            GeneralizedAbsoluteTransform toAbsolute() const;
 
-            const std::pair<SpatialTransform, int> &
+            const std::pair<Transform, int> &
             transform_and_parent_subindex(int output_body_index) const;
 
             DVec<double> transformMotionVector(const DVec<double> &m_in) const;
@@ -95,9 +92,9 @@ namespace grbda
 
             DMat<double> inverseTransformSpatialInertia(const DMat<double> &I_in) const;
 
-            SpatialTransform &operator[](int output_body_index);
-            GeneralizedSpatialTransform operator*(const GeneralizedSpatialTransform &X_in) const;
-            GeneralizedAbsoluteSpatialTransform operator*(const GeneralizedAbsoluteSpatialTransform &X_in) const;
+            Transform &operator[](int output_body_index);
+            GeneralizedTransform operator*(const GeneralizedTransform &X_in) const;
+            GeneralizedAbsoluteTransform operator*(const GeneralizedAbsoluteTransform &X_in) const;
 
             DMat<double> rightMultiplyMotionTransform(const DMat<double> &M_in) const;
             DMat<double> leftMultiplyForceTransform(const DMat<double> &M_in) const;
@@ -105,7 +102,7 @@ namespace grbda
         private:
             int num_output_bodies_ = 0;
             const int num_parent_bodies_ = 0;
-            std::vector<std::pair<SpatialTransform, int>> transforms_and_parent_subindices_;
+            std::vector<std::pair<Transform, int>> transforms_and_parent_subindices_;
         };
 
     } // namespace spatial

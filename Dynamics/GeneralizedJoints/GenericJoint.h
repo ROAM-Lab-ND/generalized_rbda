@@ -20,7 +20,7 @@ namespace grbda
             void updateKinematics(const JointState &joint_state) override;
 
             void computeSpatialTransformFromParentToCurrentCluster(
-                GeneralizedSpatialTransform &Xup) const override;
+                spatial::GeneralizedTransform &Xup) const override;
 
         private:
             void extractConnectivity();

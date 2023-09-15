@@ -7,9 +7,6 @@
 namespace grbda
 {
 
-    using namespace ori;
-    using namespace spatial;
-
     const D6Mat<double> &ClusterTreeModel::contactJacobianWorldFrame(const std::string &cp_name)
     {
         forwardKinematics();
@@ -20,9 +17,9 @@ namespace grbda
         const auto &cluster_i = getClusterContainingBody(body_i);
         const int &subindex_within_cluster_i = body_i.sub_index_within_cluster_;
 
-        const SpatialTransform Xa = cluster_i->Xa_[subindex_within_cluster_i];
+        const spatial::Transform Xa = cluster_i->Xa_[subindex_within_cluster_i];
         const Mat3<double> &R_link_to_world = Xa.getRotation().transpose();
-        Mat6<double> Xout = createSXform(R_link_to_world, cp.local_offset_);
+        Mat6<double> Xout = spatial::createSXform(R_link_to_world, cp.local_offset_);
 
         int j = (int)i;
         while (j > -1)
@@ -52,7 +49,7 @@ namespace grbda
         D6Mat<double> J = D6Mat<double>::Zero(6, getNumDegreesOfFreedom());
 
         ContactPoint &cp = contact_points_[contact_name_to_contact_index_.at(cp_name)];
-        Mat6<double> Xout = createSXform(Mat3<double>::Identity(), cp.local_offset_);
+        Mat6<double> Xout = spatial::createSXform(Mat3<double>::Identity(), cp.local_offset_);
 
         int j = cp.body_index_;
         while (j > -1)
@@ -91,7 +88,7 @@ namespace grbda
         // Forward Pass - Articulated body bias force
         for (auto &cluster : cluster_nodes_)
         {
-            cluster->pA_ = generalForceCrossProduct(cluster->v_, DVec<double>(cluster->I_ * cluster->v_));
+            cluster->pA_ = spatial::generalForceCrossProduct(cluster->v_, DVec<double>(cluster->I_ * cluster->v_));
         }
 
         // Account for external forces in bias force
@@ -304,7 +301,8 @@ namespace grbda
 
             DMat<double> &ChiUp = cp.ChiUp_[cluster->index_];
             ChiUp = DMat<double>::Zero(6, cluster->motion_subspace_dimension_);
-            const Mat6<double> X_offset = createSXform(Mat3<double>::Identity(), cp.local_offset_);
+            const Mat6<double> X_offset = spatial::createSXform(Mat3<double>::Identity(),
+                                                                cp.local_offset_);
             ChiUp.middleCols<6>(6 * body.sub_index_within_cluster_) = X_offset;
         }
 

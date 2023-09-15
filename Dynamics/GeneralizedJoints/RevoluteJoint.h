@@ -12,7 +12,7 @@ namespace grbda
         class Revolute : public Base
         {
         public:
-            Revolute(const Body &body, CoordinateAxis joint_axis);
+            Revolute(const Body &body, ori::CoordinateAxis joint_axis);
             virtual ~Revolute() {}
 
             GeneralizedJointTypes type() const override { return GeneralizedJointTypes::Revolute; }
@@ -20,7 +20,7 @@ namespace grbda
             void updateKinematics(const JointState &joint_state) override;
 
             void computeSpatialTransformFromParentToCurrentCluster(
-                GeneralizedSpatialTransform &Xup) const override;
+                spatial::GeneralizedTransform &Xup) const override;
 
             std::vector<std::tuple<Body, JointPtr, DMat<double>>>
             bodiesJointsAndReflectedInertias() const override;

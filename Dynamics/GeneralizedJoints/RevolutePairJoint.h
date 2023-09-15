@@ -13,7 +13,7 @@ namespace grbda
         {
         public:
             RevolutePair(Body &link_1, Body &link_2,
-                         CoordinateAxis joint_axis_1, CoordinateAxis joint_axis_2);
+                         ori::CoordinateAxis joint_axis_1, ori::CoordinateAxis joint_axis_2);
             virtual ~RevolutePair() {}
 
             GeneralizedJointTypes type() const override { return GeneralizedJointTypes::RevolutePair; }
@@ -21,7 +21,7 @@ namespace grbda
             void updateKinematics(const JointState &joint_state) override;
                                   
             void computeSpatialTransformFromParentToCurrentCluster(
-                GeneralizedSpatialTransform &Xup) const override;
+                spatial::GeneralizedTransform &Xup) const override;
 
             // ISSUE: #72
             std::vector<std::tuple<Body, JointPtr, DMat<double>>>
@@ -31,7 +31,7 @@ namespace grbda
             JointPtr link_1_joint_;
             JointPtr link_2_joint_;
 
-            SpatialTransform X21_;
+            spatial::Transform X21_;
 
             const Body link_1_;
             const Body link_2_;

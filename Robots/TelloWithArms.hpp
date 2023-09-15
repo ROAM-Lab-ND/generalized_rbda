@@ -28,8 +28,8 @@ namespace grbda
                 0, 1.084e-4, 0,
                 0, 0, 1.6841e-4;
 
-            Mat3<double> RY = coordinateRotation<double>(CoordinateAxis::Y, M_PI / 2);
-            Mat3<double> RX = coordinateRotation<double>(CoordinateAxis::X, -M_PI / 2);
+            Mat3<double> RY = ori::coordinateRotation<double>(ori::CoordinateAxis::Y, M_PI / 2);
+            Mat3<double> RX = ori::coordinateRotation<double>(ori::CoordinateAxis::X, -M_PI / 2);
 
             Mat3<double> smallRotorRotationalInertiaX = RY.transpose() * _smallRotorRotationalInertiaZ * RY;
             Mat3<double> smallRotorRotationalInertiaY = RX.transpose() * _smallRotorRotationalInertiaZ * RX;

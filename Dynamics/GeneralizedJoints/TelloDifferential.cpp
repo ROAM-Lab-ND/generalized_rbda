@@ -63,8 +63,8 @@ namespace grbda
 
 		TelloDifferential::TelloDifferential(
 			Body &rotor_1, Body &rotor_2, Body &link_1, Body &link_2,
-			CoordinateAxis rotor_axis_1, CoordinateAxis rotor_axis_2,
-			CoordinateAxis joint_axis_1, CoordinateAxis joint_axis_2,
+			ori::CoordinateAxis rotor_axis_1, ori::CoordinateAxis rotor_axis_2,
+			ori::CoordinateAxis joint_axis_1, ori::CoordinateAxis joint_axis_2,
 			double gear_ratio)
 			: Base(4, 4, 2, true, false), rotor_1_(rotor_1), rotor_2_(rotor_2),
 			  link_1_(link_1), link_2_(link_2), gear_ratio_(gear_ratio)
@@ -107,7 +107,7 @@ namespace grbda
 			const DMat<double> X21_S1 = X21_.transformMotionSubspace(S1);
 			const DMat<double> &S2 = link_2_joint_->S();
 			const DVec<double> v2_relative = S2 * q_dot[3];
-			const DMat<double> v2_rel_crm = generalMotionCrossMatrix(v2_relative);
+			const DMat<double> v2_rel_crm = spatial::generalMotionCrossMatrix(v2_relative);
 
 			X_inter_S_span_.block<6, 1>(18, 2) = X21_S1;
 			X_inter_S_span_ring_.block<6, 1>(18, 2) = -v2_rel_crm * X21_S1;
@@ -123,7 +123,7 @@ namespace grbda
 		}
 
 		void TelloDifferential::computeSpatialTransformFromParentToCurrentCluster(
-			GeneralizedSpatialTransform &Xup) const
+			spatial::GeneralizedTransform &Xup) const
 		{
 #ifdef DEBUG_MODE
 			if (Xup.getNumOutputBodies() != 4)

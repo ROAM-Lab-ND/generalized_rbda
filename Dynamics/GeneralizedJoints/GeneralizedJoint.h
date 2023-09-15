@@ -33,7 +33,6 @@ namespace grbda
         class Base
         {
         public:
-            EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
             Base(int num_bodies, int num_independent_positions, int num_independent_velocities,
                  bool position_is_spanning, bool velocity_is_spanning);
@@ -44,7 +43,7 @@ namespace grbda
             virtual void updateKinematics(const JointState &joint_state) = 0;
 
             virtual void computeSpatialTransformFromParentToCurrentCluster(
-                GeneralizedSpatialTransform &Xup) const = 0;
+                spatial::GeneralizedTransform &Xup) const = 0;
 
             const std::vector<JointPtr> singleJoints() const { return single_joints_; };
 
@@ -126,8 +125,8 @@ namespace grbda
         {
             Body body_;
             Body rotor_;
-            CoordinateAxis joint_axis_;
-            CoordinateAxis rotor_axis_;
+            ori::CoordinateAxis joint_axis_;
+            ori::CoordinateAxis rotor_axis_;
             double gear_ratio_;
         };
 
@@ -135,8 +134,8 @@ namespace grbda
         {
             Body body_;
             Body rotor_;
-            CoordinateAxis joint_axis_;
-            CoordinateAxis rotor_axis_;
+            ori::CoordinateAxis joint_axis_;
+            ori::CoordinateAxis rotor_axis_;
             double gear_ratio_;
             double belt_ratio_;
         };

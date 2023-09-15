@@ -52,15 +52,15 @@ namespace grbda
         {
         public:
             TelloDifferential(Body &rotor_1, Body &rotor_2, Body &link_1, Body &link_2,
-                              CoordinateAxis rotor_axis_1, CoordinateAxis rotor_axis_2,
-                              CoordinateAxis joint_axis_1, CoordinateAxis joint_axis_2,
+                              ori::CoordinateAxis rotor_axis_1, ori::CoordinateAxis rotor_axis_2,
+                              ori::CoordinateAxis joint_axis_1, ori::CoordinateAxis joint_axis_2,
                               double gear_ratio);
             virtual ~TelloDifferential() {}
 
             void updateKinematics(const JointState &joint_state) override;
 
             void computeSpatialTransformFromParentToCurrentCluster(
-                GeneralizedSpatialTransform &Xup) const override;
+                spatial::GeneralizedTransform &Xup) const override;
 
             std::vector<std::tuple<Body, JointPtr, DMat<double>>>
             bodiesJointsAndReflectedInertias() const override;
@@ -76,7 +76,7 @@ namespace grbda
             JointPtr link_1_joint_;
             JointPtr link_2_joint_;
 
-            SpatialTransform X21_;
+            spatial::Transform X21_;
 
             const Body rotor_1_;
             const Body rotor_2_;

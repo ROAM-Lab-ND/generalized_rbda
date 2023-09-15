@@ -66,15 +66,16 @@ namespace grbda
             X_inter_S_span_.block<6, 1>(18, 0) = X21_.transformMotionSubspace(link1_joint_->S());
             S_.block<6, 1>(18, 0) = X_inter_S_span_.block<6, 1>(18, 0);
 
-            X_inter_S_span_ring_.block<6, 1>(18, 0) = -generalMotionCrossMatrix(v2_relative) *
-                                                 X_inter_S_span_.block<6, 1>(18, 0);
+            X_inter_S_span_ring_.block<6, 1>(18, 0) =
+                -spatial::generalMotionCrossMatrix(v2_relative) *
+                X_inter_S_span_.block<6, 1>(18, 0);
 
             vJ_ = X_inter_S_span_ * qd;
             cJ_ = X_inter_S_span_ring_ * qd;
         }
 
         void RevolutePairWithRotor::computeSpatialTransformFromParentToCurrentCluster(
-            GeneralizedSpatialTransform &Xup) const
+            spatial::GeneralizedTransform &Xup) const
         {
 #ifdef DEBUG_MODE
             if (Xup.getNumOutputBodies() != 4)

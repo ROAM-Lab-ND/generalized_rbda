@@ -11,9 +11,6 @@
 
 namespace grbda
 {
-    // TODO(@MatthewChignoli): Probably don't want to be using std
-    using namespace ori;
-    using namespace spatial;
     using ClusterTreeNodePtr = std::shared_ptr<ClusterTreeNode>;
 
     /*!
@@ -36,7 +33,7 @@ namespace grbda
         // in  given cluster and then append them as a cluster by specifying the type of cluster 
         // joint that connects them
         Body registerBody(const std::string name, const SpatialInertia<double> inertia,
-                          const std::string parent_name, const SpatialTransform Xtree);
+                          const std::string parent_name, const spatial::Transform Xtree);
 
         template <typename T, typename... Args>
         void appendRegisteredBodiesAsCluster(const std::string name, Args&&... args)
@@ -48,7 +45,8 @@ namespace grbda
         // Alternatively, this function can be used when appending individual bodies to the model
         template <typename T, typename... Args>
         void appendBody(const std::string name, const SpatialInertia<double> inertia,
-                        const std::string parent_name, const SpatialTransform Xtree, Args&&... args)
+                        const std::string parent_name, const spatial::Transform Xtree,
+                        Args &&...args)
         {
             Body body = registerBody(name, inertia, parent_name, Xtree);
             std::shared_ptr<GeneralizedJoints::Base> joint = std::make_shared<T>(body, args...);

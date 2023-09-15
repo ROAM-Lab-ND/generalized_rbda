@@ -164,9 +164,9 @@ namespace grbda
         const TreeNodePtr rigid_body_node = getNodeContainingBody(body_idx);
 
         forwardKinematics();
-        const SpatialTransform &Xa = rigid_body_node->Xa_[0];
-        const Mat6<double> Xai = invertSXform(Xa.toMatrix().cast<double>());
-        Vec3<double> link_pos = sXFormPoint(Xai, Vec3<double>::Zero());
+        const spatial::Transform &Xa = rigid_body_node->Xa_[0];
+        const Mat6<double> Xai = spatial::invertSXform(Xa.toMatrix().cast<double>());
+        Vec3<double> link_pos = spatial::sXFormPoint(Xai, Vec3<double>::Zero());
         return link_pos;
     }
 
@@ -176,7 +176,7 @@ namespace grbda
         const TreeNodePtr rigid_body_node = getNodeContainingBody(body_idx);
 
         forwardKinematics();
-        const SpatialTransform &Xa = rigid_body_node->Xa_[0];
+        const spatial::Transform &Xa = rigid_body_node->Xa_[0];
         Mat3<double> Rai = Xa.getRotation();
         Rai.transposeInPlace();
         return Rai;
@@ -190,7 +190,7 @@ namespace grbda
         forwardKinematics();
         const Mat3<double> Rai = getOrientation(body_name);
         const SVec<double> v = rigid_body_node->v_.head<6>();
-        return Rai * spatialToLinearVelocity(v, Vec3<double>::Zero());
+        return Rai * spatial::spatialToLinearVelocity(v, Vec3<double>::Zero());
     }
 
     Vec3<double> RigidBodyTreeModel::getAngularVelocity(const std::string &body_name)
