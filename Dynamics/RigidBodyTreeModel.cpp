@@ -158,7 +158,7 @@ namespace grbda
         loop_constraints_updated_ = true;
     }
 
-    Vec3<double> RigidBodyTreeModel::getPosition(const string &body_name)
+    Vec3<double> RigidBodyTreeModel::getPosition(const std::string &body_name)
     {
         const int &body_idx = body_name_to_body_index_.at(body_name);
         const TreeNodePtr rigid_body_node = getNodeContainingBody(body_idx);
@@ -170,7 +170,7 @@ namespace grbda
         return link_pos;
     }
 
-    Mat3<double> RigidBodyTreeModel::getOrientation(const string &body_name)
+    Mat3<double> RigidBodyTreeModel::getOrientation(const std::string &body_name)
     {
         const int &body_idx = body_name_to_body_index_.at(body_name);
         const TreeNodePtr rigid_body_node = getNodeContainingBody(body_idx);
@@ -182,7 +182,7 @@ namespace grbda
         return Rai;
     }
 
-    Vec3<double> RigidBodyTreeModel::getLinearVelocity(const string &body_name)
+    Vec3<double> RigidBodyTreeModel::getLinearVelocity(const std::string &body_name)
     {
         const int &body_idx = body_name_to_body_index_.at(body_name);
         const TreeNodePtr rigid_body_node = getNodeContainingBody(body_idx);
@@ -193,7 +193,7 @@ namespace grbda
         return Rai * spatialToLinearVelocity(v, Vec3<double>::Zero());
     }
 
-    Vec3<double> RigidBodyTreeModel::getAngularVelocity(const string &body_name)
+    Vec3<double> RigidBodyTreeModel::getAngularVelocity(const std::string &body_name)
     {
         const int &body_idx = body_name_to_body_index_.at(body_name);
         const TreeNodePtr rigid_body_node = getNodeContainingBody(body_idx);

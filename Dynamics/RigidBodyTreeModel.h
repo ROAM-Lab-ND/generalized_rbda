@@ -85,10 +85,10 @@ namespace grbda
 
         void updateLoopConstraints();
 
-        Vec3<double> getPosition(const string &body_name) override;
-        Mat3<double> getOrientation(const string &body_name) override;
-        Vec3<double> getLinearVelocity(const string &body_name) override;
-        Vec3<double> getAngularVelocity(const string &body_name) override;
+        Vec3<double> getPosition(const std::string &body_name) override;
+        Mat3<double> getOrientation(const std::string &body_name) override;
+        Vec3<double> getLinearVelocity(const std::string &body_name) override;
+        Vec3<double> getAngularVelocity(const std::string &body_name) override;
 
         D6Mat<double> contactJacobianBodyFrame(const std::string &cp_name) override;
         const D6Mat<double> &contactJacobianWorldFrame(const std::string &cp_name) override;
@@ -97,7 +97,7 @@ namespace grbda
         DVec<double> inverseDynamics(const DVec<double> &ydd) override;
         DMat<double> inverseOperationalSpaceInertiaMatrix() override;
 
-        double applyTestForce(const string &contact_point_name,
+        double applyTestForce(const std::string &contact_point_name,
                               const Vec3<double> &force, DVec<double> &dstate_out) override;
 
         DMat<double> getMassMatrix() override;
@@ -138,7 +138,7 @@ namespace grbda
         bool loop_constraints_updated_ = false;
 
         std::vector<RigidBodyTreeNodePtr> rigid_body_nodes_;
-        std::unordered_map<string, int> body_name_to_body_index_;
+        std::unordered_map<std::string, int> body_name_to_body_index_;
 
         // NOTE: The expanded tree parent indices represent the parent indices for the connectivty 
         // graph resulting from treating multi-dof joints as multiple single-dof joints.

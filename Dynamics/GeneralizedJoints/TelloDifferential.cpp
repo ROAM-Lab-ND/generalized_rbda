@@ -35,8 +35,8 @@ namespace grbda
 			if (!joint_pos.isSpanning())
 				throw std::runtime_error("[TelloDifferential] Position for updating constraint Jacobians must be spanning");
 #endif
-			vector<DVec<double>> arg = {joint_pos.head<2>(), joint_pos.tail<2>()};
-			vector<Eigen::MatrixBase<DMat<double>> *> J = {&G_, &K_};
+			std::vector<DVec<double>> arg = {joint_pos.head<2>(), joint_pos.tail<2>()};
+			std::vector<Eigen::MatrixBase<DMat<double>> *> J = {&G_, &K_};
 			casadi_interface(arg, J, jacobian_helpers_);
 		}
 
@@ -50,8 +50,9 @@ namespace grbda
 			const DVec<double> &q = joint_state.position;
 			const DVec<double> &q_dot = joint_state.velocity;
 
-			vector<DVec<double>> arg = {q.head<2>(), q.tail<2>(), q_dot.head<2>(), q_dot.tail<2>()};
-			vector<Eigen::MatrixBase<DVec<double>> *> b = {&g_, &k_};
+			std::vector<DVec<double>> arg = {q.head<2>(), q.tail<2>(),
+											 q_dot.head<2>(), q_dot.tail<2>()};
+			std::vector<Eigen::MatrixBase<DVec<double>> *> b = {&g_, &k_};
 			casadi_interface(arg, b, bias_helpers_);
 		}
 

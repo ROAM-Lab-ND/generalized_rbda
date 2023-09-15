@@ -8,7 +8,7 @@ namespace grbda
     {
 
         Generic::Generic(const std::vector<Body> &bodies, const std::vector<JointPtr> &joints,
-                         shared_ptr<LoopConstraint::Base> loop_constraint)
+                         std::shared_ptr<LoopConstraint::Base> loop_constraint)
             : Base((int)bodies.size(),
                    loop_constraint->numIndependentPos(), loop_constraint->numIndependentVel(),
                    false, false),

@@ -13,7 +13,7 @@ namespace grbda
         {
         public:
             Generic(const std::vector<Body> &bodies, const std::vector<JointPtr> &joints,
-                    shared_ptr<LoopConstraint::Base> loop_constraint);
+                    std::shared_ptr<LoopConstraint::Base> loop_constraint);
 
             GeneralizedJointTypes type() const override { return GeneralizedJointTypes::Generic; }
 

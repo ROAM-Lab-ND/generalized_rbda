@@ -186,7 +186,7 @@ namespace grbda
         articulated_bodies_updated_ = true;
     }
 
-    double ClusterTreeModel::applyTestForce(const string &contact_point_name,
+    double ClusterTreeModel::applyTestForce(const std::string &contact_point_name,
                                             const Vec3<double> &force, DVec<double> &dstate_out)
     {
         const int contact_point_index = contact_name_to_contact_index_.at(contact_point_name);

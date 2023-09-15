@@ -27,8 +27,6 @@ namespace grbda
   namespace ori
   {
 
-    using namespace std;
-
     static constexpr double quaternionDerviativeStabilization = 0.1;
 
     enum class CoordinateAxis

@@ -424,7 +424,7 @@ namespace grbda
     }
 
     double ReflectedInertiaTreeModel::applyTestForce(
-        const string &contact_point_name, const Vec3<double> &force, DVec<double> &dstate_out)
+        const std::string &contact_point_name, const Vec3<double> &force, DVec<double> &dstate_out)
     {
         switch (rotor_inertia_approximation_)
         {

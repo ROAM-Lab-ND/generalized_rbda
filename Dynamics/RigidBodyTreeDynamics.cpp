@@ -163,7 +163,7 @@ namespace grbda
         return J_stacked * H.inverse() * J_stacked.transpose();
     }
 
-    double RigidBodyTreeModel::applyTestForce(const string &contact_point_name,
+    double RigidBodyTreeModel::applyTestForce(const std::string &contact_point_name,
                                               const Vec3<double> &force, DVec<double> &dstate_out)
     {
         const D3Mat<double> J = contactJacobianWorldFrame(contact_point_name).bottomRows<3>();

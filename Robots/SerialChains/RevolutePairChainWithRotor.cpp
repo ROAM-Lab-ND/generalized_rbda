@@ -160,7 +160,7 @@ namespace grbda
     DVec<double> RevolutePairChainWithRotor<N>::forwardDynamics(
         const DVec<double> &y, const DVec<double> &yd, const DVec<double> &tau) const
     {
-        vector<DVec<double>> arg = {y, yd, tau};
+        std::vector<DVec<double>> arg = {y, yd, tau};
         DMat<double> eom = DVec<double>::Zero(N);
 
         if (N == 2)
@@ -183,7 +183,7 @@ namespace grbda
     DVec<double> RevolutePairChainWithRotor<N>::forwardDynamicsReflectedInertia(
         const DVec<double> &y, const DVec<double> &yd, const DVec<double> &tau) const
     {
-        vector<DVec<double>> arg = {y, yd, tau};
+        std::vector<DVec<double>> arg = {y, yd, tau};
         DMat<double> eom = DVec<double>::Zero(N);
 
         if (N == 2)
@@ -206,7 +206,7 @@ namespace grbda
     DVec<double> RevolutePairChainWithRotor<N>::forwardDynamicsReflectedInertiaDiag(
         const DVec<double> &y, const DVec<double> &yd, const DVec<double> &tau) const
     {
-        vector<DVec<double>> arg = {y, yd, tau};
+        std::vector<DVec<double>> arg = {y, yd, tau};
         DMat<double> eom = DVec<double>::Zero(N);
 
         if (N == 2)
@@ -229,7 +229,7 @@ namespace grbda
     DVec<double> RevolutePairChainWithRotor<N>::inverseDynamics(
         const DVec<double> &y, const DVec<double> &yd, const DVec<double> &ydd) const
     {
-        vector<DVec<double>> arg = {y, yd, ydd};
+        std::vector<DVec<double>> arg = {y, yd, ydd};
         DMat<double> eom = DVec<double>::Zero(N);
 
         if (N == 2)
@@ -252,7 +252,7 @@ namespace grbda
     DVec<double> RevolutePairChainWithRotor<N>::inverseDynamicsReflectedInertia(
         const DVec<double> &y, const DVec<double> &yd, const DVec<double> &ydd) const
     {
-        vector<DVec<double>> arg = {y, yd, ydd};
+        std::vector<DVec<double>> arg = {y, yd, ydd};
         DMat<double> eom = DVec<double>::Zero(N);
 
         if (N == 2)
@@ -275,7 +275,7 @@ namespace grbda
     DVec<double> RevolutePairChainWithRotor<N>::inverseDynamicsReflectedInertiaDiag(
         const DVec<double> &y, const DVec<double> &yd, const DVec<double> &ydd) const
     {
-        vector<DVec<double>> arg = {y, yd, ydd};
+        std::vector<DVec<double>> arg = {y, yd, ydd};
         DMat<double> eom = DVec<double>::Zero(N);
 
         if (N == 2)
