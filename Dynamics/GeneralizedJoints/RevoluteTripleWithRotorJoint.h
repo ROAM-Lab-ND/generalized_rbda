@@ -9,21 +9,12 @@ namespace grbda
     namespace GeneralizedJoints
     {
 
-        // TODO(@MatthewChignoli): Use for the RevPairWithRotor? Abstract this joint somehow?
-        struct ParallelBeltTransmissionModule
-        {
-            Body body_;
-            Body rotor_;
-            CoordinateAxis joint_axis_;
-            CoordinateAxis rotor_axis_;
-            double gear_ratio_;
-            double belt_ratio_;
-        };
-
         class RevoluteTripleWithRotor : public Base
         {
         public:
-            RevoluteTripleWithRotor(std::vector<ParallelBeltTransmissionModule> modules);
+            RevoluteTripleWithRotor(const ParallelBeltTransmissionModule& module_1,
+                                    const ParallelBeltTransmissionModule& module_2,
+                                    const ParallelBeltTransmissionModule& module_3);
             virtual ~RevoluteTripleWithRotor() {}
 
             GeneralizedJointTypes type() const override

@@ -44,16 +44,14 @@ namespace grbda
             auto linkB = model.registerBody(linkB_name, linkB_inertia, linkA_name, linkB_Xtree);
 
             // Cluster
-            const int gear_ratioA = rand() % this->_gear_ratio_scale + 1;
-            const int belt_ratioA = rand() % this->_gear_ratio_scale + 1;
-            const int gear_ratioB = rand() % this->_gear_ratio_scale + 1;
-            const int belt_ratioB = rand() % this->_gear_ratio_scale + 1;
-
-            const std::string cluster_name = "cluster-" + std::to_string(i);
-            model.appendRegisteredBodiesAsCluster<RevolutePairWithRotor>(
-                cluster_name, linkA, linkB, rotorA, rotorB, linkA_joint_axis, linkB_joint_axis,
-                rotorA_joint_axis, rotorB_joint_axis, gear_ratioA, gear_ratioB,
-                belt_ratioA, belt_ratioB);
+            const std::string name = "cluster-" + std::to_string(i);
+            ParallelBeltTransmissionModule moduleA{linkA, rotorA,
+                                                   linkA_joint_axis, rotorA_joint_axis,
+                                                   randomGearRatio(), randomGearRatio()};
+            ParallelBeltTransmissionModule moduleB{linkB, rotorB,
+                                                   linkB_joint_axis, rotorB_joint_axis,
+                                                   randomGearRatio(), randomGearRatio()};
+            model.appendRegisteredBodiesAsCluster<RevolutePairWithRotor>(name, moduleA, moduleB);
 
             // Contact points
             appendContactPoints(model, i, linkA_name, linkB_name);
@@ -127,10 +125,10 @@ namespace grbda
                                             linkA_name, Xtree2);
 
             // Cluster
-            const std::string cluster_name = "cluster-" + std::to_string(i);
-            model.appendRegisteredBodiesAsCluster<RevolutePairWithRotor>(
-                cluster_name, linkA, linkB, rotorA, rotorB, axis, axis, axis, axis,
-                gr, gr, br, br);
+            const std::string name = "cluster-" + std::to_string(i);
+            ParallelBeltTransmissionModule moduleA{linkA, rotorA, axis, axis, gr, br};
+            ParallelBeltTransmissionModule moduleB{linkB, rotorB, axis, axis, gr, br};
+            model.appendRegisteredBodiesAsCluster<RevolutePairWithRotor>(name, moduleA, moduleB);
 
             // Contact points
             appendContactPoints(model, i, linkA_name, linkB_name);

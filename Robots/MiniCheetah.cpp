@@ -15,8 +15,8 @@ namespace grbda
         const std::string torso_name = "Floating Base";
         const std::string torso_parent_name = "ground";
         const SpatialInertia<double> torsoInertia(_bodyMass, _bodyCOM, _bodyRotationalInertia);
-        model.appendBody<GeneralizedJoints::Free>(torso_name, torsoInertia, torso_parent_name,
-                                                  spatial::SpatialTransform{});
+        model.appendBody<Free>(torso_name, torsoInertia, torso_parent_name,
+                               spatial::SpatialTransform{});
 
         Vec3<double> torsoDims(_bodyLength, _bodyWidth, _bodyHeight);
         model.appendContactBox(torso_name, torsoDims);
@@ -43,11 +43,9 @@ namespace grbda
                                                 abad_parent_name, xtree_abad);
             Body abad_rotor = model.registerBody(abad_rotor_name, abad_rotor_inertia,
                                                  abad_parent_name, xtree_abad_rotor);
-            model.appendRegisteredBodiesAsCluster<RevoluteWithRotor>(abad_name,
-                                                                     abad_link, abad_rotor,
-                                                                     CoordinateAxis::X,
-                                                                     CoordinateAxis::X,
-                                                                     _abadGearRatio);
+            GearedTransmissionModule abad_module{abad_link, abad_rotor, CoordinateAxis::X,
+                                                 CoordinateAxis::X, _abadGearRatio};
+            model.appendRegisteredBodiesAsCluster<RevoluteWithRotor>(abad_name, abad_module);
 
             // Hip Joint
             const std::string hip_parent_name = abad_link_name;
@@ -68,11 +66,9 @@ namespace grbda
                                                hip_parent_name, xtree_hip);
             Body hip_rotor = model.registerBody(hip_rotor_name, hip_rotor_inertia,
                                                 hip_parent_name, xtree_hip_rotor);
-            model.appendRegisteredBodiesAsCluster<RevoluteWithRotor>(hip_name,
-                                                                     hip_link, hip_rotor,
-                                                                     CoordinateAxis::Y,
-                                                                     CoordinateAxis::Y,
-                                                                     _hipGearRatio);
+            GearedTransmissionModule hip_module{hip_link, hip_rotor, CoordinateAxis::Y,
+                                                CoordinateAxis::Y, _hipGearRatio};
+            model.appendRegisteredBodiesAsCluster<RevoluteWithRotor>(hip_name, hip_module);
 
             const std::string hip_contact_name = withLegSigns("hip_contact", legID);
             model.appendContactPoint(hip_link_name, Vec3<double>(0, 0, 0), hip_contact_name);
@@ -99,11 +95,9 @@ namespace grbda
                                                 knee_parent_name, xtree_knee);
             Body knee_rotor = model.registerBody(knee_rotor_name, knee_rotor_inertia,
                                                  knee_parent_name, xtree_knee_rotor);
-            model.appendRegisteredBodiesAsCluster<RevoluteWithRotor>(knee_name,
-                                                                     knee_link, knee_rotor,
-                                                                     CoordinateAxis::Z,
-                                                                     CoordinateAxis::Z,
-                                                                     _kneeGearRatio);
+            GearedTransmissionModule knee_module{knee_link, knee_rotor, CoordinateAxis::Z,
+                                                 CoordinateAxis::Z, _kneeGearRatio};
+            model.appendRegisteredBodiesAsCluster<RevoluteWithRotor>(knee_name, knee_module);
 
             const std::string foot_contact_name = withLegSigns("foot_contact", legID);
             const Vec3<double> foot_contact_offset = withLegSigns(Vec3<double>(0, -_kneeLinkY_offset, -_kneeLinkLength), legID);

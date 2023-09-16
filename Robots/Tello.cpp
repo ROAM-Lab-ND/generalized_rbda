@@ -17,8 +17,8 @@ namespace grbda
         const std::string torso_parent_name = "ground";
         const SpatialInertia<double> torso_spatial_inertia = SpatialInertia<double>{torso_mass,
             torso_CoM, torso_inertia};
-        model.appendBody<GeneralizedJoints::Free>(torso_name, torso_spatial_inertia,
-                                                  torso_parent_name, spatial::SpatialTransform{});
+        model.appendBody<Free>(torso_name, torso_spatial_inertia,
+                               torso_parent_name, spatial::SpatialTransform{});
 
         std::vector<std::string> sides = {"left","right"};
         const std::string hip_clamp_parent_name = "torso";
@@ -57,9 +57,11 @@ namespace grbda
 
             // Hip clamp cluster
             const std::string hip_clamp_cluster_name = side + "-hip-clamp";
-            model.appendRegisteredBodiesAsCluster<RevoluteWithRotor>(
-                hip_clamp_cluster_name, hip_clamp, hip_clamp_rotor,
-                CoordinateAxis::Z, CoordinateAxis::Z, gear_ratio);
+            GearedTransmissionModule hip_clamp_module{hip_clamp, hip_clamp_rotor,
+                                                      CoordinateAxis::Z, CoordinateAxis::Z,
+                                                      gear_ratio};
+            model.appendRegisteredBodiesAsCluster<RevoluteWithRotor>(hip_clamp_cluster_name,
+                                                                     hip_clamp_module);
 
             // Hip differential rotor 1
             const SpatialTransform hip_rotor_1_Xtree = i == 0 ? SpatialTransform(R_left_hip_rotor_1,
@@ -111,10 +113,13 @@ namespace grbda
 
             // Hip differential cluster
             const std::string hip_differential_cluster_name = side + "-hip-differential";
+            TelloDifferentialModule hip_differential_module{hip_rotor_1, hip_rotor_2,
+                                                            gimbal, thigh,
+                                                            CoordinateAxis::Z, CoordinateAxis::Z,
+                                                            CoordinateAxis::X, CoordinateAxis::Y,
+                                                            gear_ratio};
             model.appendRegisteredBodiesAsCluster<TelloHipDifferential>(
-                hip_differential_cluster_name, hip_rotor_1, hip_rotor_2, gimbal, thigh,
-                CoordinateAxis::Z, CoordinateAxis::Z, CoordinateAxis::X, CoordinateAxis::Y,
-                gear_ratio);
+                hip_differential_cluster_name, hip_differential_module);
 
             // Knee-ankle differential rotor 1
             const Mat3<double> R_knee_ankle_rotor_1 = i == 0 ? R_left_knee_ankle_rotor_1
@@ -170,11 +175,13 @@ namespace grbda
 
             // Knee-ankle differential cluster
             const std::string knee_ankle_differential_cluster_name = side + "-knee-ankle-differential";
+            TelloDifferentialModule knee_ankle_module{knee_ankle_rotor_1, knee_ankle_rotor_2,
+                                                      shin, foot,
+                                                      CoordinateAxis::Z, CoordinateAxis::Z,
+                                                      CoordinateAxis::Y, CoordinateAxis::Y,
+                                                      gear_ratio};
             model.appendRegisteredBodiesAsCluster<TelloKneeAnkleDifferential>(
-                knee_ankle_differential_cluster_name,
-                knee_ankle_rotor_1, knee_ankle_rotor_2, shin, foot,
-                CoordinateAxis::Z, CoordinateAxis::Z, CoordinateAxis::Y, CoordinateAxis::Y,
-                gear_ratio);
+                knee_ankle_differential_cluster_name, knee_ankle_module);
 
             // Append contact points for the feet
             const std::string toe_contact_name = side + "-toe_contact";
