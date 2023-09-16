@@ -11,8 +11,8 @@ namespace grbda
     public:
         MiniCheetah()
         {
-            Mat3<double> RY = coordinateRotation<double>(CoordinateAxis::Y, M_PI / 2);
-            Mat3<double> RX = coordinateRotation<double>(CoordinateAxis::X, M_PI / 2);
+            Mat3<double> RY = ori::coordinateRotation<double>(ori::CoordinateAxis::Y, M_PI / 2);
+            Mat3<double> RX = ori::coordinateRotation<double>(ori::CoordinateAxis::X, M_PI / 2);
 
             _bodyRotationalInertia << 11253, 0, 0, 0, 36203, 0, 0, 0, 42673;
             _bodyRotationalInertia = _bodyRotationalInertia * 1e-6;

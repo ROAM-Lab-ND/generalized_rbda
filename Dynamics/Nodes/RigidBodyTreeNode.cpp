@@ -14,8 +14,8 @@ namespace grbda
           body_(body), joint_(joint), Xtree_(body.Xtree_)
     {
         I_ = body.inertia_.getMatrix();
-        Xup_.appendSpatialTransformWithClusterAncestorSubIndex(SpatialTransform{}, 0);
-        Xa_.appendSpatialTransform(SpatialTransform{});
+        Xup_.appendTransformWithClusterAncestorSubIndex(spatial::Transform{}, 0);
+        Xa_.appendTransform(spatial::Transform{});
     }
 
     void RigidBodyTreeNode::updateKinematics()
@@ -25,7 +25,7 @@ namespace grbda
         vJ_ = joint_->S() * joint_state_.velocity;
     }
 
-    const SpatialTransform &RigidBodyTreeNode::getAbsoluteTransformForBody(const Body &body)
+    const spatial::Transform &RigidBodyTreeNode::getAbsoluteTransformForBody(const Body &body)
     {
         return Xa_[0];
     };

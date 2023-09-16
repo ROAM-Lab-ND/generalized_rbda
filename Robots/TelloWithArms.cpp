@@ -27,8 +27,8 @@ namespace grbda
                                                              _smallRotorRotInertiaY);
             shoulder_ry_rotor_inertia = withLeftRightSigns(shoulder_ry_rotor_inertia, armID);
 
-            const spatial::SpatialTransform xtreeShoulderRy(I3, withLeftRightSigns(_shoulderRyLocation, armID));
-            const spatial::SpatialTransform xtreeShoulderRyRotor(I3, withLeftRightSigns(_shoulderRyRotorLocation, armID));
+            const spatial::Transform xtreeShoulderRy(I3, withLeftRightSigns(_shoulderRyLocation, armID));
+            const spatial::Transform xtreeShoulderRyRotor(I3, withLeftRightSigns(_shoulderRyRotorLocation, armID));
 
             Body shoulder_ry_link = model.registerBody(shoulder_ry_link_name,
                                                        shoulder_ry_link_inertia,
@@ -39,7 +39,8 @@ namespace grbda
                                                         shoulder_ry_parent_name,
                                                         xtreeShoulderRyRotor);
             GearedTransmissionModule shoulder_ry_module{shoulder_ry_link, shoulder_ry_rotor,
-                                                        CoordinateAxis::Y, CoordinateAxis::Y,
+                                                        ori::CoordinateAxis::Y, 
+                                                        ori::CoordinateAxis::Y,
                                                         _shoulderRyGearRatio};
             model.appendRegisteredBodiesAsCluster<RevoluteWithRotor>(shoulder_ry_name,
                                                                      shoulder_ry_module);
@@ -58,8 +59,8 @@ namespace grbda
                                                              _smallRotorRotInertiaX);
             shoulder_rx_rotor_inertia = withLeftRightSigns(shoulder_rx_rotor_inertia, armID);
 
-            const spatial::SpatialTransform xtreeShoulderRx(I3, withLeftRightSigns(_shoulderRxLocation, armID));
-            const spatial::SpatialTransform xtreeShoulderRxRotor(I3, withLeftRightSigns(_shoulderRxRotorLocation, armID));
+            const spatial::Transform xtreeShoulderRx(I3, withLeftRightSigns(_shoulderRxLocation, armID));
+            const spatial::Transform xtreeShoulderRxRotor(I3, withLeftRightSigns(_shoulderRxRotorLocation, armID));
 
             Body shoulder_rx_link = model.registerBody(shoulder_rx_link_name,
                                                        shoulder_rx_link_inertia,
@@ -70,7 +71,8 @@ namespace grbda
                                                         shoulder_rx_parent_name,
                                                         xtreeShoulderRxRotor);
             GearedTransmissionModule shoulder_rx_module{shoulder_rx_link, shoulder_rx_rotor,
-                                                        CoordinateAxis::X, CoordinateAxis::X,
+                                                        ori::CoordinateAxis::X, 
+                                                        ori::CoordinateAxis::X,
                                                         _shoulderRxGearRatio};
             model.appendRegisteredBodiesAsCluster<RevoluteWithRotor>(shoulder_rx_name,
                                                                      shoulder_rx_module);
@@ -89,8 +91,8 @@ namespace grbda
                                                              _smallRotorRotInertiaZ);
             shoulder_rz_rotor_inertia = withLeftRightSigns(shoulder_rz_rotor_inertia, armID);
 
-            const spatial::SpatialTransform xtreeShoulderRz(I3, withLeftRightSigns(_shoulderRzLocation, armID));
-            const spatial::SpatialTransform xtreeShoulderRzRotor(I3, withLeftRightSigns(_shoulderRzRotorLocation, armID));
+            const spatial::Transform xtreeShoulderRz(I3, withLeftRightSigns(_shoulderRzLocation, armID));
+            const spatial::Transform xtreeShoulderRzRotor(I3, withLeftRightSigns(_shoulderRzRotorLocation, armID));
 
             Body shoulder_rz_link = model.registerBody(shoulder_rz_link_name,
                                                        shoulder_rz_link_inertia,
@@ -101,7 +103,8 @@ namespace grbda
                                                         shoulder_rz_parent_name,
                                                         xtreeShoulderRzRotor);
             GearedTransmissionModule shoulder_rz_module{shoulder_rz_link, shoulder_rz_rotor,
-                                                        CoordinateAxis::Z, CoordinateAxis::Z,
+                                                        ori::CoordinateAxis::Z, 
+                                                        ori::CoordinateAxis::Z,
                                                         _shoulderRzGearRatio};
             model.appendRegisteredBodiesAsCluster<RevoluteWithRotor>(shoulder_rz_name,
                                                                      shoulder_rz_module);
@@ -119,15 +122,15 @@ namespace grbda
                                                        _smallRotorRotInertiaY);
             elbow_rotor_inertia = withLeftRightSigns(elbow_rotor_inertia, armID);
 
-            const spatial::SpatialTransform xtreeElbow(I3, withLeftRightSigns(_elbowLocation, armID));
-            const spatial::SpatialTransform xtreeElbowRotor(I3, withLeftRightSigns(_elbowRotorLocation, armID));
+            const spatial::Transform xtreeElbow(I3, withLeftRightSigns(_elbowLocation, armID));
+            const spatial::Transform xtreeElbowRotor(I3, withLeftRightSigns(_elbowRotorLocation, armID));
 
             Body elbow_link = model.registerBody(elbow_link_name, elbow_link_inertia,
                                                  elbow_parent_name, xtreeElbow);
             Body elbow_rotor = model.registerBody(elbow_rotor_name, elbow_rotor_inertia,
                                                   elbow_parent_name, xtreeElbowRotor);
-            GearedTransmissionModule elbow_module{elbow_link, elbow_rotor, CoordinateAxis::Y,
-                                                  CoordinateAxis::Y, _elbowGearRatio};
+            GearedTransmissionModule elbow_module{elbow_link, elbow_rotor, ori::CoordinateAxis::Y,
+                                                  ori::CoordinateAxis::Y, _elbowGearRatio};
             model.appendRegisteredBodiesAsCluster<RevoluteWithRotor>(elbow_name, elbow_module);
 
             const std::string elbow_contact_name = withLeftRightSigns("elbow_contact", armID);

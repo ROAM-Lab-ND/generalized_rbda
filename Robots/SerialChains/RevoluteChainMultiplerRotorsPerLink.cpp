@@ -15,20 +15,20 @@ namespace grbda
         {
             // Link
             const std::string link_name = "link-" + std::to_string(i);
-            const auto link_Xtree = randomSpatialRotation<double>();
+            const auto link_Xtree = spatial::randomSpatialRotation<double>();
             const auto link_inertia = randomLinkSpatialInertia();
-            const CoordinateAxis link_joint_axis = ori::randomCoordinateAxis<double>();
+            const ori::CoordinateAxis link_joint_axis = ori::randomCoordinateAxis<double>();
             auto link = model.registerBody(link_name, link_inertia, prev_link_name, link_Xtree);
 
             // Rotors
             std::vector<Body> rotors;
-            std::vector<CoordinateAxis> rotor_axes;
+            std::vector<ori::CoordinateAxis> rotor_axes;
             std::vector<double> gear_ratios;
             for (size_t j(0); j < M; j++)
             {
                 const std::string rotor_name = "rotor-" + std::to_string(i) +
                                                "-" + std::to_string(j);
-                const auto rotor_Xtree = randomSpatialRotation<double>();
+                const auto rotor_Xtree = spatial::randomSpatialRotation<double>();
                 const auto rotor_inertia = randomRotorSpatialInertia();
                 auto rotor = model.registerBody(rotor_name, rotor_inertia,
                                                 prev_link_name, rotor_Xtree);

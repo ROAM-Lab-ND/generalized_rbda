@@ -4,15 +4,9 @@
 #include "ClusterTreeModel.h"
 #include "Nodes/RigidBodyTreeNode.h"
 #include "Utils/Factorization.h"
-#ifdef TIMING_STATS
-#include "Utils/Timer.h"
-#endif
 
 namespace grbda
 {
-
-    using namespace ori;
-    using namespace spatial;
 
     enum class FwdDynMethod
     {
@@ -20,40 +14,6 @@ namespace grbda
         LagrangeMultiplierCustom,
         LagrangeMultiplierEigen
     };
-
-#ifdef TIMING_STATS
-    struct RigidBodyTreeTimingStatistics
-    {
-        double ltl_factorization_time = 0.0;
-        double tau_prime_calc_time = 0.0;
-        double Y_and_z_calc_time = 0.0;
-        double A_and_b_time = 0.0;
-        double lambda_solve_time = 0.0;
-        double qdd_solve_time = 0.0;
-
-        RigidBodyTreeTimingStatistics &operator+=(const RigidBodyTreeTimingStatistics &other)
-        {
-            ltl_factorization_time += other.ltl_factorization_time;
-            tau_prime_calc_time += other.tau_prime_calc_time;
-            Y_and_z_calc_time += other.Y_and_z_calc_time;
-            A_and_b_time += other.A_and_b_time;
-            lambda_solve_time += other.lambda_solve_time;
-            qdd_solve_time += other.qdd_solve_time;
-            return *this;
-        }
-
-        RigidBodyTreeTimingStatistics &operator/=(const double &scalar)
-        {
-            ltl_factorization_time /= scalar;
-            tau_prime_calc_time /= scalar;
-            Y_and_z_calc_time /= scalar;
-            A_and_b_time /= scalar;
-            lambda_solve_time /= scalar;
-            qdd_solve_time /= scalar;
-            return *this;
-        }
-    };
-#endif
 
     using RigidBodyTreeNodePtr = std::shared_ptr<RigidBodyTreeNode>;
 
@@ -85,10 +45,10 @@ namespace grbda
 
         void updateLoopConstraints();
 
-        Vec3<double> getPosition(const string &body_name) override;
-        Mat3<double> getOrientation(const string &body_name) override;
-        Vec3<double> getLinearVelocity(const string &body_name) override;
-        Vec3<double> getAngularVelocity(const string &body_name) override;
+        Vec3<double> getPosition(const std::string &body_name) override;
+        Mat3<double> getOrientation(const std::string &body_name) override;
+        Vec3<double> getLinearVelocity(const std::string &body_name) override;
+        Vec3<double> getAngularVelocity(const std::string &body_name) override;
 
         D6Mat<double> contactJacobianBodyFrame(const std::string &cp_name) override;
         const D6Mat<double> &contactJacobianWorldFrame(const std::string &cp_name) override;
@@ -97,7 +57,7 @@ namespace grbda
         DVec<double> inverseDynamics(const DVec<double> &ydd) override;
         DMat<double> inverseOperationalSpaceInertiaMatrix() override;
 
-        double applyTestForce(const string &contact_point_name,
+        double applyTestForce(const std::string &contact_point_name,
                               const Vec3<double> &force, DVec<double> &dstate_out) override;
 
         DMat<double> getMassMatrix() override;
@@ -112,13 +72,6 @@ namespace grbda
         {
             return loop_constraints_.G() * ydd + loop_constraints_.g();
         }
-
-#ifdef TIMING_STATS
-        const RigidBodyTreeTimingStatistics &getTimingStatistics() const
-        {
-            return timing_statistics_;
-        }
-#endif
 
     private:
         void extractRigidBodiesAndJointsFromClusterModel(const ClusterTreeModel &cluster_tree_model);
@@ -138,7 +91,7 @@ namespace grbda
         bool loop_constraints_updated_ = false;
 
         std::vector<RigidBodyTreeNodePtr> rigid_body_nodes_;
-        std::unordered_map<string, int> body_name_to_body_index_;
+        std::unordered_map<std::string, int> body_name_to_body_index_;
 
         // NOTE: The expanded tree parent indices represent the parent indices for the connectivty 
         // graph resulting from treating multi-dof joints as multiple single-dof joints.
@@ -147,10 +100,6 @@ namespace grbda
         DVec<double> q_;
         DVec<double> qd_;
 
-#ifdef TIMING_STATS
-        Timer timer_;
-        RigidBodyTreeTimingStatistics timing_statistics_;
-#endif
     };
 
 } // namespace grbda

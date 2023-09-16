@@ -200,9 +200,9 @@ namespace grbda
 
         const size_t &i = cp.body_index_;
         const auto node_i = getNodeContainingBody(i);
-        const SpatialTransform Xa = node_i->Xa_[0];
+        const spatial::Transform Xa = node_i->Xa_[0];
         const Mat3<double> R_link_to_world = Xa.getRotation().transpose();
-        Mat6<double> Xout = createSXform(R_link_to_world, cp.local_offset_);
+        Mat6<double> Xout = spatial::createSXform(R_link_to_world, cp.local_offset_);
 
         int j = node_i->index_;
         while (j > -1)
@@ -232,7 +232,7 @@ namespace grbda
         ContactPoint &cp = contact_points_[contact_name_to_contact_index_.at(cp_name)];
         const size_t &i = cp.body_index_;
         const auto node_i = getNodeContainingBody(i);
-        Mat6<double> Xout = createSXform(Mat3<double>::Identity(), cp.local_offset_);
+        Mat6<double> Xout = spatial::createSXform(Mat3<double>::Identity(), cp.local_offset_);
 
         int j = node_i->index_;
         while (j > -1)
@@ -319,7 +319,7 @@ namespace grbda
         // Forward Pass - Articulated body bias force
         for (auto &link_node : reflected_inertia_nodes_)
         {
-            link_node->pA_ = generalForceCrossProduct(link_node->v_, DVec<double>(link_node->I_ * link_node->v_));
+            link_node->pA_ = spatial::generalForceCrossProduct(link_node->v_, DVec<double>(link_node->I_ * link_node->v_));
         }
 
         // Account for external forces in bias force
@@ -424,7 +424,7 @@ namespace grbda
     }
 
     double ReflectedInertiaTreeModel::applyTestForce(
-        const string &contact_point_name, const Vec3<double> &force, DVec<double> &dstate_out)
+        const std::string &contact_point_name, const Vec3<double> &force, DVec<double> &dstate_out)
     {
         switch (rotor_inertia_approximation_)
         {
@@ -557,7 +557,7 @@ namespace grbda
         const auto node = getNodeContainingBody(contact_point.body_index_);
         const auto &Xa = node->Xa_[0];
         Mat3<double> Rai = Xa.getRotation().transpose();
-        SpatialTransform X_cartesian_to_plucker{Rai, contact_point.local_offset_};
+        spatial::Transform X_cartesian_to_plucker{Rai, contact_point.local_offset_};
 
         SVec<double> spatial_force = SVec<double>::Zero();
         spatial_force.tail<3>() = force;
@@ -579,7 +579,8 @@ namespace grbda
             if (!cp.is_end_effector_)
                 continue;
             const auto &node = getNodeContainingBody(cp.body_index_);
-            cp.ChiUp_[node->index_] = createSXform(Mat3<double>::Identity(), cp.local_offset_);
+            cp.ChiUp_[node->index_] = spatial::createSXform(Mat3<double>::Identity(),
+                                                            cp.local_offset_);
         }
 
         // Backward Pass to compute K and propagate the force propagators for the end-effectors

@@ -8,7 +8,7 @@ namespace grbda
 
         RevoluteWithMultipleRotorsJoint::RevoluteWithMultipleRotorsJoint(
             Body &link, std::vector<Body> &rotors,
-            CoordinateAxis joint_axis, std::vector<CoordinateAxis> &rotor_axes,
+            ori::CoordinateAxis joint_axis, std::vector<ori::CoordinateAxis> &rotor_axes,
             std::vector<double> &gear_ratios)
             : Base(1 + rotors.size(), 1, 1, false, false), link_(link), rotors_(rotors)
         {
@@ -75,7 +75,7 @@ namespace grbda
         }
 
         void RevoluteWithMultipleRotorsJoint::computeSpatialTransformFromParentToCurrentCluster(
-            GeneralizedSpatialTransform &Xup) const
+            spatial::GeneralizedTransform &Xup) const
         {
 #ifdef DEBUG_MODE
             if (Xup.getNumOutputBodies() != (int)(1 + rotors_.size()))

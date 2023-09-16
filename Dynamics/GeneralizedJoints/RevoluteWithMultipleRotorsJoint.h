@@ -13,8 +13,8 @@ namespace grbda
         {
         public:
             RevoluteWithMultipleRotorsJoint(Body &link, std::vector<Body> &rotors,
-                                            CoordinateAxis joint_axis,
-                                            std::vector<CoordinateAxis> &rotor_axes,
+                                            ori::CoordinateAxis joint_axis,
+                                            std::vector<ori::CoordinateAxis> &rotor_axes,
                                             std::vector<double> &gear_ratios);
             virtual ~RevoluteWithMultipleRotorsJoint() {}
 
@@ -26,7 +26,7 @@ namespace grbda
             void updateKinematics(const JointState &joint_state) override;
 
             void computeSpatialTransformFromParentToCurrentCluster(
-                GeneralizedSpatialTransform &Xup) const override;
+                spatial::GeneralizedTransform &Xup) const override;
 
             std::vector<std::tuple<Body, JointPtr, DMat<double>>>
             bodiesJointsAndReflectedInertias() const override;

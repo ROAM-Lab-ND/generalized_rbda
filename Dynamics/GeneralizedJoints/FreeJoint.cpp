@@ -54,7 +54,7 @@ namespace grbda
         }
 
         void Free::computeSpatialTransformFromParentToCurrentCluster(
-            GeneralizedSpatialTransform &Xup) const
+            spatial::GeneralizedTransform &Xup) const
         {
 #ifdef DEBUG_MODE
             if (Xup.getNumOutputBodies() != 1 || Xup.getNumParentBodies() != 1)

@@ -6,8 +6,9 @@ namespace grbda
     namespace GeneralizedJoints
     {
 
-        RevolutePair::RevolutePair(Body &link_1, Body &link_2, CoordinateAxis joint_axis_1,
-                                   CoordinateAxis joint_axis_2)
+        RevolutePair::RevolutePair(Body &link_1, Body &link_2,
+                                   ori::CoordinateAxis joint_axis_1,
+                                   ori::CoordinateAxis joint_axis_2)
             : Base(2, 2, 2, false, false), link_1_(link_1), link_2_(link_2)
         {
             link_1_joint_ = single_joints_.emplace_back(new Joints::Revolute(joint_axis_1));
@@ -49,15 +50,16 @@ namespace grbda
             X_inter_S_span_.block<6, 1>(6, 0) = X21_.transformMotionSubspace(link_1_joint_->S());
             S_.block<6, 1>(6, 0) = X21_.transformMotionSubspace(link_1_joint_->S());
 
-            X_inter_S_span_ring_.block<6, 1>(6, 0) = -generalMotionCrossMatrix(v2_relative) *
-                                                X_inter_S_span_.block<6, 1>(6, 0);
+            X_inter_S_span_ring_.block<6, 1>(6, 0) =
+                -spatial::generalMotionCrossMatrix(v2_relative) *
+                X_inter_S_span_.block<6, 1>(6, 0);
 
             vJ_ = X_inter_S_span_ * qd;
             cJ_ = X_inter_S_span_ring_ * qd;
         }
 
         void RevolutePair::computeSpatialTransformFromParentToCurrentCluster(
-            GeneralizedSpatialTransform &Xup) const
+            spatial::GeneralizedTransform &Xup) const
         {
 #ifdef DEBUG_MODE
             if (Xup.getNumOutputBodies() != 2)

@@ -16,9 +16,6 @@
 namespace grbda
 {
 
-  using namespace ori;
-  using namespace spatial;
-
   /*!
    * Representation of Rigid Body Inertia as a 6x6 Spatial Inertia Tensor
    */
@@ -33,7 +30,7 @@ namespace grbda
      */
     SpatialInertia(T mass, const Vec3<T> &com, const Mat3<T> &inertia)
     {
-      Mat3<T> cSkew = vectorToSkewMat(com);
+      Mat3<T> cSkew = ori::vectorToSkewMat(com);
       _inertia.template topLeftCorner<3, 3>() =
           inertia + mass * cSkew * cSkew.transpose();
       _inertia.template topRightCorner<3, 3>() = mass * cSkew;
@@ -65,7 +62,7 @@ namespace grbda
       _inertia(2, 0) = a(8);
       _inertia(2, 1) = a(7);
       _inertia(2, 2) = a(6);
-      Mat3<T> cSkew = vectorToSkewMat(Vec3<T>(a(1), a(2), a(3)));
+      Mat3<T> cSkew = ori::vectorToSkewMat(Vec3<T>(a(1), a(2), a(3)));
       _inertia.template topRightCorner<3, 3>() = cSkew;
       _inertia.template bottomLeftCorner<3, 3>() = cSkew.transpose();
       _inertia.template bottomRightCorner<3, 3>() = a(0) * Mat3<T>::Identity();
@@ -86,8 +83,8 @@ namespace grbda
       Mat3<T> E = P.template topLeftCorner<3, 3>();
       Mat3<T> Ibar = E.trace() * Mat3<T>::Identity() - E;
       I.template topLeftCorner<3, 3>() = Ibar;
-      I.template topRightCorner<3, 3>() = vectorToSkewMat(h);
-      I.template bottomLeftCorner<3, 3>() = vectorToSkewMat(h).transpose();
+      I.template topRightCorner<3, 3>() = ori::vectorToSkewMat(h);
+      I.template bottomLeftCorner<3, 3>() = ori::vectorToSkewMat(h).transpose();
       I.template bottomRightCorner<3, 3>() = m * Mat3<T>::Identity();
       _inertia = I;
     }
@@ -107,7 +104,7 @@ namespace grbda
     MassProperties<T> asMassPropertyVector()
     {
       MassProperties<T> a;
-      Vec3<T> h = matToSkewVec(_inertia.template topRightCorner<3, 3>());
+      Vec3<T> h = ori::matToSkewVec(_inertia.template topRightCorner<3, 3>());
       a << _inertia(5, 5), h(0), h(1), h(2), _inertia(0, 0), _inertia(1, 1),
           _inertia(2, 2), _inertia(2, 1), _inertia(2, 0), _inertia(1, 0);
       return a;
@@ -134,7 +131,7 @@ namespace grbda
     {
       T m = getMass();
       Mat3<T> mcSkew = _inertia.template topRightCorner<3, 3>();
-      Vec3<T> com = matToSkewVec(mcSkew) / m;
+      Vec3<T> com = ori::matToSkewVec(mcSkew) / m;
       return com;
     }
 
@@ -158,7 +155,7 @@ namespace grbda
      */
     Mat4<T> getPseudoInertia() const
     {
-      Vec3<T> h = matToSkewVec(_inertia.template topRightCorner<3, 3>());
+      Vec3<T> h = ori::matToSkewVec(_inertia.template topRightCorner<3, 3>());
       Mat3<T> Ibar = _inertia.template topLeftCorner<3, 3>();
       T m = _inertia(5, 5);
       Mat4<T> P;
@@ -173,15 +170,15 @@ namespace grbda
     /*!
      * Flip inertia matrix around an axis.  This isn't efficient, but it works!
      */
-    SpatialInertia flipAlongAxis(CoordinateAxis axis) const
+    SpatialInertia flipAlongAxis(ori::CoordinateAxis axis) const
     {
       Mat4<T> P = getPseudoInertia();
       Mat4<T> X = Mat4<T>::Identity();
-      if (axis == CoordinateAxis::X)
+      if (axis == ori::CoordinateAxis::X)
         X(0, 0) = -1;
-      else if (axis == CoordinateAxis::Y)
+      else if (axis == ori::CoordinateAxis::Y)
         X(1, 1) = -1;
-      else if (axis == CoordinateAxis::Z)
+      else if (axis == ori::CoordinateAxis::Z)
         X(2, 2) = -1;
       P = X * P * X;
       return SpatialInertia(P);

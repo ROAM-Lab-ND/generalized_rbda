@@ -24,7 +24,7 @@ namespace grbda
                 node->Xa_ = node->Xup_.toAbsolute();
             }
 
-            node->avp_ = generalMotionCrossProduct(node->v_, node->vJ());
+            node->avp_ = spatial::generalMotionCrossProduct(node->v_, node->vJ());
         }
 
         // TODO(@MatthewChignoli): Should we do contact kinematics every time we do kinematics?
@@ -44,8 +44,8 @@ namespace grbda
             const SVec<double> v_body = node->getVelocityForBody(body);
 
             cp.position_ = Xa.inverseTransformPoint(cp.local_offset_);
-            cp.velocity_ = spatialToLinearVelocity(Xa.inverseTransformMotionVector(v_body),
-                                                   cp.position_);
+            cp.velocity_ = spatial::spatialToLinearVelocity(Xa.inverseTransformMotionVector(v_body),
+                                                            cp.position_);
         }
     }
 
@@ -145,7 +145,8 @@ namespace grbda
             }
 
             node->f_ = node->I_ * node->a_ +
-                       generalForceCrossProduct(node->v_, DVec<double>(node->I_ * node->v_));
+                       spatial::generalForceCrossProduct(node->v_,
+                                                         DVec<double>(node->I_ * node->v_));
         }
 
         // Account for external forces in bias force

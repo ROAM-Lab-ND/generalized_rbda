@@ -15,16 +15,16 @@ namespace grbda
         {
             // Link A
             const std::string linkA_name = "link-A-" + std::to_string(i);
-            const auto linkA_Xtree = randomSpatialRotation<double>();
+            const auto linkA_Xtree = spatial::randomSpatialRotation<double>();
             const auto linkA_inertia = randomLinkSpatialInertia();
-            CoordinateAxis linkA_joint_axis = ori::randomCoordinateAxis<double>();
+            ori::CoordinateAxis linkA_joint_axis = ori::randomCoordinateAxis<double>();
             auto linkA = model.registerBody(linkA_name, linkA_inertia, parent_name, linkA_Xtree);
 
             // Link B
             const std::string linkB_name = "link-B-" + std::to_string(i);
-            const auto linkB_Xtree = randomSpatialRotation<double>();
+            const auto linkB_Xtree = spatial::randomSpatialRotation<double>();
             const auto linkB_inertia = randomLinkSpatialInertia();
-            CoordinateAxis linkB_joint_axis = ori::randomCoordinateAxis<double>();
+            ori::CoordinateAxis linkB_joint_axis = ori::randomCoordinateAxis<double>();
             auto linkB = model.registerBody(linkB_name, linkB_inertia, linkA_name, linkB_Xtree);
 
             // Cluster
@@ -70,9 +70,9 @@ namespace grbda
         const double br = 3.;
 
         // Uniform quantities
-        CoordinateAxis axis = CoordinateAxis::Z;
+        ori::CoordinateAxis axis = ori::CoordinateAxis::Z;
 
-        const SpatialTransform Xtree2 = SpatialTransform(I3, Vec3<double>(l, 0, 0.));
+        const spatial::Transform Xtree2 = spatial::Transform(I3, Vec3<double>(l, 0, 0.));
 
         Mat3<double> link_inertia;
         link_inertia << 0., 0., 0., 0., 0., 0., 0., 0., I;
@@ -87,7 +87,7 @@ namespace grbda
         std::string parent_name = "ground";
         for (size_t i(0); i < N / 2; i++)
         {
-            const SpatialTransform Xtree1 = i == 0 ? SpatialTransform(I3, z3) : Xtree2;
+            const spatial::Transform Xtree1 = i == 0 ? spatial::Transform(I3, z3) : Xtree2;
 
             // Link A
             const std::string linkA_name = "link-A-" + std::to_string(i);

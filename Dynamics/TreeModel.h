@@ -25,10 +25,10 @@ namespace grbda
         int getNumActuatedDegreesOfFreedom() const { return velocity_index_ - unactuated_dofs_; }
         const int& getNumEndEffectors() const { return num_end_effectors_; }
 
-        virtual Vec3<double> getPosition(const string &body_name) = 0;
-        virtual Mat3<double> getOrientation(const string &body_name) = 0;
-        virtual Vec3<double> getLinearVelocity(const string &body_name) = 0;
-        virtual Vec3<double> getAngularVelocity(const string &body_name) = 0;
+        virtual Vec3<double> getPosition(const std::string &body_name) = 0;
+        virtual Mat3<double> getOrientation(const std::string &body_name) = 0;
+        virtual Vec3<double> getLinearVelocity(const std::string &body_name) = 0;
+        virtual Vec3<double> getAngularVelocity(const std::string &body_name) = 0;
 
         virtual DMat<double> getMassMatrix() = 0;
         virtual DVec<double> getBiasForceVector() = 0;
@@ -59,7 +59,7 @@ namespace grbda
         virtual DMat<double> inverseOperationalSpaceInertiaMatrix() = 0;
 
         // The test force is expressed in the local frame
-        virtual double applyTestForce(const string &contact_point_name,
+        virtual double applyTestForce(const std::string &contact_point_name,
                                       const Vec3<double> &force, DVec<double> &dstate_out) = 0;
 
         const TreeNodePtr node(const int index) const { return nodes_[index]; }

@@ -5,7 +5,7 @@ namespace grbda
     namespace GeneralizedJoints
     {
 
-        Revolute::Revolute(const Body &body, CoordinateAxis joint_axis)
+        Revolute::Revolute(const Body &body, ori::CoordinateAxis joint_axis)
             : Base(1, 1, 1, false, false), body_(body)
         {
             single_joints_.emplace_back(new Joints::Revolute(joint_axis));
@@ -32,7 +32,7 @@ namespace grbda
         }
 
         void Revolute::computeSpatialTransformFromParentToCurrentCluster(
-            GeneralizedSpatialTransform &Xup) const
+            spatial::GeneralizedTransform &Xup) const
         {
 #ifdef DEBUG_MODE
             if (Xup.getNumOutputBodies() != 1)

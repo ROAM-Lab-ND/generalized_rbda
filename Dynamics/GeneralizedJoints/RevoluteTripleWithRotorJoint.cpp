@@ -94,16 +94,19 @@ namespace grbda
 
             S_.topLeftCorner<18, 3>() = X_inter_S_span_.topLeftCorner<18, 3>();
 
-            X_inter_S_span_ring_.block<6, 1>(6, 0) = -generalMotionCrossMatrix(v2_relative1) * X21_S1;
-            X_inter_S_span_ring_.block<6, 1>(12, 0) = -generalMotionCrossMatrix(v3_relative1) * X31_S1;
-            X_inter_S_span_ring_.block<6, 1>(12, 1) = -generalMotionCrossMatrix(v3_relative2) * X32_S2;
+            X_inter_S_span_ring_.block<6, 1>(6, 0) =
+                -spatial::generalMotionCrossMatrix(v2_relative1) * X21_S1;
+            X_inter_S_span_ring_.block<6, 1>(12, 0) =
+                -spatial::generalMotionCrossMatrix(v3_relative1) * X31_S1;
+            X_inter_S_span_ring_.block<6, 1>(12, 1) =
+                -spatial::generalMotionCrossMatrix(v3_relative2) * X32_S2;
 
             vJ_ = X_inter_S_span_ * qd;
             cJ_ = X_inter_S_span_ring_ * qd;
         }
 
         void RevoluteTripleWithRotor::computeSpatialTransformFromParentToCurrentCluster(
-            GeneralizedSpatialTransform &Xup) const
+            spatial::GeneralizedTransform &Xup) const
         {
 #ifdef DEBUG_MODE
             if (Xup.getNumOutputBodies() != 4)

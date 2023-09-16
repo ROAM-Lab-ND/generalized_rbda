@@ -19,7 +19,7 @@ namespace grbda
 
   namespace spatial
   {
-    using namespace ori;
+
     enum class JointType
     {
       Prismatic,
@@ -33,18 +33,18 @@ namespace grbda
      * theta about axis.
      */
     template <typename T>
-    SpatialTransform spatialRotation(CoordinateAxis axis, T theta)
+    Transform spatialRotation(ori::CoordinateAxis axis, T theta)
     {
       RotMat<T> E = coordinateRotation(axis, theta);
-      return SpatialTransform(E);
+      return Transform(E);
     }
 
     template <typename T>
-    SpatialTransform randomSpatialRotation()
+    Transform randomSpatialRotation()
     {
       Vec3<T> r = Vec3<T>::Random();
       Mat3<T> E = ori::rpyToRotMat(Vec3<T>::Random());
-      return SpatialTransform(E, r);
+      return Transform(E, r);
     }
 
     /*!
@@ -245,7 +245,7 @@ namespace grbda
       Mat6<typename T::Scalar> X = Mat6<typename T::Scalar>::Zero();
       X.template topLeftCorner<3, 3>() = R;
       X.template bottomRightCorner<3, 3>() = R;
-      X.template bottomLeftCorner<3, 3>() = -R * vectorToSkewMat(r);
+      X.template bottomLeftCorner<3, 3>() = -R * ori::vectorToSkewMat(r);
       return X;
     }
 
@@ -271,7 +271,7 @@ namespace grbda
                     "Must have 6x6 matrix");
       RotMat<typename T::Scalar> R = rotationFromSXform(X);
       Vec3<typename T::Scalar> r =
-          -matToSkewVec(R.transpose() * X.template bottomLeftCorner<3, 3>());
+          -ori::matToSkewVec(R.transpose() * X.template bottomLeftCorner<3, 3>());
       return r;
     }
 
@@ -285,7 +285,7 @@ namespace grbda
                     "Must have 6x6 matrix");
       RotMat<typename T::Scalar> R = rotationFromSXform(X);
       Vec3<typename T::Scalar> r =
-          -matToSkewVec(R.transpose() * X.template bottomLeftCorner<3, 3>());
+          -ori::matToSkewVec(R.transpose() * X.template bottomLeftCorner<3, 3>());
       Mat6<typename T::Scalar> Xinv = createSXform(R.transpose(), -R * r);
       return Xinv;
     }
@@ -294,13 +294,13 @@ namespace grbda
      * Compute joint motion subspace vector
      */
     template <typename T>
-    SVec<T> jointMotionSubspace(JointType joint, CoordinateAxis axis)
+    SVec<T> jointMotionSubspace(JointType joint, ori::CoordinateAxis axis)
     {
       Vec3<T> v(0, 0, 0);
       SVec<T> phi = SVec<T>::Zero();
-      if (axis == CoordinateAxis::X)
+      if (axis == ori::CoordinateAxis::X)
         v(0) = 1;
-      else if (axis == CoordinateAxis::Y)
+      else if (axis == ori::CoordinateAxis::Y)
         v(1) = 1;
       else
         v(2) = 1;
@@ -319,9 +319,9 @@ namespace grbda
      * Compute joint transformation
      */
     template <typename T>
-    SpatialTransform jointXform(JointType joint, CoordinateAxis axis, T q)
+    Transform jointXform(JointType joint, ori::CoordinateAxis axis, T q)
     {
-      SpatialTransform X;
+      Transform X;
       if (joint == JointType::Revolute)
       {
         X = spatialRotation(axis, q);
@@ -329,13 +329,13 @@ namespace grbda
       else if (joint == JointType::Prismatic)
       {
         Vec3<T> v(0, 0, 0);
-        if (axis == CoordinateAxis::X)
+        if (axis == ori::CoordinateAxis::X)
           v(0) = q;
-        else if (axis == CoordinateAxis::Y)
+        else if (axis == ori::CoordinateAxis::Y)
           v(1) = q;
-        else if (axis == CoordinateAxis::Z)
+        else if (axis == ori::CoordinateAxis::Z)
           v(2) = q;
-        X = SpatialTransform(RotMat<T>::Identity(), v);
+        X = Transform(RotMat<T>::Identity(), v);
       }
       else
       {

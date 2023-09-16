@@ -7,9 +7,6 @@
 namespace grbda
 {
 
-    using namespace ori;
-    using namespace spatial;
-
     using ReflectedInertiaTreeNodePtr = std::shared_ptr<ReflectedInertiaTreeNode>;
 
     enum class RotorInertiaApproximation
@@ -42,19 +39,19 @@ namespace grbda
 
         void setIndependentStates(const DVec<double> &y, const DVec<double> &yd);
 
-        Vec3<double> getPosition(const string &body_name) override
+        Vec3<double> getPosition(const std::string &body_name) override
         {
             throw std::runtime_error("Not implemented");
         }
-        Mat3<double> getOrientation(const string &body_name) override
+        Mat3<double> getOrientation(const std::string &body_name) override
         {
             throw std::runtime_error("Not implemented");
         }
-        Vec3<double> getLinearVelocity(const string &body_name) override
+        Vec3<double> getLinearVelocity(const std::string &body_name) override
         {
             throw std::runtime_error("Not implemented");
         }
-        Vec3<double> getAngularVelocity(const string &body_name) override
+        Vec3<double> getAngularVelocity(const std::string &body_name) override
         {
             throw std::runtime_error("Not implemented");
         }
@@ -66,7 +63,7 @@ namespace grbda
         DVec<double> inverseDynamics(const DVec<double> &ydd) override;
         DMat<double> inverseOperationalSpaceInertiaMatrix() override;
 
-        double applyTestForce(const string &contact_point_name,
+        double applyTestForce(const std::string &contact_point_name,
                               const Vec3<double> &force, DVec<double> &dstate_out) override;
 
         DMat<double> getMassMatrix() override;
@@ -86,9 +83,9 @@ namespace grbda
         DMat<double> inverseOpSpaceInertiaEFPA(bool use_reflected_inertia);
         DMat<double> inverseOpSpaceInertiaHinv();
 
-        double applyTestForceEFPA(const Vec3<double> &force, const string &contact_point_name,
+        double applyTestForceEFPA(const Vec3<double> &force, const std::string &contact_point_name,
                                   DVec<double> &dstate_out, bool use_reflected_inertia);
-        double applyTestForceHinv(const Vec3<double> &force, const string &contact_point_name,
+        double applyTestForceHinv(const Vec3<double> &force, const std::string &contact_point_name,
                                   DVec<double> &dstate_out);
 
         void updateForcePropagators(bool use_reflected_inertia);

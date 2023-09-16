@@ -13,14 +13,14 @@ namespace grbda
         {
         public:
             Generic(const std::vector<Body> &bodies, const std::vector<JointPtr> &joints,
-                    shared_ptr<LoopConstraint::Base> loop_constraint);
+                    std::shared_ptr<LoopConstraint::Base> loop_constraint);
 
             GeneralizedJointTypes type() const override { return GeneralizedJointTypes::Generic; }
 
             void updateKinematics(const JointState &joint_state) override;
 
             void computeSpatialTransformFromParentToCurrentCluster(
-                GeneralizedSpatialTransform &Xup) const override;
+                spatial::GeneralizedTransform &Xup) const override;
 
         private:
             void extractConnectivity();
