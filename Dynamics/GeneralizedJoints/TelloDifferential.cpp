@@ -70,13 +70,13 @@ namespace grbda
 			link1_joint_ = single_joints_.emplace_back(new Joints::Revolute(module.link1_axis_));
 			link2_joint_ = single_joints_.emplace_back(new Joints::Revolute(module.link2_axis_));
 
-			X_inter_S_span_ = DMat<double>::Zero(24, 4);
-			X_inter_S_span_ring_ = DMat<double>::Zero(24, 4);
+			X_intra_S_span_ = DMat<double>::Zero(24, 4);
+			X_intra_S_span_ring_ = DMat<double>::Zero(24, 4);
 
-			X_inter_S_span_.block<6, 1>(0, 0) = rotor1_joint_->S();
-			X_inter_S_span_.block<6, 1>(6, 1) = rotor2_joint_->S();
-			X_inter_S_span_.block<6, 1>(12, 2) = link1_joint_->S();
-			X_inter_S_span_.block<6, 1>(18, 3) = link2_joint_->S();
+			X_intra_S_span_.block<6, 1>(0, 0) = rotor1_joint_->S();
+			X_intra_S_span_.block<6, 1>(6, 1) = rotor2_joint_->S();
+			X_intra_S_span_.block<6, 1>(12, 2) = link1_joint_->S();
+			X_intra_S_span_.block<6, 1>(18, 3) = link2_joint_->S();
 
 			S_.block<6, 1>(0, 0) = gear_ratio_ * rotor1_joint_->S();
 			S_.block<6, 1>(6, 1) = gear_ratio_ * rotor2_joint_->S();
@@ -101,8 +101,8 @@ namespace grbda
 			const DVec<double> v2_relative = S2 * q_dot[3];
 			const DMat<double> v2_rel_crm = spatial::generalMotionCrossMatrix(v2_relative);
 
-			X_inter_S_span_.block<6, 1>(18, 2) = X21_S1;
-			X_inter_S_span_ring_.block<6, 1>(18, 2) = -v2_rel_crm * X21_S1;
+			X_intra_S_span_.block<6, 1>(18, 2) = X21_S1;
+			X_intra_S_span_ring_.block<6, 1>(18, 2) = -v2_rel_crm * X21_S1;
 
 			const DMat<double> G = loop_constraint_->G();
 			S_.block<6, 1>(12, 0) = G(2, 0) * S1;
@@ -110,8 +110,8 @@ namespace grbda
 			S_.block<6, 1>(18, 0) = G(2, 0) * X21_S1 + G(3, 0) * S2;
 			S_.block<6, 1>(18, 1) = G(2, 1) * X21_S1 + G(3, 1) * S2;
 
-			vJ_ = X_inter_S_span_ * q_dot;
-			cJ_ = X_inter_S_span_ring_ * q_dot + X_inter_S_span_ * loop_constraint_->g();
+			vJ_ = X_intra_S_span_ * q_dot;
+			cJ_ = X_intra_S_span_ring_ * q_dot + X_intra_S_span_ * loop_constraint_->g();
 		}
 
 		void TelloDifferential::computeSpatialTransformFromParentToCurrentCluster(

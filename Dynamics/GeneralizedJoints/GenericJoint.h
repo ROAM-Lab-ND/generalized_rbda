@@ -30,9 +30,9 @@ namespace grbda
 
             const std::vector<Body> bodies_;
 
-            DMat<double> S_spanning_tree_;
-            DMat<double> Xup_spanning_tree_;
-            DMat<double> Xup_ring_spanning_tree_;
+            DMat<double> S_spanning_;
+            DMat<double> X_intra_;
+            DMat<double> X_intra_ring_;
             DMat<bool> connectivity_;
         };
 

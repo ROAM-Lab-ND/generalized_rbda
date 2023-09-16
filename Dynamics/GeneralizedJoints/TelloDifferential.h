@@ -80,8 +80,8 @@ namespace grbda
             const Body link1_;
             const Body link2_;
 
-            DMat<double> X_inter_S_span_;
-            DMat<double> X_inter_S_span_ring_;
+            DMat<double> X_intra_S_span_;
+            DMat<double> X_intra_S_span_ring_;
 
             const double gear_ratio_;
         };
