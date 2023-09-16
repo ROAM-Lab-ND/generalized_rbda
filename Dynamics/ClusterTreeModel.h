@@ -33,12 +33,20 @@ namespace grbda
         }
         ~ClusterTreeModel() {}
 
+        // The standard process for appending a cluster to the tree is to register all the bodies 
+        // in  given cluster and then append them as a cluster by specifying the type of cluster 
+        // joint that connects them
         Body registerBody(const string name, const SpatialInertia<double> inertia,
                           const string parent_name, const SpatialTransform Xtree);
-        void appendRegisteredBodiesAsCluster(const string name,
-                                             shared_ptr<GeneralizedJoints::Base> joint);
 
-        // This function can be used when appending individual bodies to the model
+        template <typename T, typename... Args>
+        void appendRegisteredBodiesAsCluster(const string name, Args&&... args)
+        {
+            auto cluster_joint = make_shared<T>(args...);
+            appendRegisteredBodiesAsCluster(name, cluster_joint);
+        }
+
+        // Alternatively, this function can be used when appending individual bodies to the model
         template <typename T, typename... Args>
         void appendBody(const string name, const SpatialInertia<double> inertia,
                         const string parent_name, const SpatialTransform Xtree, Args&&... args)
@@ -123,6 +131,9 @@ namespace grbda
         DVec<double> getBiasForceVector() override;
 
     protected:
+        void appendRegisteredBodiesAsCluster(const string name,
+                                             shared_ptr<GeneralizedJoints::Base> joint);
+
         void checkValidParentClusterForBodiesInCluster(const ClusterTreeNodePtr cluster);
         void checkValidParentClusterForBodiesInCluster(const int cluster_index);
         void checkValidParentClusterForBodiesInCluster(const string &cluster_nam);

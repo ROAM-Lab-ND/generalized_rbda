@@ -5,6 +5,8 @@ namespace grbda
 
     ClusterTreeModel MiniCheetah::buildClusterTreeModel() const
     {
+        using namespace GeneralizedJoints;
+
         ClusterTreeModel model;
 
         const Mat3<double> I3 = Mat3<double>::Identity();
@@ -41,11 +43,13 @@ namespace grbda
                                                 abad_parent_name, xtree_abad);
             Body abad_rotor = model.registerBody(abad_rotor_name, abad_rotor_inertia,
                                                  abad_parent_name, xtree_abad_rotor);
+            model.appendRegisteredBodiesAsCluster<RevoluteWithRotor>(abad_name,
+                                                                     abad_link, abad_rotor,
+                                                                     CoordinateAxis::X,
+                                                                     CoordinateAxis::X,
+                                                                     _abadGearRatio);
 
-            auto abad_generalized_joint = std::make_shared<GeneralizedJoints::RevoluteWithRotor>(abad_link, abad_rotor, CoordinateAxis::X, CoordinateAxis::X, _abadGearRatio);
-            model.appendRegisteredBodiesAsCluster(abad_name, abad_generalized_joint);
-
-            // Hp Joint
+            // Hip Joint
             const std::string hip_parent_name = abad_link_name;
             const std::string hip_name = withLegSigns("hip", legID);
             const std::string hip_link_name = withLegSigns("hip_link", legID);
@@ -64,9 +68,11 @@ namespace grbda
                                                hip_parent_name, xtree_hip);
             Body hip_rotor = model.registerBody(hip_rotor_name, hip_rotor_inertia,
                                                 hip_parent_name, xtree_hip_rotor);
-
-            auto hip_generalized_joint = std::make_shared<GeneralizedJoints::RevoluteWithRotor>(hip_link, hip_rotor, CoordinateAxis::Y, CoordinateAxis::Y, _hipGearRatio);
-            model.appendRegisteredBodiesAsCluster(hip_name, hip_generalized_joint);
+            model.appendRegisteredBodiesAsCluster<RevoluteWithRotor>(hip_name,
+                                                                     hip_link, hip_rotor,
+                                                                     CoordinateAxis::Y,
+                                                                     CoordinateAxis::Y,
+                                                                     _hipGearRatio);
 
             const std::string hip_contact_name = withLegSigns("hip_contact", legID);
             model.appendContactPoint(hip_link_name, Vec3<double>(0, 0, 0), hip_contact_name);
@@ -93,9 +99,11 @@ namespace grbda
                                                 knee_parent_name, xtree_knee);
             Body knee_rotor = model.registerBody(knee_rotor_name, knee_rotor_inertia,
                                                  knee_parent_name, xtree_knee_rotor);
-
-            auto knee_generalized_joint = std::make_shared<GeneralizedJoints::RevoluteWithRotor>(knee_link, knee_rotor, CoordinateAxis::Y, CoordinateAxis::Y, _kneeGearRatio);
-            model.appendRegisteredBodiesAsCluster(knee_name, knee_generalized_joint);
+            model.appendRegisteredBodiesAsCluster<RevoluteWithRotor>(knee_name,
+                                                                     knee_link, knee_rotor,
+                                                                     CoordinateAxis::Z,
+                                                                     CoordinateAxis::Z,
+                                                                     _kneeGearRatio);
 
             const std::string foot_contact_name = withLegSigns("foot_contact", legID);
             const Vec3<double> foot_contact_offset = withLegSigns(Vec3<double>(0, -_kneeLinkY_offset, -_kneeLinkLength), legID);

@@ -6,6 +6,8 @@ namespace grbda
     template <size_t N>
     ClusterTreeModel RevolutePairChain<N>::buildRandomClusterTreeModel() const
     {
+        using namespace GeneralizedJoints;
+        
         ClusterTreeModel model{};
 
         std::string parent_name = "ground";
@@ -27,10 +29,8 @@ namespace grbda
 
             // Cluster
             const std::string cluster_name = "cluster-" + std::to_string(i);
-            auto joint = std::make_shared<GeneralizedJoints::RevolutePair>(
-                linkA, linkB, linkA_joint_axis, linkB_joint_axis);
-
-            model.appendRegisteredBodiesAsCluster(cluster_name, joint);
+            model.appendRegisteredBodiesAsCluster<RevolutePair>(
+                cluster_name, linkA, linkB, linkA_joint_axis, linkB_joint_axis);
 
             // Contact points
             const std::string cpA_name = "cp-A-" + std::to_string(i);
@@ -50,6 +50,8 @@ namespace grbda
     template <size_t N>
     ClusterTreeModel RevolutePairChain<N>::buildUniformClusterTreeModel() const
     {
+        using namespace GeneralizedJoints;
+        
         ClusterTreeModel model{};
 
         Mat3<double> I3 = Mat3<double>::Identity();
@@ -99,10 +101,8 @@ namespace grbda
 
             // Cluster
             const std::string cluster_name = "cluster-" + std::to_string(i);
-            auto joint = std::make_shared<GeneralizedJoints::RevolutePair>(
-                linkA, linkB, axis, axis);
-
-            model.appendRegisteredBodiesAsCluster(cluster_name, joint);
+            model.appendRegisteredBodiesAsCluster<RevolutePair>(
+                cluster_name, linkA, linkB, axis, axis);
 
             parent_name = linkB_name;
         }

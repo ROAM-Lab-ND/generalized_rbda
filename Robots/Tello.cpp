@@ -5,6 +5,8 @@ namespace grbda
 
     ClusterTreeModel Tello::buildClusterTreeModel() const
     {
+        using namespace GeneralizedJoints;
+
         ClusterTreeModel model{};
 
         // Set gravity in z direction
@@ -55,9 +57,9 @@ namespace grbda
 
             // Hip clamp cluster
             const std::string hip_clamp_cluster_name = side + "-hip-clamp";
-            auto hip_clamp_generalized_joint = std::make_shared<GeneralizedJoints::RevoluteWithRotor>(
-                hip_clamp, hip_clamp_rotor, CoordinateAxis::Z, CoordinateAxis::Z, gear_ratio);
-            model.appendRegisteredBodiesAsCluster(hip_clamp_cluster_name, hip_clamp_generalized_joint);
+            model.appendRegisteredBodiesAsCluster<RevoluteWithRotor>(
+                hip_clamp_cluster_name, hip_clamp, hip_clamp_rotor,
+                CoordinateAxis::Z, CoordinateAxis::Z, gear_ratio);
 
             // Hip differential rotor 1
             const SpatialTransform hip_rotor_1_Xtree = i == 0 ? SpatialTransform(R_left_hip_rotor_1,
@@ -109,11 +111,10 @@ namespace grbda
 
             // Hip differential cluster
             const std::string hip_differential_cluster_name = side + "-hip-differential";
-            auto hip_differential_generalized_joint = std::make_shared<GeneralizedJoints::TelloHipDifferential>(
-                hip_rotor_1, hip_rotor_2, gimbal, thigh, CoordinateAxis::Z, CoordinateAxis::Z,
-                CoordinateAxis::X, CoordinateAxis::Y, gear_ratio);
-            model.appendRegisteredBodiesAsCluster(hip_differential_cluster_name,
-                                                  hip_differential_generalized_joint);
+            model.appendRegisteredBodiesAsCluster<TelloHipDifferential>(
+                hip_differential_cluster_name, hip_rotor_1, hip_rotor_2, gimbal, thigh,
+                CoordinateAxis::Z, CoordinateAxis::Z, CoordinateAxis::X, CoordinateAxis::Y,
+                gear_ratio);
 
             // Knee-ankle differential rotor 1
             const Mat3<double> R_knee_ankle_rotor_1 = i == 0 ? R_left_knee_ankle_rotor_1
@@ -169,12 +170,11 @@ namespace grbda
 
             // Knee-ankle differential cluster
             const std::string knee_ankle_differential_cluster_name = side + "-knee-ankle-differential";
-            auto knee_ankle_differential_generalized_joint = std::make_shared<GeneralizedJoints::TelloKneeAnkleDifferential>(
+            model.appendRegisteredBodiesAsCluster<TelloKneeAnkleDifferential>(
+                knee_ankle_differential_cluster_name,
                 knee_ankle_rotor_1, knee_ankle_rotor_2, shin, foot,
                 CoordinateAxis::Z, CoordinateAxis::Z, CoordinateAxis::Y, CoordinateAxis::Y,
                 gear_ratio);
-            model.appendRegisteredBodiesAsCluster(knee_ankle_differential_cluster_name,
-                                                  knee_ankle_differential_generalized_joint);
 
             // Append contact points for the feet
             const std::string toe_contact_name = side + "-toe_contact";

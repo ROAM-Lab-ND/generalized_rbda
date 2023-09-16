@@ -7,6 +7,8 @@ using namespace grbda;
 
 inline ClusterTreeModel extractGenericJointModel(const ClusterTreeModel &model)
 {
+    using namespace GeneralizedJoints;
+
     ClusterTreeModel generic_model{};
 
     for (const auto &cluster : model.clusters())
@@ -30,10 +32,8 @@ inline ClusterTreeModel extractGenericJointModel(const ClusterTreeModel &model)
 
         // Extract Loop Constraint and Append Cluster
         std::shared_ptr<LoopConstraint::Base> constraint = cluster->joint_->cloneLoopConstraint();
-        std::shared_ptr<GeneralizedJoints::Generic> generic_cluster_joint =
-            std::make_shared<GeneralizedJoints::Generic>(bodies, joints, constraint);
-
-        generic_model.appendRegisteredBodiesAsCluster(cluster->name_, generic_cluster_joint);
+        generic_model.appendRegisteredBodiesAsCluster<Generic>(cluster->name_, bodies,
+                                                               joints, constraint);
     }
 
     return generic_model;
