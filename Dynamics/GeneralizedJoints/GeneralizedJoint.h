@@ -146,10 +146,10 @@ namespace grbda
             Body rotor2_;
             Body link1_;
             Body link2_;
-            CoordinateAxis rotor1_axis_;
-            CoordinateAxis rotor2_axis_;
-            CoordinateAxis link1_axis_;
-            CoordinateAxis link2_axis_;
+            ori::CoordinateAxis rotor1_axis_;
+            ori::CoordinateAxis rotor2_axis_;
+            ori::CoordinateAxis link1_axis_;
+            ori::CoordinateAxis link2_axis_;
             double gear_ratio_;
         };
 
