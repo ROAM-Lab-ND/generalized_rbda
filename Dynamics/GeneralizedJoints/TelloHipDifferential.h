@@ -13,13 +13,8 @@ namespace grbda
         class TelloHipDifferential : public TelloDifferential
         {
         public:
-            TelloHipDifferential(Body &rotor_1, Body &rotor_2, Body &link_1, Body &link_2,
-                                 ori::CoordinateAxis rotor_axis_1, ori::CoordinateAxis rotor_axis_2,
-                                 ori::CoordinateAxis joint_axis_1, ori::CoordinateAxis joint_axis_2,
-                                 double gear_ratio)
-                : TelloDifferential(rotor_1, rotor_2, link_1, link_2,
-                                    rotor_axis_1, rotor_axis_2, joint_axis_1, joint_axis_2,
-                                    gear_ratio)
+            TelloHipDifferential(TelloDifferentialModule &module)
+            : TelloDifferential(module)
             {
                 CasadiHelperFunctions jacobian_helpers(thd_jacobian, thd_jacobian_sparsity_out,
                                                        thd_jacobian_work);
