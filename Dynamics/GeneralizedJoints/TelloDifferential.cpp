@@ -61,29 +61,25 @@ namespace grbda
 	namespace GeneralizedJoints
 	{
 
-		TelloDifferential::TelloDifferential(
-			Body &rotor_1, Body &rotor_2, Body &link_1, Body &link_2,
-			ori::CoordinateAxis rotor_axis_1, ori::CoordinateAxis rotor_axis_2,
-			ori::CoordinateAxis joint_axis_1, ori::CoordinateAxis joint_axis_2,
-			double gear_ratio)
-			: Base(4, 4, 2), rotor_1_(rotor_1), rotor_2_(rotor_2),
-			  link_1_(link_1), link_2_(link_2), gear_ratio_(gear_ratio)
+		TelloDifferential::TelloDifferential(TelloDifferentialModule &module)
+		: Base(4, 4, 2), rotor1_(module.rotor1_), rotor2_(module.rotor2_),
+          link1_(module.link1_), link2_(module.link2_), gear_ratio_(module.gear_ratio_)
 		{
-			rotor_1_joint_ = single_joints_.emplace_back(new Joints::Revolute(rotor_axis_1));
-			rotor_2_joint_ = single_joints_.emplace_back(new Joints::Revolute(rotor_axis_2));
-			link_1_joint_ = single_joints_.emplace_back(new Joints::Revolute(joint_axis_1));
-			link_2_joint_ = single_joints_.emplace_back(new Joints::Revolute(joint_axis_2));
+			rotor1_joint_ = single_joints_.emplace_back(new Joints::Revolute(module.rotor1_axis_));
+			rotor2_joint_ = single_joints_.emplace_back(new Joints::Revolute(module.rotor2_axis_));
+			link1_joint_ = single_joints_.emplace_back(new Joints::Revolute(module.link1_axis_));
+			link2_joint_ = single_joints_.emplace_back(new Joints::Revolute(module.link2_axis_));
 
 			X_inter_S_span_ = DMat<double>::Zero(24, 4);
 			X_inter_S_span_ring_ = DMat<double>::Zero(24, 4);
 
-			X_inter_S_span_.block<6, 1>(0, 0) = rotor_1_joint_->S();
-			X_inter_S_span_.block<6, 1>(6, 1) = rotor_2_joint_->S();
-			X_inter_S_span_.block<6, 1>(12, 2) = link_1_joint_->S();
-			X_inter_S_span_.block<6, 1>(18, 3) = link_2_joint_->S();
+			X_inter_S_span_.block<6, 1>(0, 0) = rotor1_joint_->S();
+			X_inter_S_span_.block<6, 1>(6, 1) = rotor2_joint_->S();
+			X_inter_S_span_.block<6, 1>(12, 2) = link1_joint_->S();
+			X_inter_S_span_.block<6, 1>(18, 3) = link2_joint_->S();
 
-			S_.block<6, 1>(0, 0) = gear_ratio * rotor_1_joint_->S();
-			S_.block<6, 1>(6, 1) = gear_ratio * rotor_2_joint_->S();
+			S_.block<6, 1>(0, 0) = gear_ratio_ * rotor1_joint_->S();
+			S_.block<6, 1>(6, 1) = gear_ratio_ * rotor2_joint_->S();
 		}
 
 		void TelloDifferential::updateKinematics(const JointState &joint_state)
@@ -92,16 +88,16 @@ namespace grbda
 			const DVec<double> &q = spanning_joint_state.position;
 			const DVec<double> &q_dot = spanning_joint_state.velocity;
 
-			rotor_1_joint_->updateKinematics(q.segment<1>(0), q_dot.segment<1>(0));
-			rotor_2_joint_->updateKinematics(q.segment<1>(1), q_dot.segment<1>(1));
-			link_1_joint_->updateKinematics(q.segment<1>(2), q_dot.segment<1>(2));
-			link_2_joint_->updateKinematics(q.segment<1>(3), q_dot.segment<1>(3));
+			rotor1_joint_->updateKinematics(q.segment<1>(0), q_dot.segment<1>(0));
+			rotor2_joint_->updateKinematics(q.segment<1>(1), q_dot.segment<1>(1));
+			link1_joint_->updateKinematics(q.segment<1>(2), q_dot.segment<1>(2));
+			link2_joint_->updateKinematics(q.segment<1>(3), q_dot.segment<1>(3));
 
-			X21_ = link_2_joint_->XJ() * link_2_.Xtree_;
+			X21_ = link2_joint_->XJ() * link2_.Xtree_;
 
-			const DMat<double> &S1 = link_1_joint_->S();
+			const DMat<double> &S1 = link1_joint_->S();
 			const DMat<double> X21_S1 = X21_.transformMotionSubspace(S1);
-			const DMat<double> &S2 = link_2_joint_->S();
+			const DMat<double> &S2 = link2_joint_->S();
 			const DVec<double> v2_relative = S2 * q_dot[3];
 			const DMat<double> v2_rel_crm = spatial::generalMotionCrossMatrix(v2_relative);
 
@@ -126,10 +122,10 @@ namespace grbda
 				throw std::runtime_error("[TelloDifferential] Xup must have 24 rows");
 #endif
 
-			Xup[0] = rotor_1_joint_->XJ() * rotor_1_.Xtree_;
-			Xup[1] = rotor_2_joint_->XJ() * rotor_2_.Xtree_;
-			Xup[2] = link_1_joint_->XJ() * link_1_.Xtree_;
-			Xup[3] = link_2_joint_->XJ() * link_2_.Xtree_ * Xup[2];
+			Xup[0] = rotor1_joint_->XJ() * rotor1_.Xtree_;
+			Xup[1] = rotor2_joint_->XJ() * rotor2_.Xtree_;
+			Xup[2] = link1_joint_->XJ() * link1_.Xtree_;
+			Xup[3] = link2_joint_->XJ() * link2_.Xtree_ * Xup[2];
 		}
 
 		JointState TelloDifferential::randomJointState() const
@@ -159,8 +155,8 @@ namespace grbda
 		{
 			std::vector<std::tuple<Body, JointPtr, DMat<double>>> bodies_joints_and_ref_inertias_;
 			const Mat2<double> Z = Mat2<double>::Zero();
-			bodies_joints_and_ref_inertias_.push_back(std::make_tuple(link_1_, link_1_joint_, Z));
-			bodies_joints_and_ref_inertias_.push_back(std::make_tuple(link_2_, link_2_joint_, Z));
+			bodies_joints_and_ref_inertias_.push_back(std::make_tuple(link1_, link1_joint_, Z));
+			bodies_joints_and_ref_inertias_.push_back(std::make_tuple(link2_, link2_joint_, Z));
 			return bodies_joints_and_ref_inertias_;
 		}
 

@@ -51,10 +51,7 @@ namespace grbda
         class TelloDifferential : public Base
         {
         public:
-            TelloDifferential(Body &rotor_1, Body &rotor_2, Body &link_1, Body &link_2,
-                              ori::CoordinateAxis rotor_axis_1, ori::CoordinateAxis rotor_axis_2,
-                              ori::CoordinateAxis joint_axis_1, ori::CoordinateAxis joint_axis_2,
-                              double gear_ratio);
+            TelloDifferential(TelloDifferentialModule &module);
             virtual ~TelloDifferential() {}
 
             void updateKinematics(const JointState &joint_state) override;
@@ -71,17 +68,17 @@ namespace grbda
             std::shared_ptr<LoopConstraint::TelloDifferential> tello_constraint_;
 
         private:
-            JointPtr rotor_1_joint_;
-            JointPtr rotor_2_joint_;
-            JointPtr link_1_joint_;
-            JointPtr link_2_joint_;
+            JointPtr rotor1_joint_;
+            JointPtr rotor2_joint_;
+            JointPtr link1_joint_;
+            JointPtr link2_joint_;
 
             spatial::Transform X21_;
 
-            const Body rotor_1_;
-            const Body rotor_2_;
-            const Body link_1_;
-            const Body link_2_;
+            const Body rotor1_;
+            const Body rotor2_;
+            const Body link1_;
+            const Body link2_;
 
             DMat<double> X_inter_S_span_;
             DMat<double> X_inter_S_span_ring_;

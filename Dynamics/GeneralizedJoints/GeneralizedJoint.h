@@ -118,6 +118,19 @@ namespace grbda
             double belt_ratio_;
         };
 
+        struct TelloDifferentialModule
+        {
+            Body rotor1_;
+            Body rotor2_;
+            Body link1_;
+            Body link2_;
+            ori::CoordinateAxis rotor1_axis_;
+            ori::CoordinateAxis rotor2_axis_;
+            ori::CoordinateAxis link1_axis_;
+            ori::CoordinateAxis link2_axis_;
+            double gear_ratio_;
+        };
+
     }
 
 } // namespace grbda
