@@ -11,10 +11,10 @@ static const double tol = 1e-10;
 static const double loose_tol = 1e-3;
 
 template <class T>
-class RigidBodyKinemaitcsTest : public testing::Test
+class RigidBodyKinematicsTest : public testing::Test
 {
 protected:
-    RigidBodyKinemaitcsTest() : cluster_model(robot.buildClusterTreeModel()),
+    RigidBodyKinematicsTest() : cluster_model(robot.buildClusterTreeModel()),
                                 generic_model(extractGenericJointModel(cluster_model)),
                                 rigid_body_model(cluster_model) {}
 
@@ -80,9 +80,9 @@ typedef Types<
     Tello, TeleopArm, MIT_Humanoid, MiniCheetah>
     Robots;
 
-TYPED_TEST_SUITE(RigidBodyKinemaitcsTest, Robots);
+TYPED_TEST_SUITE(RigidBodyKinematicsTest, Robots);
 
-TYPED_TEST(RigidBodyKinemaitcsTest, ForwardKinematics)
+TYPED_TEST(RigidBodyKinematicsTest, ForwardKinematics)
 {
     // This test compares the forward kinematics of a robot (rigid-body velocities and
     // contact-point positions/velocities) as computed by the cluster tree model versus the
@@ -170,7 +170,7 @@ TYPED_TEST(RigidBodyKinemaitcsTest, ForwardKinematics)
     }
 }
 
-TYPED_TEST(RigidBodyKinemaitcsTest, MotionSubspaceApparentDerivative)
+TYPED_TEST(RigidBodyKinematicsTest, MotionSubspaceApparentDerivative)
 {
     // This test compares the apparent derivative of the motion subspace (S_ring) as computed by
     // the cluster tree model to the apparent derivative as computed by finite difference
