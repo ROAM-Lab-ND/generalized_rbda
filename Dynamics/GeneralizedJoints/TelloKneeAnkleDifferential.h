@@ -1,7 +1,8 @@
-#pragma once
+#ifndef GRBDA_GENERALIZED_JOINTS_TELLO_KNEE_ANKLE_DIFFERENTIAL_H
+#define GRBDA_GENERALIZED_JOINTS_TELLO_KNEE_ANKLE_DIFFERENTIAL_H
 
 #include "TelloDifferential.h"
-#include "3rd-parties/CasadiGen/header/CasadiGen.h"
+#include "Utils/CasadiGen/header/CasadiGen.h"
 
 namespace grbda
 {
@@ -12,13 +13,8 @@ namespace grbda
         class TelloKneeAnkleDifferential : public TelloDifferential
         {
         public:
-            TelloKneeAnkleDifferential(Body &rotor_1, Body &rotor_2, Body &link_1, Body &link_2,
-                           CoordinateAxis rotor_axis_1, CoordinateAxis rotor_axis_2,
-                           CoordinateAxis joint_axis_1, CoordinateAxis joint_axis_2,
-                           double gear_ratio)
-                           : TelloDifferential(rotor_1, rotor_2, link_1, link_2,
-                           rotor_axis_1, rotor_axis_2, joint_axis_1, joint_axis_2,
-                           gear_ratio)
+            TelloKneeAnkleDifferential(TelloDifferentialModule &module)
+            : TelloDifferential(module)
             {
             CasadiHelperFunctions jacobian_helpers(tkad_jacobian, tkad_jacobian_sparsity_out,
                                             tkad_jacobian_work);
@@ -40,3 +36,5 @@ namespace grbda
     }
 
 } // namespace grbda
+
+#endif // GRBDA_GENERALIZED_JOINTS_TELLO_KNEE_ANKLE_DIFFERENTIAL_H

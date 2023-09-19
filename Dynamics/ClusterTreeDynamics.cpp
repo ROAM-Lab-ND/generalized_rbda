@@ -7,10 +7,7 @@
 namespace grbda
 {
 
-    using namespace ori;
-    using namespace spatial;
-
-    const D6Mat<double> &ClusterTreeModel::contactJacobian(const std::string &cp_name)
+    const D6Mat<double> &ClusterTreeModel::contactJacobianWorldFrame(const std::string &cp_name)
     {
         forwardKinematics();
 
@@ -20,9 +17,9 @@ namespace grbda
         const auto &cluster_i = getClusterContainingBody(body_i);
         const int &subindex_within_cluster_i = body_i.sub_index_within_cluster_;
 
-        const SpatialTransform Xa = cluster_i->Xa_[subindex_within_cluster_i];
+        const spatial::Transform Xa = cluster_i->Xa_[subindex_within_cluster_i];
         const Mat3<double> &R_link_to_world = Xa.getRotation().transpose();
-        Mat6<double> Xout = createSXform(R_link_to_world, cp.local_offset_);
+        Mat6<double> Xout = spatial::createSXform(R_link_to_world, cp.local_offset_);
 
         int j = (int)i;
         while (j > -1)
@@ -45,14 +42,14 @@ namespace grbda
         return cp.jacobian_;
     }
 
-    D6Mat<double> ClusterTreeModel::bodyJacobian(const std::string &cp_name)
+    D6Mat<double> ClusterTreeModel::contactJacobianBodyFrame(const std::string &cp_name)
     {
         forwardKinematics();
 
         D6Mat<double> J = D6Mat<double>::Zero(6, getNumDegreesOfFreedom());
 
         ContactPoint &cp = contact_points_[contact_name_to_contact_index_.at(cp_name)];
-        Mat6<double> Xout = createSXform(Mat3<double>::Identity(), cp.local_offset_);
+        Mat6<double> Xout = spatial::createSXform(Mat3<double>::Identity(), cp.local_offset_);
 
         int j = cp.body_index_;
         while (j > -1)
@@ -85,30 +82,14 @@ namespace grbda
         DVec<double> qdd = DVec<double>::Zero(getNumDegreesOfFreedom());
 
         // Forward dynamics via Articulated Body Algorithm
-#ifdef TIMING_STATS
-        timing_statistics_.zero();
-        timer_.start();
-#endif
         forwardKinematics();
-#ifdef TIMING_STATS
-        timing_statistics_.forward_kinematics_time = timer_.getMs();
-        timer_.start();
-#endif
         updateArticulatedBodies();
-#ifdef TIMING_STATS
-        timing_statistics_.update_articulated_bodies_time = timer_.getMs();
-        timer_.start();
-#endif
 
         // Forward Pass - Articulated body bias force
         for (auto &cluster : cluster_nodes_)
         {
-            cluster->pA_ = generalForceCrossProduct(cluster->v_, DVec<double>(cluster->I_ * cluster->v_));
+            cluster->pA_ = spatial::generalForceCrossProduct(cluster->v_, DVec<double>(cluster->I_ * cluster->v_));
         }
-#ifdef TIMING_STATS
-        timing_statistics_.forward_pass1_time = timer_.getMs();
-        timer_.start();
-#endif
 
         // Account for external forces in bias force
         for (int cluster_index : indices_of_nodes_experiencing_external_forces_)
@@ -116,10 +97,6 @@ namespace grbda
             auto &cluster = cluster_nodes_[cluster_index];
             cluster->pA_ -= cluster->Xa_.transformExternalForceVector(cluster->f_ext_);
         }
-#ifdef TIMING_STATS
-        timing_statistics_.external_force_time = timer_.getMs();
-        timer_.start();
-#endif
 
         // Backward pass - Gauss principal of least constraint
         for (int i = (int)cluster_nodes_.size() - 1; i >= 0; i--)
@@ -144,10 +121,6 @@ namespace grbda
                 parent_cluster->pA_ += cluster->Xup_.inverseTransformForceVector(pa);
             }
         }
-#ifdef TIMING_STATS
-        timing_statistics_.backward_pass_time = timer_.getMs();
-        timer_.start();
-#endif
 
         // Forward Pass - Joint accelerations
         for (auto &cluster : cluster_nodes_)
@@ -171,9 +144,6 @@ namespace grbda
             qdd.segment(vel_idx, num_vel) = cluster->D_inv_u_ - cluster->D_inv_UT_ * a_temp;
             cluster->a_ = a_temp + joint->S() * qdd.segment(vel_idx, num_vel);
         }
-#ifdef TIMING_STATS
-        timing_statistics_.forward_pass2_time = timer_.getMs();
-#endif
 
         return qdd;
     }
@@ -186,62 +156,35 @@ namespace grbda
         forwardKinematics();
 
         // Forward pass
-#ifdef TIMING_STATS
-        double start_time_IA = timer_.getMs();
-#endif
         for (auto &cluster : cluster_nodes_)
         {
             cluster->IA_ = cluster->I_;
         }
-#ifdef TIMING_STATS
-        timing_statistics_.reset_IA_time += timer_.getMs() - start_time_IA;
-#endif
 
         // Backward pass (Gauss principal of least constraint)
         for (int i = (int)cluster_nodes_.size() - 1; i >= 0; i--)
         {
             auto &cluster = cluster_nodes_[i];
             const auto joint = cluster->joint_;
-#ifdef TIMING_STATS
-            double start_time_D = timer_.getMs();
-#endif
             cluster->U_ = cluster->IA_ * joint->S();
             const DMat<double> D = joint->S().transpose() * cluster->U_;
             cluster->updateDinv(D);
             cluster->D_inv_UT_ = cluster->D_inv_.solve(cluster->U_.transpose());
-#ifdef TIMING_STATS
-            timing_statistics_.update_and_solve_D_time += timer_.getMs() - start_time_D;
-#endif
 
             // Articulated body inertia recursion
             if (cluster->parent_index_ >= 0)
             {
-#ifdef TIMING_STATS
-                double start_time_Ia = timer_.getMs();
-#endif
                 auto parent_cluster = cluster_nodes_[cluster->parent_index_];
                 cluster->Ia_ = cluster->IA_ - cluster->U_ * cluster->D_inv_UT_;
                 parent_cluster->IA_ += cluster->Xup_.inverseTransformSpatialInertia(cluster->Ia_);
-#ifdef TIMING_STATS
-                timing_statistics_.invert_xform_spatial_inertia_time += timer_.getMs() - start_time_Ia;
-#endif
             }
         }
 
         articulated_bodies_updated_ = true;
     }
 
-    double ClusterTreeModel::applyTestForce(const string &cp_name,
-                                            const Vec3<double> &force_ics_at_contact,
-                                            DVec<double> &dstate_out)
-    {
-        return applyLocalFrameTestForceAtContactPoint(force_ics_at_contact, cp_name, dstate_out);
-    }
-
-    double
-    ClusterTreeModel::applyLocalFrameTestForceAtContactPoint(const Vec3<double> &force,
-                                                             const std::string &contact_point_name,
-                                                             DVec<double> &dstate_out)
+    double ClusterTreeModel::applyTestForce(const std::string &contact_point_name,
+                                            const Vec3<double> &force, DVec<double> &dstate_out)
     {
         const int contact_point_index = contact_name_to_contact_index_.at(contact_point_name);
         const ContactPoint &contact_point = contact_points_[contact_point_index];
@@ -358,7 +301,8 @@ namespace grbda
 
             DMat<double> &ChiUp = cp.ChiUp_[cluster->index_];
             ChiUp = DMat<double>::Zero(6, cluster->motion_subspace_dimension_);
-            const Mat6<double> X_offset = createSXform(Mat3<double>::Identity(), cp.local_offset_);
+            const Mat6<double> X_offset = spatial::createSXform(Mat3<double>::Identity(),
+                                                                cp.local_offset_);
             ChiUp.middleCols<6>(6 * body.sub_index_within_cluster_) = X_offset;
         }
 
@@ -391,7 +335,6 @@ namespace grbda
             }
         }
 
-        // TODO(@MatthewChignoli): Remove the assumption that every operational space has size 6
         const int num_bodies = bodies_.size();
         DMat<double> lambda_inv = DMat<double>::Zero(6 * num_end_effectors_,
                                                      6 * num_end_effectors_);

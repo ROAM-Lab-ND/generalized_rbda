@@ -1,7 +1,8 @@
-#pragma once
+#ifndef GRBDA_LOOP_CONSTRAINT_H
+#define GRBDA_LOOP_CONSTRAINT_H
 
 #include <memory>
-#include "Utils/cppTypes.h"
+#include "Utils/StateRepresentation.h"
 
 namespace grbda
 {
@@ -73,7 +74,7 @@ namespace grbda
 
         private:
             void resetCache();
-            
+
             int span_pos_cnt_ = 0;
             DMat<double> G_ = DMat<double>::Zero(0, 0);
             DVec<double> g_ = DVec<double>::Zero(0);
@@ -93,3 +94,5 @@ namespace grbda
     }
 
 }
+
+#endif // GRBDA_LOOP_CONSTRAINT_H

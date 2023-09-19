@@ -1,11 +1,12 @@
-#pragma once
+#ifndef GRBDA_GENERALIZED_JOINT_H
+#define GRBDA_GENERALIZED_JOINT_H
 
 #include <memory>
 
 #include "LoopConstraint.h"
 #include "Dynamics/Body.h"
 #include "Dynamics/Joints/Joint.h"
-#include "Utils/Utilities/SpatialTransforms.h"
+#include "Utils/SpatialTransforms.h"
 
 namespace grbda
 {
@@ -32,10 +33,8 @@ namespace grbda
         class Base
         {
         public:
-            EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
-            Base(int num_bodies, int num_independent_positions, int num_independent_velocities,
-                 bool position_is_spanning, bool velocity_is_spanning);
+            Base(int num_bodies, int num_independent_positions, int num_independent_velocities);
             virtual ~Base() {}
 
             virtual GeneralizedJointTypes type() const = 0;
@@ -43,7 +42,7 @@ namespace grbda
             virtual void updateKinematics(const JointState &joint_state) = 0;
 
             virtual void computeSpatialTransformFromParentToCurrentCluster(
-                GeneralizedSpatialTransform &Xup) const = 0;
+                spatial::GeneralizedTransform &Xup) const = 0;
 
             const std::vector<JointPtr> singleJoints() const { return single_joints_; };
 
@@ -57,8 +56,7 @@ namespace grbda
             const int &numVelocities() const { return num_velocities_; }
             virtual int numUnactuatedVelocities() const { return 0; }
 
-            const bool &positionIsSpanning() const { return position_is_spanning_; }
-            const bool &velocityIsSpanning() const { return velocity_is_spanning_; }
+            virtual JointCoordinate integratePosition(JointState joint_state, double dt) const;
 
             const DMat<double> &S() const { return S_; }
             const DMat<double> &Psi() const { return Psi_; }
@@ -86,26 +84,9 @@ namespace grbda
             JointState toSpanningTreeState(const JointState &joint_state);
 
         protected:
-#ifdef DEBUG_MODE
-            void jointStateCheck(const JointState &joint_state) const
-            {
-                if (joint_state.position.isSpanning() != position_is_spanning_)
-                    throw std::runtime_error("Position is in the wrong coordinates");
-                if (joint_state.velocity.isSpanning() != velocity_is_spanning_)
-                    throw std::runtime_error("Velocity is in the wrong coordinates");
-                if (joint_state.position.rows() != num_positions_)
-                    throw std::runtime_error("Position is the wrong size");
-                if (joint_state.velocity.rows() != num_velocities_)
-                    throw std::runtime_error("Velocity is the wrong size");
-            }
-#endif
-
             const int num_bodies_;
             const int num_positions_;
             const int num_velocities_;
-
-            const bool position_is_spanning_;
-            const bool velocity_is_spanning_;
 
             DMat<double> S_;
             DMat<double> Psi_;
@@ -118,6 +99,40 @@ namespace grbda
             DMat<double> spanning_tree_to_independent_coords_conversion_;
         };
 
+        struct GearedTransmissionModule
+        {
+            Body body_;
+            Body rotor_;
+            ori::CoordinateAxis joint_axis_;
+            ori::CoordinateAxis rotor_axis_;
+            double gear_ratio_;
+        };
+
+        struct ParallelBeltTransmissionModule
+        {
+            Body body_;
+            Body rotor_;
+            ori::CoordinateAxis joint_axis_;
+            ori::CoordinateAxis rotor_axis_;
+            double gear_ratio_;
+            double belt_ratio_;
+        };
+
+        struct TelloDifferentialModule
+        {
+            Body rotor1_;
+            Body rotor2_;
+            Body link1_;
+            Body link2_;
+            ori::CoordinateAxis rotor1_axis_;
+            ori::CoordinateAxis rotor2_axis_;
+            ori::CoordinateAxis link1_axis_;
+            ori::CoordinateAxis link2_axis_;
+            double gear_ratio_;
+        };
+
     }
 
 } // namespace grbda
+
+#endif // GRBDA_GENERALIZED_JOINT_H

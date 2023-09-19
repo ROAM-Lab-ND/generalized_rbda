@@ -95,7 +95,6 @@ namespace grbda
             k_ = DVec<double>::Zero(K_.rows());
         }
 
-        // TODO(@MatthewChignoli): Kind of a sloppy way to do the overloading
         void Collection::update(DVec<double> q)
         {
             int pos_cnt = 0;

@@ -29,14 +29,13 @@ namespace grbda
     namespace GeneralizedJoints
     {
 
-        Free::Free(const Body &body) : Base(1, 7, 6, false, false), body_(body)
+        Free::Free(const Body &body) : Base(1, 7, 6), body_(body)
         {
             if (body.parent_index_ >= 0)
                 throw std::runtime_error("Free joint is only valid as the first joint in a tree and thus cannot have a parent body");
 
             S_.setIdentity();
             Psi_.setIdentity();
-            vJ_ = SVec<double>::Zero();
 
             single_joints_.emplace_back(new Joints::Free());
 
@@ -47,21 +46,29 @@ namespace grbda
 
         void Free::updateKinematics(const JointState &joint_state)
         {
-#ifdef DEBUG_MODE
-            jointStateCheck(joint_state);
-#endif
             single_joints_[0]->updateKinematics(joint_state.position, joint_state.velocity);
             vJ_ = S_ * joint_state.velocity;
         }
 
         void Free::computeSpatialTransformFromParentToCurrentCluster(
-            GeneralizedSpatialTransform &Xup) const
+            spatial::GeneralizedTransform &Xup) const
         {
 #ifdef DEBUG_MODE
             if (Xup.getNumOutputBodies() != 1 || Xup.getNumParentBodies() != 1)
                 throw std::runtime_error("[Free Joint] Xup must be 6x6");
 #endif
             Xup[0] = single_joints_[0]->XJ();
+        }
+
+        JointCoordinate Free::integratePosition(JointState joint_state, double dt) const
+        {
+            const Quat<double> quat = joint_state.position.tail<4>();
+            const DVec<double> &vel = joint_state.velocity;
+
+            joint_state.position.head<3>() += vel.tail<3>() * dt;
+            joint_state.position.tail<4>() = ori::integrateQuat(quat, vel.head<3>(), dt);
+
+            return joint_state.position;
         }
 
         JointState Free::randomJointState() const

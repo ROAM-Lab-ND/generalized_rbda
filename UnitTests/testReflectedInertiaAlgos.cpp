@@ -3,7 +3,6 @@
 #include "Dynamics/RigidBodyTreeModel.h"
 #include "Dynamics/ReflectedInertiaTreeModel.h"
 #include "Robots/RobotTypes.h"
-#include "Utils/Utilities/Timer.h"
 
 using namespace grbda;
 
@@ -38,10 +37,10 @@ protected:
             model_state.push_back(joint_state);
         }
 
-        cluster_model.initializeState(model_state);
-        reflected_inertia_model.initializeIndependentStates(independent_joint_pos_,
+        cluster_model.setState(model_state);
+        reflected_inertia_model.setIndependentStates(independent_joint_pos_,
                                                             independent_joint_vel_);
-        reflected_inertia_diag_model.initializeIndependentStates(independent_joint_pos_,
+        reflected_inertia_diag_model.setIndependentStates(independent_joint_pos_,
                                                                  independent_joint_vel_);
 
         // Check for NaNs
@@ -59,9 +58,9 @@ protected:
 
     void setForcesForAllModels(std::vector<ExternalForceAndBodyIndexPair> force_and_index_pairs)
     {
-        cluster_model.initializeExternalForces(force_and_index_pairs);
-        reflected_inertia_model.initializeExternalForces(force_and_index_pairs);
-        reflected_inertia_diag_model.initializeExternalForces(force_and_index_pairs);
+        cluster_model.setExternalForces(force_and_index_pairs);
+        reflected_inertia_model.setExternalForces(force_and_index_pairs);
+        reflected_inertia_diag_model.setExternalForces(force_and_index_pairs);
     }
 
     T robot = T(false);
@@ -136,8 +135,8 @@ TYPED_TEST(ReflectedInertiaDynamicsAlgosTest, ForwardKinematics)
         GTEST_ASSERT_EQ(this->cluster_model.contactPoints().size(),
                         this->reflected_inertia_model.contactPoints().size());
 
-        this->cluster_model.contactJacobians();
-        this->reflected_inertia_model.contactJacobians();
+        this->cluster_model.updateContactPointJacobians();
+        this->reflected_inertia_model.updateContactPointJacobians();
         for (int j = 0; j < (int)this->cluster_model.contactPoints().size(); j++)
         {
             const ContactPoint &cluster_cp = this->cluster_model.contactPoint(j);
@@ -183,15 +182,6 @@ TYPED_TEST(ReflectedInertiaDynamicsAlgosTest, CompareFwdDynAgainstLagrangianDeri
         }
 
         DVec<double> tau = DVec<double>::Random(nv);
-
-        // TODO(@MatthewChignoli): Apply spatial forces to bodies for the lagrangian derivation?
-        // Set random spatial forces on bodies
-        // std::vector<ExternalForceAndBodyIndexPair> force_and_index_pairs;
-        // const DVec<int> &ind_coord_indices =
-        //     this->reflected_inertia_model.getIndependentCoordinateIndices();
-        // for (int j = 0; j < ind_coord_indices.rows(); j++)
-        //     force_and_index_pairs.emplace_back(ind_coord_indices[j], SVec<double>::Random());
-        // this->setForcesForAllModels(force_and_index_pairs);
 
         // Case 1: Cluster based model versus the exact Lagrangian derivation
         const DVec<double> qdd1 = this->cluster_model.forwardDynamics(tau);
@@ -298,7 +288,7 @@ TYPED_TEST(ReflectedInertiaDynamicsAlgosTest, LambdaInv)
                 const ContactPoint &cp = model.contactPoint(k);
                 if (!cp.is_end_effector_)
                     continue;
-                J_stacked.middleRows<6>(6 * ee_cnt++) = model.bodyJacobian(cp.name_);
+                J_stacked.middleRows<6>(6 * ee_cnt++) = model.contactJacobianBodyFrame(cp.name_);
             }
             DMat<double> J_Hinv_JT = J_stacked * H.inverse() * J_stacked.transpose();
 

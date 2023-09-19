@@ -5,14 +5,13 @@ namespace grbda
     namespace GeneralizedJoints
     {
 
-        Revolute::Revolute(const Body &body, CoordinateAxis joint_axis)
-            : Base(1, 1, 1, false, false), body_(body)
+        Revolute::Revolute(const Body &body, ori::CoordinateAxis joint_axis)
+            : Base(1, 1, 1), body_(body)
         {
             single_joints_.emplace_back(new Joints::Revolute(joint_axis));
 
             S_ = single_joints_[0]->S();
             Psi_ = single_joints_[0]->S();
-            vJ_ = SVec<double>::Zero();
 
             spanning_tree_to_independent_coords_conversion_ = DMat<double>::Identity(1, 1);
 
@@ -24,16 +23,12 @@ namespace grbda
 
         void Revolute::updateKinematics(const JointState &joint_state)
         {
-#ifdef DEBUG_MODE
-            jointStateCheck(joint_state);
-#endif
-
             single_joints_[0]->updateKinematics(joint_state.position, joint_state.velocity);
             vJ_ = S_ * joint_state.velocity;
         }
 
         void Revolute::computeSpatialTransformFromParentToCurrentCluster(
-            GeneralizedSpatialTransform &Xup) const
+            spatial::GeneralizedTransform &Xup) const
         {
 #ifdef DEBUG_MODE
             if (Xup.getNumOutputBodies() != 1)

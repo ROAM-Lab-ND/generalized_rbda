@@ -1,11 +1,10 @@
-#pragma once
+#ifndef GRBDA_TREEMODEL_H
 
 #include "Body.h"
-#include "DynamicsUtilities.h"
 #include "Nodes/TreeNode.h"
-#include "Utils/Utilities/spatial.h"
-#include "Utils/Utilities/SpatialTransforms.h"
-#include "Utils/Utilities/utilities.h"
+#include "Utils/Spatial.h"
+#include "Utils/SpatialTransforms.h"
+#include "Utils/Utilities.h"
 
 namespace grbda
 {
@@ -26,6 +25,11 @@ namespace grbda
         int getNumActuatedDegreesOfFreedom() const { return velocity_index_ - unactuated_dofs_; }
         const int& getNumEndEffectors() const { return num_end_effectors_; }
 
+        virtual Vec3<double> getPosition(const std::string &body_name) = 0;
+        virtual Mat3<double> getOrientation(const std::string &body_name) = 0;
+        virtual Vec3<double> getLinearVelocity(const std::string &body_name) = 0;
+        virtual Vec3<double> getAngularVelocity(const std::string &body_name) = 0;
+
         virtual DMat<double> getMassMatrix() = 0;
         virtual DVec<double> getBiasForceVector() = 0;
 
@@ -37,21 +41,31 @@ namespace grbda
         void setGravity(const Vec3<double> &g) { gravity_.tail<3>() = g; }
         SVec<double> getGravity() const { return gravity_; }
 
-        virtual void initializeExternalForces(
+        void setExternalForces(
             const std::vector<ExternalForceAndBodyIndexPair> &force_and_body_index_pairs = {});
 
         void forwardKinematics();
+        void forwardKinematicsIncludingContactPoints()
+        {
+            forwardKinematics();
+            contactPointForwardKinematics();
+        }
 
-        virtual D6Mat<double> bodyJacobian(const std::string &cp_name) = 0;
-        virtual const D6Mat<double>& contactJacobian(const std::string &cp_name) = 0;
-        void contactJacobians();
+        void updateContactPointJacobians();
+        virtual D6Mat<double> contactJacobianBodyFrame(const std::string &cp_name) = 0;
+        virtual const D6Mat<double>& contactJacobianWorldFrame(const std::string &cp_name) = 0;
 
+        // Returns independent (non-spanning) joint accelerations
         virtual DVec<double> forwardDynamics(const DVec<double> &tau) = 0;
+        
+        // Takes as input independent (non-spanning) joint accelerations
         virtual DVec<double> inverseDynamics(const DVec<double> &qdd) = 0;
+        
         virtual DMat<double> inverseOperationalSpaceInertiaMatrix() = 0;
-        virtual double applyLocalFrameTestForceAtContactPoint(const Vec3<double> &force,
-                                                              const string &contact_point_name,
-                                                              DVec<double> &dstate_out) = 0;
+
+        // The test force is expressed in the local frame
+        virtual double applyTestForce(const std::string &contact_point_name,
+                                      const Vec3<double> &force, DVec<double> &dstate_out) = 0;
 
         const TreeNodePtr node(const int index) const { return nodes_[index]; }
         const std::vector<TreeNodePtr> &nodes() const { return nodes_; }
@@ -67,6 +81,8 @@ namespace grbda
         void contactPointForwardKinematics();
         void compositeRigidBodyAlgorithm();
         void updateBiasForceVector();
+
+        // Takes as input independent (non-spanning) joint accelerations
         DVec<double> recursiveNewtonEulerAlgorithm(const DVec<double> &qdd);
 
         virtual void resetCache();
@@ -92,9 +108,12 @@ namespace grbda
         std::unordered_map<std::string, int> contact_name_to_contact_index_;
 
         bool kinematics_updated_ = false;
+        bool contact_point_kinematics_updated_ = false;
         bool mass_matrix_updated_ = false;
         bool bias_force_updated_ = false;
         bool contact_jacobians_updated_ = false;
     };
 
 } // namespace grbda
+
+#endif // GRBDA_TREEMODEL_H

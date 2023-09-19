@@ -64,6 +64,12 @@ namespace grbda
         for (const auto &cluster : cluster_tree_model.clusters())
         {
             const auto joint = cluster->joint_;
+
+            if (joint->spanningTreeToIndependentCoordsConversion().size() == 0)
+            {
+                throw std::runtime_error("Detected a joint that does not have a spanning tree to independent coordinates conversion matrix");
+            }
+
             spanning_tree_to_independent_coords_conversion_ =
                 appendEigenMatrix(spanning_tree_to_independent_coords_conversion_,
                                   joint->spanningTreeToIndependentCoordsConversion());
@@ -122,7 +128,7 @@ namespace grbda
         }
     }
 
-    void ReflectedInertiaTreeModel::initializeIndependentStates(const DVec<double> &y,
+    void ReflectedInertiaTreeModel::setIndependentStates(const DVec<double> &y,
                                                                 const DVec<double> &yd)
     {
         for (auto &node : reflected_inertia_nodes_)
@@ -131,7 +137,7 @@ namespace grbda
             node->joint_state_.velocity = yd.segment(node->velocity_index_, node->num_velocities_);
         }
 
-        initializeExternalForces();
+        setExternalForces();
     }
 
     void ReflectedInertiaTreeModel::resetCache()
@@ -191,7 +197,8 @@ namespace grbda
             return getNodeContainingBody(spanning_tree_index)->index_;
     }
 
-    const D6Mat<double> &ReflectedInertiaTreeModel::contactJacobian(const std::string &cp_name)
+    const D6Mat<double> &
+    ReflectedInertiaTreeModel::contactJacobianWorldFrame(const std::string &cp_name)
     {
         forwardKinematics();
 
@@ -199,9 +206,9 @@ namespace grbda
 
         const size_t &i = cp.body_index_;
         const auto node_i = getNodeContainingBody(i);
-        const SpatialTransform Xa = node_i->Xa_[0];
+        const spatial::Transform Xa = node_i->Xa_[0];
         const Mat3<double> R_link_to_world = Xa.getRotation().transpose();
-        Mat6<double> Xout = createSXform(R_link_to_world, cp.local_offset_);
+        Mat6<double> Xout = spatial::createSXform(R_link_to_world, cp.local_offset_);
 
         int j = node_i->index_;
         while (j > -1)
@@ -222,7 +229,7 @@ namespace grbda
         return cp.jacobian_;
     }
 
-    D6Mat<double> ReflectedInertiaTreeModel::bodyJacobian(const std::string &cp_name)
+    D6Mat<double> ReflectedInertiaTreeModel::contactJacobianBodyFrame(const std::string &cp_name)
     {
         forwardKinematics();
 
@@ -231,7 +238,7 @@ namespace grbda
         ContactPoint &cp = contact_points_[contact_name_to_contact_index_.at(cp_name)];
         const size_t &i = cp.body_index_;
         const auto node_i = getNodeContainingBody(i);
-        Mat6<double> Xout = createSXform(Mat3<double>::Identity(), cp.local_offset_);
+        Mat6<double> Xout = spatial::createSXform(Mat3<double>::Identity(), cp.local_offset_);
 
         int j = node_i->index_;
         while (j > -1)
@@ -318,7 +325,7 @@ namespace grbda
         // Forward Pass - Articulated body bias force
         for (auto &link_node : reflected_inertia_nodes_)
         {
-            link_node->pA_ = generalForceCrossProduct(link_node->v_, DVec<double>(link_node->I_ * link_node->v_));
+            link_node->pA_ = spatial::generalForceCrossProduct(link_node->v_, DVec<double>(link_node->I_ * link_node->v_));
         }
 
         // Account for external forces in bias force
@@ -422,8 +429,8 @@ namespace grbda
         articulated_bodies_updated_ = true;
     }
 
-    double ReflectedInertiaTreeModel::applyLocalFrameTestForceAtContactPoint(
-        const Vec3<double> &force, const std::string &contact_point_name, DVec<double> &dstate_out)
+    double ReflectedInertiaTreeModel::applyTestForce(
+        const std::string &contact_point_name, const Vec3<double> &force, DVec<double> &dstate_out)
     {
         switch (rotor_inertia_approximation_)
         {
@@ -484,7 +491,7 @@ namespace grbda
                                                          const std::string &cp_name,
                                                          DVec<double> &dstate_out)
     {
-        const D3Mat<double> J = contactJacobian(cp_name).bottomRows<3>();
+        const D3Mat<double> J = contactJacobianWorldFrame(cp_name).bottomRows<3>();
         const DMat<double> H = getMassMatrix();
         const DMat<double> H_inv = H.inverse();
         const DMat<double> inv_ops_inertia = J * H_inv * J.transpose();
@@ -556,7 +563,7 @@ namespace grbda
         const auto node = getNodeContainingBody(contact_point.body_index_);
         const auto &Xa = node->Xa_[0];
         Mat3<double> Rai = Xa.getRotation().transpose();
-        SpatialTransform X_cartesian_to_plucker{Rai, contact_point.local_offset_};
+        spatial::Transform X_cartesian_to_plucker{Rai, contact_point.local_offset_};
 
         SVec<double> spatial_force = SVec<double>::Zero();
         spatial_force.tail<3>() = force;
@@ -578,7 +585,8 @@ namespace grbda
             if (!cp.is_end_effector_)
                 continue;
             const auto &node = getNodeContainingBody(cp.body_index_);
-            cp.ChiUp_[node->index_] = createSXform(Mat3<double>::Identity(), cp.local_offset_);
+            cp.ChiUp_[node->index_] = spatial::createSXform(Mat3<double>::Identity(),
+                                                            cp.local_offset_);
         }
 
         // Backward Pass to compute K and propagate the force propagators for the end-effectors
@@ -599,7 +607,6 @@ namespace grbda
             }
         }
 
-        // TODO(@MatthewChignoli): Remove the assumption that every operational space has size 6
         const int num_bodies = reflected_inertia_nodes_.size();
         DMat<double> lambda_inv = DMat<double>::Zero(6 * num_end_effectors_,
                                                      6 * num_end_effectors_);
@@ -695,7 +702,7 @@ namespace grbda
             const ContactPoint &cp = contact_points_[i];
             if (!cp.is_end_effector_)
                 continue;
-            J_stacked.middleRows<6>(6 * ee_cnt++) = bodyJacobian(cp.name_);
+            J_stacked.middleRows<6>(6 * ee_cnt++) = contactJacobianBodyFrame(cp.name_);
         }
         return J_stacked * H.inverse() * J_stacked.transpose();
     }

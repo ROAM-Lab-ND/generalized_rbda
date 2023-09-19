@@ -1,4 +1,5 @@
-#pragma once
+#ifndef GRBDA_ROBOTS_MIT_HUMANOID_H
+#define GRBDA_ROBOTS_MIT_HUMANOID_H
 
 #include "Robot.h"
 
@@ -48,8 +49,8 @@ namespace grbda
                 0, 1.084e-4, 0,
                 0, 0, 1.6841e-4;
 
-            Mat3<double> RY = coordinateRotation<double>(CoordinateAxis::Y, M_PI / 2);
-            Mat3<double> RX = coordinateRotation<double>(CoordinateAxis::X, -M_PI / 2);
+            Mat3<double> RY = ori::coordinateRotation<double>(ori::CoordinateAxis::Y, M_PI / 2);
+            Mat3<double> RX = ori::coordinateRotation<double>(ori::CoordinateAxis::X, -M_PI / 2);
 
             Mat3<double> smallRotorRotationalInertiaX = RY.transpose() * _smallRotorRotationalInertiaZ * RY;
             Mat3<double> smallRotorRotationalInertiaY = RX.transpose() * _smallRotorRotationalInertiaZ * RX;
@@ -118,9 +119,9 @@ namespace grbda
         double _hipRzGearRatio = 6.0;
         double _hipRxGearRatio = 6.0;
         double _hipRyGearRatio = 6.0;
-        double _kneeGearRatio = 12.0;
+        double _kneeGearRatio = 6.0;
         double _kneeBeltRatio = 2.0;
-        double _ankleGearRatio = 12.0;
+        double _ankleGearRatio = 6.0;
         double _ankleBeltRatio = 2.0;
 
         double _shoulderRxGearRatio = 6.0;
@@ -218,4 +219,6 @@ namespace grbda
             }
         }
     };
-}
+} // namespace grbda
+
+#endif // GRBDA_ROBOTS_MIT_HUMANOID_H

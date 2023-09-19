@@ -13,10 +13,11 @@
  * - 2x post-gearbox rotor coordinates
  */
 
-#pragma once
+#ifndef GRBDA_GENERALIZED_JOINTS_TELLO_DIFFERENTIAL_H
+#define GRBDA_GENERALIZED_JOINTS_TELLO_DIFFERENTIAL_H
 
 #include "GeneralizedJoint.h"
-#include "3rd-parties/CasadiGen/header/CasadiGen.h"
+#include "Utils/CasadiGen/header/CasadiGen.h"
 
 namespace grbda
 {
@@ -50,16 +51,13 @@ namespace grbda
         class TelloDifferential : public Base
         {
         public:
-            TelloDifferential(Body &rotor_1, Body &rotor_2, Body &link_1, Body &link_2,
-                              CoordinateAxis rotor_axis_1, CoordinateAxis rotor_axis_2,
-                              CoordinateAxis joint_axis_1, CoordinateAxis joint_axis_2,
-                              double gear_ratio);
+            TelloDifferential(TelloDifferentialModule &module);
             virtual ~TelloDifferential() {}
 
             void updateKinematics(const JointState &joint_state) override;
 
             void computeSpatialTransformFromParentToCurrentCluster(
-                GeneralizedSpatialTransform &Xup) const override;
+                spatial::GeneralizedTransform &Xup) const override;
 
             std::vector<std::tuple<Body, JointPtr, DMat<double>>>
             bodiesJointsAndReflectedInertias() const override;
@@ -70,17 +68,20 @@ namespace grbda
             std::shared_ptr<LoopConstraint::TelloDifferential> tello_constraint_;
 
         private:
-            JointPtr rotor_1_joint_;
-            JointPtr rotor_2_joint_;
-            JointPtr link_1_joint_;
-            JointPtr link_2_joint_;
+            JointPtr rotor1_joint_;
+            JointPtr rotor2_joint_;
+            JointPtr link1_joint_;
+            JointPtr link2_joint_;
 
-            SpatialTransform X21_;
+            spatial::Transform X21_;
 
-            const Body rotor_1_;
-            const Body rotor_2_;
-            const Body link_1_;
-            const Body link_2_;
+            const Body rotor1_;
+            const Body rotor2_;
+            const Body link1_;
+            const Body link2_;
+
+            DMat<double> X_intra_S_span_;
+            DMat<double> X_intra_S_span_ring_;
 
             const double gear_ratio_;
         };
@@ -88,3 +89,5 @@ namespace grbda
     }
 
 } // namespace grbda
+
+#endif // GRBDA_GENERALIZED_JOINTS_TELLO_DIFFERENTIAL_H

@@ -1,14 +1,11 @@
-#pragma once
-
-#include <optional>
+#ifndef GRBDA_REFLECTED_INERTIA_TREE_NODE_H
+#define GRBDA_REFLECTED_INERTIA_TREE_NODE_H
 
 #include "TreeNode.h"
 #include "Dynamics/Joints/Joint.h"
 
 namespace grbda
 {
-
-    using namespace spatial;
 
     struct ReflectedInertiaTreeNode : TreeNode
     {
@@ -22,7 +19,7 @@ namespace grbda
         const DMat<double> &S() const override { return joint_->S(); }
         const DVec<double> &cJ() const override { return cJ_; }
 
-        const SpatialTransform &getAbsoluteTransformForBody(const Body &body) override;
+        const spatial::Transform &getAbsoluteTransformForBody(const Body &body) override;
         DVec<double> getVelocityForBody(const Body &body) override;
         void applyForceToBody(const SVec<double> &force, const Body &body) override;
 
@@ -31,7 +28,7 @@ namespace grbda
 
         DVec<double> vJ_;
         DVec<double> cJ_ = DVec<double>::Zero(6);
-        const SpatialTransform Xtree_;
+        const spatial::Transform Xtree_;
 
         Mat6<double> IA_;    // articulated body inertia
         SVec<double> pA_;    // articulated body bias force
@@ -45,3 +42,5 @@ namespace grbda
     };
 
 } // namespace grbda
+
+#endif // GRBDA_REFLECTED_INERTIA_TREE_NODE_H

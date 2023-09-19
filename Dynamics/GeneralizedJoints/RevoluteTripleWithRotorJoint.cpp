@@ -7,34 +7,33 @@ namespace grbda
     {
 
         RevoluteTripleWithRotor::RevoluteTripleWithRotor(
-            std::vector<ParallelBeltTransmissionModule> modules)
-            : Base(6, 3, 3, false, false), link_1_(modules[0].body_), link_2_(modules[1].body_),
-              link_3_(modules[2].body_), rotor_1_(modules[0].rotor_), rotor_2_(modules[1].rotor_),
-              rotor_3_(modules[2].rotor_)
+            const ParallelBeltTransmissionModule &module_1,
+            const ParallelBeltTransmissionModule &module_2,
+            const ParallelBeltTransmissionModule &module_3)
+            : Base(6, 3, 3), link_1_(module_1.body_), link_2_(module_2.body_),
+              link_3_(module_3.body_), rotor_1_(module_1.rotor_), rotor_2_(module_2.rotor_),
+              rotor_3_(module_3.rotor_)
         {
-            link_1_joint_ =
-                single_joints_.emplace_back(new Joints::Revolute(modules[0].joint_axis_));
-            link_2_joint_ =
-                single_joints_.emplace_back(new Joints::Revolute(modules[1].joint_axis_));
-            link_3_joint_ =
-                single_joints_.emplace_back(new Joints::Revolute(modules[2].joint_axis_));
+            link_1_joint_ = single_joints_.emplace_back(new Joints::Revolute(module_1.joint_axis_));
+            link_2_joint_ = single_joints_.emplace_back(new Joints::Revolute(module_2.joint_axis_));
+            link_3_joint_ = single_joints_.emplace_back(new Joints::Revolute(module_3.joint_axis_));
 
-            rotor_1_joint_ =
-                single_joints_.emplace_back(new Joints::Revolute(modules[0].rotor_axis_));
+            rotor_1_joint_ = 
+                single_joints_.emplace_back(new Joints::Revolute(module_1.rotor_axis_));
             rotor_2_joint_ =
-                single_joints_.emplace_back(new Joints::Revolute(modules[1].rotor_axis_));
+                single_joints_.emplace_back(new Joints::Revolute(module_2.rotor_axis_));
             rotor_3_joint_ =
-                single_joints_.emplace_back(new Joints::Revolute(modules[2].rotor_axis_));
+                single_joints_.emplace_back(new Joints::Revolute(module_3.rotor_axis_));
 
             spanning_tree_to_independent_coords_conversion_ = DMat<double>::Zero(3, 6);
             spanning_tree_to_independent_coords_conversion_.topLeftCorner<3, 3>().setIdentity();
 
-            const double &gr1 = modules[0].gear_ratio_;
-            const double &gr2 = modules[1].gear_ratio_;
-            const double &gr3 = modules[2].gear_ratio_;
-            const double &br1 = modules[0].belt_ratio_;
-            const double &br2 = modules[1].belt_ratio_;
-            const double &br3 = modules[2].belt_ratio_;
+            const double &gr1 = module_1.gear_ratio_;
+            const double &gr2 = module_2.gear_ratio_;
+            const double &gr3 = module_3.gear_ratio_;
+            const double &br1 = module_1.belt_ratio_;
+            const double &br2 = module_2.belt_ratio_;
+            const double &br3 = module_3.belt_ratio_;
 
             DMat<double> G = DMat<double>::Zero(6, 3);
             G.topRows<3>().setIdentity();
@@ -47,27 +46,21 @@ namespace grbda
             K.rightCols(3).setIdentity();
             loop_constraint_ = std::make_shared<LoopConstraint::Static>(G, K);
 
-            S_.block<6, 1>(0, 0) = link_1_joint_->S();
-            S_.block<6, 1>(18, 0) = gr1 * br1 * rotor_1_joint_->S();
-            S_.block<6, 1>(24, 0) = gr2 * br1 * rotor_2_joint_->S();
-            S_.block<6, 1>(30, 0) = -gr3 * br1 * rotor_3_joint_->S();
+            X_intra_S_span_ = DMat<double>::Zero(36, 6);
+            X_intra_S_span_ring_ = DMat<double>::Zero(36, 6);
 
-            S_.block<6, 1>(6, 1) = link_2_joint_->S();
-            S_.block<6, 1>(24, 1) = gr2 * br2 * rotor_2_joint_->S();
-            S_.block<6, 1>(30, 1) = -gr3 * br2 * rotor_3_joint_->S();
+            X_intra_S_span_.block<6, 1>(0, 0) = link_1_joint_->S();
+            X_intra_S_span_.block<6, 1>(6, 1) = link_2_joint_->S();
+            X_intra_S_span_.block<6, 1>(12, 2) = link_3_joint_->S();
+            X_intra_S_span_.block<6, 1>(18, 3) = rotor_1_joint_->S();
+            X_intra_S_span_.block<6, 1>(24, 4) = rotor_2_joint_->S();
+            X_intra_S_span_.block<6, 1>(30, 5) = rotor_3_joint_->S();
 
-            S_.block<6, 1>(12, 2) = link_3_joint_->S();
-            S_.block<6, 1>(30, 2) = gr3 * br3 * rotor_3_joint_->S();
-
-            vJ_ = DVec<double>::Zero(36);
+            S_ = X_intra_S_span_ * loop_constraint_->G();
         }
 
         void RevoluteTripleWithRotor::updateKinematics(const JointState &joint_state)
         {
-#ifdef DEBUG_MODE
-            jointStateCheck(joint_state);
-#endif
-
             const JointState spanning_joint_state = toSpanningTreeState(joint_state);
             const DVec<double> &q = spanning_joint_state.position;
             const DVec<double> &qd = spanning_joint_state.velocity;
@@ -91,26 +84,31 @@ namespace grbda
             const DVec<double> v3_relative2 = link_3_joint_->S() * qd[2];
             const DMat<double> X32_S2 = X32_.transformMotionSubspace(link_2_joint_->S());
 
-            S_.block<6, 1>(6, 0) = X21_S1;
-            S_.block<6, 1>(12, 0) = X31_S1;
-            S_.block<6, 1>(12, 1) = X32_S2;
+            X_intra_S_span_.block<6, 1>(6, 0) = X21_S1;
+            X_intra_S_span_.block<6, 1>(12, 0) = X31_S1;
+            X_intra_S_span_.block<6, 1>(12, 1) = X32_S2;
 
-            vJ_ = S_ * joint_state.velocity;
+            S_.topLeftCorner<18, 3>() = X_intra_S_span_.topLeftCorner<18, 3>();
 
-            cJ_.segment<6>(6) = -generalMotionCrossMatrix(v2_relative1) * X21_S1 * qd[0];
-            cJ_.segment<6>(12) = -generalMotionCrossMatrix(v3_relative1) * X31_S1 * qd[0] -
-                                 generalMotionCrossMatrix(v3_relative2) * X32_S2 * qd[1];
+            X_intra_S_span_ring_.block<6, 1>(6, 0) =
+                -spatial::generalMotionCrossMatrix(v2_relative1) * X21_S1;
+            X_intra_S_span_ring_.block<6, 1>(12, 0) =
+                -spatial::generalMotionCrossMatrix(v3_relative1) * X31_S1;
+            X_intra_S_span_ring_.block<6, 1>(12, 1) =
+                -spatial::generalMotionCrossMatrix(v3_relative2) * X32_S2;
+
+            vJ_ = X_intra_S_span_ * qd;
+            cJ_ = X_intra_S_span_ring_ * qd;
         }
 
         void RevoluteTripleWithRotor::computeSpatialTransformFromParentToCurrentCluster(
-            GeneralizedSpatialTransform &Xup) const
+            spatial::GeneralizedTransform &Xup) const
         {
 #ifdef DEBUG_MODE
             if (Xup.getNumOutputBodies() != 4)
                 throw std::runtime_error("[RevoluteTripleWithRotor] Xup must have 24 rows");
 #endif
 
-            // TODO(@MatthewChignoli): Could be some cost savings here by not recomputing the internal spatial transforms
             Xup[0] = link_1_joint_->XJ() * link_1_.Xtree_;
             Xup[1] = X21_ * Xup[0];
             Xup[2] = X31_ * Xup[0];

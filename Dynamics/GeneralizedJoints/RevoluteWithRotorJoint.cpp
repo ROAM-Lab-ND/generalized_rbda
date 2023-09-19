@@ -5,37 +5,29 @@ namespace grbda
 
     namespace GeneralizedJoints
     {
-
-        RevoluteWithRotor::RevoluteWithRotor(Body &link, Body &rotor, CoordinateAxis joint_axis,
-                                             CoordinateAxis rotor_axis, double gear_ratio)
-            : Base(2, 1, 1, false, false), link_(link), rotor_(rotor)
+        RevoluteWithRotor::RevoluteWithRotor(GearedTransmissionModule &module)
+        : Base(2, 1, 1), link_(module.body_), rotor_(module.rotor_)
         {
-            link_joint_ = single_joints_.emplace_back(new Joints::Revolute(joint_axis));
-            rotor_joint_ = single_joints_.emplace_back(new Joints::Revolute(rotor_axis));
+            link_joint_ = single_joints_.emplace_back(new Joints::Revolute(module.joint_axis_));
+            rotor_joint_ = single_joints_.emplace_back(new Joints::Revolute(module.rotor_axis_));
 
             spanning_tree_to_independent_coords_conversion_ = DMat<double>::Zero(1, 2);
             spanning_tree_to_independent_coords_conversion_ << 1., 0.;
 
             DMat<double> G = DMat<double>::Zero(2, 1);
-            G << 1., gear_ratio;
+            G << 1., module.gear_ratio_;
             DMat<double> K = DMat<double>::Zero(1, 2);
-            K << gear_ratio, -1.;
+            K << module.gear_ratio_, -1.;
             loop_constraint_ = std::make_shared<LoopConstraint::Static>(G, K);
 
             S_.block<6, 1>(0, 0) = link_joint_->S();
-            S_.block<6, 1>(6, 0) = gear_ratio * rotor_joint_->S();
+            S_.block<6, 1>(6, 0) = module.gear_ratio_ * rotor_joint_->S();
 
-            Psi_.block<6, 1>(6, 0) = 1. / gear_ratio * rotor_joint_->S();
-
-            vJ_ = DVec<double>::Zero(12);
+            Psi_.block<6, 1>(6, 0) = 1. / module.gear_ratio_ * rotor_joint_->S();
         }
 
         void RevoluteWithRotor::updateKinematics(const JointState &joint_state)
         {
-#ifdef DEBUG_MODE
-            jointStateCheck(joint_state);
-#endif
-
             const JointState spanning_joint_state = toSpanningTreeState(joint_state);
             const DVec<double> &q = spanning_joint_state.position;
             const DVec<double> &qd = spanning_joint_state.velocity;
@@ -48,7 +40,7 @@ namespace grbda
         }
 
         void RevoluteWithRotor::computeSpatialTransformFromParentToCurrentCluster(
-            GeneralizedSpatialTransform &Xup) const
+            spatial::GeneralizedTransform &Xup) const
         {
 #ifdef DEBUG_MODE
             if (Xup.getNumOutputBodies() != 2)

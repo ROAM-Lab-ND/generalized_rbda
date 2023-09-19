@@ -12,20 +12,6 @@ namespace grbda
         extractRigidBodiesAndJointsFromClusterModel(cluster_tree_model);
         extractLoopClosureFunctionsFromClusterModel(cluster_tree_model);
         extractContactPointsFromClusterModel(cluster_tree_model);
-
-        if (forward_dynamics_method_ == FwdDynMethod::LagrangeMultiplierCustom)
-        {
-            for (const auto &node : rigid_body_nodes_)
-            {
-                if (node->joint_->numVelocities() > 1)
-                {
-                    // ISSUE #14
-                    std::cout << "LagrangeMultiplierCustom is not supported for joints with more than 1 DOF. Switching to LagrangeMultiplierEigen." << std::endl;
-                    forward_dynamics_method_ = FwdDynMethod::LagrangeMultiplierEigen;
-                    break;
-                }
-            }
-        }
     }
 
     void RigidBodyTreeModel::extractRigidBodiesAndJointsFromClusterModel(
@@ -36,8 +22,8 @@ namespace grbda
         {
             for (const auto &body_and_joint : cluster->bodiesAndJoints())
             {
-                const auto &body = body_and_joint.first;
-                const auto &joint = body_and_joint.second;
+                const Body &body = body_and_joint.first;
+                JointPtr joint = body_and_joint.second;
                 auto node = std::make_shared<RigidBodyTreeNode>(body, joint,
                                                                 position_index_, velocity_index_,
                                                                 motion_subspace_index_);
@@ -52,6 +38,40 @@ namespace grbda
         }
         H_ = DMat<double>::Zero(velocity_index_, velocity_index_);
         C_ = DVec<double>::Zero(velocity_index_);
+
+        extractExpandedTreeConnectivity();
+    }
+
+    void RigidBodyTreeModel::extractExpandedTreeConnectivity()
+    {
+        // Forward pass to initialize the expanded parent indices
+        for (const auto &node : rigid_body_nodes_)
+        {
+            for (int i = 0; i < node->joint_->numVelocities(); i++)
+            {
+                expanded_tree_parent_indices_.push_back(node->parent_index_);
+            }
+        }
+
+        // Backward pass to account for multi-dof joints
+        for (int i = rigid_body_nodes_.size() - 1; i > -1; i--)
+        {
+            const auto &node = rigid_body_nodes_[i];
+
+            int extra_dofs = 0;
+            int j = node->parent_index_;
+            while (j > -1)
+            {
+                const auto &parent_node = rigid_body_nodes_[j];
+                extra_dofs += parent_node->joint_->numVelocities() - 1;
+                j = parent_node->parent_index_;
+            }
+
+            for (int k = 0; k < node->joint_->numVelocities(); k++)
+            {
+                expanded_tree_parent_indices_.at(node->index_ + extra_dofs + k) = node->parent_index_ + extra_dofs + k;
+            }
+        }
     }
 
     void RigidBodyTreeModel::extractLoopClosureFunctionsFromClusterModel(
@@ -111,7 +131,7 @@ namespace grbda
         }
     }
 
-    void RigidBodyTreeModel::initializeState(const DVec<double> &q, const DVec<double> &qd)
+    void RigidBodyTreeModel::setState(const DVec<double> &q, const DVec<double> &qd)
     {
         for (auto &node : rigid_body_nodes_)
         {
@@ -122,7 +142,7 @@ namespace grbda
         q_ = q;
         qd_ = qd;
 
-        initializeExternalForces();
+        setExternalForces();
     }
 
     void RigidBodyTreeModel::updateLoopConstraints()
@@ -138,32 +158,31 @@ namespace grbda
         loop_constraints_updated_ = true;
     }
 
-    Vec3<double> RigidBodyTreeModel::getPosition(const string &body_name)
+    Vec3<double> RigidBodyTreeModel::getPosition(const std::string &body_name)
     {
-        // TODO(@MatthewChignoli): Helper function that gets node given the name?
         const int &body_idx = body_name_to_body_index_.at(body_name);
         const TreeNodePtr rigid_body_node = getNodeContainingBody(body_idx);
 
         forwardKinematics();
-        const SpatialTransform &Xa = rigid_body_node->Xa_[0];
-        const Mat6<double> Xai = invertSXform(Xa.toMatrix().cast<double>());
-        Vec3<double> link_pos = sXFormPoint(Xai, Vec3<double>::Zero());
+        const spatial::Transform &Xa = rigid_body_node->Xa_[0];
+        const Mat6<double> Xai = spatial::invertSXform(Xa.toMatrix().cast<double>());
+        Vec3<double> link_pos = spatial::sXFormPoint(Xai, Vec3<double>::Zero());
         return link_pos;
     }
 
-    Mat3<double> RigidBodyTreeModel::getOrientation(const string &body_name)
+    Mat3<double> RigidBodyTreeModel::getOrientation(const std::string &body_name)
     {
         const int &body_idx = body_name_to_body_index_.at(body_name);
         const TreeNodePtr rigid_body_node = getNodeContainingBody(body_idx);
 
         forwardKinematics();
-        const SpatialTransform &Xa = rigid_body_node->Xa_[0];
+        const spatial::Transform &Xa = rigid_body_node->Xa_[0];
         Mat3<double> Rai = Xa.getRotation();
         Rai.transposeInPlace();
         return Rai;
     }
 
-    Vec3<double> RigidBodyTreeModel::getLinearVelocity(const string &body_name)
+    Vec3<double> RigidBodyTreeModel::getLinearVelocity(const std::string &body_name)
     {
         const int &body_idx = body_name_to_body_index_.at(body_name);
         const TreeNodePtr rigid_body_node = getNodeContainingBody(body_idx);
@@ -171,10 +190,10 @@ namespace grbda
         forwardKinematics();
         const Mat3<double> Rai = getOrientation(body_name);
         const SVec<double> v = rigid_body_node->v_.head<6>();
-        return Rai * spatialToLinearVelocity(v, Vec3<double>::Zero());
+        return Rai * spatial::spatialToLinearVelocity(v, Vec3<double>::Zero());
     }
 
-    Vec3<double> RigidBodyTreeModel::getAngularVelocity(const string &body_name)
+    Vec3<double> RigidBodyTreeModel::getAngularVelocity(const std::string &body_name)
     {
         const int &body_idx = body_name_to_body_index_.at(body_name);
         const TreeNodePtr rigid_body_node = getNodeContainingBody(body_idx);
