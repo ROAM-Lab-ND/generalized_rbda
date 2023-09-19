@@ -89,7 +89,7 @@ void runBenchmark(std::ofstream &file, const std::string &id)
     std::cout << "Finished benchmark for robot w/ id " << id << std::endl;
 }
 
-const std::string path_to_data = "../Benchmarking/data/Timing_";
+const std::string path_to_data = "../Benchmarking/data/TimingFD_";
 
 void runRevoluteWithRotorBenchmark()
 {

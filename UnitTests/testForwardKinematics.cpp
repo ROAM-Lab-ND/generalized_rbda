@@ -157,7 +157,7 @@ TYPED_TEST(RigidBodyKinematicsTest, ForwardKinematics)
             GTEST_ASSERT_LT((J_cp_cluster - J_cp_rigid_body).norm(), tol);
 
             // Verify that jacobians produce the same cartesian velocity
-            Vec6<double> J_qdot = Vec6<double>::Zero();
+            SVec<double> J_qdot = SVec<double>::Zero();
             for (size_t i = 0; i < this->cluster_model.clusters().size(); i++)
             {
                 const auto cluster = this->cluster_model.cluster(i);

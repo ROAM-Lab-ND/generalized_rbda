@@ -33,6 +33,7 @@
 
 # Dynamics Engine's redundancies
 *.m~
+*.asv
 *.swp
 *.pyc
 *.cache
