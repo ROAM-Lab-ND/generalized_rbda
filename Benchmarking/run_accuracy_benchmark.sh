@@ -1,5 +1,9 @@
 #!/bin/bash
 
+# Navigate to the correct directory
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
+cd ${DIR}/../build
+
 # Flag to determine whether to run the C++ binary (default is 1)
 benchmark=""
 
