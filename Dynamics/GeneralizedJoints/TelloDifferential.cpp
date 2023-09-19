@@ -70,6 +70,9 @@ namespace grbda
 			link1_joint_ = single_joints_.emplace_back(new Joints::Revolute(module.link1_axis_));
 			link2_joint_ = single_joints_.emplace_back(new Joints::Revolute(module.link2_axis_));
 
+			spanning_tree_to_independent_coords_conversion_ = DMat<double>::Identity(2, 4);
+            spanning_tree_to_independent_coords_conversion_ << 1., 0., 0., 0., 0., 1., 0., 0.;
+
 			X_intra_S_span_ = DMat<double>::Zero(24, 4);
 			X_intra_S_span_ring_ = DMat<double>::Zero(24, 4);
 
