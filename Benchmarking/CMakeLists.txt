@@ -1,25 +1,20 @@
-add_executable(time_benchmark timeBenchmarkForwardDynamics.cpp)
-target_link_libraries(time_benchmark dyna-utils robots)
+add_executable(time_benchmark_fd src/timeBenchmarkForwardDynamics.cpp)
+target_link_libraries(time_benchmark_fd dyna-utils robots)
 
-add_executable(time_benchmark_tello timeBenchmarkForwardDynamicsTello.cpp)
-target_link_libraries(time_benchmark_tello dyna-utils robots)
+add_executable(time_benchmark_iosim src/timeBenchmarkInverseOSIM.cpp)
+target_link_libraries(time_benchmark_iosim dyna-utils robots)
 
-add_executable(accuracy_benchmark_fd accuracyBenchmarkForwardDynamics.cpp)
+add_executable(time_benchmark_robots src/timeBenchmarkRobots.cpp)
+target_link_libraries(time_benchmark_robots dyna-utils robots)
+
+add_executable(accuracy_benchmark_fd src/accuracyBenchmarkForwardDynamics.cpp)
 target_link_libraries(accuracy_benchmark_fd dyna-utils robots)
 
-add_executable(accuracy_benchmark_id accuracyBenchmarkInverseDynamics.cpp)
+add_executable(accuracy_benchmark_id src/accuracyBenchmarkInverseDynamics.cpp)
 target_link_libraries(accuracy_benchmark_id dyna-utils robots)
 
-add_executable(accuracy_benchmark_atf accuracyBenchmarkApplyTestForce.cpp)
+add_executable(accuracy_benchmark_atf src/accuracyBenchmarkApplyTestForce.cpp)
 target_link_libraries(accuracy_benchmark_atf dyna-utils robots)
 
-if(TIMING_STATS)
-    add_executable(lg_mult_timing_analysis lagrangeMultiplierMethodTimingAnalysis.cpp)
-    target_link_libraries(lg_mult_timing_analysis dyna-utils robots)
-
-    add_executable(cluster_model_timing_analysis clusterModelTimingAnalysis.cpp)
-    target_link_libraries(cluster_model_timing_analysis dyna-utils robots)
-
-    add_executable(cluster_model_timing_analysis_tello clusterModelTimingAnalysisTello.cpp)
-    target_link_libraries(cluster_model_timing_analysis_tello dyna-utils robots)
-endif()
+add_executable(accuracy_benchmark_robots src/accuracyBenchmarkRobots.cpp)
+target_link_libraries(accuracy_benchmark_robots dyna-utils robots)

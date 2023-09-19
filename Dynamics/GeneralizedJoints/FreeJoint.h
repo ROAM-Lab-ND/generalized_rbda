@@ -1,9 +1,29 @@
-#pragma once
+#ifndef GRBDA_GENERALIZED_JOINTS_FREE_JOINT_H
+#define GRBDA_GENERALIZED_JOINTS_FREE_JOINT_H
 
 #include "GeneralizedJoint.h"
 
 namespace grbda
 {
+
+    namespace LoopConstraint
+    {
+        struct Free : Base
+        {
+            Free();
+
+            int numSpanningPos() const override { return 7; }
+            int numIndependentPos() const override { return 7; }
+
+            std::shared_ptr<Base> clone() const override;
+
+            void updateJacobians(const JointCoordinate &joint_pos) override {}
+            void updateBiases(const JointState &joint_state) override {}
+
+            DVec<double> gamma(const JointCoordinate &joint_pos) const override;
+        };
+
+    }
 
     namespace GeneralizedJoints
     {
@@ -21,10 +41,12 @@ namespace grbda
             void updateKinematics(const JointState &joint_state) override;
 
             void computeSpatialTransformFromParentToCurrentCluster(
-                GeneralizedSpatialTransform &Xup) const override;
+                spatial::GeneralizedTransform &Xup) const override;
 
             std::vector<std::tuple<Body, JointPtr, DMat<double>>>
             bodiesJointsAndReflectedInertias() const override;
+
+            JointCoordinate integratePosition(JointState joint_state, double dt) const override;
 
             JointState randomJointState() const override;
 
@@ -35,3 +57,5 @@ namespace grbda
     }
 
 } // namespace grbda
+
+#endif // GRBDA_GENERALIZED_JOINTS_FREE_JOINT_H

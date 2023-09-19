@@ -24,20 +24,17 @@ namespace grbda
                 node->Xa_ = node->Xup_.toAbsolute();
             }
 
-
-            // ISSUE #9
-            node->c_ = node->S_ring() * node->joint_state_.velocity +
-                       generalMotionCrossProduct(node->v_, node->vJ());
+            node->avp_ = spatial::generalMotionCrossProduct(node->v_, node->vJ());
         }
-
-        // TODO(@MatthewChignoli): Should we do contact kinematics every time we do kinematics?
-        contactPointForwardKinematics();
 
         kinematics_updated_ = true;
     }
 
     void TreeModel::contactPointForwardKinematics()
     {
+        if (contact_point_kinematics_updated_)
+            return;
+
         for (auto &cp : contact_points_)
         {
             const auto &body = getBody(cp.body_index_);
@@ -47,9 +44,23 @@ namespace grbda
             const SVec<double> v_body = node->getVelocityForBody(body);
 
             cp.position_ = Xa.inverseTransformPoint(cp.local_offset_);
-            cp.velocity_ = spatialToLinearVelocity(Xa.inverseTransformMotionVector(v_body),
-                                                   cp.position_);
+            cp.velocity_ = spatial::spatialToLinearVelocity(Xa.inverseTransformMotionVector(v_body),
+                                                            cp.position_);
         }
+
+        contact_point_kinematics_updated_ = true;
+    }
+
+    void TreeModel::updateContactPointJacobians()
+    {
+        if (contact_jacobians_updated_)
+            return;
+
+        for (auto &contact_point : contact_points_)
+        {
+            contactJacobianWorldFrame(contact_point.name_);
+        }
+        contact_jacobians_updated_ = true;
     }
 
     void TreeModel::compositeRigidBodyAlgorithm()
@@ -124,16 +135,19 @@ namespace grbda
             {
                 auto parent_node = nodes_[node->parent_index_];
                 node->a_ = node->Xup_.transformMotionVector(parent_node->a_) +
-                           node->S() * qdd.segment(vel_idx, num_vel) + node->c_;
+                           node->S() * qdd.segment(vel_idx, num_vel) +
+                           node->cJ() + node->avp_;
             }
             else
             {
                 node->a_ = node->Xup_.transformMotionVector(-gravity_) +
-                           node->S() * qdd.segment(vel_idx, num_vel) + node->c_;
+                           node->S() * qdd.segment(vel_idx, num_vel) +
+                           node->cJ() + node->avp_;
             }
 
             node->f_ = node->I_ * node->a_ +
-                       generalForceCrossProduct(node->v_, DVec<double>(node->I_ * node->v_));
+                       spatial::generalForceCrossProduct(node->v_,
+                                                         DVec<double>(node->I_ * node->v_));
         }
 
         // Account for external forces in bias force
@@ -162,7 +176,7 @@ namespace grbda
         return tau;
     }
 
-    void TreeModel::initializeExternalForces(
+    void TreeModel::setExternalForces(
         const std::vector<ExternalForceAndBodyIndexPair> &force_and_body_index_pairs)
     {
         // Clear previous external forces
@@ -191,8 +205,17 @@ namespace grbda
     void TreeModel::resetCache()
     {
         kinematics_updated_ = false;
+        contact_point_kinematics_updated_ = false;
         mass_matrix_updated_ = false;
         bias_force_updated_ = false;
+        contact_jacobians_updated_ = false;
+    }
+
+    int TreeModel::getNearestSharedSupportingNode(const std::pair<int, int> &cp_indices)
+    {
+        const ContactPoint &cp_i = contact_points_[cp_indices.first];
+        const ContactPoint &cp_j = contact_points_[cp_indices.second];
+        return greatestCommonElement(cp_i.supporting_nodes_, cp_j.supporting_nodes_);
     }
 
     bool TreeModel::vectorContainsIndex(const std::vector<int> vec, const int index)

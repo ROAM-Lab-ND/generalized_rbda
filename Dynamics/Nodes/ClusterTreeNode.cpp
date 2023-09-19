@@ -6,8 +6,9 @@ namespace grbda
     ClusterTreeNode::ClusterTreeNode(int index, std::string name, std::vector<Body> &bodies,
                                      std::shared_ptr<GeneralizedJoints::Base> joint,
                                      int parent_index, int num_parent_bodies,
-                                     int position_index, int velocity_index)
-        : TreeNode(index, name, parent_index, 6 * bodies.size(), num_parent_bodies,
+                                     int position_index, int velocity_index, int motion_ss_index)
+        : TreeNode(index, name, parent_index, num_parent_bodies,
+                   motion_ss_index, 6 * bodies.size(),
                    position_index, joint->numPositions(),
                    velocity_index, joint->numVelocities()),
           bodies_(bodies), joint_(joint)
@@ -15,9 +16,9 @@ namespace grbda
         for (size_t i = 0; i < bodies.size(); i++)
         {
             I_.block<6, 6>(6 * i, 6 * i) = bodies[i].inertia_.getMatrix();
-            Xup_.appendSpatialTransformWithClusterAncestorSubIndex(
-                SpatialTransform{}, bodies[i].cluster_ancestor_sub_index_within_cluster_);
-            Xa_.appendSpatialTransform(SpatialTransform{});
+            Xup_.appendTransformWithClusterAncestorSubIndex(
+                spatial::Transform{}, bodies[i].cluster_ancestor_sub_index_within_cluster_);
+            Xa_.appendTransform(spatial::Transform{});
         }
     }
 
@@ -32,7 +33,7 @@ namespace grbda
         D_inv_ = Eigen::ColPivHouseholderQR<DMat<double>>(D);
     }
 
-    const SpatialTransform &ClusterTreeNode::getAbsoluteTransformForBody(const Body &body)
+    const spatial::Transform &ClusterTreeNode::getAbsoluteTransformForBody(const Body &body)
     {
         return Xa_.getTransformForOutputBody(body.sub_index_within_cluster_);
     }
@@ -64,7 +65,9 @@ namespace grbda
         std::vector<std::pair<Body, JointPtr>> bodies_and_joints;
         for (int i = 0; i < (int)bodies_.size(); i++)
         {
-            std::pair<Body, JointPtr> body_and_joint = std::make_pair(bodies_[i], single_joints[i]);
+            Body body = bodies_[i];
+            JointPtr joint = single_joints[i]->clone();
+            std::pair<Body, JointPtr> body_and_joint = std::make_pair(body, joint);
             bodies_and_joints.push_back(body_and_joint);
         }
         return bodies_and_joints;

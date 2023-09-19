@@ -1,5 +1,5 @@
 #include "GenericJoint.h"
-#include "Utils/Utilities/utilities.h"
+#include "Utils/Utilities.h"
 
 namespace grbda
 {
@@ -8,37 +8,28 @@ namespace grbda
     {
 
         Generic::Generic(const std::vector<Body> &bodies, const std::vector<JointPtr> &joints,
-                         const ExplicitConstraint &explicit_constraint)
+                         std::shared_ptr<LoopConstraint::Base> loop_constraint)
             : Base((int)bodies.size(),
-                   explicit_constraint.numIndependentVelocities(),
-                   explicit_constraint.numIndependentVelocities(),
-                   false, false),
+                   loop_constraint->numIndependentPos(), loop_constraint->numIndependentVel()),
               bodies_(bodies)
         {
+            loop_constraint_ = loop_constraint;
+
             for (auto &joint : joints)
                 single_joints_.push_back(joint);
 
-            gamma_ = explicit_constraint.gamma_;
-            G_ = explicit_constraint.G_;
-            g_ = explicit_constraint.g_;
-            extractImplicitConstraintFromExplicit(explicit_constraint);
-
             extractConnectivity();
 
-            S_spanning_tree_ = DMat<double>::Zero(0, 0);
+            S_spanning_ = DMat<double>::Zero(0, 0);
             for (auto &joint : joints)
-                S_spanning_tree_ = appendEigenMatrix(S_spanning_tree_, joint->S());
+                S_spanning_ = appendEigenMatrix(S_spanning_, joint->S());
 
-            Xup_spanning_tree_ = DMat<double>::Identity(6 * num_bodies_, 6 * num_bodies_);
-            Xup_ring_spanning_tree_ = DMat<double>::Zero(6 * num_bodies_, 6 * num_bodies_);
+            X_intra_ = DMat<double>::Identity(6 * num_bodies_, 6 * num_bodies_);
+            X_intra_ring_ = DMat<double>::Zero(6 * num_bodies_, 6 * num_bodies_);
         }
 
         void Generic::updateKinematics(const JointState &joint_state)
         {
-#ifdef DEBUG_MODE
-            jointStateCheck(joint_state);
-#endif
-
             const JointState spanning_joint_state = toSpanningTreeState(joint_state);
             const DVec<double> &q = spanning_joint_state.position;
             const DVec<double> &qd = spanning_joint_state.velocity;
@@ -63,9 +54,9 @@ namespace grbda
                         const auto &body_k = bodies_[k];
                         const auto joint_k = single_joints_[k];
 
-                        Xup_spanning_tree_.block<6, 6>(6 * i, 6 * j) =
-                            Xup_spanning_tree_.block<6, 6>(6 * i, 6 * k) *
-                            (joint_k->XJ() * body_k.Xtree_).toMatrix();
+                        const Mat6<double> Xup_prev = X_intra_.block<6, 6>(6 * i, 6 * k);
+                        const Mat6<double> Xint = (joint_k->XJ() * body_k.Xtree_).toMatrix();
+                        X_intra_.block<6, 6>(6 * i, 6 * j) = Xup_prev * Xint;
 
                         k = j;
                     }
@@ -75,8 +66,9 @@ namespace grbda
                 vel_idx += num_vel;
             }
 
-            S_ = Xup_spanning_tree_ * S_spanning_tree_ * G_;
-            vJ_ = S_ * joint_state.velocity;
+            const DMat<double> S_implicit = X_intra_ * S_spanning_;
+            S_ = S_implicit * loop_constraint_->G();
+            vJ_ = S_implicit * qd;
 
             for (int i = 0; i < num_bodies_; i++)
             {
@@ -85,20 +77,24 @@ namespace grbda
                 {
                     if (connectivity_(i, j))
                     {
-                        v_relative = Xup_spanning_tree_.block<6, 6>(6 * i, 6 * j) * vJ_.segment<6>(6 * j) -
-                                     vJ_.segment<6>(6 * i);
+                        const Mat6<double> Xup = X_intra_.block<6, 6>(6 * i, 6 * j);
 
-                        Xup_ring_spanning_tree_.block<6, 6>(6 * i, 6 * j) =
-                            motionCrossMatrix(v_relative) * Xup_spanning_tree_.block<6, 6>(6 * i, 6 * j);
+                        const SVec<double> v_parent = Xup * vJ_.segment<6>(6 * j);
+                        const SVec<double> v_child = vJ_.segment<6>(6 * i);
+                        v_relative = v_child - v_parent;
+
+                        X_intra_ring_.block<6, 6>(6 * i, 6 * j) =
+                            -spatial::motionCrossMatrix(v_relative) * Xup;
                     }
                 }
             }
 
-            S_ring_ = Xup_ring_spanning_tree_ * S_spanning_tree_ * G_;
+            cJ_ = X_intra_ring_ * S_spanning_ * qd +
+                  S_implicit * loop_constraint_->g();
         }
 
         void Generic::computeSpatialTransformFromParentToCurrentCluster(
-            GeneralizedSpatialTransform &Xup) const
+            spatial::GeneralizedTransform &Xup) const
         {
             for (int i = 0; i < num_bodies_; i++)
             {
@@ -112,31 +108,6 @@ namespace grbda
                         break;
                     }
             }
-        }
-
-        void
-        Generic::extractImplicitConstraintFromExplicit(const ExplicitConstraint &explicit_constraint)
-        {
-            const DMat<double> &G = explicit_constraint.G_;
-            const DVec<double> &g = explicit_constraint.g_;
-
-            const int num_spanning_coords = G.rows();
-            const int num_independent_coords = G.cols();
-            const int num_constraints = num_spanning_coords - num_independent_coords;
-
-            if (num_spanning_coords < num_independent_coords)
-                throw std::runtime_error("Generic Joint cannot have more independent coordinates than spanning tree coordinates");
-            if (!G.topRows(num_independent_coords).isIdentity())
-                throw std::runtime_error("Generic joints require the independent coordinates be a subset of the spanning tree coordinates");
-
-            K_ = DMat<double>::Zero(num_constraints, num_spanning_coords);
-            K_.leftCols(num_independent_coords) = -G.bottomRows(num_constraints);
-            K_.rightCols(num_constraints).setIdentity();
-            k_ = -g.tail(num_constraints);
-
-            spanning_tree_to_independent_coords_conversion_ =
-                DMat<double>::Zero(num_independent_coords, num_spanning_coords);
-            spanning_tree_to_independent_coords_conversion_.leftCols(num_independent_coords) = DMat<double>::Identity(num_independent_coords, num_independent_coords);
         }
 
         void Generic::extractConnectivity()

@@ -1,15 +1,13 @@
-#pragma once
+#ifndef GRBDA_JOINT_H
+#define GRBDA_JOINT_H
 
-#include "Utils/Utilities/SpatialTransforms.h"
+#include "Utils/SpatialTransforms.h"
 
 namespace grbda
 {
 
     namespace Joints
     {
-
-        using namespace ori;
-        using namespace spatial;
 
         class Base
         {
@@ -18,23 +16,23 @@ namespace grbda
                 : num_positions_(num_positions), num_velocities_(num_velocities) {}
             virtual ~Base() {}
 
+            virtual std::shared_ptr<Base> clone() const = 0;
+
             virtual void updateKinematics(const DVec<double> &q, const DVec<double> &qd) = 0;
 
             int numPositions() const { return num_positions_; }
             int numVelocities() const { return num_velocities_; }
 
             const DMat<double> &S() const { return S_; }
-            const DMat<double> &S_ring() const { return S_ring_; }
             const DMat<double> &Psi() const { return Psi_; }
-            const SpatialTransform &XJ() const { return XJ_; }
+            const spatial::Transform &XJ() const { return XJ_; }
 
         protected:
             const int num_positions_;
             const int num_velocities_;
 
-            SpatialTransform XJ_;
+            spatial::Transform XJ_;
             DMat<double> S_;
-            DMat<double> S_ring_;
             DMat<double> Psi_;
         };
 
@@ -44,42 +42,50 @@ namespace grbda
             Free() : Base(7, 6)
             {
                 S_ = D6Mat<double>::Identity(6, 6);
-                S_ring_ = D6Mat<double>::Zero(6, 6);
                 Psi_ = D6Mat<double>::Identity(6, 6);
             }
             ~Free() {}
 
+            std::shared_ptr<Base> clone() const override { return std::make_shared<Free>(*this); }
+
             void updateKinematics(const DVec<double> &q, const DVec<double> &qd) override
             {
-                XJ_ = SpatialTransform(quaternionToRotationMatrix(q.tail<4>()),
-                                       q.head<3>());
+                XJ_ = spatial::Transform(ori::quaternionToRotationMatrix(q.tail<4>()),
+                                         q.head<3>());
             }
         };
 
         class Revolute : public Base
         {
         public:
-            Revolute(CoordinateAxis axis) : Base(1, 1), axis_(axis)
+            Revolute(ori::CoordinateAxis axis) : Base(1, 1), axis_(axis)
             {
-                S_ = D6Mat<double>::Zero(6, 1);
-                S_.leftCols<1>() = jointMotionSubspace<double>(JointType::Revolute, axis);
+                spatial::JointType Rev = spatial::JointType::Revolute;
 
-                S_ring_ = D6Mat<double>::Zero(6, 1);
+                S_ = D6Mat<double>::Zero(6, 1);
+                S_.leftCols<1>() = spatial::jointMotionSubspace<double>(Rev, axis);
 
                 Psi_ = D6Mat<double>::Zero(6, 1);
-                Psi_.leftCols<1>() = jointMotionSubspace<double>(JointType::Revolute, axis);
+                Psi_.leftCols<1>() = spatial::jointMotionSubspace<double>(Rev, axis);
             }
             ~Revolute() {}
 
+            std::shared_ptr<Base> clone() const override
+            {
+                return std::make_shared<Revolute>(*this);
+            }
+
             void updateKinematics(const DVec<double> &q, const DVec<double> &qd) override
             {
-                XJ_ = spatialRotation(axis_, q[0]);
+                XJ_ = spatial::spatialRotation<double>(axis_, q[0]);
             }
 
         private:
-            const CoordinateAxis axis_;
+            const ori::CoordinateAxis axis_;
         };
 
     }
 
 } // namespace grbda
+
+#endif // GRBDA_JOINT_H

@@ -1,10 +1,49 @@
-#pragma once
+/**
+ * @file TelloDifferential.h
+ *
+ * @brief Implementation of generalized joint for differential
+ * mechanism (hip differential and knee-ankle differential)
+ * found in Tello.
+ *
+ * Maximal coordinate consists of the spanning tree coordinates:
+ * - 2x pre-gearbox rotor coordinates (independent coordinates)
+ * - 2x joint link coordinate (dependent coordinates)
+ *
+ * Minimal coordinate consists of:
+ * - 2x post-gearbox rotor coordinates
+ */
+
+#ifndef GRBDA_GENERALIZED_JOINTS_TELLO_DIFFERENTIAL_H
+#define GRBDA_GENERALIZED_JOINTS_TELLO_DIFFERENTIAL_H
 
 #include "GeneralizedJoint.h"
-#include "3rd-parties/CasadiGen/header/CasadiGen.h"
+#include "Utils/CasadiGen/header/CasadiGen.h"
 
 namespace grbda
 {
+
+    namespace LoopConstraint
+    {
+        struct TelloDifferential : Base
+        {
+            TelloDifferential(const CasadiHelperFunctions &jacobian_helpers,
+                              const CasadiHelperFunctions &bias_helpers,
+                              const CasadiHelperFunctions &IK_pos_helpers,
+                              const CasadiHelperFunctions &IK_vel_helpers);
+
+            std::shared_ptr<Base> clone() const override;
+
+            DVec<double> gamma(const JointCoordinate &joint_pos) const override;
+
+            void updateJacobians(const JointCoordinate &joint_pos) override;
+            void updateBiases(const JointState &joint_state) override;
+
+            const CasadiHelperFunctions jacobian_helpers_;
+            const CasadiHelperFunctions bias_helpers_;
+            const CasadiHelperFunctions IK_pos_helpers_;
+            const CasadiHelperFunctions IK_vel_helpers_;
+        };
+    }
 
     namespace GeneralizedJoints
     {
@@ -12,15 +51,13 @@ namespace grbda
         class TelloDifferential : public Base
         {
         public:
-            TelloDifferential(Body &rotor_1, Body &rotor_2, Body &link_1, Body &link_2,
-                                 CoordinateAxis rotor_axis_1, CoordinateAxis rotor_axis_2,
-                                 CoordinateAxis joint_axis_1, CoordinateAxis joint_axis_2);
+            TelloDifferential(TelloDifferentialModule &module);
             virtual ~TelloDifferential() {}
 
             void updateKinematics(const JointState &joint_state) override;
 
             void computeSpatialTransformFromParentToCurrentCluster(
-                GeneralizedSpatialTransform &Xup) const override;
+                spatial::GeneralizedTransform &Xup) const override;
 
             std::vector<std::tuple<Body, JointPtr, DMat<double>>>
             bodiesJointsAndReflectedInertias() const override;
@@ -28,47 +65,29 @@ namespace grbda
             JointState randomJointState() const override;
 
         protected:
-            typedef int (*casadi_fn)(const double**, double**, long long int*, double*, int);
-            typedef const long long int* (*casadi_sparsity_out_fn)(long long int);
-            typedef int (*casadi_work_fn)(long long int*, long long int*, long long int*, long long int*);
-
-            casadi_fn td_kikd;
-            casadi_sparsity_out_fn td_kikd_sparsity_out;
-            casadi_work_fn td_kikd_work;
-            casadi_fn td_J_dy_2_dqd;
-            casadi_sparsity_out_fn td_J_dy_2_dqd_sparsity_out;
-            casadi_work_fn td_J_dy_2_dqd_work;
-            casadi_fn td_g;
-            casadi_sparsity_out_fn td_g_sparsity_out;
-            casadi_work_fn td_g_work;
-            casadi_fn td_k;
-            casadi_sparsity_out_fn td_k_sparsity_out;
-            casadi_work_fn td_k_work;
-            casadi_fn td_IK_pos = thd_IK_pos;
-            casadi_sparsity_out_fn td_IK_pos_sparsity_out;
-            casadi_work_fn td_IK_pos_work;
-            casadi_fn td_IK_vel;
-            casadi_sparsity_out_fn td_IK_vel_sparsity_out;
-            casadi_work_fn td_IK_vel_work;
+            std::shared_ptr<LoopConstraint::TelloDifferential> tello_constraint_;
 
         private:
-            void updateConstraintJacobians(const JointCoordinate &joint_pos) override;
-            void updateConstraintBias(const JointState &joint_state) override;
+            JointPtr rotor1_joint_;
+            JointPtr rotor2_joint_;
+            JointPtr link1_joint_;
+            JointPtr link2_joint_;
 
-            JointPtr rotor_1_joint_;
-            JointPtr rotor_2_joint_;
-            JointPtr link_1_joint_;
-            JointPtr link_2_joint_;
+            spatial::Transform X21_;
 
-            SpatialTransform X21_;
-            
-            const Body rotor_1_;
-            const Body rotor_2_;
-            const Body link_1_;
-            const Body link_2_;
+            const Body rotor1_;
+            const Body rotor2_;
+            const Body link1_;
+            const Body link2_;
 
+            DMat<double> X_intra_S_span_;
+            DMat<double> X_intra_S_span_ring_;
+
+            const double gear_ratio_;
         };
 
     }
 
 } // namespace grbda
+
+#endif // GRBDA_GENERALIZED_JOINTS_TELLO_DIFFERENTIAL_H

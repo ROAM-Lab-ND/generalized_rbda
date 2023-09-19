@@ -26,13 +26,12 @@ if(CMAKE_BUILD_TYPE STREQUAL "Debug")
 endif()
 
 option(M1_BUILD "set compile options for Mac M1 chip" OFF)
-option(TIMING_STATS "log detailed timing statistics for algorithms" OFF)
 
 if(CMAKE_SYSTEM_NAME MATCHES Linux)
-  set(CMAKE_CXX_FLAGS "-O3 -no-pie -march=native -ggdb -Wall \
+  set(CMAKE_CXX_FLAGS "-O3 -march=native -ggdb -Wall \
   -Wextra -Wcast-align -Wdisabled-optimization -Wformat=2 \
   -Winit-self -Wmissing-include-dirs -Woverloaded-virtual \
-  -Wshadow -Wsign-promo -Werror -Wno-aligned-new -Wno-unused-but-set-variable \
+  -Wshadow -Wsign-promo \
   -Wno-sign-compare")
 
 elseif(APPLE)
@@ -50,18 +49,11 @@ endif()
 
 set(CMAKE_C_FLAGS "-O3  -ggdb  -march=native -std=gnu99 -I.")
 
-if(TIMING_STATS)
-  add_definitions(-DTIMING_STATS)
-endif()
-
 #------------------------------------------------------------------------
 # Directory setup
 #------------------------------------------------------------------------
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/Utils)
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/3rd-parties)
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/3rd-parties/URDF)
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/3rd-parties/CasadiGen)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/Dynamics)
 include_directories("/usr/local/include/eigen3")
 include_directories("/usr/local/include/lcm/")   # lcm includes
@@ -75,7 +67,6 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unused-const-variable \
 add_subdirectory(Utils)
 add_subdirectory(Dynamics)
 add_subdirectory(Robots)
-add_subdirectory(3rd-parties)
 add_subdirectory(Benchmarking)
 
 # Check if the project is being built as a subdirectory
@@ -102,6 +93,5 @@ message (" The project name/ Build Type: ${PROJECT_NAME}/${CMAKE_BUILD_TYPE}")
 message (" The system name: ${CMAKE_SYSTEM_NAME}")
 message (" The project source directory: ${PROJECT_SOURCE_DIR}")
 message (" The project binary directory: ${CMAKE_BINARY_DIR}")
-message (" Timing statistics: ${TIMING_STATS}")
 message ("--------------------------------------------------------------")
 message ("")

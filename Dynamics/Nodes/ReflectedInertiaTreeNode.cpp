@@ -7,15 +7,17 @@ namespace grbda
                                                        const std::shared_ptr<Joints::Base> &joint,
                                                        const int parent_index,
                                                        const int position_index,
-                                                       const int velocity_index)
-        : TreeNode(index, link.name_, parent_index, 6, 1,
+                                                       const int velocity_index,
+                                                       const int motion_subspace_index)
+        : TreeNode(index, link.name_, parent_index, 1,
+                   motion_subspace_index, 6,
                    position_index, joint->numPositions(),
                    velocity_index, joint->numVelocities()),
           link_(link), joint_(joint), Xtree_(link.Xtree_)
     {
         I_ = link.inertia_.getMatrix();
-        Xup_.appendSpatialTransformWithClusterAncestorSubIndex(SpatialTransform{}, 0);
-        Xa_.appendSpatialTransform(SpatialTransform{});
+        Xup_.appendTransformWithClusterAncestorSubIndex(spatial::Transform{}, 0);
+        Xa_.appendTransform(spatial::Transform{});
     }
 
     void ReflectedInertiaTreeNode::updateKinematics()
@@ -25,7 +27,7 @@ namespace grbda
         vJ_ = joint_->S() * joint_state_.velocity;
     }
 
-    const SpatialTransform &ReflectedInertiaTreeNode::getAbsoluteTransformForBody(const Body &body)
+    const spatial::Transform &ReflectedInertiaTreeNode::getAbsoluteTransformForBody(const Body &body)
     {
         return Xa_[0];
     };

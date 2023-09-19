@@ -1,8 +1,8 @@
 #include "gtest/gtest.h"
 
 #include <eigen3/unsupported/Eigen/MatrixFunctions>
-#include "Utils/Utilities/SpatialInertia.h"
-#include "Utils/Utilities/SpatialTransforms.h"
+#include "Utils/SpatialInertia.h"
+#include "Utils/SpatialTransforms.h"
 
 namespace internal_helpers
 {
@@ -49,7 +49,7 @@ GTEST_TEST(Spatial, SpatialMotionTransform)
     const Vec3<double> r = Vec3<double>::Random();
 
     Mat6<double> X_eigen_matrix = createSXform(E, r);
-    SpatialTransform X_spatial_transform = SpatialTransform(E, r);
+    Transform X_spatial_transform = Transform(E, r);
 
     SVec<double> v = SVec<double>::Random();
 
@@ -71,7 +71,7 @@ GTEST_TEST(Spatial, SpatialInertiaTransform)
     const Vec3<double> r = Vec3<double>::Random();
 
     Mat6<double> X_eigen_matrix = createSXform(E, r);
-    SpatialTransform X_spatial_transform = SpatialTransform(E, r);
+    Transform X_spatial_transform = Transform(E, r);
 
     Mat6<double> I = randomSpatialInertia();
 
@@ -95,11 +95,11 @@ GTEST_TEST(Spatial, SpatialTransformMultiplication)
     Mat6<double> X1_eigen_matrix = createSXform(E1, r1);
     Mat6<double> X2_eigen_matrix = createSXform(E2, r2);
 
-    SpatialTransform X1_spatial_transform = SpatialTransform(E1, r1);
-    SpatialTransform X2_spatial_transform = SpatialTransform(E2, r2);
+    Transform X1_spatial_transform = Transform(E1, r1);
+    Transform X2_spatial_transform = Transform(E2, r2);
 
     Mat6<double> X3_eigen_matrix = X1_eigen_matrix * X2_eigen_matrix;
-    SpatialTransform X3_spatial_transform = X1_spatial_transform * X2_spatial_transform;
+    Transform X3_spatial_transform = X1_spatial_transform * X2_spatial_transform;
 
     GTEST_ASSERT_LT((rotationFromSXform(X3_eigen_matrix) - X3_spatial_transform.getRotation()).norm(), 1e-8);
     GTEST_ASSERT_LT((translationFromSXform(X3_eigen_matrix) - X3_spatial_transform.getTranslation()).norm(), 1e-8);
@@ -109,7 +109,7 @@ GTEST_TEST(Spatial, SpatialTransformMultiplication)
 GTEST_TEST(Spatial, GeneralizedSpatialTransforms)
 {
     // Verify that transforming a spatial motion vector, spatial force vector, and spatial inertia
-    // using a 6Nx6N Eigen matrix and a GeneralizedSpatialTransform object gives the same result
+    // using a 6Nx6N Eigen matrix and a GeneralizedTransform object gives the same result
 
     const int max_num_output_bodies = 3;
     const int max_num_parent_bodies = 3;
@@ -128,7 +128,7 @@ GTEST_TEST(Spatial, GeneralizedSpatialTransforms)
             DVec<int> parent_subindices = toBase(i, num_parent_bodies, num_output_bodies);
 
             DMat<double> X_eigen_matrix = DMat<double>::Zero(6 * num_output_bodies, 6 * num_parent_bodies);
-            GeneralizedSpatialTransform X_generalized = GeneralizedSpatialTransform(num_parent_bodies);
+            GeneralizedTransform X_generalized = GeneralizedTransform(num_parent_bodies);
 
             for (int j = 0; j < num_output_bodies; j++)
             {
@@ -137,9 +137,9 @@ GTEST_TEST(Spatial, GeneralizedSpatialTransforms)
 
                 X_eigen_matrix.block<6, 6>(6 * j, 6 * parent_subindices[j]) = createSXform(E, r);
 
-                SpatialTransform X_spatial_transform = SpatialTransform(E, r);
-                X_generalized.appendSpatialTransformWithClusterAncestorSubIndex(
-                    X_spatial_transform, parent_subindices[j]);
+                Transform X_spatial_transform = Transform(E, r);
+                X_generalized.appendTransformWithClusterAncestorSubIndex(X_spatial_transform,
+                                                                         parent_subindices[j]);
             }
 
             // Conversion to matrix
@@ -180,7 +180,7 @@ GTEST_TEST(Spatial, GeneralizedSpatialTransforms)
 GTEST_TEST(Spatial, GeneralizedSpatialTransformMultiplication)
 {
     // Verify that transforming a spatial motion vector using a 6Nx6N Eigen matrix and a
-    // GeneralizedSpatialTransform object gives the same result
+    // GeneralizedTransform object gives the same result
     //
     // Matrix multiplication X3 = X1 * X2 where
     // X1 is 6*num_outputs x 6*num_intermediates
@@ -210,8 +210,8 @@ GTEST_TEST(Spatial, GeneralizedSpatialTransformMultiplication)
             DMat<double> X1_eigen_matrix =
                 DMat<double>::Zero(6 * num_output_bodies, 6 * num_intermediate_bodies);
 
-            GeneralizedSpatialTransform X1_generalized =
-                GeneralizedSpatialTransform(num_intermediate_bodies);
+            GeneralizedTransform X1_generalized =
+                GeneralizedTransform(num_intermediate_bodies);
 
             for (int j = 0; j < num_output_bodies; j++)
             {
@@ -221,8 +221,8 @@ GTEST_TEST(Spatial, GeneralizedSpatialTransformMultiplication)
                 X1_eigen_matrix.block<6, 6>(6 * j, 6 * intermediate_subindices[j]) =
                     createSXform(E, r);
 
-                SpatialTransform X_spatial_transform = SpatialTransform(E, r);
-                X1_generalized.appendSpatialTransformWithClusterAncestorSubIndex(
+                Transform X_spatial_transform = Transform(E, r);
+                X1_generalized.appendTransformWithClusterAncestorSubIndex(
                     X_spatial_transform, intermediate_subindices[j]);
             }
 
@@ -234,8 +234,8 @@ GTEST_TEST(Spatial, GeneralizedSpatialTransformMultiplication)
                 DMat<double> X2_eigen_matrix =
                     DMat<double>::Zero(6 * num_intermediate_bodies, 6 * num_parent_bodies);
 
-                GeneralizedSpatialTransform X2_generalized =
-                    GeneralizedSpatialTransform(num_parent_bodies);
+                GeneralizedTransform X2_generalized =
+                    GeneralizedTransform(num_parent_bodies);
 
                 for (int j = 0; j < num_intermediate_bodies; j++)
                 {
@@ -245,13 +245,13 @@ GTEST_TEST(Spatial, GeneralizedSpatialTransformMultiplication)
                     X2_eigen_matrix.block<6, 6>(6 * j, 6 * parent_subindices[j]) =
                         createSXform(E, r);
 
-                    SpatialTransform X_spatial_transform = SpatialTransform(E, r);
-                    X2_generalized.appendSpatialTransformWithClusterAncestorSubIndex(
+                    Transform X_spatial_transform = Transform(E, r);
+                    X2_generalized.appendTransformWithClusterAncestorSubIndex(
                         X_spatial_transform, parent_subindices[j]);
                 }
 
                 DMat<double> X3_eigen_matrix = X1_eigen_matrix * X2_eigen_matrix;
-                GeneralizedSpatialTransform X3_generalized = X1_generalized * X2_generalized;
+                GeneralizedTransform X3_generalized = X1_generalized * X2_generalized;
                 GTEST_ASSERT_LT((X3_eigen_matrix - X3_generalized.toMatrix()).norm(), 1e-8);
             }
         }

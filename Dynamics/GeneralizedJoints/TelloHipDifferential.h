@@ -1,7 +1,8 @@
-#pragma once
+#ifndef GRBDA_GENERALIZED_JOINTS_TELLO_HIP_DIFFERENTIAL_H
+#define GRBDA_GENERALIZED_JOINTS_TELLO_HIP_DIFFERENTIAL_H
 
 #include "TelloDifferential.h"
-#include "3rd-parties/CasadiGen/header/CasadiGen.h"
+#include "Utils/CasadiGen/header/CasadiGen.h"
 
 namespace grbda
 {
@@ -9,40 +10,29 @@ namespace grbda
     namespace GeneralizedJoints
     {
 
-	class TelloHipDifferential : public TelloDifferential
-	{
-	public:
-	    TelloHipDifferential(Body &rotor_1, Body &rotor_2, Body &link_1, Body &link_2,
-				 CoordinateAxis rotor_axis_1, CoordinateAxis rotor_axis_2,
-				 CoordinateAxis joint_axis_1, CoordinateAxis joint_axis_2)
-				 : TelloDifferential(rotor_1, rotor_2, link_1, link_2,
-				 rotor_axis_1, rotor_axis_2, joint_axis_1, joint_axis_2)
-	    {
-		td_kikd = thd_kikd;
-		td_kikd_sparsity_out = thd_kikd_sparsity_out;
-		td_kikd_work = thd_kikd_work;
-		td_J_dy_2_dqd = thd_J_dy_2_dqd;
-		td_J_dy_2_dqd_sparsity_out = thd_J_dy_2_dqd_sparsity_out;
-		td_J_dy_2_dqd_work = thd_J_dy_2_dqd_work;
-		td_g = thd_g;
-		td_g_sparsity_out = thd_g_sparsity_out;
-		td_g_work = thd_g_work;
-		td_k = thd_k;
-		td_k_sparsity_out = thd_k_sparsity_out;
-		td_k_work = thd_k_work;
-		td_IK_pos = thd_IK_pos;
-		td_IK_pos_sparsity_out = thd_IK_pos_sparsity_out;
-		td_IK_pos_work = thd_IK_pos_work;
-		td_IK_vel = thd_IK_vel;
-		td_IK_vel_sparsity_out = thd_IK_vel_sparsity_out;
-		td_IK_vel_work = thd_IK_vel_work;
-	    }
-	    virtual ~TelloHipDifferential() {}
+        class TelloHipDifferential : public TelloDifferential
+        {
+        public:
+            TelloHipDifferential(TelloDifferentialModule &module)
+            : TelloDifferential(module)
+            {
+                CasadiHelperFunctions jacobian_helpers(thd_jacobian, thd_jacobian_sparsity_out,
+                                                       thd_jacobian_work);
+                CasadiHelperFunctions bias_helpers(thd_bias, thd_bias_sparsity_out, thd_bias_work);
+                CasadiHelperFunctions IK_pos_helpers(thd_IK_pos, thd_IK_pos_sparsity_out, thd_IK_pos_work);
+                CasadiHelperFunctions IK_vel_helpers(thd_IK_vel, thd_IK_vel_sparsity_out, thd_IK_vel_work);
 
-	    GeneralizedJointTypes type() const override { return GeneralizedJointTypes::TelloHipDifferential; }
+                tello_constraint_ = std::make_shared<LoopConstraint::TelloDifferential>(
+                    jacobian_helpers, bias_helpers, IK_pos_helpers, IK_vel_helpers);
+                loop_constraint_ = tello_constraint_;
+            }
+            virtual ~TelloHipDifferential() {}
 
-	};
+            GeneralizedJointTypes type() const override { return GeneralizedJointTypes::TelloHipDifferential; }
+        };
 
     }
 
 } // namespace grbda
+
+#endif // GRBDA_GENERALIZED_JOINTS_TELLO_HIP_DIFFERENTIAL_H

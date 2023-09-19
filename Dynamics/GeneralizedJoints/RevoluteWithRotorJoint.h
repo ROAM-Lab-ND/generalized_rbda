@@ -1,4 +1,5 @@
-#pragma once
+#ifndef GRBDA_GENERALIZED_JOINTS_REVOLUTE_WITH_ROTOR_JOINT_H
+#define GRBDA_GENERALIZED_JOINTS_REVOLUTE_WITH_ROTOR_JOINT_H
 
 #include "GeneralizedJoint.h"
 
@@ -11,8 +12,8 @@ namespace grbda
         class RevoluteWithRotor : public Base
         {
         public:
-            RevoluteWithRotor(Body &link, Body &rotor, CoordinateAxis joint_axis,
-                              CoordinateAxis rotor_axis, double gear_ratio);
+            RevoluteWithRotor(GearedTransmissionModule &module);
+
             virtual ~RevoluteWithRotor() {}
 
             GeneralizedJointTypes type() const override { return GeneralizedJointTypes::RevoluteWithRotor; }
@@ -20,7 +21,7 @@ namespace grbda
             void updateKinematics(const JointState &joint_state) override;
 
             void computeSpatialTransformFromParentToCurrentCluster(
-                GeneralizedSpatialTransform &Xup) const override;
+                spatial::GeneralizedTransform &Xup) const override;
 
             std::vector<std::tuple<Body, JointPtr, DMat<double>>>
             bodiesJointsAndReflectedInertias() const override;
@@ -36,3 +37,5 @@ namespace grbda
     }
 
 } // namespace grbda
+
+#endif // GRBDA_GENERALIZED_JOINTS_REVOLUTE_WITH_ROTOR_JOINT_H

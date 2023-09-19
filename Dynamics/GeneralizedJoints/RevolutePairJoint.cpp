@@ -6,50 +6,33 @@ namespace grbda
     namespace GeneralizedJoints
     {
 
-        RevolutePair::RevolutePair(Body &link_1, Body &link_2, CoordinateAxis joint_axis_1,
-                                   CoordinateAxis joint_axis_2)
-            : Base(2, 2, 2, false, false), link_1_(link_1), link_2_(link_2)
+        RevolutePair::RevolutePair(Body &link_1, Body &link_2,
+                                   ori::CoordinateAxis joint_axis_1,
+                                   ori::CoordinateAxis joint_axis_2)
+            : Base(2, 2, 2), link_1_(link_1), link_2_(link_2)
         {
             link_1_joint_ = single_joints_.emplace_back(new Joints::Revolute(joint_axis_1));
             link_2_joint_ = single_joints_.emplace_back(new Joints::Revolute(joint_axis_2));
 
-            gamma_ = [](DVec<double> y)
-            {
-                Vec2<double> q;
-                q[0] = y[0];
-                q[1] = y[1];
-                return q;
-            };
-
-            G_ = DMat<double>::Zero(2, 2);
-            G_ << 1., 0.,
-                0., 1.;
-
-            g_ = DVec<double>::Zero(2);
-
-            phi_ = [&](DVec<double> q)
-            {
-                return DVec<double>::Zero(0);
-            };
-            K_ = DMat<double>::Zero(0, 2);
-            k_ = DVec<double>::Zero(0);
-
-            // ISSUE: #72
             spanning_tree_to_independent_coords_conversion_ = DMat<double>::Zero(0, 0);
 
-            S_ = DMat<double>::Zero(12, 2);
-            S_.block<6, 1>(0, 0) = link_1_joint_->S();
-            S_.block<6, 1>(6, 1) = link_2_joint_->S();
+            DMat<double> G = DMat<double>::Zero(2, 2);
+            G << 1., 0.,
+                0., 1.;
+            const DMat<double> K = DMat<double>::Identity(0, 2);
+            loop_constraint_ = std::make_shared<LoopConstraint::Static>(G, K);
 
-            vJ_ = DVec<double>::Zero(12);
+            X_intra_S_span_ = DMat<double>::Zero(12, 2);
+            X_intra_S_span_ring_ = DMat<double>::Zero(12, 2);
+
+            X_intra_S_span_.block<6, 1>(0, 0) = link_1_joint_->S();
+            X_intra_S_span_.block<6, 1>(6, 1) = link_2_joint_->S();
+
+            S_ = X_intra_S_span_ * loop_constraint_->G();
         }
 
         void RevolutePair::updateKinematics(const JointState &joint_state)
         {
-#ifdef DEBUG_MODE
-            jointStateCheck(joint_state);
-#endif
-
             const JointState spanning_joint_state = toSpanningTreeState(joint_state);
             const DVec<double> &q = spanning_joint_state.position;
             const DVec<double> &qd = spanning_joint_state.velocity;
@@ -58,18 +41,20 @@ namespace grbda
             link_2_joint_->updateKinematics(q.segment<1>(1), qd.segment<1>(1));
 
             X21_ = link_2_joint_->XJ() * link_2_.Xtree_;
-
+            const DVec<double> v2_relative = link_2_joint_->S() * qd[1];
+            X_intra_S_span_.block<6, 1>(6, 0) = X21_.transformMotionSubspace(link_1_joint_->S());
             S_.block<6, 1>(6, 0) = X21_.transformMotionSubspace(link_1_joint_->S());
 
-            const DVec<double> v2_relative = link_2_joint_->S() * qd[1];
-            S_ring_.block<6, 1>(6, 0) = -generalMotionCrossMatrix(v2_relative) *
-                                        X21_.transformMotionSubspace(link_1_joint_->S());
+            X_intra_S_span_ring_.block<6, 1>(6, 0) =
+                -spatial::generalMotionCrossMatrix(v2_relative) *
+                X_intra_S_span_.block<6, 1>(6, 0);
 
-            vJ_ = S_ * joint_state.velocity;
+            vJ_ = X_intra_S_span_ * qd;
+            cJ_ = X_intra_S_span_ring_ * qd;
         }
 
         void RevolutePair::computeSpatialTransformFromParentToCurrentCluster(
-            GeneralizedSpatialTransform &Xup) const
+            spatial::GeneralizedTransform &Xup) const
         {
 #ifdef DEBUG_MODE
             if (Xup.getNumOutputBodies() != 2)

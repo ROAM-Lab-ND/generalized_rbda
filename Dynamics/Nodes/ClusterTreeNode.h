@@ -1,4 +1,5 @@
-#pragma once
+#ifndef GRBDA_CLUSTER_TREE_NODE_H
+#define GRBDA_CLUSTER_TREE_NODE_H
 
 #include "TreeNode.h"
 #include "Dynamics/GeneralizedJoints/GeneralizedJointTypes.h"
@@ -8,43 +9,24 @@ namespace grbda
 
     struct ClusterTreeNode : TreeNode
     {
-        EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+        typedef std::shared_ptr<GeneralizedJoints::Base> GenJointPtr;
 
         ClusterTreeNode(int index, std::string name, std::vector<Body> &bodies,
-                        std::shared_ptr<GeneralizedJoints::Base> joint, int parent_index,
-                        int num_parent_bodies, int position_index, int velocity_index);
+                        GenJointPtr joint, int parent_index, int num_parent_bodies,
+                        int position_index, int velocity_index, int motion_ss_index);
 
         void updateKinematics() override;
         void updateDinv(const DMat<double> &D);
         const DVec<double> &vJ() const override { return joint_->vJ(); }
         const DMat<double> &S() const override { return joint_->S(); }
-        const DMat<double> &S_ring() const override { return joint_->S_ring(); }
+        const DVec<double> &cJ() const override { return joint_->cJ(); }
 
-        // ISSUE #14
-        // TODO(@MatthewChignoli): Should this actually be a virtual function in TreeNode.h?
         JointCoordinate integratePosition(JointState joint_state, double dt)
         {
-            if (joint_state.position.isSpanning() && joint_state.velocity.isSpanning())
-            {
-                joint_state.position += joint_state.velocity * dt;
-            }
-            else if (joint_state.position.isSpanning())
-            {
-                joint_state.position += joint_->G() * joint_state.velocity * dt;
-            }
-            else if (joint_state.velocity.isSpanning())
-            {
-                throw std::runtime_error("Velocity is spanning but position is not. This is not supported.");
-            }
-            else
-            {
-                joint_state.position += joint_state.velocity * dt;
-            }
-
-            return joint_state.position;
+            return joint_->integratePosition(joint_state, dt);
         }
 
-        const SpatialTransform &getAbsoluteTransformForBody(const Body &body) override;
+        const spatial::Transform &getAbsoluteTransformForBody(const Body &body) override;
         DVec<double> getVelocityForBody(const Body &body) override;
         void applyForceToBody(const SVec<double> &force, const Body &body) override;
 
@@ -69,6 +51,10 @@ namespace grbda
 
         DMat<double> ChiUp_;
         DMat<double> qdd_for_subtree_due_to_subtree_root_joint_qdd;
+        DMat<double> K_;
+        DMat<double> L_;
     };
 
 } // namespace grbda
+
+#endif // GRBDA_CLUSTER_TREE_NODE_H
