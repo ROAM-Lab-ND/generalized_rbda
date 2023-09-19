@@ -6,7 +6,7 @@ namespace grbda
     namespace GeneralizedJoints
     {
         RevoluteWithRotor::RevoluteWithRotor(GearedTransmissionModule &module)
-        : Base(2, 1, 1, false, false), link_(module.body_), rotor_(module.rotor_)
+        : Base(2, 1, 1), link_(module.body_), rotor_(module.rotor_)
         {
             link_joint_ = single_joints_.emplace_back(new Joints::Revolute(module.joint_axis_));
             rotor_joint_ = single_joints_.emplace_back(new Joints::Revolute(module.rotor_axis_));
@@ -28,10 +28,6 @@ namespace grbda
 
         void RevoluteWithRotor::updateKinematics(const JointState &joint_state)
         {
-#ifdef DEBUG_MODE
-            jointStateCheck(joint_state);
-#endif
-
             const JointState spanning_joint_state = toSpanningTreeState(joint_state);
             const DVec<double> &q = spanning_joint_state.position;
             const DVec<double> &qd = spanning_joint_state.velocity;

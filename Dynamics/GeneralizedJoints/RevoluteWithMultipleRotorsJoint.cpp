@@ -10,7 +10,7 @@ namespace grbda
             Body &link, std::vector<Body> &rotors,
             ori::CoordinateAxis joint_axis, std::vector<ori::CoordinateAxis> &rotor_axes,
             std::vector<double> &gear_ratios)
-            : Base(1 + rotors.size(), 1, 1, false, false), link_(link), rotors_(rotors)
+            : Base(1 + rotors.size(), 1, 1), link_(link), rotors_(rotors)
         {
             const size_t num_rotors = rotors.size();
             if (num_rotors != rotor_axes.size() || num_rotors != gear_ratios.size())
@@ -42,8 +42,6 @@ namespace grbda
             }
             loop_constraint_ = std::make_shared<LoopConstraint::Static>(G, K);
 
-            // TODO(@MatthewChignoli): How to compute Psi?
-
             S_spanning_ = DMat<double>::Zero(0, 0);
             for (const auto &joint : single_joints_)
                 S_spanning_ = appendEigenMatrix(S_spanning_, joint->S());
@@ -55,10 +53,6 @@ namespace grbda
 
         void RevoluteWithMultipleRotorsJoint::updateKinematics(const JointState &joint_state)
         {
-#ifdef DEBUG_MODE
-            jointStateCheck(joint_state);
-#endif
-
             const JointState spanning_joint_state = toSpanningTreeState(joint_state);
             const DVec<double> &q = spanning_joint_state.position;
             const DVec<double> &qd = spanning_joint_state.velocity;
@@ -69,9 +63,9 @@ namespace grbda
                 rotor_joints_[i]->updateKinematics(q.segment<1>(i + 1), qd.segment<1>(i + 1));
             }
 
-            const DMat<double> X_inter_S_span = X_inter_ * S_spanning_; 
-            S_ = X_inter_S_span * G();
-            vJ_ = X_inter_S_span * qd;
+            const DMat<double> X_intra_S_span = X_inter_ * S_spanning_; 
+            S_ = X_intra_S_span * G();
+            vJ_ = X_intra_S_span * qd;
         }
 
         void RevoluteWithMultipleRotorsJoint::computeSpatialTransformFromParentToCurrentCluster(

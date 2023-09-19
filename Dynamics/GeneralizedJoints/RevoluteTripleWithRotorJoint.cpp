@@ -10,7 +10,7 @@ namespace grbda
             const ParallelBeltTransmissionModule &module_1,
             const ParallelBeltTransmissionModule &module_2,
             const ParallelBeltTransmissionModule &module_3)
-            : Base(6, 3, 3, false, false), link_1_(module_1.body_), link_2_(module_2.body_),
+            : Base(6, 3, 3), link_1_(module_1.body_), link_2_(module_2.body_),
               link_3_(module_3.body_), rotor_1_(module_1.rotor_), rotor_2_(module_2.rotor_),
               rotor_3_(module_3.rotor_)
         {
@@ -46,25 +46,21 @@ namespace grbda
             K.rightCols(3).setIdentity();
             loop_constraint_ = std::make_shared<LoopConstraint::Static>(G, K);
 
-            X_inter_S_span_ = DMat<double>::Zero(36, 6);
-            X_inter_S_span_ring_ = DMat<double>::Zero(36, 6);
+            X_intra_S_span_ = DMat<double>::Zero(36, 6);
+            X_intra_S_span_ring_ = DMat<double>::Zero(36, 6);
 
-            X_inter_S_span_.block<6, 1>(0, 0) = link_1_joint_->S();
-            X_inter_S_span_.block<6, 1>(6, 1) = link_2_joint_->S();
-            X_inter_S_span_.block<6, 1>(12, 2) = link_3_joint_->S();
-            X_inter_S_span_.block<6, 1>(18, 3) = rotor_1_joint_->S();
-            X_inter_S_span_.block<6, 1>(24, 4) = rotor_2_joint_->S();
-            X_inter_S_span_.block<6, 1>(30, 5) = rotor_3_joint_->S();
+            X_intra_S_span_.block<6, 1>(0, 0) = link_1_joint_->S();
+            X_intra_S_span_.block<6, 1>(6, 1) = link_2_joint_->S();
+            X_intra_S_span_.block<6, 1>(12, 2) = link_3_joint_->S();
+            X_intra_S_span_.block<6, 1>(18, 3) = rotor_1_joint_->S();
+            X_intra_S_span_.block<6, 1>(24, 4) = rotor_2_joint_->S();
+            X_intra_S_span_.block<6, 1>(30, 5) = rotor_3_joint_->S();
 
-            S_ = X_inter_S_span_ * loop_constraint_->G();
+            S_ = X_intra_S_span_ * loop_constraint_->G();
         }
 
         void RevoluteTripleWithRotor::updateKinematics(const JointState &joint_state)
         {
-#ifdef DEBUG_MODE
-            jointStateCheck(joint_state);
-#endif
-
             const JointState spanning_joint_state = toSpanningTreeState(joint_state);
             const DVec<double> &q = spanning_joint_state.position;
             const DVec<double> &qd = spanning_joint_state.velocity;
@@ -88,21 +84,21 @@ namespace grbda
             const DVec<double> v3_relative2 = link_3_joint_->S() * qd[2];
             const DMat<double> X32_S2 = X32_.transformMotionSubspace(link_2_joint_->S());
 
-            X_inter_S_span_.block<6, 1>(6, 0) = X21_S1;
-            X_inter_S_span_.block<6, 1>(12, 0) = X31_S1;
-            X_inter_S_span_.block<6, 1>(12, 1) = X32_S2;
+            X_intra_S_span_.block<6, 1>(6, 0) = X21_S1;
+            X_intra_S_span_.block<6, 1>(12, 0) = X31_S1;
+            X_intra_S_span_.block<6, 1>(12, 1) = X32_S2;
 
-            S_.topLeftCorner<18, 3>() = X_inter_S_span_.topLeftCorner<18, 3>();
+            S_.topLeftCorner<18, 3>() = X_intra_S_span_.topLeftCorner<18, 3>();
 
-            X_inter_S_span_ring_.block<6, 1>(6, 0) =
+            X_intra_S_span_ring_.block<6, 1>(6, 0) =
                 -spatial::generalMotionCrossMatrix(v2_relative1) * X21_S1;
-            X_inter_S_span_ring_.block<6, 1>(12, 0) =
+            X_intra_S_span_ring_.block<6, 1>(12, 0) =
                 -spatial::generalMotionCrossMatrix(v3_relative1) * X31_S1;
-            X_inter_S_span_ring_.block<6, 1>(12, 1) =
+            X_intra_S_span_ring_.block<6, 1>(12, 1) =
                 -spatial::generalMotionCrossMatrix(v3_relative2) * X32_S2;
 
-            vJ_ = X_inter_S_span_ * qd;
-            cJ_ = X_inter_S_span_ring_ * qd;
+            vJ_ = X_intra_S_span_ * qd;
+            cJ_ = X_intra_S_span_ring_ * qd;
         }
 
         void RevoluteTripleWithRotor::computeSpatialTransformFromParentToCurrentCluster(
@@ -113,7 +109,6 @@ namespace grbda
                 throw std::runtime_error("[RevoluteTripleWithRotor] Xup must have 24 rows");
 #endif
 
-            // TODO(@MatthewChignoli): Could be some cost savings here by not recomputing the internal spatial transforms
             Xup[0] = link_1_joint_->XJ() * link_1_.Xtree_;
             Xup[1] = X21_ * Xup[0];
             Xup[2] = X31_ * Xup[0];

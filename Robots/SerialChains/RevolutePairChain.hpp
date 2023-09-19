@@ -10,8 +10,7 @@ namespace grbda
     class RevolutePairChain : public SerialChain
     {
     public:
-        RevolutePairChain(const bool random_parameters = true)
-            : SerialChain(random_parameters)
+        RevolutePairChain(const bool random_parameters = true) : SerialChain(random_parameters)
         {
             if (N % 2 != 0)
             {

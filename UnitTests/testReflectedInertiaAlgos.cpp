@@ -183,15 +183,6 @@ TYPED_TEST(ReflectedInertiaDynamicsAlgosTest, CompareFwdDynAgainstLagrangianDeri
 
         DVec<double> tau = DVec<double>::Random(nv);
 
-        // TODO(@MatthewChignoli): Apply spatial forces to bodies for the lagrangian derivation?
-        // Set random spatial forces on bodies
-        // std::vector<ExternalForceAndBodyIndexPair> force_and_index_pairs;
-        // const DVec<int> &ind_coord_indices =
-        //     this->reflected_inertia_model.getIndependentCoordinateIndices();
-        // for (int j = 0; j < ind_coord_indices.rows(); j++)
-        //     force_and_index_pairs.emplace_back(ind_coord_indices[j], SVec<double>::Random());
-        // this->setForcesForAllModels(force_and_index_pairs);
-
         // Case 1: Cluster based model versus the exact Lagrangian derivation
         const DVec<double> qdd1 = this->cluster_model.forwardDynamics(tau);
         const DVec<double> qdd2 = this->robot.forwardDynamics(this->independent_joint_pos_,

@@ -8,7 +8,7 @@ namespace grbda
 
         RevolutePairWithRotor::RevolutePairWithRotor(ParallelBeltTransmissionModule &module_1,
                                                      ParallelBeltTransmissionModule &module_2)
-            : Base(4, 2, 2, false, false), link1_(module_1.body_), link2_(module_2.body_),
+            : Base(4, 2, 2), link1_(module_1.body_), link2_(module_2.body_),
               rotor1_(module_1.rotor_), rotor2_(module_2.rotor_)
         {
             const double &gear_ratio_2 = module_2.gear_ratio_;
@@ -34,23 +34,19 @@ namespace grbda
                 gear_ratio_2 * belt_ratio_1, 0, -1., net_ratio_2;
             loop_constraint_ = std::make_shared<LoopConstraint::Static>(G, K);
 
-            X_inter_S_span_ = DMat<double>::Zero(24, 4);
-            X_inter_S_span_ring_ = DMat<double>::Zero(24, 4);
+            X_intra_S_span_ = DMat<double>::Zero(24, 4);
+            X_intra_S_span_ring_ = DMat<double>::Zero(24, 4);
 
-            X_inter_S_span_.block<6, 1>(0, 0) = link1_joint_->S();
-            X_inter_S_span_.block<6, 1>(6, 1) = rotor1_joint_->S();
-            X_inter_S_span_.block<6, 1>(12, 2) = rotor2_joint_->S();
-            X_inter_S_span_.block<6, 1>(18, 3) = link2_joint_->S();
+            X_intra_S_span_.block<6, 1>(0, 0) = link1_joint_->S();
+            X_intra_S_span_.block<6, 1>(6, 1) = rotor1_joint_->S();
+            X_intra_S_span_.block<6, 1>(12, 2) = rotor2_joint_->S();
+            X_intra_S_span_.block<6, 1>(18, 3) = link2_joint_->S();
 
-            S_ = X_inter_S_span_ * loop_constraint_->G();
+            S_ = X_intra_S_span_ * loop_constraint_->G();
         }
 
         void RevolutePairWithRotor::updateKinematics(const JointState &joint_state)
         {
-#ifdef DEBUG_MODE
-            jointStateCheck(joint_state);
-#endif
-
             const JointState spanning_joint_state = toSpanningTreeState(joint_state);
             const DVec<double> &q = spanning_joint_state.position;
             const DVec<double> &qd = spanning_joint_state.velocity;
@@ -63,15 +59,15 @@ namespace grbda
             X21_ = link2_joint_->XJ() * link2_.Xtree_;
             const DVec<double> v2_relative = link2_joint_->S() * qd[3];
 
-            X_inter_S_span_.block<6, 1>(18, 0) = X21_.transformMotionSubspace(link1_joint_->S());
-            S_.block<6, 1>(18, 0) = X_inter_S_span_.block<6, 1>(18, 0);
+            X_intra_S_span_.block<6, 1>(18, 0) = X21_.transformMotionSubspace(link1_joint_->S());
+            S_.block<6, 1>(18, 0) = X_intra_S_span_.block<6, 1>(18, 0);
 
-            X_inter_S_span_ring_.block<6, 1>(18, 0) =
+            X_intra_S_span_ring_.block<6, 1>(18, 0) =
                 -spatial::generalMotionCrossMatrix(v2_relative) *
-                X_inter_S_span_.block<6, 1>(18, 0);
+                X_intra_S_span_.block<6, 1>(18, 0);
 
-            vJ_ = X_inter_S_span_ * qd;
-            cJ_ = X_inter_S_span_ring_ * qd;
+            vJ_ = X_intra_S_span_ * qd;
+            cJ_ = X_intra_S_span_ring_ * qd;
         }
 
         void RevolutePairWithRotor::computeSpatialTransformFromParentToCurrentCluster(

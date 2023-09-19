@@ -6,7 +6,6 @@
 namespace grbda
 {
 
-    // TODO(@MatthewChignoli): Maybe need better names for N and M
     template <size_t N, size_t M>
     class RevoluteChainWithAndWithoutRotor : public SerialChain
     {

@@ -56,6 +56,8 @@ namespace grbda
         void appendContactPoint(const std::string body_name, const Vec3<double> &local_offset,
                                 const std::string contact_name, const bool is_end_eff = false);
         void appendContactBox(const std::string body_name, const Vec3<double> &box_dimensions);
+
+        // Current implementation every operational space has size 6x1
         void appendEndEffector(const std::string body_name, const Vec3<double> &local_offset,
                                const std::string end_effector_name);
 

@@ -37,7 +37,6 @@ namespace grbda
 
         int getNumBodies() const override { return (int)rigid_body_nodes_.size(); }
 
-        // TOOD(@MatthewChignoli): I don't really like these functions...
         const Body &getBody(int index) const override { return rigid_body_nodes_[index]->body_; }
         const TreeNodePtr getNodeContainingBody(int index) override { return rigid_body_nodes_[index]; }
 

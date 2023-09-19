@@ -27,7 +27,7 @@ namespace grbda
   namespace ori
   {
 
-    static constexpr double quaternionDerviativeStabilization = 0.1;
+    static constexpr double quaternionDerivativeStabilization = 0.1;
 
     enum class CoordinateAxis
     {
@@ -311,7 +311,7 @@ namespace grbda
           -q[1], q[3], -q[2], q[1], q[0];
 
       Quat<typename T::Scalar> qq(
-          quaternionDerviativeStabilization * omega.norm() * (1 - q.norm()),
+          quaternionDerivativeStabilization * omega.norm() * (1 - q.norm()),
           omega[0], omega[1], omega[2]);
       Quat<typename T::Scalar> dq = 0.5 * Q * qq;
       return dq;
