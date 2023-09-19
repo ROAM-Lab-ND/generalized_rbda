@@ -25,16 +25,11 @@ endif()
 #------------------------------------------------------------------------
 # Compiler flags
 #------------------------------------------------------------------------
-
 option(M1_BUILD "set compile options for Mac M1 chip" OFF)
-
-if(CMAKE_SYSTEM_NAME MATCHES APPLE)
-  if(M1_BUILD)
-    set(CMAKE_CXX_FLAGS "-mcpu=apple-m1")
-  else()
-    set(CMAKE_CXX_FLAGS "-march=native")
-  endif()
-  include_directories("/usr/local/include/")
+if(M1_BUILD AND CMAKE_SYSTEM_NAME MATCHES Darwin)
+  set(CMAKE_CXX_FLAGS "-mcpu=apple-m1")
+else()
+  set(CMAKE_CXX_FLAGS "-march=native")
 endif()
 
 set(CMAKE_C_FLAGS "-O3  -ggdb  -march=native -std=gnu99 -I.")
