@@ -21,7 +21,6 @@ namespace grbda
         RevolutePairWithRotor,
         RevoluteTripleWithRotor,
         RevoluteWithRotor,
-        RevoluteWithMultipleRotorsJoint,
         Generic,
         TelloHipDifferential,
         TelloKneeAnkleDifferential

@@ -1,8 +1,3 @@
-Things this README should contain
-- Descriptions of the three types of models (and their common inheritance)
-- Descriptions of how the Nodes and Joints relate to the models, with links to the relevant folders
-- Simple examples of usage (Specifically setting the state and then calling one of the dynamics functions)
-
 ## System Modeling
 
 A popular approach to modeling rigid-body systems is to describe the system in terms of its component parts via a *system model*.

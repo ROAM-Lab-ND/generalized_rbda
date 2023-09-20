@@ -2,7 +2,6 @@
 #include "FreeJoint.h"
 #include "RevoluteJoint.h"
 #include "RevoluteWithRotorJoint.h"
-#include "RevoluteWithMultipleRotorsJoint.h"
 #include "RevolutePairJoint.h"
 #include "RevolutePairWithRotorJoint.h"
 #include "RevoluteTripleWithRotorJoint.h"
