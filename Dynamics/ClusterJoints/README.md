@@ -29,10 +29,9 @@ They can be expressed in two ways:
 | -------- | ------- | -------- | ------------ |
 | **implicit:** | $\phi(\mathbf{q}) = \mathbf{0}$ | $\mathbf{K}\dot{\mathbf{q}} = \mathbf{0}$ | $\mathbf{K}\ddot{\mathbf{q}} = \mathbf{k}$ |
 | **explicit:** | $\mathbf{q} = \gamma(\mathbf{y}) $ | $\dot{\mathbf{q}} = \mathbf{G}\dot{\mathbf{y}} $ | $\ddot{\mathbf{q}} = \mathbf{G}\ddot{\mathbf{y}} + \mathbf{g}$ |
+
 where,
-$$
-\mathbf{K} = \frac{\partial \phi}{\partial \mathbf{q}}, \quad \mathbf{k} = -\dot{\mathbf{K}}\dot{\mathbf{q}}, \quad \mathbf{G} = \frac{\partial \gamma}{\partial \mathbf{y}}, \quad \mathbf{g} = \dot{\mathbf{G}}\dot{\mathbf{y}}.
-$$
+$$\mathbf{K} = \frac{\partial \phi}{\partial \mathbf{q}}, \quad \mathbf{k} = -\dot{\mathbf{K}}\dot{\mathbf{q}}, \quad \mathbf{G} = \frac{\partial \gamma}{\partial \mathbf{y}}, \quad \mathbf{g} = \dot{\mathbf{G}}\dot{\mathbf{y}}.$$
 For a more thorough treatment of loop constraints, see Chapters 3.2 and 4.1 of [Rigid Body Dynamics Algorithms](https://link.springer.com/book/10.1007/978-1-4899-7560-7).
 
 Every `ClusterJoint` has an associated `LoopConstraint` object that describes the loop constraint associated with that joint.
