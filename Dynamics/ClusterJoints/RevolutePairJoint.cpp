@@ -3,7 +3,7 @@
 namespace grbda
 {
 
-    namespace GeneralizedJoints
+    namespace ClusterJoints
     {
 
         RevolutePair::RevolutePair(Body &link_1, Body &link_2,

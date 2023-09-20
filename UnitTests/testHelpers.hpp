@@ -7,7 +7,7 @@ using namespace grbda;
 
 inline ClusterTreeModel extractGenericJointModel(const ClusterTreeModel &model)
 {
-    using namespace GeneralizedJoints;
+    using namespace ClusterJoints;
 
     ClusterTreeModel generic_model{};
 

@@ -6,7 +6,7 @@ namespace grbda
     template <size_t N>
     ClusterTreeModel RevoluteTripleChainWithRotor<N>::buildRandomClusterTreeModel() const
     {
-        using namespace GeneralizedJoints;
+        using namespace ClusterJoints;
         
         ClusterTreeModel model{};
 

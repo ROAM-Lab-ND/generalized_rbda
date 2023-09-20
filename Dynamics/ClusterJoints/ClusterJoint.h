@@ -13,7 +13,7 @@ namespace grbda
 
     using JointPtr = std::shared_ptr<Joints::Base>;
 
-    enum class GeneralizedJointTypes
+    enum class ClusterJointTypes
     {
         Free,
         Revolute,
@@ -27,7 +27,7 @@ namespace grbda
         TelloKneeAnkleDifferential
     };
 
-    namespace GeneralizedJoints
+    namespace ClusterJoints
     {
 
         class Base
@@ -37,7 +37,7 @@ namespace grbda
             Base(int num_bodies, int num_independent_positions, int num_independent_velocities);
             virtual ~Base() {}
 
-            virtual GeneralizedJointTypes type() const = 0;
+            virtual ClusterJointTypes type() const = 0;
 
             virtual void updateKinematics(const JointState &joint_state) = 0;
 

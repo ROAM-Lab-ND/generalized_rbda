@@ -5,7 +5,7 @@ namespace grbda
 
     ClusterTreeModel TelloWithArms::buildClusterTreeModel() const
     {
-        using namespace GeneralizedJoints;
+        using namespace ClusterJoints;
 
         ClusterTreeModel model = Tello::buildClusterTreeModel();
 

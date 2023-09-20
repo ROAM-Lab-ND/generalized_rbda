@@ -3,7 +3,7 @@
 
 namespace grbda
 {
-    namespace GeneralizedJoints
+    namespace ClusterJoints
     {
 
         RevoluteWithMultipleRotorsJoint::RevoluteWithMultipleRotorsJoint(
@@ -101,6 +101,6 @@ namespace grbda
             return bodies_joints_and_reflected_inertias_;
         }
 
-    } // namespace GeneralizedJoints
+    } // namespace ClusterJoints
 
 } // namespace grbda

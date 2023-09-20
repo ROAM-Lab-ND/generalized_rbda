@@ -1,12 +1,12 @@
 #ifndef GRBDA_GENERALIZED_JOINTS_REVOLUTE_PAIR_JOINT_H
 #define GRBDA_GENERALIZED_JOINTS_REVOLUTE_PAIR_JOINT_H
 
-#include "GeneralizedJoint.h"
+#include "ClusterJoint.h"
 
 namespace grbda
 {
 
-    namespace GeneralizedJoints
+    namespace ClusterJoints
     {
 
         class RevolutePair : public Base
@@ -16,7 +16,7 @@ namespace grbda
                          ori::CoordinateAxis joint_axis_1, ori::CoordinateAxis joint_axis_2);
             virtual ~RevolutePair() {}
 
-            GeneralizedJointTypes type() const override { return GeneralizedJointTypes::RevolutePair; }
+            ClusterJointTypes type() const override { return ClusterJointTypes::RevolutePair; }
 
             void updateKinematics(const JointState &joint_state) override;
                                   

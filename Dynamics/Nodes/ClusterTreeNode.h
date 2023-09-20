@@ -2,14 +2,14 @@
 #define GRBDA_CLUSTER_TREE_NODE_H
 
 #include "TreeNode.h"
-#include "Dynamics/GeneralizedJoints/GeneralizedJointTypes.h"
+#include "Dynamics/ClusterJoints/ClusterJointTypes.h"
 
 namespace grbda
 {
 
     struct ClusterTreeNode : TreeNode
     {
-        typedef std::shared_ptr<GeneralizedJoints::Base> GenJointPtr;
+        typedef std::shared_ptr<ClusterJoints::Base> GenJointPtr;
 
         ClusterTreeNode(int index, std::string name, std::vector<Body> &bodies,
                         GenJointPtr joint, int parent_index, int num_parent_bodies,
@@ -37,7 +37,7 @@ namespace grbda
         std::vector<std::tuple<Body, JointPtr, DMat<double>>> bodiesJointsAndReflectedInertias() const;
 
         const std::vector<Body> bodies_;
-        std::shared_ptr<GeneralizedJoints::Base> joint_;
+        std::shared_ptr<ClusterJoints::Base> joint_;
 
         // Featherstone quantities
         DMat<double> IA_;                                // articulated body inertia

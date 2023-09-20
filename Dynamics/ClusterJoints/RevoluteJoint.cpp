@@ -2,7 +2,7 @@
 
 namespace grbda
 {
-    namespace GeneralizedJoints
+    namespace ClusterJoints
     {
 
         Revolute::Revolute(const Body &body, ori::CoordinateAxis joint_axis)

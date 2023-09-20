@@ -1,7 +1,7 @@
 #ifndef GRBDA_GENERALIZED_JOINTS_FREE_JOINT_H
 #define GRBDA_GENERALIZED_JOINTS_FREE_JOINT_H
 
-#include "GeneralizedJoint.h"
+#include "ClusterJoint.h"
 
 namespace grbda
 {
@@ -25,7 +25,7 @@ namespace grbda
 
     }
 
-    namespace GeneralizedJoints
+    namespace ClusterJoints
     {
 
         class Free : public Base
@@ -34,7 +34,7 @@ namespace grbda
             Free(const Body &body);
             virtual ~Free() {}
 
-            GeneralizedJointTypes type() const override { return GeneralizedJointTypes::Free; }
+            ClusterJointTypes type() const override { return ClusterJointTypes::Free; }
 
             int numUnactuatedVelocities() const override { return 6; }
 

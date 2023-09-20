@@ -7,7 +7,7 @@
 namespace grbda
 {
 
-    namespace GeneralizedJoints
+    namespace ClusterJoints
     {
 
         class TelloHipDifferential : public TelloDifferential
@@ -28,7 +28,7 @@ namespace grbda
             }
             virtual ~TelloHipDifferential() {}
 
-            GeneralizedJointTypes type() const override { return GeneralizedJointTypes::TelloHipDifferential; }
+            ClusterJointTypes type() const override { return ClusterJointTypes::TelloHipDifferential; }
         };
 
     }

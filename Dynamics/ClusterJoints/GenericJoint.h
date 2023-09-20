@@ -1,12 +1,12 @@
 #ifndef GRBDA_GENERALIZED_JOINT_GENERIC_H
 #define GRBDA_GENERALIZED_JOINT_GENERIC_H
 
-#include "GeneralizedJoint.h"
+#include "ClusterJoint.h"
 
 namespace grbda
 {
 
-    namespace GeneralizedJoints
+    namespace ClusterJoints
     {
 
         class Generic : public Base
@@ -15,7 +15,7 @@ namespace grbda
             Generic(const std::vector<Body> &bodies, const std::vector<JointPtr> &joints,
                     std::shared_ptr<LoopConstraint::Base> loop_constraint);
 
-            GeneralizedJointTypes type() const override { return GeneralizedJointTypes::Generic; }
+            ClusterJointTypes type() const override { return ClusterJointTypes::Generic; }
 
             void updateKinematics(const JointState &joint_state) override;
 

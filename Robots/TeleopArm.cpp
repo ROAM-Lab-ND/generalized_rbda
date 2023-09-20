@@ -5,7 +5,7 @@ namespace grbda
 
     ClusterTreeModel TeleopArm::buildClusterTreeModel() const
     {
-        using namespace GeneralizedJoints;
+        using namespace ClusterJoints;
         using SpatialTransform = spatial::Transform;
         
         ClusterTreeModel model{};

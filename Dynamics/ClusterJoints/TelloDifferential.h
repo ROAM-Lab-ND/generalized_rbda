@@ -16,7 +16,7 @@
 #ifndef GRBDA_GENERALIZED_JOINTS_TELLO_DIFFERENTIAL_H
 #define GRBDA_GENERALIZED_JOINTS_TELLO_DIFFERENTIAL_H
 
-#include "GeneralizedJoint.h"
+#include "ClusterJoint.h"
 #include "Utils/CasadiGen/header/CasadiGen.h"
 
 namespace grbda
@@ -45,7 +45,7 @@ namespace grbda
         };
     }
 
-    namespace GeneralizedJoints
+    namespace ClusterJoints
     {
 
         class TelloDifferential : public Base

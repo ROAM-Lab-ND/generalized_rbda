@@ -35,8 +35,8 @@ namespace grbda
 
                 DVec<double> independent_joint_pos_i;
                 DVec<double> independent_joint_vel_i;
-                if (cluster->joint_->type() == GeneralizedJointTypes::TelloHipDifferential ||
-                    cluster->joint_->type() == GeneralizedJointTypes::TelloKneeAnkleDifferential)
+                if (cluster->joint_->type() == ClusterJointTypes::TelloHipDifferential ||
+                    cluster->joint_->type() == ClusterJointTypes::TelloKneeAnkleDifferential)
                 {
                     independent_joint_pos_i = spanning_joint_state.position.tail<2>();
                     independent_joint_vel_i = spanning_joint_state.velocity.tail<2>();

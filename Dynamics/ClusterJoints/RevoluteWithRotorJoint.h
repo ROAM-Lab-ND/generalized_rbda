@@ -1,12 +1,12 @@
 #ifndef GRBDA_GENERALIZED_JOINTS_REVOLUTE_WITH_ROTOR_JOINT_H
 #define GRBDA_GENERALIZED_JOINTS_REVOLUTE_WITH_ROTOR_JOINT_H
 
-#include "GeneralizedJoint.h"
+#include "ClusterJoint.h"
 
 namespace grbda
 {
 
-    namespace GeneralizedJoints
+    namespace ClusterJoints
     {
 
         class RevoluteWithRotor : public Base
@@ -16,7 +16,7 @@ namespace grbda
 
             virtual ~RevoluteWithRotor() {}
 
-            GeneralizedJointTypes type() const override { return GeneralizedJointTypes::RevoluteWithRotor; }
+            ClusterJointTypes type() const override { return ClusterJointTypes::RevoluteWithRotor; }
 
             void updateKinematics(const JointState &joint_state) override;
 

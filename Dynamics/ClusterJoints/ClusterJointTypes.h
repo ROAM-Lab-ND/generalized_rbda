@@ -1,4 +1,4 @@
-#include "GeneralizedJoint.h"
+#include "ClusterJoint.h"
 #include "FreeJoint.h"
 #include "RevoluteJoint.h"
 #include "RevoluteWithRotorJoint.h"

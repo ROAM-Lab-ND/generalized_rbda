@@ -5,7 +5,7 @@ namespace grbda
 
     ClusterTreeModel MiniCheetah::buildClusterTreeModel() const
     {
-        using namespace GeneralizedJoints;
+        using namespace ClusterJoints;
 
         ClusterTreeModel model;
 
