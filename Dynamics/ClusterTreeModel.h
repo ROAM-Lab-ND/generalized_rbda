@@ -33,7 +33,7 @@ namespace grbda
         // in  given cluster and then append them as a cluster by specifying the type of cluster 
         // joint that connects them
         Body registerBody(const std::string name, const SpatialInertia<double> inertia,
-                          const std::string parent_name, const spatial::Transform Xtree);
+                          const std::string parent_name, const spatial::Transform<> Xtree);
 
         template <typename ClusterJointType, typename... Args>
         void appendRegisteredBodiesAsCluster(const std::string name, Args&&... args)
@@ -45,7 +45,7 @@ namespace grbda
         // Alternatively, this function can be used when appending individual bodies to the model
         template <typename ClusterJointType, typename... Args>
         void appendBody(const std::string name, const SpatialInertia<double> inertia,
-                        const std::string parent_name, const spatial::Transform Xtree,
+                        const std::string parent_name, const spatial::Transform<> Xtree,
                         Args &&...args)
         {
             Body body = registerBody(name, inertia, parent_name, Xtree);
@@ -63,7 +63,7 @@ namespace grbda
 
         void print() const;
 
-        void setState(const ModelState &model_state);
+        void setState(const ModelState<> &model_state);
 
         int getNumBodies() const override { return (int)bodies_.size(); }
 

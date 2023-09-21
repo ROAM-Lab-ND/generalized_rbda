@@ -17,10 +17,10 @@ namespace grbda
 
             std::shared_ptr<Base> clone() const override;
 
-            void updateJacobians(const JointCoordinate &joint_pos) override {}
-            void updateBiases(const JointState &joint_state) override {}
+            void updateJacobians(const JointCoordinate<> &joint_pos) override {}
+            void updateBiases(const JointState<> &joint_state) override {}
 
-            DVec<double> gamma(const JointCoordinate &joint_pos) const override;
+            DVec<double> gamma(const JointCoordinate<> &joint_pos) const override;
         };
 
     }
@@ -38,17 +38,17 @@ namespace grbda
 
             int numUnactuatedVelocities() const override { return 6; }
 
-            void updateKinematics(const JointState &joint_state) override;
+            void updateKinematics(const JointState<> &joint_state) override;
 
             void computeSpatialTransformFromParentToCurrentCluster(
-                spatial::GeneralizedTransform &Xup) const override;
+                spatial::GeneralizedTransform<> &Xup) const override;
 
             std::vector<std::tuple<Body, JointPtr, DMat<double>>>
             bodiesJointsAndReflectedInertias() const override;
 
-            JointCoordinate integratePosition(JointState joint_state, double dt) const override;
+            JointCoordinate<> integratePosition(JointState<> joint_state, double dt) const override;
 
-            JointState randomJointState() const override;
+            JointState<> randomJointState() const override;
 
         private:
             const Body body_;

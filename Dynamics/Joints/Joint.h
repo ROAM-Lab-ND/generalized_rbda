@@ -25,13 +25,13 @@ namespace grbda
 
             const DMat<double> &S() const { return S_; }
             const DMat<double> &Psi() const { return Psi_; }
-            const spatial::Transform &XJ() const { return XJ_; }
+            const spatial::Transform<> &XJ() const { return XJ_; }
 
         protected:
             const int num_positions_;
             const int num_velocities_;
 
-            spatial::Transform XJ_;
+            spatial::Transform<> XJ_;
             DMat<double> S_;
             DMat<double> Psi_;
         };
@@ -50,8 +50,8 @@ namespace grbda
 
             void updateKinematics(const DVec<double> &q, const DVec<double> &qd) override
             {
-                XJ_ = spatial::Transform(ori::quaternionToRotationMatrix(q.tail<4>()),
-                                         q.head<3>());
+                XJ_ = spatial::Transform<>(ori::quaternionToRotationMatrix(q.tail<4>()),
+                                           q.head<3>());
             }
         };
 

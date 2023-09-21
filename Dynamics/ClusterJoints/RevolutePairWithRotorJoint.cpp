@@ -45,9 +45,9 @@ namespace grbda
             S_ = X_intra_S_span_ * loop_constraint_->G();
         }
 
-        void RevolutePairWithRotor::updateKinematics(const JointState &joint_state)
+        void RevolutePairWithRotor::updateKinematics(const JointState<> &joint_state)
         {
-            const JointState spanning_joint_state = toSpanningTreeState(joint_state);
+            const JointState<> spanning_joint_state = toSpanningTreeState(joint_state);
             const DVec<double> &q = spanning_joint_state.position;
             const DVec<double> &qd = spanning_joint_state.velocity;
 
@@ -71,7 +71,7 @@ namespace grbda
         }
 
         void RevolutePairWithRotor::computeSpatialTransformFromParentToCurrentCluster(
-            spatial::GeneralizedTransform &Xup) const
+            spatial::GeneralizedTransform<> &Xup) const
         {
 #ifdef DEBUG_MODE
             if (Xup.getNumOutputBodies() != 4)

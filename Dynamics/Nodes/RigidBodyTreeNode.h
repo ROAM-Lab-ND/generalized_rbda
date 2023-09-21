@@ -18,7 +18,7 @@ namespace grbda
         const DMat<double> &S() const override { return joint_->S(); }
         const DVec<double> &cJ() const override { return cJ_; }
 
-        const spatial::Transform &getAbsoluteTransformForBody(const Body &body) override;
+        const spatial::Transform<> &getAbsoluteTransformForBody(const Body &body) override;
         DVec<double> getVelocityForBody(const Body &body) override;
         void applyForceToBody(const SVec<double> &force, const Body &body) override;
 
@@ -27,7 +27,7 @@ namespace grbda
 
         DVec<double> vJ_;
         DVec<double> cJ_ = DVec<double>::Zero(6);
-        const spatial::Transform Xtree_;
+        const spatial::Transform<> Xtree_;
     };
 
 } // namespace grbda

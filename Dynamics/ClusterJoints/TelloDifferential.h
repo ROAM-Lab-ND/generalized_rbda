@@ -33,10 +33,10 @@ namespace grbda
 
             std::shared_ptr<Base> clone() const override;
 
-            DVec<double> gamma(const JointCoordinate &joint_pos) const override;
+            DVec<double> gamma(const JointCoordinate<> &joint_pos) const override;
 
-            void updateJacobians(const JointCoordinate &joint_pos) override;
-            void updateBiases(const JointState &joint_state) override;
+            void updateJacobians(const JointCoordinate<> &joint_pos) override;
+            void updateBiases(const JointState<> &joint_state) override;
 
             const CasadiHelperFunctions jacobian_helpers_;
             const CasadiHelperFunctions bias_helpers_;
@@ -54,15 +54,15 @@ namespace grbda
             TelloDifferential(TelloDifferentialModule &module);
             virtual ~TelloDifferential() {}
 
-            void updateKinematics(const JointState &joint_state) override;
+            void updateKinematics(const JointState<> &joint_state) override;
 
             void computeSpatialTransformFromParentToCurrentCluster(
-                spatial::GeneralizedTransform &Xup) const override;
+                spatial::GeneralizedTransform<> &Xup) const override;
 
             std::vector<std::tuple<Body, JointPtr, DMat<double>>>
             bodiesJointsAndReflectedInertias() const override;
 
-            JointState randomJointState() const override;
+            JointState<> randomJointState() const override;
 
         protected:
             std::shared_ptr<LoopConstraint::TelloDifferential> tello_constraint_;
@@ -73,7 +73,7 @@ namespace grbda
             JointPtr link1_joint_;
             JointPtr link2_joint_;
 
-            spatial::Transform X21_;
+            spatial::Transform<> X21_;
 
             const Body rotor1_;
             const Body rotor2_;

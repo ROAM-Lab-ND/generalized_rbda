@@ -17,10 +17,10 @@ namespace grbda
 
             ClusterJointTypes type() const override { return ClusterJointTypes::Generic; }
 
-            void updateKinematics(const JointState &joint_state) override;
+            void updateKinematics(const JointState<> &joint_state) override;
 
             void computeSpatialTransformFromParentToCurrentCluster(
-                spatial::GeneralizedTransform &Xup) const override;
+                spatial::GeneralizedTransform<> &Xup) const override;
 
         private:
             void extractConnectivity();

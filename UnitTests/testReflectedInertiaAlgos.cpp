@@ -19,12 +19,12 @@ protected:
 
     bool initializeRandomStates()
     {
-        ModelState model_state;
+        ModelState<> model_state;
         independent_joint_pos_ = DVec<double>::Zero(0);
         independent_joint_vel_ = DVec<double>::Zero(0);
         for (const auto &cluster : cluster_model.clusters())
         {
-            JointState joint_state = cluster->joint_->randomJointState();
+            JointState<> joint_state = cluster->joint_->randomJointState();
 
             if (joint_state.position.isSpanning() || joint_state.velocity.isSpanning())
                 throw std::runtime_error("Initializing reflected inertia model requires all independent coordinates");

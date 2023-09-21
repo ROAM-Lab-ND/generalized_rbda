@@ -26,9 +26,9 @@ namespace grbda
             Psi_.block<6, 1>(6, 0) = 1. / module.gear_ratio_ * rotor_joint_->S();
         }
 
-        void RevoluteWithRotor::updateKinematics(const JointState &joint_state)
+        void RevoluteWithRotor::updateKinematics(const JointState<> &joint_state)
         {
-            const JointState spanning_joint_state = toSpanningTreeState(joint_state);
+            const JointState<> spanning_joint_state = toSpanningTreeState(joint_state);
             const DVec<double> &q = spanning_joint_state.position;
             const DVec<double> &qd = spanning_joint_state.velocity;
 
@@ -40,7 +40,7 @@ namespace grbda
         }
 
         void RevoluteWithRotor::computeSpatialTransformFromParentToCurrentCluster(
-            spatial::GeneralizedTransform &Xup) const
+            spatial::GeneralizedTransform<> &Xup) const
         {
 #ifdef DEBUG_MODE
             if (Xup.getNumOutputBodies() != 2)

@@ -15,7 +15,7 @@ namespace grbda
             k_ = DVec<double>::Zero(K.rows());
         }
 
-        DVec<double> Static::gamma(const JointCoordinate &joint_pos) const
+        DVec<double> Static::gamma(const JointCoordinate<> &joint_pos) const
         {
             return G_ * joint_pos;
         }
@@ -31,7 +31,7 @@ namespace grbda
                 const int n_span_pos = constraint->numSpanningPos();
                 const int n_ind_pos = constraint->numIndependentPos();
 
-                JointCoordinate position(y.segment(ind_pos_cnt, n_ind_pos), false);
+                JointCoordinate<> position(y.segment(ind_pos_cnt, n_ind_pos), false);
                 spanning_pos.segment(span_pos_cnt, n_span_pos) = constraint->gamma(position);
 
                 span_pos_cnt += n_span_pos;
@@ -109,7 +109,7 @@ namespace grbda
                 const int n_ind_vel = constraint->numIndependentVel();
                 const int n_cnstr = constraint->numConstraints();
 
-                JointCoordinate position(q.segment(pos_cnt, n_span_pos), true);
+                JointCoordinate<> position(q.segment(pos_cnt, n_span_pos), true);
                 constraint->updateJacobians(position);
 
                 G_.block(span_vel_cnt, ind_vel_cnt, n_span_vel, n_ind_vel) = constraint->G();
@@ -138,9 +138,9 @@ namespace grbda
                 const int n_ind_vel = constraint->numIndependentVel();
                 const int n_cnstr = constraint->numConstraints();
 
-                JointCoordinate position(q.segment(pos_cnt, n_span_pos), true);
-                JointCoordinate velocity(qd.segment(span_vel_cnt, n_span_vel), true);
-                JointState state(position, velocity);
+                JointCoordinate<> position(q.segment(pos_cnt, n_span_pos), true);
+                JointCoordinate<> velocity(qd.segment(span_vel_cnt, n_span_vel), true);
+                JointState<> state(position, velocity);
                 constraint->updateJacobians(position);
                 constraint->updateBiases(state);
 

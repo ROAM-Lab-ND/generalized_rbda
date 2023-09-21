@@ -36,8 +36,8 @@ namespace grbda
             SpatialInertia<double> abad_rotor_inertia(0., _rotorCOM, _rotorRotationalInertiaX);
             abad_rotor_inertia = withLeftRightSigns(abad_rotor_inertia, sideSign);
 
-            const spatial::Transform xtree_abad(I3, withLegSigns(_abadLocation, legID));
-            const spatial::Transform xtree_abad_rotor(I3, withLegSigns(_abadRotorLocation, legID));
+            const spatial::Transform<> xtree_abad(I3, withLegSigns(_abadLocation, legID));
+            const spatial::Transform<> xtree_abad_rotor(I3, withLegSigns(_abadRotorLocation, legID));
 
             Body abad_link = model.registerBody(abad_link_name, abad_link_inertia,
                                                 abad_parent_name, xtree_abad);
@@ -59,8 +59,8 @@ namespace grbda
             SpatialInertia<double> hip_rotor_inertia(0., _rotorCOM, _rotorRotationalInertiaY);
             hip_rotor_inertia = withLeftRightSigns(hip_rotor_inertia, sideSign);
 
-            const spatial::Transform xtree_hip(I3, withLegSigns(_hipLocation, legID));
-            const spatial::Transform xtree_hip_rotor(I3, withLegSigns(_hipRotorLocation, legID));
+            const spatial::Transform<> xtree_hip(I3, withLegSigns(_hipLocation, legID));
+            const spatial::Transform<> xtree_hip_rotor(I3, withLegSigns(_hipRotorLocation, legID));
 
             Body hip_link = model.registerBody(hip_link_name, hip_link_inertia,
                                                hip_parent_name, xtree_hip);
@@ -88,8 +88,8 @@ namespace grbda
             SpatialInertia<double> knee_rotor_inertia(0., _rotorCOM, _rotorRotationalInertiaZ);
             knee_rotor_inertia = withLeftRightSigns(knee_rotor_inertia, sideSign);
 
-            const spatial::Transform xtree_knee(I3, withLegSigns(_kneeLocation, legID));
-            const spatial::Transform xtree_knee_rotor(I3, withLegSigns(_kneeRotorLocation, legID));
+            const spatial::Transform<> xtree_knee(I3, withLegSigns(_kneeLocation, legID));
+            const spatial::Transform<> xtree_knee_rotor(I3, withLegSigns(_kneeRotorLocation, legID));
 
             Body knee_link = model.registerBody(knee_link_name, knee_link_inertia,
                                                 knee_parent_name, xtree_knee);

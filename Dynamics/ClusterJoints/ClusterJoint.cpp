@@ -18,9 +18,9 @@ namespace grbda
             cJ_ = DVec<double>::Zero(motion_subspace_dimension);
         }
 
-        JointState Base::toSpanningTreeState(const JointState &joint_state)
+        JointState<> Base::toSpanningTreeState(const JointState<> &joint_state)
         {
-            JointState spanning_joint_state(true, true);
+            JointState<> spanning_joint_state(true, true);
 
             if (!joint_state.position.isSpanning())
             {
@@ -45,7 +45,7 @@ namespace grbda
             return spanning_joint_state;
         }
 
-        JointCoordinate Base::integratePosition(JointState joint_state, double dt) const
+        JointCoordinate<> Base::integratePosition(JointState<> joint_state, double dt) const
         {
             if (joint_state.position.isSpanning() && joint_state.velocity.isSpanning())
             {
@@ -67,9 +67,9 @@ namespace grbda
             return joint_state.position;
         }
 
-        JointState Base::randomJointState() const
+        JointState<> Base::randomJointState() const
         {
-            JointState joint_state(false, false);
+            JointState<> joint_state(false, false);
             joint_state.position = DVec<double>::Random(numPositions());
             joint_state.velocity = DVec<double>::Random(numVelocities());
             return joint_state;

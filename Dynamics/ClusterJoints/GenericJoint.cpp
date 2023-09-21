@@ -28,9 +28,9 @@ namespace grbda
             X_intra_ring_ = DMat<double>::Zero(6 * num_bodies_, 6 * num_bodies_);
         }
 
-        void Generic::updateKinematics(const JointState &joint_state)
+        void Generic::updateKinematics(const JointState<> &joint_state)
         {
-            const JointState spanning_joint_state = toSpanningTreeState(joint_state);
+            const JointState<> spanning_joint_state = toSpanningTreeState(joint_state);
             const DVec<double> &q = spanning_joint_state.position;
             const DVec<double> &qd = spanning_joint_state.velocity;
 
@@ -94,7 +94,7 @@ namespace grbda
         }
 
         void Generic::computeSpatialTransformFromParentToCurrentCluster(
-            spatial::GeneralizedTransform &Xup) const
+            spatial::GeneralizedTransform<> &Xup) const
         {
             for (int i = 0; i < num_bodies_; i++)
             {

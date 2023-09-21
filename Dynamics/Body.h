@@ -12,8 +12,9 @@ namespace grbda
   {
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
+    // TODO(@MatthewChignoli): Does this class need to be templated? We don't need derivatives of anythign, but it might need the template so that we are not mixing types.
     Body(const int index, const std::string name, const int parent_index,
-         const spatial::Transform Xtree, const SpatialInertia<double> inertia,
+         const spatial::Transform<> Xtree, const SpatialInertia<double> inertia,
          const int sub_index_within_cluster, const int cluster_ancestor_index,
          const int cluster_ancestor_sub_index_within_cluster)
         : index_(index), name_(name), parent_index_(parent_index), Xtree_(Xtree),
@@ -34,7 +35,7 @@ namespace grbda
     const int index_;
     const std::string name_;
     const int parent_index_;
-    const spatial::Transform Xtree_;
+    const spatial::Transform<> Xtree_;
     const SpatialInertia<double> inertia_;
     const int sub_index_within_cluster_;
     const int cluster_ancestor_index_;

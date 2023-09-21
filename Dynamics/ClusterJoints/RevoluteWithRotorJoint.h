@@ -18,10 +18,10 @@ namespace grbda
 
             ClusterJointTypes type() const override { return ClusterJointTypes::RevoluteWithRotor; }
 
-            void updateKinematics(const JointState &joint_state) override;
+            void updateKinematics(const JointState<> &joint_state) override;
 
             void computeSpatialTransformFromParentToCurrentCluster(
-                spatial::GeneralizedTransform &Xup) const override;
+                spatial::GeneralizedTransform<> &Xup) const override;
 
             std::vector<std::tuple<Body, JointPtr, DMat<double>>>
             bodiesJointsAndReflectedInertias() const override;

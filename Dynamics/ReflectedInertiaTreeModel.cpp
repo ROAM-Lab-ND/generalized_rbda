@@ -206,7 +206,7 @@ namespace grbda
 
         const size_t &i = cp.body_index_;
         const auto node_i = getNodeContainingBody(i);
-        const spatial::Transform Xa = node_i->Xa_[0];
+        const spatial::Transform<> Xa = node_i->Xa_[0];
         const Mat3<double> R_link_to_world = Xa.getRotation().transpose();
         Mat6<double> Xout = spatial::createSXform(R_link_to_world, cp.local_offset_);
 

@@ -10,7 +10,7 @@ namespace grbda
     Body ClusterTreeModel::registerBody(const std::string name,
                                         const SpatialInertia<double> inertia,
                                         const std::string parent_name,
-                                        const spatial::Transform Xtree)
+                                        const spatial::Transform<> Xtree)
     {
         const int body_index = (int)bodies_.size();
         body_name_to_body_index_[name] = body_index;
@@ -211,7 +211,7 @@ namespace grbda
         appendContactPoint(body_name, local_offset, end_effector_name, true);
     }
 
-    void ClusterTreeModel::setState(const ModelState &model_state)
+    void ClusterTreeModel::setState(const ModelState<> &model_state)
     {
         size_t i = 0;
         for (auto &cluster : cluster_nodes_)
@@ -237,7 +237,7 @@ namespace grbda
         const int subindex_within_cluster = body(body_name).sub_index_within_cluster_;
 
         forwardKinematics();
-        const spatial::Transform &Xa = cluster_nodes_[cluster_idx]->Xa_[subindex_within_cluster];
+        const spatial::Transform<> &Xa = cluster_nodes_[cluster_idx]->Xa_[subindex_within_cluster];
         const Mat6<double> Xai = spatial::invertSXform(Xa.toMatrix().cast<double>());
         Vec3<double> link_pos = spatial::sXFormPoint(Xai, Vec3<double>::Zero());
         return link_pos;
@@ -249,7 +249,7 @@ namespace grbda
         const int subindex_within_cluster = body(body_name).sub_index_within_cluster_;
 
         forwardKinematics();
-        const spatial::Transform &Xa = cluster_nodes_[cluster_idx]->Xa_[subindex_within_cluster];
+        const spatial::Transform<> &Xa = cluster_nodes_[cluster_idx]->Xa_[subindex_within_cluster];
         Mat3<double> Rai = Xa.getRotation();
         Rai.transposeInPlace();
         return Rai;

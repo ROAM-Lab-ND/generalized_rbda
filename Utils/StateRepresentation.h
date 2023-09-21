@@ -6,28 +6,31 @@
 namespace grbda
 {
 
-    class JointCoordinate : public DVec<double>
+    template <typename Scalar = double>
+    class JointCoordinate : public DVec<Scalar>
     {
     public:
-        JointCoordinate(const DVec<double> &vec, bool is_spanning)
-            : DVec<double>(vec), _is_spanning(is_spanning) {}
+        JointCoordinate(const DVec<Scalar> &vec, bool is_spanning)
+            : DVec<Scalar>(vec), _is_spanning(is_spanning) {}
 
         const bool &isSpanning() const { return _is_spanning; }
 
-        JointCoordinate(const JointCoordinate &other)
-            : DVec<double>(other), _is_spanning(other._is_spanning) {}
+        // TODO(@MatthewChignoli): Should this be a copy constructor?
+        // TODO(@MatthewChignoli): Regardless, it should deduce the scalar type, not assume it
+        JointCoordinate(const JointCoordinate<> &other)
+            : DVec<Scalar>(other), _is_spanning(other._is_spanning) {}
 
-        JointCoordinate &operator=(const JointCoordinate &other)
+        JointCoordinate &operator=(const JointCoordinate<> &other)
         {
-            this->DVec<double>::operator=(other);
+            this->DVec<Scalar>::operator=(other);
             _is_spanning = other._is_spanning;
             return *this;
         }
 
         template <typename Derived>
-        JointCoordinate &operator=(const Eigen::DenseBase<Derived> &x)
+        JointCoordinate<> &operator=(const Eigen::DenseBase<Derived> &x)
         {
-            this->DVec<double>::operator=(x);
+            this->DVec<Scalar>::operator=(x);
             return *this;
         }
 
@@ -35,24 +38,26 @@ namespace grbda
         bool _is_spanning;
     };
 
+    template <typename Scalar = double>
     struct JointState
     {
-        JointState(const JointCoordinate &pos, const JointCoordinate &vel)
+        JointState(const JointCoordinate<Scalar> &pos, const JointCoordinate<Scalar> &vel)
             : position(pos), velocity(vel) {}
 
         JointState(bool position_is_spanning, bool velocity_is_spanning)
-            : position(JointCoordinate(DVec<double>::Zero(0), position_is_spanning)),
-              velocity(JointCoordinate(DVec<double>::Zero(0), velocity_is_spanning)) {}
+            : position(JointCoordinate<>(DVec<Scalar>::Zero(0), position_is_spanning)),
+              velocity(JointCoordinate<>(DVec<Scalar>::Zero(0), velocity_is_spanning)) {}
 
         JointState()
-            : position(JointCoordinate(DVec<double>::Zero(0), false)),
-              velocity(JointCoordinate(DVec<double>::Zero(0), false)) {}
+            : position(JointCoordinate<>(DVec<Scalar>::Zero(0), false)),
+              velocity(JointCoordinate<>(DVec<Scalar>::Zero(0), false)) {}
 
-        JointCoordinate position;
-        JointCoordinate velocity;
+        JointCoordinate<> position;
+        JointCoordinate<> velocity;
     };
 
-    using ModelState = std::vector<JointState>;
+    template <typename Scalar = double>
+    using ModelState = std::vector<JointState<Scalar>>;
 
     struct ExternalForceAndBodyIndexPair
     {

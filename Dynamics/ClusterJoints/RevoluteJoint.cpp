@@ -21,14 +21,14 @@ namespace grbda
 
         }
 
-        void Revolute::updateKinematics(const JointState &joint_state)
+        void Revolute::updateKinematics(const JointState<> &joint_state)
         {
             single_joints_[0]->updateKinematics(joint_state.position, joint_state.velocity);
             vJ_ = S_ * joint_state.velocity;
         }
 
         void Revolute::computeSpatialTransformFromParentToCurrentCluster(
-            spatial::GeneralizedTransform &Xup) const
+            spatial::GeneralizedTransform<> &Xup) const
         {
 #ifdef DEBUG_MODE
             if (Xup.getNumOutputBodies() != 1)

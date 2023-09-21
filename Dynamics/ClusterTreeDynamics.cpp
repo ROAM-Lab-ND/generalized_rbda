@@ -17,7 +17,7 @@ namespace grbda
         const auto &cluster_i = getClusterContainingBody(body_i);
         const int &subindex_within_cluster_i = body_i.sub_index_within_cluster_;
 
-        const spatial::Transform Xa = cluster_i->Xa_[subindex_within_cluster_i];
+        const spatial::Transform<> Xa = cluster_i->Xa_[subindex_within_cluster_i];
         const Mat3<double> &R_link_to_world = Xa.getRotation().transpose();
         Mat6<double> Xout = spatial::createSXform(R_link_to_world, cp.local_offset_);
 

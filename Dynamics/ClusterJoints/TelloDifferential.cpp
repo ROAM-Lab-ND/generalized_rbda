@@ -24,12 +24,12 @@ namespace grbda
 			return std::make_shared<TelloDifferential>(*this);
 		}
 
-		DVec<double> TelloDifferential::gamma(const JointCoordinate &joint_pos) const
+		DVec<double> TelloDifferential::gamma(const JointCoordinate<> &joint_pos) const
 		{
 			throw std::runtime_error("Tello loop constraint does not have a gamma function");
 		}
 
-		void TelloDifferential::updateJacobians(const JointCoordinate &joint_pos)
+		void TelloDifferential::updateJacobians(const JointCoordinate<> &joint_pos)
 		{
 #ifdef DEBUG_MODE
 			if (!joint_pos.isSpanning())
@@ -40,7 +40,7 @@ namespace grbda
 			casadi_interface(arg, J, jacobian_helpers_);
 		}
 
-		void TelloDifferential::updateBiases(const JointState &joint_state)
+		void TelloDifferential::updateBiases(const JointState<> &joint_state)
 		{
 #ifdef DEBUG_MODE
 			if (!joint_state.position.isSpanning() || !joint_state.velocity.isSpanning())
@@ -85,9 +85,9 @@ namespace grbda
 			S_.block<6, 1>(6, 1) = gear_ratio_ * rotor2_joint_->S();
 		}
 
-		void TelloDifferential::updateKinematics(const JointState &joint_state)
+		void TelloDifferential::updateKinematics(const JointState<> &joint_state)
 		{
-			const JointState spanning_joint_state = toSpanningTreeState(joint_state);
+			const JointState<> spanning_joint_state = toSpanningTreeState(joint_state);
 			const DVec<double> &q = spanning_joint_state.position;
 			const DVec<double> &q_dot = spanning_joint_state.velocity;
 
@@ -118,7 +118,7 @@ namespace grbda
 		}
 
 		void TelloDifferential::computeSpatialTransformFromParentToCurrentCluster(
-			spatial::GeneralizedTransform &Xup) const
+			spatial::GeneralizedTransform<> &Xup) const
 		{
 #ifdef DEBUG_MODE
 			if (Xup.getNumOutputBodies() != 4)
@@ -131,11 +131,11 @@ namespace grbda
 			Xup[3] = link2_joint_->XJ() * link2_.Xtree_ * Xup[2];
 		}
 
-		JointState TelloDifferential::randomJointState() const
+		JointState<> TelloDifferential::randomJointState() const
 		{
-			JointCoordinate joint_pos(DVec<double>::Zero(num_positions_), true);
-			JointCoordinate joint_vel(DVec<double>::Zero(num_velocities_), false);
-			JointState joint_state(joint_pos, joint_vel);
+			JointCoordinate<> joint_pos(DVec<double>::Zero(num_positions_), true);
+			JointCoordinate<> joint_vel(DVec<double>::Zero(num_velocities_), false);
+			JointState<> joint_state(joint_pos, joint_vel);
 
 			// Position
 			std::vector<DVec<double>> dependent_state = {DVec<double>::Random(2)};

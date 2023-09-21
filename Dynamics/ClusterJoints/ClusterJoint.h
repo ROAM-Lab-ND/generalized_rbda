@@ -32,16 +32,15 @@ namespace grbda
         class Base
         {
         public:
-
             Base(int num_bodies, int num_independent_positions, int num_independent_velocities);
             virtual ~Base() {}
 
             virtual ClusterJointTypes type() const = 0;
 
-            virtual void updateKinematics(const JointState &joint_state) = 0;
+            virtual void updateKinematics(const JointState<> &joint_state) = 0;
 
             virtual void computeSpatialTransformFromParentToCurrentCluster(
-                spatial::GeneralizedTransform &Xup) const = 0;
+                spatial::GeneralizedTransform<> &Xup) const = 0;
 
             const std::vector<JointPtr> singleJoints() const { return single_joints_; };
 
@@ -55,7 +54,7 @@ namespace grbda
             const int &numVelocities() const { return num_velocities_; }
             virtual int numUnactuatedVelocities() const { return 0; }
 
-            virtual JointCoordinate integratePosition(JointState joint_state, double dt) const;
+            virtual JointCoordinate<> integratePosition(JointState<> joint_state, double dt) const;
 
             const DMat<double> &S() const { return S_; }
             const DMat<double> &Psi() const { return Psi_; }
@@ -67,7 +66,7 @@ namespace grbda
                 return loop_constraint_->clone();
             }
 
-            virtual JointState randomJointState() const;
+            virtual JointState<> randomJointState() const;
 
             const DMat<double> &G() const { return loop_constraint_->G(); }
             const DVec<double> &g() const { return loop_constraint_->g(); }
@@ -80,7 +79,7 @@ namespace grbda
                 return spanning_tree_to_independent_coords_conversion_;
             }
 
-            JointState toSpanningTreeState(const JointState &joint_state);
+            JointState<> toSpanningTreeState(const JointState<> &joint_state);
 
         protected:
             const int num_bodies_;

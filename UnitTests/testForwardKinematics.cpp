@@ -25,8 +25,8 @@ protected:
         DVec<double> spanning_joint_vel = DVec<double>::Zero(0);
         for (const auto &cluster : cluster_model.clusters())
         {
-            JointState joint_state = cluster->joint_->randomJointState();
-            JointState spanning_joint_state = cluster->joint_->toSpanningTreeState(joint_state);
+            JointState<> joint_state = cluster->joint_->randomJointState();
+            JointState<> spanning_joint_state = cluster->joint_->toSpanningTreeState(joint_state);
 
             spanning_joint_pos = appendEigenVector(spanning_joint_pos,
                                                    spanning_joint_state.position);
@@ -57,7 +57,7 @@ protected:
     ClusterTreeModel generic_model;
     RigidBodyTreeModel rigid_body_model;
 
-    ModelState model_state;
+    ModelState<> model_state;
 };
 
 using testing::Types;
@@ -188,17 +188,17 @@ TYPED_TEST(RigidBodyKinematicsTest, MotionSubspaceApparentDerivative)
         for (auto &cluster : this->cluster_model.clusters())
         {
             auto joint = cluster->joint_;
-            JointState joint_state = cluster->joint_state_;
+            JointState<> joint_state = cluster->joint_state_;
 
             const DVec<double> cJ = joint->cJ();
 
-            JointState q_plus_joint_state = cluster->joint_state_;
+            JointState<> q_plus_joint_state = cluster->joint_state_;
             q_plus_joint_state.position = cluster->integratePosition(joint_state, dt);
             q_plus_joint_state.velocity = cluster->jointVelocity();
             joint->updateKinematics(q_plus_joint_state);
             DMat<double> S_plus = joint->S();
 
-            JointState q_minus_joint_state = cluster->joint_state_;
+            JointState<> q_minus_joint_state = cluster->joint_state_;
             q_minus_joint_state.position = cluster->integratePosition(joint_state, -dt);
             q_minus_joint_state.velocity = cluster->jointVelocity();
             joint->updateKinematics(q_minus_joint_state);

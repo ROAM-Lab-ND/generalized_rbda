@@ -44,11 +44,22 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -ggdb -Wall \
 #------------------------------------------------------------------------
 # Dependencies
 #------------------------------------------------------------------------
-find_package(lcm REQUIRED)
-include_directories("/usr/local/include/lcm/")
+# TODO(@MatthewChignoli): Maybe want to check out the TOLRAS repo for examples on how to setup this CMake in a more general way
 
 find_package(Eigen3 REQUIRED)
 include_directories("/usr/local/include/eigen3")
+
+# for using casadi
+find_package(casadi REQUIRED)
+set(CASADI_INCLUDE_DIR /usr/local/include/casadi)
+include_directories(${CASADI_INCLUDE_DIR})
+
+find_library(CASADI_LIBRARY
+    NAMES casadi
+    HINTS ${CASADI_INCLUDE_DIR}/../lib $ENV{CASADI_PREFIX}/lib)
+if(CASADI_LIBRARY)
+    set(CASADI_LIBRARIES ${CASADI_LIBRARIES} ${CASADI_LIBRARY})
+endif()
 
 #------------------------------------------------------------------------
 # Directory setup

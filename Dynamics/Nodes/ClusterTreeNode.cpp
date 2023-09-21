@@ -33,7 +33,7 @@ namespace grbda
         D_inv_ = Eigen::ColPivHouseholderQR<DMat<double>>(D);
     }
 
-    const spatial::Transform &ClusterTreeNode::getAbsoluteTransformForBody(const Body &body)
+    const spatial::Transform<> &ClusterTreeNode::getAbsoluteTransformForBody(const Body &body)
     {
         return Xa_.getTransformForOutputBody(body.sub_index_within_cluster_);
     }

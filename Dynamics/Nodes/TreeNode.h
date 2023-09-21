@@ -32,13 +32,13 @@ namespace grbda
 
         virtual void updateKinematics() = 0;
 
-        const JointCoordinate &jointPosition() const { return joint_state_.position; }
-        const JointCoordinate &jointVelocity() const { return joint_state_.velocity; }
+        const JointCoordinate<> &jointPosition() const { return joint_state_.position; }
+        const JointCoordinate<> &jointVelocity() const { return joint_state_.velocity; }
         virtual const DVec<double> &vJ() const = 0;
         virtual const DMat<double> &S() const = 0;
         virtual const DVec<double> &cJ() const = 0;
 
-        virtual const spatial::Transform &getAbsoluteTransformForBody(const Body &body) = 0;
+        virtual const spatial::Transform<> &getAbsoluteTransformForBody(const Body &body) = 0;
         virtual DVec<double> getVelocityForBody(const Body &body) = 0;
         virtual void applyForceToBody(const SVec<double> &force, const Body &body) = 0;
 
@@ -53,7 +53,7 @@ namespace grbda
         const std::string name_;
         const int parent_index_;
 
-        JointState joint_state_;
+        JointState<> joint_state_;
 
         DVec<double> v_;     // spatial velocity
         DVec<double> a_;     // spatial acceleration
@@ -64,8 +64,8 @@ namespace grbda
         DMat<double> I_;  // spatial inertia
         DMat<double> Ic_; // compisite rigid body inertia
 
-        spatial::GeneralizedTransform Xup_;        // spatial xform from parent to child frame
-        spatial::GeneralizedAbsoluteTransform Xa_; // spatial xform from world to current frame
+        spatial::GeneralizedTransform<> Xup_;        // spatial xform from parent to child frame
+        spatial::GeneralizedAbsoluteTransform<> Xa_; // spatial xform from world to current frame
 
         std::vector<int> supported_end_effectors_;
         std::vector<std::pair<int, int>> nearest_supported_ee_pairs_;

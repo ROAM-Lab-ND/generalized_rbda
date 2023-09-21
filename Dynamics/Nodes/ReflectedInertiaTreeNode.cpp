@@ -27,7 +27,7 @@ namespace grbda
         vJ_ = joint_->S() * joint_state_.velocity;
     }
 
-    const spatial::Transform &ReflectedInertiaTreeNode::getAbsoluteTransformForBody(const Body &body)
+    const spatial::Transform<> &ReflectedInertiaTreeNode::getAbsoluteTransformForBody(const Body &body)
     {
         return Xa_[0];
     };

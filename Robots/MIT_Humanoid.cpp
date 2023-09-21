@@ -40,8 +40,8 @@ namespace grbda
                                                                      _hipRzPitch);
             const Vec3<double> hipRzLocation = withLeftRightSigns(_hipRzLocation, legID);
             const Vec3<double> hipRzRotorLocation = withLeftRightSigns(_hipRzRotorLocation, legID);
-            const spatial::Transform xtreeHipRz(Xrot_HipZ, hipRzLocation);
-            const spatial::Transform xtreeHipRzRotor(Xrot_HipZ, hipRzRotorLocation);
+            const spatial::Transform<> xtreeHipRz(Xrot_HipZ, hipRzLocation);
+            const spatial::Transform<> xtreeHipRzRotor(Xrot_HipZ, hipRzRotorLocation);
 
             Body hip_rz_link = model.registerBody(hip_rz_link_name, hip_rz_link_inertia,
                                                   hip_rz_parent_name, xtreeHipRz);
@@ -68,8 +68,8 @@ namespace grbda
                                                                      _hipRxPitch);
             const Vec3<double> hipRxLocation = withLeftRightSigns(_hipRxLocation, legID);
             const Vec3<double> hipRxRotorLocation = withLeftRightSigns(_hipRxRotorLocation, legID);
-            const spatial::Transform xtreeHipRx(Xrot_HipX, hipRxLocation);
-            const spatial::Transform xtreeHipRxRotor(Xrot_HipX, hipRxRotorLocation);
+            const spatial::Transform<> xtreeHipRx(Xrot_HipX, hipRxLocation);
+            const spatial::Transform<> xtreeHipRxRotor(Xrot_HipX, hipRxRotorLocation);
 
             Body hip_rx_link = model.registerBody(hip_rx_link_name, hip_rx_link_inertia,
                                                   hip_rx_parent_name, xtreeHipRx);
@@ -98,8 +98,8 @@ namespace grbda
                                                                      _hipRyPitch);
             const Vec3<double> hipRyLocation = withLeftRightSigns(_hipRyLocation, legID);
             const Vec3<double> hipRyRotorLocation = withLeftRightSigns(_hipRyRotorLocation, legID);
-            const spatial::Transform xtreeHipRy(Xrot_HipY, hipRyLocation);
-            const spatial::Transform xtreeHipRyRotor(Xrot_HipY, hipRyRotorLocation);
+            const spatial::Transform<> xtreeHipRy(Xrot_HipY, hipRyLocation);
+            const spatial::Transform<> xtreeHipRyRotor(Xrot_HipY, hipRyRotorLocation);
 
             Body hip_ry_link = model.registerBody(hip_ry_link_name, hip_ry_link_inertia,
                                                   hip_ry_parent_name, xtreeHipRy);
@@ -127,8 +127,8 @@ namespace grbda
 
             const Vec3<double> kneeLocation = withLeftRightSigns(_kneeLocation, legID);
             const Vec3<double> kneeRotorLocation = withLeftRightSigns(_kneeRotorLocation, legID);
-            const spatial::Transform xtreeKnee(I3, kneeLocation);
-            const spatial::Transform xtreeKneeRotor(I3, kneeRotorLocation);
+            const spatial::Transform<> xtreeKnee(I3, kneeLocation);
+            const spatial::Transform<> xtreeKneeRotor(I3, kneeRotorLocation);
 
             Body knee_link = model.registerBody(knee_link_name, knee_link_inertia,
                                                 knee_parent_name, xtreeKnee);
@@ -152,8 +152,8 @@ namespace grbda
 
             const Vec3<double> ankleLocation = withLeftRightSigns(_ankleLocation, legID);
             const Vec3<double> ankleRotorLocation = withLeftRightSigns(_ankleRotorLocation, legID);
-            const spatial::Transform xtreeAnkle(I3, ankleLocation);
-            const spatial::Transform xtreeAnkleRotor(I3, ankleRotorLocation);
+            const spatial::Transform<> xtreeAnkle(I3, ankleLocation);
+            const spatial::Transform<> xtreeAnkleRotor(I3, ankleRotorLocation);
 
             Body ankle_rotor = model.registerBody(ankle_rotor_name, ankle_rotor_inertia,
                                                   knee_parent_name, xtreeAnkleRotor);
@@ -201,8 +201,8 @@ namespace grbda
                                                              _smallRotorRotInertiaY);
             shoulder_ry_rotor_inertia = withLeftRightSigns(shoulder_ry_rotor_inertia, armID);
 
-            const spatial::Transform xtreeShoulderRy(I3, withLeftRightSigns(_shoulderRyLocation, armID));
-            const spatial::Transform xtreeShoulderRyRotor(I3, withLeftRightSigns(_shoulderRyRotorLocation, armID));
+            const spatial::Transform<> xtreeShoulderRy(I3, withLeftRightSigns(_shoulderRyLocation, armID));
+            const spatial::Transform<> xtreeShoulderRyRotor(I3, withLeftRightSigns(_shoulderRyRotorLocation, armID));
 
             Body shoulder_ry_link = model.registerBody(shoulder_ry_link_name,
                                                        shoulder_ry_link_inertia,
@@ -233,8 +233,8 @@ namespace grbda
                                                              _smallRotorRotInertiaX);
             shoulder_rx_rotor_inertia = withLeftRightSigns(shoulder_rx_rotor_inertia, armID);
 
-            const spatial::Transform xtreeShoulderRx(I3, withLeftRightSigns(_shoulderRxLocation, armID));
-            const spatial::Transform xtreeShoulderRxRotor(I3, withLeftRightSigns(_shoulderRxRotorLocation, armID));
+            const spatial::Transform<> xtreeShoulderRx(I3, withLeftRightSigns(_shoulderRxLocation, armID));
+            const spatial::Transform<> xtreeShoulderRxRotor(I3, withLeftRightSigns(_shoulderRxRotorLocation, armID));
 
             Body shoulder_rx_link = model.registerBody(shoulder_rx_link_name,
                                                        shoulder_rx_link_inertia,
@@ -265,8 +265,8 @@ namespace grbda
                                                              _smallRotorRotInertiaZ);
             shoulder_rz_rotor_inertia = withLeftRightSigns(shoulder_rz_rotor_inertia, armID);
 
-            const spatial::Transform xtreeShoulderRz(I3, withLeftRightSigns(_shoulderRzLocation, armID));
-            const spatial::Transform xtreeShoulderRzRotor(I3, withLeftRightSigns(_shoulderRzRotorLocation, armID));
+            const spatial::Transform<> xtreeShoulderRz(I3, withLeftRightSigns(_shoulderRzLocation, armID));
+            const spatial::Transform<> xtreeShoulderRzRotor(I3, withLeftRightSigns(_shoulderRzRotorLocation, armID));
 
             Body shoulder_rz_link = model.registerBody(shoulder_rz_link_name,
                                                        shoulder_rz_link_inertia,
@@ -296,8 +296,8 @@ namespace grbda
                                                        _smallRotorRotInertiaY);
             elbow_rotor_inertia = withLeftRightSigns(elbow_rotor_inertia, armID);
 
-            const spatial::Transform xtreeElbow(I3, withLeftRightSigns(_elbowLocation, armID));
-            const spatial::Transform xtreeElbowRotor(I3, withLeftRightSigns(_elbowRotorLocation, armID));
+            const spatial::Transform<> xtreeElbow(I3, withLeftRightSigns(_elbowLocation, armID));
+            const spatial::Transform<> xtreeElbowRotor(I3, withLeftRightSigns(_elbowRotorLocation, armID));
 
             Body elbow_link = model.registerBody(elbow_link_name, elbow_link_inertia,
                                                  elbow_parent_name, xtreeElbow);

@@ -19,7 +19,7 @@ namespace grbda
             return std::make_shared<Free>(*this);
         }
 
-        DVec<double> Free::gamma(const JointCoordinate &joint_pos) const
+        DVec<double> Free::gamma(const JointCoordinate<> &joint_pos) const
         {
             return joint_pos;
         }
@@ -44,14 +44,14 @@ namespace grbda
             loop_constraint_ = std::make_shared<LoopConstraint::Free>();
         }
 
-        void Free::updateKinematics(const JointState &joint_state)
+        void Free::updateKinematics(const JointState<> &joint_state)
         {
             single_joints_[0]->updateKinematics(joint_state.position, joint_state.velocity);
             vJ_ = S_ * joint_state.velocity;
         }
 
         void Free::computeSpatialTransformFromParentToCurrentCluster(
-            spatial::GeneralizedTransform &Xup) const
+            spatial::GeneralizedTransform<> &Xup) const
         {
 #ifdef DEBUG_MODE
             if (Xup.getNumOutputBodies() != 1 || Xup.getNumParentBodies() != 1)
@@ -60,7 +60,7 @@ namespace grbda
             Xup[0] = single_joints_[0]->XJ();
         }
 
-        JointCoordinate Free::integratePosition(JointState joint_state, double dt) const
+        JointCoordinate<> Free::integratePosition(JointState<> joint_state, double dt) const
         {
             const Quat<double> quat = joint_state.position.tail<4>();
             const DVec<double> &vel = joint_state.velocity;
@@ -71,9 +71,9 @@ namespace grbda
             return joint_state.position;
         }
 
-        JointState Free::randomJointState() const
+        JointState<> Free::randomJointState() const
         {
-            JointState joint_state(false, false);
+            JointState<> joint_state(false, false);
             joint_state.position = DVec<double>::Zero(7);
             joint_state.position.segment<3>(0) = Vec3<double>::Random(3);
             joint_state.position.segment<4>(3) = ori::rpyToQuat(Vec3<double>::Random(3));

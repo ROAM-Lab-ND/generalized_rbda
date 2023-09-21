@@ -42,14 +42,14 @@ protected:
 
     bool initializeRandomStates(const int robot_idx, bool use_spanning_state)
     {
-        ModelState model_state;
+        ModelState<> model_state;
         DVec<double> spanning_joint_pos = DVec<double>::Zero(0);
         DVec<double> spanning_joint_vel = DVec<double>::Zero(0);
 
         for (const auto &cluster : cluster_models.at(robot_idx).clusters())
         {
-            JointState joint_state = cluster->joint_->randomJointState();
-            JointState spanning_joint_state = cluster->joint_->toSpanningTreeState(joint_state);
+            JointState<> joint_state = cluster->joint_->randomJointState();
+            JointState<> spanning_joint_state = cluster->joint_->toSpanningTreeState(joint_state);
 
             spanning_joint_pos = appendEigenVector(spanning_joint_pos,
                                                    spanning_joint_state.position);

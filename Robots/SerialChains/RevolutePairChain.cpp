@@ -72,7 +72,7 @@ namespace grbda
         // Uniform quantities
         ori::CoordinateAxis axis = ori::CoordinateAxis::Z;
 
-        const spatial::Transform Xtree2 = spatial::Transform(I3, Vec3<double>(l, 0, 0.));
+        const spatial::Transform<> Xtree2 = spatial::Transform(I3, Vec3<double>(l, 0, 0.));
 
         Mat3<double> link_inertia;
         link_inertia << 0., 0., 0., 0., 0., 0., 0., 0., I;
@@ -87,7 +87,7 @@ namespace grbda
         std::string parent_name = "ground";
         for (size_t i(0); i < N / 2; i++)
         {
-            const spatial::Transform Xtree1 = i == 0 ? spatial::Transform(I3, z3) : Xtree2;
+            const spatial::Transform<> Xtree1 = i == 0 ? spatial::Transform(I3, z3) : Xtree2;
 
             // Link A
             const std::string linkA_name = "link-A-" + std::to_string(i);

@@ -21,12 +21,12 @@ namespace grbda
         const DMat<double> &S() const override { return joint_->S(); }
         const DVec<double> &cJ() const override { return joint_->cJ(); }
 
-        JointCoordinate integratePosition(JointState joint_state, double dt)
+        JointCoordinate<> integratePosition(JointState<> joint_state, double dt)
         {
             return joint_->integratePosition(joint_state, dt);
         }
 
-        const spatial::Transform &getAbsoluteTransformForBody(const Body &body) override;
+        const spatial::Transform<> &getAbsoluteTransformForBody(const Body &body) override;
         DVec<double> getVelocityForBody(const Body &body) override;
         void applyForceToBody(const SVec<double> &force, const Body &body) override;
 
