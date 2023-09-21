@@ -26,7 +26,6 @@ The algorithms contained in this repository use the concept of [Local Constraint
 - C++17 or higher
 - CMake 3.20 or higher
 - Eigen 3.3.7 or higher
-- LCM 1.40 or higher
 
 ### Supported Operating Systems
 - Ubuntu 18.04 or higher

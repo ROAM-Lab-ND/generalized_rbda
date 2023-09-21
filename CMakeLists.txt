@@ -44,9 +44,6 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -ggdb -Wall \
 #------------------------------------------------------------------------
 # Dependencies
 #------------------------------------------------------------------------
-find_package(lcm REQUIRED)
-include_directories("/usr/local/include/lcm/")
-
 find_package(Eigen3 REQUIRED)
 include_directories("/usr/local/include/eigen3")
 
