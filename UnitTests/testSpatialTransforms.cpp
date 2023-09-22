@@ -40,8 +40,6 @@ namespace internal_helpers
 
 using namespace internal_helpers;
 
-// TODO(@MatthewChignoli): Make these tests templated on casadi types as well as doubl
-
 GTEST_TEST(Spatial, SpatialMotionTransform)
 {
     // Verify that transforming a spatial motion vector using a 6x6 Eigen matrix and a

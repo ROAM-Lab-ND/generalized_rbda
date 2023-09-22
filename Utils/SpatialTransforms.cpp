@@ -248,6 +248,7 @@ namespace grbda
         }
 
         template class GeneralizedAbsoluteTransform<double>;
+        template class GeneralizedAbsoluteTransform<casadi::SX>;
 
         ///////////////////////////////////////////////////////////////////////////////////////////
         // GeneralizedTransform
@@ -465,6 +466,7 @@ namespace grbda
         }
 
         template class GeneralizedTransform<double>;
+        template class GeneralizedTransform<casadi::SX>;
 
     } // namespace spatial
 

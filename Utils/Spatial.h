@@ -33,18 +33,18 @@ namespace grbda
      * theta about axis.
      */
     template <typename T>
-    Transform<> spatialRotation(ori::CoordinateAxis axis, T theta)
+    Transform<T> spatialRotation(ori::CoordinateAxis axis, T theta)
     {
       RotMat<T> E = coordinateRotation(axis, theta);
-      return Transform<>(E);
+      return Transform<T>(E);
     }
 
     template <typename T>
-    Transform<> randomSpatialRotation()
+    Transform<T> randomSpatialRotation()
     {
       Vec3<T> r = Vec3<T>::Random();
       Mat3<T> E = ori::rpyToRotMat(Vec3<T>::Random());
-      return Transform<>(E, r);
+      return Transform<T>(E, r);
     }
 
     /*!
