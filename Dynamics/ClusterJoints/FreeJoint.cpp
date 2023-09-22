@@ -29,7 +29,8 @@ namespace grbda
     namespace ClusterJoints
     {
 
-        Free::Free(const Body &body) : Base(1, 7, 6), body_(body)
+        template <typename Scalar>
+        Free<Scalar>::Free(const Body &body) : Base<Scalar>(1, 7, 6), body_(body)
         {
             if (body.parent_index_ >= 0)
                 throw std::runtime_error("Free joint is only valid as the first joint in a tree and thus cannot have a parent body");
@@ -44,13 +45,15 @@ namespace grbda
             this->loop_constraint_ = std::make_shared<LoopConstraint::Free>();
         }
 
-        void Free::updateKinematics(const JointState<> &joint_state)
+        template <typename Scalar>
+        void Free<Scalar>::updateKinematics(const JointState<> &joint_state)
         {
             this->single_joints_[0]->updateKinematics(joint_state.position, joint_state.velocity);
             this->vJ_ = this->S_ * joint_state.velocity;
         }
 
-        void Free::computeSpatialTransformFromParentToCurrentCluster(
+        template <typename Scalar>
+        void Free<Scalar>::computeSpatialTransformFromParentToCurrentCluster(
             spatial::GeneralizedTransform<> &Xup) const
         {
 #ifdef DEBUG_MODE
@@ -60,7 +63,8 @@ namespace grbda
             Xup[0] = this->single_joints_[0]->XJ();
         }
 
-        JointCoordinate<> Free::integratePosition(JointState<> joint_state, double dt) const
+        template <typename Scalar>
+        JointCoordinate<> Free<Scalar>::integratePosition(JointState<> joint_state, double dt) const
         {
             const Quat<double> quat = joint_state.position.tail<4>();
             const DVec<double> &vel = joint_state.velocity;
@@ -71,7 +75,8 @@ namespace grbda
             return joint_state.position;
         }
 
-        JointState<> Free::randomJointState() const
+        template <typename Scalar>
+        JointState<> Free<Scalar>::randomJointState() const
         {
             JointState<> joint_state(false, false);
             joint_state.position = DVec<double>::Zero(7);
@@ -81,14 +86,17 @@ namespace grbda
             return joint_state;
         }
 
+        template <typename Scalar>
         std::vector<std::tuple<Body, JointPtr, DMat<double>>>
-        Free::bodiesJointsAndReflectedInertias() const
+        Free<Scalar>::bodiesJointsAndReflectedInertias() const
         {
             std::vector<std::tuple<Body, JointPtr, DMat<double>>> bodies_joints_and_ref_inertias;
-            bodies_joints_and_ref_inertias.push_back(std::make_tuple(body_, single_joints_[0],
-                                                                      Mat6<double>::Zero()));
+            bodies_joints_and_ref_inertias.push_back(std::make_tuple(body_, this->single_joints_[0],
+                                                                     Mat6<double>::Zero()));
             return bodies_joints_and_ref_inertias;
         }
+
+        template class Free<double>;
 
     }
 

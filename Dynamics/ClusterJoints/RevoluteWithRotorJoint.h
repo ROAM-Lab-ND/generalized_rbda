@@ -9,7 +9,8 @@ namespace grbda
     namespace ClusterJoints
     {
 
-        class RevoluteWithRotor : public Base<>
+        template <typename Scalar = double>
+        class RevoluteWithRotor : public Base<Scalar>
         {
         public:
             RevoluteWithRotor(GearedTransmissionModule &module);

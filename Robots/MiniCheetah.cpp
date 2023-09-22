@@ -15,8 +15,8 @@ namespace grbda
         const std::string torso_name = "Floating Base";
         const std::string torso_parent_name = "ground";
         const SpatialInertia<double> torsoInertia(_bodyMass, _bodyCOM, _bodyRotationalInertia);
-        model.appendBody<Free>(torso_name, torsoInertia, torso_parent_name,
-                               spatial::Transform{});
+        model.appendBody<Free<>>(torso_name, torsoInertia, torso_parent_name,
+                                 spatial::Transform{});
 
         Vec3<double> torsoDims(_bodyLength, _bodyWidth, _bodyHeight);
         model.appendContactBox(torso_name, torsoDims);
@@ -45,7 +45,7 @@ namespace grbda
                                                  abad_parent_name, xtree_abad_rotor);
             GearedTransmissionModule abad_module{abad_link, abad_rotor, ori::CoordinateAxis::X,
                                                  ori::CoordinateAxis::X, _abadGearRatio};
-            model.appendRegisteredBodiesAsCluster<RevoluteWithRotor>(abad_name, abad_module);
+            model.appendRegisteredBodiesAsCluster<RevoluteWithRotor<>>(abad_name, abad_module);
 
             // Hip Joint
             const std::string hip_parent_name = abad_link_name;
@@ -68,7 +68,7 @@ namespace grbda
                                                 hip_parent_name, xtree_hip_rotor);
             GearedTransmissionModule hip_module{hip_link, hip_rotor, ori::CoordinateAxis::Y,
                                                 ori::CoordinateAxis::Y, _hipGearRatio};
-            model.appendRegisteredBodiesAsCluster<RevoluteWithRotor>(hip_name, hip_module);
+            model.appendRegisteredBodiesAsCluster<RevoluteWithRotor<>>(hip_name, hip_module);
 
             const std::string hip_contact_name = withLegSigns("hip_contact", legID);
             model.appendContactPoint(hip_link_name, Vec3<double>(0, 0, 0), hip_contact_name);
@@ -97,7 +97,7 @@ namespace grbda
                                                  knee_parent_name, xtree_knee_rotor);
             GearedTransmissionModule knee_module{knee_link, knee_rotor, ori::CoordinateAxis::Z,
                                                  ori::CoordinateAxis::Z, _kneeGearRatio};
-            model.appendRegisteredBodiesAsCluster<RevoluteWithRotor>(knee_name, knee_module);
+            model.appendRegisteredBodiesAsCluster<RevoluteWithRotor<>>(knee_name, knee_module);
 
             const std::string foot_contact_name = withLegSigns("foot_contact", legID);
             const Vec3<double> foot_contact_offset = withLegSigns(Vec3<double>(0, -_kneeLinkY_offset, -_kneeLinkLength), legID);

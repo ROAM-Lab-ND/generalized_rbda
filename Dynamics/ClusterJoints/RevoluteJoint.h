@@ -9,7 +9,8 @@ namespace grbda
     namespace ClusterJoints
     {
 
-        class Revolute : public Base<>
+        template <typename Scalar = double>
+        class Revolute : public Base<Scalar>
         {
         public:
             Revolute(const Body &body, ori::CoordinateAxis joint_axis);

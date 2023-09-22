@@ -10,7 +10,7 @@ namespace grbda
     namespace ClusterJoints
     {
 
-        class TelloHipDifferential : public TelloDifferential
+        class TelloHipDifferential : public TelloDifferential<>
         {
         public:
             TelloHipDifferential(TelloDifferentialModule &module)

@@ -7,7 +7,7 @@ namespace grbda
     ClusterTreeModel RevolutePairChainWithRotor<N>::buildRandomClusterTreeModel() const
     {
         using namespace ClusterJoints;
-        
+
         ClusterTreeModel model{};
 
         std::string parent_name = "ground";
@@ -51,7 +51,7 @@ namespace grbda
             ParallelBeltTransmissionModule moduleB{linkB, rotorB,
                                                    linkB_joint_axis, rotorB_joint_axis,
                                                    randomGearRatio(), randomGearRatio()};
-            model.appendRegisteredBodiesAsCluster<RevolutePairWithRotor>(name, moduleA, moduleB);
+            model.appendRegisteredBodiesAsCluster<RevolutePairWithRotor<>>(name, moduleA, moduleB);
 
             // Contact points
             appendContactPoints(model, i, linkA_name, linkB_name);
@@ -66,7 +66,7 @@ namespace grbda
     ClusterTreeModel RevolutePairChainWithRotor<N>::buildUniformClusterTreeModel() const
     {
         using namespace ClusterJoints;
-        
+
         ClusterTreeModel model{};
 
         Mat3<double> I3 = Mat3<double>::Identity();
@@ -128,7 +128,7 @@ namespace grbda
             const std::string name = "cluster-" + std::to_string(i);
             ParallelBeltTransmissionModule moduleA{linkA, rotorA, axis, axis, gr, br};
             ParallelBeltTransmissionModule moduleB{linkB, rotorB, axis, axis, gr, br};
-            model.appendRegisteredBodiesAsCluster<RevolutePairWithRotor>(name, moduleA, moduleB);
+            model.appendRegisteredBodiesAsCluster<RevolutePairWithRotor<>>(name, moduleA, moduleB);
 
             // Contact points
             appendContactPoints(model, i, linkA_name, linkB_name);

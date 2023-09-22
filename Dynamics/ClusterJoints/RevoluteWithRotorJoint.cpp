@@ -5,13 +5,14 @@ namespace grbda
 
     namespace ClusterJoints
     {
-        RevoluteWithRotor::RevoluteWithRotor(GearedTransmissionModule &module)
-        : Base(2, 1, 1), link_(module.body_), rotor_(module.rotor_)
+        template <typename Scalar>
+        RevoluteWithRotor<Scalar>::RevoluteWithRotor(GearedTransmissionModule &module)
+            : Base<Scalar>(2, 1, 1), link_(module.body_), rotor_(module.rotor_)
         {
-            link_joint_ = 
-            this->single_joints_.emplace_back(new Joints::Revolute(module.joint_axis_));
-            rotor_joint_ = 
-            this->single_joints_.emplace_back(new Joints::Revolute(module.rotor_axis_));
+            link_joint_ =
+                this->single_joints_.emplace_back(new Joints::Revolute(module.joint_axis_));
+            rotor_joint_ =
+                this->single_joints_.emplace_back(new Joints::Revolute(module.rotor_axis_));
 
             this->spanning_tree_to_independent_coords_conversion_ = DMat<double>::Zero(1, 2);
             this->spanning_tree_to_independent_coords_conversion_ << 1., 0.;
@@ -22,13 +23,14 @@ namespace grbda
             K << module.gear_ratio_, -1.;
             this->loop_constraint_ = std::make_shared<LoopConstraint::Static>(G, K);
 
-            this->S_.block<6, 1>(0, 0) = link_joint_->S();
-            this->S_.block<6, 1>(6, 0) = module.gear_ratio_ * rotor_joint_->S();
+            this->S_.template block<6, 1>(0, 0) = link_joint_->S();
+            this->S_.template block<6, 1>(6, 0) = module.gear_ratio_ * rotor_joint_->S();
 
-            this->Psi_.block<6, 1>(6, 0) = 1. / module.gear_ratio_ * rotor_joint_->S();
+            this->Psi_.template block<6, 1>(6, 0) = 1. / module.gear_ratio_ * rotor_joint_->S();
         }
 
-        void RevoluteWithRotor::updateKinematics(const JointState<> &joint_state)
+        template <typename Scalar>
+        void RevoluteWithRotor<Scalar>::updateKinematics(const JointState<> &joint_state)
         {
             const JointState<> spanning_joint_state = this->toSpanningTreeState(joint_state);
             const DVec<double> &q = spanning_joint_state.position;
@@ -37,11 +39,12 @@ namespace grbda
             link_joint_->updateKinematics(q.segment<1>(0), qd.segment<1>(0));
             rotor_joint_->updateKinematics(q.segment<1>(1), qd.segment<1>(1));
 
-            this->vJ_.head<6>() = link_joint_->S() * qd[0];
-            this->vJ_.tail<6>() = rotor_joint_->S() * qd[1];
+            this->vJ_.template head<6>() = link_joint_->S() * qd[0];
+            this->vJ_.template tail<6>() = rotor_joint_->S() * qd[1];
         }
 
-        void RevoluteWithRotor::computeSpatialTransformFromParentToCurrentCluster(
+        template <typename Scalar>
+        void RevoluteWithRotor<Scalar>::computeSpatialTransformFromParentToCurrentCluster(
             spatial::GeneralizedTransform<> &Xup) const
         {
 #ifdef DEBUG_MODE
@@ -53,12 +56,13 @@ namespace grbda
             Xup[1] = rotor_joint_->XJ() * rotor_.Xtree_;
         }
 
+        template <typename Scalar>
         std::vector<std::tuple<Body, JointPtr, DMat<double>>>
-        RevoluteWithRotor::bodiesJointsAndReflectedInertias() const
+        RevoluteWithRotor<Scalar>::bodiesJointsAndReflectedInertias() const
         {
             std::vector<std::tuple<Body, JointPtr, DMat<double>>> bodies_joints_and_reflected_inertias;
 
-            DMat<double> S_dependent = this->S_.bottomRows<6>();
+            DMat<double> S_dependent = this->S_.template bottomRows<6>();
             DMat<double> reflected_inertia =
                 S_dependent.transpose() * rotor_.inertia_.getMatrix() * S_dependent;
 
@@ -67,6 +71,8 @@ namespace grbda
 
             return bodies_joints_and_reflected_inertias;
         }
+
+        template class RevoluteWithRotor<double>;
     }
 
 } // namespace grbda

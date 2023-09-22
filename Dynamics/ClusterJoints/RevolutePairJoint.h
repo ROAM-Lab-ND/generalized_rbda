@@ -9,7 +9,9 @@ namespace grbda
     namespace ClusterJoints
     {
 
-        class RevolutePair : public Base<>
+        
+        template <typename Scalar = double>
+        class RevolutePair : public Base<Scalar>
         {
         public:
             RevolutePair(Body &link_1, Body &link_2,

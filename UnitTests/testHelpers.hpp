@@ -32,8 +32,8 @@ inline ClusterTreeModel extractGenericJointModel(const ClusterTreeModel &model)
 
         // Extract Loop Constraint and Append Cluster
         std::shared_ptr<LoopConstraint::Base> constraint = cluster->joint_->cloneLoopConstraint();
-        generic_model.appendRegisteredBodiesAsCluster<Generic>(cluster->name_, bodies,
-                                                               joints, constraint);
+        generic_model.appendRegisteredBodiesAsCluster<Generic<>>(cluster->name_, bodies,
+                                                                 joints, constraint);
     }
 
     return generic_model;

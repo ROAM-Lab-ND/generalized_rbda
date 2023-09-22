@@ -73,8 +73,8 @@ namespace grbda
                                                    this->randomGearRatio()};
 
             const std::string cluster_name = "cluster-" + std::to_string(i);
-            model.appendRegisteredBodiesAsCluster<RevoluteTripleWithRotor>(cluster_name, moduleA,
-                                                                           moduleB, moduleC);
+            model.appendRegisteredBodiesAsCluster<RevoluteTripleWithRotor<>>(cluster_name, moduleA,
+                                                                             moduleB, moduleC);
 
             // Contact points
             appendContactPoints(model, i, linkA_name, linkB_name, linkC_name);

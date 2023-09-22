@@ -7,7 +7,7 @@ namespace grbda
     {
         using namespace ClusterJoints;
         using SpatialTransform = spatial::Transform<>;
-        
+
         ClusterTreeModel model{};
 
         Mat3<double> I3 = Mat3<double>::Identity();
@@ -23,7 +23,7 @@ namespace grbda
 
         GearedTransmissionModule base_module{base, base_rotor, ori::CoordinateAxis::Z,
                                              ori::CoordinateAxis::Z, base_rotor_gear_ratio_};
-        model.appendRegisteredBodiesAsCluster<RevoluteWithRotor>(base_cluster_name_, base_module);
+        model.appendRegisteredBodiesAsCluster<RevoluteWithRotor<>>(base_cluster_name_, base_module);
 
         // Shoulder Rx
         SpatialTransform shoulder_rx_link_Xtree = SpatialTransform(I3, shoulder_rx_link_location_);
@@ -41,8 +41,8 @@ namespace grbda
         GearedTransmissionModule shoulder_rx_module{shoulder_rx_link, shoulder_rx_rotor,
                                                     ori::CoordinateAxis::X, ori::CoordinateAxis::X,
                                                     shoulder_rx_rotor_gear_ratio_};
-        model.appendRegisteredBodiesAsCluster<RevoluteWithRotor>(shoulder_rx_cluster_name_,
-                                                                 shoulder_rx_module);
+        model.appendRegisteredBodiesAsCluster<RevoluteWithRotor<>>(shoulder_rx_cluster_name_,
+                                                                   shoulder_rx_module);
 
         // Shoulder Ry
         SpatialTransform shoulder_ry_link_Xtree = SpatialTransform(I3, shoulder_ry_link_location_);
@@ -60,8 +60,8 @@ namespace grbda
         GearedTransmissionModule shoulder_ry_module{shoulder_ry_link, shoulder_ry_rotor,
                                                     ori::CoordinateAxis::Y, ori::CoordinateAxis::Y,
                                                     shoulder_ry_rotor_gear_ratio_};
-        model.appendRegisteredBodiesAsCluster<RevoluteWithRotor>(shoulder_ry_cluster_name_,
-                                                                 shoulder_ry_module);
+        model.appendRegisteredBodiesAsCluster<RevoluteWithRotor<>>(shoulder_ry_cluster_name_,
+                                                                   shoulder_ry_module);
 
         // Upper Link
         SpatialTransform upper_link_Xtree = SpatialTransform(I3, upper_link_location_);
@@ -109,7 +109,7 @@ namespace grbda
 
         // Upper Arm Cluster
         ParallelBeltTransmissionModule upper_arm_module{upper_link, elbow_rotor,
-                                                        ori::CoordinateAxis::Y, 
+                                                        ori::CoordinateAxis::Y,
                                                         ori::CoordinateAxis::Y,
                                                         elbow_rotor_gear_ratio_,
                                                         elbow_rotor_belt_ratio_};
@@ -119,14 +119,14 @@ namespace grbda
                                                           wrist_pitch_rotor_gear_ratio_,
                                                           wrist_pitch_rotor_belt_ratio_};
         ParallelBeltTransmissionModule wrist_roll_module{wrist_roll_link, wrist_roll_rotor,
-                                                         ori::CoordinateAxis::Z, 
+                                                         ori::CoordinateAxis::Z,
                                                          ori::CoordinateAxis::Z,
                                                          wrist_roll_rotor_gear_ratio_,
                                                          wrist_roll_rotor_belt_ratio_};
-        model.appendRegisteredBodiesAsCluster<RevoluteTripleWithRotor>(upper_arm_cluster_name_,
-                                                                       upper_arm_module,
-                                                                       wrist_pitch_module,
-                                                                       wrist_roll_module);
+        model.appendRegisteredBodiesAsCluster<RevoluteTripleWithRotor<>>(upper_arm_cluster_name_,
+                                                                         upper_arm_module,
+                                                                         wrist_pitch_module,
+                                                                         wrist_roll_module);
 
         // Gripper
         SpatialTransform gripper_Xtree = SpatialTransform(I3, gripper_location_);
@@ -139,8 +139,8 @@ namespace grbda
 
         GearedTransmissionModule gripper_module{gripper, gripper_rotor, ori::CoordinateAxis::X,
                                                 ori::CoordinateAxis::X, gripper_rotor_gear_ratio_};
-        model.appendRegisteredBodiesAsCluster<RevoluteWithRotor>(gripper_cluster_name_,
-                                                                 gripper_module);
+        model.appendRegisteredBodiesAsCluster<RevoluteWithRotor<>>(gripper_cluster_name_,
+                                                                   gripper_module);
 
         // Add contact points
         model.appendContactPoint("upper-link", Vec3<double>(0., 0., 0.), "elbow-contact");

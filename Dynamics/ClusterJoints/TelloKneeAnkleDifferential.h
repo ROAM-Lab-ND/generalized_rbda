@@ -10,7 +10,7 @@ namespace grbda
     namespace ClusterJoints
     {
 
-        class TelloKneeAnkleDifferential : public TelloDifferential
+        class TelloKneeAnkleDifferential : public TelloDifferential<>
         {
         public:
             TelloKneeAnkleDifferential(TelloDifferentialModule &module)

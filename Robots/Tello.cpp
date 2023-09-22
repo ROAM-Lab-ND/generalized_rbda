@@ -16,11 +16,11 @@ namespace grbda
         const std::string torso_name = "torso";
         const std::string torso_parent_name = "ground";
         const SpatialInertia<double> torso_spatial_inertia = SpatialInertia<double>{torso_mass,
-            torso_CoM, torso_inertia};
-        model.appendBody<Free>(torso_name, torso_spatial_inertia,
-                               torso_parent_name, spatial::Transform{});
+                                                                                    torso_CoM, torso_inertia};
+        model.appendBody<Free<>>(torso_name, torso_spatial_inertia,
+                                 torso_parent_name, spatial::Transform{});
 
-        std::vector<std::string> sides = {"left","right"};
+        std::vector<std::string> sides = {"left", "right"};
         const std::string hip_clamp_parent_name = "torso";
         const std::string hip_clamp_rotor_parent_name = "torso";
 
@@ -44,7 +44,7 @@ namespace grbda
             const Vec3<double> p_hip_clamp_rotor = i == 0 ? p_left_hip_clamp_rotor
                                                           : p_right_hip_clamp_rotor;
             const spatial::Transform<> hip_clamp_rotor_Xtree = spatial::Transform(R_hip_clamp_rotor,
-                                                                                p_hip_clamp_rotor);
+                                                                                  p_hip_clamp_rotor);
             const std::string hip_clamp_rotor_name = side + "-hip-clamp-rotor";
             const SpatialInertia<double> hip_clamp_rotor_spatial_inertia =
                 SpatialInertia<double>{hip_clamp_rotor_mass, hip_clamp_rotor_CoM,
@@ -60,14 +60,14 @@ namespace grbda
                                                       ori::CoordinateAxis::Z,
                                                       ori::CoordinateAxis::Z,
                                                       gear_ratio};
-            model.appendRegisteredBodiesAsCluster<RevoluteWithRotor>(hip_clamp_cluster_name,
-                                                                     hip_clamp_module);
+            model.appendRegisteredBodiesAsCluster<RevoluteWithRotor<>>(hip_clamp_cluster_name,
+                                                                       hip_clamp_module);
 
             // Hip differential rotor 1
             const Mat3<double> R_hip_rotor_1 = i == 0 ? R_left_hip_rotor_1 : R_right_hip_rotor_1;
             const Vec3<double> p_hip_rotor_1 = i == 0 ? p_left_hip_rotor_1 : p_right_hip_rotor_1;
             const spatial::Transform<> hip_rotor_1_Xtree = spatial::Transform(R_hip_rotor_1,
-                                                                            p_hip_rotor_1);
+                                                                              p_hip_rotor_1);
             const std::string hip_rotor_1_name = side + "-hip-rotor-1";
             const std::string hip_rotor_1_parent_name = side + "-hip-clamp";
             const SpatialInertia<double> hip_rotor_1_spatial_inertia =
@@ -79,7 +79,7 @@ namespace grbda
             const Mat3<double> R_hip_rotor_2 = i == 0 ? R_left_hip_rotor_2 : R_right_hip_rotor_2;
             const Vec3<double> p_hip_rotor_2 = i == 0 ? p_left_hip_rotor_2 : p_right_hip_rotor_2;
             const spatial::Transform<> hip_rotor_2_Xtree = spatial::Transform(R_hip_rotor_2,
-                                                                            p_hip_rotor_2);
+                                                                              p_hip_rotor_2);
             const std::string hip_rotor_2_name = side + "-hip-rotor-2";
             const std::string hip_rotor_2_parent_name = side + "-hip-clamp";
             const SpatialInertia<double> hip_rotor_2_spatial_inertia =
@@ -98,7 +98,7 @@ namespace grbda
             auto gimbal = model.registerBody(gimbal_name, gimbal_spatial_inertia,
                                              gimbal_parent_name, gimbal_Xtree);
 
-            // 
+            //
             const Mat3<double> R_thigh = i == 0 ? R_left_thigh : R_right_thigh;
             const Vec3<double> p_thigh = i == 0 ? p_left_thigh : p_right_thigh;
             const spatial::Transform<> thigh_Xtree = spatial::Transform(R_thigh, p_thigh);

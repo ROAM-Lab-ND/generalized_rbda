@@ -28,7 +28,8 @@ namespace grbda
     namespace ClusterJoints
     {
 
-        class Free : public Base<>
+        template <typename Scalar = double>
+        class Free : public Base<Scalar>
         {
         public:
             Free(const Body &body);

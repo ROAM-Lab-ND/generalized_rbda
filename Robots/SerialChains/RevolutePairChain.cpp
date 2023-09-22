@@ -29,7 +29,7 @@ namespace grbda
 
             // Cluster
             const std::string cluster_name = "cluster-" + std::to_string(i);
-            model.appendRegisteredBodiesAsCluster<RevolutePair>(
+            model.appendRegisteredBodiesAsCluster<RevolutePair<>>(
                 cluster_name, linkA, linkB, linkA_joint_axis, linkB_joint_axis);
 
             // Contact points
@@ -101,7 +101,7 @@ namespace grbda
 
             // Cluster
             const std::string cluster_name = "cluster-" + std::to_string(i);
-            model.appendRegisteredBodiesAsCluster<RevolutePair>(
+            model.appendRegisteredBodiesAsCluster<RevolutePair<>>(
                 cluster_name, linkA, linkB, axis, axis);
 
             parent_name = linkB_name;

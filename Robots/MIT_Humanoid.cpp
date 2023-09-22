@@ -15,8 +15,8 @@ namespace grbda
         const std::string torso_name = "Floating Base";
         const std::string torso_parent_name = "ground";
         const SpatialInertia<double> torsoInertia(_torsoMass, _torsoCOM, _torsoRotInertia);
-        model.appendBody<Free>(torso_name, torsoInertia, torso_parent_name,
-                               spatial::Transform{});
+        model.appendBody<Free<>>(torso_name, torsoInertia, torso_parent_name,
+                                 spatial::Transform{});
 
         Vec3<double> torsoDims(_torsoLength, _torsoWidth, _torsoHeight);
         model.appendContactBox(torso_name, torsoDims);
@@ -50,7 +50,7 @@ namespace grbda
             GearedTransmissionModule hip_rz_module{hip_rz_link, hip_rz_rotor,
                                                    ori::CoordinateAxis::Z, ori::CoordinateAxis::Z,
                                                    _hipRzGearRatio};
-            model.appendRegisteredBodiesAsCluster<RevoluteWithRotor>(hip_rz_name, hip_rz_module);
+            model.appendRegisteredBodiesAsCluster<RevoluteWithRotor<>>(hip_rz_name, hip_rz_module);
 
             // HipRx
             const std::string hip_rx_parent_name = hip_rz_link_name;
@@ -78,7 +78,7 @@ namespace grbda
             GearedTransmissionModule hip_rx_module{hip_rx_link, hip_rx_rotor,
                                                    ori::CoordinateAxis::X, ori::CoordinateAxis::X,
                                                    _hipRxGearRatio};
-            model.appendRegisteredBodiesAsCluster<RevoluteWithRotor>(hip_rx_name, hip_rx_module);
+            model.appendRegisteredBodiesAsCluster<RevoluteWithRotor<>>(hip_rx_name, hip_rx_module);
 
             // HipRy
             const std::string hip_ry_parent_name = hip_rx_link_name;
@@ -108,7 +108,7 @@ namespace grbda
             GearedTransmissionModule hip_ry_module{hip_ry_link, hip_ry_rotor,
                                                    ori::CoordinateAxis::Y, ori::CoordinateAxis::Y,
                                                    _hipRyGearRatio};
-            model.appendRegisteredBodiesAsCluster<RevoluteWithRotor>(hip_ry_name, hip_ry_module);
+            model.appendRegisteredBodiesAsCluster<RevoluteWithRotor<>>(hip_ry_name, hip_ry_module);
 
             const std::string knee_contact_name = withLeftRightSigns("knee_contact", legID);
             model.appendContactPoint(hip_ry_link_name, Vec3<double>(0, 0, -_thighLength),
@@ -166,8 +166,9 @@ namespace grbda
 
             // Cluster
             const std::string knee_and_ankle_name = withLeftRightSigns("knee_and_ankle", legID);
-            model.appendRegisteredBodiesAsCluster<RevolutePairWithRotor>(knee_and_ankle_name,
-                                                                         knee_module, ankle_module);
+            model.appendRegisteredBodiesAsCluster<RevolutePairWithRotor<>>(knee_and_ankle_name,
+                                                                           knee_module,
+                                                                           ankle_module);
 
             // Contact Points
             const std::string toe_contact_name = withLeftRightSigns("toe_contact", legID);
@@ -216,8 +217,8 @@ namespace grbda
                                                         ori::CoordinateAxis::Y,
                                                         ori::CoordinateAxis::Y,
                                                         _shoulderRyGearRatio};
-            model.appendRegisteredBodiesAsCluster<RevoluteWithRotor>(shoulder_ry_name,
-                                                                     shoulder_ry_module);
+            model.appendRegisteredBodiesAsCluster<RevoluteWithRotor<>>(shoulder_ry_name,
+                                                                       shoulder_ry_module);
 
             // ShoulderRx
             const std::string shoulder_rx_parent_name = shoulder_ry_link_name;
@@ -248,8 +249,8 @@ namespace grbda
                                                         ori::CoordinateAxis::X,
                                                         ori::CoordinateAxis::X,
                                                         _shoulderRxGearRatio};
-            model.appendRegisteredBodiesAsCluster<RevoluteWithRotor>(shoulder_rx_name,
-                                                                     shoulder_rx_module);
+            model.appendRegisteredBodiesAsCluster<RevoluteWithRotor<>>(shoulder_rx_name,
+                                                                       shoulder_rx_module);
 
             // ShoulderRz
             const std::string shoulder_rz_parent_name = shoulder_rx_link_name;
@@ -280,8 +281,8 @@ namespace grbda
                                                         ori::CoordinateAxis::Z,
                                                         ori::CoordinateAxis::Z,
                                                         _shoulderRzGearRatio};
-            model.appendRegisteredBodiesAsCluster<RevoluteWithRotor>(shoulder_rz_name,
-                                                                     shoulder_rz_module);
+            model.appendRegisteredBodiesAsCluster<RevoluteWithRotor<>>(shoulder_rz_name,
+                                                                       shoulder_rz_module);
 
             // Elbow
             const std::string elbow_parent_name = shoulder_rz_link_name;
@@ -305,7 +306,7 @@ namespace grbda
                                                   elbow_parent_name, xtreeElbowRotor);
             GearedTransmissionModule elbow_module{elbow_link, elbow_rotor, ori::CoordinateAxis::Y,
                                                   ori::CoordinateAxis::Y, _elbowGearRatio};
-            model.appendRegisteredBodiesAsCluster<RevoluteWithRotor>(elbow_name, elbow_module);
+            model.appendRegisteredBodiesAsCluster<RevoluteWithRotor<>>(elbow_name, elbow_module);
 
             const std::string elbow_contact_name = withLeftRightSigns("elbow_contact", armID);
             const std::string hand_contact_name = withLeftRightSigns("hand_contact", armID);

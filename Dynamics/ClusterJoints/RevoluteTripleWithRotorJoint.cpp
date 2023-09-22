@@ -6,11 +6,12 @@ namespace grbda
     namespace ClusterJoints
     {
 
-        RevoluteTripleWithRotor::RevoluteTripleWithRotor(
+        template <typename Scalar>
+        RevoluteTripleWithRotor<Scalar>::RevoluteTripleWithRotor(
             const ParallelBeltTransmissionModule &module_1,
             const ParallelBeltTransmissionModule &module_2,
             const ParallelBeltTransmissionModule &module_3)
-            : Base(6, 3, 3), link_1_(module_1.body_), link_2_(module_2.body_),
+            : Base<Scalar>(6, 3, 3), link_1_(module_1.body_), link_2_(module_2.body_),
               link_3_(module_3.body_), rotor_1_(module_1.rotor_), rotor_2_(module_2.rotor_),
               rotor_3_(module_3.rotor_)
         {
@@ -29,7 +30,7 @@ namespace grbda
                 this->single_joints_.emplace_back(new Joints::Revolute(module_3.rotor_axis_));
 
             this->spanning_tree_to_independent_coords_conversion_ = DMat<double>::Zero(3, 6);
-            this->spanning_tree_to_independent_coords_conversion_.topLeftCorner<3, 3>().setIdentity();
+            this->spanning_tree_to_independent_coords_conversion_.template topLeftCorner<3, 3>().setIdentity();
 
             const double &gr1 = module_1.gear_ratio_;
             const double &gr2 = module_2.gear_ratio_;
@@ -59,10 +60,11 @@ namespace grbda
             X_intra_S_span_.block<6, 1>(24, 4) = rotor_2_joint_->S();
             X_intra_S_span_.block<6, 1>(30, 5) = rotor_3_joint_->S();
 
-            this->S_ = X_intra_S_span_ * loop_constraint_->G();
+            this->S_ = X_intra_S_span_ * this->loop_constraint_->G();
         }
 
-        void RevoluteTripleWithRotor::updateKinematics(const JointState<> &joint_state)
+        template <typename Scalar>
+        void RevoluteTripleWithRotor<Scalar>::updateKinematics(const JointState<> &joint_state)
         {
             const JointState<> spanning_joint_state = this->toSpanningTreeState(joint_state);
             const DVec<double> &q = spanning_joint_state.position;
@@ -91,7 +93,7 @@ namespace grbda
             X_intra_S_span_.block<6, 1>(12, 0) = X31_S1;
             X_intra_S_span_.block<6, 1>(12, 1) = X32_S2;
 
-            this->S_.topLeftCorner<18, 3>() = X_intra_S_span_.topLeftCorner<18, 3>();
+            this->S_.template topLeftCorner<18, 3>() = X_intra_S_span_.topLeftCorner<18, 3>();
 
             X_intra_S_span_ring_.block<6, 1>(6, 0) =
                 -spatial::generalMotionCrossMatrix(v2_relative1) * X21_S1;
@@ -104,7 +106,8 @@ namespace grbda
             this->cJ_ = X_intra_S_span_ring_ * qd;
         }
 
-        void RevoluteTripleWithRotor::computeSpatialTransformFromParentToCurrentCluster(
+        template <typename Scalar>
+        void RevoluteTripleWithRotor<Scalar>::computeSpatialTransformFromParentToCurrentCluster(
             spatial::GeneralizedTransform<> &Xup) const
         {
 #ifdef DEBUG_MODE
@@ -120,24 +123,25 @@ namespace grbda
             Xup[5] = rotor_3_joint_->XJ() * rotor_3_.Xtree_;
         }
 
+        template <typename Scalar>
         std::vector<std::tuple<Body, JointPtr, DMat<double>>>
-        RevoluteTripleWithRotor::bodiesJointsAndReflectedInertias() const
+        RevoluteTripleWithRotor<Scalar>::bodiesJointsAndReflectedInertias() const
         {
             std::vector<std::tuple<Body, JointPtr, DMat<double>>> bodies_joints_and_ref_inertias;
 
-            const DMat<double> S_dependent_1 = this->S_.middleRows<6>(18);
+            const DMat<double> S_dependent_1 = this->S_.template middleRows<6>(18);
             const Mat6<double> Ir1 = rotor_1_.inertia_.getMatrix();
             const DMat<double> ref_inertia_1 = S_dependent_1.transpose() * Ir1 * S_dependent_1;
             bodies_joints_and_ref_inertias.push_back(std::make_tuple(link_1_, link_1_joint_,
                                                                      ref_inertia_1));
 
-            const DMat<double> S_dependent_2 = this->S_.middleRows<6>(24);
+            const DMat<double> S_dependent_2 = this->S_.template middleRows<6>(24);
             const Mat6<double> Ir2 = rotor_2_.inertia_.getMatrix();
             const DMat<double> ref_inertia_2 = S_dependent_2.transpose() * Ir2 * S_dependent_2;
             bodies_joints_and_ref_inertias.push_back(std::make_tuple(link_2_, link_2_joint_,
                                                                      ref_inertia_2));
 
-            const DMat<double> S_dependent_3 = this->S_.middleRows<6>(30);
+            const DMat<double> S_dependent_3 = this->S_.template middleRows<6>(30);
             const Mat6<double> Ir3 = rotor_3_.inertia_.getMatrix();
             const DMat<double> ref_inertia_3 = S_dependent_3.transpose() * Ir3 * S_dependent_3;
             bodies_joints_and_ref_inertias.push_back(std::make_tuple(link_3_, link_3_joint_,
@@ -145,6 +149,8 @@ namespace grbda
 
             return bodies_joints_and_ref_inertias;
         }
+
+        template class RevoluteTripleWithRotor<double>;
 
     }
 

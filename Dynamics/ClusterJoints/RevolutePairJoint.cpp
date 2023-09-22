@@ -6,10 +6,11 @@ namespace grbda
     namespace ClusterJoints
     {
 
-        RevolutePair::RevolutePair(Body &link_1, Body &link_2,
-                                   ori::CoordinateAxis joint_axis_1,
-                                   ori::CoordinateAxis joint_axis_2)
-            : Base(2, 2, 2), link_1_(link_1), link_2_(link_2)
+        template <typename Scalar>
+        RevolutePair<Scalar>::RevolutePair(Body &link_1, Body &link_2,
+                                           ori::CoordinateAxis joint_axis_1,
+                                           ori::CoordinateAxis joint_axis_2)
+            : Base<Scalar>(2, 2, 2), link_1_(link_1), link_2_(link_2)
         {
             link_1_joint_ = this->single_joints_.emplace_back(new Joints::Revolute(joint_axis_1));
             link_2_joint_ = this->single_joints_.emplace_back(new Joints::Revolute(joint_axis_2));
@@ -28,12 +29,13 @@ namespace grbda
             X_intra_S_span_.block<6, 1>(0, 0) = link_1_joint_->S();
             X_intra_S_span_.block<6, 1>(6, 1) = link_2_joint_->S();
 
-            this->S_ = X_intra_S_span_ * loop_constraint_->G();
+            this->S_ = X_intra_S_span_ * this->loop_constraint_->G();
         }
 
-        void RevolutePair::updateKinematics(const JointState<> &joint_state)
+        template <typename Scalar>
+        void RevolutePair<Scalar>::updateKinematics(const JointState<> &joint_state)
         {
-            const JointState<> spanning_joint_state = toSpanningTreeState(joint_state);
+            const JointState<> spanning_joint_state = this->toSpanningTreeState(joint_state);
             const DVec<double> &q = spanning_joint_state.position;
             const DVec<double> &qd = spanning_joint_state.velocity;
 
@@ -43,7 +45,7 @@ namespace grbda
             X21_ = link_2_joint_->XJ() * link_2_.Xtree_;
             const DVec<double> v2_relative = link_2_joint_->S() * qd[1];
             X_intra_S_span_.block<6, 1>(6, 0) = X21_.transformMotionSubspace(link_1_joint_->S());
-            this->S_.block<6, 1>(6, 0) = X21_.transformMotionSubspace(link_1_joint_->S());
+            this->S_.template block<6, 1>(6, 0) = X21_.transformMotionSubspace(link_1_joint_->S());
 
             X_intra_S_span_ring_.block<6, 1>(6, 0) =
                 -spatial::generalMotionCrossMatrix(v2_relative) *
@@ -53,7 +55,8 @@ namespace grbda
             this->cJ_ = X_intra_S_span_ring_ * qd;
         }
 
-        void RevolutePair::computeSpatialTransformFromParentToCurrentCluster(
+        template <typename Scalar>
+        void RevolutePair<Scalar>::computeSpatialTransformFromParentToCurrentCluster(
             spatial::GeneralizedTransform<> &Xup) const
         {
 #ifdef DEBUG_MODE
@@ -65,8 +68,9 @@ namespace grbda
             Xup[1] = link_2_joint_->XJ() * link_2_.Xtree_ * Xup[0];
         }
 
+        template <typename Scalar>
         std::vector<std::tuple<Body, JointPtr, DMat<double>>>
-        RevolutePair::bodiesJointsAndReflectedInertias() const
+        RevolutePair<Scalar>::bodiesJointsAndReflectedInertias() const
         {
             std::vector<std::tuple<Body, JointPtr, DMat<double>>> bodies_joints_and_reflected_inertias;
 
@@ -82,6 +86,8 @@ namespace grbda
 
             return bodies_joints_and_reflected_inertias;
         }
+
+        template class RevolutePair<double>;
     }
 
 } // namespace grbda

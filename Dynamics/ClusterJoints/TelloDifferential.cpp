@@ -61,8 +61,9 @@ namespace grbda
 	namespace ClusterJoints
 	{
 
-		TelloDifferential::TelloDifferential(TelloDifferentialModule &module)
-			: Base(4, 4, 2), rotor1_(module.rotor1_), rotor2_(module.rotor2_),
+		template <typename Scalar>
+		TelloDifferential<Scalar>::TelloDifferential(TelloDifferentialModule &module)
+			: Base<Scalar>(4, 4, 2), rotor1_(module.rotor1_), rotor2_(module.rotor2_),
 			  link1_(module.link1_), link2_(module.link2_), gear_ratio_(module.gear_ratio_)
 		{
 			rotor1_joint_ =
@@ -85,13 +86,14 @@ namespace grbda
 			X_intra_S_span_.block<6, 1>(12, 2) = link1_joint_->S();
 			X_intra_S_span_.block<6, 1>(18, 3) = link2_joint_->S();
 
-			this->S_.block<6, 1>(0, 0) = gear_ratio_ * rotor1_joint_->S();
-			this->S_.block<6, 1>(6, 1) = gear_ratio_ * rotor2_joint_->S();
+			this->S_.template block<6, 1>(0, 0) = gear_ratio_ * rotor1_joint_->S();
+			this->S_.template block<6, 1>(6, 1) = gear_ratio_ * rotor2_joint_->S();
 		}
 
-		void TelloDifferential::updateKinematics(const JointState<> &joint_state)
+		template <typename Scalar>
+		void TelloDifferential<Scalar>::updateKinematics(const JointState<> &joint_state)
 		{
-			const JointState<> spanning_joint_state = toSpanningTreeState(joint_state);
+			const JointState<> spanning_joint_state = this->toSpanningTreeState(joint_state);
 			const DVec<double> &q = spanning_joint_state.position;
 			const DVec<double> &q_dot = spanning_joint_state.velocity;
 
@@ -111,17 +113,18 @@ namespace grbda
 			X_intra_S_span_.block<6, 1>(18, 2) = X21_S1;
 			X_intra_S_span_ring_.block<6, 1>(18, 2) = -v2_rel_crm * X21_S1;
 
-			const DMat<double> G = loop_constraint_->G();
-			S_.block<6, 1>(12, 0) = G(2, 0) * S1;
-			S_.block<6, 1>(12, 1) = G(2, 1) * S1;
-			S_.block<6, 1>(18, 0) = G(2, 0) * X21_S1 + G(3, 0) * S2;
-			S_.block<6, 1>(18, 1) = G(2, 1) * X21_S1 + G(3, 1) * S2;
+			const DMat<double> G = this->loop_constraint_->G();
+			this->S_.template block<6, 1>(12, 0) = G(2, 0) * S1;
+			this->S_.template block<6, 1>(12, 1) = G(2, 1) * S1;
+			this->S_.template block<6, 1>(18, 0) = G(2, 0) * X21_S1 + G(3, 0) * S2;
+			this->S_.template block<6, 1>(18, 1) = G(2, 1) * X21_S1 + G(3, 1) * S2;
 
-			vJ_ = X_intra_S_span_ * q_dot;
-			cJ_ = X_intra_S_span_ring_ * q_dot + X_intra_S_span_ * loop_constraint_->g();
+			this->vJ_ = X_intra_S_span_ * q_dot;
+			this->cJ_ = X_intra_S_span_ring_ * q_dot + X_intra_S_span_ * this->loop_constraint_->g();
 		}
 
-		void TelloDifferential::computeSpatialTransformFromParentToCurrentCluster(
+		template <typename Scalar>
+		void TelloDifferential<Scalar>::computeSpatialTransformFromParentToCurrentCluster(
 			spatial::GeneralizedTransform<> &Xup) const
 		{
 #ifdef DEBUG_MODE
@@ -135,7 +138,8 @@ namespace grbda
 			Xup[3] = link2_joint_->XJ() * link2_.Xtree_ * Xup[2];
 		}
 
-		JointState<> TelloDifferential::randomJointState() const
+		template <typename Scalar>
+		JointState<> TelloDifferential<Scalar>::randomJointState() const
 		{
 			JointCoordinate<> joint_pos(DVec<double>::Zero(this->num_positions_), true);
 			JointCoordinate<> joint_vel(DVec<double>::Zero(this->num_velocities_), false);
@@ -157,8 +161,9 @@ namespace grbda
 			return joint_state;
 		}
 
+		template <typename Scalar>
 		std::vector<std::tuple<Body, JointPtr, DMat<double>>>
-		TelloDifferential::bodiesJointsAndReflectedInertias() const
+		TelloDifferential<Scalar>::bodiesJointsAndReflectedInertias() const
 		{
 			std::vector<std::tuple<Body, JointPtr, DMat<double>>> bodies_joints_and_ref_inertias_;
 			const Mat2<double> Z = Mat2<double>::Zero();
@@ -166,6 +171,8 @@ namespace grbda
 			bodies_joints_and_ref_inertias_.push_back(std::make_tuple(link2_, link2_joint_, Z));
 			return bodies_joints_and_ref_inertias_;
 		}
+
+		template class TelloDifferential<double>;
 
 	}
 

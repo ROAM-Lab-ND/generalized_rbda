@@ -30,7 +30,7 @@ namespace grbda
             // Cluster
             const std::string cluster_name = "cluster-" + std::to_string(i);
             GearedTransmissionModule module{link, rotor, link_axis, rotor_axis, randomGearRatio()};
-            model.appendRegisteredBodiesAsCluster<RevoluteWithRotor>(cluster_name, module);
+            model.appendRegisteredBodiesAsCluster<RevoluteWithRotor<>>(cluster_name, module);
 
             prev_link_name = link_name;
         }
@@ -42,8 +42,8 @@ namespace grbda
             const auto link_Xtree = spatial::randomSpatialRotation<double>();
             const auto link_inertia = randomLinkSpatialInertia();
             ori::CoordinateAxis link_joint_axis = ori::randomCoordinateAxis<double>();
-            model.appendBody<ClusterJoints::Revolute>(link_name, link_inertia, prev_link_name,
-                                                          link_Xtree, link_joint_axis);
+            model.appendBody<ClusterJoints::Revolute<>>(link_name, link_inertia, prev_link_name,
+                                                        link_Xtree, link_joint_axis);
 
             prev_link_name = link_name;
         }
