@@ -1,12 +1,15 @@
 #include "ClusterJoint.h"
 
+#include <casadi/casadi.hpp>
+
 namespace grbda
 {
 
     namespace ClusterJoints
     {
 
-        Base::Base(int num_bodies, int num_positions, int num_velocities)
+        template <typename Scalar>
+        Base<Scalar>::Base(int num_bodies, int num_positions, int num_velocities)
             : num_bodies_(num_bodies),
               num_positions_(num_positions),
               num_velocities_(num_velocities)
@@ -18,7 +21,8 @@ namespace grbda
             cJ_ = DVec<double>::Zero(motion_subspace_dimension);
         }
 
-        JointState<> Base::toSpanningTreeState(const JointState<> &joint_state)
+        template <typename Scalar>
+        JointState<> Base<Scalar>::toSpanningTreeState(const JointState<> &joint_state)
         {
             JointState<> spanning_joint_state(true, true);
 
@@ -45,7 +49,8 @@ namespace grbda
             return spanning_joint_state;
         }
 
-        JointCoordinate<> Base::integratePosition(JointState<> joint_state, double dt) const
+        template <typename Scalar>
+        JointCoordinate<> Base<Scalar>::integratePosition(JointState<> joint_state, double dt) const
         {
             if (joint_state.position.isSpanning() && joint_state.velocity.isSpanning())
             {
@@ -67,13 +72,17 @@ namespace grbda
             return joint_state.position;
         }
 
-        JointState<> Base::randomJointState() const
+        template <typename Scalar>
+        JointState<> Base<Scalar>::randomJointState() const
         {
             JointState<> joint_state(false, false);
             joint_state.position = DVec<double>::Random(numPositions());
             joint_state.velocity = DVec<double>::Random(numVelocities());
             return joint_state;
         }
+
+        template class Base<double>;
+        template class Base<casadi::SX>;
 
     }
 

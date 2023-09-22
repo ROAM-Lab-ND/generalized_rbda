@@ -9,7 +9,7 @@ namespace grbda
     namespace ClusterJoints
     {
 
-        class RevoluteTripleWithRotor : public Base
+        class RevoluteTripleWithRotor : public Base<>
         {
         public:
             RevoluteTripleWithRotor(const ParallelBeltTransmissionModule& module_1,

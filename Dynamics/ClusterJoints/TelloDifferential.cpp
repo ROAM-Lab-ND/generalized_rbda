@@ -62,16 +62,20 @@ namespace grbda
 	{
 
 		TelloDifferential::TelloDifferential(TelloDifferentialModule &module)
-		: Base(4, 4, 2), rotor1_(module.rotor1_), rotor2_(module.rotor2_),
-          link1_(module.link1_), link2_(module.link2_), gear_ratio_(module.gear_ratio_)
+			: Base(4, 4, 2), rotor1_(module.rotor1_), rotor2_(module.rotor2_),
+			  link1_(module.link1_), link2_(module.link2_), gear_ratio_(module.gear_ratio_)
 		{
-			rotor1_joint_ = single_joints_.emplace_back(new Joints::Revolute(module.rotor1_axis_));
-			rotor2_joint_ = single_joints_.emplace_back(new Joints::Revolute(module.rotor2_axis_));
-			link1_joint_ = single_joints_.emplace_back(new Joints::Revolute(module.link1_axis_));
-			link2_joint_ = single_joints_.emplace_back(new Joints::Revolute(module.link2_axis_));
+			rotor1_joint_ =
+				this->single_joints_.emplace_back(new Joints::Revolute(module.rotor1_axis_));
+			rotor2_joint_ =
+				this->single_joints_.emplace_back(new Joints::Revolute(module.rotor2_axis_));
+			link1_joint_ =
+				this->single_joints_.emplace_back(new Joints::Revolute(module.link1_axis_));
+			link2_joint_ =
+				this->single_joints_.emplace_back(new Joints::Revolute(module.link2_axis_));
 
-			spanning_tree_to_independent_coords_conversion_ = DMat<double>::Identity(2, 4);
-            spanning_tree_to_independent_coords_conversion_ << 1., 0., 0., 0., 0., 1., 0., 0.;
+			this->spanning_tree_to_independent_coords_conversion_ = DMat<double>::Identity(2, 4);
+			this->spanning_tree_to_independent_coords_conversion_ << 1., 0., 0., 0., 0., 1., 0., 0.;
 
 			X_intra_S_span_ = DMat<double>::Zero(24, 4);
 			X_intra_S_span_ring_ = DMat<double>::Zero(24, 4);
@@ -81,8 +85,8 @@ namespace grbda
 			X_intra_S_span_.block<6, 1>(12, 2) = link1_joint_->S();
 			X_intra_S_span_.block<6, 1>(18, 3) = link2_joint_->S();
 
-			S_.block<6, 1>(0, 0) = gear_ratio_ * rotor1_joint_->S();
-			S_.block<6, 1>(6, 1) = gear_ratio_ * rotor2_joint_->S();
+			this->S_.block<6, 1>(0, 0) = gear_ratio_ * rotor1_joint_->S();
+			this->S_.block<6, 1>(6, 1) = gear_ratio_ * rotor2_joint_->S();
 		}
 
 		void TelloDifferential::updateKinematics(const JointState<> &joint_state)
@@ -133,8 +137,8 @@ namespace grbda
 
 		JointState<> TelloDifferential::randomJointState() const
 		{
-			JointCoordinate<> joint_pos(DVec<double>::Zero(num_positions_), true);
-			JointCoordinate<> joint_vel(DVec<double>::Zero(num_velocities_), false);
+			JointCoordinate<> joint_pos(DVec<double>::Zero(this->num_positions_), true);
+			JointCoordinate<> joint_vel(DVec<double>::Zero(this->num_velocities_), false);
 			JointState<> joint_state(joint_pos, joint_vel);
 
 			// Position

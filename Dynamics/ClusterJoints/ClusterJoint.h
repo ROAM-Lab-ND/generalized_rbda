@@ -29,6 +29,7 @@ namespace grbda
     namespace ClusterJoints
     {
 
+        template <typename Scalar = double>
         class Base
         {
         public:

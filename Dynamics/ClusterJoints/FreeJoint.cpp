@@ -34,20 +34,20 @@ namespace grbda
             if (body.parent_index_ >= 0)
                 throw std::runtime_error("Free joint is only valid as the first joint in a tree and thus cannot have a parent body");
 
-            S_.setIdentity();
-            Psi_.setIdentity();
+            this->S_.setIdentity();
+            this->Psi_.setIdentity();
 
-            single_joints_.emplace_back(new Joints::Free());
+            this->single_joints_.emplace_back(new Joints::Free());
 
-            spanning_tree_to_independent_coords_conversion_ = DMat<double>::Identity(6, 6);
+            this->spanning_tree_to_independent_coords_conversion_ = DMat<double>::Identity(6, 6);
 
-            loop_constraint_ = std::make_shared<LoopConstraint::Free>();
+            this->loop_constraint_ = std::make_shared<LoopConstraint::Free>();
         }
 
         void Free::updateKinematics(const JointState<> &joint_state)
         {
-            single_joints_[0]->updateKinematics(joint_state.position, joint_state.velocity);
-            vJ_ = S_ * joint_state.velocity;
+            this->single_joints_[0]->updateKinematics(joint_state.position, joint_state.velocity);
+            this->vJ_ = this->S_ * joint_state.velocity;
         }
 
         void Free::computeSpatialTransformFromParentToCurrentCluster(
@@ -57,7 +57,7 @@ namespace grbda
             if (Xup.getNumOutputBodies() != 1 || Xup.getNumParentBodies() != 1)
                 throw std::runtime_error("[Free Joint] Xup must be 6x6");
 #endif
-            Xup[0] = single_joints_[0]->XJ();
+            Xup[0] = this->single_joints_[0]->XJ();
         }
 
         JointCoordinate<> Free::integratePosition(JointState<> joint_state, double dt) const
@@ -84,10 +84,10 @@ namespace grbda
         std::vector<std::tuple<Body, JointPtr, DMat<double>>>
         Free::bodiesJointsAndReflectedInertias() const
         {
-            std::vector<std::tuple<Body, JointPtr, DMat<double>>> bodies_joints_and_ref_inertias_;
-            bodies_joints_and_ref_inertias_.push_back(std::make_tuple(body_, single_joints_[0],
+            std::vector<std::tuple<Body, JointPtr, DMat<double>>> bodies_joints_and_ref_inertias;
+            bodies_joints_and_ref_inertias.push_back(std::make_tuple(body_, single_joints_[0],
                                                                       Mat6<double>::Zero()));
-            return bodies_joints_and_ref_inertias_;
+            return bodies_joints_and_ref_inertias;
         }
 
     }

@@ -4,8 +4,7 @@ namespace grbda
 {
 
     ClusterTreeNode::ClusterTreeNode(int index, std::string name, std::vector<Body> &bodies,
-                                     std::shared_ptr<ClusterJoints::Base> joint,
-                                     int parent_index, int num_parent_bodies,
+                                     ClusterJointPtr joint, int parent_index, int num_parent_bodies,
                                      int position_index, int velocity_index, int motion_ss_index)
         : TreeNode(index, name, parent_index, num_parent_bodies,
                    motion_ss_index, 6 * bodies.size(),

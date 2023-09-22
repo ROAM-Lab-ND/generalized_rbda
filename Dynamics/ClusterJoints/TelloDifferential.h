@@ -48,7 +48,7 @@ namespace grbda
     namespace ClusterJoints
     {
 
-        class TelloDifferential : public Base
+        class TelloDifferential : public Base<>
         {
         public:
             TelloDifferential(TelloDifferentialModule &module);

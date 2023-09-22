@@ -9,7 +9,7 @@ namespace grbda
     namespace ClusterJoints
     {
 
-        class Generic : public Base
+        class Generic : public Base<>
         {
         public:
             Generic(const std::vector<Body> &bodies, const std::vector<JointPtr> &joints,

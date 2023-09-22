@@ -13,10 +13,10 @@ namespace grbda
                    loop_constraint->numIndependentPos(), loop_constraint->numIndependentVel()),
               bodies_(bodies)
         {
-            loop_constraint_ = loop_constraint;
+            this->loop_constraint_ = loop_constraint;
 
             for (auto &joint : joints)
-                single_joints_.push_back(joint);
+                this->single_joints_.push_back(joint);
 
             extractConnectivity();
 
@@ -24,22 +24,22 @@ namespace grbda
             for (auto &joint : joints)
                 S_spanning_ = appendEigenMatrix(S_spanning_, joint->S());
 
-            X_intra_ = DMat<double>::Identity(6 * num_bodies_, 6 * num_bodies_);
-            X_intra_ring_ = DMat<double>::Zero(6 * num_bodies_, 6 * num_bodies_);
+            X_intra_ = DMat<double>::Identity(6 * this->num_bodies_, 6 * this->num_bodies_);
+            X_intra_ring_ = DMat<double>::Zero(6 * this->num_bodies_, 6 * this->num_bodies_);
         }
 
         void Generic::updateKinematics(const JointState<> &joint_state)
         {
-            const JointState<> spanning_joint_state = toSpanningTreeState(joint_state);
+            const JointState<> spanning_joint_state = this->toSpanningTreeState(joint_state);
             const DVec<double> &q = spanning_joint_state.position;
             const DVec<double> &qd = spanning_joint_state.velocity;
 
             int pos_idx = 0;
             int vel_idx = 0;
-            for (int i = 0; i < num_bodies_; i++)
+            for (int i = 0; i < this->num_bodies_; i++)
             {
                 const auto &body = bodies_[i];
-                auto joint = single_joints_[i];
+                auto joint = this->single_joints_[i];
 
                 const int num_pos = joint->numPositions();
                 const int num_vel = joint->numVelocities();
@@ -52,7 +52,7 @@ namespace grbda
                     if (connectivity_(i, j))
                     {
                         const auto &body_k = bodies_[k];
-                        const auto joint_k = single_joints_[k];
+                        const auto joint_k = this->single_joints_[k];
 
                         const Mat6<double> Xup_prev = X_intra_.block<6, 6>(6 * i, 6 * k);
                         const Mat6<double> Xint = (joint_k->XJ() * body_k.Xtree_).toMatrix();
@@ -67,10 +67,10 @@ namespace grbda
             }
 
             const DMat<double> S_implicit = X_intra_ * S_spanning_;
-            S_ = S_implicit * loop_constraint_->G();
-            vJ_ = S_implicit * qd;
+            this->S_ = S_implicit * this->loop_constraint_->G();
+            this->vJ_ = S_implicit * qd;
 
-            for (int i = 0; i < num_bodies_; i++)
+            for (int i = 0; i < this->num_bodies_; i++)
             {
                 SVec<double> v_relative = SVec<double>::Zero();
                 for (int j = i - 1; j >= 0; j--)
@@ -89,17 +89,17 @@ namespace grbda
                 }
             }
 
-            cJ_ = X_intra_ring_ * S_spanning_ * qd +
-                  S_implicit * loop_constraint_->g();
+            this->cJ_ = X_intra_ring_ * this->S_spanning_ * qd +
+                  S_implicit * this->loop_constraint_->g();
         }
 
         void Generic::computeSpatialTransformFromParentToCurrentCluster(
             spatial::GeneralizedTransform<> &Xup) const
         {
-            for (int i = 0; i < num_bodies_; i++)
+            for (int i = 0; i < this->num_bodies_; i++)
             {
                 const auto &body = bodies_[i];
-                const auto joint = single_joints_[i];
+                const auto joint = this->single_joints_[i];
                 Xup[i] = joint->XJ() * body.Xtree_;
                 for (int j = i - 1; j >= 0; j--)
                     if (connectivity_(i, j))
@@ -113,7 +113,7 @@ namespace grbda
         void Generic::extractConnectivity()
         {
             connectivity_ = DMat<bool>::Zero(num_bodies_, num_bodies_);
-            for (int i = 0; i < num_bodies_; i++)
+            for (int i = 0; i < this->num_bodies_; i++)
             {
                 int j = i;
                 while (bodyInCurrentCluster(bodies_[j].parent_index_))

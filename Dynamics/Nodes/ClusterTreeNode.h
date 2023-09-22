@@ -9,10 +9,10 @@ namespace grbda
 
     struct ClusterTreeNode : TreeNode
     {
-        typedef std::shared_ptr<ClusterJoints::Base> GenJointPtr;
+        typedef std::shared_ptr<ClusterJoints::Base<>> ClusterJointPtr;
 
         ClusterTreeNode(int index, std::string name, std::vector<Body> &bodies,
-                        GenJointPtr joint, int parent_index, int num_parent_bodies,
+                        ClusterJointPtr joint, int parent_index, int num_parent_bodies,
                         int position_index, int velocity_index, int motion_ss_index);
 
         void updateKinematics() override;
@@ -37,7 +37,7 @@ namespace grbda
         std::vector<std::tuple<Body, JointPtr, DMat<double>>> bodiesJointsAndReflectedInertias() const;
 
         const std::vector<Body> bodies_;
-        std::shared_ptr<ClusterJoints::Base> joint_;
+        ClusterJointPtr joint_;
 
         // Featherstone quantities
         DMat<double> IA_;                                // articulated body inertia

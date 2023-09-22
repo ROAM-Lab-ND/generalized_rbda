@@ -131,7 +131,7 @@ namespace grbda
 
     protected:
         void appendRegisteredBodiesAsCluster(const std::string name,
-                                             std::shared_ptr<ClusterJoints::Base> joint);
+                                             std::shared_ptr<ClusterJoints::Base<>> joint);
 
         void checkValidParentClusterForBodiesInCluster(const ClusterTreeNodePtr cluster);
         void checkValidParentClusterForBodiesInCluster(const int cluster_index);

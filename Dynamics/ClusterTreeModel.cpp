@@ -31,7 +31,7 @@ namespace grbda
     }
 
     void ClusterTreeModel::appendRegisteredBodiesAsCluster(
-        const std::string name, std::shared_ptr<ClusterJoints::Base> joint)
+        const std::string name, std::shared_ptr<ClusterJoints::Base<>> joint)
     {
         const int parent_cluster_index = getIndexOfParentClusterFromBodies(bodies_in_current_cluster_);
         const int num_bodies_in_parent_cluster = getNumBodiesInCluster(parent_cluster_index);

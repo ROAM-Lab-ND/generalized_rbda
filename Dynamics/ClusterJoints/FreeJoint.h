@@ -28,7 +28,7 @@ namespace grbda
     namespace ClusterJoints
     {
 
-        class Free : public Base
+        class Free : public Base<>
         {
         public:
             Free(const Body &body);

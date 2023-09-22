@@ -16,13 +16,17 @@ namespace grbda
             const double net_ratio_1 = module_1.gear_ratio_ * belt_ratio_1;
             const double net_ratio_2 = gear_ratio_2 * module_2.belt_ratio_;
 
-            link1_joint_ = single_joints_.emplace_back(new Joints::Revolute(module_1.joint_axis_));
-            rotor1_joint_ = single_joints_.emplace_back(new Joints::Revolute(module_1.rotor_axis_));
-            rotor2_joint_ = single_joints_.emplace_back(new Joints::Revolute(module_2.rotor_axis_));
-            link2_joint_ = single_joints_.emplace_back(new Joints::Revolute(module_2.joint_axis_));
+            link1_joint_ = 
+            this->single_joints_.emplace_back(new Joints::Revolute(module_1.joint_axis_));
+            rotor1_joint_ = 
+            this->single_joints_.emplace_back(new Joints::Revolute(module_1.rotor_axis_));
+            rotor2_joint_ = 
+            this->single_joints_.emplace_back(new Joints::Revolute(module_2.rotor_axis_));
+            link2_joint_ = 
+            this->single_joints_.emplace_back(new Joints::Revolute(module_2.joint_axis_));
 
-            spanning_tree_to_independent_coords_conversion_ = DMat<double>::Identity(2, 4);
-            spanning_tree_to_independent_coords_conversion_ << 1., 0., 0., 0., 0., 0., 0., 1.;
+            this->spanning_tree_to_independent_coords_conversion_ = DMat<double>::Identity(2, 4);
+            this->spanning_tree_to_independent_coords_conversion_ << 1., 0., 0., 0., 0., 0., 0., 1.;
 
             DMat<double> G = DMat<double>::Zero(4, 2);
             G << 1., 0.,
@@ -32,7 +36,7 @@ namespace grbda
             DMat<double> K = DMat<double>::Identity(2, 4);
             K << net_ratio_1, -1., 0., 0.,
                 gear_ratio_2 * belt_ratio_1, 0, -1., net_ratio_2;
-            loop_constraint_ = std::make_shared<LoopConstraint::Static>(G, K);
+            this->loop_constraint_ = std::make_shared<LoopConstraint::Static>(G, K);
 
             X_intra_S_span_ = DMat<double>::Zero(24, 4);
             X_intra_S_span_ring_ = DMat<double>::Zero(24, 4);
@@ -42,12 +46,12 @@ namespace grbda
             X_intra_S_span_.block<6, 1>(12, 2) = rotor2_joint_->S();
             X_intra_S_span_.block<6, 1>(18, 3) = link2_joint_->S();
 
-            S_ = X_intra_S_span_ * loop_constraint_->G();
+            this->S_ = X_intra_S_span_ * this->loop_constraint_->G();
         }
 
         void RevolutePairWithRotor::updateKinematics(const JointState<> &joint_state)
         {
-            const JointState<> spanning_joint_state = toSpanningTreeState(joint_state);
+            const JointState<> spanning_joint_state = this->toSpanningTreeState(joint_state);
             const DVec<double> &q = spanning_joint_state.position;
             const DVec<double> &qd = spanning_joint_state.velocity;
 
@@ -60,14 +64,14 @@ namespace grbda
             const DVec<double> v2_relative = link2_joint_->S() * qd[3];
 
             X_intra_S_span_.block<6, 1>(18, 0) = X21_.transformMotionSubspace(link1_joint_->S());
-            S_.block<6, 1>(18, 0) = X_intra_S_span_.block<6, 1>(18, 0);
+            this->S_.block<6, 1>(18, 0) = X_intra_S_span_.block<6, 1>(18, 0);
 
             X_intra_S_span_ring_.block<6, 1>(18, 0) =
                 -spatial::generalMotionCrossMatrix(v2_relative) *
                 X_intra_S_span_.block<6, 1>(18, 0);
 
-            vJ_ = X_intra_S_span_ * qd;
-            cJ_ = X_intra_S_span_ring_ * qd;
+            this->vJ_ = X_intra_S_span_ * qd;
+            this->cJ_ = X_intra_S_span_ring_ * qd;
         }
 
         void RevolutePairWithRotor::computeSpatialTransformFromParentToCurrentCluster(
@@ -87,21 +91,21 @@ namespace grbda
         std::vector<std::tuple<Body, JointPtr, DMat<double>>>
         RevolutePairWithRotor::bodiesJointsAndReflectedInertias() const
         {
-            std::vector<std::tuple<Body, JointPtr, DMat<double>>> bodies_joints_and_ref_inertias_;
+            std::vector<std::tuple<Body, JointPtr, DMat<double>>> bodies_joints_and_ref_inertias;
 
-            DMat<double> S_dependent_1 = S_.middleRows<6>(6);
+            DMat<double> S_dependent_1 = this->S_.middleRows<6>(6);
             Mat6<double> Ir1 = rotor1_.inertia_.getMatrix();
             DMat<double> ref_inertia_1 = S_dependent_1.transpose() * Ir1 * S_dependent_1;
-            bodies_joints_and_ref_inertias_.push_back(std::make_tuple(link1_, link1_joint_,
+            bodies_joints_and_ref_inertias.push_back(std::make_tuple(link1_, link1_joint_,
                                                                       ref_inertia_1));
 
-            DMat<double> S_dependent_2 = S_.middleRows<6>(12);
+            DMat<double> S_dependent_2 = this->S_.middleRows<6>(12);
             Mat6<double> Ir2 = rotor2_.inertia_.getMatrix();
             DMat<double> ref_inertia_2 = S_dependent_2.transpose() * Ir2 * S_dependent_2;
-            bodies_joints_and_ref_inertias_.push_back(std::make_tuple(link2_, link2_joint_,
+            bodies_joints_and_ref_inertias.push_back(std::make_tuple(link2_, link2_joint_,
                                                                       ref_inertia_2));
 
-            return bodies_joints_and_ref_inertias_;
+            return bodies_joints_and_ref_inertias;
         }
 
     }
