@@ -48,7 +48,7 @@ namespace grbda
             DMat<double> K = DMat<double>::Zero(3, 6);
             K.leftCols(3) = -G.bottomRows(3);
             K.rightCols(3).setIdentity();
-            this->loop_constraint_ = std::make_shared<LoopConstraint::Static>(G, K);
+            this->loop_constraint_ = std::make_shared<LoopConstraint::Static<Scalar>>(G, K);
 
             X_intra_S_span_ = DMat<double>::Zero(36, 6);
             X_intra_S_span_ring_ = DMat<double>::Zero(36, 6);

@@ -6,21 +6,26 @@ namespace grbda
     namespace LoopConstraint
     {
 
-        Static::Static(DMat<double> G, DMat<double> K)
+        template <typename Scalar>
+        Static<Scalar>::Static(DMat<double> G, DMat<double> K)
         {
-            G_ = G;
-            g_ = DVec<double>::Zero(G.rows());
+            this->G_ = G;
+            this->g_ = DVec<double>::Zero(G.rows());
 
-            K_ = K;
-            k_ = DVec<double>::Zero(K.rows());
+            this->K_ = K;
+            this->k_ = DVec<double>::Zero(K.rows());
         }
 
-        DVec<double> Static::gamma(const JointCoordinate<> &joint_pos) const
+        template <typename Scalar>
+        DVec<double> Static<Scalar>::gamma(const JointCoordinate<> &joint_pos) const
         {
-            return G_ * joint_pos;
+            return this->G_ * joint_pos;
         }
 
-        DVec<double> Collection::gamma(const DVec<double> y) const
+        template class Static<double>;
+
+        template <typename Scalar>
+        DVec<double> Collection<Scalar>::gamma(const DVec<double> y) const
         {
             DVec<double> spanning_pos(span_pos_cnt_);
 
@@ -40,7 +45,8 @@ namespace grbda
             return spanning_pos;
         }
 
-        const DMat<double> &Collection::G_transpose() const
+        template <typename Scalar>
+        const DMat<double> &Collection<Scalar>::G_transpose() const
         {
             if (!G_transpose_computed_)
             {
@@ -50,7 +56,8 @@ namespace grbda
             return G_transpose_;
         }
 
-        const DMat<double> &Collection::G_pinv() const
+        template <typename Scalar>
+        const DMat<double> &Collection<Scalar>::G_pinv() const
         {
             if (!G_pinv_computed_)
             {
@@ -60,17 +67,21 @@ namespace grbda
 
             return G_pinv_;
         }
-        const DMat<double> &Collection::G_tranpose_pinv() const
+
+        template <typename Scalar>
+        const DMat<double> &Collection<Scalar>::G_tranpose_pinv() const
         {
             if (!G_tranpose_pinv_computed_)
             {
-                G_tranpose_pinv_ = G_transpose().completeOrthogonalDecomposition().pseudoInverse();
+                G_tranpose_pinv_ =
+                    G_transpose().completeOrthogonalDecomposition().pseudoInverse();
                 G_tranpose_pinv_computed_ = true;
             }
             return G_tranpose_pinv_;
         }
 
-        const DMat<double> &Collection::K_transpose() const
+        template <typename Scalar>
+        const DMat<double> &Collection<Scalar>::K_transpose() const
         {
             if (!K_transpose_computed_)
             {
@@ -80,9 +91,10 @@ namespace grbda
             return K_transpose_;
         }
 
-        void Collection::push_back(const std::shared_ptr<Base> loop_constraint)
+        template <typename Scalar>
+        void Collection<Scalar>::push_back(const std::shared_ptr<Base<Scalar>> loop_constraint)
         {
-            std::vector<std::shared_ptr<Base>>::push_back(loop_constraint);
+            std::vector<std::shared_ptr<Base<Scalar>>>::push_back(loop_constraint);
 
             span_pos_cnt_ += loop_constraint->numSpanningPos();
 
@@ -95,7 +107,8 @@ namespace grbda
             k_ = DVec<double>::Zero(K_.rows());
         }
 
-        void Collection::update(DVec<double> q)
+        template <typename Scalar>
+        void Collection<Scalar>::update(DVec<double> q)
         {
             int pos_cnt = 0;
             int span_vel_cnt = 0;
@@ -124,7 +137,8 @@ namespace grbda
             resetCache();
         }
 
-        void Collection::update(DVec<double> q, DVec<double> qd)
+        template <typename Scalar>
+        void Collection<Scalar>::update(DVec<double> q, DVec<double> qd)
         {
             int pos_cnt = 0;
             int span_vel_cnt = 0;
@@ -159,13 +173,16 @@ namespace grbda
             resetCache();
         }
 
-        void Collection::resetCache()
+        template <typename Scalar>
+        void Collection<Scalar>::resetCache()
         {
             G_transpose_computed_ = false;
             G_pinv_computed_ = false;
             G_tranpose_pinv_computed_ = false;
             K_transpose_computed_ = false;
         }
+
+        template class Collection<double>;
 
     }
 

@@ -18,7 +18,7 @@ namespace grbda
 
             const DMat<double> G = DMat<double>::Identity(1, 1);
             const DMat<double> K = DMat<double>::Identity(0, 1);
-            this->loop_constraint_ = std::make_shared<LoopConstraint::Static>(G, K);
+            this->loop_constraint_ = std::make_shared<LoopConstraint::Static<Scalar>>(G, K);
         }
 
         template <typename Scalar>

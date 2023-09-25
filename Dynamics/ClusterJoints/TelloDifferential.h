@@ -24,14 +24,15 @@ namespace grbda
 
     namespace LoopConstraint
     {
-        struct TelloDifferential : Base
+        template <typename Scalar = double>
+        struct TelloDifferential : Base<Scalar>
         {
             TelloDifferential(const CasadiHelperFunctions &jacobian_helpers,
                               const CasadiHelperFunctions &bias_helpers,
                               const CasadiHelperFunctions &IK_pos_helpers,
                               const CasadiHelperFunctions &IK_vel_helpers);
 
-            std::shared_ptr<Base> clone() const override;
+            std::shared_ptr<Base<Scalar>> clone() const override;
 
             DVec<double> gamma(const JointCoordinate<> &joint_pos) const override;
 
@@ -66,7 +67,7 @@ namespace grbda
             JointState<> randomJointState() const override;
 
         protected:
-            std::shared_ptr<LoopConstraint::TelloDifferential> tello_constraint_;
+            std::shared_ptr<LoopConstraint::TelloDifferential<Scalar>> tello_constraint_;
 
         private:
             JointPtr<Scalar> rotor1_joint_;

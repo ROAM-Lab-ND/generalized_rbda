@@ -24,7 +24,7 @@ namespace grbda
             CasadiHelperFunctions IK_vel_helpers(tkad_IK_vel, tkad_IK_vel_sparsity_out,
                                                  tkad_IK_vel_work);
     
-            tello_constraint_ = std::make_shared<LoopConstraint::TelloDifferential>(
+            tello_constraint_ = std::make_shared<LoopConstraint::TelloDifferential<double>>(
                 jacobian_helpers, bias_helpers, IK_pos_helpers, IK_vel_helpers);
             loop_constraint_ = tello_constraint_;
             }

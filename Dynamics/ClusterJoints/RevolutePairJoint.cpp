@@ -21,7 +21,7 @@ namespace grbda
             G << 1., 0.,
                 0., 1.;
             const DMat<double> K = DMat<double>::Identity(0, 2);
-            this->loop_constraint_ = std::make_shared<LoopConstraint::Static>(G, K);
+            this->loop_constraint_ = std::make_shared<LoopConstraint::Static<>>(G, K);
 
             X_intra_S_span_ = DMat<double>::Zero(12, 2);
             X_intra_S_span_ring_ = DMat<double>::Zero(12, 2);

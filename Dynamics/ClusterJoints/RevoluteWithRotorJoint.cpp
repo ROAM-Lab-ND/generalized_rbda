@@ -21,7 +21,7 @@ namespace grbda
             G << 1., module.gear_ratio_;
             DMat<double> K = DMat<double>::Zero(1, 2);
             K << module.gear_ratio_, -1.;
-            this->loop_constraint_ = std::make_shared<LoopConstraint::Static>(G, K);
+            this->loop_constraint_ = std::make_shared<LoopConstraint::Static<>>(G, K);
 
             this->S_.template block<6, 1>(0, 0) = link_joint_->S();
             this->S_.template block<6, 1>(6, 0) = module.gear_ratio_ * rotor_joint_->S();

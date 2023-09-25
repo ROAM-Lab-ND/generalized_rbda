@@ -37,7 +37,7 @@ namespace grbda
             DMat<double> K = DMat<double>::Identity(2, 4);
             K << net_ratio_1, -1., 0., 0.,
                 gear_ratio_2 * belt_ratio_1, 0, -1., net_ratio_2;
-            this->loop_constraint_ = std::make_shared<LoopConstraint::Static>(G, K);
+            this->loop_constraint_ = std::make_shared<LoopConstraint::Static<Scalar>>(G, K);
 
             X_intra_S_span_ = DMat<double>::Zero(24, 4);
             X_intra_S_span_ring_ = DMat<double>::Zero(24, 4);

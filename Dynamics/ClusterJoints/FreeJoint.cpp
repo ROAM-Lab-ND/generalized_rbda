@@ -5,24 +5,29 @@ namespace grbda
 
     namespace LoopConstraint
     {
-        Free::Free()
+        template <typename Scalar>
+        Free<Scalar>::Free()
         {
-            G_ = DMat<double>::Identity(6, 6);
-            g_ = DVec<double>::Zero(6);
+            this->G_ = DMat<double>::Identity(6, 6);
+            this->g_ = DVec<double>::Zero(6);
 
-            K_ = DMat<double>::Zero(0, 6);
-            k_ = DVec<double>::Zero(0);
+            this->K_ = DMat<double>::Zero(0, 6);
+            this->k_ = DVec<double>::Zero(0);
         }
 
-        std::shared_ptr<Base> Free::clone() const
+        template <typename Scalar>
+        std::shared_ptr<Base<Scalar>> Free<Scalar>::clone() const
         {
-            return std::make_shared<Free>(*this);
+            return std::make_shared<Free<Scalar>>(*this);
         }
 
-        DVec<double> Free::gamma(const JointCoordinate<> &joint_pos) const
+        template <typename Scalar>
+        DVec<double> Free<Scalar>::gamma(const JointCoordinate<> &joint_pos) const
         {
             return joint_pos;
         }
+
+        template class Free<double>;
 
     }
 
@@ -38,11 +43,11 @@ namespace grbda
             this->S_.setIdentity();
             this->Psi_.setIdentity();
 
-            this->single_joints_.emplace_back(new Joints::Free());
+            this->single_joints_.emplace_back(new Joints::Free<Scalar>());
 
             this->spanning_tree_to_independent_coords_conversion_ = DMat<double>::Identity(6, 6);
 
-            this->loop_constraint_ = std::make_shared<LoopConstraint::Free>();
+            this->loop_constraint_ = std::make_shared<LoopConstraint::Free<Scalar>>();
         }
 
         template <typename Scalar>

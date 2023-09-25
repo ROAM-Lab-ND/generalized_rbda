@@ -62,7 +62,7 @@ namespace grbda
             const DVec<double> &vJ() const { return vJ_; }
             const DVec<double> &cJ() const { return cJ_; }
 
-            std::shared_ptr<LoopConstraint::Base> cloneLoopConstraint() const
+            std::shared_ptr<LoopConstraint::Base<Scalar>> cloneLoopConstraint() const
             {
                 return loop_constraint_->clone();
             }
@@ -92,7 +92,7 @@ namespace grbda
             DVec<double> vJ_;
             DVec<double> cJ_;
 
-            std::shared_ptr<LoopConstraint::Base> loop_constraint_;
+            std::shared_ptr<LoopConstraint::Base<Scalar>> loop_constraint_;
             std::vector<JointPtr<double>> single_joints_;
 
             DMat<double> spanning_tree_to_independent_coords_conversion_;

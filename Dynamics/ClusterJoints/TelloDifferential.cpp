@@ -6,41 +6,46 @@ namespace grbda
 	namespace LoopConstraint
 	{
 
-		TelloDifferential::TelloDifferential(const CasadiHelperFunctions &jacobian_helpers,
-											 const CasadiHelperFunctions &bias_helpers,
-											 const CasadiHelperFunctions &IK_pos_helpers,
-											 const CasadiHelperFunctions &IK_vel_helpers)
+		template <typename Scalar>
+		TelloDifferential<Scalar>::TelloDifferential(const CasadiHelperFunctions &jacobian_helpers,
+													 const CasadiHelperFunctions &bias_helpers,
+													 const CasadiHelperFunctions &IK_pos_helpers,
+													 const CasadiHelperFunctions &IK_vel_helpers)
 			: jacobian_helpers_(jacobian_helpers), bias_helpers_(bias_helpers),
 			  IK_pos_helpers_(IK_pos_helpers), IK_vel_helpers_(IK_vel_helpers)
 		{
-			G_.setZero(4, 2);
-			K_.setZero(2, 4);
-			g_.setZero(4);
-			k_.setZero(2);
+			this->G_.setZero(4, 2);
+			this->K_.setZero(2, 4);
+			this->g_.setZero(4);
+			this->k_.setZero(2);
 		}
 
-		std::shared_ptr<Base> TelloDifferential::clone() const
+		template <typename Scalar>
+		std::shared_ptr<Base<Scalar>> TelloDifferential<Scalar>::clone() const
 		{
-			return std::make_shared<TelloDifferential>(*this);
+			return std::make_shared<TelloDifferential<Scalar>>(*this);
 		}
 
-		DVec<double> TelloDifferential::gamma(const JointCoordinate<> &joint_pos) const
+		template <typename Scalar>
+		DVec<double> TelloDifferential<Scalar>::gamma(const JointCoordinate<> &joint_pos) const
 		{
 			throw std::runtime_error("Tello loop constraint does not have a gamma function");
 		}
 
-		void TelloDifferential::updateJacobians(const JointCoordinate<> &joint_pos)
+		template <typename Scalar>
+		void TelloDifferential<Scalar>::updateJacobians(const JointCoordinate<> &joint_pos)
 		{
 #ifdef DEBUG_MODE
 			if (!joint_pos.isSpanning())
 				throw std::runtime_error("[TelloDifferential] Position for updating constraint Jacobians must be spanning");
 #endif
 			std::vector<DVec<double>> arg = {joint_pos.head<2>(), joint_pos.tail<2>()};
-			std::vector<Eigen::MatrixBase<DMat<double>> *> J = {&G_, &K_};
+			std::vector<Eigen::MatrixBase<DMat<double>> *> J = {&this->G_, &this->K_};
 			casadi_interface(arg, J, jacobian_helpers_);
 		}
 
-		void TelloDifferential::updateBiases(const JointState<> &joint_state)
+		template <typename Scalar>
+		void TelloDifferential<Scalar>::updateBiases(const JointState<> &joint_state)
 		{
 #ifdef DEBUG_MODE
 			if (!joint_state.position.isSpanning() || !joint_state.velocity.isSpanning())
@@ -52,9 +57,11 @@ namespace grbda
 
 			std::vector<DVec<double>> arg = {q.head<2>(), q.tail<2>(),
 											 q_dot.head<2>(), q_dot.tail<2>()};
-			std::vector<Eigen::MatrixBase<DVec<double>> *> b = {&g_, &k_};
+			std::vector<Eigen::MatrixBase<DVec<double>> *> b = {&this->g_, &this->k_};
 			casadi_interface(arg, b, bias_helpers_);
 		}
+
+		template class TelloDifferential<double>;
 
 	}
 

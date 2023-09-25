@@ -10,11 +10,12 @@ namespace grbda
     namespace LoopConstraint
     {
 
+        template <typename Scalar = double>
         struct Base
         {
             virtual ~Base() {}
 
-            virtual std::shared_ptr<Base> clone() const = 0;
+            virtual std::shared_ptr<Base<Scalar>> clone() const = 0;
 
             virtual int numSpanningPos() const { return G_.rows(); }
             virtual int numIndependentPos() const { return G_.cols(); }
@@ -40,11 +41,15 @@ namespace grbda
             DVec<double> k_;
         };
 
-        struct Static : Base
+        template <typename Scalar = double>
+        struct Static : Base<Scalar>
         {
             Static(DMat<double> G, DMat<double> K);
 
-            std::shared_ptr<Base> clone() const override { return std::make_shared<Static>(*this); }
+            std::shared_ptr<Base<Scalar>> clone() const override
+            {
+                return std::make_shared<Static<Scalar>>(*this);
+            }
 
             void updateJacobians(const JointCoordinate<> &joint_pos) override {}
             void updateBiases(const JointState<> &joint_state) override {}
@@ -52,7 +57,8 @@ namespace grbda
             DVec<double> gamma(const JointCoordinate<> &joint_pos) const override;
         };
 
-        struct Collection : std::vector<std::shared_ptr<Base>>
+        template <typename Scalar = double>
+        struct Collection : std::vector<std::shared_ptr<Base<Scalar>>>
         {
             DVec<double> gamma(const DVec<double> y) const;
 
@@ -67,7 +73,7 @@ namespace grbda
             const DMat<double> &G_tranpose_pinv() const;
             const DMat<double> &K_transpose() const;
 
-            void push_back(const std::shared_ptr<Base> loop_constraint);
+            void push_back(const std::shared_ptr<Base<Scalar>> loop_constraint);
 
             void update(DVec<double> q);
             void update(DVec<double> q, DVec<double> qd);

@@ -8,14 +8,15 @@ namespace grbda
 
     namespace LoopConstraint
     {
-        struct Free : Base
+        template <typename Scalar = double>
+        struct Free : Base<Scalar>
         {
             Free();
 
             int numSpanningPos() const override { return 7; }
             int numIndependentPos() const override { return 7; }
 
-            std::shared_ptr<Base> clone() const override;
+            std::shared_ptr<Base<Scalar>> clone() const override;
 
             void updateJacobians(const JointCoordinate<> &joint_pos) override {}
             void updateBiases(const JointState<> &joint_state) override {}

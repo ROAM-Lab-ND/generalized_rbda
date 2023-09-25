@@ -14,7 +14,7 @@ namespace grbda
         {
         public:
             Generic(const std::vector<Body> &bodies, const std::vector<JointPtr<Scalar>> &joints,
-                    std::shared_ptr<LoopConstraint::Base> loop_constraint);
+                    std::shared_ptr<LoopConstraint::Base<Scalar>> loop_constraint);
 
             ClusterJointTypes type() const override { return ClusterJointTypes::Generic; }
 

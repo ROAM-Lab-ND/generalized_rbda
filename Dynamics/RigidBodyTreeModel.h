@@ -86,7 +86,7 @@ namespace grbda
 
         FwdDynMethod forward_dynamics_method_;
 
-        LoopConstraint::Collection loop_constraints_;
+        LoopConstraint::Collection<double> loop_constraints_;
         bool loop_constraints_updated_ = false;
 
         std::vector<RigidBodyTreeNodePtr> rigid_body_nodes_;

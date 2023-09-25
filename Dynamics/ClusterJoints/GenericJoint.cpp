@@ -10,7 +10,7 @@ namespace grbda
         template <typename Scalar>
         Generic<Scalar>::Generic(const std::vector<Body> &bodies,
                                  const std::vector<JointPtr<Scalar>> &joints,
-                                 std::shared_ptr<LoopConstraint::Base> loop_constraint)
+                                 std::shared_ptr<LoopConstraint::Base<Scalar>> loop_constraint)
             : Base<Scalar>((int)bodies.size(),
                            loop_constraint->numIndependentPos(),
                            loop_constraint->numIndependentVel()),
