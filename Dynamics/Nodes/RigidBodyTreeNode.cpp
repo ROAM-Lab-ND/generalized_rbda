@@ -4,7 +4,7 @@ namespace grbda
 {
 
     RigidBodyTreeNode::RigidBodyTreeNode(const Body &body,
-                                         const std::shared_ptr<Joints::Base> &joint,
+                                         const std::shared_ptr<Joints::Base<>> &joint,
                                          const int position_index, const int velocity_index,
                                          const int motion_subspace_index)
         : TreeNode(body.index_, body.name_, body.parent_index_, 1,

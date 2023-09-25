@@ -16,18 +16,18 @@ namespace grbda
               rotor_3_(module_3.rotor_)
         {
             link_1_joint_ =
-                this->single_joints_.emplace_back(new Joints::Revolute(module_1.joint_axis_));
+                this->single_joints_.emplace_back(new Joints::Revolute<>(module_1.joint_axis_));
             link_2_joint_ =
-                this->single_joints_.emplace_back(new Joints::Revolute(module_2.joint_axis_));
+                this->single_joints_.emplace_back(new Joints::Revolute<>(module_2.joint_axis_));
             link_3_joint_ =
-                this->single_joints_.emplace_back(new Joints::Revolute(module_3.joint_axis_));
+                this->single_joints_.emplace_back(new Joints::Revolute<>(module_3.joint_axis_));
 
             rotor_1_joint_ =
-                this->single_joints_.emplace_back(new Joints::Revolute(module_1.rotor_axis_));
+                this->single_joints_.emplace_back(new Joints::Revolute<>(module_1.rotor_axis_));
             rotor_2_joint_ =
-                this->single_joints_.emplace_back(new Joints::Revolute(module_2.rotor_axis_));
+                this->single_joints_.emplace_back(new Joints::Revolute<>(module_2.rotor_axis_));
             rotor_3_joint_ =
-                this->single_joints_.emplace_back(new Joints::Revolute(module_3.rotor_axis_));
+                this->single_joints_.emplace_back(new Joints::Revolute<>(module_3.rotor_axis_));
 
             this->spanning_tree_to_independent_coords_conversion_ = DMat<double>::Zero(3, 6);
             this->spanning_tree_to_independent_coords_conversion_.template topLeftCorner<3, 3>().setIdentity();
@@ -124,10 +124,10 @@ namespace grbda
         }
 
         template <typename Scalar>
-        std::vector<std::tuple<Body, JointPtr, DMat<double>>>
+        std::vector<std::tuple<Body, JointPtr<double>, DMat<double>>>
         RevoluteTripleWithRotor<Scalar>::bodiesJointsAndReflectedInertias() const
         {
-            std::vector<std::tuple<Body, JointPtr, DMat<double>>> bodies_joints_and_ref_inertias;
+            std::vector<std::tuple<Body, JointPtr<double>, DMat<double>>> bodies_joints_and_ref_inertias;
 
             const DMat<double> S_dependent_1 = this->S_.template middleRows<6>(18);
             const Mat6<double> Ir1 = rotor_1_.inertia_.getMatrix();

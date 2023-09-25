@@ -4,7 +4,7 @@ namespace grbda
 {
 
     ReflectedInertiaTreeNode::ReflectedInertiaTreeNode(const int index, const Body &link,
-                                                       const std::shared_ptr<Joints::Base> &joint,
+                                                       const std::shared_ptr<Joints::Base<>>  &joint,
                                                        const int parent_index,
                                                        const int position_index,
                                                        const int velocity_index,

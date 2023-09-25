@@ -60,7 +60,7 @@ namespace grbda
             void computeSpatialTransformFromParentToCurrentCluster(
                 spatial::GeneralizedTransform<> &Xup) const override;
 
-            std::vector<std::tuple<Body, JointPtr, DMat<double>>>
+            std::vector<std::tuple<Body, JointPtr<double>, DMat<double>>>
             bodiesJointsAndReflectedInertias() const override;
 
             JointState<> randomJointState() const override;
@@ -69,10 +69,10 @@ namespace grbda
             std::shared_ptr<LoopConstraint::TelloDifferential> tello_constraint_;
 
         private:
-            JointPtr rotor1_joint_;
-            JointPtr rotor2_joint_;
-            JointPtr link1_joint_;
-            JointPtr link2_joint_;
+            JointPtr<Scalar> rotor1_joint_;
+            JointPtr<Scalar> rotor2_joint_;
+            JointPtr<Scalar> link1_joint_;
+            JointPtr<Scalar> link2_joint_;
 
             spatial::Transform<> X21_;
 

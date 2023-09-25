@@ -87,10 +87,10 @@ namespace grbda
         }
 
         template <typename Scalar>
-        std::vector<std::tuple<Body, JointPtr, DMat<double>>>
+        std::vector<std::tuple<Body, JointPtr<double>, DMat<double>>>
         Free<Scalar>::bodiesJointsAndReflectedInertias() const
         {
-            std::vector<std::tuple<Body, JointPtr, DMat<double>>> bodies_joints_and_ref_inertias;
+            std::vector<std::tuple<Body, JointPtr<double>, DMat<double>>> bodies_joints_and_ref_inertias;
             bodies_joints_and_ref_inertias.push_back(std::make_tuple(body_, this->single_joints_[0],
                                                                      Mat6<double>::Zero()));
             return bodies_joints_and_ref_inertias;

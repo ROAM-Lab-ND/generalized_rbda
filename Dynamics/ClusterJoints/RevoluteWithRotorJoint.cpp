@@ -10,9 +10,9 @@ namespace grbda
             : Base<Scalar>(2, 1, 1), link_(module.body_), rotor_(module.rotor_)
         {
             link_joint_ =
-                this->single_joints_.emplace_back(new Joints::Revolute(module.joint_axis_));
+                this->single_joints_.emplace_back(new Joints::Revolute<>(module.joint_axis_));
             rotor_joint_ =
-                this->single_joints_.emplace_back(new Joints::Revolute(module.rotor_axis_));
+                this->single_joints_.emplace_back(new Joints::Revolute<>(module.rotor_axis_));
 
             this->spanning_tree_to_independent_coords_conversion_ = DMat<double>::Zero(1, 2);
             this->spanning_tree_to_independent_coords_conversion_ << 1., 0.;
@@ -57,10 +57,10 @@ namespace grbda
         }
 
         template <typename Scalar>
-        std::vector<std::tuple<Body, JointPtr, DMat<double>>>
+        std::vector<std::tuple<Body, JointPtr<double>, DMat<double>>>
         RevoluteWithRotor<Scalar>::bodiesJointsAndReflectedInertias() const
         {
-            std::vector<std::tuple<Body, JointPtr, DMat<double>>> bodies_joints_and_reflected_inertias;
+            std::vector<std::tuple<Body, JointPtr<double>, DMat<double>>> bodies_joints_and_reflected_inertias;
 
             DMat<double> S_dependent = this->S_.template bottomRows<6>();
             DMat<double> reflected_inertia =

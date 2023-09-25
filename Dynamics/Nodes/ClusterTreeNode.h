@@ -10,6 +10,8 @@ namespace grbda
     struct ClusterTreeNode : TreeNode
     {
         typedef std::shared_ptr<ClusterJoints::Base<>> ClusterJointPtr;
+        typedef std::pair<Body, JointPtr<double>> BodyJointPair;
+        typedef std::tuple<Body, JointPtr<double>, DMat<double>> BodyJointRefInertiaTriple;
 
         ClusterTreeNode(int index, std::string name, std::vector<Body> &bodies,
                         ClusterJointPtr joint, int parent_index, int num_parent_bodies,
@@ -33,8 +35,8 @@ namespace grbda
         bool containsBody(int body_index) const;
 
         const std::vector<Body> &bodies() const { return bodies_; }
-        std::vector<std::pair<Body, JointPtr>> bodiesAndJoints() const;
-        std::vector<std::tuple<Body, JointPtr, DMat<double>>> bodiesJointsAndReflectedInertias() const;
+        std::vector<BodyJointPair> bodiesAndJoints() const;
+        std::vector<BodyJointRefInertiaTriple> bodiesJointsAndReflectedInertias() const;
 
         const std::vector<Body> bodies_;
         ClusterJointPtr joint_;

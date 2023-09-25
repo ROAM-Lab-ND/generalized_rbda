@@ -67,13 +67,13 @@ namespace grbda
 			  link1_(module.link1_), link2_(module.link2_), gear_ratio_(module.gear_ratio_)
 		{
 			rotor1_joint_ =
-				this->single_joints_.emplace_back(new Joints::Revolute(module.rotor1_axis_));
+				this->single_joints_.emplace_back(new Joints::Revolute<>(module.rotor1_axis_));
 			rotor2_joint_ =
-				this->single_joints_.emplace_back(new Joints::Revolute(module.rotor2_axis_));
+				this->single_joints_.emplace_back(new Joints::Revolute<>(module.rotor2_axis_));
 			link1_joint_ =
-				this->single_joints_.emplace_back(new Joints::Revolute(module.link1_axis_));
+				this->single_joints_.emplace_back(new Joints::Revolute<>(module.link1_axis_));
 			link2_joint_ =
-				this->single_joints_.emplace_back(new Joints::Revolute(module.link2_axis_));
+				this->single_joints_.emplace_back(new Joints::Revolute<>(module.link2_axis_));
 
 			this->spanning_tree_to_independent_coords_conversion_ = DMat<double>::Identity(2, 4);
 			this->spanning_tree_to_independent_coords_conversion_ << 1., 0., 0., 0., 0., 1., 0., 0.;
@@ -162,10 +162,10 @@ namespace grbda
 		}
 
 		template <typename Scalar>
-		std::vector<std::tuple<Body, JointPtr, DMat<double>>>
+		std::vector<std::tuple<Body, JointPtr<double>, DMat<double>>>
 		TelloDifferential<Scalar>::bodiesJointsAndReflectedInertias() const
 		{
-			std::vector<std::tuple<Body, JointPtr, DMat<double>>> bodies_joints_and_ref_inertias_;
+			std::vector<std::tuple<Body, JointPtr<double>, DMat<double>>> bodies_joints_and_ref_inertias_;
 			const Mat2<double> Z = Mat2<double>::Zero();
 			bodies_joints_and_ref_inertias_.push_back(std::make_tuple(link1_, link1_joint_, Z));
 			bodies_joints_and_ref_inertias_.push_back(std::make_tuple(link2_, link2_joint_, Z));

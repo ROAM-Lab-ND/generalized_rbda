@@ -14,7 +14,7 @@ inline ClusterTreeModel extractGenericJointModel(const ClusterTreeModel &model)
     for (const auto &cluster : model.clusters())
     {
         std::vector<Body> bodies;
-        std::vector<JointPtr> joints;
+        std::vector<JointPtr<double>> joints;
 
         // Register bodies
         for (auto pair : cluster->bodiesAndJoints())
@@ -22,7 +22,7 @@ inline ClusterTreeModel extractGenericJointModel(const ClusterTreeModel &model)
             Body body_i = pair.first;
             bodies.push_back(body_i);
 
-            JointPtr joint_i = pair.second;
+            JointPtr<double> joint_i = pair.second;
             joints.push_back(joint_i);
 
             bool is_base = body_i.parent_index_ == -1;

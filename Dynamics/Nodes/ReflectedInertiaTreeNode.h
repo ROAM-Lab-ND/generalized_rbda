@@ -10,8 +10,9 @@ namespace grbda
     struct ReflectedInertiaTreeNode : TreeNode
     {
         ReflectedInertiaTreeNode(const int index, const Body &link,
-                                 const std::shared_ptr<Joints::Base> &joint, const int parent_index,
-                                 const int position_index, const int velocity_index, 
+                                 const std::shared_ptr<Joints::Base<>> &joint,
+                                 const int parent_index,
+                                 const int position_index, const int velocity_index,
                                  const int motion_subspace_index);
 
         void updateKinematics() override;
@@ -24,7 +25,7 @@ namespace grbda
         void applyForceToBody(const SVec<double> &force, const Body &body) override;
 
         const Body link_;
-        std::shared_ptr<Joints::Base> joint_;
+        const std::shared_ptr<Joints::Base<>> joint_;
 
         DVec<double> vJ_;
         DVec<double> cJ_ = DVec<double>::Zero(6);

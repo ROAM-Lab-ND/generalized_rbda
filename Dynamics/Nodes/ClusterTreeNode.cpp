@@ -57,22 +57,22 @@ namespace grbda
         return false;
     }
 
-    std::vector<std::pair<Body, JointPtr>>
+    std::vector<std::pair<Body, JointPtr<double>>>
     ClusterTreeNode::bodiesAndJoints() const
     {
-        std::vector<JointPtr> single_joints = joint_->singleJoints();
-        std::vector<std::pair<Body, JointPtr>> bodies_and_joints;
+        std::vector<JointPtr<double>> single_joints = joint_->singleJoints();
+        std::vector<std::pair<Body, JointPtr<double>>> bodies_and_joints;
         for (int i = 0; i < (int)bodies_.size(); i++)
         {
             Body body = bodies_[i];
-            JointPtr joint = single_joints[i]->clone();
-            std::pair<Body, JointPtr> body_and_joint = std::make_pair(body, joint);
+            JointPtr<double> joint = single_joints[i]->clone();
+            std::pair<Body, JointPtr<double>> body_and_joint = std::make_pair(body, joint);
             bodies_and_joints.push_back(body_and_joint);
         }
         return bodies_and_joints;
     }
 
-    std::vector<std::tuple<Body, JointPtr, DMat<double>>>
+    std::vector<std::tuple<Body, JointPtr<double>, DMat<double>>>
     ClusterTreeNode::bodiesJointsAndReflectedInertias() const
     {
         return joint_->bodiesJointsAndReflectedInertias();

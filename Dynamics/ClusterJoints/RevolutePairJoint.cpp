@@ -12,8 +12,8 @@ namespace grbda
                                            ori::CoordinateAxis joint_axis_2)
             : Base<Scalar>(2, 2, 2), link_1_(link_1), link_2_(link_2)
         {
-            link_1_joint_ = this->single_joints_.emplace_back(new Joints::Revolute(joint_axis_1));
-            link_2_joint_ = this->single_joints_.emplace_back(new Joints::Revolute(joint_axis_2));
+            link_1_joint_ = this->single_joints_.emplace_back(new Joints::Revolute<>(joint_axis_1));
+            link_2_joint_ = this->single_joints_.emplace_back(new Joints::Revolute<>(joint_axis_2));
 
             this->spanning_tree_to_independent_coords_conversion_ = DMat<double>::Zero(0, 0);
 
@@ -69,10 +69,10 @@ namespace grbda
         }
 
         template <typename Scalar>
-        std::vector<std::tuple<Body, JointPtr, DMat<double>>>
+        std::vector<std::tuple<Body, JointPtr<double>, DMat<double>>>
         RevolutePair<Scalar>::bodiesJointsAndReflectedInertias() const
         {
-            std::vector<std::tuple<Body, JointPtr, DMat<double>>> bodies_joints_and_reflected_inertias;
+            std::vector<std::tuple<Body, JointPtr<double>, DMat<double>>> bodies_joints_and_reflected_inertias;
 
             const DMat<double> reflected_inertia_1 =
                 DMat<double>::Zero(link_1_joint_->numVelocities(), link_1_joint_->numVelocities());

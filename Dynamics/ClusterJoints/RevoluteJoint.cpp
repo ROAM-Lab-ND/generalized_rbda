@@ -9,7 +9,7 @@ namespace grbda
         Revolute<Scalar>::Revolute(const Body &body, ori::CoordinateAxis joint_axis)
             : Base<Scalar>(1, 1, 1), body_(body)
         {
-            this->single_joints_.emplace_back(new Joints::Revolute(joint_axis));
+            this->single_joints_.emplace_back(new Joints::Revolute<>(joint_axis));
 
             this->S_ = this->single_joints_[0]->S();
             this->Psi_ = this->single_joints_[0]->S();
@@ -40,10 +40,10 @@ namespace grbda
         }
 
         template <typename Scalar>
-        std::vector<std::tuple<Body, JointPtr, DMat<double>>>
+        std::vector<std::tuple<Body, JointPtr<double>, DMat<double>>>
         Revolute<Scalar>::bodiesJointsAndReflectedInertias() const
         {
-            std::vector<std::tuple<Body, JointPtr, DMat<double>>> bodies_joints_and_reflected_inertias_;
+            std::vector<std::tuple<Body, JointPtr<double>, DMat<double>>> bodies_joints_and_reflected_inertias_;
             bodies_joints_and_reflected_inertias_.push_back(
                 std::make_tuple(body_, this->single_joints_[0], DMat<double>::Zero(1, 1)));
             return bodies_joints_and_reflected_inertias_;

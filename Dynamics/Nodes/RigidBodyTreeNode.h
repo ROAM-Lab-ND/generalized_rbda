@@ -9,7 +9,7 @@ namespace grbda
 
     struct RigidBodyTreeNode : TreeNode
     {
-        RigidBodyTreeNode(const Body &body, const std::shared_ptr<Joints::Base> &joint,
+        RigidBodyTreeNode(const Body &body, const std::shared_ptr<Joints::Base<>> &joint,
                           const int position_index, const int velocity_index,
                           const int motion_subspace_index);
 
@@ -23,7 +23,7 @@ namespace grbda
         void applyForceToBody(const SVec<double> &force, const Body &body) override;
 
         const Body body_;
-        std::shared_ptr<Joints::Base> joint_;
+        std::shared_ptr<Joints::Base<>> joint_;
 
         DVec<double> vJ_;
         DVec<double> cJ_ = DVec<double>::Zero(6);
