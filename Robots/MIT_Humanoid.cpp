@@ -43,9 +43,9 @@ namespace grbda
             const spatial::Transform<> xtreeHipRz(Xrot_HipZ, hipRzLocation);
             const spatial::Transform<> xtreeHipRzRotor(Xrot_HipZ, hipRzRotorLocation);
 
-            Body hip_rz_link = model.registerBody(hip_rz_link_name, hip_rz_link_inertia,
+            Body<> hip_rz_link = model.registerBody(hip_rz_link_name, hip_rz_link_inertia,
                                                   hip_rz_parent_name, xtreeHipRz);
-            Body hip_rz_rotor = model.registerBody(hip_rz_rotor_name, hip_rz_rotor_inertia,
+            Body<> hip_rz_rotor = model.registerBody(hip_rz_rotor_name, hip_rz_rotor_inertia,
                                                    hip_rz_parent_name, xtreeHipRzRotor);
             GearedTransmissionModule hip_rz_module{hip_rz_link, hip_rz_rotor,
                                                    ori::CoordinateAxis::Z, ori::CoordinateAxis::Z,
@@ -71,9 +71,9 @@ namespace grbda
             const spatial::Transform<> xtreeHipRx(Xrot_HipX, hipRxLocation);
             const spatial::Transform<> xtreeHipRxRotor(Xrot_HipX, hipRxRotorLocation);
 
-            Body hip_rx_link = model.registerBody(hip_rx_link_name, hip_rx_link_inertia,
+            Body<> hip_rx_link = model.registerBody(hip_rx_link_name, hip_rx_link_inertia,
                                                   hip_rx_parent_name, xtreeHipRx);
-            Body hip_rx_rotor = model.registerBody(hip_rx_rotor_name, hip_rx_rotor_inertia,
+            Body<> hip_rx_rotor = model.registerBody(hip_rx_rotor_name, hip_rx_rotor_inertia,
                                                    hip_rx_parent_name, xtreeHipRxRotor);
             GearedTransmissionModule hip_rx_module{hip_rx_link, hip_rx_rotor,
                                                    ori::CoordinateAxis::X, ori::CoordinateAxis::X,
@@ -101,9 +101,9 @@ namespace grbda
             const spatial::Transform<> xtreeHipRy(Xrot_HipY, hipRyLocation);
             const spatial::Transform<> xtreeHipRyRotor(Xrot_HipY, hipRyRotorLocation);
 
-            Body hip_ry_link = model.registerBody(hip_ry_link_name, hip_ry_link_inertia,
+            Body<> hip_ry_link = model.registerBody(hip_ry_link_name, hip_ry_link_inertia,
                                                   hip_ry_parent_name, xtreeHipRy);
-            Body hip_ry_rotor = model.registerBody(hip_ry_rotor_name, hip_ry_rotor_inertia,
+            Body<> hip_ry_rotor = model.registerBody(hip_ry_rotor_name, hip_ry_rotor_inertia,
                                                    hip_ry_parent_name, xtreeHipRyRotor);
             GearedTransmissionModule hip_ry_module{hip_ry_link, hip_ry_rotor,
                                                    ori::CoordinateAxis::Y, ori::CoordinateAxis::Y,
@@ -130,9 +130,9 @@ namespace grbda
             const spatial::Transform<> xtreeKnee(I3, kneeLocation);
             const spatial::Transform<> xtreeKneeRotor(I3, kneeRotorLocation);
 
-            Body knee_link = model.registerBody(knee_link_name, knee_link_inertia,
+            Body<> knee_link = model.registerBody(knee_link_name, knee_link_inertia,
                                                 knee_parent_name, xtreeKnee);
-            Body knee_rotor = model.registerBody(knee_rotor_name, knee_rotor_inertia,
+            Body<> knee_rotor = model.registerBody(knee_rotor_name, knee_rotor_inertia,
                                                  knee_parent_name, xtreeKneeRotor);
             ParallelBeltTransmissionModule knee_module{knee_link, knee_rotor,
                                                        ori::CoordinateAxis::Y,
@@ -155,9 +155,9 @@ namespace grbda
             const spatial::Transform<> xtreeAnkle(I3, ankleLocation);
             const spatial::Transform<> xtreeAnkleRotor(I3, ankleRotorLocation);
 
-            Body ankle_rotor = model.registerBody(ankle_rotor_name, ankle_rotor_inertia,
+            Body<> ankle_rotor = model.registerBody(ankle_rotor_name, ankle_rotor_inertia,
                                                   knee_parent_name, xtreeAnkleRotor);
-            Body ankle_link = model.registerBody(ankle_link_name, ankle_link_inertia,
+            Body<> ankle_link = model.registerBody(ankle_link_name, ankle_link_inertia,
                                                  ankle_parent_name, xtreeAnkle);
             ParallelBeltTransmissionModule ankle_module{ankle_link, ankle_rotor,
                                                         ori::CoordinateAxis::Y,
@@ -205,11 +205,11 @@ namespace grbda
             const spatial::Transform<> xtreeShoulderRy(I3, withLeftRightSigns(_shoulderRyLocation, armID));
             const spatial::Transform<> xtreeShoulderRyRotor(I3, withLeftRightSigns(_shoulderRyRotorLocation, armID));
 
-            Body shoulder_ry_link = model.registerBody(shoulder_ry_link_name,
+            Body<> shoulder_ry_link = model.registerBody(shoulder_ry_link_name,
                                                        shoulder_ry_link_inertia,
                                                        shoulder_ry_parent_name,
                                                        xtreeShoulderRy);
-            Body shoulder_ry_rotor = model.registerBody(shoulder_ry_rotor_name,
+            Body<> shoulder_ry_rotor = model.registerBody(shoulder_ry_rotor_name,
                                                         shoulder_ry_rotor_inertia,
                                                         shoulder_ry_parent_name,
                                                         xtreeShoulderRyRotor);
@@ -237,11 +237,11 @@ namespace grbda
             const spatial::Transform<> xtreeShoulderRx(I3, withLeftRightSigns(_shoulderRxLocation, armID));
             const spatial::Transform<> xtreeShoulderRxRotor(I3, withLeftRightSigns(_shoulderRxRotorLocation, armID));
 
-            Body shoulder_rx_link = model.registerBody(shoulder_rx_link_name,
+            Body<> shoulder_rx_link = model.registerBody(shoulder_rx_link_name,
                                                        shoulder_rx_link_inertia,
                                                        shoulder_rx_parent_name,
                                                        xtreeShoulderRx);
-            Body shoulder_rx_rotor = model.registerBody(shoulder_rx_rotor_name,
+            Body<> shoulder_rx_rotor = model.registerBody(shoulder_rx_rotor_name,
                                                         shoulder_rx_rotor_inertia,
                                                         shoulder_rx_parent_name,
                                                         xtreeShoulderRxRotor);
@@ -269,11 +269,11 @@ namespace grbda
             const spatial::Transform<> xtreeShoulderRz(I3, withLeftRightSigns(_shoulderRzLocation, armID));
             const spatial::Transform<> xtreeShoulderRzRotor(I3, withLeftRightSigns(_shoulderRzRotorLocation, armID));
 
-            Body shoulder_rz_link = model.registerBody(shoulder_rz_link_name,
+            Body<> shoulder_rz_link = model.registerBody(shoulder_rz_link_name,
                                                        shoulder_rz_link_inertia,
                                                        shoulder_rz_parent_name,
                                                        xtreeShoulderRz);
-            Body shoulder_rz_rotor = model.registerBody(shoulder_rz_rotor_name,
+            Body<> shoulder_rz_rotor = model.registerBody(shoulder_rz_rotor_name,
                                                         shoulder_rz_rotor_inertia,
                                                         shoulder_rz_parent_name,
                                                         xtreeShoulderRzRotor);
@@ -300,9 +300,9 @@ namespace grbda
             const spatial::Transform<> xtreeElbow(I3, withLeftRightSigns(_elbowLocation, armID));
             const spatial::Transform<> xtreeElbowRotor(I3, withLeftRightSigns(_elbowRotorLocation, armID));
 
-            Body elbow_link = model.registerBody(elbow_link_name, elbow_link_inertia,
+            Body<> elbow_link = model.registerBody(elbow_link_name, elbow_link_inertia,
                                                  elbow_parent_name, xtreeElbow);
-            Body elbow_rotor = model.registerBody(elbow_rotor_name, elbow_rotor_inertia,
+            Body<> elbow_rotor = model.registerBody(elbow_rotor_name, elbow_rotor_inertia,
                                                   elbow_parent_name, xtreeElbowRotor);
             GearedTransmissionModule elbow_module{elbow_link, elbow_rotor, ori::CoordinateAxis::Y,
                                                   ori::CoordinateAxis::Y, _elbowGearRatio};

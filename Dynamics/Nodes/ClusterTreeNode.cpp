@@ -3,7 +3,7 @@
 namespace grbda
 {
 
-    ClusterTreeNode::ClusterTreeNode(int index, std::string name, std::vector<Body> &bodies,
+    ClusterTreeNode::ClusterTreeNode(int index, std::string name, std::vector<Body<>> &bodies,
                                      ClusterJointPtr joint, int parent_index, int num_parent_bodies,
                                      int position_index, int velocity_index, int motion_ss_index)
         : TreeNode(index, name, parent_index, num_parent_bodies,
@@ -32,17 +32,17 @@ namespace grbda
         D_inv_ = Eigen::ColPivHouseholderQR<DMat<double>>(D);
     }
 
-    const spatial::Transform<> &ClusterTreeNode::getAbsoluteTransformForBody(const Body &body)
+    const spatial::Transform<> &ClusterTreeNode::getAbsoluteTransformForBody(const Body<> &body)
     {
         return Xa_.getTransformForOutputBody(body.sub_index_within_cluster_);
     }
 
-    DVec<double> ClusterTreeNode::getVelocityForBody(const Body &body)
+    DVec<double> ClusterTreeNode::getVelocityForBody(const Body<> &body)
     {
         return v_.segment<6>(6 * body.sub_index_within_cluster_);
     }
 
-    void ClusterTreeNode::applyForceToBody(const SVec<double> &force, const Body &body)
+    void ClusterTreeNode::applyForceToBody(const SVec<double> &force, const Body<> &body)
     {
         f_ext_.segment<6>(6 * body.sub_index_within_cluster_) += force;
     }
@@ -57,22 +57,22 @@ namespace grbda
         return false;
     }
 
-    std::vector<std::pair<Body, JointPtr<double>>>
+    std::vector<std::pair<Body<>, JointPtr<double>>>
     ClusterTreeNode::bodiesAndJoints() const
     {
         std::vector<JointPtr<double>> single_joints = joint_->singleJoints();
-        std::vector<std::pair<Body, JointPtr<double>>> bodies_and_joints;
+        std::vector<std::pair<Body<>, JointPtr<double>>> bodies_and_joints;
         for (int i = 0; i < (int)bodies_.size(); i++)
         {
-            Body body = bodies_[i];
+            Body<> body = bodies_[i];
             JointPtr<double> joint = single_joints[i]->clone();
-            std::pair<Body, JointPtr<double>> body_and_joint = std::make_pair(body, joint);
+            std::pair<Body<>, JointPtr<double>> body_and_joint = std::make_pair(body, joint);
             bodies_and_joints.push_back(body_and_joint);
         }
         return bodies_and_joints;
     }
 
-    std::vector<std::tuple<Body, JointPtr<double>, DMat<double>>>
+    std::vector<std::tuple<Body<>, JointPtr<double>, DMat<double>>>
     ClusterTreeNode::bodiesJointsAndReflectedInertias() const
     {
         return joint_->bodiesJointsAndReflectedInertias();

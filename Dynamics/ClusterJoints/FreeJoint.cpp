@@ -35,7 +35,7 @@ namespace grbda
     {
 
         template <typename Scalar>
-        Free<Scalar>::Free(const Body &body) : Base<Scalar>(1, 7, 6), body_(body)
+        Free<Scalar>::Free(const Body<> &body) : Base<Scalar>(1, 7, 6), body_(body)
         {
             if (body.parent_index_ >= 0)
                 throw std::runtime_error("Free joint is only valid as the first joint in a tree and thus cannot have a parent body");
@@ -92,10 +92,10 @@ namespace grbda
         }
 
         template <typename Scalar>
-        std::vector<std::tuple<Body, JointPtr<double>, DMat<double>>>
+        std::vector<std::tuple<Body<>, JointPtr<double>, DMat<double>>>
         Free<Scalar>::bodiesJointsAndReflectedInertias() const
         {
-            std::vector<std::tuple<Body, JointPtr<double>, DMat<double>>> bodies_joints_and_ref_inertias;
+            std::vector<std::tuple<Body<>, JointPtr<double>, DMat<double>>> bodies_joints_and_ref_inertias;
             bodies_joints_and_ref_inertias.push_back(std::make_tuple(body_, this->single_joints_[0],
                                                                      Mat6<double>::Zero()));
             return bodies_joints_and_ref_inertias;

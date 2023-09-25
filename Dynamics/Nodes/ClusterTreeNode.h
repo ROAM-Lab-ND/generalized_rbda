@@ -10,10 +10,10 @@ namespace grbda
     struct ClusterTreeNode : TreeNode
     {
         typedef std::shared_ptr<ClusterJoints::Base<>> ClusterJointPtr;
-        typedef std::pair<Body, JointPtr<double>> BodyJointPair;
-        typedef std::tuple<Body, JointPtr<double>, DMat<double>> BodyJointRefInertiaTriple;
+        typedef std::pair<Body<>, JointPtr<double>> BodyJointPair;
+        typedef std::tuple<Body<>, JointPtr<double>, DMat<double>> BodyJointRefInertiaTriple;
 
-        ClusterTreeNode(int index, std::string name, std::vector<Body> &bodies,
+        ClusterTreeNode(int index, std::string name, std::vector<Body<>> &bodies,
                         ClusterJointPtr joint, int parent_index, int num_parent_bodies,
                         int position_index, int velocity_index, int motion_ss_index);
 
@@ -28,17 +28,17 @@ namespace grbda
             return joint_->integratePosition(joint_state, dt);
         }
 
-        const spatial::Transform<> &getAbsoluteTransformForBody(const Body &body) override;
-        DVec<double> getVelocityForBody(const Body &body) override;
-        void applyForceToBody(const SVec<double> &force, const Body &body) override;
+        const spatial::Transform<> &getAbsoluteTransformForBody(const Body<> &body) override;
+        DVec<double> getVelocityForBody(const Body<> &body) override;
+        void applyForceToBody(const SVec<double> &force, const Body<> &body) override;
 
         bool containsBody(int body_index) const;
 
-        const std::vector<Body> &bodies() const { return bodies_; }
+        const std::vector<Body<>> &bodies() const { return bodies_; }
         std::vector<BodyJointPair> bodiesAndJoints() const;
         std::vector<BodyJointRefInertiaTriple> bodiesJointsAndReflectedInertias() const;
 
-        const std::vector<Body> bodies_;
+        const std::vector<Body<>> bodies_;
         ClusterJointPtr joint_;
 
         // Featherstone quantities

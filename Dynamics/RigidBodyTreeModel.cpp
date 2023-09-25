@@ -22,7 +22,7 @@ namespace grbda
         {
             for (const auto &body_and_joint : cluster->bodiesAndJoints())
             {
-                const Body &body = body_and_joint.first;
+                const Body<> &body = body_and_joint.first;
                 JointPtr<double> joint = body_and_joint.second;
                 auto node = std::make_shared<RigidBodyTreeNode>(body, joint,
                                                                 position_index_, velocity_index_,

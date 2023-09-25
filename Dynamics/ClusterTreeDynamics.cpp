@@ -13,7 +13,7 @@ namespace grbda
 
         ContactPoint &cp = contact_points_[contact_name_to_contact_index_.at(cp_name)];
         const size_t i = cp.body_index_;
-        const Body &body_i = body(i);
+        const Body<> &body_i = body(i);
         const auto &cluster_i = getClusterContainingBody(body_i);
         const int &subindex_within_cluster_i = body_i.sub_index_within_cluster_;
 
@@ -24,7 +24,7 @@ namespace grbda
         int j = (int)i;
         while (j > -1)
         {
-            const Body &body_j = body(j);
+            const Body<> &body_j = body(j);
             const auto &cluster_j = getClusterContainingBody(body_j);
             const int &subindex_within_cluster_j = body_j.sub_index_within_cluster_;
             const int &vel_idx = cluster_j->velocity_index_;
@@ -54,7 +54,7 @@ namespace grbda
         int j = cp.body_index_;
         while (j > -1)
         {
-            const Body &body_j = body(j);
+            const Body<> &body_j = body(j);
             const auto &cluster_j = getClusterContainingBody(body_j);
             const int &subindex_within_cluster_j = body_j.sub_index_within_cluster_;
             const int &vel_idx = cluster_j->velocity_index_;
@@ -296,7 +296,7 @@ namespace grbda
             if (!cp.is_end_effector_)
                 continue;
 
-            const Body &body = bodies_[cp.body_index_];
+            const Body<> &body = bodies_[cp.body_index_];
             const auto &cluster = getClusterContainingBody(cp.body_index_);
 
             DMat<double> &ChiUp = cp.ChiUp_[cluster->index_];

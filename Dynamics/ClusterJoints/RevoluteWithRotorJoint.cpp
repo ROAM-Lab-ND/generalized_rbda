@@ -57,10 +57,10 @@ namespace grbda
         }
 
         template <typename Scalar>
-        std::vector<std::tuple<Body, JointPtr<double>, DMat<double>>>
+        std::vector<std::tuple<Body<>, JointPtr<double>, DMat<double>>>
         RevoluteWithRotor<Scalar>::bodiesJointsAndReflectedInertias() const
         {
-            std::vector<std::tuple<Body, JointPtr<double>, DMat<double>>> bodies_joints_and_reflected_inertias;
+            std::vector<std::tuple<Body<>, JointPtr<double>, DMat<double>>> bodies_joints_and_reflected_inertias;
 
             DMat<double> S_dependent = this->S_.template bottomRows<6>();
             DMat<double> reflected_inertia =

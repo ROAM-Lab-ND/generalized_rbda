@@ -39,9 +39,9 @@ namespace grbda
             const spatial::Transform<> xtree_abad(I3, withLegSigns(_abadLocation, legID));
             const spatial::Transform<> xtree_abad_rotor(I3, withLegSigns(_abadRotorLocation, legID));
 
-            Body abad_link = model.registerBody(abad_link_name, abad_link_inertia,
+            Body<> abad_link = model.registerBody(abad_link_name, abad_link_inertia,
                                                 abad_parent_name, xtree_abad);
-            Body abad_rotor = model.registerBody(abad_rotor_name, abad_rotor_inertia,
+            Body<> abad_rotor = model.registerBody(abad_rotor_name, abad_rotor_inertia,
                                                  abad_parent_name, xtree_abad_rotor);
             GearedTransmissionModule abad_module{abad_link, abad_rotor, ori::CoordinateAxis::X,
                                                  ori::CoordinateAxis::X, _abadGearRatio};
@@ -62,9 +62,9 @@ namespace grbda
             const spatial::Transform<> xtree_hip(I3, withLegSigns(_hipLocation, legID));
             const spatial::Transform<> xtree_hip_rotor(I3, withLegSigns(_hipRotorLocation, legID));
 
-            Body hip_link = model.registerBody(hip_link_name, hip_link_inertia,
+            Body<> hip_link = model.registerBody(hip_link_name, hip_link_inertia,
                                                hip_parent_name, xtree_hip);
-            Body hip_rotor = model.registerBody(hip_rotor_name, hip_rotor_inertia,
+            Body<> hip_rotor = model.registerBody(hip_rotor_name, hip_rotor_inertia,
                                                 hip_parent_name, xtree_hip_rotor);
             GearedTransmissionModule hip_module{hip_link, hip_rotor, ori::CoordinateAxis::Y,
                                                 ori::CoordinateAxis::Y, _hipGearRatio};
@@ -91,9 +91,9 @@ namespace grbda
             const spatial::Transform<> xtree_knee(I3, withLegSigns(_kneeLocation, legID));
             const spatial::Transform<> xtree_knee_rotor(I3, withLegSigns(_kneeRotorLocation, legID));
 
-            Body knee_link = model.registerBody(knee_link_name, knee_link_inertia,
+            Body<> knee_link = model.registerBody(knee_link_name, knee_link_inertia,
                                                 knee_parent_name, xtree_knee);
-            Body knee_rotor = model.registerBody(knee_rotor_name, knee_rotor_inertia,
+            Body<> knee_rotor = model.registerBody(knee_rotor_name, knee_rotor_inertia,
                                                  knee_parent_name, xtree_knee_rotor);
             GearedTransmissionModule knee_module{knee_link, knee_rotor, ori::CoordinateAxis::Z,
                                                  ori::CoordinateAxis::Z, _kneeGearRatio};

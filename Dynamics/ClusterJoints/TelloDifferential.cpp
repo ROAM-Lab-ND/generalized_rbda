@@ -169,10 +169,10 @@ namespace grbda
 		}
 
 		template <typename Scalar>
-		std::vector<std::tuple<Body, JointPtr<double>, DMat<double>>>
+		std::vector<std::tuple<Body<>, JointPtr<double>, DMat<double>>>
 		TelloDifferential<Scalar>::bodiesJointsAndReflectedInertias() const
 		{
-			std::vector<std::tuple<Body, JointPtr<double>, DMat<double>>> bodies_joints_and_ref_inertias_;
+			std::vector<std::tuple<Body<>, JointPtr<double>, DMat<double>>> bodies_joints_and_ref_inertias_;
 			const Mat2<double> Z = Mat2<double>::Zero();
 			bodies_joints_and_ref_inertias_.push_back(std::make_tuple(link1_, link1_joint_, Z));
 			bodies_joints_and_ref_inertias_.push_back(std::make_tuple(link2_, link2_joint_, Z));

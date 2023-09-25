@@ -31,7 +31,7 @@ namespace grbda
 
         int getNumBodies() const override { return (int)reflected_inertia_nodes_.size(); }
 
-        const Body &getBody(int spanning_tree_index) const override;
+        const Body<> &getBody(int spanning_tree_index) const override;
         const TreeNodePtr getNodeContainingBody(int spanning_tree_index) override;
         int getIndexOfParentNodeForBody(const int spanning_tree_index);
 

@@ -13,7 +13,7 @@ namespace grbda
         class Generic : public Base<Scalar>
         {
         public:
-            Generic(const std::vector<Body> &bodies, const std::vector<JointPtr<Scalar>> &joints,
+            Generic(const std::vector<Body<>> &bodies, const std::vector<JointPtr<Scalar>> &joints,
                     std::shared_ptr<LoopConstraint::Base<Scalar>> loop_constraint);
 
             ClusterJointTypes type() const override { return ClusterJointTypes::Generic; }
@@ -27,9 +27,9 @@ namespace grbda
             void extractConnectivity();
 
             bool bodyInCurrentCluster(const int body_index) const;
-            const Body &getBody(const int body_index) const;
+            const Body<> &getBody(const int body_index) const;
 
-            const std::vector<Body> bodies_;
+            const std::vector<Body<>> bodies_;
 
             DMat<double> S_spanning_;
             DMat<double> X_intra_;

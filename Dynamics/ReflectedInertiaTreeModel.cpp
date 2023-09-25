@@ -173,7 +173,7 @@ namespace grbda
 
     // NOTE: The following relationship is true for the rigid body tree model, but not the reflected
     // inertia model: body.index_ = nodes[body.index_].index_
-    const Body &ReflectedInertiaTreeModel::getBody(int spanning_tree_index) const
+    const Body<> &ReflectedInertiaTreeModel::getBody(int spanning_tree_index) const
     {
         for (const auto &link_node : reflected_inertia_nodes_)
             if (link_node->link_.index_ == spanning_tree_index)

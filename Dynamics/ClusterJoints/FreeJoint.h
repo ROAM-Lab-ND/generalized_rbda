@@ -33,7 +33,7 @@ namespace grbda
         class Free : public Base<Scalar>
         {
         public:
-            Free(const Body &body);
+            Free(const Body<> &body);
             virtual ~Free() {}
 
             ClusterJointTypes type() const override { return ClusterJointTypes::Free; }
@@ -45,7 +45,7 @@ namespace grbda
             void computeSpatialTransformFromParentToCurrentCluster(
                 spatial::GeneralizedTransform<> &Xup) const override;
 
-            std::vector<std::tuple<Body, JointPtr<double>, DMat<double>>>
+            std::vector<std::tuple<Body<>, JointPtr<double>, DMat<double>>>
             bodiesJointsAndReflectedInertias() const override;
 
             JointCoordinate<> integratePosition(JointState<> joint_state, double dt) const override;
@@ -53,7 +53,7 @@ namespace grbda
             JointState<> randomJointState() const override;
 
         private:
-            const Body body_;
+            const Body<> body_;
         };
 
     }

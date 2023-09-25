@@ -13,13 +13,13 @@ inline ClusterTreeModel extractGenericJointModel(const ClusterTreeModel &model)
 
     for (const auto &cluster : model.clusters())
     {
-        std::vector<Body> bodies;
+        std::vector<Body<>> bodies;
         std::vector<JointPtr<double>> joints;
 
         // Register bodies
         for (auto pair : cluster->bodiesAndJoints())
         {
-            Body body_i = pair.first;
+            Body<> body_i = pair.first;
             bodies.push_back(body_i);
 
             JointPtr<double> joint_i = pair.second;

@@ -7,7 +7,7 @@
 namespace grbda
 {
 
-    Body ClusterTreeModel::registerBody(const std::string name,
+    Body<> ClusterTreeModel::registerBody(const std::string name,
                                         const SpatialInertia<double> inertia,
                                         const std::string parent_name,
                                         const spatial::Transform<> Xtree)
@@ -294,7 +294,7 @@ namespace grbda
         return body_index >= 0 ? bodies_[body_index].sub_index_within_cluster_ : 0;
     }
 
-    int ClusterTreeModel::getSubIndexWithinClusterForBody(const Body &body) const
+    int ClusterTreeModel::getSubIndexWithinClusterForBody(const Body<> &body) const
     {
         return getSubIndexWithinClusterForBody(body.index_);
     }
@@ -319,7 +319,7 @@ namespace grbda
         return getNumBodiesInCluster(cluster_name_to_cluster_index_.at(cluster_name));
     }
 
-    int ClusterTreeModel::getIndexOfParentClusterFromBodies(const std::vector<Body> &bodies)
+    int ClusterTreeModel::getIndexOfParentClusterFromBodies(const std::vector<Body<>> &bodies)
     {
         int parent_cluster_index;
         bool parent_cluster_detected = false;
@@ -362,7 +362,7 @@ namespace grbda
             return body_found_in_map->second;
     }
 
-    int ClusterTreeModel::getIndexOfClusterContainingBody(const Body &body)
+    int ClusterTreeModel::getIndexOfClusterContainingBody(const Body<> &body)
     {
         return getIndexOfClusterContainingBody(body.index_);
     }
@@ -388,7 +388,7 @@ namespace grbda
         return cluster_nodes_[getIndexOfClusterContainingBody(body_index)];
     }
 
-    ClusterTreeNodePtr ClusterTreeModel::getClusterContainingBody(const Body &body)
+    ClusterTreeNodePtr ClusterTreeModel::getClusterContainingBody(const Body<> &body)
     {
         return cluster_nodes_[getIndexOfClusterContainingBody(body)];
     }

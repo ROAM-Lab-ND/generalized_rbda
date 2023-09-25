@@ -35,7 +35,7 @@ namespace grbda
 
         virtual int getNumBodies() const = 0;
 
-        virtual const Body &getBody(int index) const = 0;
+        virtual const Body<> &getBody(int index) const = 0;
         virtual const TreeNodePtr getNodeContainingBody(int index) = 0;
 
         void setGravity(const Vec3<double> &g) { gravity_.tail<3>() = g; }

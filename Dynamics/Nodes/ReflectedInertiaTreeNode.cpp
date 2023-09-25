@@ -3,7 +3,7 @@
 namespace grbda
 {
 
-    ReflectedInertiaTreeNode::ReflectedInertiaTreeNode(const int index, const Body &link,
+    ReflectedInertiaTreeNode::ReflectedInertiaTreeNode(const int index, const Body<> &link,
                                                        const std::shared_ptr<Joints::Base<>>  &joint,
                                                        const int parent_index,
                                                        const int position_index,
@@ -27,17 +27,17 @@ namespace grbda
         vJ_ = joint_->S() * joint_state_.velocity;
     }
 
-    const spatial::Transform<> &ReflectedInertiaTreeNode::getAbsoluteTransformForBody(const Body &body)
+    const spatial::Transform<> &ReflectedInertiaTreeNode::getAbsoluteTransformForBody(const Body<> &body)
     {
         return Xa_[0];
     };
 
-    DVec<double> ReflectedInertiaTreeNode::getVelocityForBody(const Body &body)
+    DVec<double> ReflectedInertiaTreeNode::getVelocityForBody(const Body<> &body)
     {
         return v_;
     };
 
-    void ReflectedInertiaTreeNode::applyForceToBody(const SVec<double> &force, const Body &body)
+    void ReflectedInertiaTreeNode::applyForceToBody(const SVec<double> &force, const Body<> &body)
     {
         f_ext_.segment<6>(0) = force;
     }

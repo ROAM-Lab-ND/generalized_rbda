@@ -38,9 +38,9 @@ namespace grbda
         virtual const DMat<double> &S() const = 0;
         virtual const DVec<double> &cJ() const = 0;
 
-        virtual const spatial::Transform<> &getAbsoluteTransformForBody(const Body &body) = 0;
-        virtual DVec<double> getVelocityForBody(const Body &body) = 0;
-        virtual void applyForceToBody(const SVec<double> &force, const Body &body) = 0;
+        virtual const spatial::Transform<> &getAbsoluteTransformForBody(const Body<> &body) = 0;
+        virtual DVec<double> getVelocityForBody(const Body<> &body) = 0;
+        virtual void applyForceToBody(const SVec<double> &force, const Body<> &body) = 0;
 
         const int position_index_;
         const int num_positions_;

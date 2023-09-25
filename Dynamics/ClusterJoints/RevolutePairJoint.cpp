@@ -7,7 +7,7 @@ namespace grbda
     {
 
         template <typename Scalar>
-        RevolutePair<Scalar>::RevolutePair(Body &link_1, Body &link_2,
+        RevolutePair<Scalar>::RevolutePair(Body<> &link_1, Body<> &link_2,
                                            ori::CoordinateAxis joint_axis_1,
                                            ori::CoordinateAxis joint_axis_2)
             : Base<Scalar>(2, 2, 2), link_1_(link_1), link_2_(link_2)
@@ -69,10 +69,10 @@ namespace grbda
         }
 
         template <typename Scalar>
-        std::vector<std::tuple<Body, JointPtr<double>, DMat<double>>>
+        std::vector<std::tuple<Body<>, JointPtr<double>, DMat<double>>>
         RevolutePair<Scalar>::bodiesJointsAndReflectedInertias() const
         {
-            std::vector<std::tuple<Body, JointPtr<double>, DMat<double>>> bodies_joints_and_reflected_inertias;
+            std::vector<std::tuple<Body<>, JointPtr<double>, DMat<double>>> bodies_joints_and_reflected_inertias;
 
             const DMat<double> reflected_inertia_1 =
                 DMat<double>::Zero(link_1_joint_->numVelocities(), link_1_joint_->numVelocities());

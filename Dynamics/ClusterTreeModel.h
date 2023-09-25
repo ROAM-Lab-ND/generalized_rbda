@@ -32,7 +32,7 @@ namespace grbda
         // The standard process for appending a cluster to the tree is to register all the bodies 
         // in  given cluster and then append them as a cluster by specifying the type of cluster 
         // joint that connects them
-        Body registerBody(const std::string name, const SpatialInertia<double> inertia,
+        Body<> registerBody(const std::string name, const SpatialInertia<double> inertia,
                           const std::string parent_name, const spatial::Transform<> Xtree);
 
         template <typename ClusterJointType, typename... Args>
@@ -48,7 +48,7 @@ namespace grbda
                         const std::string parent_name, const spatial::Transform<> Xtree,
                         Args &&...args)
         {
-            Body body = registerBody(name, inertia, parent_name, Xtree);
+            Body<> body = registerBody(name, inertia, parent_name, Xtree);
             std::shared_ptr<ClusterJointType> joint = std::make_shared<ClusterJointType>(body, args...);
             appendRegisteredBodiesAsCluster(name, joint);
         }
@@ -73,7 +73,7 @@ namespace grbda
         // body.cluster_ancestor_index_
         int getClusterAncestorIndexFromParent(const int body_index);
 
-        int getSubIndexWithinClusterForBody(const Body &body) const;
+        int getSubIndexWithinClusterForBody(const Body<> &body) const;
         int getSubIndexWithinClusterForBody(const int body_index) const;
         int getSubIndexWithinClusterForBody(const std::string &body_name) const;
 
@@ -81,27 +81,27 @@ namespace grbda
         int getNumBodiesInCluster(const int cluster_index) const;
         int getNumBodiesInCluster(const std::string &cluster_name) const;
 
-        int getIndexOfClusterContainingBody(const Body &body);
+        int getIndexOfClusterContainingBody(const Body<> &body);
         int getIndexOfClusterContainingBody(const int body_index);
         int getIndexOfClusterContainingBody(const std::string &body_name);
 
-        ClusterTreeNodePtr getClusterContainingBody(const Body &body);
+        ClusterTreeNodePtr getClusterContainingBody(const Body<> &body);
         ClusterTreeNodePtr getClusterContainingBody(const int body_index);
         ClusterTreeNodePtr getClusterContainingBody(const std::string &body_name);
 
-        int getIndexOfParentClusterFromBodies(const std::vector<Body> &bodies);
+        int getIndexOfParentClusterFromBodies(const std::vector<Body<>> &bodies);
 
-        const Body &getBody(int index) const override { return bodies_[index]; }
+        const Body<> &getBody(int index) const override { return bodies_[index]; }
         const TreeNodePtr getNodeContainingBody(int index) override
         {
             return nodes_[getIndexOfClusterContainingBody(index)];
         }
 
-        const std::vector<Body> &bodies() const { return bodies_; }
+        const std::vector<Body<>> &bodies() const { return bodies_; }
         const std::vector<ClusterTreeNodePtr> &clusters() const { return cluster_nodes_; }
 
-        const Body &body(const int body_index) const { return bodies_[body_index]; }
-        const Body &body(const std::string body_name) const
+        const Body<> &body(const int body_index) const { return bodies_[body_index]; }
+        const Body<> &body(const std::string body_name) const
         {
             return bodies_[body_name_to_body_index_.at(body_name)];
         }
@@ -148,10 +148,10 @@ namespace grbda
         DVec<double> localCartesianForceAtPointToWorldPluckerForceOnCluster(
             const Vec3<double> &force, const ContactPoint &contact_point);
 
-        std::vector<Body> bodies_;
+        std::vector<Body<>> bodies_;
         std::vector<ClusterTreeNodePtr> cluster_nodes_;
 
-        std::vector<Body> bodies_in_current_cluster_;
+        std::vector<Body<>> bodies_in_current_cluster_;
 
         std::unordered_map<std::string, int> body_name_to_body_index_;
         std::unordered_map<std::string, int> cluster_name_to_cluster_index_;

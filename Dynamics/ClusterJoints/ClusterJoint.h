@@ -45,7 +45,7 @@ namespace grbda
 
             const std::vector<JointPtr<double>> singleJoints() const { return single_joints_; };
 
-            virtual std::vector<std::tuple<Body, JointPtr<double>, DMat<double>>>
+            virtual std::vector<std::tuple<Body<>, JointPtr<double>, DMat<double>>>
             bodiesJointsAndReflectedInertias() const
             {
                 throw std::runtime_error("Reflected Inertia not setup for this generalized joint type");
@@ -100,8 +100,8 @@ namespace grbda
 
         struct GearedTransmissionModule
         {
-            Body body_;
-            Body rotor_;
+            Body<> body_;
+            Body<> rotor_;
             ori::CoordinateAxis joint_axis_;
             ori::CoordinateAxis rotor_axis_;
             double gear_ratio_;
@@ -109,8 +109,8 @@ namespace grbda
 
         struct ParallelBeltTransmissionModule
         {
-            Body body_;
-            Body rotor_;
+            Body<> body_;
+            Body<> rotor_;
             ori::CoordinateAxis joint_axis_;
             ori::CoordinateAxis rotor_axis_;
             double gear_ratio_;
@@ -119,10 +119,10 @@ namespace grbda
 
         struct TelloDifferentialModule
         {
-            Body rotor1_;
-            Body rotor2_;
-            Body link1_;
-            Body link2_;
+            Body<> rotor1_;
+            Body<> rotor2_;
+            Body<> link1_;
+            Body<> link2_;
             ori::CoordinateAxis rotor1_axis_;
             ori::CoordinateAxis rotor2_axis_;
             ori::CoordinateAxis link1_axis_;

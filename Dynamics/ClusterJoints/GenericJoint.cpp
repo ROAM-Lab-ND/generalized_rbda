@@ -8,7 +8,7 @@ namespace grbda
     {
 
         template <typename Scalar>
-        Generic<Scalar>::Generic(const std::vector<Body> &bodies,
+        Generic<Scalar>::Generic(const std::vector<Body<>> &bodies,
                                  const std::vector<JointPtr<Scalar>> &joints,
                                  std::shared_ptr<LoopConstraint::Base<Scalar>> loop_constraint)
             : Base<Scalar>((int)bodies.size(),
@@ -124,7 +124,7 @@ namespace grbda
                 int j = i;
                 while (bodyInCurrentCluster(bodies_[j].parent_index_))
                 {
-                    const Body &parent_body = getBody(bodies_[j].parent_index_);
+                    const Body<> &parent_body = getBody(bodies_[j].parent_index_);
                     j = parent_body.sub_index_within_cluster_;
                     connectivity_(i, j) = true;
                 }
@@ -141,7 +141,7 @@ namespace grbda
         }
 
         template <typename Scalar>
-        const Body &Generic<Scalar>::getBody(const int body_index) const
+        const Body<> &Generic<Scalar>::getBody(const int body_index) const
         {
             for (const auto &body : bodies_)
                 if (body.index_ == body_index)

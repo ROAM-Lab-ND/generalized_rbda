@@ -3,7 +3,7 @@
 namespace grbda
 {
 
-    RigidBodyTreeNode::RigidBodyTreeNode(const Body &body,
+    RigidBodyTreeNode::RigidBodyTreeNode(const Body<> &body,
                                          const std::shared_ptr<Joints::Base<>> &joint,
                                          const int position_index, const int velocity_index,
                                          const int motion_subspace_index)
@@ -25,17 +25,17 @@ namespace grbda
         vJ_ = joint_->S() * joint_state_.velocity;
     }
 
-    const spatial::Transform<> &RigidBodyTreeNode::getAbsoluteTransformForBody(const Body &body)
+    const spatial::Transform<> &RigidBodyTreeNode::getAbsoluteTransformForBody(const Body<> &body)
     {
         return Xa_[0];
     };
 
-    DVec<double> RigidBodyTreeNode::getVelocityForBody(const Body &body)
+    DVec<double> RigidBodyTreeNode::getVelocityForBody(const Body<> &body)
     {
         return v_;
     };
 
-    void RigidBodyTreeNode::applyForceToBody(const SVec<double> &force, const Body &body)
+    void RigidBodyTreeNode::applyForceToBody(const SVec<double> &force, const Body<> &body)
     {
         f_ext_.segment<6>(0) = force;
     }

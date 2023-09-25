@@ -14,7 +14,7 @@ namespace grbda
         class RevolutePair : public Base<Scalar>
         {
         public:
-            RevolutePair(Body &link_1, Body &link_2,
+            RevolutePair(Body<> &link_1, Body<> &link_2,
                          ori::CoordinateAxis joint_axis_1, ori::CoordinateAxis joint_axis_2);
             virtual ~RevolutePair() {}
 
@@ -25,7 +25,7 @@ namespace grbda
             void computeSpatialTransformFromParentToCurrentCluster(
                 spatial::GeneralizedTransform<> &Xup) const override;
 
-            std::vector<std::tuple<Body, JointPtr<double>, DMat<double>>>
+            std::vector<std::tuple<Body<>, JointPtr<double>, DMat<double>>>
             bodiesJointsAndReflectedInertias() const override;
 
         private:
@@ -34,8 +34,8 @@ namespace grbda
 
             spatial::Transform<> X21_;
 
-            const Body link_1_;
-            const Body link_2_;
+            const Body<> link_1_;
+            const Body<> link_2_;
 
             DMat<double> X_intra_S_span_;
             DMat<double> X_intra_S_span_ring_;

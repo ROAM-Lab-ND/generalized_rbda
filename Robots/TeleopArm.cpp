@@ -14,11 +14,11 @@ namespace grbda
 
         // Base
         SpatialTransform base_Xtree = SpatialTransform(I3, base_location_);
-        Body base = model.registerBody(base_name_, base_spatial_inertia_,
+        Body<> base = model.registerBody(base_name_, base_spatial_inertia_,
                                        base_parent_name_, base_Xtree);
 
         SpatialTransform base_rotor_Xtree = SpatialTransform(I3, base_rotor_location_);
-        Body base_rotor = model.registerBody(base_rotor_name_, base_rotor_spatial_inertia_,
+        Body<> base_rotor = model.registerBody(base_rotor_name_, base_rotor_spatial_inertia_,
                                              base_rotor_parent_name_, base_rotor_Xtree);
 
         GearedTransmissionModule base_module{base, base_rotor, ori::CoordinateAxis::Z,
@@ -27,13 +27,13 @@ namespace grbda
 
         // Shoulder Rx
         SpatialTransform shoulder_rx_link_Xtree = SpatialTransform(I3, shoulder_rx_link_location_);
-        Body shoulder_rx_link = model.registerBody(shoulder_rx_link_name_,
+        Body<> shoulder_rx_link = model.registerBody(shoulder_rx_link_name_,
                                                    shoulder_rx_link_spatial_inertia_,
                                                    shoulder_rx_link_parent_name_,
                                                    shoulder_rx_link_Xtree);
 
         SpatialTransform shoulder_rx_rotor_Xtree = SpatialTransform(I3, shoulder_rx_rotor_location_);
-        Body shoulder_rx_rotor = model.registerBody(shoulder_rx_rotor_name_,
+        Body<> shoulder_rx_rotor = model.registerBody(shoulder_rx_rotor_name_,
                                                     shoulder_rx_rotor_spatial_inertia_,
                                                     shoulder_rx_rotor_parent_name_,
                                                     shoulder_rx_rotor_Xtree);
@@ -46,13 +46,13 @@ namespace grbda
 
         // Shoulder Ry
         SpatialTransform shoulder_ry_link_Xtree = SpatialTransform(I3, shoulder_ry_link_location_);
-        Body shoulder_ry_link = model.registerBody(shoulder_ry_link_name_,
+        Body<> shoulder_ry_link = model.registerBody(shoulder_ry_link_name_,
                                                    shoulder_ry_link_spatial_inertia_,
                                                    shoulder_ry_link_parent_name_,
                                                    shoulder_ry_link_Xtree);
 
         SpatialTransform shoulder_ry_rotor_Xtree = SpatialTransform(I3, shoulder_ry_rotor_location_);
-        Body shoulder_ry_rotor = model.registerBody(shoulder_ry_rotor_name_,
+        Body<> shoulder_ry_rotor = model.registerBody(shoulder_ry_rotor_name_,
                                                     shoulder_ry_rotor_spatial_inertia_,
                                                     shoulder_ry_rotor_parent_name_,
                                                     shoulder_ry_rotor_Xtree);
@@ -65,7 +65,7 @@ namespace grbda
 
         // Upper Link
         SpatialTransform upper_link_Xtree = SpatialTransform(I3, upper_link_location_);
-        Body upper_link = model.registerBody(upper_link_name_, upper_link_spatial_inertia_,
+        Body<> upper_link = model.registerBody(upper_link_name_, upper_link_spatial_inertia_,
                                              upper_link_parent_name_, upper_link_Xtree);
         auto elbow_joint = std::make_shared<Joints::Revolute<>>(ori::CoordinateAxis::Y);
 
@@ -87,7 +87,7 @@ namespace grbda
 
         // Elbow Rotor
         SpatialTransform elbow_rotor_Xtree = SpatialTransform(I3, elbow_rotor_location_);
-        Body elbow_rotor = model.registerBody(elbow_rotor_name_, elbow_rotor_spatial_inertia_,
+        Body<> elbow_rotor = model.registerBody(elbow_rotor_name_, elbow_rotor_spatial_inertia_,
                                               elbow_rotor_parent_name_, elbow_rotor_Xtree);
         auto elbow_rotor_joint = std::make_shared<Joints::Revolute<>>(ori::CoordinateAxis::Y);
 
@@ -130,11 +130,11 @@ namespace grbda
 
         // Gripper
         SpatialTransform gripper_Xtree = SpatialTransform(I3, gripper_location_);
-        Body gripper = model.registerBody(gripper_name_, gripper_spatial_inertia_,
+        Body<> gripper = model.registerBody(gripper_name_, gripper_spatial_inertia_,
                                           gripper_parent_name_, gripper_Xtree);
 
         SpatialTransform gripper_rotor_Xtree = SpatialTransform(I3, gripper_rotor_location_);
-        Body gripper_rotor = model.registerBody(gripper_rotor_name_, gripper_rotor_spatial_inertia_,
+        Body<> gripper_rotor = model.registerBody(gripper_rotor_name_, gripper_rotor_spatial_inertia_,
                                                 gripper_rotor_parent_name_, gripper_rotor_Xtree);
 
         GearedTransmissionModule gripper_module{gripper, gripper_rotor, ori::CoordinateAxis::X,
