@@ -43,8 +43,8 @@ namespace grbda
                                                 abad_parent_name, xtree_abad);
             Body<> abad_rotor = model.registerBody(abad_rotor_name, abad_rotor_inertia,
                                                  abad_parent_name, xtree_abad_rotor);
-            GearedTransmissionModule abad_module{abad_link, abad_rotor, ori::CoordinateAxis::X,
-                                                 ori::CoordinateAxis::X, _abadGearRatio};
+            GearedTransmissionModule<> abad_module{abad_link, abad_rotor, ori::CoordinateAxis::X,
+                                                   ori::CoordinateAxis::X, _abadGearRatio};
             model.appendRegisteredBodiesAsCluster<RevoluteWithRotor<>>(abad_name, abad_module);
 
             // Hip Joint
@@ -66,8 +66,8 @@ namespace grbda
                                                hip_parent_name, xtree_hip);
             Body<> hip_rotor = model.registerBody(hip_rotor_name, hip_rotor_inertia,
                                                 hip_parent_name, xtree_hip_rotor);
-            GearedTransmissionModule hip_module{hip_link, hip_rotor, ori::CoordinateAxis::Y,
-                                                ori::CoordinateAxis::Y, _hipGearRatio};
+            GearedTransmissionModule<> hip_module{hip_link, hip_rotor, ori::CoordinateAxis::Y,
+                                                  ori::CoordinateAxis::Y, _hipGearRatio};
             model.appendRegisteredBodiesAsCluster<RevoluteWithRotor<>>(hip_name, hip_module);
 
             const std::string hip_contact_name = withLegSigns("hip_contact", legID);
@@ -95,8 +95,8 @@ namespace grbda
                                                 knee_parent_name, xtree_knee);
             Body<> knee_rotor = model.registerBody(knee_rotor_name, knee_rotor_inertia,
                                                  knee_parent_name, xtree_knee_rotor);
-            GearedTransmissionModule knee_module{knee_link, knee_rotor, ori::CoordinateAxis::Z,
-                                                 ori::CoordinateAxis::Z, _kneeGearRatio};
+            GearedTransmissionModule<> knee_module{knee_link, knee_rotor, ori::CoordinateAxis::Z,
+                                                   ori::CoordinateAxis::Z, _kneeGearRatio};
             model.appendRegisteredBodiesAsCluster<RevoluteWithRotor<>>(knee_name, knee_module);
 
             const std::string foot_contact_name = withLegSigns("foot_contact", legID);

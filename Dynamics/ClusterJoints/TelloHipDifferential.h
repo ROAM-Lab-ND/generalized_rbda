@@ -13,7 +13,7 @@ namespace grbda
         class TelloHipDifferential : public TelloDifferential<>
         {
         public:
-            TelloHipDifferential(TelloDifferentialModule &module)
+            TelloHipDifferential(TelloDifferentialModule<double> &module)
             : TelloDifferential(module)
             {
                 CasadiHelperFunctions jacobian_helpers(thd_jacobian, thd_jacobian_sparsity_out,

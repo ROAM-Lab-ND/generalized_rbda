@@ -8,7 +8,8 @@ namespace grbda
 
         template <typename Scalar>
         RevolutePairWithRotor<Scalar>::RevolutePairWithRotor(
-            ParallelBeltTransmissionModule &module_1, ParallelBeltTransmissionModule &module_2)
+            ParallelBeltTransmissionModule<Scalar> &module_1,
+            ParallelBeltTransmissionModule<Scalar> &module_2)
             : Base<Scalar>(4, 2, 2), link1_(module_1.body_), link2_(module_2.body_),
               rotor1_(module_1.rotor_), rotor2_(module_2.rotor_)
         {

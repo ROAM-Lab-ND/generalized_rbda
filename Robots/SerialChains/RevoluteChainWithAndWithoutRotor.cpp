@@ -29,7 +29,7 @@ namespace grbda
 
             // Cluster
             const std::string cluster_name = "cluster-" + std::to_string(i);
-            GearedTransmissionModule module{link, rotor, link_axis, rotor_axis, randomGearRatio()};
+            GearedTransmissionModule<> module{link, rotor, link_axis, rotor_axis, randomGearRatio()};
             model.appendRegisteredBodiesAsCluster<RevoluteWithRotor<>>(cluster_name, module);
 
             prev_link_name = link_name;

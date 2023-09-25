@@ -13,7 +13,7 @@ namespace grbda
         class RevoluteWithRotor : public Base<Scalar>
         {
         public:
-            RevoluteWithRotor(GearedTransmissionModule &module);
+            RevoluteWithRotor(GearedTransmissionModule<Scalar> &module);
 
             virtual ~RevoluteWithRotor() {}
 

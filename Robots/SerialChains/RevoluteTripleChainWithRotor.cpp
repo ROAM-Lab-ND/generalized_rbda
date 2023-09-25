@@ -59,18 +59,18 @@ namespace grbda
                                              parent_name, rotorC_Xtree);
 
             // Cluster
-            ParallelBeltTransmissionModule moduleA{linkA, rotorA,
-                                                   linkA_joint_axis, rotorA_joint_axis,
-                                                   this->randomGearRatio(),
-                                                   this->randomGearRatio()};
-            ParallelBeltTransmissionModule moduleB{linkB, rotorB,
-                                                   linkB_joint_axis, rotorB_joint_axis,
-                                                   this->randomGearRatio(), 
-                                                   this->randomGearRatio()};
-            ParallelBeltTransmissionModule moduleC{linkC, rotorC,
-                                                   linkC_joint_axis, rotorC_joint_axis,
-                                                   this->randomGearRatio(),
-                                                   this->randomGearRatio()};
+            ParallelBeltTransmissionModule<> moduleA{linkA, rotorA,
+                                                     linkA_joint_axis, rotorA_joint_axis,
+                                                     this->randomGearRatio(),
+                                                     this->randomGearRatio()};
+            ParallelBeltTransmissionModule<> moduleB{linkB, rotorB,
+                                                     linkB_joint_axis, rotorB_joint_axis,
+                                                     this->randomGearRatio(),
+                                                     this->randomGearRatio()};
+            ParallelBeltTransmissionModule<> moduleC{linkC, rotorC,
+                                                     linkC_joint_axis, rotorC_joint_axis,
+                                                     this->randomGearRatio(),
+                                                     this->randomGearRatio()};
 
             const std::string cluster_name = "cluster-" + std::to_string(i);
             model.appendRegisteredBodiesAsCluster<RevoluteTripleWithRotor<>>(cluster_name, moduleA,

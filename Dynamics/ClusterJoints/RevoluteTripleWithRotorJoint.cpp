@@ -8,9 +8,9 @@ namespace grbda
 
         template <typename Scalar>
         RevoluteTripleWithRotor<Scalar>::RevoluteTripleWithRotor(
-            const ParallelBeltTransmissionModule &module_1,
-            const ParallelBeltTransmissionModule &module_2,
-            const ParallelBeltTransmissionModule &module_3)
+            const ParallelBeltTransmissionModule<Scalar> &module_1,
+            const ParallelBeltTransmissionModule<Scalar> &module_2,
+            const ParallelBeltTransmissionModule<Scalar> &module_3)
             : Base<Scalar>(6, 3, 3), link_1_(module_1.body_), link_2_(module_2.body_),
               link_3_(module_3.body_), rotor_1_(module_1.rotor_), rotor_2_(module_2.rotor_),
               rotor_3_(module_3.rotor_)

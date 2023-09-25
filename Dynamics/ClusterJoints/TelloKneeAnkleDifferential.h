@@ -13,7 +13,7 @@ namespace grbda
         class TelloKneeAnkleDifferential : public TelloDifferential<>
         {
         public:
-            TelloKneeAnkleDifferential(TelloDifferentialModule &module)
+            TelloKneeAnkleDifferential(TelloDifferentialModule<double> &module)
             : TelloDifferential(module)
             {
             CasadiHelperFunctions jacobian_helpers(tkad_jacobian, tkad_jacobian_sparsity_out,

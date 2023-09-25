@@ -69,7 +69,7 @@ namespace grbda
 	{
 
 		template <typename Scalar>
-		TelloDifferential<Scalar>::TelloDifferential(TelloDifferentialModule &module)
+		TelloDifferential<Scalar>::TelloDifferential(TelloDifferentialModule<Scalar> &module)
 			: Base<Scalar>(4, 4, 2), rotor1_(module.rotor1_), rotor2_(module.rotor2_),
 			  link1_(module.link1_), link2_(module.link2_), gear_ratio_(module.gear_ratio_)
 		{

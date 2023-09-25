@@ -56,10 +56,10 @@ namespace grbda
 
             // Hip clamp cluster
             const std::string hip_clamp_cluster_name = side + "-hip-clamp";
-            GearedTransmissionModule hip_clamp_module{hip_clamp, hip_clamp_rotor,
-                                                      ori::CoordinateAxis::Z,
-                                                      ori::CoordinateAxis::Z,
-                                                      gear_ratio};
+            GearedTransmissionModule<> hip_clamp_module{hip_clamp, hip_clamp_rotor,
+                                                        ori::CoordinateAxis::Z,
+                                                        ori::CoordinateAxis::Z,
+                                                        gear_ratio};
             model.appendRegisteredBodiesAsCluster<RevoluteWithRotor<>>(hip_clamp_cluster_name,
                                                                        hip_clamp_module);
 
@@ -111,7 +111,7 @@ namespace grbda
 
             // Hip differential cluster
             const std::string hip_differential_cluster_name = side + "-hip-differential";
-            TelloDifferentialModule hip_differential_module{
+            TelloDifferentialModule<> hip_differential_module{
                 hip_rotor_1, hip_rotor_2, gimbal, thigh,
                 ori::CoordinateAxis::Z, ori::CoordinateAxis::Z,
                 ori::CoordinateAxis::X, ori::CoordinateAxis::Y, gear_ratio};
@@ -174,7 +174,7 @@ namespace grbda
 
             // Knee-ankle differential cluster
             const std::string knee_ankle_differential_cluster_name = side + "-knee-ankle-differential";
-            TelloDifferentialModule knee_ankle_module{
+            TelloDifferentialModule<> knee_ankle_module{
                 knee_ankle_rotor_1, knee_ankle_rotor_2, shin, foot,
                 ori::CoordinateAxis::Z, ori::CoordinateAxis::Z,
                 ori::CoordinateAxis::Y, ori::CoordinateAxis::Y, gear_ratio};

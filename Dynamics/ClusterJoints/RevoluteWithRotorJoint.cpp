@@ -6,7 +6,7 @@ namespace grbda
     namespace ClusterJoints
     {
         template <typename Scalar>
-        RevoluteWithRotor<Scalar>::RevoluteWithRotor(GearedTransmissionModule &module)
+        RevoluteWithRotor<Scalar>::RevoluteWithRotor(GearedTransmissionModule<Scalar> &module)
             : Base<Scalar>(2, 1, 1), link_(module.body_), rotor_(module.rotor_)
         {
             link_joint_ =

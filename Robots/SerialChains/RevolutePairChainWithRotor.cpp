@@ -45,10 +45,10 @@ namespace grbda
 
             // Cluster
             const std::string name = "cluster-" + std::to_string(i);
-            ParallelBeltTransmissionModule moduleA{linkA, rotorA,
+            ParallelBeltTransmissionModule<> moduleA{linkA, rotorA,
                                                    linkA_joint_axis, rotorA_joint_axis,
                                                    randomGearRatio(), randomGearRatio()};
-            ParallelBeltTransmissionModule moduleB{linkB, rotorB,
+            ParallelBeltTransmissionModule<> moduleB{linkB, rotorB,
                                                    linkB_joint_axis, rotorB_joint_axis,
                                                    randomGearRatio(), randomGearRatio()};
             model.appendRegisteredBodiesAsCluster<RevolutePairWithRotor<>>(name, moduleA, moduleB);
@@ -126,8 +126,8 @@ namespace grbda
 
             // Cluster
             const std::string name = "cluster-" + std::to_string(i);
-            ParallelBeltTransmissionModule moduleA{linkA, rotorA, axis, axis, gr, br};
-            ParallelBeltTransmissionModule moduleB{linkB, rotorB, axis, axis, gr, br};
+            ParallelBeltTransmissionModule<> moduleA{linkA, rotorA, axis, axis, gr, br};
+            ParallelBeltTransmissionModule<> moduleB{linkB, rotorB, axis, axis, gr, br};
             model.appendRegisteredBodiesAsCluster<RevolutePairWithRotor<>>(name, moduleA, moduleB);
 
             // Contact points

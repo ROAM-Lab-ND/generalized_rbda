@@ -98,36 +98,39 @@ namespace grbda
             DMat<double> spanning_tree_to_independent_coords_conversion_;
         };
 
+        template <typename Scalar = double>
         struct GearedTransmissionModule
         {
-            Body<> body_;
-            Body<> rotor_;
+            Body<Scalar> body_;
+            Body<Scalar> rotor_;
             ori::CoordinateAxis joint_axis_;
             ori::CoordinateAxis rotor_axis_;
-            double gear_ratio_;
+            Scalar gear_ratio_;
         };
 
+        template <typename Scalar = double>
         struct ParallelBeltTransmissionModule
         {
-            Body<> body_;
-            Body<> rotor_;
+            Body<Scalar> body_;
+            Body<Scalar> rotor_;
             ori::CoordinateAxis joint_axis_;
             ori::CoordinateAxis rotor_axis_;
-            double gear_ratio_;
-            double belt_ratio_;
+            Scalar gear_ratio_;
+            Scalar belt_ratio_;
         };
 
+        template <typename Scalar = double>
         struct TelloDifferentialModule
         {
-            Body<> rotor1_;
-            Body<> rotor2_;
-            Body<> link1_;
-            Body<> link2_;
+            Body<Scalar> rotor1_;
+            Body<Scalar> rotor2_;
+            Body<Scalar> link1_;
+            Body<Scalar> link2_;
             ori::CoordinateAxis rotor1_axis_;
             ori::CoordinateAxis rotor2_axis_;
             ori::CoordinateAxis link1_axis_;
             ori::CoordinateAxis link2_axis_;
-            double gear_ratio_;
+            Scalar gear_ratio_;
         };
 
     }

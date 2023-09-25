@@ -53,7 +53,7 @@ namespace grbda
         class TelloDifferential : public Base<Scalar>
         {
         public:
-            TelloDifferential(TelloDifferentialModule &module);
+            TelloDifferential(TelloDifferentialModule<Scalar> &module);
             virtual ~TelloDifferential() {}
 
             void updateKinematics(const JointState<> &joint_state) override;
