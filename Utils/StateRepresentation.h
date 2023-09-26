@@ -17,10 +17,10 @@ namespace grbda
 
         // TODO(@MatthewChignoli): Should this be a copy constructor?
         // TODO(@MatthewChignoli): Regardless, it should deduce the scalar type, not assume it
-        JointCoordinate(const JointCoordinate<> &other)
+        JointCoordinate(const JointCoordinate<Scalar> &other)
             : DVec<Scalar>(other), _is_spanning(other._is_spanning) {}
 
-        JointCoordinate &operator=(const JointCoordinate<> &other)
+        JointCoordinate &operator=(const JointCoordinate<Scalar> &other)
         {
             this->DVec<Scalar>::operator=(other);
             _is_spanning = other._is_spanning;
@@ -28,7 +28,7 @@ namespace grbda
         }
 
         template <typename Derived>
-        JointCoordinate<> &operator=(const Eigen::DenseBase<Derived> &x)
+        JointCoordinate<Scalar> &operator=(const Eigen::DenseBase<Derived> &x)
         {
             this->DVec<Scalar>::operator=(x);
             return *this;
@@ -45,15 +45,15 @@ namespace grbda
             : position(pos), velocity(vel) {}
 
         JointState(bool position_is_spanning, bool velocity_is_spanning)
-            : position(JointCoordinate<>(DVec<Scalar>::Zero(0), position_is_spanning)),
-              velocity(JointCoordinate<>(DVec<Scalar>::Zero(0), velocity_is_spanning)) {}
+            : position(JointCoordinate<Scalar>(DVec<Scalar>::Zero(0), position_is_spanning)),
+              velocity(JointCoordinate<Scalar>(DVec<Scalar>::Zero(0), velocity_is_spanning)) {}
 
         JointState()
-            : position(JointCoordinate<>(DVec<Scalar>::Zero(0), false)),
-              velocity(JointCoordinate<>(DVec<Scalar>::Zero(0), false)) {}
+            : position(JointCoordinate<Scalar>(DVec<Scalar>::Zero(0), false)),
+              velocity(JointCoordinate<Scalar>(DVec<Scalar>::Zero(0), false)) {}
 
-        JointCoordinate<> position;
-        JointCoordinate<> velocity;
+        JointCoordinate<Scalar> position;
+        JointCoordinate<Scalar> velocity;
     };
 
     template <typename Scalar = double>

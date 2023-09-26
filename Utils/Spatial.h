@@ -51,7 +51,7 @@ namespace grbda
      * Compute the spatial motion cross product matrix. Prefer motionCrossProduct when possible.
      */
     template <typename T>
-    auto motionCrossMatrix(const Eigen::MatrixBase<T> &v)
+    Mat6<typename T::Scalar> motionCrossMatrix(const Eigen::MatrixBase<T> &v)
     {
       static_assert(T::ColsAtCompileTime == 1 && T::RowsAtCompileTime == 6, "Must have 6x1 vector");
       Mat6<typename T::Scalar> m;

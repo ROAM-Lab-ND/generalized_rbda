@@ -115,7 +115,7 @@ namespace grbda
                 hip_rotor_1, hip_rotor_2, gimbal, thigh,
                 ori::CoordinateAxis::Z, ori::CoordinateAxis::Z,
                 ori::CoordinateAxis::X, ori::CoordinateAxis::Y, gear_ratio};
-            model.appendRegisteredBodiesAsCluster<TelloHipDifferential>(
+            model.appendRegisteredBodiesAsCluster<TelloHipDifferential<double>>(
                 hip_differential_cluster_name, hip_differential_module);
 
             // Knee-ankle differential rotor 1
@@ -178,7 +178,7 @@ namespace grbda
                 knee_ankle_rotor_1, knee_ankle_rotor_2, shin, foot,
                 ori::CoordinateAxis::Z, ori::CoordinateAxis::Z,
                 ori::CoordinateAxis::Y, ori::CoordinateAxis::Y, gear_ratio};
-            model.appendRegisteredBodiesAsCluster<TelloKneeAnkleDifferential>(
+            model.appendRegisteredBodiesAsCluster<TelloKneeAnkleDifferential<double>>(
                 knee_ankle_differential_cluster_name, knee_ankle_module);
 
             // Append contact points for the feet

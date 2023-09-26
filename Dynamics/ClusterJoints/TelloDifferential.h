@@ -27,22 +27,22 @@ namespace grbda
         template <typename Scalar = double>
         struct TelloDifferential : Base<Scalar>
         {
-            TelloDifferential(const CasadiHelperFunctions &jacobian_helpers,
-                              const CasadiHelperFunctions &bias_helpers,
-                              const CasadiHelperFunctions &IK_pos_helpers,
-                              const CasadiHelperFunctions &IK_vel_helpers);
+            TelloDifferential(const CasadiHelperFunctions<Scalar> &jacobian_helpers,
+                              const CasadiHelperFunctions<Scalar> &bias_helpers,
+                              const CasadiHelperFunctions<Scalar> &IK_pos_helpers,
+                              const CasadiHelperFunctions<Scalar> &IK_vel_helpers);
 
             std::shared_ptr<Base<Scalar>> clone() const override;
 
-            DVec<double> gamma(const JointCoordinate<> &joint_pos) const override;
+            DVec<Scalar> gamma(const JointCoordinate<Scalar> &joint_pos) const override;
 
-            void updateJacobians(const JointCoordinate<> &joint_pos) override;
-            void updateBiases(const JointState<> &joint_state) override;
+            void updateJacobians(const JointCoordinate<Scalar> &joint_pos) override;
+            void updateBiases(const JointState<Scalar> &joint_state) override;
 
-            const CasadiHelperFunctions jacobian_helpers_;
-            const CasadiHelperFunctions bias_helpers_;
-            const CasadiHelperFunctions IK_pos_helpers_;
-            const CasadiHelperFunctions IK_vel_helpers_;
+            const CasadiHelperFunctions<Scalar> jacobian_helpers_;
+            const CasadiHelperFunctions<Scalar> bias_helpers_;
+            const CasadiHelperFunctions<Scalar> IK_pos_helpers_;
+            const CasadiHelperFunctions<Scalar> IK_vel_helpers_;
         };
     }
 
@@ -56,15 +56,15 @@ namespace grbda
             TelloDifferential(TelloDifferentialModule<Scalar> &module);
             virtual ~TelloDifferential() {}
 
-            void updateKinematics(const JointState<> &joint_state) override;
+            void updateKinematics(const JointState<Scalar> &joint_state) override;
 
             void computeSpatialTransformFromParentToCurrentCluster(
-                spatial::GeneralizedTransform<> &Xup) const override;
+                spatial::GeneralizedTransform<Scalar> &Xup) const override;
 
-            std::vector<std::tuple<Body<>, JointPtr<double>, DMat<double>>>
+            std::vector<std::tuple<Body<Scalar>, JointPtr<Scalar>, DMat<Scalar>>>
             bodiesJointsAndReflectedInertias() const override;
 
-            JointState<> randomJointState() const override;
+            JointState<Scalar> randomJointState() const override;
 
         protected:
             std::shared_ptr<LoopConstraint::TelloDifferential<Scalar>> tello_constraint_;
@@ -75,17 +75,17 @@ namespace grbda
             JointPtr<Scalar> link1_joint_;
             JointPtr<Scalar> link2_joint_;
 
-            spatial::Transform<> X21_;
+            spatial::Transform<Scalar> X21_;
 
-            const Body<> rotor1_;
-            const Body<> rotor2_;
-            const Body<> link1_;
-            const Body<> link2_;
+            const Body<Scalar> rotor1_;
+            const Body<Scalar> rotor2_;
+            const Body<Scalar> link1_;
+            const Body<Scalar> link2_;
 
-            DMat<double> X_intra_S_span_;
-            DMat<double> X_intra_S_span_ring_;
+            DMat<Scalar> X_intra_S_span_;
+            DMat<Scalar> X_intra_S_span_ring_;
 
-            const double gear_ratio_;
+            const Scalar gear_ratio_;
         };
 
     }

@@ -8,11 +8,11 @@ namespace grbda
         template <typename Scalar>
         Free<Scalar>::Free()
         {
-            this->G_ = DMat<double>::Identity(6, 6);
-            this->g_ = DVec<double>::Zero(6);
+            this->G_ = DMat<Scalar>::Identity(6, 6);
+            this->g_ = DVec<Scalar>::Zero(6);
 
-            this->K_ = DMat<double>::Zero(0, 6);
-            this->k_ = DVec<double>::Zero(0);
+            this->K_ = DMat<Scalar>::Zero(0, 6);
+            this->k_ = DVec<Scalar>::Zero(0);
         }
 
         template <typename Scalar>
@@ -22,12 +22,13 @@ namespace grbda
         }
 
         template <typename Scalar>
-        DVec<double> Free<Scalar>::gamma(const JointCoordinate<> &joint_pos) const
+        DVec<Scalar> Free<Scalar>::gamma(const JointCoordinate<Scalar> &joint_pos) const
         {
             return joint_pos;
         }
 
         template class Free<double>;
+        template class Free<casadi::SX>;
 
     }
 
@@ -35,7 +36,7 @@ namespace grbda
     {
 
         template <typename Scalar>
-        Free<Scalar>::Free(const Body<> &body) : Base<Scalar>(1, 7, 6), body_(body)
+        Free<Scalar>::Free(const Body<Scalar> &body) : Base<Scalar>(1, 7, 6), body_(body)
         {
             if (body.parent_index_ >= 0)
                 throw std::runtime_error("Free joint is only valid as the first joint in a tree and thus cannot have a parent body");
@@ -45,13 +46,13 @@ namespace grbda
 
             this->single_joints_.emplace_back(new Joints::Free<Scalar>());
 
-            this->spanning_tree_to_independent_coords_conversion_ = DMat<double>::Identity(6, 6);
+            this->spanning_tree_to_independent_coords_conversion_ = DMat<Scalar>::Identity(6, 6);
 
             this->loop_constraint_ = std::make_shared<LoopConstraint::Free<Scalar>>();
         }
 
         template <typename Scalar>
-        void Free<Scalar>::updateKinematics(const JointState<> &joint_state)
+        void Free<Scalar>::updateKinematics(const JointState<Scalar> &joint_state)
         {
             this->single_joints_[0]->updateKinematics(joint_state.position, joint_state.velocity);
             this->vJ_ = this->S_ * joint_state.velocity;
@@ -59,7 +60,7 @@ namespace grbda
 
         template <typename Scalar>
         void Free<Scalar>::computeSpatialTransformFromParentToCurrentCluster(
-            spatial::GeneralizedTransform<> &Xup) const
+            spatial::GeneralizedTransform<Scalar> &Xup) const
         {
 #ifdef DEBUG_MODE
             if (Xup.getNumOutputBodies() != 1 || Xup.getNumParentBodies() != 1)
@@ -69,39 +70,42 @@ namespace grbda
         }
 
         template <typename Scalar>
-        JointCoordinate<> Free<Scalar>::integratePosition(JointState<> joint_state, double dt) const
+        JointCoordinate<Scalar> Free<Scalar>::integratePosition(JointState<Scalar> joint_state,
+                                                                Scalar dt) const
         {
-            const Quat<double> quat = joint_state.position.tail<4>();
-            const DVec<double> &vel = joint_state.velocity;
+            const Quat<Scalar> quat = joint_state.position.template tail<4>();
+            const Vec3<Scalar> lin_vel = joint_state.velocity.template tail<3>();
+            const Vec3<Scalar> ang_vel = joint_state.velocity.template head<3>();
 
-            joint_state.position.head<3>() += vel.tail<3>() * dt;
-            joint_state.position.tail<4>() = ori::integrateQuat(quat, vel.head<3>(), dt);
+            joint_state.position.template head<3>() += lin_vel * dt;
+            joint_state.position.template tail<4>() = ori::integrateQuat(quat, ang_vel, dt);
 
             return joint_state.position;
         }
 
         template <typename Scalar>
-        JointState<> Free<Scalar>::randomJointState() const
+        JointState<Scalar> Free<Scalar>::randomJointState() const
         {
-            JointState<> joint_state(false, false);
-            joint_state.position = DVec<double>::Zero(7);
-            joint_state.position.segment<3>(0) = Vec3<double>::Random(3);
-            joint_state.position.segment<4>(3) = ori::rpyToQuat(Vec3<double>::Random(3));
-            joint_state.velocity = DVec<double>::Random(6);
+            JointState<Scalar> joint_state(false, false);
+            joint_state.position = DVec<Scalar>::Zero(7);
+            joint_state.position.template segment<3>(0) = Vec3<Scalar>::Random(3);
+            joint_state.position.template segment<4>(3) = ori::rpyToQuat(Vec3<Scalar>::Random(3));
+            joint_state.velocity = DVec<Scalar>::Random(6);
             return joint_state;
         }
 
         template <typename Scalar>
-        std::vector<std::tuple<Body<>, JointPtr<double>, DMat<double>>>
+        std::vector<std::tuple<Body<Scalar>, JointPtr<Scalar>, DMat<Scalar>>>
         Free<Scalar>::bodiesJointsAndReflectedInertias() const
         {
-            std::vector<std::tuple<Body<>, JointPtr<double>, DMat<double>>> bodies_joints_and_ref_inertias;
+            std::vector<std::tuple<Body<Scalar>, JointPtr<Scalar>, DMat<Scalar>>> bodies_joints_and_ref_inertias;
             bodies_joints_and_ref_inertias.push_back(std::make_tuple(body_, this->single_joints_[0],
-                                                                     Mat6<double>::Zero()));
+                                                                     Mat6<Scalar>::Zero()));
             return bodies_joints_and_ref_inertias;
         }
 
         template class Free<double>;
+        template class Free<casadi::SX>;
 
     }
 

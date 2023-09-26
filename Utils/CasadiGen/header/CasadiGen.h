@@ -45,9 +45,10 @@
 namespace grbda
 {
 
+  template <typename Scalar>
   struct CasadiHelperFunctions
   {
-    typedef int (*casadi_fn)(const double **, double **, long long int *, double *, int);
+    typedef int (*casadi_fn)(const Scalar **, Scalar **, long long int *, Scalar *, int);
     typedef const long long int *(*sparsity_out_fn)(long long int);
     typedef int (*work_fn)(long long int *, long long int *, long long int *, long long int *);
 
@@ -107,7 +108,7 @@ namespace grbda
   template <typename T>
   void casadi_interface(
       std::vector<DVec<typename T::Scalar>> &arg, std::vector<Eigen::MatrixBase<T> *> &res,
-      const CasadiHelperFunctions& helpers)
+      const CasadiHelperFunctions<typename T::Scalar>& helpers)
   {
     casadi_interface(arg, res, helpers.main_, helpers.sparsity_, helpers.work_);
   }
@@ -126,7 +127,7 @@ namespace grbda
   template <typename T>
   void casadi_interface(
       std::vector<DVec<typename T::Scalar>> &arg, Eigen::MatrixBase<T> &res,
-      const CasadiHelperFunctions& helpers)
+      const CasadiHelperFunctions<typename T::Scalar>& helpers)
   {
     casadi_interface(arg, res, helpers.main_, helpers.sparsity_, helpers.work_);
   }

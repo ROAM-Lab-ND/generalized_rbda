@@ -15,16 +15,16 @@ namespace grbda
               num_velocities_(num_velocities)
         {
             const size_t motion_subspace_dimension = num_bodies * 6;
-            S_ = DMat<double>::Zero(motion_subspace_dimension, num_velocities_);
-            Psi_ = DMat<double>::Zero(motion_subspace_dimension, num_velocities_);
-            vJ_ = DVec<double>::Zero(motion_subspace_dimension);
-            cJ_ = DVec<double>::Zero(motion_subspace_dimension);
+            S_ = DMat<Scalar>::Zero(motion_subspace_dimension, num_velocities_);
+            Psi_ = DMat<Scalar>::Zero(motion_subspace_dimension, num_velocities_);
+            vJ_ = DVec<Scalar>::Zero(motion_subspace_dimension);
+            cJ_ = DVec<Scalar>::Zero(motion_subspace_dimension);
         }
 
         template <typename Scalar>
-        JointState<> Base<Scalar>::toSpanningTreeState(const JointState<> &joint_state)
+        JointState<Scalar> Base<Scalar>::toSpanningTreeState(const JointState<Scalar> &joint_state)
         {
-            JointState<> spanning_joint_state(true, true);
+            JointState<Scalar> spanning_joint_state(true, true);
 
             if (!joint_state.position.isSpanning())
             {
@@ -50,7 +50,8 @@ namespace grbda
         }
 
         template <typename Scalar>
-        JointCoordinate<> Base<Scalar>::integratePosition(JointState<> joint_state, double dt) const
+        JointCoordinate<Scalar> Base<Scalar>::integratePosition(JointState<Scalar> joint_state,
+                                                                Scalar dt) const
         {
             if (joint_state.position.isSpanning() && joint_state.velocity.isSpanning())
             {
@@ -73,11 +74,11 @@ namespace grbda
         }
 
         template <typename Scalar>
-        JointState<> Base<Scalar>::randomJointState() const
+        JointState<Scalar> Base<Scalar>::randomJointState() const
         {
-            JointState<> joint_state(false, false);
-            joint_state.position = DVec<double>::Random(numPositions());
-            joint_state.velocity = DVec<double>::Random(numVelocities());
+            JointState<Scalar> joint_state(false, false);
+            joint_state.position = DVec<Scalar>::Random(numPositions());
+            joint_state.velocity = DVec<Scalar>::Random(numVelocities());
             return joint_state;
         }
 

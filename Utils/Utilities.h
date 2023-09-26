@@ -10,26 +10,6 @@
 
 namespace grbda
 {
-
-  template <typename T>
-  bool isPositiveDefinite(const Eigen::MatrixBase<T> &A)
-  {
-    // Symmetry check
-    if (!A.isApprox(A.transpose()))
-    {
-      return false;
-    }
-
-    // Positive eignvalue check
-    Eigen::LLT<T> llt_of_A(A);
-    if (llt_of_A.info() == Eigen::NumericalIssue)
-    {
-      return false;
-    }
-
-    return true;
-  }
-
   /*!
    * Finds the greatest common element between two vectors and throws an exception if none is found.
    * NOTE: This function assumes that the vectors are sorted in descending order.
@@ -71,7 +51,7 @@ namespace grbda
     DMat<T> mat_out = DMat<T>::Zero(mat.rows() + appendage.rows(),
                                     mat.cols() + appendage.cols());
     mat_out << mat, DMat<T>::Zero(mat.rows(), appendage.cols()),
-        DMat<double>::Zero(appendage.rows(), mat.cols()), appendage;
+        DMat<T>::Zero(appendage.rows(), mat.cols()), appendage;
     return mat_out;
   }
 

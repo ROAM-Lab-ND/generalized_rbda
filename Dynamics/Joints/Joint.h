@@ -19,22 +19,22 @@ namespace grbda
 
             virtual std::shared_ptr<Base<Scalar>> clone() const = 0;
 
-            virtual void updateKinematics(const DVec<double> &q, const DVec<double> &qd) = 0;
+            virtual void updateKinematics(const DVec<Scalar> &q, const DVec<Scalar> &qd) = 0;
 
             int numPositions() const { return num_positions_; }
             int numVelocities() const { return num_velocities_; }
 
-            const DMat<double> &S() const { return S_; }
-            const DMat<double> &Psi() const { return Psi_; }
-            const spatial::Transform<> &XJ() const { return XJ_; }
+            const DMat<Scalar> &S() const { return S_; }
+            const DMat<Scalar> &Psi() const { return Psi_; }
+            const spatial::Transform<Scalar> &XJ() const { return XJ_; }
 
         protected:
             const int num_positions_;
             const int num_velocities_;
 
-            spatial::Transform<> XJ_;
-            DMat<double> S_;
-            DMat<double> Psi_;
+            spatial::Transform<Scalar> XJ_;
+            DMat<Scalar> S_;
+            DMat<Scalar> Psi_;
         };
 
         template <typename Scalar = double>
@@ -43,8 +43,8 @@ namespace grbda
         public:
             Free() : Base<Scalar>(7, 6)
             {
-                this->S_ = D6Mat<double>::Identity(6, 6);
-                this->Psi_ = D6Mat<double>::Identity(6, 6);
+                this->S_ = D6Mat<Scalar>::Identity(6, 6);
+                this->Psi_ = D6Mat<Scalar>::Identity(6, 6);
             }
             ~Free() {}
 
@@ -53,10 +53,11 @@ namespace grbda
                 return std::make_shared<Free<Scalar>>(*this);
             }
 
-            void updateKinematics(const DVec<double> &q, const DVec<double> &qd) override
+            void updateKinematics(const DVec<Scalar> &q, const DVec<Scalar> &qd) override
             {
-                this->XJ_ = spatial::Transform<>(ori::quaternionToRotationMatrix(q.tail<4>()),
-                                                  q.head<3>());
+                const Mat3<Scalar> R = ori::quaternionToRotationMatrix(q.template head<4>());
+                const Vec3<Scalar> q_pos = q.template tail<3>();
+                this->XJ_ = spatial::Transform<Scalar>(R, q_pos);
             }
         };
 
@@ -68,11 +69,11 @@ namespace grbda
             {
                 spatial::JointType Rev = spatial::JointType::Revolute;
 
-                this->S_ = D6Mat<double>::Zero(6, 1);
-                this->S_.template leftCols<1>() = spatial::jointMotionSubspace<double>(Rev, axis);
+                this->S_ = D6Mat<Scalar>::Zero(6, 1);
+                this->S_.template leftCols<1>() = spatial::jointMotionSubspace<Scalar>(Rev, axis);
 
-                this->Psi_ = D6Mat<double>::Zero(6, 1);
-                this->Psi_.template leftCols<1>() = spatial::jointMotionSubspace<double>(Rev, axis);
+                this->Psi_ = D6Mat<Scalar>::Zero(6, 1);
+                this->Psi_.template leftCols<1>() = spatial::jointMotionSubspace<Scalar>(Rev, axis);
             }
             ~Revolute() {}
 
@@ -81,9 +82,9 @@ namespace grbda
                 return std::make_shared<Revolute<Scalar>>(*this);
             }
 
-            void updateKinematics(const DVec<double> &q, const DVec<double> &qd) override
+            void updateKinematics(const DVec<Scalar> &q, const DVec<Scalar> &qd) override
             {
-                this->XJ_ = spatial::spatialRotation<double>(axis_, q[0]);
+                this->XJ_ = spatial::spatialRotation<Scalar>(axis_, q[0]);
             }
 
         private:

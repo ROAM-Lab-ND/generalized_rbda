@@ -8,7 +8,7 @@ namespace grbda
     {
 
         template <typename Scalar>
-        Generic<Scalar>::Generic(const std::vector<Body<>> &bodies,
+        Generic<Scalar>::Generic(const std::vector<Body<Scalar>> &bodies,
                                  const std::vector<JointPtr<Scalar>> &joints,
                                  std::shared_ptr<LoopConstraint::Base<Scalar>> loop_constraint)
             : Base<Scalar>((int)bodies.size(),
@@ -23,20 +23,20 @@ namespace grbda
 
             extractConnectivity();
 
-            S_spanning_ = DMat<double>::Zero(0, 0);
+            S_spanning_ = DMat<Scalar>::Zero(0, 0);
             for (auto &joint : joints)
                 S_spanning_ = appendEigenMatrix(S_spanning_, joint->S());
 
-            X_intra_ = DMat<double>::Identity(6 * this->num_bodies_, 6 * this->num_bodies_);
-            X_intra_ring_ = DMat<double>::Zero(6 * this->num_bodies_, 6 * this->num_bodies_);
+            X_intra_ = DMat<Scalar>::Identity(6 * this->num_bodies_, 6 * this->num_bodies_);
+            X_intra_ring_ = DMat<Scalar>::Zero(6 * this->num_bodies_, 6 * this->num_bodies_);
         }
 
         template <typename Scalar>
-        void Generic<Scalar>::updateKinematics(const JointState<> &joint_state)
+        void Generic<Scalar>::updateKinematics(const JointState<Scalar> &joint_state)
         {
-            const JointState<> spanning_joint_state = this->toSpanningTreeState(joint_state);
-            const DVec<double> &q = spanning_joint_state.position;
-            const DVec<double> &qd = spanning_joint_state.velocity;
+            const JointState<Scalar> spanning_joint_state = this->toSpanningTreeState(joint_state);
+            const DVec<Scalar> &q = spanning_joint_state.position;
+            const DVec<Scalar> &qd = spanning_joint_state.velocity;
 
             int pos_idx = 0;
             int vel_idx = 0;
@@ -58,9 +58,9 @@ namespace grbda
                         const auto &body_k = bodies_[k];
                         const auto joint_k = this->single_joints_[k];
 
-                        const Mat6<double> Xup_prev = X_intra_.block<6, 6>(6 * i, 6 * k);
-                        const Mat6<double> Xint = (joint_k->XJ() * body_k.Xtree_).toMatrix();
-                        X_intra_.block<6, 6>(6 * i, 6 * j) = Xup_prev * Xint;
+                        const Mat6<Scalar> Xup_prev = X_intra_.template block<6, 6>(6 * i, 6 * k);
+                        const Mat6<Scalar> Xint = (joint_k->XJ() * body_k.Xtree_).toMatrix();
+                        X_intra_.template block<6, 6>(6 * i, 6 * j) = Xup_prev * Xint;
 
                         k = j;
                     }
@@ -70,24 +70,24 @@ namespace grbda
                 vel_idx += num_vel;
             }
 
-            const DMat<double> S_implicit = X_intra_ * S_spanning_;
+            const DMat<Scalar> S_implicit = X_intra_ * S_spanning_;
             this->S_ = S_implicit * this->loop_constraint_->G();
             this->vJ_ = S_implicit * qd;
 
             for (int i = 0; i < this->num_bodies_; i++)
             {
-                SVec<double> v_relative = SVec<double>::Zero();
+                SVec<Scalar> v_relative = SVec<Scalar>::Zero();
                 for (int j = i - 1; j >= 0; j--)
                 {
                     if (connectivity_(i, j))
                     {
-                        const Mat6<double> Xup = X_intra_.block<6, 6>(6 * i, 6 * j);
+                        const Mat6<Scalar> Xup = X_intra_.template block<6, 6>(6 * i, 6 * j);
 
-                        const SVec<double> v_parent = Xup * this->vJ_.template segment<6>(6 * j);
-                        const SVec<double> v_child = this->vJ_.template segment<6>(6 * i);
+                        const SVec<Scalar> v_parent = Xup * this->vJ_.template segment<6>(6 * j);
+                        const SVec<Scalar> v_child = this->vJ_.template segment<6>(6 * i);
                         v_relative = v_child - v_parent;
 
-                        X_intra_ring_.block<6, 6>(6 * i, 6 * j) =
+                        X_intra_ring_.template block<6, 6>(6 * i, 6 * j) =
                             -spatial::motionCrossMatrix(v_relative) * Xup;
                     }
                 }
@@ -99,7 +99,7 @@ namespace grbda
 
         template <typename Scalar>
         void Generic<Scalar>::computeSpatialTransformFromParentToCurrentCluster(
-            spatial::GeneralizedTransform<> &Xup) const
+            spatial::GeneralizedTransform<Scalar> &Xup) const
         {
             for (int i = 0; i < this->num_bodies_; i++)
             {
@@ -124,7 +124,7 @@ namespace grbda
                 int j = i;
                 while (bodyInCurrentCluster(bodies_[j].parent_index_))
                 {
-                    const Body<> &parent_body = getBody(bodies_[j].parent_index_);
+                    const Body<Scalar> &parent_body = getBody(bodies_[j].parent_index_);
                     j = parent_body.sub_index_within_cluster_;
                     connectivity_(i, j) = true;
                 }
@@ -141,7 +141,7 @@ namespace grbda
         }
 
         template <typename Scalar>
-        const Body<> &Generic<Scalar>::getBody(const int body_index) const
+        const Body<Scalar> &Generic<Scalar>::getBody(const int body_index) const
         {
             for (const auto &body : bodies_)
                 if (body.index_ == body_index)
@@ -150,6 +150,7 @@ namespace grbda
         }
 
         template class Generic<double>;
+        template class Generic<casadi::SX>;
     }
 
 } // namespace grbda

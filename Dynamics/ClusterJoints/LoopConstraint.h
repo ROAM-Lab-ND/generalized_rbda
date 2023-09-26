@@ -23,79 +23,79 @@ namespace grbda
             int numIndependentVel() const { return G_.cols(); }
             int numConstraints() const { return K_.rows(); }
 
-            virtual void updateJacobians(const JointCoordinate<> &joint_pos) = 0;
-            virtual void updateBiases(const JointState<> &joint_state) = 0;
+            virtual void updateJacobians(const JointCoordinate<Scalar> &joint_pos) = 0;
+            virtual void updateBiases(const JointState<Scalar> &joint_state) = 0;
 
-            virtual DVec<double> gamma(const JointCoordinate<> &joint_pos) const = 0;
-            const DMat<double> &G() const { return G_; }
-            const DVec<double> &g() const { return g_; }
+            virtual DVec<Scalar> gamma(const JointCoordinate<Scalar> &joint_pos) const = 0;
+            const DMat<Scalar> &G() const { return G_; }
+            const DVec<Scalar> &g() const { return g_; }
 
-            const DMat<double> &K() const { return K_; }
-            const DVec<double> &k() const { return k_; }
+            const DMat<Scalar> &K() const { return K_; }
+            const DVec<Scalar> &k() const { return k_; }
 
         protected:
-            DMat<double> G_;
-            DVec<double> g_;
+            DMat<Scalar> G_;
+            DVec<Scalar> g_;
 
-            DMat<double> K_;
-            DVec<double> k_;
+            DMat<Scalar> K_;
+            DVec<Scalar> k_;
         };
 
         template <typename Scalar = double>
         struct Static : Base<Scalar>
         {
-            Static(DMat<double> G, DMat<double> K);
+            Static(DMat<Scalar> G, DMat<Scalar> K);
 
             std::shared_ptr<Base<Scalar>> clone() const override
             {
                 return std::make_shared<Static<Scalar>>(*this);
             }
 
-            void updateJacobians(const JointCoordinate<> &joint_pos) override {}
-            void updateBiases(const JointState<> &joint_state) override {}
+            void updateJacobians(const JointCoordinate<Scalar> &joint_pos) override {}
+            void updateBiases(const JointState<Scalar> &joint_state) override {}
 
-            DVec<double> gamma(const JointCoordinate<> &joint_pos) const override;
+            DVec<Scalar> gamma(const JointCoordinate<Scalar> &joint_pos) const override;
         };
 
         template <typename Scalar = double>
         struct Collection : std::vector<std::shared_ptr<Base<Scalar>>>
         {
-            DVec<double> gamma(const DVec<double> y) const;
+            DVec<Scalar> gamma(const DVec<Scalar> y) const;
 
-            const DMat<double> &G() const { return G_; }
-            const DVec<double> &g() const { return g_; }
+            const DMat<Scalar> &G() const { return G_; }
+            const DVec<Scalar> &g() const { return g_; }
 
-            const DMat<double> &K() const { return K_; }
-            const DVec<double> &k() const { return k_; }
+            const DMat<Scalar> &K() const { return K_; }
+            const DVec<Scalar> &k() const { return k_; }
 
-            const DMat<double> &G_transpose() const;
-            const DMat<double> &G_pinv() const;
-            const DMat<double> &G_tranpose_pinv() const;
-            const DMat<double> &K_transpose() const;
+            const DMat<Scalar> &G_transpose() const;
+            const DMat<Scalar> &G_pinv() const;
+            const DMat<Scalar> &G_tranpose_pinv() const;
+            const DMat<Scalar> &K_transpose() const;
 
             void push_back(const std::shared_ptr<Base<Scalar>> loop_constraint);
 
-            void update(DVec<double> q);
-            void update(DVec<double> q, DVec<double> qd);
+            void update(DVec<Scalar> q);
+            void update(DVec<Scalar> q, DVec<Scalar> qd);
 
         private:
             void resetCache();
 
             int span_pos_cnt_ = 0;
-            DMat<double> G_ = DMat<double>::Zero(0, 0);
-            DVec<double> g_ = DVec<double>::Zero(0);
+            DMat<Scalar> G_ = DMat<Scalar>::Zero(0, 0);
+            DVec<Scalar> g_ = DVec<Scalar>::Zero(0);
 
-            DMat<double> K_ = DMat<double>::Zero(0, 0);
-            DVec<double> k_ = DVec<double>::Zero(0);
+            DMat<Scalar> K_ = DMat<Scalar>::Zero(0, 0);
+            DVec<Scalar> k_ = DVec<Scalar>::Zero(0);
 
             mutable bool G_transpose_computed_ = false;
-            mutable DMat<double> G_transpose_;
+            mutable DMat<Scalar> G_transpose_;
             mutable bool G_pinv_computed_ = false;
-            mutable DMat<double> G_pinv_;
+            mutable DMat<Scalar> G_pinv_;
             mutable bool G_tranpose_pinv_computed_ = false;
-            mutable DMat<double> G_tranpose_pinv_;
+            mutable DMat<Scalar> G_tranpose_pinv_;
             mutable bool K_transpose_computed_ = false;
-            mutable DMat<double> K_transpose_;
+            mutable DMat<Scalar> K_transpose_;
         };
     }
 

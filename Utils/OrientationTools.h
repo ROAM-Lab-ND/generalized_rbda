@@ -158,18 +158,56 @@ namespace grbda
     /*!
      * Convert a coordinate transformation matrix to an orientation quaternion.
      */
-    template <typename T>
-    Quat<typename T::Scalar> rotationMatrixToQuaternion(
-        const Eigen::MatrixBase<T> &r1)
+    inline Quat<casadi::SX> rotationMatrixToQuaternion(const Mat3<casadi::SX> &r1)
     {
-      static_assert(T::ColsAtCompileTime == 3 && T::RowsAtCompileTime == 3,
-                    "Must have 3x3 matrix");
-      Quat<typename T::Scalar> q;
-      Mat3<typename T::Scalar> r = r1.transpose();
-      typename T::Scalar tr = r.trace();
+      Quat<casadi::SX> q;
+      Mat3<casadi::SX> r = r1.transpose();
+      casadi::SX tr = r.trace();
+
+      casadi::SX cond1 = tr > 0.;
+      casadi::SX cond2 = (r(0, 0) > r(1, 1)) && (r(0, 0) > r(2, 2));
+      casadi::SX cond3 = r(1, 1) > r(2, 2);
+
+      casadi::SX S = casadi::SX::if_else(cond1, sqrt(tr + 1.0) * 2.0,
+                     casadi::SX::if_else(cond2, sqrt(1.0 + r(0, 0) - r(1, 1) - r(2, 2)) * 2.0,
+                     casadi::SX::if_else(cond3, sqrt(1.0 + r(1, 1) - r(0, 0) - r(2, 2)) * 2.0,
+                                                sqrt(1.0 + r(2, 2) - r(0, 0) - r(1, 1)) * 2.0)));
+
+      q(0) = casadi::SX::if_else(cond1, 0.25 * S,
+             casadi::SX::if_else(cond2, (r(2, 1) - r(1, 2)) / S,
+             casadi::SX::if_else(cond3, (r(0, 2) - r(2, 0)) / S,
+                                        (r(1, 0) - r(0, 1)) / S)));
+
+      q(1) = casadi::SX::if_else(cond1, (r(2, 1) - r(1, 2)) / S,
+             casadi::SX::if_else(cond2, 0.25 * S,
+             casadi::SX::if_else(cond3, (r(1, 0) + r(0, 1)) / S,
+                                        (r(0, 2) + r(2, 0)) / S)));
+
+      q(2) = casadi::SX::if_else(cond1, (r(0, 2) - r(2, 0)) / S,
+             casadi::SX::if_else(cond2, (r(1, 0) + r(0, 1)) / S,
+             casadi::SX::if_else(cond3, 0.25 * S,
+                                        (r(1, 2) + r(2, 1)) / S)));
+
+      q(3) = casadi::SX::if_else(cond1, (r(1, 0) - r(0, 1)) / S,
+             casadi::SX::if_else(cond2, (r(0, 2) + r(2, 0)) / S,
+             casadi::SX::if_else(cond3, (r(1, 2) + r(2, 1)) / S,
+                                        0.25 * S)));
+
+      return q;
+    }
+
+    /*!
+     * Convert a coordinate transformation matrix to an orientation quaternion.
+     */
+    inline Quat<double> rotationMatrixToQuaternion(const Mat3<double> &r1)
+    {
+      Quat<double> q;
+      Mat3<double> r = r1.transpose();
+      double tr = r.trace();
+
       if (tr > 0.0)
       {
-        typename T::Scalar S = sqrt(tr + 1.0) * 2.0;
+        double S = sqrt(tr + 1.0) * 2.0;
         q(0) = 0.25 * S;
         q(1) = (r(2, 1) - r(1, 2)) / S;
         q(2) = (r(0, 2) - r(2, 0)) / S;
@@ -177,7 +215,7 @@ namespace grbda
       }
       else if ((r(0, 0) > r(1, 1)) && (r(0, 0) > r(2, 2)))
       {
-        typename T::Scalar S = sqrt(1.0 + r(0, 0) - r(1, 1) - r(2, 2)) * 2.0;
+        double S = sqrt(1.0 + r(0, 0) - r(1, 1) - r(2, 2)) * 2.0;
         q(0) = (r(2, 1) - r(1, 2)) / S;
         q(1) = 0.25 * S;
         q(2) = (r(0, 1) + r(1, 0)) / S;
@@ -185,7 +223,7 @@ namespace grbda
       }
       else if (r(1, 1) > r(2, 2))
       {
-        typename T::Scalar S = sqrt(1.0 + r(1, 1) - r(0, 0) - r(2, 2)) * 2.0;
+        double S = sqrt(1.0 + r(1, 1) - r(0, 0) - r(2, 2)) * 2.0;
         q(0) = (r(0, 2) - r(2, 0)) / S;
         q(1) = (r(0, 1) + r(1, 0)) / S;
         q(2) = 0.25 * S;
@@ -193,7 +231,7 @@ namespace grbda
       }
       else
       {
-        typename T::Scalar S = sqrt(1.0 + r(2, 2) - r(0, 0) - r(1, 1)) * 2.0;
+        double S = sqrt(1.0 + r(2, 2) - r(0, 0) - r(1, 1)) * 2.0;
         q(0) = (r(1, 0) - r(0, 1)) / S;
         q(1) = (r(0, 2) + r(2, 0)) / S;
         q(2) = (r(1, 2) + r(2, 1)) / S;
@@ -342,31 +380,55 @@ namespace grbda
      * @param dt The timestep
      * @return
      */
-    template <typename T, typename T2, typename T3>
-    Quat<typename T::Scalar> integrateQuat(const Eigen::MatrixBase<T> &quat,
-                                           const Eigen::MatrixBase<T2> &omega,
-                                           T3 dt)
+    inline Quat<casadi::SX> integrateQuat(const Quat<casadi::SX> &quat,
+                                          const Vec3<casadi::SX> &omega,
+                                          casadi::SX dt)
     {
-      static_assert(T::ColsAtCompileTime == 1 && T::RowsAtCompileTime == 4,
-                    "Must have 4x1 quat");
-      static_assert(T2::ColsAtCompileTime == 1 && T2::RowsAtCompileTime == 3,
-                    "Must have 3x1 omega");
-      Vec3<typename T::Scalar> axis;
-      typename T::Scalar ang = omega.norm();
+      casadi::SX ang = omega.norm();
+      casadi::SX pos_ang = ang > 0.;
+
+      Vec3<casadi::SX> axis;
+      axis[0] = casadi::SX::if_else(pos_ang, omega[0] / ang, 1.);
+      axis[1] = casadi::SX::if_else(pos_ang, omega[1] / ang, 0.);
+      axis[2] = casadi::SX::if_else(pos_ang, omega[2] / ang, 0.);
+
+      ang *= dt;
+
+      Vec3<casadi::SX> ee = sin(ang / 2) * axis;
+      Quat<casadi::SX> quatD(cos(ang / 2), ee[0], ee[1], ee[2]);
+
+      Quat<casadi::SX> quatNew = quatProduct(quatD, quat);
+      quatNew = quatNew / quatNew.norm();
+      return quatNew;
+    }
+
+    /*!
+     * Compute new quaternion given:
+     * @param quat The old quaternion
+     * @param omega The angular velocity (IN INERTIAL COORDINATES!)
+     * @param dt The timestep
+     * @return
+     */
+    inline Quat<double> integrateQuat(const Quat<double> &quat,
+                                      const Vec3<double> &omega,
+                                      double dt)
+    {
+      Vec3<double> axis;
+      double ang = omega.norm();
       if (ang > 0)
       {
         axis = omega / ang;
       }
       else
       {
-        axis = Vec3<typename T::Scalar>(1, 0, 0);
+        axis = Vec3<double>(1, 0, 0);
       }
 
       ang *= dt;
-      Vec3<typename T::Scalar> ee = sin(ang / 2) * axis;
-      Quat<typename T::Scalar> quatD(cos(ang / 2), ee[0], ee[1], ee[2]);
+      Vec3<double> ee = sin(ang / 2) * axis;
+      Quat<double> quatD(cos(ang / 2), ee[0], ee[1], ee[2]);
 
-      Quat<typename T::Scalar> quatNew = quatProduct(quatD, quat);
+      Quat<double> quatNew = quatProduct(quatD, quat);
       quatNew = quatNew / quatNew.norm();
       return quatNew;
     }

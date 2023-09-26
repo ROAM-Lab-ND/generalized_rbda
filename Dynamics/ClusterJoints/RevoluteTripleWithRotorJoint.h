@@ -23,12 +23,12 @@ namespace grbda
                 return ClusterJointTypes::RevoluteTripleWithRotor;
             }
 
-            void updateKinematics(const JointState<> &joint_state) override;
+            void updateKinematics(const JointState<Scalar> &joint_state) override;
 
             void computeSpatialTransformFromParentToCurrentCluster(
-                spatial::GeneralizedTransform<> &Xup) const override;
+                spatial::GeneralizedTransform<Scalar> &Xup) const override;
 
-            std::vector<std::tuple<Body<>, JointPtr<double>, DMat<double>>>
+            std::vector<std::tuple<Body<Scalar>, JointPtr<Scalar>, DMat<Scalar>>>
             bodiesJointsAndReflectedInertias() const override;
 
         private:
@@ -39,19 +39,19 @@ namespace grbda
             JointPtr<Scalar> rotor_2_joint_;
             JointPtr<Scalar> rotor_3_joint_;
 
-            spatial::Transform<> X21_;
-            spatial::Transform<> X32_;
-            spatial::Transform<> X31_;
+            spatial::Transform<Scalar> X21_;
+            spatial::Transform<Scalar> X32_;
+            spatial::Transform<Scalar> X31_;
 
-            const Body<> link_1_;
-            const Body<> link_2_;
-            const Body<> link_3_;
-            const Body<> rotor_1_;
-            const Body<> rotor_2_;
-            const Body<> rotor_3_;
+            const Body<Scalar> link_1_;
+            const Body<Scalar> link_2_;
+            const Body<Scalar> link_3_;
+            const Body<Scalar> rotor_1_;
+            const Body<Scalar> rotor_2_;
+            const Body<Scalar> rotor_3_;
 
-            DMat<double> X_intra_S_span_;
-            DMat<double> X_intra_S_span_ring_;
+            DMat<Scalar> X_intra_S_span_;
+            DMat<Scalar> X_intra_S_span_ring_;
         };
 
     }

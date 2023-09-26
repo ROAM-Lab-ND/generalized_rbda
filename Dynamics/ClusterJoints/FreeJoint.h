@@ -18,10 +18,10 @@ namespace grbda
 
             std::shared_ptr<Base<Scalar>> clone() const override;
 
-            void updateJacobians(const JointCoordinate<> &joint_pos) override {}
-            void updateBiases(const JointState<> &joint_state) override {}
+            void updateJacobians(const JointCoordinate<Scalar> &joint_pos) override {}
+            void updateBiases(const JointState<Scalar> &joint_state) override {}
 
-            DVec<double> gamma(const JointCoordinate<> &joint_pos) const override;
+            DVec<Scalar> gamma(const JointCoordinate<Scalar> &joint_pos) const override;
         };
 
     }
@@ -33,27 +33,28 @@ namespace grbda
         class Free : public Base<Scalar>
         {
         public:
-            Free(const Body<> &body);
+            Free(const Body<Scalar> &body);
             virtual ~Free() {}
 
             ClusterJointTypes type() const override { return ClusterJointTypes::Free; }
 
             int numUnactuatedVelocities() const override { return 6; }
 
-            void updateKinematics(const JointState<> &joint_state) override;
+            void updateKinematics(const JointState<Scalar> &joint_state) override;
 
             void computeSpatialTransformFromParentToCurrentCluster(
-                spatial::GeneralizedTransform<> &Xup) const override;
+                spatial::GeneralizedTransform<Scalar> &Xup) const override;
 
-            std::vector<std::tuple<Body<>, JointPtr<double>, DMat<double>>>
+            std::vector<std::tuple<Body<Scalar>, JointPtr<Scalar>, DMat<Scalar>>>
             bodiesJointsAndReflectedInertias() const override;
 
-            JointCoordinate<> integratePosition(JointState<> joint_state, double dt) const override;
+            JointCoordinate<Scalar> integratePosition(JointState<Scalar> joint_state,
+                                                      Scalar dt) const override;
 
-            JointState<> randomJointState() const override;
+            JointState<Scalar> randomJointState() const override;
 
         private:
-            const Body<> body_;
+            const Body<Scalar> body_;
         };
 
     }
