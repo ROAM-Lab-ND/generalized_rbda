@@ -55,8 +55,8 @@ namespace grbda
 
             void updateKinematics(const DVec<Scalar> &q, const DVec<Scalar> &qd) override
             {
-                const Mat3<Scalar> R = ori::quaternionToRotationMatrix(q.template head<4>());
-                const Vec3<Scalar> q_pos = q.template tail<3>();
+                const Mat3<Scalar> R = ori::quaternionToRotationMatrix(q.template tail<4>());
+                const Vec3<Scalar> q_pos = q.template head<3>();
                 this->XJ_ = spatial::Transform<Scalar>(R, q_pos);
             }
         };
