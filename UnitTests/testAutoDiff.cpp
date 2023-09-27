@@ -3,11 +3,14 @@
 #include "Utils/math.h"
 #include "Utils/SpatialInertia.h"
 #include "Utils/SpatialTransforms.h"
+#include "Dynamics/ClusterJoints/ClusterJointTypes.h"
 
 #include <eigen3/unsupported/Eigen/MatrixFunctions>
 #include <casadi/casadi.hpp>
 
 using namespace grbda;
+
+// TODO(@MatthewChignoli): Change the name of this file?
 
 GTEST_TEST(Derivatives, TestQuaternionIntegration)
 {
@@ -33,7 +36,7 @@ GTEST_TEST(Derivatives, TestQuaternionIntegration)
 
     casadi::Function csIntegrateQuat("integrateQuat",
                                      casadi::SXVector{cs_q_sym, cs_w_sym, dt_sym},
-                                     casadi::SXVector{cs_q_plus_sym}); 
+                                     casadi::SXVector{cs_q_plus_sym});
 
     // Compare CasADi function to original quaternion integration function
     const double dt = 0.001;
@@ -74,7 +77,7 @@ GTEST_TEST(Derivatives, TestQuaternionIntegration)
 
 GTEST_TEST(Derivatives, TestRotationMatrix)
 {
-    // This test validates that conversion from rotation matrix to quaternion for scalar types 
+    // This test validates that conversion from rotation matrix to quaternion for scalar types
     // double and casadi::SX agree with each other
 
     using SX = casadi::SX;
@@ -162,4 +165,66 @@ GTEST_TEST(Derivatives, SpatialMotionTransform)
     casadi::DM res_fd = (res_plus[0] - res_minus[0]) / (2. * eps);
 
     std::cout << "fun(q + eps) - fun(q - eps) / (2 * eps) = " << res_fd << std::endl;
+}
+
+GTEST_TEST(Derivatives, MotionSubspaceApparentDerivative)
+{
+    // TODO(@MatthewChignoli): Test description
+    // TODO(@MatthewChignoli): Add more randomness to this test
+    // TODO(@MatthewChignoli): Template the test on the types of cluster joints
+    // TODO(@MatthewChignoli): Add more comments to explain what is happening, Maybe even write some nicer wrappers for making/working with these symbolic functions
+
+    using SX = casadi::SX;
+
+    // Create symbolic function for computing the apparent derivative of the motion subspace
+    Mat3<SX> I3 = Mat3<SX>::Identity();
+    Vec3<SX> r = Vec3<SX>::Random();
+
+    Body<SX> link1{1, "link1", 0, spatial::Transform<SX>(I3, r), SpatialInertia<SX>(), 0, 0, 0};
+    Body<SX> rotor1{2, "rotor1", 0, spatial::Transform<SX>(I3, r), SpatialInertia<SX>(), 1, 0, 0};
+    Body<SX> rotor2{3, "rotor2", 0, spatial::Transform<SX>(I3, r), SpatialInertia<SX>(), 2, 0, 0};
+    Body<SX> link2{4, "link2", 1, spatial::Transform<SX>(I3, r), SpatialInertia<SX>(), 4, 0, 0};
+
+    ClusterJoints::ParallelBeltTransmissionModule<SX> module1{link1, rotor1, ori::CoordinateAxis::Z, ori::CoordinateAxis::Z, 1., 1.};
+    ClusterJoints::ParallelBeltTransmissionModule<SX> module2{link2, rotor2, ori::CoordinateAxis::Z, ori::CoordinateAxis::Z, 1., 1.};
+
+    ClusterJoints::RevolutePairWithRotor<SX> joint{module1, module2};
+
+    SX cs_q_sym = SX::sym("q", joint.numPositions(), 1);
+    DVec<SX> q_sym(joint.numPositions());
+    casadi::copy(cs_q_sym, q_sym);
+
+    SX cs_qd_sym = SX::sym("qd", joint.numVelocities(), 1);
+    DVec<SX> qd_sym(joint.numVelocities());
+    casadi::copy(cs_qd_sym, qd_sym);
+
+    JointState<SX> joint_state(JointCoordinate<SX>(q_sym, false),
+                               JointCoordinate<SX>(qd_sym, false));
+
+    joint.updateKinematics(joint_state);
+
+    DVec<SX> S_qd = joint.S() * qd_sym;
+    SX cs_S_qd = casadi::SX(casadi::Sparsity::dense(S_qd.rows(), 1));
+    casadi::copy(S_qd, cs_S_qd);
+    SX cs_Sring_qd = jacobian(cs_S_qd, cs_q_sym);
+
+    DVec<SX> cJ = joint.cJ();
+    SX cs_cJ = casadi::SX(casadi::Sparsity::dense(cJ.rows(), 1));
+    casadi::copy(cJ, cs_cJ);
+
+    casadi::Function csApparentDerivative("apparentDerivative",
+                                          casadi::SXVector{cs_q_sym, cs_qd_sym},
+                                          casadi::SXVector{cs_Sring_qd, cs_cJ});
+
+    // Validate that cJ is equal to the derivative of S * qd with respect to q
+    casadi::DMVector res = csApparentDerivative(casadi::DMVector{std::vector<double>{1., 1.},
+                                                                 std::vector<double>{1., 1.}});
+
+    DVec<double> Sring_qd_full(S_qd.rows());
+    casadi::copy(res[0], Sring_qd_full);
+
+    DVec<double> cJ_full(cJ.rows());
+    casadi::copy(res[1], cJ_full);
+
+    GTEST_ASSERT_LE((Sring_qd_full - cJ_full).norm(), 1e-12);
 }
