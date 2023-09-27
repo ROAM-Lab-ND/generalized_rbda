@@ -3,12 +3,12 @@
 namespace grbda
 {
 
-    ClusterTreeModel TeleopArm::buildClusterTreeModel() const
+    ClusterTreeModel<> TeleopArm::buildClusterTreeModel() const
     {
         using namespace ClusterJoints;
         using SpatialTransform = spatial::Transform<>;
 
-        ClusterTreeModel model{};
+        ClusterTreeModel<> model{};
 
         Mat3<double> I3 = Mat3<double>::Identity();
 

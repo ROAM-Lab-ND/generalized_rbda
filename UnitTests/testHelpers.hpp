@@ -5,11 +5,11 @@
 
 using namespace grbda;
 
-inline ClusterTreeModel extractGenericJointModel(const ClusterTreeModel &model)
+inline ClusterTreeModel<> extractGenericJointModel(const ClusterTreeModel<> &model)
 {
     using namespace ClusterJoints;
 
-    ClusterTreeModel generic_model{};
+    ClusterTreeModel<> generic_model{};
 
     for (const auto &cluster : model.clusters())
     {

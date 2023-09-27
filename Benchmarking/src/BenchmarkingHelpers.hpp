@@ -9,10 +9,10 @@ namespace grbda
     namespace BenchmarkHelpers
     {
 
-        using RigidBodyTreePtr = std::shared_ptr<RigidBodyTreeModel>;
-        using ReflectedInertiaTreePtr = std::shared_ptr<ReflectedInertiaTreeModel>;
+        using RigidBodyTreePtr = std::shared_ptr<RigidBodyTreeModel<>>;
+        using ReflectedInertiaTreePtr = std::shared_ptr<ReflectedInertiaTreeModel<>>;
 
-        inline bool setRandomStates(ClusterTreeModel &cluster_model,
+        inline bool setRandomStates(ClusterTreeModel<> &cluster_model,
                                     std::vector<RigidBodyTreePtr> rigid_body_models,
                                     std::vector<ReflectedInertiaTreePtr> reflected_inertia_models)
         {
@@ -73,7 +73,7 @@ namespace grbda
             return false;
         }
 
-        inline bool setRandomStates(ClusterTreeModel &cluster_model,
+        inline bool setRandomStates(ClusterTreeModel<> &cluster_model,
                                     RigidBodyTreePtr rigid_body_model,
                                     ReflectedInertiaTreePtr reflected_inertia_model)
         {

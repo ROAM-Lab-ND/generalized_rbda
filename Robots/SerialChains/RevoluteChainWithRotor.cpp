@@ -4,11 +4,11 @@ namespace grbda
 {
 
     template <size_t N>
-    ClusterTreeModel RevoluteChainWithRotor<N>::buildRandomClusterTreeModel() const
+    ClusterTreeModel<> RevoluteChainWithRotor<N>::buildRandomClusterTreeModel() const
     {
         using namespace ClusterJoints;
 
-        ClusterTreeModel model{};
+        ClusterTreeModel<> model{};
 
         std::string prev_link_name = "ground";
         for (size_t i(0); i < N; i++)
@@ -42,11 +42,11 @@ namespace grbda
     }
 
     template <size_t N>
-    ClusterTreeModel RevoluteChainWithRotor<N>::buildUniformClusterTreeModel() const
+    ClusterTreeModel<> RevoluteChainWithRotor<N>::buildUniformClusterTreeModel() const
     {
         using namespace ClusterJoints;
 
-        ClusterTreeModel model{};
+        ClusterTreeModel<> model{};
 
         Mat3<double> I3 = Mat3<double>::Identity();
         Vec3<double> z3 = Vec3<double>::Zero();
@@ -107,7 +107,7 @@ namespace grbda
     }
 
     template <size_t N>
-    void RevoluteChainWithRotor<N>::appendContactPoints(ClusterTreeModel &model, const int i,
+    void RevoluteChainWithRotor<N>::appendContactPoints(ClusterTreeModel<> &model, const int i,
                                                         const std::string link_name) const
     {
         const std::string cp_name = "cp-" + std::to_string(i);

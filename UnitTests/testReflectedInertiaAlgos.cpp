@@ -64,9 +64,9 @@ protected:
     }
 
     T robot = T(false);
-    ClusterTreeModel cluster_model;
-    ReflectedInertiaTreeModel reflected_inertia_model;
-    ReflectedInertiaTreeModel reflected_inertia_diag_model;
+    ClusterTreeModel<> cluster_model;
+    ReflectedInertiaTreeModel<>reflected_inertia_model;
+    ReflectedInertiaTreeModel<>reflected_inertia_diag_model;
 
     DVec<double> independent_joint_pos_;
     DVec<double> independent_joint_vel_;
@@ -272,8 +272,8 @@ TYPED_TEST(ReflectedInertiaDynamicsAlgosTest, LambdaInv)
             continue;
         }
 
-        std::vector<ReflectedInertiaTreeModel> models{this->reflected_inertia_model,
-                                                      this->reflected_inertia_diag_model};
+        std::vector<ReflectedInertiaTreeModel<>> models{this->reflected_inertia_model,
+                                                        this->reflected_inertia_diag_model};
 
         for (auto &model : models)
         {

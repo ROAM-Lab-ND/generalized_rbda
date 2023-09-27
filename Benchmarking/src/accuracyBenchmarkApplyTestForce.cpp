@@ -23,10 +23,10 @@ void runBenchmark(std::ofstream &file)
     for (int i = 0; i < num_robot_samples; i++)
     {
         T robot = T(true);
-        ClusterTreeModel cl_model = robot.buildClusterTreeModel();
+        ClusterTreeModel<> cl_model = robot.buildClusterTreeModel();
 
-        ReflectedInertiaTreePtr rf_model = std::make_shared<ReflectedInertiaTreeModel>(cl_model, RotorInertiaApproximation::BLOCK_DIAGONAL);
-        ReflectedInertiaTreePtr rf_diag_model = std::make_shared<ReflectedInertiaTreeModel>(cl_model, RotorInertiaApproximation::DIAGONAL);
+        ReflectedInertiaTreePtr rf_model = std::make_shared<ReflectedInertiaTreeModel<>>(cl_model, RotorInertiaApproximation::BLOCK_DIAGONAL);
+        ReflectedInertiaTreePtr rf_diag_model = std::make_shared<ReflectedInertiaTreeModel<>>(cl_model, RotorInertiaApproximation::DIAGONAL);
 
         std::vector<ReflectedInertiaTreePtr> ref_inertia_models{rf_model, rf_diag_model};
 

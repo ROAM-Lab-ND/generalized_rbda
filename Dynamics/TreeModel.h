@@ -11,6 +11,7 @@ namespace grbda
 
     using TreeNodePtr = std::shared_ptr<TreeNode<>>;
 
+    template <typename Scalar = double>
     class TreeModel
     {
     public:

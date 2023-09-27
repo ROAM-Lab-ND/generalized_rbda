@@ -22,10 +22,10 @@ namespace grbda
         size_t getNumDofs() const override { return N; }
 
     private:
-        ClusterTreeModel buildRandomClusterTreeModel() const override;
-        ClusterTreeModel buildUniformClusterTreeModel() const override;
+        ClusterTreeModel<> buildRandomClusterTreeModel() const override;
+        ClusterTreeModel<> buildUniformClusterTreeModel() const override;
 
-        void appendContactPoints(ClusterTreeModel &model, const int i,
+        void appendContactPoints(ClusterTreeModel<> &model, const int i,
                                  const std::string linkA_name,
                                  const std::string linkB_name,
                                  const std::string linkC_name) const;

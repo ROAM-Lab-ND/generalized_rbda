@@ -11,7 +11,7 @@ namespace grbda
     public:
         Tello() {}
 
-        ClusterTreeModel buildClusterTreeModel() const override;
+        ClusterTreeModel<> buildClusterTreeModel() const override;
 
     private:
         const double grav = -9.81;

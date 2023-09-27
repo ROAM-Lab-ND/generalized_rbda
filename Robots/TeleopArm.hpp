@@ -11,7 +11,7 @@ namespace grbda
     public:
         TeleopArm();
 
-        ClusterTreeModel buildClusterTreeModel() const override;
+        ClusterTreeModel<> buildClusterTreeModel() const override;
 
     private:
         // Base Cluster

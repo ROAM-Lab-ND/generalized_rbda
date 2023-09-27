@@ -3,20 +3,22 @@
 namespace grbda
 {
 
-    ReflectedInertiaTreeModel::ReflectedInertiaTreeModel(
-        const ClusterTreeModel &cluster_tree_model,
+    template <typename Scalar>
+    ReflectedInertiaTreeModel<Scalar>::ReflectedInertiaTreeModel(
+        const ClusterTreeModel<> &cluster_tree_model,
         RotorInertiaApproximation rotor_inertia_approximation)
-        : TreeModel(), rotor_inertia_approximation_(rotor_inertia_approximation)
+        : TreeModel<Scalar>(), rotor_inertia_approximation_(rotor_inertia_approximation)
     {
-        gravity_ = cluster_tree_model.getGravity();
+        this->gravity_ = cluster_tree_model.getGravity();
 
         extractRigidBodiesAndJointsFromClusterModel(cluster_tree_model);
         extractIndependentCoordinatesFromClusterModel(cluster_tree_model);
         extractContactPointsFromClusterModel(cluster_tree_model);
     }
 
-    void ReflectedInertiaTreeModel::extractRigidBodiesAndJointsFromClusterModel(
-        const ClusterTreeModel &cluster_tree_model)
+    template <typename Scalar>
+    void ReflectedInertiaTreeModel<Scalar>::extractRigidBodiesAndJointsFromClusterModel(
+        const ClusterTreeModel<> &cluster_tree_model)
     {
         for (const auto &cluster : cluster_tree_model.clusters())
         {
@@ -33,30 +35,31 @@ namespace grbda
                 const int parent_node_index = getIndexOfParentNodeForBody(link.parent_index_);
                 auto node = std::make_shared<ReflectedInertiaTreeNode<>>(
                     node_index, link, link_joint, parent_node_index,
-                    position_index_, velocity_index_, motion_subspace_index_);
+                    this->position_index_, this->velocity_index_, this->motion_subspace_index_);
                 reflected_inertia_nodes_.push_back(node);
-                nodes_.push_back(node);
+                this->nodes_.push_back(node);
 
                 cluster_reflected_inertia += reflected_inertia;
 
-                position_index_ += link_joint->numPositions();
-                velocity_index_ += link_joint->numVelocities();
-                motion_subspace_index_ += 6;
+                this->position_index_ += link_joint->numPositions();
+                this->velocity_index_ += link_joint->numVelocities();
+                this->motion_subspace_index_ += 6;
             }
             reflected_inertia_ = appendEigenMatrix(reflected_inertia_, cluster_reflected_inertia);
         }
 
-        H_ = DMat<double>::Zero(velocity_index_, velocity_index_);
-        C_ = DVec<double>::Zero(velocity_index_);
+        this->H_ = DMat<double>::Zero(this->velocity_index_, this->velocity_index_);
+        this->C_ = DVec<double>::Zero(this->velocity_index_);
 
         // Resize system matrices
         for (auto &node : reflected_inertia_nodes_)
             node->qdd_for_subtree_due_to_subtree_root_joint_qdd
-                .setZero(getNumDegreesOfFreedom(), node->num_velocities_);
+                .setZero(this->getNumDegreesOfFreedom(), node->num_velocities_);
     }
 
-    void ReflectedInertiaTreeModel::extractIndependentCoordinatesFromClusterModel(
-        const ClusterTreeModel &cluster_tree_model)
+    template <typename Scalar>
+    void ReflectedInertiaTreeModel<Scalar>::extractIndependentCoordinatesFromClusterModel(
+        const ClusterTreeModel<> &cluster_tree_model)
     {
         spanning_tree_to_independent_coords_conversion_ = DMat<double>::Zero(0, 0);
         for (const auto &cluster : cluster_tree_model.clusters())
@@ -79,20 +82,21 @@ namespace grbda
             DVec<int>::LinSpaced(num_bodies, 0, num_bodies - 1);
     }
 
-    void ReflectedInertiaTreeModel::extractContactPointsFromClusterModel(
-        const ClusterTreeModel &cluster_tree_model)
+    template <typename Scalar>
+    void ReflectedInertiaTreeModel<Scalar>::extractContactPointsFromClusterModel(
+        const ClusterTreeModel<> &cluster_tree_model)
     {
-        contact_name_to_contact_index_ = cluster_tree_model.contact_name_to_contact_index_;
+        this->contact_name_to_contact_index_ = cluster_tree_model.contact_name_to_contact_index_;
 
         int contact_point_index = 0;
         for (const auto &contact_point : cluster_tree_model.contactPoints())
         {
-            contact_points_.push_back(contact_point);
+            this->contact_points_.push_back(contact_point);
             if (contact_point.is_end_effector_)
             {
-                num_end_effectors_++;
+                this->num_end_effectors_++;
 
-                ContactPoint &end_effector = contact_points_.back();
+                ContactPoint &end_effector = this->contact_points_.back();
                 end_effector.supporting_nodes_.clear();
                 end_effector.ChiUp_.clear();
 
@@ -113,12 +117,13 @@ namespace grbda
                 }
 
                 // Get the nearest shared supporting node for every existing end effector
-                for (int k = 0; k < (int)contact_points_.size() - 1; k++)
+                for (int k = 0; k < (int)this->contact_points_.size() - 1; k++)
                 {
-                    if (!contact_points_[k].is_end_effector_)
+                    if (!this->contact_points_[k].is_end_effector_)
                         continue;
                     std::pair<int, int> cp_pair(k, contact_point_index);
-                    const int nearest_shared_support = getNearestSharedSupportingNode(cp_pair);
+                    const int nearest_shared_support =
+                        this->getNearestSharedSupportingNode(cp_pair);
                     reflected_inertia_nodes_[nearest_shared_support]->nearest_supported_ee_pairs_.push_back(cp_pair);
                 }
             }
@@ -126,8 +131,9 @@ namespace grbda
         }
     }
 
-    void ReflectedInertiaTreeModel::setIndependentStates(const DVec<double> &y,
-                                                                const DVec<double> &yd)
+    template <typename Scalar>
+    void ReflectedInertiaTreeModel<Scalar>::setIndependentStates(const DVec<double> &y,
+                                                                 const DVec<double> &yd)
     {
         for (auto &node : reflected_inertia_nodes_)
         {
@@ -135,43 +141,47 @@ namespace grbda
             node->joint_state_.velocity = yd.segment(node->velocity_index_, node->num_velocities_);
         }
 
-        setExternalForces();
+        this->setExternalForces();
     }
 
-    void ReflectedInertiaTreeModel::resetCache()
+    template <typename Scalar>
+    void ReflectedInertiaTreeModel<Scalar>::resetCache()
     {
-        TreeModel::resetCache();
+        TreeModel<Scalar>::resetCache();
         articulated_bodies_updated_ = false;
         force_propagators_updated_ = false;
         qdd_effects_updated_ = false;
     }
 
-    DMat<double> ReflectedInertiaTreeModel::getMassMatrix()
+    template <typename Scalar>
+    DMat<double> ReflectedInertiaTreeModel<Scalar>::getMassMatrix()
     {
-        compositeRigidBodyAlgorithm();
+        this->compositeRigidBodyAlgorithm();
 
         switch (rotor_inertia_approximation_)
         {
         case RotorInertiaApproximation::NONE:
-            return H_;
+            return this->H_;
         case RotorInertiaApproximation::DIAGONAL:
-            return H_ + DMat<double>(reflected_inertia_.diagonal().asDiagonal());
+            return this->H_ + DMat<double>(reflected_inertia_.diagonal().asDiagonal());
         case RotorInertiaApproximation::BLOCK_DIAGONAL:
-            return H_ + reflected_inertia_;
+            return this->H_ + reflected_inertia_;
         default:
             throw std::runtime_error("Invalid rotor inertia approximation");
         }
     }
 
-    DVec<double> ReflectedInertiaTreeModel::getBiasForceVector()
+    template <typename Scalar>
+    DVec<double> ReflectedInertiaTreeModel<Scalar>::getBiasForceVector()
     {
-        updateBiasForceVector();
-        return C_;
+        this->updateBiasForceVector();
+        return this->C_;
     }
 
     // NOTE: The following relationship is true for the rigid body tree model, but not the reflected
     // inertia model: body.index_ = nodes[body.index_].index_
-    const Body<> &ReflectedInertiaTreeModel::getBody(int spanning_tree_index) const
+    template <typename Scalar>
+    const Body<> &ReflectedInertiaTreeModel<Scalar>::getBody(int spanning_tree_index) const
     {
         for (const auto &link_node : reflected_inertia_nodes_)
             if (link_node->link_.index_ == spanning_tree_index)
@@ -179,7 +189,9 @@ namespace grbda
         throw std::runtime_error("That body does not exist in the link and rotor tree model");
     }
 
-    const TreeNodePtr ReflectedInertiaTreeModel::getNodeContainingBody(int spanning_tree_index)
+    template <typename Scalar>
+    const TreeNodePtr
+    ReflectedInertiaTreeModel<Scalar>::getNodeContainingBody(int spanning_tree_index)
     {
         for (const auto &link_node : reflected_inertia_nodes_)
             if (link_node->link_.index_ == spanning_tree_index)
@@ -187,7 +199,8 @@ namespace grbda
         throw std::runtime_error("That body does not exist in the link and rotor tree model");
     }
 
-    int ReflectedInertiaTreeModel::getIndexOfParentNodeForBody(const int spanning_tree_index)
+    template <typename Scalar>
+    int ReflectedInertiaTreeModel<Scalar>::getIndexOfParentNodeForBody(const int spanning_tree_index)
     {
         if (spanning_tree_index == -1)
             return -1;
@@ -195,12 +208,13 @@ namespace grbda
             return getNodeContainingBody(spanning_tree_index)->index_;
     }
 
+    template <typename Scalar>
     const D6Mat<double> &
-    ReflectedInertiaTreeModel::contactJacobianWorldFrame(const std::string &cp_name)
+    ReflectedInertiaTreeModel<Scalar>::contactJacobianWorldFrame(const std::string &cp_name)
     {
-        forwardKinematics();
+        this->forwardKinematics();
 
-        ContactPoint &cp = contact_points_[contact_name_to_contact_index_.at(cp_name)];
+        ContactPoint &cp = this->contact_points_[this->contact_name_to_contact_index_.at(cp_name)];
 
         const size_t &i = cp.body_index_;
         const auto node_i = getNodeContainingBody(i);
@@ -227,13 +241,14 @@ namespace grbda
         return cp.jacobian_;
     }
 
-    D6Mat<double> ReflectedInertiaTreeModel::contactJacobianBodyFrame(const std::string &cp_name)
+    template <typename Scalar>
+    D6Mat<double> ReflectedInertiaTreeModel<Scalar>::contactJacobianBodyFrame(const std::string &cp_name)
     {
-        forwardKinematics();
+        this->forwardKinematics();
 
-        D6Mat<double> J = D6Mat<double>::Zero(6, getNumDegreesOfFreedom());
+        D6Mat<double> J = D6Mat<double>::Zero(6, this->getNumDegreesOfFreedom());
 
-        ContactPoint &cp = contact_points_[contact_name_to_contact_index_.at(cp_name)];
+        ContactPoint &cp = this->contact_points_[this->contact_name_to_contact_index_.at(cp_name)];
         const size_t &i = cp.body_index_;
         const auto node_i = getNodeContainingBody(i);
         Mat6<double> Xout = spatial::createSXform(Mat3<double>::Identity(), cp.local_offset_);
@@ -257,7 +272,8 @@ namespace grbda
         return J;
     }
 
-    DVec<double> ReflectedInertiaTreeModel::forwardDynamics(const DVec<double> &tau)
+    template <typename Scalar>
+    DVec<double> ReflectedInertiaTreeModel<Scalar>::forwardDynamics(const DVec<double> &tau)
     {
         switch (rotor_inertia_approximation_)
         {
@@ -272,23 +288,25 @@ namespace grbda
         }
     }
 
-    DVec<double> ReflectedInertiaTreeModel::inverseDynamics(const DVec<double> &ydd)
+    template <typename Scalar>
+    DVec<double> ReflectedInertiaTreeModel<Scalar>::inverseDynamics(const DVec<double> &ydd)
     {
         switch (rotor_inertia_approximation_)
         {
         case RotorInertiaApproximation::NONE:
-            return recursiveNewtonEulerAlgorithm(ydd);
+            return this->recursiveNewtonEulerAlgorithm(ydd);
         case RotorInertiaApproximation::DIAGONAL:
-            return recursiveNewtonEulerAlgorithm(ydd) +
+            return this->recursiveNewtonEulerAlgorithm(ydd) +
                    reflected_inertia_.diagonal().asDiagonal() * ydd;
         case RotorInertiaApproximation::BLOCK_DIAGONAL:
-            return recursiveNewtonEulerAlgorithm(ydd) + reflected_inertia_ * ydd;
+            return this->recursiveNewtonEulerAlgorithm(ydd) + reflected_inertia_ * ydd;
         default:
             throw std::runtime_error("Invalid rotor inertia approximation");
         }
     }
 
-    DMat<double> ReflectedInertiaTreeModel::inverseOperationalSpaceInertiaMatrix()
+    template <typename Scalar>
+    DMat<double> ReflectedInertiaTreeModel<Scalar>::inverseOperationalSpaceInertiaMatrix()
     {
         switch (rotor_inertia_approximation_)
         {
@@ -303,22 +321,24 @@ namespace grbda
         }
     }
 
-    DVec<double> ReflectedInertiaTreeModel::forwardDynamicsHinv(const DVec<double> &tau)
+    template <typename Scalar>
+    DVec<double> ReflectedInertiaTreeModel<Scalar>::forwardDynamicsHinv(const DVec<double> &tau)
     {
-        compositeRigidBodyAlgorithm();
-        updateBiasForceVector();
-        DVec<double> qdd_ref_inertia = (H_ + reflected_inertia_).inverse() * (tau - C_);
+        this->compositeRigidBodyAlgorithm();
+        this->updateBiasForceVector();
+        DVec<double> qdd_ref_inertia = (this->H_ + reflected_inertia_).inverse() * (tau - this->C_);
         return qdd_ref_inertia;
     }
 
-    DVec<double> ReflectedInertiaTreeModel::forwardDynamicsABA(const DVec<double> &tau,
-                                                               bool use_reflected_inertia)
+    template <typename Scalar>
+    DVec<double> ReflectedInertiaTreeModel<Scalar>::forwardDynamicsABA(const DVec<double> &tau,
+                                                                       bool use_reflected_inertia)
     {
         // Forward dynamics via Articulated Body Algorithm
-        forwardKinematics();
+        this->forwardKinematics();
         updateArticulatedBodies(use_reflected_inertia);
 
-        DVec<double> qdd = DVec<double>::Zero(getNumDegreesOfFreedom());
+        DVec<double> qdd = DVec<double>::Zero(this->getNumDegreesOfFreedom());
 
         // Forward Pass - Articulated body bias force
         for (auto &link_node : reflected_inertia_nodes_)
@@ -327,7 +347,7 @@ namespace grbda
         }
 
         // Account for external forces in bias force
-        for (int link_node_index : indices_of_nodes_experiencing_external_forces_)
+        for (int link_node_index : this->indices_of_nodes_experiencing_external_forces_)
         {
             auto &link_node = reflected_inertia_nodes_[link_node_index];
             link_node->pA_ -= link_node->Xa_.transformExternalForceVector(link_node->f_ext_);
@@ -375,7 +395,7 @@ namespace grbda
             }
             else
             {
-                a_temp = link_node->Xup_.transformMotionVector(-gravity_) +
+                a_temp = link_node->Xup_.transformMotionVector(-this->gravity_) +
                          link_node->cJ() + link_node->avp_;
             }
             qdd.segment(vel_idx, num_vel) =
@@ -386,12 +406,13 @@ namespace grbda
         return qdd;
     }
 
-    void ReflectedInertiaTreeModel::updateArticulatedBodies(bool use_reflected_inertia)
+    template <typename Scalar>
+    void ReflectedInertiaTreeModel<Scalar>::updateArticulatedBodies(bool use_reflected_inertia)
     {
         if (articulated_bodies_updated_)
             return;
 
-        forwardKinematics();
+        this->forwardKinematics();
 
         // Forward pass
         for (auto &link_node : reflected_inertia_nodes_)
@@ -427,7 +448,8 @@ namespace grbda
         articulated_bodies_updated_ = true;
     }
 
-    double ReflectedInertiaTreeModel::applyTestForce(
+    template <typename Scalar>
+    double ReflectedInertiaTreeModel<Scalar>::applyTestForce(
         const std::string &contact_point_name, const Vec3<double> &force, DVec<double> &dstate_out)
     {
         switch (rotor_inertia_approximation_)
@@ -443,20 +465,21 @@ namespace grbda
         }
     }
 
-    double ReflectedInertiaTreeModel::applyTestForceEFPA(const Vec3<double> &force,
-                                                         const std::string &cp_name,
-                                                         DVec<double> &dstate_out,
-                                                         bool use_reflected_inertia)
+    template <typename Scalar>
+    double ReflectedInertiaTreeModel<Scalar>::applyTestForceEFPA(const Vec3<double> &force,
+                                                                 const std::string &cp_name,
+                                                                 DVec<double> &dstate_out,
+                                                                 bool use_reflected_inertia)
     {
-        const int contact_point_index = contact_name_to_contact_index_.at(cp_name);
-        const ContactPoint &contact_point = contact_points_[contact_point_index];
+        const int contact_point_index = this->contact_name_to_contact_index_.at(cp_name);
+        const ContactPoint &contact_point = this->contact_points_[contact_point_index];
 
-        forwardKinematics();
+        this->forwardKinematics();
         updateArticulatedBodies(use_reflected_inertia);
         updateForcePropagators(use_reflected_inertia);
         updateQddEffects(use_reflected_inertia);
 
-        dstate_out = DVec<double>::Zero(getNumDegreesOfFreedom());
+        dstate_out = DVec<double>::Zero(this->getNumDegreesOfFreedom());
 
         SVec<double> f = localCartesianForceAtPointToWorldPluckerForceOnCluster(force,
                                                                                 contact_point);
@@ -485,11 +508,12 @@ namespace grbda
         return lambda_inv;
     }
 
-    double ReflectedInertiaTreeModel::applyTestForceHinv(const Vec3<double> &force,
-                                                         const std::string &cp_name,
-                                                         DVec<double> &dstate_out)
+    template <typename Scalar>
+    double ReflectedInertiaTreeModel<Scalar>::applyTestForceHinv(const Vec3<double> &force,
+                                                                 const std::string &cp_name,
+                                                                 DVec<double> &dstate_out)
     {
-        const D3Mat<double> J = contactJacobianWorldFrame(cp_name).bottomRows<3>();
+        const D3Mat<double> J = contactJacobianWorldFrame(cp_name).template bottomRows<3>();
         const DMat<double> H = getMassMatrix();
         const DMat<double> H_inv = H.inverse();
         const DMat<double> inv_ops_inertia = J * H_inv * J.transpose();
@@ -497,7 +521,8 @@ namespace grbda
         return force.dot(inv_ops_inertia * force);
     }
 
-    void ReflectedInertiaTreeModel::updateForcePropagators(bool use_reflected_inertia)
+    template <typename Scalar>
+    void ReflectedInertiaTreeModel<Scalar>::updateForcePropagators(bool use_reflected_inertia)
     {
         if (force_propagators_updated_)
             return;
@@ -514,7 +539,8 @@ namespace grbda
         force_propagators_updated_ = true;
     }
 
-    void ReflectedInertiaTreeModel::updateQddEffects(bool use_reflected_inertia)
+    template <typename Scalar>
+    void ReflectedInertiaTreeModel<Scalar>::updateQddEffects(bool use_reflected_inertia)
     {
         if (qdd_effects_updated_)
             return;
@@ -555,7 +581,9 @@ namespace grbda
         qdd_effects_updated_ = true;
     }
 
-    SVec<double> ReflectedInertiaTreeModel::localCartesianForceAtPointToWorldPluckerForceOnCluster(
+    template <typename Scalar>
+    SVec<double>
+    ReflectedInertiaTreeModel<Scalar>::localCartesianForceAtPointToWorldPluckerForceOnCluster(
         const Vec3<double> &force, const ContactPoint &contact_point)
     {
         const auto node = getNodeContainingBody(contact_point.body_index_);
@@ -569,16 +597,18 @@ namespace grbda
         return X_cartesian_to_plucker.inverseTransformForceVector(spatial_force);
     }
 
-    DMat<double> ReflectedInertiaTreeModel::inverseOpSpaceInertiaEFPA(bool use_reflected_inertia)
+    template <typename Scalar>
+    DMat<double>
+    ReflectedInertiaTreeModel<Scalar>::inverseOpSpaceInertiaEFPA(bool use_reflected_inertia)
     {
         // Based on the EFPA from "https://www3.nd.edu/~pwensing/Papers/WensingFeatherstoneOrin12-ICRA.pdf"
 
-        forwardKinematics();
+        this->forwardKinematics();
         updateArticulatedBodies(use_reflected_inertia);
         updateForcePropagators(use_reflected_inertia);
 
         // Reset Force Propagators for the end-effectors
-        for (ContactPoint &cp : contact_points_)
+        for (ContactPoint &cp : this->contact_points_)
         {
             if (!cp.is_end_effector_)
                 continue;
@@ -599,17 +629,17 @@ namespace grbda
             {
                 for (const int &cp_index : node->supported_end_effectors_)
                 {
-                    ContactPoint &cp = contact_points_[cp_index];
+                    ContactPoint &cp = this->contact_points_[cp_index];
                     cp.ChiUp_[parent_index] = cp.ChiUp_[i] * node->ChiUp_;
                 }
             }
         }
 
         const int num_bodies = reflected_inertia_nodes_.size();
-        DMat<double> lambda_inv = DMat<double>::Zero(6 * num_end_effectors_,
-                                                     6 * num_end_effectors_);
+        DMat<double> lambda_inv = DMat<double>::Zero(6 * this->num_end_effectors_,
+                                                     6 * this->num_end_effectors_);
         DMat<double> lambda_inv_tmp = DMat<double>::Zero(6 * num_bodies,
-                                                         6 * num_end_effectors_);
+                                                         6 * this->num_end_effectors_);
 
         // Forward Pass
         DMat<double> lambda_inv_prev;
@@ -623,7 +653,7 @@ namespace grbda
 
             for (const int &cp_index : node->supported_end_effectors_)
             {
-                const ContactPoint &contact_point = contact_points_[cp_index];
+                const ContactPoint &contact_point = this->contact_points_[cp_index];
                 const int &k = contact_point.end_effector_index_; // "k" in Table 1 of the paper
 
                 const int ee_output_dim = 6;
@@ -648,8 +678,8 @@ namespace grbda
 
             for (const std::pair<int, int> &cp_pair : node->nearest_supported_ee_pairs_)
             {
-                const ContactPoint &cp1 = contact_points_[cp_pair.first];
-                const ContactPoint &cp2 = contact_points_[cp_pair.second];
+                const ContactPoint &cp1 = this->contact_points_[cp_pair.first];
+                const ContactPoint &cp2 = this->contact_points_[cp_pair.second];
 
                 const int &k1 = cp1.end_effector_index_; // "k1" in Table 1 of the paper
                 const int &k2 = cp2.end_effector_index_; // "k2" in Table 1 of the paper
@@ -667,9 +697,9 @@ namespace grbda
         }
 
         // And now do the diagonal blocks
-        for (int i = 0; i < (int)contact_points_.size(); i++)
+        for (int i = 0; i < (int)this->contact_points_.size(); i++)
         {
-            const ContactPoint &cp = contact_points_[i];
+            const ContactPoint &cp = this->contact_points_[i];
 
             if (!cp.is_end_effector_)
                 continue;
@@ -689,20 +719,23 @@ namespace grbda
         return lambda_inv;
     }
 
-    DMat<double> ReflectedInertiaTreeModel::inverseOpSpaceInertiaHinv()
+    template <typename Scalar>
+    DMat<double> ReflectedInertiaTreeModel<Scalar>::inverseOpSpaceInertiaHinv()
     {
         const DMat<double> H = getMassMatrix();
-        DMat<double> J_stacked = DMat<double>::Zero(6 * getNumEndEffectors(),
-                                                    getNumDegreesOfFreedom());
+        DMat<double> J_stacked = DMat<double>::Zero(6 * this->getNumEndEffectors(),
+                                                    this->getNumDegreesOfFreedom());
         int ee_cnt = 0;
-        for (int i = 0; i < (int)contact_points_.size(); i++)
+        for (int i = 0; i < (int)this->contact_points_.size(); i++)
         {
-            const ContactPoint &cp = contact_points_[i];
+            const ContactPoint &cp = this->contact_points_[i];
             if (!cp.is_end_effector_)
                 continue;
             J_stacked.middleRows<6>(6 * ee_cnt++) = contactJacobianBodyFrame(cp.name_);
         }
         return J_stacked * H.inverse() * J_stacked.transpose();
     }
+
+    template class ReflectedInertiaTreeModel<double>;
 
 } // namespace grbda

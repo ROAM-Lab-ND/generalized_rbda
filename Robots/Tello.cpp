@@ -3,11 +3,11 @@
 namespace grbda
 {
 
-    ClusterTreeModel Tello::buildClusterTreeModel() const
+    ClusterTreeModel<> Tello::buildClusterTreeModel() const
     {
         using namespace ClusterJoints;
 
-        ClusterTreeModel model{};
+        ClusterTreeModel<> model{};
 
         // Set gravity in z direction
         model.setGravity(Vec3<double>{0., 0., grav});

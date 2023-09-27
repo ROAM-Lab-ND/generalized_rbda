@@ -19,17 +19,19 @@ void runForwardDynamicsBenchmark(std::ofstream &file)
     double t_reflected_inertia = 0.;
 
     RobotType robot;
-    ClusterTreeModel cluster_model = robot.buildClusterTreeModel();
+
+    ClusterTreeModel<> cluster_model = robot.buildClusterTreeModel();
+
     RigidBodyTreePtr lg_custom_mult_model =
-        std::make_shared<RigidBodyTreeModel>(cluster_model, FwdDynMethod::LagrangeMultiplierCustom);
+        std::make_shared<RigidBodyTreeModel<>>(cluster_model, FwdDynMethod::LagrangeMultiplierCustom);
     RigidBodyTreePtr lg_eigen_mult_model =
-        std::make_shared<RigidBodyTreeModel>(cluster_model, FwdDynMethod::LagrangeMultiplierEigen);
+        std::make_shared<RigidBodyTreeModel<>>(cluster_model, FwdDynMethod::LagrangeMultiplierEigen);
     RigidBodyTreePtr projection_model =
-        std::make_shared<RigidBodyTreeModel>(cluster_model, FwdDynMethod::Projection);
+        std::make_shared<RigidBodyTreeModel<>>(cluster_model, FwdDynMethod::Projection);
+
     ReflectedInertiaTreePtr reflected_inertia_model =
-        std::make_shared<ReflectedInertiaTreeModel>(cluster_model,
-                                                    RotorInertiaApproximation::DIAGONAL);
-                                                    
+        std::make_shared<ReflectedInertiaTreeModel<>>(cluster_model, RotorInertiaApproximation::DIAGONAL);
+
     std::vector<RigidBodyTreePtr> rigid_body_models{lg_custom_mult_model,
                                                     lg_eigen_mult_model,
                                                     projection_model};
@@ -87,12 +89,11 @@ void runInverseDynamicsBenchmark(std::ofstream &file)
     double t_reflected_inertia = 0.;
 
     RobotType robot;
-    ClusterTreeModel cluster_model = robot.buildClusterTreeModel();
+    ClusterTreeModel<> cluster_model = robot.buildClusterTreeModel();
     RigidBodyTreePtr projection_model =
-        std::make_shared<RigidBodyTreeModel>(cluster_model, FwdDynMethod::Projection);
+        std::make_shared<RigidBodyTreeModel<>>(cluster_model, FwdDynMethod::Projection);
     ReflectedInertiaTreePtr reflected_inertia_model =
-        std::make_shared<ReflectedInertiaTreeModel>(cluster_model,
-                                                    RotorInertiaApproximation::DIAGONAL);
+        std::make_shared<ReflectedInertiaTreeModel<>>(cluster_model, RotorInertiaApproximation::DIAGONAL);
 
     std::vector<RigidBodyTreePtr> rigid_body_models{projection_model};
     std::vector<ReflectedInertiaTreePtr> ref_inertia_models{reflected_inertia_model};
@@ -139,12 +140,11 @@ void runInverseOperationalSpaceInertiaBenchmark(std::ofstream &file)
     double t_reflected_inertia = 0.;
 
     RobotType robot;
-    ClusterTreeModel cluster_model = robot.buildClusterTreeModel();
+    ClusterTreeModel<> cluster_model = robot.buildClusterTreeModel();
     RigidBodyTreePtr projection_model =
-        std::make_shared<RigidBodyTreeModel>(cluster_model, FwdDynMethod::Projection);
+        std::make_shared<RigidBodyTreeModel<>>(cluster_model, FwdDynMethod::Projection);
     ReflectedInertiaTreePtr reflected_inertia_model =
-        std::make_shared<ReflectedInertiaTreeModel>(cluster_model,
-                                                    RotorInertiaApproximation::DIAGONAL);
+        std::make_shared<ReflectedInertiaTreeModel<>>(cluster_model, RotorInertiaApproximation::DIAGONAL);
     std::vector<RigidBodyTreePtr> rigid_body_models{projection_model};
     std::vector<ReflectedInertiaTreePtr> ref_inertia_models{reflected_inertia_model};
 
@@ -188,12 +188,11 @@ void runApplyTestForceBenchmark(std::ofstream &file, const std::string &contact_
     double t_reflected_inertia = 0.;
 
     RobotType robot;
-    ClusterTreeModel cluster_model = robot.buildClusterTreeModel();
+    ClusterTreeModel<> cluster_model = robot.buildClusterTreeModel();
     RigidBodyTreePtr projection_model =
-        std::make_shared<RigidBodyTreeModel>(cluster_model, FwdDynMethod::Projection);
+        std::make_shared<RigidBodyTreeModel<>>(cluster_model, FwdDynMethod::Projection);
     ReflectedInertiaTreePtr ref_inertia_model =
-        std::make_shared<ReflectedInertiaTreeModel>(cluster_model,
-                                                    RotorInertiaApproximation::DIAGONAL);
+        std::make_shared<ReflectedInertiaTreeModel<>>(cluster_model, RotorInertiaApproximation::DIAGONAL);
     std::vector<RigidBodyTreePtr> rigid_body_models{projection_model};
     std::vector<ReflectedInertiaTreePtr> ref_inertia_models{ref_inertia_model};
 

@@ -21,12 +21,13 @@ namespace grbda
      * Class to represent a floating base rigid body model with rotors and ground
      * contacts. No concept of state.
      */
-    class RigidBodyTreeModel : public TreeModel
+    template <typename Scalar = double>
+    class RigidBodyTreeModel : public TreeModel<Scalar>
     {
     public:
         EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
-        RigidBodyTreeModel(const ClusterTreeModel &cluster_tree_model,
+        RigidBodyTreeModel(const ClusterTreeModel<> &cluster_tree_model,
                            const FwdDynMethod fd_method = FwdDynMethod::Projection);
         ~RigidBodyTreeModel() {}
 
@@ -73,14 +74,14 @@ namespace grbda
         }
 
     private:
-        void extractRigidBodiesAndJointsFromClusterModel(const ClusterTreeModel &cluster_tree_model);
-        void extractLoopClosureFunctionsFromClusterModel(const ClusterTreeModel &cluster_tree_model);
-        void extractContactPointsFromClusterModel(const ClusterTreeModel &cluster_tree_model);
+        void extractRigidBodiesAndJointsFromClusterModel(const ClusterTreeModel<> &cluster_tree_model);
+        void extractLoopClosureFunctionsFromClusterModel(const ClusterTreeModel<> &cluster_tree_model);
+        void extractContactPointsFromClusterModel(const ClusterTreeModel<> &cluster_tree_model);
         void extractExpandedTreeConnectivity();
 
         void resetCache() override
         {
-            TreeModel::resetCache();
+            TreeModel<Scalar>::resetCache();
             loop_constraints_updated_ = false;
         }
 

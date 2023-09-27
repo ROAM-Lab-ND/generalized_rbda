@@ -4,11 +4,11 @@ namespace grbda
 {
 
     template <size_t N>
-    ClusterTreeModel RevoluteTripleChainWithRotor<N>::buildRandomClusterTreeModel() const
+    ClusterTreeModel<> RevoluteTripleChainWithRotor<N>::buildRandomClusterTreeModel() const
     {
         using namespace ClusterJoints;
         
-        ClusterTreeModel model{};
+        ClusterTreeModel<> model{};
 
         std::string parent_name = "ground";
         for (size_t i(0); i < N / 3; i++)
@@ -86,13 +86,13 @@ namespace grbda
     }
 
     template <size_t N>
-    ClusterTreeModel RevoluteTripleChainWithRotor<N>::buildUniformClusterTreeModel() const
+    ClusterTreeModel<> RevoluteTripleChainWithRotor<N>::buildUniformClusterTreeModel() const
     {
         throw std::runtime_error("Not implemented");
     }
 
     template <size_t N>
-    void RevoluteTripleChainWithRotor<N>::appendContactPoints(ClusterTreeModel &model, const int i,
+    void RevoluteTripleChainWithRotor<N>::appendContactPoints(ClusterTreeModel<> &model, const int i,
                                                               const std::string linkA_name,
                                                               const std::string linkB_name,
                                                               const std::string linkC_name) const

@@ -53,9 +53,9 @@ protected:
     }
 
     T robot;
-    ClusterTreeModel cluster_model;
-    ClusterTreeModel generic_model;
-    RigidBodyTreeModel rigid_body_model;
+    ClusterTreeModel<> cluster_model;
+    ClusterTreeModel<> generic_model;
+    grbda::RigidBodyTreeModel<> rigid_body_model;
 
     ModelState<> model_state;
 };

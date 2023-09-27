@@ -4,11 +4,11 @@ namespace grbda
 {
 
     template <size_t N>
-    ClusterTreeModel RevolutePairChain<N>::buildRandomClusterTreeModel() const
+    ClusterTreeModel<> RevolutePairChain<N>::buildRandomClusterTreeModel() const
     {
         using namespace ClusterJoints;
         
-        ClusterTreeModel model{};
+        ClusterTreeModel<> model{};
 
         std::string parent_name = "ground";
         for (size_t i(0); i < N / 2; i++)
@@ -48,11 +48,11 @@ namespace grbda
     }
 
     template <size_t N>
-    ClusterTreeModel RevolutePairChain<N>::buildUniformClusterTreeModel() const
+    ClusterTreeModel<> RevolutePairChain<N>::buildUniformClusterTreeModel() const
     {
         using namespace ClusterJoints;
         
-        ClusterTreeModel model{};
+        ClusterTreeModel<> model{};
 
         Mat3<double> I3 = Mat3<double>::Identity();
         Vec3<double> z3 = Vec3<double>::Zero();

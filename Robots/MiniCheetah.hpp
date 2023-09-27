@@ -34,7 +34,7 @@ namespace grbda
             _rotorRotationalInertiaY = RX * _rotorRotationalInertiaZ * RX.transpose();
         }
 
-        ClusterTreeModel buildClusterTreeModel() const override;
+        ClusterTreeModel<> buildClusterTreeModel() const override;
 
     private:
         //

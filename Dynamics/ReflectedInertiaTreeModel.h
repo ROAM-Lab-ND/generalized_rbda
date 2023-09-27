@@ -20,12 +20,13 @@ namespace grbda
      * Class to represent a floating base rigid body model with rotors and ground
      * contacts. No concept of state.
      */
-    class ReflectedInertiaTreeModel : public TreeModel
+    template <typename Scalar = double>
+    class ReflectedInertiaTreeModel : public TreeModel<Scalar>
     {
     public:
         EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
-        ReflectedInertiaTreeModel(const ClusterTreeModel &cluster_tree_model,
+        ReflectedInertiaTreeModel(const ClusterTreeModel<> &cluster_tree_model,
                                   RotorInertiaApproximation rotor_inertia_approximation =
                                       RotorInertiaApproximation::NONE);
 
@@ -69,10 +70,10 @@ namespace grbda
         DMat<double> getMassMatrix() override;
         DVec<double> getBiasForceVector() override;
 
-    private:
-        void extractRigidBodiesAndJointsFromClusterModel(const ClusterTreeModel &cluster_tree_model);
-        void extractIndependentCoordinatesFromClusterModel(const ClusterTreeModel &cluster_tree_model);
-        void extractContactPointsFromClusterModel(const ClusterTreeModel &cluster_tree_model);
+    protected:
+        void extractRigidBodiesAndJointsFromClusterModel(const ClusterTreeModel<> &cluster_tree_model);
+        void extractIndependentCoordinatesFromClusterModel(const ClusterTreeModel<> &cluster_tree_model);
+        void extractContactPointsFromClusterModel(const ClusterTreeModel<> &cluster_tree_model);
 
         void resetCache() override;
 

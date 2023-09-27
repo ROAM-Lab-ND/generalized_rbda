@@ -12,11 +12,11 @@ template <typename RobotType>
 void runInverseDynamicsBenchmark(std::ofstream &file, const double max_torque)
 {
     RobotType robot;
-    ClusterTreeModel model_cl = robot.buildClusterTreeModel();
+    ClusterTreeModel<> model_cl = robot.buildClusterTreeModel();
 
-    ReflectedInertiaTreePtr model_rf = std::make_shared<ReflectedInertiaTreeModel>(model_cl, RotorInertiaApproximation::BLOCK_DIAGONAL);
-    ReflectedInertiaTreePtr model_rf_diag = std::make_shared<ReflectedInertiaTreeModel>(model_cl, RotorInertiaApproximation::DIAGONAL);
-    ReflectedInertiaTreePtr model_rf_none = std::make_shared<ReflectedInertiaTreeModel>(model_cl, RotorInertiaApproximation::NONE);
+    ReflectedInertiaTreePtr model_rf = std::make_shared<ReflectedInertiaTreeModel<>>(model_cl, RotorInertiaApproximation::BLOCK_DIAGONAL);
+    ReflectedInertiaTreePtr model_rf_diag = std::make_shared<ReflectedInertiaTreeModel<>>(model_cl, RotorInertiaApproximation::DIAGONAL);
+    ReflectedInertiaTreePtr model_rf_none = std::make_shared<ReflectedInertiaTreeModel<>>(model_cl, RotorInertiaApproximation::NONE);
     std::vector<ReflectedInertiaTreePtr> ref_inertia_models{model_rf, model_rf_diag, model_rf_none};
 
     const int nv = model_cl.getNumDegreesOfFreedom();
@@ -65,10 +65,10 @@ template <typename RobotType>
 void runForwardDynamicsBenchmark(std::ofstream &file, const double max_torque)
 {
     RobotType robot;
-    ClusterTreeModel model_cl = robot.buildClusterTreeModel();
+    ClusterTreeModel<> model_cl = robot.buildClusterTreeModel();
 
-    ReflectedInertiaTreePtr model_rf_diag = std::make_shared<ReflectedInertiaTreeModel>(model_cl, RotorInertiaApproximation::DIAGONAL);
-    ReflectedInertiaTreePtr model_rf_none = std::make_shared<ReflectedInertiaTreeModel>(model_cl, RotorInertiaApproximation::NONE);
+    ReflectedInertiaTreePtr model_rf_diag = std::make_shared<ReflectedInertiaTreeModel<>>(model_cl, RotorInertiaApproximation::DIAGONAL);
+    ReflectedInertiaTreePtr model_rf_none = std::make_shared<ReflectedInertiaTreeModel<>>(model_cl, RotorInertiaApproximation::NONE);
     std::vector<ReflectedInertiaTreePtr> ref_inertia_models{model_rf_diag, model_rf_none};
 
     const int nv = model_cl.getNumDegreesOfFreedom();
@@ -110,10 +110,10 @@ template <typename RobotType>
 void runInverseOperationalSpaceInertiaBenchmark(std::ofstream &file)
 {
     RobotType robot;
-    ClusterTreeModel model_cl = robot.buildClusterTreeModel();
+    ClusterTreeModel<> model_cl = robot.buildClusterTreeModel();
 
-    ReflectedInertiaTreePtr model_rf_diag = std::make_shared<ReflectedInertiaTreeModel>(model_cl, RotorInertiaApproximation::DIAGONAL);
-    ReflectedInertiaTreePtr model_rf_none = std::make_shared<ReflectedInertiaTreeModel>(model_cl, RotorInertiaApproximation::NONE);
+    ReflectedInertiaTreePtr model_rf_diag = std::make_shared<ReflectedInertiaTreeModel<>>(model_cl, RotorInertiaApproximation::DIAGONAL);
+    ReflectedInertiaTreePtr model_rf_none = std::make_shared<ReflectedInertiaTreeModel<>>(model_cl, RotorInertiaApproximation::NONE);
     std::vector<ReflectedInertiaTreePtr> ref_inertia_models{model_rf_diag, model_rf_none};
 
     double lambda_inv_diag_rel_error = 0.;
@@ -146,10 +146,10 @@ void runApplyTestForceBenchmark(std::ofstream &file, const std::string contact_p
                                 const double max_force)
 {
     RobotType robot;
-    ClusterTreeModel model_cl = robot.buildClusterTreeModel();
+    ClusterTreeModel<> model_cl = robot.buildClusterTreeModel();
 
-    ReflectedInertiaTreePtr model_rf_diag = std::make_shared<ReflectedInertiaTreeModel>(model_cl, RotorInertiaApproximation::DIAGONAL);
-    ReflectedInertiaTreePtr model_rf_none = std::make_shared<ReflectedInertiaTreeModel>(model_cl, RotorInertiaApproximation::NONE);
+    ReflectedInertiaTreePtr model_rf_diag = std::make_shared<ReflectedInertiaTreeModel<>>(model_cl, RotorInertiaApproximation::DIAGONAL);
+    ReflectedInertiaTreePtr model_rf_none = std::make_shared<ReflectedInertiaTreeModel<>>(model_cl, RotorInertiaApproximation::NONE);
     std::vector<ReflectedInertiaTreePtr> ref_inertia_models{model_rf_diag, model_rf_none};
 
     const int nv = model_cl.getNumDegreesOfFreedom();

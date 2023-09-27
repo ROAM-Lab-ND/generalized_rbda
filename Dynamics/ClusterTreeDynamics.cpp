@@ -7,11 +7,12 @@
 namespace grbda
 {
 
-    const D6Mat<double> &ClusterTreeModel::contactJacobianWorldFrame(const std::string &cp_name)
+    template <typename Scalar>
+    const D6Mat<double> &ClusterTreeModel<Scalar>::contactJacobianWorldFrame(const std::string &cp_name)
     {
-        forwardKinematics();
+        this->forwardKinematics();
 
-        ContactPoint &cp = contact_points_[contact_name_to_contact_index_.at(cp_name)];
+        ContactPoint &cp = this->contact_points_[this->contact_name_to_contact_index_.at(cp_name)];
         const size_t i = cp.body_index_;
         const Body<> &body_i = body(i);
         const auto &cluster_i = getClusterContainingBody(body_i);
@@ -30,7 +31,7 @@ namespace grbda
             const int &vel_idx = cluster_j->velocity_index_;
             const int &num_vel = cluster_j->num_velocities_;
 
-            D6Mat<double> S = cluster_j->S().middleRows<6>(6 * subindex_within_cluster_j);
+            D6Mat<double> S = cluster_j->S().template middleRows<6>(6 * subindex_within_cluster_j);
             cp.jacobian_.middleCols(vel_idx, num_vel) = Xout * S;
 
             Mat6<double> Xup = cluster_j->Xup_[subindex_within_cluster_j].toMatrix();
@@ -42,13 +43,14 @@ namespace grbda
         return cp.jacobian_;
     }
 
-    D6Mat<double> ClusterTreeModel::contactJacobianBodyFrame(const std::string &cp_name)
+    template <typename Scalar>
+    D6Mat<double> ClusterTreeModel<Scalar>::contactJacobianBodyFrame(const std::string &cp_name)
     {
-        forwardKinematics();
+        this->forwardKinematics();
 
-        D6Mat<double> J = D6Mat<double>::Zero(6, getNumDegreesOfFreedom());
+        D6Mat<double> J = D6Mat<double>::Zero(6, this->getNumDegreesOfFreedom());
 
-        ContactPoint &cp = contact_points_[contact_name_to_contact_index_.at(cp_name)];
+        ContactPoint &cp = this->contact_points_[this->contact_name_to_contact_index_.at(cp_name)];
         Mat6<double> Xout = spatial::createSXform(Mat3<double>::Identity(), cp.local_offset_);
 
         int j = cp.body_index_;
@@ -60,7 +62,7 @@ namespace grbda
             const int &vel_idx = cluster_j->velocity_index_;
             const int &num_vel = cluster_j->num_velocities_;
 
-            D6Mat<double> S = cluster_j->S().middleRows<6>(6 * subindex_within_cluster_j);
+            D6Mat<double> S = cluster_j->S().template middleRows<6>(6 * subindex_within_cluster_j);
             J.middleCols(vel_idx, num_vel) = Xout * S;
 
             Mat6<double> Xup = cluster_j->Xup_[subindex_within_cluster_j].toMatrix();
@@ -72,17 +74,19 @@ namespace grbda
         return J;
     }
 
-    DVec<double> ClusterTreeModel::inverseDynamics(const DVec<double> &qdd)
+    template <typename Scalar>
+    DVec<double> ClusterTreeModel<Scalar>::inverseDynamics(const DVec<double> &qdd)
     {
-        return recursiveNewtonEulerAlgorithm(qdd);
+        return this->recursiveNewtonEulerAlgorithm(qdd);
     }
 
-    DVec<double> ClusterTreeModel::forwardDynamics(const DVec<double> &tau)
+    template <typename Scalar>
+    DVec<double> ClusterTreeModel<Scalar>::forwardDynamics(const DVec<double> &tau)
     {
-        DVec<double> qdd = DVec<double>::Zero(getNumDegreesOfFreedom());
+        DVec<double> qdd = DVec<double>::Zero(this->getNumDegreesOfFreedom());
 
         // Forward dynamics via Articulated Body Algorithm
-        forwardKinematics();
+        this->forwardKinematics();
         updateArticulatedBodies();
 
         // Forward Pass - Articulated body bias force
@@ -92,7 +96,7 @@ namespace grbda
         }
 
         // Account for external forces in bias force
-        for (int cluster_index : indices_of_nodes_experiencing_external_forces_)
+        for (int cluster_index : this->indices_of_nodes_experiencing_external_forces_)
         {
             auto &cluster = cluster_nodes_[cluster_index];
             cluster->pA_ -= cluster->Xa_.transformExternalForceVector(cluster->f_ext_);
@@ -138,7 +142,7 @@ namespace grbda
             }
             else
             {
-                a_temp = cluster->Xup_.transformMotionVector(-gravity_) +
+                a_temp = cluster->Xup_.transformMotionVector(-this->gravity_) +
                          cluster->cJ() + cluster->avp_;
             }
             qdd.segment(vel_idx, num_vel) = cluster->D_inv_u_ - cluster->D_inv_UT_ * a_temp;
@@ -148,12 +152,13 @@ namespace grbda
         return qdd;
     }
 
-    void ClusterTreeModel::updateArticulatedBodies()
+    template <typename Scalar>
+    void ClusterTreeModel<Scalar>::updateArticulatedBodies()
     {
         if (articulated_bodies_updated_)
             return;
 
-        forwardKinematics();
+        this->forwardKinematics();
 
         // Forward pass
         for (auto &cluster : cluster_nodes_)
@@ -183,18 +188,19 @@ namespace grbda
         articulated_bodies_updated_ = true;
     }
 
-    double ClusterTreeModel::applyTestForce(const std::string &contact_point_name,
+    template <typename Scalar>
+    double ClusterTreeModel<Scalar>::applyTestForce(const std::string &contact_point_name,
                                             const Vec3<double> &force, DVec<double> &dstate_out)
     {
-        const int contact_point_index = contact_name_to_contact_index_.at(contact_point_name);
-        const ContactPoint &contact_point = contact_points_[contact_point_index];
+        const int contact_point_index = this->contact_name_to_contact_index_.at(contact_point_name);
+        const ContactPoint &contact_point = this->contact_points_[contact_point_index];
 
-        forwardKinematics();
+        this->forwardKinematics();
         updateArticulatedBodies();
         updateForcePropagators();
         updateQddEffects();
 
-        dstate_out = DVec<double>::Zero(getNumDegreesOfFreedom());
+        dstate_out = DVec<double>::Zero(this->getNumDegreesOfFreedom());
 
         DVec<double> f = localCartesianForceAtPointToWorldPluckerForceOnCluster(force,
                                                                                 contact_point);
@@ -223,7 +229,8 @@ namespace grbda
         return lambda_inv;
     }
 
-    void ClusterTreeModel::updateForcePropagators()
+    template <typename Scalar>
+    void ClusterTreeModel<Scalar>::updateForcePropagators()
     {
         if (force_propagators_updated_)
             return;
@@ -232,7 +239,7 @@ namespace grbda
 
         for (auto &cluster : cluster_nodes_)
         {
-            const int& mss_dim = cluster->motion_subspace_dimension_;
+            const int &mss_dim = cluster->motion_subspace_dimension_;
             const DMat<double> L = DMat<double>::Identity(mss_dim, mss_dim) -
                                    cluster->S() * cluster->D_inv_UT_;
             cluster->ChiUp_ = cluster->Xup_.rightMultiplyMotionTransform(L);
@@ -241,7 +248,8 @@ namespace grbda
         force_propagators_updated_ = true;
     }
 
-    void ClusterTreeModel::updateQddEffects()
+    template <typename Scalar>
+    void ClusterTreeModel<Scalar>::updateQddEffects()
     {
         if (qdd_effects_updated_)
             return;
@@ -280,18 +288,19 @@ namespace grbda
         qdd_effects_updated_ = true;
     }
 
-    DMat<double> ClusterTreeModel::inverseOperationalSpaceInertiaMatrix()
+    template <typename Scalar>
+    DMat<double> ClusterTreeModel<Scalar>::inverseOperationalSpaceInertiaMatrix()
     {
         // Based on the EFPA from "https://www3.nd.edu/~pwensing/Papers/WensingFeatherstoneOrin12-ICRA.pdf"
 
-        forwardKinematics();
+        this->forwardKinematics();
         for (auto &cluster : cluster_nodes_)
         {
             cluster->IA_ = cluster->I_;
         }
 
         // Reset Force Propagators for the end-effectors
-        for (ContactPoint &cp : contact_points_)
+        for (ContactPoint &cp : this->contact_points_)
         {
             if (!cp.is_end_effector_)
                 continue;
@@ -329,17 +338,17 @@ namespace grbda
 
                 for (const int &cp_index : cluster->supported_end_effectors_)
                 {
-                    ContactPoint &cp = contact_points_[cp_index];
+                    ContactPoint &cp = this->contact_points_[cp_index];
                     cp.ChiUp_[parent_index] = cp.ChiUp_[i] * cluster->ChiUp_;
                 }
             }
         }
 
         const int num_bodies = bodies_.size();
-        DMat<double> lambda_inv = DMat<double>::Zero(6 * num_end_effectors_,
-                                                     6 * num_end_effectors_);
+        DMat<double> lambda_inv = DMat<double>::Zero(6 * this->num_end_effectors_,
+                                                     6 * this->num_end_effectors_);
         DMat<double> lambda_inv_tmp = DMat<double>::Zero(6 * num_bodies,
-                                                         6 * num_end_effectors_);
+                                                         6 * this->num_end_effectors_);
 
         // Forward Pass
         DMat<double> lambda_inv_prev;
@@ -353,7 +362,7 @@ namespace grbda
 
             for (const int &cp_index : cluster->supported_end_effectors_)
             {
-                const ContactPoint &contact_point = contact_points_[cp_index];
+                const ContactPoint &contact_point = this->contact_points_[cp_index];
                 const int &k = contact_point.end_effector_index_; // "k" in Table 1 of the paper
 
                 const int ee_output_dim = 6;
@@ -378,8 +387,8 @@ namespace grbda
 
             for (const std::pair<int, int> &cp_pair : cluster->nearest_supported_ee_pairs_)
             {
-                const ContactPoint &cp1 = contact_points_[cp_pair.first];
-                const ContactPoint &cp2 = contact_points_[cp_pair.second];
+                const ContactPoint &cp1 = this->contact_points_[cp_pair.first];
+                const ContactPoint &cp2 = this->contact_points_[cp_pair.second];
 
                 const int &k1 = cp1.end_effector_index_; // "k1" in Table 1 of the paper
                 const int &k2 = cp2.end_effector_index_; // "k2" in Table 1 of the paper
@@ -397,9 +406,9 @@ namespace grbda
         }
 
         // And now do the diagonal blocks
-        for (int i = 0; i < (int)contact_points_.size(); i++)
+        for (int i = 0; i < (int)this->contact_points_.size(); i++)
         {
-            const ContactPoint &cp = contact_points_[i];
+            const ContactPoint &cp = this->contact_points_[i];
 
             if (!cp.is_end_effector_)
                 continue;
@@ -419,5 +428,7 @@ namespace grbda
 
         return lambda_inv;
     }
+
+    template class ClusterTreeModel<double>;
 
 } // namespace grbda

@@ -3,7 +3,8 @@
 namespace grbda
 {
 
-    void TreeModel::forwardKinematics()
+    template <typename Scalar>
+    void TreeModel<Scalar>::forwardKinematics()
     {
         if (kinematics_updated_)
             return;
@@ -30,7 +31,8 @@ namespace grbda
         kinematics_updated_ = true;
     }
 
-    void TreeModel::contactPointForwardKinematics()
+    template <typename Scalar>
+    void TreeModel<Scalar>::contactPointForwardKinematics()
     {
         if (contact_point_kinematics_updated_)
             return;
@@ -51,7 +53,8 @@ namespace grbda
         contact_point_kinematics_updated_ = true;
     }
 
-    void TreeModel::updateContactPointJacobians()
+    template <typename Scalar>
+    void TreeModel<Scalar>::updateContactPointJacobians()
     {
         if (contact_jacobians_updated_)
             return;
@@ -63,7 +66,8 @@ namespace grbda
         contact_jacobians_updated_ = true;
     }
 
-    void TreeModel::compositeRigidBodyAlgorithm()
+    template <typename Scalar>
+    void TreeModel<Scalar>::compositeRigidBodyAlgorithm()
     {
         if (mass_matrix_updated_)
             return;
@@ -109,7 +113,8 @@ namespace grbda
         mass_matrix_updated_ = true;
     }
 
-    void TreeModel::updateBiasForceVector()
+    template <typename Scalar>
+    void TreeModel<Scalar>::updateBiasForceVector()
     {
         if (bias_force_updated_)
             return;
@@ -119,7 +124,8 @@ namespace grbda
         bias_force_updated_ = true;
     }
 
-    DVec<double> TreeModel::recursiveNewtonEulerAlgorithm(const DVec<double> &qdd)
+    template <typename Scalar>
+    DVec<double> TreeModel<Scalar>::recursiveNewtonEulerAlgorithm(const DVec<double> &qdd)
     {
         forwardKinematics();
 
@@ -176,7 +182,8 @@ namespace grbda
         return tau;
     }
 
-    void TreeModel::setExternalForces(
+    template <typename Scalar>
+    void TreeModel<Scalar>::setExternalForces(
         const std::vector<ExternalForceAndBodyIndexPair> &force_and_body_index_pairs)
     {
         // Clear previous external forces
@@ -202,7 +209,8 @@ namespace grbda
         resetCache();
     }
 
-    void TreeModel::resetCache()
+    template <typename Scalar>
+    void TreeModel<Scalar>::resetCache()
     {
         kinematics_updated_ = false;
         contact_point_kinematics_updated_ = false;
@@ -211,16 +219,21 @@ namespace grbda
         contact_jacobians_updated_ = false;
     }
 
-    int TreeModel::getNearestSharedSupportingNode(const std::pair<int, int> &cp_indices)
+    template <typename Scalar>
+    int TreeModel<Scalar>::getNearestSharedSupportingNode(const std::pair<int, int> &cp_indices)
     {
         const ContactPoint &cp_i = contact_points_[cp_indices.first];
         const ContactPoint &cp_j = contact_points_[cp_indices.second];
         return greatestCommonElement(cp_i.supporting_nodes_, cp_j.supporting_nodes_);
     }
 
-    bool TreeModel::vectorContainsIndex(const std::vector<int> vec, const int index)
+    template <typename Scalar>
+    bool TreeModel<Scalar>::vectorContainsIndex(const std::vector<int> vec, const int index)
     {
         return std::find(vec.begin(), vec.end(), index) != vec.end();
     }
+
+    template class TreeModel<double>;
+    // template class TreeModel<casadi::SX>;
 
 } // namespace grbda

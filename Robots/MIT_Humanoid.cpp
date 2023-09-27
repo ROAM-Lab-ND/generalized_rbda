@@ -3,11 +3,11 @@
 namespace grbda
 {
 
-    ClusterTreeModel MIT_Humanoid::buildClusterTreeModel() const
+    ClusterTreeModel<> MIT_Humanoid::buildClusterTreeModel() const
     {
         using namespace ClusterJoints;
 
-        ClusterTreeModel model;
+        ClusterTreeModel<> model;
 
         const Mat3<double> I3 = Mat3<double>::Identity();
 

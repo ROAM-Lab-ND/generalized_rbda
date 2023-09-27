@@ -17,7 +17,9 @@ namespace grbda
      * Class to represent a floating base rigid body model with rotors and ground
      * contacts. No concept of state.
      */
-    class ClusterTreeModel : public TreeModel
+    
+    template <typename Scalar = double>
+    class ClusterTreeModel : public TreeModel<Scalar>
     {
     public:
         EIGEN_MAKE_ALIGNED_OPERATOR_NEW
@@ -94,7 +96,7 @@ namespace grbda
         const Body<> &getBody(int index) const override { return bodies_[index]; }
         const TreeNodePtr getNodeContainingBody(int index) override
         {
-            return nodes_[getIndexOfClusterContainingBody(index)];
+            return this->nodes_[getIndexOfClusterContainingBody(index)];
         }
 
         const std::vector<Body<>> &bodies() const { return bodies_; }
@@ -161,7 +163,10 @@ namespace grbda
         bool force_propagators_updated_ = false;
         bool qdd_effects_updated_ = false;
 
+        template <typename Scalar2>
         friend class RigidBodyTreeModel;
+
+        template <typename Scalar2>
         friend class ReflectedInertiaTreeModel;
     };
 

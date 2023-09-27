@@ -3,14 +3,16 @@
 namespace grbda
 {
 
-    const D6Mat<double> &RigidBodyTreeModel::contactJacobianWorldFrame(const std::string &cp_name)
+    template <typename Scalar>
+    const D6Mat<double> &
+    RigidBodyTreeModel<Scalar>::contactJacobianWorldFrame(const std::string &cp_name)
     {
-        forwardKinematics();
+        this->forwardKinematics();
         updateLoopConstraints();
 
-        D6Mat<double> J_spanning = D6Mat<double>::Zero(6, getNumDegreesOfFreedom());
+        D6Mat<double> J_spanning = D6Mat<double>::Zero(6, this->getNumDegreesOfFreedom());
 
-        ContactPoint &cp = contact_points_[contact_name_to_contact_index_.at(cp_name)];
+        ContactPoint &cp = this->contact_points_[this->contact_name_to_contact_index_.at(cp_name)];
         const size_t &i = cp.body_index_;
         const auto node_i = getNodeContainingBody(i);
         const spatial::Transform<> Xa = node_i->Xa_[0];
@@ -37,14 +39,15 @@ namespace grbda
         return cp.jacobian_;
     }
 
-    D6Mat<double> RigidBodyTreeModel::contactJacobianBodyFrame(const std::string &cp_name)
+    template <typename Scalar>
+    D6Mat<double> RigidBodyTreeModel<Scalar>::contactJacobianBodyFrame(const std::string &cp_name)
     {
-        forwardKinematics();
+        this->forwardKinematics();
         updateLoopConstraints();
 
-        D6Mat<double> J_spanning = D6Mat<double>::Zero(6, getNumDegreesOfFreedom());
+        D6Mat<double> J_spanning = D6Mat<double>::Zero(6, this->getNumDegreesOfFreedom());
 
-        ContactPoint &cp = contact_points_[contact_name_to_contact_index_.at(cp_name)];
+        ContactPoint &cp = this->contact_points_[this->contact_name_to_contact_index_.at(cp_name)];
         const size_t &i = cp.body_index_;
         const auto node_i = getNodeContainingBody(i);
         Mat6<double> Xout = spatial::createSXform(Mat3<double>::Identity(), cp.local_offset_);
@@ -68,12 +71,13 @@ namespace grbda
         return J_spanning * loop_constraints_.G();
     }
 
-    DVec<double> RigidBodyTreeModel::forwardDynamics(const DVec<double> &tau)
+    template <typename Scalar>
+    DVec<double> RigidBodyTreeModel<Scalar>::forwardDynamics(const DVec<double> &tau)
     {
-        forwardKinematics();
+        this->forwardKinematics();
         updateLoopConstraints();
-        compositeRigidBodyAlgorithm();
-        updateBiasForceVector();
+        this->compositeRigidBodyAlgorithm();
+        this->updateBiasForceVector();
 
         switch (forward_dynamics_method_)
         {
@@ -84,8 +88,8 @@ namespace grbda
             const DMat<double> &G_transpose = loop_constraints_.G_transpose();
             const DVec<double> &g = loop_constraints_.g();
 
-            const DMat<double> A = G_transpose * H_ * G;
-            const DVec<double> b = tau - G_transpose * (C_ + H_ * g);
+            const DMat<double> A = G_transpose * this->H_ * G;
+            const DVec<double> b = tau - G_transpose * (this->C_ + this->H_ * g);
             const DVec<double> ydd = A.llt().solve(b);
             return G * ydd + g;
         }
@@ -95,11 +99,11 @@ namespace grbda
             // Based on Method 2 in Featherstone Ch 8.5 (using custom sparse factorization)
 
             // Factorize H into L^T*L
-            factorization::LTL L(H_, expanded_tree_parent_indices_);
+            factorization::LTL L(this->H_, expanded_tree_parent_indices_);
 
             // Calculate tau_prime
             DVec<double> tau_full = loop_constraints_.G_tranpose_pinv() * tau;
-            DVec<double> tau_prime = tau_full - C_;
+            DVec<double> tau_prime = tau_full - this->C_;
 
             // Calculate Y and z via back-subsition
             DMat<double> Y = L.inverseTransposeMatrixProduct(loop_constraints_.K_transpose());
@@ -121,10 +125,10 @@ namespace grbda
         {
             // Based on Method 2 in Featherstone Ch 8.5 (using Eigen factorization)
 
-            auto lltOfH = H_.llt();
+            auto lltOfH = this->H_.llt();
             DMat<double> A = loop_constraints_.K() * lltOfH.solve(loop_constraints_.K_transpose());
             DVec<double> tau_full = loop_constraints_.G_tranpose_pinv() * tau;
-            DVec<double> tau_prime = tau_full - C_;
+            DVec<double> tau_prime = tau_full - this->C_;
             DVec<double> b = loop_constraints_.k() -
                              loop_constraints_.K() * lltOfH.solve(tau_prime);
             DVec<double> lambda = A.size() > 0 ? DVec<double>(A.colPivHouseholderQr().solve(b))
@@ -137,25 +141,27 @@ namespace grbda
         }
     }
 
-    DVec<double> RigidBodyTreeModel::inverseDynamics(const DVec<double> &ydd)
+    template <typename Scalar>
+    DVec<double> RigidBodyTreeModel<Scalar>::inverseDynamics(const DVec<double> &ydd)
     {
-        forwardKinematics();
+        this->forwardKinematics();
         updateLoopConstraints();
 
         const DVec<double> qdd_spanning = loop_constraints_.G() * ydd + loop_constraints_.g();
-        const DVec<double> tau_id = recursiveNewtonEulerAlgorithm(qdd_spanning);
+        const DVec<double> tau_id = this->recursiveNewtonEulerAlgorithm(qdd_spanning);
         return loop_constraints_.G_transpose() * tau_id;
     }
 
-    DMat<double> RigidBodyTreeModel::inverseOperationalSpaceInertiaMatrix()
+    template <typename Scalar>
+    DMat<double> RigidBodyTreeModel<Scalar>::inverseOperationalSpaceInertiaMatrix()
     {
         const DMat<double> H = getMassMatrix();
-        DMat<double> J_stacked = DMat<double>::Zero(6 * getNumEndEffectors(), H.rows());
+        DMat<double> J_stacked = DMat<double>::Zero(6 * this->getNumEndEffectors(), H.rows());
 
         int ee_cnt = 0;
-        for (int i = 0; i < (int)contact_points_.size(); i++)
+        for (int i = 0; i < (int)this->contact_points_.size(); i++)
         {
-            const ContactPoint &cp = contact_points_[i];
+            const ContactPoint &cp = this->contact_points_[i];
             if (!cp.is_end_effector_)
                 continue;
             J_stacked.middleRows<6>(6 * ee_cnt++) = contactJacobianBodyFrame(cp.name_);
@@ -163,15 +169,18 @@ namespace grbda
         return J_stacked * H.inverse() * J_stacked.transpose();
     }
 
-    double RigidBodyTreeModel::applyTestForce(const std::string &contact_point_name,
+    template <typename Scalar>
+    double RigidBodyTreeModel<Scalar>::applyTestForce(const std::string &contact_point_name,
                                               const Vec3<double> &force, DVec<double> &dstate_out)
     {
-        const D3Mat<double> J = contactJacobianWorldFrame(contact_point_name).bottomRows<3>();
+        const D3Mat<double> J = contactJacobianWorldFrame(contact_point_name).template bottomRows<3>();
         const DMat<double> H = getMassMatrix();
         const DMat<double> H_inv = H.inverse();
         const DMat<double> inv_ops_inertia = J * H_inv * J.transpose();
         dstate_out = H_inv * (J.transpose() * force);
         return force.dot(inv_ops_inertia * force);
     }
+
+    template class RigidBodyTreeModel<double>;
 
 } // namespace grbda

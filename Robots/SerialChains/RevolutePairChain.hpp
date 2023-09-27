@@ -21,8 +21,8 @@ namespace grbda
         size_t getNumDofs() const override { return N; }
 
     private:
-        ClusterTreeModel buildRandomClusterTreeModel() const override;
-        ClusterTreeModel buildUniformClusterTreeModel() const override;
+        ClusterTreeModel<> buildRandomClusterTreeModel() const override;
+        ClusterTreeModel<> buildUniformClusterTreeModel() const override;
     };
 
 } // namespace grbda

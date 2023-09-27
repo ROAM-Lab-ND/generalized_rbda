@@ -14,7 +14,7 @@ protected:
     ClusterTreeModelTest() : cluster_model(robot.buildClusterTreeModel()) {}
 
     T robot;
-    ClusterTreeModel cluster_model;
+    ClusterTreeModel<> cluster_model;
 };
 
 using testing::Types;

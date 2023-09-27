@@ -63,7 +63,7 @@ namespace grbda
             _largeRotorRotInertiaZ = _largeRotorRotationalInertiaZ;
         }
 
-        ClusterTreeModel buildClusterTreeModel() const override;
+        ClusterTreeModel<> buildClusterTreeModel() const override;
 
     private:
         //

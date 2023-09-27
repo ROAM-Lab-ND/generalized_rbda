@@ -3,11 +3,11 @@
 namespace grbda
 {
 
-    ClusterTreeModel TelloWithArms::buildClusterTreeModel() const
+    ClusterTreeModel<> TelloWithArms::buildClusterTreeModel() const
     {
         using namespace ClusterJoints;
 
-        ClusterTreeModel model = Tello::buildClusterTreeModel();
+        ClusterTreeModel<> model = Tello::buildClusterTreeModel();
 
         const Mat3<double> I3 = Mat3<double>::Identity();
 

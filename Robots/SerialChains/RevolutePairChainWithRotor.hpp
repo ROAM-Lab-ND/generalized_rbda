@@ -40,10 +40,10 @@ namespace grbda
             const DVec<double> &y, const DVec<double> &yd, const DVec<double> &ydd) const override;
 
     private:
-        ClusterTreeModel buildRandomClusterTreeModel() const override;
-        ClusterTreeModel buildUniformClusterTreeModel() const override;
+        ClusterTreeModel<> buildRandomClusterTreeModel() const override;
+        ClusterTreeModel<> buildUniformClusterTreeModel() const override;
 
-        void appendContactPoints(ClusterTreeModel &model, const int i,
+        void appendContactPoints(ClusterTreeModel<> &model, const int i,
                                  const std::string linkA_name, const std::string linkB_name) const;
     };
 

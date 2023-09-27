@@ -13,7 +13,7 @@ namespace grbda
     Robot() {}
     virtual ~Robot() {}
 
-    virtual ClusterTreeModel buildClusterTreeModel() const = 0;
+    virtual ClusterTreeModel<> buildClusterTreeModel() const = 0;
 
     virtual DVec<double> forwardDynamics(
         const DVec<double> &y, const DVec<double> &yd, const DVec<double> &tau) const

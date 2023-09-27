@@ -23,14 +23,16 @@ protected:
         for (int i = 0; i < num_robots; i++)
         {
             T robot;
-            ClusterTreeModel cluster_model(robot.buildClusterTreeModel());
-            ClusterTreeModel generic_model = extractGenericJointModel(cluster_model);
-            RigidBodyTreeModel lg_mult_custom_model(cluster_model,
-                                                    FwdDynMethod::LagrangeMultiplierCustom);
-            RigidBodyTreeModel lg_mult_eigen_model(cluster_model,
-                                                   FwdDynMethod::LagrangeMultiplierEigen);
-            RigidBodyTreeModel projection_model(cluster_model,
-                                                FwdDynMethod::Projection);
+            
+            ClusterTreeModel<> cluster_model(robot.buildClusterTreeModel());
+            ClusterTreeModel<> generic_model = extractGenericJointModel(cluster_model);
+            
+            grbda::RigidBodyTreeModel<> lg_mult_custom_model(
+                cluster_model, FwdDynMethod::LagrangeMultiplierCustom);
+            grbda::RigidBodyTreeModel<> lg_mult_eigen_model(
+                cluster_model, FwdDynMethod::LagrangeMultiplierEigen);
+            grbda::RigidBodyTreeModel<> projection_model(
+                cluster_model, FwdDynMethod::Projection);
 
             robots.push_back(robot);
             cluster_models.push_back(cluster_model);
@@ -93,10 +95,10 @@ protected:
     }
 
     std::vector<T> robots;
-    std::vector<ClusterTreeModel> cluster_models;
-    std::vector<ClusterTreeModel> generic_models;
-    std::vector<RigidBodyTreeModel> lg_mult_custom_models, lg_mult_eigen_models;
-    std::vector<RigidBodyTreeModel> projection_models;
+    std::vector<ClusterTreeModel<>> cluster_models;
+    std::vector<ClusterTreeModel<>> generic_models;
+    std::vector<grbda::RigidBodyTreeModel<>> lg_mult_custom_models, lg_mult_eigen_models;
+    std::vector<grbda::RigidBodyTreeModel<>> projection_models;
 };
 
 using testing::Types;
@@ -127,9 +129,9 @@ TYPED_TEST(RigidBodyDynamicsAlgosTest, MassMatrix)
     const int num_tests_per_robot = 20;
     for (int i = 0; i < (int)this->cluster_models.size(); i++)
     {
-        ClusterTreeModel &cluster_model = this->cluster_models.at(i);
-        ClusterTreeModel &generic_model = this->generic_models.at(i);
-        RigidBodyTreeModel &projection_model = this->projection_models.at(i);
+        ClusterTreeModel<> &cluster_model = this->cluster_models.at(i);
+        ClusterTreeModel<> &generic_model = this->generic_models.at(i);
+        grbda::RigidBodyTreeModel<> &projection_model = this->projection_models.at(i);
 
         const int nq = cluster_model.getNumPositions();
         const int nv = cluster_model.getNumDegreesOfFreedom();
@@ -163,9 +165,9 @@ TYPED_TEST(RigidBodyDynamicsAlgosTest, BiasForceVector)
     const int num_tests_per_robot = 20;
     for (int i = 0; i < (int)this->cluster_models.size(); i++)
     {
-        ClusterTreeModel &cluster_model = this->cluster_models[i];
-        ClusterTreeModel &generic_model = this->generic_models[i];
-        RigidBodyTreeModel &projection_model = this->projection_models[i];
+        ClusterTreeModel<> &cluster_model = this->cluster_models[i];
+        ClusterTreeModel<> &generic_model = this->generic_models[i];
+        grbda::RigidBodyTreeModel<> &projection_model = this->projection_models[i];
 
         const int nq = cluster_model.getNumPositions();
         const int nv = cluster_model.getNumDegreesOfFreedom();
@@ -200,11 +202,11 @@ TYPED_TEST(RigidBodyDynamicsAlgosTest, ForwardAndInverseDyanmics)
     const int num_tests_per_robot = 20;
     for (int i = 0; i < (int)this->cluster_models.size(); i++)
     {
-        ClusterTreeModel &cluster_model = this->cluster_models[i];
-        ClusterTreeModel &generic_model = this->generic_models[i];
-        RigidBodyTreeModel &lg_mult_custom_model = this->lg_mult_custom_models[i];
-        RigidBodyTreeModel &lg_mult_eigen_model = this->lg_mult_eigen_models[i];
-        RigidBodyTreeModel &projection_model = this->projection_models[i];
+        ClusterTreeModel<> &cluster_model = this->cluster_models[i];
+        ClusterTreeModel<> &generic_model = this->generic_models[i];
+        grbda::RigidBodyTreeModel<> &lg_mult_custom_model = this->lg_mult_custom_models[i];
+        grbda::RigidBodyTreeModel<> &lg_mult_eigen_model = this->lg_mult_eigen_models[i];
+        grbda::RigidBodyTreeModel<> &projection_model = this->projection_models[i];
 
         const int nq = cluster_model.getNumPositions();
         const int nv = cluster_model.getNumDegreesOfFreedom();
@@ -271,9 +273,9 @@ TYPED_TEST(RigidBodyDynamicsAlgosTest, LambdaInv)
     const int num_tests_per_robot = 20;
     for (int i = 0; i < (int)this->cluster_models.size(); i++)
     {
-        ClusterTreeModel &cluster_model = this->cluster_models[i];
-        ClusterTreeModel &gen_model = this->generic_models[i];
-        RigidBodyTreeModel &proj_model = this->projection_models[i];
+        ClusterTreeModel<> &cluster_model = this->cluster_models[i];
+        ClusterTreeModel<> &gen_model = this->generic_models[i];
+        grbda::RigidBodyTreeModel<> &proj_model = this->projection_models[i];
 
         for (int j = 0; j < num_tests_per_robot; j++)
         {
@@ -311,8 +313,8 @@ TYPED_TEST(RigidBodyDynamicsAlgosTest, ApplyTestForceTest)
     const int num_tests_per_robot = 20;
     for (int i = 0; i < (int)this->cluster_models.size(); i++)
     {
-        ClusterTreeModel &cluster_model = this->cluster_models[i];
-        RigidBodyTreeModel &projection_model = this->projection_models[i];
+        ClusterTreeModel<> &cluster_model = this->cluster_models[i];
+        grbda::RigidBodyTreeModel<> &projection_model = this->projection_models[i];
 
         const int nq = cluster_model.getNumPositions();
         const int nv = cluster_model.getNumDegreesOfFreedom();

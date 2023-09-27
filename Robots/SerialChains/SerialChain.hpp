@@ -11,7 +11,7 @@ namespace grbda
     public:
         SerialChain(bool random_parameters = true) : _random_parameters(random_parameters) {}
 
-        ClusterTreeModel buildClusterTreeModel() const override
+        ClusterTreeModel<> buildClusterTreeModel() const override
         {
             if (_random_parameters)
                 return buildRandomClusterTreeModel();
@@ -22,8 +22,8 @@ namespace grbda
         virtual size_t getNumDofs() const = 0;
 
     protected:
-        virtual ClusterTreeModel buildRandomClusterTreeModel() const = 0;
-        virtual ClusterTreeModel buildUniformClusterTreeModel() const = 0;
+        virtual ClusterTreeModel<> buildRandomClusterTreeModel() const = 0;
+        virtual ClusterTreeModel<> buildUniformClusterTreeModel() const = 0;
 
         SpatialInertia<double> randomLinkSpatialInertia() const
         {
