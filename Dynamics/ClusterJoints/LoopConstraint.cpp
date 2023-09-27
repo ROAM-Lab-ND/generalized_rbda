@@ -1,5 +1,6 @@
 #include "LoopConstraint.h"
 
+#include "Utils/math.h"
 #include <casadi/casadi.hpp>
 
 namespace grbda
@@ -64,10 +65,8 @@ namespace grbda
         {
             if (!G_pinv_computed_)
             {
-                // TODO(@MatthewChignoli): Fix this (or is the second method right?)
-                // G_pinv_ = G_.completeOrthogonalDecomposition().pseudoInverse();
-                // G_pinv_ = G_.transpose() * (G_ * G_.transpose()).inverse();
-                G_pinv_ = G_.transpose();
+                const DMat<Scalar> GT_G = G_.transpose() * G_;
+                G_pinv_ = math::matrixInverse(GT_G) * G_.transpose();
                 G_pinv_computed_ = true;
             }
 
@@ -79,11 +78,8 @@ namespace grbda
         {
             if (!G_tranpose_pinv_computed_)
             {
-                // TODO(@MatthewChignoli): Fix this (or is the second method right?
-                // G_tranpose_pinv_ =
-                    // G_transpose().completeOrthogonalDecomposition().pseudoInverse();
-                // G_tranpose_pinv_ = G_ * (G_.transpose() * G_).inverse();
-                G_tranpose_pinv_ = G_;
+                const DMat<Scalar> GT_G = G_.transpose() * G_;
+                G_tranpose_pinv_ = G_ * math::matrixInverse(GT_G);
                 G_tranpose_pinv_computed_ = true;
             }
             return G_tranpose_pinv_;

@@ -22,11 +22,6 @@ namespace casadi
         return x;
     }
 
-    // inline bool operator!=(const casadi::Matrix<SXElem> & /*x*/, const casadi::Matrix<SXElem> & /*y*/)
-    // {
-    //     return false;
-    // }
-
     inline bool operator&&(const bool x, const casadi::Matrix<SXElem> & /*y*/)
     {
         return x;
