@@ -11,7 +11,7 @@
 
 namespace grbda
 {
-    using ClusterTreeNodePtr = std::shared_ptr<ClusterTreeNode>;
+    using ClusterTreeNodePtr = std::shared_ptr<ClusterTreeNode<>>;
 
     /*!
      * Class to represent a floating base rigid body model with rotors and ground

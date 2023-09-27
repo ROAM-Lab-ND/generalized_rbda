@@ -11,6 +11,7 @@
 namespace grbda
 {
 
+    template <typename Scalar = double>
     struct TreeNode
     {
         TreeNode(int index, std::string name, int parent_index, int num_parent_bodies, 
@@ -24,23 +25,23 @@ namespace grbda
               index_(index), name_(name), parent_index_(parent_index),
               Xup_(num_parent_bodies)
         {
-            I_ = DMat<double>::Zero(motion_subspace_dimension_, motion_subspace_dimension_);
-            f_ext_ = DVec<double>::Zero(motion_subspace_dimension_);
+            I_ = DMat<Scalar>::Zero(motion_subspace_dimension_, motion_subspace_dimension_);
+            f_ext_ = DVec<Scalar>::Zero(motion_subspace_dimension_);
         }
 
         virtual ~TreeNode() {}
 
         virtual void updateKinematics() = 0;
 
-        const JointCoordinate<> &jointPosition() const { return joint_state_.position; }
-        const JointCoordinate<> &jointVelocity() const { return joint_state_.velocity; }
-        virtual const DVec<double> &vJ() const = 0;
-        virtual const DMat<double> &S() const = 0;
-        virtual const DVec<double> &cJ() const = 0;
+        const JointCoordinate<Scalar> &jointPosition() const { return joint_state_.position; }
+        const JointCoordinate<Scalar> &jointVelocity() const { return joint_state_.velocity; }
+        virtual const DVec<Scalar> &vJ() const = 0;
+        virtual const DMat<Scalar> &S() const = 0;
+        virtual const DVec<Scalar> &cJ() const = 0;
 
-        virtual const spatial::Transform<> &getAbsoluteTransformForBody(const Body<> &body) = 0;
-        virtual DVec<double> getVelocityForBody(const Body<> &body) = 0;
-        virtual void applyForceToBody(const SVec<double> &force, const Body<> &body) = 0;
+        virtual const spatial::Transform<Scalar> &getAbsoluteTransformForBody(const Body<Scalar> &body) = 0;
+        virtual DVec<Scalar> getVelocityForBody(const Body<Scalar> &body) = 0;
+        virtual void applyForceToBody(const SVec<Scalar> &force, const Body<Scalar> &body) = 0;
 
         const int position_index_;
         const int num_positions_;
@@ -53,19 +54,19 @@ namespace grbda
         const std::string name_;
         const int parent_index_;
 
-        JointState<> joint_state_;
+        JointState<Scalar> joint_state_;
 
-        DVec<double> v_;     // spatial velocity
-        DVec<double> a_;     // spatial acceleration
-        DVec<double> f_;     // spatial force across joint
-        DVec<double> f_ext_; // net external spatial force acting on the cluster
-        DVec<double> avp_;   // acceleration velocity product
+        DVec<Scalar> v_;     // spatial velocity
+        DVec<Scalar> a_;     // spatial acceleration
+        DVec<Scalar> f_;     // spatial force across joint
+        DVec<Scalar> f_ext_; // net external spatial force acting on the cluster
+        DVec<Scalar> avp_;   // acceleration velocity product
 
-        DMat<double> I_;  // spatial inertia
-        DMat<double> Ic_; // compisite rigid body inertia
+        DMat<Scalar> I_;  // spatial inertia
+        DMat<Scalar> Ic_; // compisite rigid body inertia
 
-        spatial::GeneralizedTransform<> Xup_;        // spatial xform from parent to child frame
-        spatial::GeneralizedAbsoluteTransform<> Xa_; // spatial xform from world to current frame
+        spatial::GeneralizedTransform<Scalar> Xup_;        // spatial xform from parent to child
+        spatial::GeneralizedAbsoluteTransform<Scalar> Xa_; // spatial xform from world to current
 
         std::vector<int> supported_end_effectors_;
         std::vector<std::pair<int, int>> nearest_supported_ee_pairs_;

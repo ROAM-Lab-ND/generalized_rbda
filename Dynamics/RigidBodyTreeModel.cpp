@@ -24,9 +24,9 @@ namespace grbda
             {
                 const Body<> &body = body_and_joint.first;
                 JointPtr<double> joint = body_and_joint.second;
-                auto node = std::make_shared<RigidBodyTreeNode>(body, joint,
-                                                                position_index_, velocity_index_,
-                                                                motion_subspace_index_);
+                auto node = std::make_shared<RigidBodyTreeNode<>>(body, joint,
+                                                                  position_index_, velocity_index_,
+                                                                  motion_subspace_index_);
                 rigid_body_nodes_.push_back(node);
                 nodes_.push_back(node);
                 body_name_to_body_index_[body.name_] = body_index++;

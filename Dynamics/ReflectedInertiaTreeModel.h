@@ -7,7 +7,7 @@
 namespace grbda
 {
 
-    using ReflectedInertiaTreeNodePtr = std::shared_ptr<ReflectedInertiaTreeNode>;
+    using ReflectedInertiaTreeNodePtr = std::shared_ptr<ReflectedInertiaTreeNode<>>;
 
     enum class RotorInertiaApproximation
     {

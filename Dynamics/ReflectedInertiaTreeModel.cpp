@@ -31,11 +31,9 @@ namespace grbda
 
                 const int node_index = (int)reflected_inertia_nodes_.size();
                 const int parent_node_index = getIndexOfParentNodeForBody(link.parent_index_);
-                auto node = std::make_shared<ReflectedInertiaTreeNode>(node_index, link, link_joint,
-                                                                       parent_node_index,
-                                                                       position_index_,
-                                                                       velocity_index_,
-                                                                       motion_subspace_index_);
+                auto node = std::make_shared<ReflectedInertiaTreeNode<>>(
+                    node_index, link, link_joint, parent_node_index,
+                    position_index_, velocity_index_, motion_subspace_index_);
                 reflected_inertia_nodes_.push_back(node);
                 nodes_.push_back(node);
 

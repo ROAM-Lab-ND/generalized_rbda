@@ -7,27 +7,29 @@
 namespace grbda
 {
 
-    struct RigidBodyTreeNode : TreeNode
+    template <typename Scalar = double>
+    struct RigidBodyTreeNode : TreeNode<Scalar>
     {
-        RigidBodyTreeNode(const Body<> &body, const std::shared_ptr<Joints::Base<>> &joint,
+        RigidBodyTreeNode(const Body<Scalar> &body,
+                          const std::shared_ptr<Joints::Base<Scalar>> &joint,
                           const int position_index, const int velocity_index,
                           const int motion_subspace_index);
 
         void updateKinematics() override;
-        const DVec<double> &vJ() const override { return vJ_; }
-        const DMat<double> &S() const override { return joint_->S(); }
-        const DVec<double> &cJ() const override { return cJ_; }
+        const DVec<Scalar> &vJ() const override { return vJ_; }
+        const DMat<Scalar> &S() const override { return joint_->S(); }
+        const DVec<Scalar> &cJ() const override { return cJ_; }
 
-        const spatial::Transform<> &getAbsoluteTransformForBody(const Body<> &body) override;
-        DVec<double> getVelocityForBody(const Body<> &body) override;
-        void applyForceToBody(const SVec<double> &force, const Body<> &body) override;
+        const spatial::Transform<Scalar> &getAbsoluteTransformForBody(const Body<Scalar> &body) override;
+        DVec<Scalar> getVelocityForBody(const Body<Scalar> &body) override;
+        void applyForceToBody(const SVec<Scalar> &force, const Body<Scalar> &body) override;
 
-        const Body<> body_;
-        std::shared_ptr<Joints::Base<>> joint_;
+        const Body<Scalar> body_;
+        std::shared_ptr<Joints::Base<Scalar>> joint_;
 
-        DVec<double> vJ_;
-        DVec<double> cJ_ = DVec<double>::Zero(6);
-        const spatial::Transform<> Xtree_;
+        DVec<Scalar> vJ_;
+        DVec<Scalar> cJ_ = DVec<Scalar>::Zero(6);
+        const spatial::Transform<Scalar> Xtree_;
     };
 
 } // namespace grbda

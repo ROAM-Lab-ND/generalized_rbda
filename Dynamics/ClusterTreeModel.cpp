@@ -39,12 +39,12 @@ namespace grbda
         const int cluster_index = (int)cluster_nodes_.size();
         cluster_name_to_cluster_index_[name] = cluster_index;
 
-        auto node = std::make_shared<ClusterTreeNode>(cluster_index, name,
-                                                      bodies_in_current_cluster_,
-                                                      joint, parent_cluster_index,
-                                                      num_bodies_in_parent_cluster,
-                                                      position_index_, velocity_index_,
-                                                      motion_subspace_index_);
+        auto node = std::make_shared<ClusterTreeNode<>>(cluster_index, name,
+                                                        bodies_in_current_cluster_,
+                                                        joint, parent_cluster_index,
+                                                        num_bodies_in_parent_cluster,
+                                                        position_index_, velocity_index_,
+                                                        motion_subspace_index_);
         cluster_nodes_.push_back(node);
         nodes_.push_back(node);
 

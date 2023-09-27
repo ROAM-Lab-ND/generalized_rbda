@@ -43,6 +43,13 @@ namespace grbda
 
             return mat_out;
         }
+
+        class CasadiInverse
+        {
+        public:
+            CasadiInverse() {}
+            CasadiInverse(const DMat<casadi::SX> &mat) {}
+        };
     }
 }
 

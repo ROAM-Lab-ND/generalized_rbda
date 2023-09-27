@@ -15,7 +15,7 @@ namespace grbda
         LagrangeMultiplierEigen
     };
 
-    using RigidBodyTreeNodePtr = std::shared_ptr<RigidBodyTreeNode>;
+    using RigidBodyTreeNodePtr = std::shared_ptr<RigidBodyTreeNode<>>;
 
     /*!
      * Class to represent a floating base rigid body model with rotors and ground
