@@ -48,9 +48,7 @@ namespace grbda
                                        this->randomGearRatio(), this->randomGearRatio()};
             TransmissionModule moduleB{linkB, rotorB, linkB_joint_axis, rotorB_joint_axis,
                                        this->randomGearRatio(), this->randomGearRatio()};
-            model.appendRegisteredBodiesAsCluster(
-                name, std::make_shared<RevPairRotor>(moduleA, moduleB));
-            // model.appendRegisteredBodiesAsCluster<RevPairRotor>(name, moduleA, moduleB);
+            model.template appendRegisteredBodiesAsCluster<RevPairRotor>(name, moduleA, moduleB);
 
             // Contact points
             appendContactPoints(model, i, linkA_name, linkB_name);
@@ -128,9 +126,7 @@ namespace grbda
             const std::string name = "cluster-" + std::to_string(i);
             TransmissionModule moduleA{linkA, rotorA, axis, axis, gr, br};
             TransmissionModule moduleB{linkB, rotorB, axis, axis, gr, br};
-            model.appendRegisteredBodiesAsCluster(
-                name, std::make_shared<RevPairRotor>(moduleA, moduleB));
-            // model.appendRegisteredBodiesAsCluster<RevPairRotor>(name, moduleA, moduleB);
+            model.template appendRegisteredBodiesAsCluster<RevPairRotor>(name, moduleA, moduleB);
 
             // Contact points
             appendContactPoints(model, i, linkA_name, linkB_name);

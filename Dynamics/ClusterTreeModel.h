@@ -29,22 +29,18 @@ namespace grbda
         }
         ~ClusterTreeModel() {}
 
-        // The standard process for appending a cluster to the tree is to register all the bodies 
-        // in  given cluster and then append them as a cluster by specifying the type of cluster 
+        // The standard process for appending a cluster to the tree is to register all the bodies
+        // in  given cluster and then append them as a cluster by specifying the type of cluster
         // joint that connects them
         Body<Scalar> registerBody(const std::string name, const SpatialInertia<Scalar> inertia,
                                   const std::string parent, const spatial::Transform<Scalar> Xtree);
 
         template <typename ClusterJointType, typename... Args>
-        void appendRegisteredBodiesAsCluster(const std::string name, Args&&... args)
+        void appendRegisteredBodiesAsCluster(const std::string name, Args &&...args)
         {
             auto cluster_joint = std::make_shared<ClusterJointType>(args...);
             appendRegisteredBodiesAsCluster(name, cluster_joint);
         }
-
-        // TODO(@MatthewChignoli): Make this private again, but need to figure out why the variadic template version is not working with Scalar template...
-        void appendRegisteredBodiesAsCluster(const std::string name,
-                                             std::shared_ptr<ClusterJoints::Base<Scalar>> joint);
 
         // Alternatively, this function can be used when appending individual bodies to the model
         template <typename ClusterJointType, typename... Args>
@@ -138,6 +134,8 @@ namespace grbda
         DVec<Scalar> getBiasForceVector() override;
 
     protected:
+        void appendRegisteredBodiesAsCluster(const std::string name,
+                                             std::shared_ptr<ClusterJoints::Base<Scalar>> joint);
 
         void checkValidParentClusterForBodiesInCluster(const ClusterTreeNodePtr<Scalar> cluster);
         void checkValidParentClusterForBodiesInCluster(const int cluster_index);

@@ -6,12 +6,15 @@
 namespace grbda
 {
 
-    template <size_t N>
-    class RevoluteTripleChainWithRotor : public SerialChain<double>
+    template <size_t N, typename Scalar = double>
+    class RevoluteTripleChainWithRotor : public SerialChain<Scalar>
     {
     public:
+        typedef typename ClusterJoints::RevoluteTripleWithRotor<Scalar> RevTripleWithRotor;
+        typedef typename ClusterJoints::ParallelBeltTransmissionModule<Scalar> TransmissionModule;
+
         RevoluteTripleChainWithRotor(const bool random_parameters = true)
-            : SerialChain(random_parameters)
+            : SerialChain<Scalar>(random_parameters)
         {
             if (N % 3 != 0)
             {
@@ -22,10 +25,10 @@ namespace grbda
         size_t getNumDofs() const override { return N; }
 
     private:
-        ClusterTreeModel<> buildRandomClusterTreeModel() const override;
-        ClusterTreeModel<> buildUniformClusterTreeModel() const override;
+        ClusterTreeModel<Scalar> buildRandomClusterTreeModel() const override;
+        ClusterTreeModel<Scalar> buildUniformClusterTreeModel() const override;
 
-        void appendContactPoints(ClusterTreeModel<> &model, const int i,
+        void appendContactPoints(ClusterTreeModel<Scalar> &model, const int i,
                                  const std::string linkA_name,
                                  const std::string linkB_name,
                                  const std::string linkC_name) const;

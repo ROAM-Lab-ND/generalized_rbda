@@ -6,18 +6,22 @@
 namespace grbda
 {
 
-    template <size_t N, size_t M>
-    class RevoluteChainWithAndWithoutRotor : public SerialChain<double>
+    template <size_t N, size_t M, typename Scalar = double>
+    class RevoluteChainWithAndWithoutRotor : public SerialChain<Scalar>
     {
     public:
+        typedef typename ClusterJoints::RevoluteWithRotor<Scalar> RevoluteWithRotor;
+        typedef typename ClusterJoints::Revolute<Scalar> Revolute;
+        typedef typename ClusterJoints::GearedTransmissionModule<Scalar> TransmissionModule;
+
         RevoluteChainWithAndWithoutRotor(bool random_parameters = true)
-            : SerialChain(random_parameters) {}
+            : SerialChain<Scalar>(random_parameters) {}
 
         size_t getNumDofs() const override { return N + M; }
 
     private:
-        ClusterTreeModel<> buildRandomClusterTreeModel() const override;
-        ClusterTreeModel<> buildUniformClusterTreeModel() const override;
+        ClusterTreeModel<Scalar> buildRandomClusterTreeModel() const override;
+        ClusterTreeModel<Scalar> buildUniformClusterTreeModel() const override;
     };
 
 } // namespace grbda
