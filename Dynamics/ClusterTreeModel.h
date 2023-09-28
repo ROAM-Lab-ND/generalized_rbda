@@ -18,13 +18,10 @@ namespace grbda
      * Class to represent a floating base rigid body model with rotors and ground
      * contacts. No concept of state.
      */
-    
     template <typename Scalar = double>
     class ClusterTreeModel : public TreeModel<Scalar>
     {
     public:
-        EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-
         ClusterTreeModel()
         {
             body_name_to_body_index_["ground"] = -1;
@@ -44,6 +41,10 @@ namespace grbda
             auto cluster_joint = std::make_shared<ClusterJointType>(args...);
             appendRegisteredBodiesAsCluster(name, cluster_joint);
         }
+
+        // TODO(@MatthewChignoli): Make this private again, but need to figure out why the variadic template version is not working with Scalar template...
+        void appendRegisteredBodiesAsCluster(const std::string name,
+                                             std::shared_ptr<ClusterJoints::Base<Scalar>> joint);
 
         // Alternatively, this function can be used when appending individual bodies to the model
         template <typename ClusterJointType, typename... Args>
@@ -137,8 +138,6 @@ namespace grbda
         DVec<Scalar> getBiasForceVector() override;
 
     protected:
-        void appendRegisteredBodiesAsCluster(const std::string name,
-                                             std::shared_ptr<ClusterJoints::Base<Scalar>> joint);
 
         void checkValidParentClusterForBodiesInCluster(const ClusterTreeNodePtr<Scalar> cluster);
         void checkValidParentClusterForBodiesInCluster(const int cluster_index);

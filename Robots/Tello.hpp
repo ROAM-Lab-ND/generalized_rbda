@@ -6,7 +6,7 @@
 namespace grbda
 {
 
-    class Tello : public Robot
+    class Tello : public Robot<double>
     {
     public:
         Tello() {}

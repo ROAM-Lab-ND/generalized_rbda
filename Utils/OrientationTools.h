@@ -65,8 +65,7 @@ namespace grbda
       return R;
     }
 
-    template <typename T>
-    CoordinateAxis randomCoordinateAxis()
+    inline CoordinateAxis randomCoordinateAxis()
     {
       const int x = rand() % 3;
       if (x == 0)

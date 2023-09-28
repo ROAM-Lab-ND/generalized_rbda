@@ -6,7 +6,7 @@
 namespace grbda
 {
 
-    class TeleopArm : public Robot
+    class TeleopArm : public Robot<double>
     {
     public:
         TeleopArm();

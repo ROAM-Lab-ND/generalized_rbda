@@ -7,7 +7,7 @@ namespace grbda
 {
 
     template <size_t N>
-    class RevoluteTripleChainWithRotor : public SerialChain
+    class RevoluteTripleChainWithRotor : public SerialChain<double>
     {
     public:
         RevoluteTripleChainWithRotor(const bool random_parameters = true)

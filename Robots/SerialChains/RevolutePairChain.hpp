@@ -7,7 +7,7 @@ namespace grbda
 {
 
     template <size_t N>
-    class RevolutePairChain : public SerialChain
+    class RevolutePairChain : public SerialChain<double>
     {
     public:
         RevolutePairChain(const bool random_parameters = true) : SerialChain(random_parameters)

@@ -17,14 +17,14 @@ namespace grbda
             const std::string linkA_name = "link-A-" + std::to_string(i);
             const auto linkA_Xtree = spatial::randomSpatialRotation<double>();
             const auto linkA_inertia = randomLinkSpatialInertia();
-            ori::CoordinateAxis linkA_joint_axis = ori::randomCoordinateAxis<double>();
+            ori::CoordinateAxis linkA_joint_axis = ori::randomCoordinateAxis();
             auto linkA = model.registerBody(linkA_name, linkA_inertia, parent_name, linkA_Xtree);
 
             // Link B
             const std::string linkB_name = "link-B-" + std::to_string(i);
             const auto linkB_Xtree = spatial::randomSpatialRotation<double>();
             const auto linkB_inertia = randomLinkSpatialInertia();
-            ori::CoordinateAxis linkB_joint_axis = ori::randomCoordinateAxis<double>();
+            ori::CoordinateAxis linkB_joint_axis = ori::randomCoordinateAxis();
             auto linkB = model.registerBody(linkB_name, linkB_inertia, linkA_name, linkB_Xtree);
 
             // Cluster

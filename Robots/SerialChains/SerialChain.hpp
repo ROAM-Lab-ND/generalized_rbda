@@ -6,12 +6,13 @@
 namespace grbda
 {
 
-    class SerialChain : public Robot
+    template <typename Scalar>
+    class SerialChain : public Robot<Scalar>
     {
     public:
         SerialChain(bool random_parameters = true) : _random_parameters(random_parameters) {}
 
-        ClusterTreeModel<> buildClusterTreeModel() const override
+        ClusterTreeModel<Scalar> buildClusterTreeModel() const override
         {
             if (_random_parameters)
                 return buildRandomClusterTreeModel();
@@ -22,22 +23,22 @@ namespace grbda
         virtual size_t getNumDofs() const = 0;
 
     protected:
-        virtual ClusterTreeModel<> buildRandomClusterTreeModel() const = 0;
-        virtual ClusterTreeModel<> buildUniformClusterTreeModel() const = 0;
+        virtual ClusterTreeModel<Scalar> buildRandomClusterTreeModel() const = 0;
+        virtual ClusterTreeModel<Scalar> buildUniformClusterTreeModel() const = 0;
 
-        SpatialInertia<double> randomLinkSpatialInertia() const
+        SpatialInertia<Scalar> randomLinkSpatialInertia() const
         {
-            return SpatialInertia<double>::createRandomInertia();
+            return SpatialInertia<Scalar>::createRandomInertia();
         }
 
-        SpatialInertia<double> randomRotorSpatialInertia() const
+        SpatialInertia<Scalar> randomRotorSpatialInertia() const
         {
-            return SpatialInertia<double>::createRandomInertia(1e-4);
+            return SpatialInertia<Scalar>::createRandomInertia(1e-4);
         }
 
-        double randomGearRatio() const
+        Scalar randomGearRatio() const
         {
-            return static_cast<double>(rand() % _gear_ratio_scale + 1);
+            return static_cast<Scalar>(rand() % _gear_ratio_scale + 1);
         }
 
         const bool _random_parameters;

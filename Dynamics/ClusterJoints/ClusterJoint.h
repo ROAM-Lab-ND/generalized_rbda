@@ -96,7 +96,6 @@ namespace grbda
             std::shared_ptr<LoopConstraint::Base<Scalar>> loop_constraint_;
             std::vector<JointPtr<Scalar>> single_joints_;
 
-            // TODO(@MatthewChignoli): Does this need to be scalar?
             DMat<int> spanning_tree_to_independent_coords_conversion_;
         };
 

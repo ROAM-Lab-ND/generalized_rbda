@@ -6,7 +6,7 @@
 namespace grbda
 {
 
-    class MiniCheetah : public Robot
+    class MiniCheetah : public Robot<double>
     {
     public:
         MiniCheetah()

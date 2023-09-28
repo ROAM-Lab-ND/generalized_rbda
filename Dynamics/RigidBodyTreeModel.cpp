@@ -228,11 +228,7 @@ namespace grbda
     {
         updateLoopConstraints();
         this->updateBiasForceVector();
-        // TODO(@MatthewChignoli): Had to comment out because can't have if's when using symbolic
-        // if (loop_constraints_.g().norm() > 1e-12)
-        // {
         this->compositeRigidBodyAlgorithm();
-        // }
         return loop_constraints_.G_transpose() * (this->C_ + this->H_ * loop_constraints_.g());
     }
 

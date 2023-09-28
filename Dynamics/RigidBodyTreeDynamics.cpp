@@ -82,8 +82,6 @@ namespace grbda
         this->compositeRigidBodyAlgorithm();
         this->updateBiasForceVector();
 
-        // TODO(@MatthewChignoli): Do some work here to make sure we are solving linear systems as fast as possible when Scalar == double
-
         switch (forward_dynamics_method_)
         {
         case FwdDynMethod::Projection:

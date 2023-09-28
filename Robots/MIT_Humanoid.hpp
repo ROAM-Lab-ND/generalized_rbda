@@ -6,7 +6,7 @@
 namespace grbda
 {
 
-    class MIT_Humanoid : public Robot
+    class MIT_Humanoid : public Robot<double>
     {
     public:
         MIT_Humanoid()
