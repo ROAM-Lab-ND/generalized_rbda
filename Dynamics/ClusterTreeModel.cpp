@@ -8,10 +8,10 @@ namespace grbda
 {
 
     template <typename Scalar>
-    Body<> ClusterTreeModel<Scalar>::registerBody(const std::string name,
-                                                  const SpatialInertia<double> inertia,
-                                                  const std::string parent_name,
-                                                  const spatial::Transform<> Xtree)
+    Body<Scalar> ClusterTreeModel<Scalar>::registerBody(const std::string name,
+                                                        const SpatialInertia<Scalar> inertia,
+                                                        const std::string parent_name,
+                                                        const spatial::Transform<Scalar> Xtree)
     {
         const int body_index = (int)bodies_.size();
         body_name_to_body_index_[name] = body_index;
@@ -33,7 +33,7 @@ namespace grbda
 
     template <typename Scalar>
     void ClusterTreeModel<Scalar>::appendRegisteredBodiesAsCluster(
-        const std::string name, std::shared_ptr<ClusterJoints::Base<>> joint)
+        const std::string name, std::shared_ptr<ClusterJoints::Base<Scalar>> joint)
     {
         const int parent_cluster_index = getIndexOfParentClusterFromBodies(bodies_in_current_cluster_);
         const int num_bodies_in_parent_cluster = getNumBodiesInCluster(parent_cluster_index);
@@ -41,13 +41,13 @@ namespace grbda
         const int cluster_index = (int)cluster_nodes_.size();
         cluster_name_to_cluster_index_[name] = cluster_index;
 
-        auto node = std::make_shared<ClusterTreeNode<>>(cluster_index, name,
-                                                        bodies_in_current_cluster_,
-                                                        joint, parent_cluster_index,
-                                                        num_bodies_in_parent_cluster,
-                                                        this->position_index_,
-                                                        this->velocity_index_,
-                                                        this->motion_subspace_index_);
+        auto node = std::make_shared<ClusterTreeNode<Scalar>>(cluster_index, name,
+                                                              bodies_in_current_cluster_,
+                                                              joint, parent_cluster_index,
+                                                              num_bodies_in_parent_cluster,
+                                                              this->position_index_,
+                                                              this->velocity_index_,
+                                                              this->motion_subspace_index_);
         cluster_nodes_.push_back(node);
         this->nodes_.push_back(node);
 
@@ -92,14 +92,14 @@ namespace grbda
     }
 
     template <typename Scalar>
-    DMat<double> ClusterTreeModel<Scalar>::getMassMatrix()
+    DMat<Scalar> ClusterTreeModel<Scalar>::getMassMatrix()
     {
         this->compositeRigidBodyAlgorithm();
         return this->H_;
     }
 
     template <typename Scalar>
-    DVec<double> ClusterTreeModel<Scalar>::getBiasForceVector()
+    DVec<Scalar> ClusterTreeModel<Scalar>::getBiasForceVector()
     {
         this->updateBiasForceVector();
         return this->C_;
@@ -107,7 +107,7 @@ namespace grbda
 
     template <typename Scalar>
     void ClusterTreeModel<Scalar>::checkValidParentClusterForBodiesInCluster(
-        const ClusterTreeNodePtr cluster)
+        const ClusterTreeNodePtr<Scalar> cluster)
     {
         const int cluster_index = cluster->index_;
         const int parent_cluster_index = cluster->parent_index_;
@@ -141,8 +141,8 @@ namespace grbda
     {
         const int num_degrees_of_freedom = this->getNumDegreesOfFreedom();
 
-        this->H_ = DMat<double>::Zero(num_degrees_of_freedom, num_degrees_of_freedom);
-        this->C_ = DVec<double>::Zero(num_degrees_of_freedom);
+        this->H_ = DMat<Scalar>::Zero(num_degrees_of_freedom, num_degrees_of_freedom);
+        this->C_ = DVec<Scalar>::Zero(num_degrees_of_freedom);
 
         for (auto &cluster : cluster_nodes_)
             cluster->qdd_for_subtree_due_to_subtree_root_joint_qdd
@@ -153,13 +153,13 @@ namespace grbda
             contact_point.jacobian_.setZero(6, num_degrees_of_freedom);
             if (!contact_point.is_end_effector_)
                 continue;
-            contact_point.ChiUp_.push_back(DMat<double>::Zero(0, 0));
+            contact_point.ChiUp_.push_back(DMat<Scalar>::Zero(0, 0));
         }
     }
 
     template <typename Scalar>
     void ClusterTreeModel<Scalar>::appendContactPoint(const std::string body_name,
-                                                      const Vec3<double> &local_offset,
+                                                      const Vec3<Scalar> &local_offset,
                                                       const std::string contact_point_name,
                                                       const bool is_end_effector)
     {
@@ -176,7 +176,7 @@ namespace grbda
         this->contact_points_.emplace_back(body_name_to_body_index_.at(body_name), local_offset,
                                            contact_point_name, this->getNumDegreesOfFreedom(),
                                            this->num_end_effectors_++);
-        ContactPoint &contact_point = this->contact_points_.back();
+        ContactPoint<Scalar> &contact_point = this->contact_points_.back();
 
         // Keep track of which nodes support this new end effector
         int i = getIndexOfClusterContainingBody(body_name_to_body_index_.at(body_name));
@@ -190,7 +190,7 @@ namespace grbda
         // Initialize the force propagators for this end effector
         for (int j = 0; j < (int)cluster_nodes_.size(); j++)
         {
-            contact_point.ChiUp_.push_back(DMat<double>::Zero(0, 0));
+            contact_point.ChiUp_.push_back(DMat<Scalar>::Zero(0, 0));
         }
 
         // Get the nearest shared supporting cluster for every existing end effector
@@ -206,9 +206,9 @@ namespace grbda
 
     template <typename Scalar>
     void ClusterTreeModel<Scalar>::appendContactBox(const std::string body_name,
-                                                    const Vec3<double> &dims)
+                                                    const Vec3<Scalar> &dims)
     {
-        using V3d = Vec3<double>;
+        using V3d = Vec3<Scalar>;
         appendContactPoint(body_name, V3d(dims(0), dims(1), dims(2)) / 2, "torso-contact-1");
         appendContactPoint(body_name, V3d(-dims(0), dims(1), dims(2)) / 2, "torso-contact-2");
         appendContactPoint(body_name, V3d(dims(0), -dims(1), dims(2)) / 2, "torso-contact-3");
@@ -222,14 +222,14 @@ namespace grbda
 
     template <typename Scalar>
     void ClusterTreeModel<Scalar>::appendEndEffector(const std::string body_name,
-                                                     const Vec3<double> &local_offset,
+                                                     const Vec3<Scalar> &local_offset,
                                                      const std::string end_effector_name)
     {
         appendContactPoint(body_name, local_offset, end_effector_name, true);
     }
 
     template <typename Scalar>
-    void ClusterTreeModel<Scalar>::setState(const ModelState<> &model_state)
+    void ClusterTreeModel<Scalar>::setState(const ModelState<Scalar> &model_state)
     {
         size_t i = 0;
         for (auto &cluster : cluster_nodes_)
@@ -251,55 +251,57 @@ namespace grbda
     }
 
     template <typename Scalar>
-    Vec3<double> ClusterTreeModel<Scalar>::getPosition(const std::string &body_name)
+    Vec3<Scalar> ClusterTreeModel<Scalar>::getPosition(const std::string &body_name)
     {
         const int cluster_idx = getIndexOfClusterContainingBody(body_name);
         const int subindex_within_cluster = body(body_name).sub_index_within_cluster_;
 
         this->forwardKinematics();
-        const spatial::Transform<> &Xa = cluster_nodes_[cluster_idx]->Xa_[subindex_within_cluster];
-        const Mat6<double> Xai = spatial::invertSXform(Xa.toMatrix().cast<double>());
-        Vec3<double> link_pos = spatial::sXFormPoint(Xai, Vec3<double>::Zero());
+        const spatial::Transform<Scalar> &Xa =
+            cluster_nodes_[cluster_idx]->Xa_[subindex_within_cluster];
+        const Mat6<Scalar> Xai = spatial::invertSXform(Xa.toMatrix().template cast<Scalar>());
+        Vec3<Scalar> link_pos = spatial::sXFormPoint(Xai, Vec3<Scalar>::Zero());
         return link_pos;
     }
 
     template <typename Scalar>
-    Mat3<double> ClusterTreeModel<Scalar>::getOrientation(const std::string &body_name)
+    Mat3<Scalar> ClusterTreeModel<Scalar>::getOrientation(const std::string &body_name)
     {
         const int cluster_idx = getIndexOfClusterContainingBody(body_name);
         const int subindex_within_cluster = body(body_name).sub_index_within_cluster_;
 
         this->forwardKinematics();
-        const spatial::Transform<> &Xa = cluster_nodes_[cluster_idx]->Xa_[subindex_within_cluster];
-        Mat3<double> Rai = Xa.getRotation();
+        const spatial::Transform<Scalar> &Xa =
+            cluster_nodes_[cluster_idx]->Xa_[subindex_within_cluster];
+        Mat3<Scalar> Rai = Xa.getRotation();
         Rai.transposeInPlace();
         return Rai;
     }
 
     template <typename Scalar>
-    Vec3<double> ClusterTreeModel<Scalar>::getLinearVelocity(const std::string &body_name)
+    Vec3<Scalar> ClusterTreeModel<Scalar>::getLinearVelocity(const std::string &body_name)
     {
         const int cluster_idx = getIndexOfClusterContainingBody(body_name);
         const int subindex_within_cluster = body(body_name).sub_index_within_cluster_;
 
         this->forwardKinematics();
-        const Mat3<double> Rai = getOrientation(body_name);
-        const DVec<double> &v_cluster = cluster_nodes_[cluster_idx]->v_;
-        const SVec<double> v = v_cluster.segment<6>(6 * subindex_within_cluster);
-        return Rai * spatial::spatialToLinearVelocity(v, Vec3<double>::Zero());
+        const Mat3<Scalar> Rai = getOrientation(body_name);
+        const DVec<Scalar> &v_cluster = cluster_nodes_[cluster_idx]->v_;
+        const SVec<Scalar> v = v_cluster.template segment<6>(6 * subindex_within_cluster);
+        return Rai * spatial::spatialToLinearVelocity(v, Vec3<Scalar>::Zero());
     }
 
     template <typename Scalar>
-    Vec3<double> ClusterTreeModel<Scalar>::getAngularVelocity(const std::string &body_name)
+    Vec3<Scalar> ClusterTreeModel<Scalar>::getAngularVelocity(const std::string &body_name)
     {
         const int cluster_idx = getIndexOfClusterContainingBody(body_name);
         const int subindex_within_cluster = body(body_name).sub_index_within_cluster_;
 
         this->forwardKinematics();
-        const Mat3<double> Rai = getOrientation(body_name);
-        const DVec<double> &v_cluster = cluster_nodes_[cluster_idx]->v_;
-        const SVec<double> v = v_cluster.segment<6>(6 * subindex_within_cluster);
-        return Rai * v.head<3>();
+        const Mat3<Scalar> Rai = getOrientation(body_name);
+        const DVec<Scalar> &v_cluster = cluster_nodes_[cluster_idx]->v_;
+        const SVec<Scalar> v = v_cluster.template segment<6>(6 * subindex_within_cluster);
+        return Rai * v.template head<3>();
     }
 
     template <typename Scalar>
@@ -320,7 +322,7 @@ namespace grbda
     }
 
     template <typename Scalar>
-    int ClusterTreeModel<Scalar>::getSubIndexWithinClusterForBody(const Body<> &body) const
+    int ClusterTreeModel<Scalar>::getSubIndexWithinClusterForBody(const Body<Scalar> &body) const
     {
         return getSubIndexWithinClusterForBody(body.index_);
     }
@@ -339,7 +341,8 @@ namespace grbda
     }
 
     template <typename Scalar>
-    int ClusterTreeModel<Scalar>::getNumBodiesInCluster(const ClusterTreeNodePtr cluster) const
+    int 
+    ClusterTreeModel<Scalar>::getNumBodiesInCluster(const ClusterTreeNodePtr<Scalar> cluster) const
     {
         return getNumBodiesInCluster(cluster->index_);
     }
@@ -351,8 +354,8 @@ namespace grbda
     }
 
     template <typename Scalar>
-    int
-    ClusterTreeModel<Scalar>::getIndexOfParentClusterFromBodies(const std::vector<Body<>> &bodies)
+    int ClusterTreeModel<Scalar>::getIndexOfParentClusterFromBodies(
+        const std::vector<Body<Scalar>> &bodies)
     {
         int parent_cluster_index;
         bool parent_cluster_detected = false;
@@ -397,7 +400,7 @@ namespace grbda
     }
 
     template <typename Scalar>
-    int ClusterTreeModel<Scalar>::getIndexOfClusterContainingBody(const Body<> &body)
+    int ClusterTreeModel<Scalar>::getIndexOfClusterContainingBody(const Body<Scalar> &body)
     {
         return getIndexOfClusterContainingBody(body.index_);
     }
@@ -421,40 +424,42 @@ namespace grbda
     }
 
     template <typename Scalar>
-    ClusterTreeNodePtr ClusterTreeModel<Scalar>::getClusterContainingBody(const int body_index)
+    ClusterTreeNodePtr<Scalar>
+    ClusterTreeModel<Scalar>::getClusterContainingBody(const int body_index)
     {
         return cluster_nodes_[getIndexOfClusterContainingBody(body_index)];
     }
 
     template <typename Scalar>
-    ClusterTreeNodePtr ClusterTreeModel<Scalar>::getClusterContainingBody(const Body<> &body)
+    ClusterTreeNodePtr<Scalar>
+    ClusterTreeModel<Scalar>::getClusterContainingBody(const Body<Scalar> &body)
     {
         return cluster_nodes_[getIndexOfClusterContainingBody(body)];
     }
 
     template <typename Scalar>
-    ClusterTreeNodePtr
+    ClusterTreeNodePtr<Scalar>
     ClusterTreeModel<Scalar>::getClusterContainingBody(const std::string &body_name)
     {
         return cluster_nodes_[getIndexOfClusterContainingBody(body_name)];
     }
 
     template <typename Scalar>
-    DVec<double> ClusterTreeModel<Scalar>::localCartesianForceAtPointToWorldPluckerForceOnCluster(
-        const Vec3<double> &force, const ContactPoint &contact_point)
+    DVec<Scalar> ClusterTreeModel<Scalar>::localCartesianForceAtPointToWorldPluckerForceOnCluster(
+        const Vec3<Scalar> &force, const ContactPoint<Scalar> &contact_point)
     {
         const auto &body = bodies_[contact_point.body_index_];
         auto cluster = getClusterContainingBody(contact_point.body_index_);
 
         const auto &Xa = cluster->Xa_.getTransformForOutputBody(body.sub_index_within_cluster_);
-        Mat3<double> Rai = Xa.getRotation().transpose();
+        Mat3<Scalar> Rai = Xa.getRotation().transpose();
         spatial::Transform X_cartesian_to_plucker{Rai, contact_point.local_offset_};
 
-        SVec<double> spatial_force = SVec<double>::Zero();
-        spatial_force.tail<3>() = force;
+        SVec<Scalar> spatial_force = SVec<Scalar>::Zero();
+        spatial_force.template tail<3>() = force;
 
-        DVec<double> F = DVec<double>::Zero(cluster->motion_subspace_dimension_);
-        F.segment<6>(6 * body.sub_index_within_cluster_) =
+        DVec<Scalar> F = DVec<Scalar>::Zero(cluster->motion_subspace_dimension_);
+        F.template segment<6>(6 * body.sub_index_within_cluster_) =
             X_cartesian_to_plucker.inverseTransformForceVector(spatial_force);
 
         return F;

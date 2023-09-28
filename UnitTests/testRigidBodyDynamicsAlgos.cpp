@@ -84,8 +84,9 @@ protected:
         return nan_detected;
     }
 
-    void setForcesForAllModels(std::vector<ExternalForceAndBodyIndexPair> force_and_index_pairs,
-                               const int robot_idx)
+    void setForcesForAllModels(
+        std::vector<ExternalForceAndBodyIndexPair<double>> force_and_index_pairs,
+        const int robot_idx)
     {
         cluster_models[robot_idx].setExternalForces(force_and_index_pairs);
         generic_models[robot_idx].setExternalForces(force_and_index_pairs);
@@ -223,7 +224,7 @@ TYPED_TEST(RigidBodyDynamicsAlgosTest, ForwardAndInverseDyanmics)
             }
 
             // Set random spatial forces on bodies
-            std::vector<ExternalForceAndBodyIndexPair> force_and_index_pairs;
+            std::vector<ExternalForceAndBodyIndexPair<double>> force_and_index_pairs;
             for (const auto &body : cluster_model.bodies())
                 force_and_index_pairs.emplace_back(body.index_, SVec<double>::Random());
             this->setForcesForAllModels(force_and_index_pairs, i);
@@ -336,7 +337,7 @@ TYPED_TEST(RigidBodyDynamicsAlgosTest, ApplyTestForceTest)
             }
 
             cluster_model.updateContactPointJacobians();
-            for (const ContactPoint &cp : cluster_model.contactPoints())
+            for (const ContactPoint<double> &cp : cluster_model.contactPoints())
             {
                 const D6Mat<double> J = cluster_model.contactJacobianWorldFrame(cp.name_);
                 const D3Mat<double> J_lin = J.bottomRows<3>();

@@ -16,7 +16,7 @@ namespace grbda
             link_1_joint_ =  this->single_joints_.emplace_back(new Rev(joint_axis_1));
             link_2_joint_ =  this->single_joints_.emplace_back(new Rev(joint_axis_2));
 
-            this->spanning_tree_to_independent_coords_conversion_ = DMat<Scalar>::Zero(0, 0);
+            this->spanning_tree_to_independent_coords_conversion_ = DMat<int>::Zero(0, 0);
 
             DMat<Scalar> G = DMat<Scalar>::Zero(2, 2);
             G << 1., 0.,

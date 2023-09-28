@@ -1,17 +1,20 @@
 #include "Factorization.h"
 
+#include "math.h"
+
 namespace grbda
 {
 
     namespace factorization
     {
 
-        LTL::LTL(DMat<double> H, const std::vector<int> &expanded_tree_parent_indices)
+        template <typename Scalar>
+        LTL<Scalar>::LTL(DMat<Scalar> H, const std::vector<int> &expanded_tree_parent_indices)
             : expanded_tree_parent_indices_(expanded_tree_parent_indices)
         {
             for (int k = H.rows() - 1; k > -1; k--)
             {
-                H(k, k) = std::sqrt(H(k, k));
+                H(k, k) = math::sqrt(H(k, k));
                 int i = parent(k);
                 while (i != -1)
                 {
@@ -31,13 +34,14 @@ namespace grbda
                     i = parent(i);
                 }
             }
-            this->DMat<double>::operator=(H.triangularView<Eigen::Lower>());
+            this->DMat<Scalar>::operator=(H.template triangularView<Eigen::Lower>());
         }
 
-        DVec<double> LTL::product(const DVec<double> &x) const
+        template <typename Scalar>
+        DVec<Scalar> LTL<Scalar>::product(const DVec<Scalar> &x) const
         {
             const int n = x.rows();
-            DVec<double> y = DVec<double>::Zero(n);
+            DVec<Scalar> y = DVec<Scalar>::Zero(n);
             for (int i = n - 1; i > -1; i--)
             {
                 y(i) = (*this)(i, i) * x(i);
@@ -51,10 +55,11 @@ namespace grbda
             return y;
         }
 
-        DVec<double> LTL::transposeProduct(const DVec<double> &x) const
+        template <typename Scalar>
+        DVec<Scalar> LTL<Scalar>::transposeProduct(const DVec<Scalar> &x) const
         {
             const int n = x.rows();
-            DVec<double> y = DVec<double>::Zero(n);
+            DVec<Scalar> y = DVec<Scalar>::Zero(n);
             for (int i = 0; i < n; i++)
             {
                 y(i) = (*this)(i, i) * x(i);
@@ -68,9 +73,10 @@ namespace grbda
             return y;
         }
 
-        DMat<double> LTL::transposeMatrixProduct(const DMat<double> &X) const
+        template <typename Scalar>
+        DMat<Scalar> LTL<Scalar>::transposeMatrixProduct(const DMat<Scalar> &X) const
         {
-            DMat<double> Y = DMat<double>(cols(), X.cols());
+            DMat<Scalar> Y = DMat<Scalar>(this->cols(), X.cols());
             for (int i = 0; i < X.cols(); i++)
             {
                 Y.col(i) = transposeProduct(X.col(i));
@@ -78,7 +84,8 @@ namespace grbda
             return Y;
         }
 
-        void LTL::inverseProductInSitu(DVec<double> &x) const
+        template <typename Scalar>
+        void LTL<Scalar>::inverseProductInSitu(DVec<Scalar> &x) const
         {
             for (int i = 0; i < x.rows(); i++)
             {
@@ -92,14 +99,16 @@ namespace grbda
             }
         }
 
-        DVec<double> LTL::inverseProduct(const DVec<double> &x) const
+        template <typename Scalar>
+        DVec<Scalar> LTL<Scalar>::inverseProduct(const DVec<Scalar> &x) const
         {
-            DVec<double> y = x;
+            DVec<Scalar> y = x;
             inverseProductInSitu(y);
             return y;
         }
 
-        void LTL::inverseTransposeProductInSitu(DVec<double> &x) const
+        template <typename Scalar>
+        void LTL<Scalar>::inverseTransposeProductInSitu(DVec<Scalar> &x) const
         {
             for (int i = x.rows() - 1; i > -1; i--)
             {
@@ -113,25 +122,31 @@ namespace grbda
             }
         }
 
-        DVec<double> LTL::inverseTransposeProduct(const DVec<double> &x) const
+        template <typename Scalar>
+        DVec<Scalar> LTL<Scalar>::inverseTransposeProduct(const DVec<Scalar> &x) const
         {
-            DVec<double> y = x;
+            DVec<Scalar> y = x;
             inverseTransposeProductInSitu(y);
             return y;
         }
 
-        DMat<double> LTL::inverseTransposeMatrixProduct(const DMat<double> &X) const
+        template <typename Scalar>
+        DMat<Scalar> LTL<Scalar>::inverseTransposeMatrixProduct(const DMat<Scalar> &X) const
         {
-            DMat<double> Y = X;
+            DMat<Scalar> Y = X;
             for (int i = 0; i < X.cols(); i++)
                 Y.col(i) = inverseTransposeProduct(Y.col(i));
             return Y;
         }
 
-        DVec<double> LTL::solve(const DVec<double> &x) const
+        template <typename Scalar>
+        DVec<Scalar> LTL<Scalar>::solve(const DVec<Scalar> &x) const
         {
             return inverseProduct(inverseTransposeProduct(x));
         }
+
+        template class LTL<double>;
+        template class LTL<casadi::SX>;
 
     }
 

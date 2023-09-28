@@ -5,13 +5,11 @@
 namespace grbda
 {
 
-    template <typename Scalar, typename InverseType>
-    ClusterTreeNode<Scalar, InverseType>::ClusterTreeNode(int index, std::string name,
-                                                          std::vector<Body<Scalar>> &bodies,
-                                                          ClusterJointPtr joint,
-                                                          int parent_index, int num_parent_bodies,
-                                                          int position_index, int velocity_index,
-                                                          int motion_ss_index)
+    template <typename Scalar>
+    ClusterTreeNode<Scalar>::ClusterTreeNode(
+        int index, std::string name, std::vector<Body<Scalar>> &bodies,
+        ClusterJointPtr joint, int parent_index, int num_parent_bodies,
+        int position_index, int velocity_index, int motion_ss_index)
         : TreeNode<Scalar>(index, name, parent_index, num_parent_bodies,
                            motion_ss_index, 6 * bodies.size(),
                            position_index, joint->numPositions(),
@@ -27,41 +25,41 @@ namespace grbda
         }
     }
 
-    template <typename Scalar, typename InverseType>
-    void ClusterTreeNode<Scalar, InverseType>::updateKinematics()
+    template <typename Scalar>
+    void ClusterTreeNode<Scalar>::updateKinematics()
     {
         joint_->updateKinematics(this->joint_state_);
         joint_->computeSpatialTransformFromParentToCurrentCluster(this->Xup_);
     }
 
-    template <typename Scalar, typename InverseType>
-    void ClusterTreeNode<Scalar, InverseType>::updateDinv(const DMat<Scalar> &D)
+    template <typename Scalar>
+    void ClusterTreeNode<Scalar>::updateDinv(const DMat<Scalar> &D)
     {
         D_inv_ = InverseType(D);
     }
 
-    template <typename Scalar, typename InverseType>
+    template <typename Scalar>
     const spatial::Transform<Scalar> &
-    ClusterTreeNode<Scalar, InverseType>::getAbsoluteTransformForBody(const Body<Scalar> &body)
+    ClusterTreeNode<Scalar>::getAbsoluteTransformForBody(const Body<Scalar> &body)
     {
         return this->Xa_.getTransformForOutputBody(body.sub_index_within_cluster_);
     }
 
-    template <typename Scalar, typename InverseType>
-    DVec<Scalar> ClusterTreeNode<Scalar, InverseType>::getVelocityForBody(const Body<Scalar> &body)
+    template <typename Scalar>
+    DVec<Scalar> ClusterTreeNode<Scalar>::getVelocityForBody(const Body<Scalar> &body)
     {
         return this->v_.template segment<6>(6 * body.sub_index_within_cluster_);
     }
 
-    template <typename Scalar, typename InverseType>
-    void ClusterTreeNode<Scalar, InverseType>::applyForceToBody(const SVec<Scalar> &force,
-                                                                const Body<Scalar> &body)
+    template <typename Scalar>
+    void ClusterTreeNode<Scalar>::applyForceToBody(const SVec<Scalar> &force,
+                                                   const Body<Scalar> &body)
     {
         this->f_ext_.template segment<6>(6 * body.sub_index_within_cluster_) += force;
     }
 
-    template <typename Scalar, typename InverseType>
-    bool ClusterTreeNode<Scalar, InverseType>::containsBody(int body_index) const
+    template <typename Scalar>
+    bool ClusterTreeNode<Scalar>::containsBody(int body_index) const
     {
         for (const auto &body : bodies_)
         {
@@ -71,9 +69,9 @@ namespace grbda
         return false;
     }
 
-    template <typename Scalar, typename InverseType>
+    template <typename Scalar>
     std::vector<std::pair<Body<Scalar>, JointPtr<Scalar>>>
-    ClusterTreeNode<Scalar, InverseType>::bodiesAndJoints() const
+    ClusterTreeNode<Scalar>::bodiesAndJoints() const
     {
         std::vector<JointPtr<Scalar>> single_joints = joint_->singleJoints();
         std::vector<std::pair<Body<Scalar>, JointPtr<Scalar>>> bodies_and_joints;
@@ -87,14 +85,14 @@ namespace grbda
         return bodies_and_joints;
     }
 
-    template <typename Scalar, typename InverseType>
+    template <typename Scalar>
     std::vector<std::tuple<Body<Scalar>, JointPtr<Scalar>, DMat<Scalar>>>
-    ClusterTreeNode<Scalar, InverseType>::bodiesJointsAndReflectedInertias() const
+    ClusterTreeNode<Scalar>::bodiesJointsAndReflectedInertias() const
     {
         return joint_->bodiesJointsAndReflectedInertias();
     }
 
-    template class ClusterTreeNode<double, Eigen::ColPivHouseholderQR<DMat<double>>>;
-    template class ClusterTreeNode<casadi::SX, math::CasadiInverse>;
+    template class ClusterTreeNode<double>;
+    template class ClusterTreeNode<casadi::SX>;
 
 } // namespace grbda

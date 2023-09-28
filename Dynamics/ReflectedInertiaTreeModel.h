@@ -6,8 +6,8 @@
 
 namespace grbda
 {
-
-    using ReflectedInertiaTreeNodePtr = std::shared_ptr<ReflectedInertiaTreeNode<>>;
+    template <typename Scalar>
+    using ReflectedInertiaTreeNodePtr = std::shared_ptr<ReflectedInertiaTreeNode<Scalar>>;
 
     enum class RotorInertiaApproximation
     {
@@ -26,79 +26,85 @@ namespace grbda
     public:
         EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
-        ReflectedInertiaTreeModel(const ClusterTreeModel<> &cluster_tree_model,
+        ReflectedInertiaTreeModel(const ClusterTreeModel<Scalar> &cluster_tree_model,
                                   RotorInertiaApproximation rotor_inertia_approximation =
                                       RotorInertiaApproximation::NONE);
 
         int getNumBodies() const override { return (int)reflected_inertia_nodes_.size(); }
 
-        const Body<> &getBody(int spanning_tree_index) const override;
-        const TreeNodePtr getNodeContainingBody(int spanning_tree_index) override;
+        const Body<Scalar> &getBody(int spanning_tree_index) const override;
+        const TreeNodePtr<Scalar> getNodeContainingBody(int spanning_tree_index) override;
         int getIndexOfParentNodeForBody(const int spanning_tree_index);
 
-        const DVec<int> &getIndependentCoordinateIndices() const { return independent_coord_indices_; }
+        const DVec<int> &getIndependentCoordinateIndices() const
+        {
+            return independent_coord_indices_;
+        }
 
-        void setIndependentStates(const DVec<double> &y, const DVec<double> &yd);
+        void setIndependentStates(const DVec<Scalar> &y, const DVec<Scalar> &yd);
 
-        Vec3<double> getPosition(const std::string &body_name) override
+        Vec3<Scalar> getPosition(const std::string &body_name) override
         {
             throw std::runtime_error("Not implemented");
         }
-        Mat3<double> getOrientation(const std::string &body_name) override
+        Mat3<Scalar> getOrientation(const std::string &body_name) override
         {
             throw std::runtime_error("Not implemented");
         }
-        Vec3<double> getLinearVelocity(const std::string &body_name) override
+        Vec3<Scalar> getLinearVelocity(const std::string &body_name) override
         {
             throw std::runtime_error("Not implemented");
         }
-        Vec3<double> getAngularVelocity(const std::string &body_name) override
+        Vec3<Scalar> getAngularVelocity(const std::string &body_name) override
         {
             throw std::runtime_error("Not implemented");
         }
 
-        D6Mat<double> contactJacobianBodyFrame(const std::string &cp_name) override;
-        const D6Mat<double>& contactJacobianWorldFrame(const std::string &cp_name) override;
+        D6Mat<Scalar> contactJacobianBodyFrame(const std::string &cp_name) override;
+        const D6Mat<Scalar>& contactJacobianWorldFrame(const std::string &cp_name) override;
 
-        DVec<double> forwardDynamics(const DVec<double> &tau) override;
-        DVec<double> inverseDynamics(const DVec<double> &ydd) override;
-        DMat<double> inverseOperationalSpaceInertiaMatrix() override;
+        DVec<Scalar> forwardDynamics(const DVec<Scalar> &tau) override;
+        DVec<Scalar> inverseDynamics(const DVec<Scalar> &ydd) override;
+        DMat<Scalar> inverseOperationalSpaceInertiaMatrix() override;
 
-        double applyTestForce(const std::string &contact_point_name,
-                              const Vec3<double> &force, DVec<double> &dstate_out) override;
+        Scalar applyTestForce(const std::string &contact_point_name,
+                              const Vec3<Scalar> &force, DVec<Scalar> &dstate_out) override;
 
-        DMat<double> getMassMatrix() override;
-        DVec<double> getBiasForceVector() override;
+        DMat<Scalar> getMassMatrix() override;
+        DVec<Scalar> getBiasForceVector() override;
 
     protected:
-        void extractRigidBodiesAndJointsFromClusterModel(const ClusterTreeModel<> &cluster_tree_model);
-        void extractIndependentCoordinatesFromClusterModel(const ClusterTreeModel<> &cluster_tree_model);
-        void extractContactPointsFromClusterModel(const ClusterTreeModel<> &cluster_tree_model);
+        void extractRigidBodiesAndJointsFromClusterModel(
+            const ClusterTreeModel<Scalar> &cluster_tree_model);
+        void extractIndependentCoordinatesFromClusterModel(
+            const ClusterTreeModel<Scalar> &cluster_tree_model);
+        void extractContactPointsFromClusterModel(
+            const ClusterTreeModel<Scalar> &cluster_tree_model);
 
         void resetCache() override;
 
-        DVec<double> forwardDynamicsABA(const DVec<double> &tau, bool use_reflected_inertia);
-        DVec<double> forwardDynamicsHinv(const DVec<double> &tau);
+        DVec<Scalar> forwardDynamicsABA(const DVec<Scalar> &tau, bool use_reflected_inertia);
+        DVec<Scalar> forwardDynamicsHinv(const DVec<Scalar> &tau);
         void updateArticulatedBodies(bool use_reflected_inertia);
 
-        DMat<double> inverseOpSpaceInertiaEFPA(bool use_reflected_inertia);
-        DMat<double> inverseOpSpaceInertiaHinv();
+        DMat<Scalar> inverseOpSpaceInertiaEFPA(bool use_reflected_inertia);
+        DMat<Scalar> inverseOpSpaceInertiaHinv();
 
-        double applyTestForceEFPA(const Vec3<double> &force, const std::string &contact_point_name,
-                                  DVec<double> &dstate_out, bool use_reflected_inertia);
-        double applyTestForceHinv(const Vec3<double> &force, const std::string &contact_point_name,
-                                  DVec<double> &dstate_out);
+        Scalar applyTestForceEFPA(const Vec3<Scalar> &force, const std::string &contact_point_name,
+                                  DVec<Scalar> &dstate_out, bool use_reflected_inertia);
+        Scalar applyTestForceHinv(const Vec3<Scalar> &force, const std::string &contact_point_name,
+                                  DVec<Scalar> &dstate_out);
 
         void updateForcePropagators(bool use_reflected_inertia);
         void updateQddEffects(bool use_reflected_inertia);
-        SVec<double> localCartesianForceAtPointToWorldPluckerForceOnCluster(
-            const Vec3<double> &force, const ContactPoint &contact_point);
+        SVec<Scalar> localCartesianForceAtPointToWorldPluckerForceOnCluster(
+            const Vec3<Scalar> &force, const ContactPoint<Scalar> &contact_point);
 
-        std::vector<ReflectedInertiaTreeNodePtr> reflected_inertia_nodes_;
+        std::vector<ReflectedInertiaTreeNodePtr<Scalar>> reflected_inertia_nodes_;
 
-        DMat<double> reflected_inertia_;
+        DMat<Scalar> reflected_inertia_;
 
-        DMat<double> spanning_tree_to_independent_coords_conversion_;
+        DMat<int> spanning_tree_to_independent_coords_conversion_;
         DVec<int> independent_coord_indices_;
 
         bool articulated_bodies_updated_ = false;

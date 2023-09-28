@@ -76,7 +76,7 @@ namespace grbda
             const DMat<Scalar> &K() const { return loop_constraint_->K(); }
             const DVec<Scalar> &k() const { return loop_constraint_->k(); }
 
-            const DMat<Scalar> &spanningTreeToIndependentCoordsConversion() const
+            const DMat<int> &spanningTreeToIndependentCoordsConversion() const
             {
                 return spanning_tree_to_independent_coords_conversion_;
             }
@@ -97,7 +97,7 @@ namespace grbda
             std::vector<JointPtr<Scalar>> single_joints_;
 
             // TODO(@MatthewChignoli): Does this need to be scalar?
-            DMat<Scalar> spanning_tree_to_independent_coords_conversion_;
+            DMat<int> spanning_tree_to_independent_coords_conversion_;
         };
 
         template <typename Scalar = double>

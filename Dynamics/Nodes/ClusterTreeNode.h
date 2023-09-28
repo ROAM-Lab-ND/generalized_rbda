@@ -3,14 +3,29 @@
 
 #include "TreeNode.h"
 #include "Dynamics/ClusterJoints/ClusterJointTypes.h"
+#include "Utils/math.h"
 
 namespace grbda
 {
 
-    template <typename Scalar = double,
-              typename InverseType = Eigen::ColPivHouseholderQR<DMat<double>>>
+    // Define a type trait to map the first template parameter to the second
+    template <typename Scalar>
+    struct ClusterTreeNodeInverseType
+    {
+        using type = Eigen::ColPivHouseholderQR<DMat<Scalar>>;
+    };
+
+    // Specialization for casadi::SX
+    template <>
+    struct ClusterTreeNodeInverseType<casadi::SX>
+    {
+        using type = math::CasadiInverse;
+    };
+
+    template <typename Scalar = double>
     struct ClusterTreeNode : TreeNode<Scalar>
     {
+        typedef typename ClusterTreeNodeInverseType<Scalar>::type InverseType;
         typedef std::shared_ptr<ClusterJoints::Base<Scalar>> ClusterJointPtr;
         typedef std::pair<Body<Scalar>, JointPtr<Scalar>> BodyJointPair;
         typedef std::tuple<Body<Scalar>, JointPtr<Scalar>, DMat<Scalar>> BodyJointRefInertiaTriple;

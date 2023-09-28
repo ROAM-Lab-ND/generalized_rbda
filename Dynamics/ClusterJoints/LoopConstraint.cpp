@@ -65,8 +65,9 @@ namespace grbda
         {
             if (!G_pinv_computed_)
             {
-                const DMat<Scalar> GT_G = G_.transpose() * G_;
-                G_pinv_ = math::matrixInverse(GT_G) * G_.transpose();
+                // const DMat<Scalar> GT_G = G_.transpose() * G_;
+                // G_pinv_ = math::matrixInverse(GT_G) * G_.transpose();
+                G_pinv_ = math::matrixLeftPseudoInverse(G_);
                 G_pinv_computed_ = true;
             }
 
@@ -78,8 +79,9 @@ namespace grbda
         {
             if (!G_tranpose_pinv_computed_)
             {
-                const DMat<Scalar> GT_G = G_.transpose() * G_;
-                G_tranpose_pinv_ = G_ * math::matrixInverse(GT_G);
+                // const DMat<Scalar> GT_G = G_.transpose() * G_;
+                // G_tranpose_pinv_ = G_ * math::matrixInverse(GT_G);
+                G_tranpose_pinv_ = math::matrixRightPseudoInverse(G_.transpose());
                 G_tranpose_pinv_computed_ = true;
             }
             return G_tranpose_pinv_;

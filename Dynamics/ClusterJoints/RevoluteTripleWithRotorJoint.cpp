@@ -25,7 +25,7 @@ namespace grbda
             rotor_2_joint_ = this->single_joints_.emplace_back(new Rev(module_2.rotor_axis_));
             rotor_3_joint_ = this->single_joints_.emplace_back(new Rev(module_3.rotor_axis_));
 
-            this->spanning_tree_to_independent_coords_conversion_ = DMat<Scalar>::Zero(3, 6);
+            this->spanning_tree_to_independent_coords_conversion_ = DMat<int>::Zero(3, 6);
             this->spanning_tree_to_independent_coords_conversion_.template topLeftCorner<3, 3>().setIdentity();
 
             const Scalar &gr1 = module_1.gear_ratio_;

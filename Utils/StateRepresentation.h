@@ -59,49 +59,51 @@ namespace grbda
     template <typename Scalar = double>
     using ModelState = std::vector<JointState<Scalar>>;
 
+    template <typename Scalar>
     struct ExternalForceAndBodyIndexPair
     {
-        ExternalForceAndBodyIndexPair(int index, const SVec<double> &force)
+        ExternalForceAndBodyIndexPair(int index, const SVec<Scalar> &force)
             : index_(index), force_(force) {}
         const int index_;
-        const SVec<double> force_;
+        const SVec<Scalar> force_;
     };
 
+    template <typename Scalar = double>
     struct ContactPoint
     {
-        ContactPoint(const int body_index, const Vec3<double> &local_offset, const std::string name,
+        ContactPoint(const int body_index, const Vec3<Scalar> &local_offset, const std::string name,
                      const int num_jacobian_cols)
             : body_index_(body_index), local_offset_(local_offset), name_(name),
               is_end_effector_(false), end_effector_index_(-1),
-              jacobian_(D6Mat<double>::Zero(6, num_jacobian_cols)) {}
+              jacobian_(D6Mat<Scalar>::Zero(6, num_jacobian_cols)) {}
 
-        ContactPoint(const int body_index, const Vec3<double> &local_offset, const std::string name,
+        ContactPoint(const int body_index, const Vec3<Scalar> &local_offset, const std::string name,
                      const int num_jacobian_cols, const int end_effector_index)
             : body_index_(body_index), local_offset_(local_offset), name_(name),
               is_end_effector_(true), end_effector_index_(end_effector_index),
-              jacobian_(D6Mat<double>::Zero(6, num_jacobian_cols)) {}
+              jacobian_(D6Mat<Scalar>::Zero(6, num_jacobian_cols)) {}
 
-        ContactPoint(const ContactPoint &other)
+        ContactPoint(const ContactPoint<Scalar> &other)
             : body_index_(other.body_index_), local_offset_(other.local_offset_),
               name_(other.name_), is_end_effector_(other.is_end_effector_),
               end_effector_index_(other.end_effector_index_), position_(other.position_),
               velocity_(other.velocity_), jacobian_(other.jacobian_),
               supporting_nodes_(other.supporting_nodes_), ChiUp_(other.ChiUp_) {}
 
-        ContactPoint &operator=(const ContactPoint &contact_point) { return *this; }
+        ContactPoint<Scalar> &operator=(const ContactPoint<Scalar> &contact_point) { return *this; }
 
         const int body_index_;
-        const Vec3<double> local_offset_;
+        const Vec3<Scalar> local_offset_;
         const std::string name_;
         const bool is_end_effector_;
         const int end_effector_index_;
 
-        Vec3<double> position_;
-        Vec3<double> velocity_;
-        D6Mat<double> jacobian_;
+        Vec3<Scalar> position_;
+        Vec3<Scalar> velocity_;
+        D6Mat<Scalar> jacobian_;
 
         std::vector<int> supporting_nodes_;
-        std::vector<DMat<double>> ChiUp_;
+        std::vector<DMat<Scalar>> ChiUp_;
     };
 
 } // namespace grbda

@@ -46,7 +46,7 @@ namespace grbda
 
             this->single_joints_.emplace_back(new Joints::Free<Scalar>());
 
-            this->spanning_tree_to_independent_coords_conversion_ = DMat<Scalar>::Identity(6, 6);
+            this->spanning_tree_to_independent_coords_conversion_ = DMat<int>::Identity(6, 6);
 
             this->loop_constraint_ = std::make_shared<LoopConstraint::Free<Scalar>>();
         }

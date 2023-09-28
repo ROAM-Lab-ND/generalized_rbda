@@ -37,33 +37,6 @@ namespace grbda
     };
 
     /*!
-     * Square a number
-     */
-    template <typename T>
-    T square(T a)
-    {
-      return a * a;
-    }
-
-    /*!
-     * Convert radians to degrees
-     */
-    template <typename T>
-    T rad2deg(T rad)
-    {
-      return rad * T(180) / T(M_PI);
-    }
-
-    /*!
-     * Convert degrees to radians
-     */
-    template <typename T>
-    T deg2rad(T deg)
-    {
-      return deg * T(M_PI) / T(180);
-    }
-
-    /*!
      * Compute rotation matrix for coordinate transformation. Note that
      * coordinateRotation(CoordinateAxis:X, .1) * v will rotate v by -.1 radians -
      * this transforms into a frame rotated by .1 radians!.

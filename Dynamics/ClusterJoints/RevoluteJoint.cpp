@@ -14,7 +14,7 @@ namespace grbda
             this->S_ = this->single_joints_[0]->S();
             this->Psi_ = this->single_joints_[0]->S();
 
-            this->spanning_tree_to_independent_coords_conversion_ = DMat<Scalar>::Identity(1, 1);
+            this->spanning_tree_to_independent_coords_conversion_ = DMat<int>::Identity(1, 1);
 
             const DMat<Scalar> G = DMat<Scalar>::Identity(1, 1);
             const DMat<Scalar> K = DMat<Scalar>::Identity(0, 1);

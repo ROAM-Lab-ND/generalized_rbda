@@ -135,8 +135,8 @@ TYPED_TEST(RigidBodyKinematicsTest, ForwardKinematics)
         this->rigid_body_model.updateContactPointJacobians();
         for (int j = 0; j < (int)this->cluster_model.contactPoints().size(); j++)
         {
-            const ContactPoint &cluster_cp = this->cluster_model.contactPoint(j);
-            const ContactPoint &rigid_body_cp = this->rigid_body_model.contactPoint(j);
+            const ContactPoint<double> &cluster_cp = this->cluster_model.contactPoint(j);
+            const ContactPoint<double> &rigid_body_cp = this->rigid_body_model.contactPoint(j);
 
             // Verify positions
             const Vec3<double> p_cp_cluster = cluster_cp.position_;

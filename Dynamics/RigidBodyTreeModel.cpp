@@ -4,8 +4,8 @@ namespace grbda
 {
 
     template <typename Scalar>
-    RigidBodyTreeModel<Scalar>::RigidBodyTreeModel(const ClusterTreeModel<> &cluster_tree_model,
-                                                   const FwdDynMethod fd_method)
+    RigidBodyTreeModel<Scalar>::RigidBodyTreeModel(
+        const ClusterTreeModel<Scalar> &cluster_tree_model, const FwdDynMethod fd_method)
     {
         forward_dynamics_method_ = fd_method;
         this->gravity_ = cluster_tree_model.getGravity();
@@ -17,19 +17,18 @@ namespace grbda
 
     template <typename Scalar>
     void RigidBodyTreeModel<Scalar>::extractRigidBodiesAndJointsFromClusterModel(
-        const ClusterTreeModel<> &cluster_tree_model)
+        const ClusterTreeModel<Scalar> &cluster_tree_model)
     {
         int body_index = 0;
         for (const auto &cluster : cluster_tree_model.clusters())
         {
             for (const auto &body_and_joint : cluster->bodiesAndJoints())
             {
-                const Body<> &body = body_and_joint.first;
-                JointPtr<double> joint = body_and_joint.second;
-                auto node = std::make_shared<RigidBodyTreeNode<>>(body, joint,
-                                                                  this->position_index_, 
-                                                                  this->velocity_index_,
-                                                                  this->motion_subspace_index_);
+                const Body<Scalar> &body = body_and_joint.first;
+                JointPtr<Scalar> joint = body_and_joint.second;
+                auto node = std::make_shared<RigidBodyTreeNode<Scalar>>(
+                    body, joint, this->position_index_, this->velocity_index_,
+                    this->motion_subspace_index_);
                 rigid_body_nodes_.push_back(node);
                 this->nodes_.push_back(node);
                 body_name_to_body_index_[body.name_] = body_index++;
@@ -39,8 +38,8 @@ namespace grbda
                 this->motion_subspace_index_ += 6;
             }
         }
-        this->H_ = DMat<double>::Zero(this->velocity_index_, this->velocity_index_);
-        this->C_ = DVec<double>::Zero(this->velocity_index_);
+        this->H_ = DMat<Scalar>::Zero(this->velocity_index_, this->velocity_index_);
+        this->C_ = DVec<Scalar>::Zero(this->velocity_index_);
 
         extractExpandedTreeConnectivity();
     }
@@ -80,7 +79,7 @@ namespace grbda
 
     template <typename Scalar>
     void RigidBodyTreeModel<Scalar>::extractLoopClosureFunctionsFromClusterModel(
-        const ClusterTreeModel<> &cluster_tree_model)
+        const ClusterTreeModel<Scalar> &cluster_tree_model)
     {
 
         for (const auto &cluster : cluster_tree_model.clusters())
@@ -91,7 +90,7 @@ namespace grbda
 
     template <typename Scalar>
     void RigidBodyTreeModel<Scalar>::extractContactPointsFromClusterModel(
-        const ClusterTreeModel<> &cluster_tree_model)
+        const ClusterTreeModel<Scalar> &cluster_tree_model)
     {
         this->contact_name_to_contact_index_ = cluster_tree_model.contact_name_to_contact_index_;
 
@@ -103,12 +102,12 @@ namespace grbda
             {
                 this->num_end_effectors_++;
 
-                ContactPoint &end_effector = this->contact_points_.back();
+                ContactPoint<Scalar> &end_effector = this->contact_points_.back();
                 end_effector.supporting_nodes_.clear();
                 end_effector.ChiUp_.clear();
 
                 // Keep track of which nodes support this new end effector
-                int i = getNodeContainingBody(end_effector.body_index_)->index_;
+                int i = this->getNodeContainingBody(end_effector.body_index_)->index_;
                 while (i > -1)
                 {
                     auto &node = rigid_body_nodes_[i];
@@ -120,7 +119,7 @@ namespace grbda
                 // Initialize the force propagators for this end effector
                 for (int j = 0; j < (int)rigid_body_nodes_.size(); j++)
                 {
-                    end_effector.ChiUp_.push_back(DMat<double>::Zero(0, 0));
+                    end_effector.ChiUp_.push_back(DMat<Scalar>::Zero(0, 0));
                 }
 
                 // Get the nearest shared supporting node for every existing end effector
@@ -138,7 +137,7 @@ namespace grbda
     }
 
     template <typename Scalar>
-    void RigidBodyTreeModel<Scalar>::setState(const DVec<double> &q, const DVec<double> &qd)
+    void RigidBodyTreeModel<Scalar>::setState(const DVec<Scalar> &q, const DVec<Scalar> &qd)
     {
         for (auto &node : rigid_body_nodes_)
         {
@@ -167,57 +166,57 @@ namespace grbda
     }
 
     template <typename Scalar>
-    Vec3<double> RigidBodyTreeModel<Scalar>::getPosition(const std::string &body_name)
+    Vec3<Scalar> RigidBodyTreeModel<Scalar>::getPosition(const std::string &body_name)
     {
         const int &body_idx = body_name_to_body_index_.at(body_name);
-        const TreeNodePtr rigid_body_node = getNodeContainingBody(body_idx);
+        const TreeNodePtr<Scalar> rigid_body_node = this->getNodeContainingBody(body_idx);
 
         this->forwardKinematics();
-        const spatial::Transform<> &Xa = rigid_body_node->Xa_[0];
-        const Mat6<double> Xai = spatial::invertSXform(Xa.toMatrix().cast<double>());
-        Vec3<double> link_pos = spatial::sXFormPoint(Xai, Vec3<double>::Zero());
+        const spatial::Transform<Scalar> &Xa = rigid_body_node->Xa_[0];
+        const Mat6<Scalar> Xai = spatial::invertSXform(Xa.toMatrix().template cast<Scalar>());
+        Vec3<Scalar> link_pos = spatial::sXFormPoint(Xai, Vec3<Scalar>::Zero());
         return link_pos;
     }
 
     template <typename Scalar>
-    Mat3<double> RigidBodyTreeModel<Scalar>::getOrientation(const std::string &body_name)
+    Mat3<Scalar> RigidBodyTreeModel<Scalar>::getOrientation(const std::string &body_name)
     {
         const int &body_idx = body_name_to_body_index_.at(body_name);
-        const TreeNodePtr rigid_body_node = getNodeContainingBody(body_idx);
+        const TreeNodePtr<Scalar> rigid_body_node = this->getNodeContainingBody(body_idx);
 
         this->forwardKinematics();
-        const spatial::Transform<> &Xa = rigid_body_node->Xa_[0];
-        Mat3<double> Rai = Xa.getRotation();
+        const spatial::Transform<Scalar> &Xa = rigid_body_node->Xa_[0];
+        Mat3<Scalar> Rai = Xa.getRotation();
         Rai.transposeInPlace();
         return Rai;
     }
 
     template <typename Scalar>
-    Vec3<double> RigidBodyTreeModel<Scalar>::getLinearVelocity(const std::string &body_name)
+    Vec3<Scalar> RigidBodyTreeModel<Scalar>::getLinearVelocity(const std::string &body_name)
     {
         const int &body_idx = body_name_to_body_index_.at(body_name);
-        const TreeNodePtr rigid_body_node = getNodeContainingBody(body_idx);
+        const TreeNodePtr<Scalar> rigid_body_node = this->getNodeContainingBody(body_idx);
 
         this->forwardKinematics();
-        const Mat3<double> Rai = getOrientation(body_name);
-        const SVec<double> v = rigid_body_node->v_.head<6>();
-        return Rai * spatial::spatialToLinearVelocity(v, Vec3<double>::Zero());
+        const Mat3<Scalar> Rai = getOrientation(body_name);
+        const SVec<Scalar> v = rigid_body_node->v_.template head<6>();
+        return Rai * spatial::spatialToLinearVelocity(v, Vec3<Scalar>::Zero());
     }
 
     template <typename Scalar>
-    Vec3<double> RigidBodyTreeModel<Scalar>::getAngularVelocity(const std::string &body_name)
+    Vec3<Scalar> RigidBodyTreeModel<Scalar>::getAngularVelocity(const std::string &body_name)
     {
         const int &body_idx = body_name_to_body_index_.at(body_name);
-        const TreeNodePtr rigid_body_node = getNodeContainingBody(body_idx);
+        const TreeNodePtr<Scalar> rigid_body_node = this->getNodeContainingBody(body_idx);
 
         this->forwardKinematics();
-        const Mat3<double> Rai = getOrientation(body_name);
-        const SVec<double> v = rigid_body_node->v_.head<6>();
-        return Rai * v.head<3>();
+        const Mat3<Scalar> Rai = getOrientation(body_name);
+        const SVec<Scalar> v = rigid_body_node->v_.template head<6>();
+        return Rai * v.template head<3>();
     }
 
     template <typename Scalar>
-    DMat<double> RigidBodyTreeModel<Scalar>::getMassMatrix()
+    DMat<Scalar> RigidBodyTreeModel<Scalar>::getMassMatrix()
     {
         updateLoopConstraints();
         this->compositeRigidBodyAlgorithm();
@@ -225,17 +224,19 @@ namespace grbda
     }
 
     template <typename Scalar>
-    DVec<double> RigidBodyTreeModel<Scalar>::getBiasForceVector()
+    DVec<Scalar> RigidBodyTreeModel<Scalar>::getBiasForceVector()
     {
         updateLoopConstraints();
         this->updateBiasForceVector();
-        if (loop_constraints_.g().norm() > 1e-12)
-        {
-            this->compositeRigidBodyAlgorithm();
-        }
+        // TODO(@MatthewChignoli): Had to comment out because can't have if's when using symbolic
+        // if (loop_constraints_.g().norm() > 1e-12)
+        // {
+        this->compositeRigidBodyAlgorithm();
+        // }
         return loop_constraints_.G_transpose() * (this->C_ + this->H_ * loop_constraints_.g());
     }
 
     template class RigidBodyTreeModel<double>;
+    template class RigidBodyTreeModel<casadi::SX>;
 
 } // namespace grbda

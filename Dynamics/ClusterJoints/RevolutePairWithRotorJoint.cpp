@@ -25,8 +25,8 @@ namespace grbda
             rotor2_joint_ = this->single_joints_.emplace_back(new Rev(module_2.rotor_axis_));
             link2_joint_ = this->single_joints_.emplace_back(new Rev(module_2.joint_axis_));
 
-            this->spanning_tree_to_independent_coords_conversion_ = DMat<Scalar>::Identity(2, 4);
-            this->spanning_tree_to_independent_coords_conversion_ << 1., 0., 0., 0., 0., 0., 0., 1.;
+            this->spanning_tree_to_independent_coords_conversion_ = DMat<int>::Identity(2, 4);
+            this->spanning_tree_to_independent_coords_conversion_ << 1, 0, 0, 0, 0, 0, 0, 1;
 
             DMat<Scalar> G = DMat<Scalar>::Zero(4, 2);
             G << 1., 0.,

@@ -40,10 +40,10 @@ namespace grbda
         for (auto &cp : contact_points_)
         {
             const auto &body = getBody(cp.body_index_);
-            const auto node = getNodeContainingBody(cp.body_index_);
+            const auto node = this->getNodeContainingBody(cp.body_index_);
 
             const auto &Xa = node->getAbsoluteTransformForBody(body);
-            const SVec<double> v_body = node->getVelocityForBody(body);
+            const SVec<Scalar> v_body = node->getVelocityForBody(body);
 
             cp.position_ = Xa.inverseTransformPoint(cp.local_offset_);
             cp.velocity_ = spatial::spatialToLinearVelocity(Xa.inverseTransformMotionVector(v_body),
@@ -91,7 +91,7 @@ namespace grbda
                 parent_node->Ic_ += node_i->Xup_.inverseTransformSpatialInertia(node_i->Ic_);
             }
 
-            DMat<double> F = node_i->Ic_ * node_i->S();
+            DMat<Scalar> F = node_i->Ic_ * node_i->S();
             H_.block(vel_idx_i, vel_idx_i, num_vel_i, num_vel_i) = node_i->S().transpose() * F;
 
             int j = i;
@@ -119,17 +119,17 @@ namespace grbda
         if (bias_force_updated_)
             return;
 
-        C_ = recursiveNewtonEulerAlgorithm(DVec<double>::Zero(getNumDegreesOfFreedom()));
+        C_ = recursiveNewtonEulerAlgorithm(DVec<Scalar>::Zero(getNumDegreesOfFreedom()));
 
         bias_force_updated_ = true;
     }
 
     template <typename Scalar>
-    DVec<double> TreeModel<Scalar>::recursiveNewtonEulerAlgorithm(const DVec<double> &qdd)
+    DVec<Scalar> TreeModel<Scalar>::recursiveNewtonEulerAlgorithm(const DVec<Scalar> &qdd)
     {
         forwardKinematics();
 
-        DVec<double> tau = DVec<double>::Zero(qdd.rows());
+        DVec<Scalar> tau = DVec<Scalar>::Zero(qdd.rows());
 
         // Forward Pass
         for (auto &node : nodes_)
@@ -153,7 +153,7 @@ namespace grbda
 
             node->f_ = node->I_ * node->a_ +
                        spatial::generalForceCrossProduct(node->v_,
-                                                         DVec<double>(node->I_ * node->v_));
+                                                         DVec<Scalar>(node->I_ * node->v_));
         }
 
         // Account for external forces in bias force
@@ -184,7 +184,7 @@ namespace grbda
 
     template <typename Scalar>
     void TreeModel<Scalar>::setExternalForces(
-        const std::vector<ExternalForceAndBodyIndexPair> &force_and_body_index_pairs)
+        const std::vector<ExternalForceAndBodyIndexPair<Scalar>> &force_and_body_index_pairs)
     {
         // Clear previous external forces
         for (const int index : indices_of_nodes_experiencing_external_forces_)
@@ -198,7 +198,7 @@ namespace grbda
             const int body_index = force_and_body_index.index_;
 
             const auto &body = getBody(body_index);
-            const auto node = getNodeContainingBody(body_index);
+            const auto node = this->getNodeContainingBody(body_index);
             node->applyForceToBody(force, body);
 
             // Add index to vector if vector does not already contain this cluster
@@ -222,8 +222,8 @@ namespace grbda
     template <typename Scalar>
     int TreeModel<Scalar>::getNearestSharedSupportingNode(const std::pair<int, int> &cp_indices)
     {
-        const ContactPoint &cp_i = contact_points_[cp_indices.first];
-        const ContactPoint &cp_j = contact_points_[cp_indices.second];
+        const ContactPoint<Scalar> &cp_i = contact_points_[cp_indices.first];
+        const ContactPoint<Scalar> &cp_j = contact_points_[cp_indices.second];
         return greatestCommonElement(cp_i.supporting_nodes_, cp_j.supporting_nodes_);
     }
 
@@ -234,6 +234,6 @@ namespace grbda
     }
 
     template class TreeModel<double>;
-    // template class TreeModel<casadi::SX>;
+    template class TreeModel<casadi::SX>;
 
 } // namespace grbda
