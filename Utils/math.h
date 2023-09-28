@@ -48,6 +48,9 @@ namespace grbda
             return deg * T(M_PI) / T(180);
         }
 
+        /*!
+         * Check if an Eigen matrix is positive definite
+         */
         template <typename T>
         bool isPositiveDefinite(const Eigen::MatrixBase<T> &A)
         {
@@ -67,12 +70,20 @@ namespace grbda
             return true;
         }
 
-        inline DMat<double> matrixInverse(const DMat<double> &mat)
+        /*!
+         * Overloaded functions for taking the inverse of a Eigen matrix
+         * - Standard Eigen matrices are inverted using the .inverse() function
+         * - Casadi matrices are symbolically inverted using the casadi::SX::inv() function
+         */
+        template <typename T>
+        DMat<typename T::Scalar> matrixInverse(const Eigen::MatrixBase<T> &mat)
         {
             return mat.inverse();
         }
 
-        inline DMat<casadi::SX> matrixInverse(const DMat<casadi::SX> &mat)
+        template <>
+        inline DMat<casadi::SX>
+        matrixInverse<DMat<casadi::SX>>(const Eigen::MatrixBase<DMat<casadi::SX>> &mat)
         {
             casadi::SX cs_mat(mat.rows(), mat.cols());
             casadi::copy(mat, cs_mat);
@@ -85,31 +96,54 @@ namespace grbda
             return mat_out;
         }
 
-        // TODO(@MatthewChignoli): Or I could specialize these functions for double vs casadi::SX and for the double one I can call Eigen::orthogonalDecomposition.pseudoInverse()
-        // TODO(@MatthewChignoli): Unit test against Eigen::orthogonalDecomposition.pseudoInverse()
-        // Applicable when mat has linearly independent columns
+        /*!
+         * Left pseudo inverse of an Eigen matrix.
+         * Applicable when mat has linearly independent columns
+         */
         template <typename T>
         DMat<typename T::Scalar> matrixLeftPseudoInverse(const Eigen::MatrixBase<T> &mat)
         {
-            const DMat<typename T::Scalar> tmp = mat.transpose() * mat;
+            return mat.completeOrthogonalDecomposition().pseudoInverse();
+        }
+
+        template <>
+        inline DMat<casadi::SX>
+        matrixLeftPseudoInverse<DMat<casadi::SX>>(const Eigen::MatrixBase<DMat<casadi::SX>> &mat)
+        {
+            const DMat<casadi::SX> tmp = mat.transpose() * mat;
             return matrixInverse(tmp) * mat.transpose();
         }
 
-        // Applicable when mat has linearly independent rows
+        /*!
+         * Right pseudo inverse of an Eigen matrix.
+         * Applicable when mat has linearly independent rows
+         */
         template <typename T>
         DMat<typename T::Scalar> matrixRightPseudoInverse(const Eigen::MatrixBase<T> &mat)
         {
-            const DMat<typename T::Scalar> tmp = mat * mat.transpose();
+            return mat.completeOrthogonalDecomposition().pseudoInverse();
+        }
+
+        template <>
+        inline DMat<casadi::SX>
+        matrixRightPseudoInverse<DMat<casadi::SX>>(const Eigen::MatrixBase<DMat<casadi::SX>> &mat)
+        {
+            const DMat<casadi::SX> tmp = mat * mat.transpose();
             return mat.transpose() * matrixInverse(tmp);
         }
 
-        inline DVec<double> solveLinearSystem(const DMat<double> &A, const DVec<double> &b)
+        /*!
+         * Solve a linear system of Eigen matrices
+         */
+        template <typename T>
+        DVec<typename T::Scalar> solveLinearSystem(const Eigen::MatrixBase<T> &A,
+                                                   const DVec<typename T::Scalar> &b)
         {
             return A.colPivHouseholderQr().solve(b);
         }
 
-        // TODO(@MatthewChignoli): Unit test this
-        inline DVec<casadi::SX> solveLinearSystem(const DMat<casadi::SX> &A,
+        template <>
+        inline DVec<casadi::SX> solveLinearSystem(const Eigen::MatrixBase<DMat<casadi::SX>> &A,
                                                   const DVec<casadi::SX> &b)
         {
             casadi::SX cs_A(A.rows(), A.cols());
@@ -126,6 +160,9 @@ namespace grbda
             return x;
         }
 
+        /*!
+         * Analaogous to Eigen::LLT, but for casadi::SX matrices
+         */
         class CasadiLLT
         {
         public:
@@ -153,11 +190,60 @@ namespace grbda
             DMat<casadi::SX> Ainv_;
         };
 
+        template <typename Scalar>
+        struct CorrectMatrixLltType
+        {
+            using type = Eigen::LLT<DMat<Scalar>>;
+        };
+
+        // Specialization for casadi::SX
+        template <>
+        struct CorrectMatrixLltType<casadi::SX>
+        {
+            using type = math::CasadiLLT;
+        };
+
+        /*!
+         * Analaogous to Eigen::ColPivHouseholderQR, but for casadi::SX matrices
+         */
         class CasadiInverse
         {
         public:
             CasadiInverse() {}
-            CasadiInverse(const DMat<casadi::SX> &mat) {}
+            CasadiInverse(const DMat<casadi::SX> &mat)
+            {
+                Ainv_.resize(mat.rows(), mat.cols());
+
+                casadi::SX cs_mat(mat.rows(), mat.cols());
+                casadi::copy(mat, cs_mat);
+
+                casadi::SX cs_mat_inv = casadi::SX::inv(cs_mat);
+
+                DMat<casadi::SX> mat_out(mat.rows(), mat.cols());
+                casadi::copy(cs_mat_inv, Ainv_);
+            }
+
+            template <typename Derived>
+            DMat<casadi::SX> solve(const Eigen::MatrixBase<Derived> &b) const
+            {
+                return Ainv_ * b;
+            }
+
+        private:
+            DMat<casadi::SX> Ainv_;
+        };
+
+        template <typename Scalar>
+        struct CorrectMatrixInverseType
+        {
+            using type = Eigen::ColPivHouseholderQR<DMat<Scalar>>;
+        };
+
+        // Specialization for casadi::SX
+        template <>
+        struct CorrectMatrixInverseType<casadi::SX>
+        {
+            using type = math::CasadiInverse;
         };
     }
 }

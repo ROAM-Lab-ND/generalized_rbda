@@ -562,9 +562,8 @@ namespace grbda
                 .setIdentity();
 
             // Compute Psi
-            const D6Mat<Scalar> &S = joint->S();
-            // D6Mat<Scalar> Psi = S.transpose().completeOrthogonalDecomposition().pseudoInverse();
-            D6Mat<Scalar> Psi = math::matrixRightPseudoInverse(S.transpose());
+            const DMat<Scalar> &ST = joint->S().transpose();
+            D6Mat<Scalar> Psi = math::matrixRightPseudoInverse(ST);
 
             D6Mat<Scalar> F =
                 (node->ChiUp_.transpose() - node->Xup_.toMatrix().transpose()) * Psi;

@@ -13,7 +13,7 @@ namespace grbda
     {
         this->forwardKinematics();
 
-        ContactPoint<Scalar>    &cp = this->contact_points_[this->contact_name_to_contact_index_.at(cp_name)];
+        ContactPoint<Scalar> &cp = this->contact_points_[this->contact_name_to_contact_index_.at(cp_name)];
         const size_t i = cp.body_index_;
         const Body<Scalar> &body_i = body(i);
         const auto &cluster_i = getClusterContainingBody(body_i);
@@ -51,7 +51,7 @@ namespace grbda
 
         D6Mat<Scalar> J = D6Mat<Scalar>::Zero(6, this->getNumDegreesOfFreedom());
 
-        ContactPoint<Scalar>&cp = this->contact_points_[this->contact_name_to_contact_index_.at(cp_name)];
+        ContactPoint<Scalar> &cp = this->contact_points_[this->contact_name_to_contact_index_.at(cp_name)];
         Mat6<Scalar> Xout = spatial::createSXform(Mat3<Scalar>::Identity(), cp.local_offset_);
 
         int j = cp.body_index_;
@@ -191,7 +191,8 @@ namespace grbda
 
     template <typename Scalar>
     Scalar ClusterTreeModel<Scalar>::applyTestForce(const std::string &contact_point_name,
-                                            const Vec3<Scalar> &force, DVec<Scalar> &dstate_out)
+                                                    const Vec3<Scalar> &force,
+                                                    DVec<Scalar> &dstate_out)
     {
         const int contact_point_index = this->contact_name_to_contact_index_.at(contact_point_name);
         const ContactPoint<Scalar> &contact_point = this->contact_points_[contact_point_index];
@@ -217,7 +218,7 @@ namespace grbda
             const auto joint = cluster->joint_;
 
             DVec<Scalar> tmp = joint->S().transpose() * f;
-            lambda_inv += tmp.dot(cluster->D_inv_.solve(tmp));
+            lambda_inv += tmp.dot(DVec<Scalar>(cluster->D_inv_.solve(tmp)));
 
             dstate_out +=
                 cluster->qdd_for_subtree_due_to_subtree_root_joint_qdd * cluster->D_inv_.solve(tmp);
@@ -267,8 +268,8 @@ namespace grbda
                 .setIdentity();
 
             // Compute Psi
-            const DMat<Scalar> &S = cluster->S();
-            DMat<Scalar> Psi = S.transpose().completeOrthogonalDecomposition().pseudoInverse();
+            const DMat<Scalar> &ST = cluster->S().transpose();
+            DMat<Scalar> Psi = math::matrixRightPseudoInverse(ST);
 
             DMat<Scalar> F =
                 (cluster->ChiUp_.transpose() - cluster->Xup_.toMatrix().transpose()) * Psi;
@@ -293,6 +294,8 @@ namespace grbda
     DMat<Scalar> ClusterTreeModel<Scalar>::inverseOperationalSpaceInertiaMatrix()
     {
         // Based on the EFPA from "https://www3.nd.edu/~pwensing/Papers/WensingFeatherstoneOrin12-ICRA.pdf"
+
+        typedef typename math::CorrectMatrixLltType<Scalar>::type LltType;
 
         this->forwardKinematics();
         for (auto &cluster : cluster_nodes_)
@@ -323,7 +326,7 @@ namespace grbda
 
             const DMat<Scalar> &S = cluster->S();
             const DMat<Scalar> ST = S.transpose();
-            cluster->K_ = S * (Eigen::LLT<DMat<Scalar>>(ST * cluster->IA_ * S).solve(ST));
+            cluster->K_ = S * (LltType(ST * cluster->IA_ * S).solve(ST));
 
             const int &mss_dim = cluster->motion_subspace_dimension_;
             cluster->L_ = DMat<Scalar>::Identity(mss_dim, mss_dim) - cluster->K_ * cluster->IA_;
@@ -431,5 +434,6 @@ namespace grbda
     }
 
     template class ClusterTreeModel<double>;
+    template class ClusterTreeModel<casadi::SX>;
 
 } // namespace grbda

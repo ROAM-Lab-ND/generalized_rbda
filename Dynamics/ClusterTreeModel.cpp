@@ -341,7 +341,7 @@ namespace grbda
     }
 
     template <typename Scalar>
-    int 
+    int
     ClusterTreeModel<Scalar>::getNumBodiesInCluster(const ClusterTreeNodePtr<Scalar> cluster) const
     {
         return getNumBodiesInCluster(cluster->index_);
@@ -466,5 +466,6 @@ namespace grbda
     }
 
     template class ClusterTreeModel<double>;
+    template class ClusterTreeModel<casadi::SX>;
 
 } // namespace grbda

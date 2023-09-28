@@ -75,7 +75,7 @@ namespace grbda
     template <typename Scalar>
     DVec<Scalar> RigidBodyTreeModel<Scalar>::forwardDynamics(const DVec<Scalar> &tau)
     {
-        typedef typename RigidBodyTreeModelLltType<Scalar>::type LltType;
+        typedef typename math::CorrectMatrixLltType<Scalar>::type LltType;
      
         this->forwardKinematics();
         updateLoopConstraints();

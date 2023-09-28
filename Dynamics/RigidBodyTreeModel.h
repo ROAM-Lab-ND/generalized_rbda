@@ -18,20 +18,6 @@ namespace grbda
     template <typename Scalar>
     using RigidBodyTreeNodePtr = std::shared_ptr<RigidBodyTreeNode<Scalar>>;
 
-    // Define a type trait to map the first template parameter to the second
-    template <typename Scalar>
-    struct RigidBodyTreeModelLltType
-    {
-        using type = Eigen::LLT<DMat<Scalar>>;
-    };
-
-    // Specialization for casadi::SX
-    template <>
-    struct RigidBodyTreeModelLltType<casadi::SX>
-    {
-        using type = math::CasadiLLT;
-    };
-
     /*!
      * Class to represent a floating base rigid body model with rotors and ground
      * contacts. No concept of state.
