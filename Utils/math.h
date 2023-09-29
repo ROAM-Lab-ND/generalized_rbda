@@ -31,6 +31,29 @@ namespace grbda
         }
 
         /*!
+         * Generate a random number
+         */
+        template <typename T>
+        T random()
+        {
+            return T(std::rand()) / T(RAND_MAX);
+        }
+
+        /*!
+         * Generate a std::vector of random numbers
+         */
+        template <typename T>
+        std::vector<T> random(int n)
+        {
+            std::vector<T> v(n);
+            for (int i = 0; i < n; ++i)
+            {
+                v[i] = random<T>();
+            }
+            return v;
+        }
+
+        /*!
          * Convert radians to degrees
          */
         template <typename T>
