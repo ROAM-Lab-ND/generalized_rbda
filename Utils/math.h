@@ -54,6 +54,20 @@ namespace grbda
         }
 
         /*!
+         * Generate a std::vector of zeros
+         */
+        template <typename T>
+        std::vector<T> zeros(int n)
+        {
+            std::vector<T> v(n);
+            for (int i = 0; i < n; ++i)
+            {
+                v[i] = T(0);
+            }
+            return v;
+        }
+
+        /*!
          * Convert radians to degrees
          */
         template <typename T>

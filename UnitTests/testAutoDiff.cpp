@@ -121,33 +121,39 @@ namespace biasVelocityTestHelpers
         using SX = casadi::SX;
 
         // Define symbolic variables
-        SX cs_q_sym = SX::sym("q", joint->numPositions(), 1);
+        SX cs_q_sym = SX::sym("q", joint->numPositions(), 1); // manifold space
         DVec<SX> q_sym(joint->numPositions());
         casadi::copy(cs_q_sym, q_sym);
 
-        SX cs_qd_sym = SX::sym("qd", joint->numVelocities(), 1);
+        SX cs_dq_sym = SX::sym("dq", joint->numVelocities(), 1); // tangent space
+        DVec<SX> dq_sym(joint->numVelocities());
+        casadi::copy(cs_dq_sym, dq_sym);
+
+        SX cs_qd_sym = SX::sym("qd", joint->numVelocities(), 1); // joint velocity
         DVec<SX> qd_sym(joint->numVelocities());
         casadi::copy(cs_qd_sym, qd_sym);
 
         // Set state and update kinematics
         JointState<SX> joint_state(JointCoordinate<SX>(q_sym, false),
-                                   JointCoordinate<SX>(qd_sym, false));
+                                   JointCoordinate<SX>(dq_sym, false));
+        joint_state.position = joint->integratePosition(joint_state, 1);
+        joint_state.velocity = qd_sym;
         joint->updateKinematics(joint_state);
 
-        // Differentiate the motion subspace matrix with repsect to q
+        // Differentiate the motion subspace matrix with repsect to q, ∂S/∂dq
         DMat<SX> S = joint->S();
         SX cs_S = casadi::SX(casadi::Sparsity::dense(S.rows(), S.cols()));
         casadi::copy(S, cs_S);
 
-        SX cs_dS_dq = jacobian(cs_S, cs_q_sym);
-        DMat<SX> dS_dq(cs_dS_dq.size1(), cs_dS_dq.size2());
-        casadi::copy(cs_dS_dq, dS_dq);
+        SX cs_dS_ddq = jacobian(cs_S, cs_dq_sym);
+        DMat<SX> dS_ddq(cs_dS_ddq.size1(), cs_dS_ddq.size2());
+        casadi::copy(cs_dS_ddq, dS_ddq);
 
-        // Tensor multiplication: dS_dt = Sring = dS_dq * qd_sym
+        // Tensor multiplication: dS/dt = Sring = ∂S/∂dq * dq/dt
         DMat<SX> Sring(S.rows(), S.cols());
         for (int i = 0; i < S.cols(); ++i)
         {
-            Sring.col(i) = dS_dq.middleRows(i * S.rows(), S.rows()) * qd_sym;
+            Sring.col(i) = dS_ddq.middleRows(i * S.rows(), S.rows()) * qd_sym;
         }
 
         // Compute bias velocity from partial of motion subspace matrix
@@ -162,7 +168,7 @@ namespace biasVelocityTestHelpers
 
         // Create the function
         casadi::Function csBiasVelocity("biasVelocity",
-                                        casadi::SXVector{cs_q_sym, cs_qd_sym},
+                                        casadi::SXVector{cs_q_sym, cs_dq_sym, cs_qd_sym},
                                         casadi::SXVector{cs_Sring_dq, cs_cJ});
 
         return csBiasVelocity;
@@ -171,8 +177,9 @@ namespace biasVelocityTestHelpers
     bool biasVelocitiesAreEqual(const casadi::Function &fcn, int nq, int nv)
     {
         std::vector<casadi::DM> q = math::random<casadi::DM>(nq);
+        std::vector<casadi::DM> dq = math::zeros<casadi::DM>(nv);
         std::vector<casadi::DM> qd = math::random<casadi::DM>(nv);
-        casadi::DMVector res = fcn(casadi::DMVector{q, qd});
+        casadi::DMVector res = fcn(casadi::DMVector{q, dq, qd});
 
         DVec<double> Sring_qd_full(res[0].size1());
         casadi::copy(res[0], Sring_qd_full);
@@ -196,13 +203,30 @@ GTEST_TEST(Derivatives, BiasVelocities)
     const int joint_samples = 10;
     const int state_samples = 10;
 
+    // Free Cluster Joint
+    for (int i = 0; i < joint_samples; i++)
+    {
+        using JointType = ClusterJoints::Free<SX>;
+        Body<SX> body = randomBody<SX>(0, -1, 0, 0, 0);
+        std::shared_ptr<JointType> joint = std::make_shared<JointType>(body);
+
+        casadi::Function csBiasVelocity = createBiasVelocityCasadiFunction(joint);
+
+        for (int j = 0; j < state_samples; j++)
+        {
+            ASSERT_TRUE(biasVelocitiesAreEqual(csBiasVelocity, joint->numPositions(), joint->numVelocities()));
+        }
+    }
+
     // Revolute Pair with Rotor Cluster Joint
     for (int i = 0; i < joint_samples; i++)
     {
-        Body<SX> link1 = randomBody<SX>(1, 0, 0, 0, 0);
-        Body<SX> rotor1 = randomBody<SX>(2, 0, 1, 0, 0);
-        Body<SX> rotor2 = randomBody<SX>(3, 0, 2, 0, 0);
-        Body<SX> link2 = randomBody<SX>(4, 1, 3, 0, 0);
+        using JointType = ClusterJoints::RevolutePairWithRotor<SX>;
+
+        Body<SX> link1 = randomBody<SX>(0, -1, 0, 0, 0);
+        Body<SX> rotor1 = randomBody<SX>(1, -1, 1, 0, 0);
+        Body<SX> rotor2 = randomBody<SX>(2, -1, 2, 0, 0);
+        Body<SX> link2 = randomBody<SX>(3, 0, 3, 0, 0);
 
         ClusterJoints::ParallelBeltTransmissionModule<SX> module1{
             link1, rotor1, ori::randomCoordinateAxis(), ori::randomCoordinateAxis(),
@@ -211,7 +235,7 @@ GTEST_TEST(Derivatives, BiasVelocities)
             link2, rotor2, ori::randomCoordinateAxis(), ori::randomCoordinateAxis(),
             math::random<SX>(), math::random<SX>()};
 
-        std::shared_ptr<ClusterJoints::RevolutePairWithRotor<SX>> joint = std::make_shared<ClusterJoints::RevolutePairWithRotor<SX>>(module1, module2);
+        std::shared_ptr<JointType> joint = std::make_shared<JointType>(module1, module2);
 
         casadi::Function csBiasVelocity = createBiasVelocityCasadiFunction(joint);
 
