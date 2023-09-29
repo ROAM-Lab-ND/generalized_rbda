@@ -170,8 +170,8 @@ namespace biasVelocityTestHelpers
 
     bool biasVelocitiesAreEqual(const casadi::Function &fcn, int nq, int nv)
     {
-        std::vector q = math::random<casadi::SX>(nq);
-        std::vector qd = math::random<casadi::SX>(nv);
+        std::vector<casadi::DM> q = math::random<casadi::DM>(nq);
+        std::vector<casadi::DM> qd = math::random<casadi::DM>(nv);
         casadi::DMVector res = fcn(casadi::DMVector{q, qd});
 
         DVec<double> Sring_qd_full(res[0].size1());
@@ -187,7 +187,7 @@ namespace biasVelocityTestHelpers
 
 GTEST_TEST(Derivatives, BiasVelocities)
 {
-    // This test validates that the bias velocities for each of the cluster joints is equal to the 
+    // This test validates that the bias velocities for each of the cluster joints is equal to the
     // time derivative of the motion subspace matrix
 
     using namespace biasVelocityTestHelpers;
@@ -247,131 +247,122 @@ GTEST_TEST(Derivatives, BiasVelocities)
     // }
 }
 
-// GTEST_TEST(Derivatives, ContactJacobians)
-// {
-//     // TODO(@MatthewChignoli): How to deal with differentiation on non-Euclidean manifolds
+template <class T>
+class AutoDiffRobotTest : public testing::Test
+{
+    typedef casadi::SX SX;
 
-//     using SX = casadi::SX;
-//     using Sparsity = casadi::Sparsity;
-//     using SXVector = casadi::SXVector;
-//     using DMVector = casadi::DMVector;
+protected:
+    AutoDiffRobotTest() : robot_(T())
+    {
+        for (int i = 0; i < num_robots_; i++)
+        {
+            T robot;
+            ClusterTreeModel<SX> model = robot.buildClusterTreeModel();
 
-//     RevolutePairChainWithRotor<2, SX> robot;
-//     ClusterTreeModel<SX> model = robot.buildClusterTreeModel();
+            createContactJacobianCasadiFunctions(model);
+        }
+    }
 
-//     // Create function to symbolically compute the jacobian of the contact point position
-//     SX cs_q_sym = SX::sym("q", robot.getNumDofs(), 1);
-//     DVec<SX> q_sym(robot.getNumDofs());
-//     casadi::copy(cs_q_sym, q_sym);
+    ModelState<SX> createSymbolicModelState(const ClusterTreeModel<SX> &model,
+                                            SX &cs_q_sym, SX &cs_qd_sym) const
+    {
+        DVec<SX> q_sym(model.getNumPositions());
+        casadi::copy(cs_q_sym, q_sym);
 
-//     SX cs_qd_sym = SX::zeros(robot.getNumDofs(), 1);
-//     DVec<SX> qd_sym(robot.getNumDofs());
-//     casadi::copy(cs_qd_sym, qd_sym);
+        DVec<SX> qd_sym(model.getNumDegreesOfFreedom());
+        casadi::copy(cs_qd_sym, qd_sym);
 
-//     ModelState<SX> state;
-//     state.push_back(JointState<SX>(JointCoordinate<SX>(q_sym, false),
-//                                    JointCoordinate<SX>(qd_sym, false)));
+        ModelState<SX> state;
+        for (const auto cluster : model.clusters())
+        {
+            DVec<SX> q_cluster = q_sym.segment(cluster->position_index_,
+                                               cluster->num_positions_);
+            DVec<SX> qd_cluster = qd_sym.segment(cluster->velocity_index_,
+                                                 cluster->num_velocities_);
+            state.push_back(JointState<SX>(JointCoordinate<SX>(q_cluster, false),
+                                           JointCoordinate<SX>(qd_cluster, false)));
+        }
 
-//     model.setState(state);
-//     model.forwardKinematicsIncludingContactPoints();
-//     model.updateContactPointJacobians();
+        return state;
+    }
 
-//     const ContactPoint<SX> contact_point = model.contactPoints()[0];
-//     Vec3<SX> contact_point_pos = contact_point.position_;
-//     D3Mat<SX> contact_point_jac = contact_point.jacobian_.bottomRows<3>();
+    void createContactJacobianCasadiFunctions(ClusterTreeModel<casadi::SX> model)
+    {
+        SX cs_q_sym = SX::sym("q", model.getNumPositions(), 1);
+        SX cs_qd_sym = SX::zeros(model.getNumDegreesOfFreedom(), 1);
+        ModelState<SX> state = createSymbolicModelState(model, cs_q_sym, cs_qd_sym);
 
-//     SX cs_contact_point_pos = SX(Sparsity::dense(3, 1));
-//     casadi::copy(contact_point_pos, cs_contact_point_pos);
+        model.setState(state);
+        model.forwardKinematicsIncludingContactPoints();
+        model.updateContactPointJacobians();
 
-//     SX cs_contact_point_jac = SX(Sparsity::dense(contact_point_jac.rows(), robot.getNumDofs()));
-//     casadi::copy(contact_point_jac, cs_contact_point_jac);
+        std::unordered_map<std::string, casadi::Function> contact_jacobian_fcns;
+        for (const ContactPoint<SX> &contact_point : model.contactPoints())
+        {
+            Vec3<SX> contact_point_pos = contact_point.position_;
+            D3Mat<SX> contact_point_jac = contact_point.jacobian_.bottomRows<3>();
 
-//     SX dpos_dq = jacobian(cs_contact_point_pos, cs_q_sym);
+            SX cs_contact_point_pos = SX(casadi::Sparsity::dense(3, 1));
+            casadi::copy(contact_point_pos, cs_contact_point_pos);
 
-//     casadi::Function csContactPointPositionJacobian("contactPointPositionJacobian",
-//                                                     SXVector{cs_q_sym},
-//                                                     SXVector{dpos_dq, cs_contact_point_jac});
+            SX cs_contact_point_jac = SX(casadi::Sparsity::dense(contact_point_jac.rows(),
+                                                                 model.getNumDegreesOfFreedom()));
+            casadi::copy(contact_point_jac, cs_contact_point_jac);
 
-//     // TODO(@MatthewChignoli): Better description
-//     // Validate that the jacobian of the contact point position is equal to the jacobian of the contact point position
-//     DMVector res = csContactPointPositionJacobian(DMVector{std::vector<double>{1., 1.}});
+            SX dpos_dq = jacobian(cs_contact_point_pos, cs_q_sym);
 
-//     DMat<double> dpos_dq_full(3, robot.getNumDofs());
-//     casadi::copy(res[0], dpos_dq_full);
+            std::vector<SX> args{cs_q_sym};
+            std::vector<SX> res{dpos_dq, cs_contact_point_jac};
+            casadi::Function contactPointFunction("contactPointPositionJacobian", args, res);
 
-//     DMat<double> contact_point_jac_full(3, robot.getNumDofs());
-//     casadi::copy(res[1], contact_point_jac_full);
+            contact_jacobian_fcns[contact_point.name_] = contactPointFunction;
+        }
+        contact_jacobian_fcn_maps_.push_back(contact_jacobian_fcns);
+    }
 
-//     GTEST_ASSERT_LE((dpos_dq_full - contact_point_jac_full).norm(), 1e-12);
-// }
+    T robot_;
+    const int num_robots_ = 10;
+    std::vector<std::unordered_map<std::string, casadi::Function>> contact_jacobian_fcn_maps_;
+};
 
-// template <class T>
-// class AutoDiffRobotTest : public testing::Test
-// {
-// protected:
-//     AutoDiffRobotTest()
-//     {
-//         for (int i = 0; i < num_robots_; i++)
-//         {
-//             T robot;
-//             models_.push_back(robot.buildClusterTreeModel());
-//         }
-//     }
+using testing::Types;
 
-//     // TODO(@MatthewChignoli): How to deal with NaNs in the symbolic case?
-//     void initializeRandomStates(const int robot_idx); //, bool use_spanning_state)
-//     {
-//         ModelState<casadi::SX> model_state;
+// TODO(@MatthewChignoli): Add floating base robots once we know how to handle differentiation on non-Euclidean manifolds
+typedef Types<
+    RevoluteChainWithRotor<2, casadi::SX>,
+    RevoluteChainWithRotor<4, casadi::SX>,
+    RevoluteChainWithRotor<8, casadi::SX>>
+    Robots;
 
-//         for (const auto &cluster : cluster_models.at(robot_idx).clusters())
-//         {
-//             JointState<casadi::SX> joint_state = cluster->joint_->randomJointState();
-//             model_state.push_back(joint_state);
-//         }
+TYPED_TEST_SUITE(AutoDiffRobotTest, Robots);
 
-//         cluster_models[robot_idx].setState(model_state);
-//     }
+TYPED_TEST(AutoDiffRobotTest, contactJacobians)
+{
+    // This test validates that the partial derivative of the contact points' positions are equal to
+    // the contact points' jacobians
 
-//     casadi::Function createBiasVelocityCasadiFunctions(ClusterTreeModel<casadi::SX> &model)
-//     {
-//         // Create function to symbolically compute the bias velocity
-//         casadi::SX cs_q_sym = casadi::SX::sym("q", model.numPositions(), 1);
-//         casadi::SX cs_qd_sym = casadi::SX::sym("qd", model.numVelocities(), 1);
+    using DM = casadi::DM;
 
-//         casadi::SX cs_bias_velocity_sym = model.biasVelocity();
+    for (const auto &contact_jacobian_fcns : this->contact_jacobian_fcn_maps_)
+    {
+        for (const auto &contact_jacobian_fcn : contact_jacobian_fcns)
+        {
+            casadi::Function fcn = contact_jacobian_fcn.second;
 
-//         casadi::Function csBiasVelocity("biasVelocity",
-//                                         casadi::SXVector{cs_q_sym, cs_qd_sym},
-//                                         casadi::SXVector{cs_bias_velocity_sym});
+            for (int i = 0; i < 20; i++)
+            {
+                std::vector<DM> q = math::random<DM>(this->robot_.getNumDofs());
+                std::vector<DM> res = fcn(std::vector<DM>{q});
 
-//         return csBiasVelocity;
-//     }
+                DMat<double> dpos_dq_full(3, this->robot_.getNumDofs());
+                casadi::copy(res[0], dpos_dq_full);
 
-//     const int num_robots_ = 10;
-//     std::vector<ClusterTreeModel<casadi::SX>> models_;
-// };
+                DMat<double> contact_point_jac_full(3, this->robot_.getNumDofs());
+                casadi::copy(res[1], contact_point_jac_full);
 
-// using testing::Types;
-
-// // TODO(@MatthewChignoli): Add floating base robots once we know how to handle differentiation on non-Euclidean manifolds
-// typedef Types<
-//     RevoluteChainWithRotor<2, casadi::SX>,
-//     RevoluteChainWithRotor<4, casadi::SX>,
-//     RevoluteChainWithRotor<8, casadi::SX>,
-//     RevolutePairChainWithRotor<2, casadi::SX>,
-//     RevolutePairChainWithRotor<4, casadi::SX>,
-//     RevolutePairChainWithRotor<8, casadi::SX>,
-//     RevoluteTripleChainWithRotor<3, casadi::SX>,
-//     RevoluteTripleChainWithRotor<6, casadi::SX>,
-//     RevoluteChainWithAndWithoutRotor<0ul, 8ul, casadi::SX>,
-//     RevoluteChainWithAndWithoutRotor<4ul, 4ul, casadi::SX>,
-//     RevoluteChainWithAndWithoutRotor<8ul, 0ul, casadi::SX>>
-//     Robots;
-
-// TYPED_TEST_SUITE(AutoDiffRobotTest, Robots);
-
-// TYPED_TEST(AutoDiffRobotTest, contactJacobians)
-// {
-//     // This test validates that the partial derivative of the contact points positions are equal to
-//     // the contact points jacobians
-// }
+                GTEST_ASSERT_LE((dpos_dq_full - contact_point_jac_full).norm(), 1e-12);
+            }
+        }
+    }
+}

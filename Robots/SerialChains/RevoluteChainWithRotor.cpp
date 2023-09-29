@@ -264,5 +264,6 @@ namespace grbda
 
     template class RevoluteChainWithRotor<2ul, casadi::SX>;
     template class RevoluteChainWithRotor<4ul, casadi::SX>;
+    template class RevoluteChainWithRotor<8ul, casadi::SX>;
 
 } // namespace grbda
