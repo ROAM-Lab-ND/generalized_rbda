@@ -74,7 +74,7 @@ typedef Types<
     RevoluteChainWithAndWithoutRotor<0ul, 8ul>,
     RevoluteChainWithAndWithoutRotor<4ul, 4ul>,
     RevoluteChainWithAndWithoutRotor<8ul, 0ul>,
-    Tello, TeleopArm, MIT_Humanoid, MiniCheetah<>>
+    Tello, TeleopArm, MIT_Humanoid<>, MiniCheetah<>>
     Robots;
 
 TYPED_TEST_SUITE(RigidBodyKinematicsTest, Robots);
