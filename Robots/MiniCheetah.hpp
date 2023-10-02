@@ -6,13 +6,14 @@
 namespace grbda
 {
 
-    class MiniCheetah : public Robot<double>
+    template <typename Scalar = double>
+    class MiniCheetah : public Robot<Scalar>
     {
     public:
         MiniCheetah()
         {
-            Mat3<double> RY = ori::coordinateRotation<double>(ori::CoordinateAxis::Y, M_PI / 2);
-            Mat3<double> RX = ori::coordinateRotation<double>(ori::CoordinateAxis::X, M_PI / 2);
+            Mat3<Scalar> RY = ori::coordinateRotation<Scalar>(ori::CoordinateAxis::Y, M_PI / 2);
+            Mat3<Scalar> RX = ori::coordinateRotation<Scalar>(ori::CoordinateAxis::X, M_PI / 2);
 
             _bodyRotationalInertia << 11253, 0, 0, 0, 36203, 0, 0, 0, 42673;
             _bodyRotationalInertia = _bodyRotationalInertia * 1e-6;
@@ -34,69 +35,69 @@ namespace grbda
             _rotorRotationalInertiaY = RX * _rotorRotationalInertiaZ * RX.transpose();
         }
 
-        ClusterTreeModel<> buildClusterTreeModel() const override;
+        ClusterTreeModel<Scalar> buildClusterTreeModel() const override;
 
     private:
         //
-        double _bodyMass = 3.3;
-        double _abadMass = 0.54;
-        double _hipMass = 0.634;
-        double _kneeMass = 0.064;
+        Scalar _bodyMass = 3.3;
+        Scalar _abadMass = 0.54;
+        Scalar _hipMass = 0.634;
+        Scalar _kneeMass = 0.064;
 
         //
-        double _bodyLength = 0.19 * 2;
-        double _bodyWidth = 0.049 * 2;
-        double _bodyHeight = 0.05 * 2;
-        double _abadLinkLength = 0.062;
-        double _hipLinkLength = 0.209;
-        double _kneeLinkLength = 0.195;
-        double _kneeLinkY_offset = 0.004;
+        Scalar _bodyLength = 0.19 * 2;
+        Scalar _bodyWidth = 0.049 * 2;
+        Scalar _bodyHeight = 0.05 * 2;
+        Scalar _abadLinkLength = 0.062;
+        Scalar _hipLinkLength = 0.209;
+        Scalar _kneeLinkLength = 0.195;
+        Scalar _kneeLinkY_offset = 0.004;
 
         //
-        double _abadGearRatio = 6;
-        double _hipGearRatio = 6;
-        double _kneeGearRatio = 9.33;
+        Scalar _abadGearRatio = 6;
+        Scalar _hipGearRatio = 6;
+        Scalar _kneeGearRatio = 9.33;
 
         //
-        Vec3<double> _bodyCOM = Vec3<double>(0, 0, 0);
-        Vec3<double> _abadCOM = Vec3<double>(0, 0.036, 0);
-        Vec3<double> _hipCOM = Vec3<double>(0, 0.016, -0.02);
-        Vec3<double> _kneeCOM = Vec3<double>(0, 0, -0.061);
-        Vec3<double> _rotorCOM = Vec3<double>(0, 0, 0);
+        Vec3<Scalar> _bodyCOM = Vec3<Scalar>(0, 0, 0);
+        Vec3<Scalar> _abadCOM = Vec3<Scalar>(0, 0.036, 0);
+        Vec3<Scalar> _hipCOM = Vec3<Scalar>(0, 0.016, -0.02);
+        Vec3<Scalar> _kneeCOM = Vec3<Scalar>(0, 0, -0.061);
+        Vec3<Scalar> _rotorCOM = Vec3<Scalar>(0, 0, 0);
 
         //
-        Mat3<double> _bodyRotationalInertia;
-        Mat3<double> _abadRotationalInertia;
-        Mat3<double> _hipRotationalInertia;
-        Mat3<double> _kneeRotationalInertia, _kneeRotationalInertiaRotated;
+        Mat3<Scalar> _bodyRotationalInertia;
+        Mat3<Scalar> _abadRotationalInertia;
+        Mat3<Scalar> _hipRotationalInertia;
+        Mat3<Scalar> _kneeRotationalInertia, _kneeRotationalInertiaRotated;
 
-        Mat3<double> _rotorRotationalInertiaX;
-        Mat3<double> _rotorRotationalInertiaY;
-        Mat3<double> _rotorRotationalInertiaZ;
+        Mat3<Scalar> _rotorRotationalInertiaX;
+        Mat3<Scalar> _rotorRotationalInertiaY;
+        Mat3<Scalar> _rotorRotationalInertiaZ;
 
         //
-        Vec3<double> _abadRotorLocation = Vec3<double>(0.125, 0.049, 0);
-        Vec3<double> _abadLocation = Vec3<double>(0.38, 0.1, 0) * 0.5;
-        Vec3<double> _hipLocation = Vec3<double>(0, 0.062, 0);
-        Vec3<double> _hipRotorLocation = Vec3<double>(0, 0.04, 0);
-        Vec3<double> _kneeLocation = Vec3<double>(0, 0, -0.209);
-        Vec3<double> _kneeRotorLocation = Vec3<double>(0, 0, 0);
+        Vec3<Scalar> _abadRotorLocation = Vec3<Scalar>(0.125, 0.049, 0);
+        Vec3<Scalar> _abadLocation = Vec3<Scalar>(0.38, 0.1, 0) * 0.5;
+        Vec3<Scalar> _hipLocation = Vec3<Scalar>(0, 0.062, 0);
+        Vec3<Scalar> _hipRotorLocation = Vec3<Scalar>(0, 0.04, 0);
+        Vec3<Scalar> _kneeLocation = Vec3<Scalar>(0, 0, -0.209);
+        Vec3<Scalar> _kneeRotorLocation = Vec3<Scalar>(0, 0, 0);
 
         template <typename T>
-        Vec3<double> withLegSigns(const Eigen::MatrixBase<T> &v, int side) const
+        Vec3<Scalar> withLegSigns(const Eigen::MatrixBase<T> &v, int side) const
         {
             static_assert(T::ColsAtCompileTime == 1 && T::RowsAtCompileTime == 3,
                           "Must have 3x1 matrix");
             switch (side)
             {
             case 0:
-                return Vec3<double>(v[0], -v[1], v[2]);
+                return Vec3<Scalar>(v[0], -v[1], v[2]);
             case 1:
-                return Vec3<double>(v[0], v[1], v[2]);
+                return Vec3<Scalar>(v[0], v[1], v[2]);
             case 2:
-                return Vec3<double>(-v[0], -v[1], v[2]);
+                return Vec3<Scalar>(-v[0], -v[1], v[2]);
             case 3:
-                return Vec3<double>(-v[0], v[1], v[2]);
+                return Vec3<Scalar>(-v[0], v[1], v[2]);
             default:
                 throw std::runtime_error("Invalid leg id!");
             }
@@ -119,7 +120,7 @@ namespace grbda
             }
         }
 
-        SpatialInertia<double> withLeftRightSigns(const SpatialInertia<double> &I, int side) const
+        SpatialInertia<Scalar> withLeftRightSigns(const SpatialInertia<Scalar> &I, int side) const
         {
             switch (side)
             {

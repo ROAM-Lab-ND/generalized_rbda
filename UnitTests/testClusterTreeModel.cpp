@@ -23,7 +23,7 @@ typedef Types<
     RevoluteChainWithRotor<4>,
     RevolutePairChainWithRotor<4>,
     RevoluteChainWithAndWithoutRotor<4ul, 4ul>,
-    Tello, TeleopArm, MIT_Humanoid, MiniCheetah>
+    Tello, TeleopArm, MIT_Humanoid, MiniCheetah<>>
     Robots;
 
 TYPED_TEST_SUITE(ClusterTreeModelTest, Robots);

@@ -39,4 +39,38 @@ inline ClusterTreeModel<> extractGenericJointModel(const ClusterTreeModel<> &mod
     return generic_model;
 }
 
+// TODO(@MatthewChignoli): include other functions in this namespace
+namespace TestHelpers
+{
+
+    inline DVec<casadi::SX> plus(std::shared_ptr<ClusterJoints::Base<casadi::SX>> joint,
+                                 DVec<casadi::SX> q, DVec<casadi::SX> dq)
+    {
+        using SX = casadi::SX;
+
+        if (joint->type() == ClusterJointTypes::Free)
+        {
+            const Vec3<SX> pos = q.head<3>();
+            const Quat<SX> quat = q.tail<4>();
+
+            const Vec3<SX> dquat = dq.head<3>();
+            const Vec3<SX> dpos = dq.tail<3>();
+
+            Vec7<SX> q_plus_dq_vec;
+
+            const Mat3<SX> R = ori::quaternionToRotationMatrix(quat);
+            q_plus_dq_vec.head<3>() = pos + R.transpose() * dpos;
+
+            q_plus_dq_vec.template tail<4>() = quat + 0.5 * ori::quatProduct(quat, Quat<casadi::SX>(0, dquat[0], dquat[1], dquat[2]));
+
+            return q_plus_dq_vec;
+        }
+        else
+        {
+            return q + dq;
+        }
+    }
+
+}
+
 #endif // GRBDA_TEST_HELPERS_H

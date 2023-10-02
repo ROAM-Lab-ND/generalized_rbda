@@ -1,5 +1,6 @@
 #include "gtest/gtest.h"
 
+#include "testHelpers.hpp"
 #include "Utils/math.h"
 #include "Utils/SpatialInertia.h"
 #include "Utils/SpatialTransforms.h"
@@ -9,108 +10,6 @@
 #include <casadi/casadi.hpp>
 
 using namespace grbda;
-
-// TODO(@MatthewChignoli): Change the name of this file?
-
-GTEST_TEST(Derivatives, TestQuaternionIntegration)
-{
-    // This test validates that quaternion integration for scalar types double and casadi::SX
-    // agree with each other
-
-    using SX = casadi::SX;
-
-    // Create symbolic function for integrating quaternions
-    SX cs_q_sym = SX::sym("q", 4, 1);
-    SX cs_w_sym = SX::sym("w", 3, 1);
-    SX dt_sym = SX::sym("dt");
-
-    Quat<SX> q_sym;
-    casadi::copy(cs_q_sym, q_sym);
-
-    Vec3<SX> w_sym;
-    casadi::copy(cs_w_sym, w_sym);
-
-    Quat<SX> q_plus_sym = ori::integrateQuat(q_sym, w_sym, dt_sym);
-    SX cs_q_plus_sym = casadi::SX(casadi::Sparsity::dense(q_plus_sym.rows(), 1));
-    casadi::copy(q_plus_sym, cs_q_plus_sym);
-
-    casadi::Function csIntegrateQuat("integrateQuat",
-                                     casadi::SXVector{cs_q_sym, cs_w_sym, dt_sym},
-                                     casadi::SXVector{cs_q_plus_sym});
-
-    // Compare CasADi function to original quaternion integration function
-    const double dt = 0.001;
-    std::vector<Quat<double>> q_samples;
-    std::vector<Vec3<double>> w_samples;
-
-    for (int i = 0; i < 20; ++i)
-    {
-        q_samples.push_back(ori::rpyToQuat(Vec3<double>::Random()));
-        w_samples.push_back(Vec3<double>::Random());
-
-        q_samples.push_back(ori::rpyToQuat(Vec3<double>::Random()));
-        w_samples.push_back(Vec3<double>::Zero());
-
-        q_samples.push_back(ori::rpyToQuat(Vec3<double>::Zero()));
-        w_samples.push_back(Vec3<double>::Random());
-    }
-
-    q_samples.push_back(ori::rpyToQuat(Vec3<double>::Zero()));
-    w_samples.push_back(Vec3<double>::Zero());
-
-    for (int i = 0; i < q_samples.size(); ++i)
-    {
-        Quat<double> q = q_samples[i];
-        Vec3<double> w = w_samples[i];
-
-        Quat<double> q_plus1 = ori::integrateQuat(q, w, dt);
-
-        std::vector<double> q_vec{q[0], q[1], q[2], q[3]};
-        std::vector<double> w_vec{w(0), w(1), w(2)};
-        casadi::DMVector res = csIntegrateQuat(casadi::DMVector{q_vec, w_vec, dt});
-        Quat<double> q_plus2;
-        casadi::copy(res[0], q_plus2);
-
-        GTEST_ASSERT_LE((q_plus1 - q_plus2).norm(), 1e-12);
-    }
-}
-
-GTEST_TEST(Derivatives, TestRotationMatrix)
-{
-    // This test validates that conversion from rotation matrix to quaternion for scalar types
-    // double and casadi::SX agree with each other
-
-    using SX = casadi::SX;
-
-    // Create symbolic function for integrating quaternions
-    SX cs_rpy_sym = SX::sym("rpy", 3, 1);
-    Vec3<SX> rpy_sym;
-    casadi::copy(cs_rpy_sym, rpy_sym);
-    Mat3<SX> R_sym = ori::rpyToRotMat(rpy_sym);
-    Quat<SX> q_sym = ori::rotationMatrixToQuaternion(R_sym);
-
-    SX cs_q_sym = casadi::SX(casadi::Sparsity::dense(q_sym.rows(), 1));
-    casadi::copy(q_sym, cs_q_sym);
-
-    casadi::Function csRpyToQuat("rpyToQuat",
-                                 casadi::SXVector{cs_rpy_sym},
-                                 casadi::SXVector{cs_q_sym});
-
-    // Compare CasADi function to original rotation matrix to quaternion function
-    for (int i = 0; i < 50; ++i)
-    {
-        Vec3<double> rpy = Vec3<double>::Random();
-        Mat3<double> R = ori::rpyToRotMat(rpy);
-        Quat<double> q1 = ori::rotationMatrixToQuaternion(R);
-
-        std::vector<double> rpy_vec{rpy(0), rpy(1), rpy(2)};
-        casadi::DMVector res = csRpyToQuat(casadi::DMVector{rpy_vec});
-        Quat<double> q2;
-        casadi::copy(res[0], q2);
-
-        GTEST_ASSERT_LE((q1 - q2).norm(), 1e-12);
-    }
-}
 
 namespace biasVelocityTestHelpers
 {
@@ -135,9 +34,8 @@ namespace biasVelocityTestHelpers
 
         // Set state and update kinematics
         JointState<SX> joint_state(JointCoordinate<SX>(q_sym, false),
-                                   JointCoordinate<SX>(dq_sym, false));
-        joint_state.position = joint->integratePosition(joint_state, 1);
-        joint_state.velocity = qd_sym;
+                                   JointCoordinate<SX>(qd_sym, false));
+        joint_state.position = TestHelpers::plus(joint, q_sym, dq_sym);
         joint->updateKinematics(joint_state);
 
         // Differentiate the motion subspace matrix with repsect to q, ∂S/∂dq
@@ -277,22 +175,33 @@ class AutoDiffRobotTest : public testing::Test
     typedef casadi::SX SX;
 
 protected:
-    AutoDiffRobotTest() : robot_(T())
+    AutoDiffRobotTest()
     {
         for (int i = 0; i < num_robots_; i++)
         {
+
             T robot;
             ClusterTreeModel<SX> model = robot.buildClusterTreeModel();
 
             createContactJacobianCasadiFunctions(model);
+
+            if (i == 0)
+            {
+                nq_ = model.getNumPositions();
+                nv_ = model.getNumDegreesOfFreedom();
+            }
         }
     }
 
+    // TODO(@MatthewChignoli): Make this a more general helper function?
     ModelState<SX> createSymbolicModelState(const ClusterTreeModel<SX> &model,
-                                            SX &cs_q_sym, SX &cs_qd_sym) const
+                                            SX &cs_q_sym, SX &cs_dq_sym, SX &cs_qd_sym) const
     {
         DVec<SX> q_sym(model.getNumPositions());
         casadi::copy(cs_q_sym, q_sym);
+
+        DVec<SX> dq_sym(model.getNumDegreesOfFreedom());
+        casadi::copy(cs_dq_sym, dq_sym);
 
         DVec<SX> qd_sym(model.getNumDegreesOfFreedom());
         casadi::copy(cs_qd_sym, qd_sym);
@@ -300,12 +209,17 @@ protected:
         ModelState<SX> state;
         for (const auto cluster : model.clusters())
         {
-            DVec<SX> q_cluster = q_sym.segment(cluster->position_index_,
-                                               cluster->num_positions_);
-            DVec<SX> qd_cluster = qd_sym.segment(cluster->velocity_index_,
-                                                 cluster->num_velocities_);
-            state.push_back(JointState<SX>(JointCoordinate<SX>(q_cluster, false),
-                                           JointCoordinate<SX>(qd_cluster, false)));
+
+            DVec<SX> q_cluster = q_sym.segment(cluster->position_index_, cluster->num_positions_);
+            const int &vel_idx = cluster->velocity_index_;
+            const int &num_vel = cluster->num_velocities_;
+            DVec<SX> dq_cluster = dq_sym.segment(vel_idx, num_vel);
+            DVec<SX> qd_cluster = qd_sym.segment(vel_idx, num_vel);
+
+            JointState<SX> joint_state(JointCoordinate<SX>(q_cluster, false),
+                                       JointCoordinate<SX>(qd_cluster, false));
+            joint_state.position = TestHelpers::plus(cluster->joint_, q_cluster, dq_cluster);
+            state.push_back(joint_state);
         }
 
         return state;
@@ -313,9 +227,12 @@ protected:
 
     void createContactJacobianCasadiFunctions(ClusterTreeModel<casadi::SX> model)
     {
+        typedef casadi::Sparsity Sparsity;
+
         SX cs_q_sym = SX::sym("q", model.getNumPositions(), 1);
+        SX cs_dq_sym = SX::sym("dq", model.getNumDegreesOfFreedom(), 1);
         SX cs_qd_sym = SX::zeros(model.getNumDegreesOfFreedom(), 1);
-        ModelState<SX> state = createSymbolicModelState(model, cs_q_sym, cs_qd_sym);
+        ModelState<SX> state = createSymbolicModelState(model, cs_q_sym, cs_dq_sym, cs_qd_sym);
 
         model.setState(state);
         model.forwardKinematicsIncludingContactPoints();
@@ -327,17 +244,16 @@ protected:
             Vec3<SX> contact_point_pos = contact_point.position_;
             D3Mat<SX> contact_point_jac = contact_point.jacobian_.bottomRows<3>();
 
-            SX cs_contact_point_pos = SX(casadi::Sparsity::dense(3, 1));
+            SX cs_contact_point_pos = SX(Sparsity::dense(3, 1));
             casadi::copy(contact_point_pos, cs_contact_point_pos);
 
-            SX cs_contact_point_jac = SX(casadi::Sparsity::dense(contact_point_jac.rows(),
-                                                                 model.getNumDegreesOfFreedom()));
+            SX cs_contact_point_jac = SX(Sparsity::dense(3, model.getNumDegreesOfFreedom()));
             casadi::copy(contact_point_jac, cs_contact_point_jac);
 
-            SX dpos_dq = jacobian(cs_contact_point_pos, cs_q_sym);
+            SX dpos_ddq = jacobian(cs_contact_point_pos, cs_dq_sym);
 
-            std::vector<SX> args{cs_q_sym};
-            std::vector<SX> res{dpos_dq, cs_contact_point_jac};
+            std::vector<SX> args{cs_q_sym, cs_dq_sym};
+            std::vector<SX> res{dpos_ddq, cs_contact_point_jac};
             casadi::Function contactPointFunction("contactPointPositionJacobian", args, res);
 
             contact_jacobian_fcns[contact_point.name_] = contactPointFunction;
@@ -345,15 +261,16 @@ protected:
         contact_jacobian_fcn_maps_.push_back(contact_jacobian_fcns);
     }
 
-    T robot_;
+    int nq_, nv_;
     const int num_robots_ = 10;
     std::vector<std::unordered_map<std::string, casadi::Function>> contact_jacobian_fcn_maps_;
 };
 
 using testing::Types;
 
-// TODO(@MatthewChignoli): Add floating base robots once we know how to handle differentiation on non-Euclidean manifolds
 typedef Types<
+    SingleRigidBody<casadi::SX>,
+    MiniCheetah<casadi::SX>,
     RevoluteChainWithRotor<2, casadi::SX>,
     RevoluteChainWithRotor<4, casadi::SX>,
     RevoluteChainWithRotor<8, casadi::SX>>
@@ -376,16 +293,28 @@ TYPED_TEST(AutoDiffRobotTest, contactJacobians)
 
             for (int i = 0; i < 20; i++)
             {
-                std::vector<DM> q = math::random<DM>(this->robot_.getNumDofs());
-                std::vector<DM> res = fcn(std::vector<DM>{q});
+                std::vector<DM> q = math::random<DM>(this->nq_);
+                std::vector<DM> dq = math::zeros<DM>(this->nv_);
 
-                DMat<double> dpos_dq_full(3, this->robot_.getNumDofs());
-                casadi::copy(res[0], dpos_dq_full);
+                // TODO(@MatthewChignoli): Fix this current method for dealing with floating base robots
+                if (this->nq_ != this->nv_)
+                {
+                    Quat<double> quat = ori::rpyToQuat(Vec3<double>::Random());
+                    q[3] = quat[0];
+                    q[4] = quat[1];
+                    q[5] = quat[2];
+                    q[6] = quat[3];
+                }
 
-                DMat<double> contact_point_jac_full(3, this->robot_.getNumDofs());
+                std::vector<DM> res = fcn(std::vector<DM>{q, dq});
+
+                DMat<double> dpos_ddq_full(3, this->nv_);
+                casadi::copy(res[0], dpos_ddq_full);
+
+                DMat<double> contact_point_jac_full(3, this->nv_);
                 casadi::copy(res[1], contact_point_jac_full);
 
-                GTEST_ASSERT_LE((dpos_dq_full - contact_point_jac_full).norm(), 1e-12);
+                GTEST_ASSERT_LE((dpos_ddq_full - contact_point_jac_full).norm(), 1e-12);
             }
         }
     }

@@ -352,63 +352,48 @@ namespace grbda
      * @param dt The timestep
      * @return
      */
-    inline Quat<casadi::SX> integrateQuat(const Quat<casadi::SX> &quat,
-                                          const Vec3<casadi::SX> &omega,
-                                          casadi::SX dt)
+    template <typename T, typename T2, typename T3>
+    Quat<typename T::Scalar> integrateQuat(const Eigen::MatrixBase<T> &quat,
+                                           const Eigen::MatrixBase<T2> &omega,
+                                           T3 dt)
     {
-      casadi::SX ang = omega.norm();
-      casadi::SX pos_ang = ang > 0.;
-
-      Vec3<casadi::SX> axis;
-      axis[0] = casadi::SX::if_else(pos_ang, omega[0] / ang, 1.);
-      axis[1] = casadi::SX::if_else(pos_ang, omega[1] / ang, 0.);
-      axis[2] = casadi::SX::if_else(pos_ang, omega[2] / ang, 0.);
-
-      ang *= dt;
-
-      Vec3<casadi::SX> ee = sin(ang / 2) * axis;
-      Quat<casadi::SX> quatD(cos(ang / 2), ee[0], ee[1], ee[2]);
-
-      Quat<casadi::SX> quatNew = quatProduct(quatD, quat);
-      quatNew = quatNew / quatNew.norm();
-      return quatNew;
-    }
-
-    /*!
-     * Compute new quaternion given:
-     * @param quat The old quaternion
-     * @param omega The angular velocity (IN INERTIAL COORDINATES!)
-     * @param dt The timestep
-     * @return
-     */
-    inline Quat<double> integrateQuat(const Quat<double> &quat,
-                                      const Vec3<double> &omega,
-                                      double dt)
-    {
-      Vec3<double> axis;
-      double ang = omega.norm();
+      static_assert(T::ColsAtCompileTime == 1 && T::RowsAtCompileTime == 4,
+                    "Must have 4x1 quat");
+      static_assert(T2::ColsAtCompileTime == 1 && T2::RowsAtCompileTime == 3,
+                    "Must have 3x1 omega");
+      Vec3<typename T::Scalar> axis;
+      typename T::Scalar ang = omega.norm();
       if (ang > 0)
       {
         axis = omega / ang;
       }
       else
       {
-        axis = Vec3<double>(1, 0, 0);
+        axis = Vec3<typename T::Scalar>(1, 0, 0);
       }
 
       ang *= dt;
-      Vec3<double> ee = sin(ang / 2) * axis;
-      Quat<double> quatD(cos(ang / 2), ee[0], ee[1], ee[2]);
+      Vec3<typename T::Scalar> ee = sin(ang / 2) * axis;
+      Quat<typename T::Scalar> quatD(cos(ang / 2), ee[0], ee[1], ee[2]);
 
-      Quat<double> quatNew = quatProduct(quatD, quat);
+      Quat<typename T::Scalar> quatNew = quatProduct(quatD, quat);
       quatNew = quatNew / quatNew.norm();
       return quatNew;
+    }
+
+    template <>
+    inline Quat<casadi::SX> integrateQuat(const Eigen::MatrixBase<Quat<casadi::SX>> &quat,
+                                          const Eigen::MatrixBase<Vec3<casadi::SX>> &omega,
+                                          casadi::SX dt)
+    {
+      Quat<casadi::SX> quat_new = quat + 0.5 * quatProduct(Quat<casadi::SX>(0, omega[0], omega[1], omega[2]), quat) * dt;
+      return quat_new / quat_new.norm();
     }
 
     /*!
      * Compute new quaternion given:
      * @param quat The old quaternion
-     * @param omega The angular velocity (IN INERTIAL COORDINATES!)
+     * @param omega The angular velocity (IN BODY COORDINATES!)
      * @param dt The timestep
      * @return
      */
@@ -439,6 +424,15 @@ namespace grbda
       Quat<typename T::Scalar> quatNew = quatProduct(quat, quatD);
       quatNew = quatNew / quatNew.norm();
       return quatNew;
+    }
+
+    template <>
+    inline Quat<casadi::SX> integrateQuatImplicit(const Eigen::MatrixBase<Quat<casadi::SX>> &quat,
+                                                  const Eigen::MatrixBase<Vec3<casadi::SX>> &omega,
+                                                  casadi::SX dt)
+    {
+      Quat<casadi::SX> quat_new = quat + 0.5 * quatProduct(quat, Quat<casadi::SX>(0, omega[0], omega[1], omega[2])) * dt;
+      return quat_new / quat_new.norm();
     }
 
     template <typename T>
