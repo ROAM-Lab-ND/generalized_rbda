@@ -2,6 +2,7 @@
 #include "Tello.hpp"
 #include "TelloWithArms.hpp"
 #include "MIT_Humanoid.hpp"
+#include "MIT_Humanoid_no_rotors.hpp"
 #include "MiniCheetah.hpp"
 #include "SingleRigidBody.hpp"
 #include "SerialChains/RevoluteChainWithRotor.hpp"

@@ -166,3 +166,75 @@ TYPED_TEST(RigidBodyKinematicsTest, ForwardKinematics)
         }
     }
 }
+
+GTEST_TEST(ForwardKinematics, HumanoidModelComparison)
+{
+    // Build the models
+    MIT_Humanoid<> robot_with_rotors;
+    ClusterTreeModel<> rotor_model(robot_with_rotors.buildClusterTreeModel());
+
+    MIT_Humanoid_no_rotors<> robot_no_rotors;
+    ClusterTreeModel<> no_rotor_model(robot_no_rotors.buildClusterTreeModel());
+
+    for (int i = 0; i < 20; i++)
+    {
+        // Initialize Random States
+        ModelState<> model_state;
+        for (const auto &cluster : rotor_model.clusters())
+        {
+            JointState<> joint_state = cluster->joint_->randomJointState();
+            model_state.push_back(joint_state);
+        }
+        rotor_model.setState(model_state);
+        no_rotor_model.setState(model_state);
+
+        // Forward Kinematics
+        rotor_model.forwardKinematicsIncludingContactPoints();
+        no_rotor_model.forwardKinematicsIncludingContactPoints();
+
+        // Compare
+        for (const auto &body : no_rotor_model.bodies())
+        {
+            const Vec3<double> p_rotor = rotor_model.getPosition(body.name_);
+            const Vec3<double> p_no_rotor = no_rotor_model.getPosition(body.name_);
+            GTEST_ASSERT_LT((p_rotor - p_no_rotor).norm(), tol);
+
+            const Mat3<double> R_rotor = rotor_model.getOrientation(body.name_);
+            const Mat3<double> R_no_rotor = no_rotor_model.getOrientation(body.name_);
+            GTEST_ASSERT_LT((R_rotor - R_no_rotor).norm(), tol);
+
+            const Vec3<double> v_rotor = rotor_model.getLinearVelocity(body.name_);
+            const Vec3<double> v_no_rotor = no_rotor_model.getLinearVelocity(body.name_);
+            GTEST_ASSERT_LT((v_rotor - v_no_rotor).norm(), tol);
+
+            const Vec3<double> w_rotor = rotor_model.getAngularVelocity(body.name_);
+            const Vec3<double> w_no_rotor = no_rotor_model.getAngularVelocity(body.name_);
+            GTEST_ASSERT_LT((w_rotor - w_no_rotor).norm(), tol);
+        }
+
+        GTEST_ASSERT_EQ(rotor_model.contactPoints().size(), no_rotor_model.contactPoints().size());
+
+        rotor_model.updateContactPointJacobians();
+        no_rotor_model.updateContactPointJacobians();
+        for (int j = 0; j < (int)rotor_model.contactPoints().size(); j++)
+        {
+            const ContactPoint<double> &rotor_cp = rotor_model.contactPoint(j);
+            const ContactPoint<double> &no_rotor_cp = no_rotor_model.contactPoint(j);
+
+            // Verify positions
+            const Vec3<double> p_cp_rotor = rotor_cp.position_;
+            const Vec3<double> p_cp_no_rotor = no_rotor_cp.position_;
+            GTEST_ASSERT_LT((p_cp_rotor - p_cp_no_rotor).norm(), tol);
+
+            // Verify velocities
+            const Vec3<double> v_cp_rotor = rotor_cp.velocity_;
+            const Vec3<double> v_cp_no_rotor = no_rotor_cp.velocity_;
+            GTEST_ASSERT_LT((v_cp_rotor - v_cp_no_rotor).norm(), tol);
+
+            // Verify jacobians
+            const D6Mat<double> J_cp_rotor = rotor_cp.jacobian_;
+            const D6Mat<double> J_cp_no_rotor = no_rotor_cp.jacobian_;
+            GTEST_ASSERT_LT((J_cp_rotor - J_cp_no_rotor).norm(), tol);
+        }
+    }
+}

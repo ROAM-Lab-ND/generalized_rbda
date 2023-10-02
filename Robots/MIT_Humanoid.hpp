@@ -66,7 +66,7 @@ namespace grbda
 
         ClusterTreeModel<Scalar> buildClusterTreeModel() const override;
 
-    private:
+    protected:
         //
         Scalar _torsoMass = 8.52; // from measuring the total weight of the humanoid
 
