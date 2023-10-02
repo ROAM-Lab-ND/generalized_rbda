@@ -26,11 +26,6 @@ namespace grbda
         const DMat<Scalar> &S() const override { return joint_->S(); }
         const DVec<Scalar> &cJ() const override { return joint_->cJ(); }
 
-        JointCoordinate<Scalar> integratePosition(JointState<Scalar> joint_state, Scalar dt)
-        {
-            return joint_->integratePosition(joint_state, dt);
-        }
-
         const spatial::Transform<Scalar> &getAbsoluteTransformForBody(const Body<Scalar> &body) override;
         DVec<Scalar> getVelocityForBody(const Body<Scalar> &body) override;
         void applyForceToBody(const SVec<Scalar> &force, const Body<Scalar> &body) override;

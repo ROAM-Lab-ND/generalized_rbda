@@ -48,9 +48,6 @@ namespace grbda
             std::vector<std::tuple<Body<Scalar>, JointPtr<Scalar>, DMat<Scalar>>>
             bodiesJointsAndReflectedInertias() const override;
 
-            JointCoordinate<Scalar> integratePosition(JointState<Scalar> joint_state,
-                                                      Scalar dt) const override;
-
             JointState<Scalar> randomJointState() const override;
 
         private:

@@ -50,30 +50,6 @@ namespace grbda
         }
 
         template <typename Scalar>
-        JointCoordinate<Scalar> Base<Scalar>::integratePosition(JointState<Scalar> joint_state,
-                                                                Scalar dt) const
-        {
-            if (joint_state.position.isSpanning() && joint_state.velocity.isSpanning())
-            {
-                joint_state.position += joint_state.velocity * dt;
-            }
-            else if (joint_state.position.isSpanning())
-            {
-                joint_state.position += G() * joint_state.velocity * dt;
-            }
-            else if (joint_state.velocity.isSpanning())
-            {
-                throw std::runtime_error("Velocity is spanning but position is not. This is not supported.");
-            }
-            else
-            {
-                joint_state.position += joint_state.velocity * dt;
-            }
-
-            return joint_state.position;
-        }
-
-        template <typename Scalar>
         JointState<Scalar> Base<Scalar>::randomJointState() const
         {
             JointState<Scalar> joint_state(false, false);

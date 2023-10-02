@@ -55,9 +55,6 @@ namespace grbda
             const int &numVelocities() const { return num_velocities_; }
             virtual int numUnactuatedVelocities() const { return 0; }
 
-            virtual JointCoordinate<Scalar> integratePosition(JointState<Scalar> joint_state,
-                                                              Scalar dt) const;
-
             const DMat<Scalar> &S() const { return S_; }
             const DMat<Scalar> &Psi() const { return Psi_; }
             const DVec<Scalar> &vJ() const { return vJ_; }

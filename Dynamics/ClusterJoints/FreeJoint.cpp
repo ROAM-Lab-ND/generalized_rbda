@@ -70,20 +70,6 @@ namespace grbda
         }
 
         template <typename Scalar>
-        JointCoordinate<Scalar> Free<Scalar>::integratePosition(JointState<Scalar> joint_state,
-                                                                Scalar dt) const
-        {
-            const Quat<Scalar> quat = joint_state.position.template tail<4>();
-            const Vec3<Scalar> lin_vel = joint_state.velocity.template tail<3>();
-            const Vec3<Scalar> ang_vel = joint_state.velocity.template head<3>();
-
-            joint_state.position.template head<3>() += lin_vel * dt;
-            joint_state.position.template tail<4>() = ori::integrateQuat(quat, ang_vel, dt);
-
-            return joint_state.position;
-        }
-
-        template <typename Scalar>
         JointState<Scalar> Free<Scalar>::randomJointState() const
         {
             JointState<Scalar> joint_state(false, false);
