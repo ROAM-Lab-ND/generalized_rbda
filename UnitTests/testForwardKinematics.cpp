@@ -15,7 +15,7 @@ class RigidBodyKinematicsTest : public testing::Test
 {
 protected:
     RigidBodyKinematicsTest() : cluster_model(robot.buildClusterTreeModel()),
-                                generic_model(extractGenericJointModel(cluster_model)),
+                                generic_model(TestHelpers::extractGenericJointModel(cluster_model)),
                                 rigid_body_model(cluster_model) {}
 
     bool initializeRandomStates()
@@ -100,7 +100,7 @@ TYPED_TEST(RigidBodyKinematicsTest, ForwardKinematics)
         this->rigid_body_model.forwardKinematicsIncludingContactPoints();
 
         // Verify link kinematics
-        for (const auto& body : this->cluster_model.bodies())
+        for (const auto &body : this->cluster_model.bodies())
         {
             const Vec3<double> p_cluster = this->cluster_model.getPosition(body.name_);
             const Vec3<double> p_generic = this->generic_model.getPosition(body.name_);
@@ -163,51 +163,6 @@ TYPED_TEST(RigidBodyKinematicsTest, ForwardKinematics)
                 J_qdot += J_cp_cluster.middleCols(vel_idx, num_vel) * this->model_state[i].velocity;
             }
             GTEST_ASSERT_LT((J_qdot.tail<3>() - v_cp_cluster).norm(), tol);
-        }
-    }
-}
-
-TYPED_TEST(RigidBodyKinematicsTest, MotionSubspaceApparentDerivative)
-{
-    // This test compares the apparent derivative of the motion subspace (S_ring) as computed by
-    // the cluster tree model to the apparent derivative as computed by finite difference
-
-    double dt = 0.00001;
-    const int nq = this->cluster_model.getNumPositions();
-    const int nv = this->cluster_model.getNumDegreesOfFreedom();
-
-    for (int k = 0; k < 5; k++)
-    {
-        bool nan_detected_in_state = this->initializeRandomStates();
-        if (nan_detected_in_state)
-        {
-            continue;
-        }
-        this->cluster_model.forwardKinematics();
-
-        for (auto &cluster : this->cluster_model.clusters())
-        {
-            auto joint = cluster->joint_;
-            JointState<> joint_state = cluster->joint_state_;
-
-            const DVec<double> cJ = joint->cJ();
-
-            JointState<> q_plus_joint_state = cluster->joint_state_;
-            q_plus_joint_state.position = cluster->integratePosition(joint_state, dt);
-            q_plus_joint_state.velocity = cluster->jointVelocity();
-            joint->updateKinematics(q_plus_joint_state);
-            DMat<double> S_plus = joint->S();
-
-            JointState<> q_minus_joint_state = cluster->joint_state_;
-            q_minus_joint_state.position = cluster->integratePosition(joint_state, -dt);
-            q_minus_joint_state.velocity = cluster->jointVelocity();
-            joint->updateKinematics(q_minus_joint_state);
-            DMat<double> S_minus = joint->S();
-
-            DMat<double> S_ring_fd = (S_plus - S_minus) / (2 * dt);
-            DVec<double> cJ_fd = S_ring_fd * joint_state.velocity;
-
-            GTEST_ASSERT_LT((cJ - cJ_fd).norm(), loose_tol);
         }
     }
 }

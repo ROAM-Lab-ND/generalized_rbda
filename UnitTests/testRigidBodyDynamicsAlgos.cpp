@@ -25,7 +25,7 @@ protected:
             T robot;
             
             ClusterTreeModel<> cluster_model(robot.buildClusterTreeModel());
-            ClusterTreeModel<> generic_model = extractGenericJointModel(cluster_model);
+            ClusterTreeModel<> generic_model = TestHelpers::extractGenericJointModel(cluster_model);
             
             grbda::RigidBodyTreeModel<> lg_mult_custom_model(
                 cluster_model, FwdDynMethod::LagrangeMultiplierCustom);

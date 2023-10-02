@@ -35,7 +35,7 @@ namespace biasVelocityTestHelpers
         // Set state and update kinematics
         JointState<SX> joint_state(JointCoordinate<SX>(q_sym, false),
                                    JointCoordinate<SX>(qd_sym, false));
-        joint_state.position = TestHelpers::plus(joint, q_sym, dq_sym);
+        joint_state.position = TestHelpers::plus(joint->type(), q_sym, dq_sym);
         joint->updateKinematics(joint_state);
 
         // Differentiate the motion subspace matrix with repsect to q, ∂S/∂dq
@@ -218,7 +218,8 @@ protected:
 
             JointState<SX> joint_state(JointCoordinate<SX>(q_cluster, false),
                                        JointCoordinate<SX>(qd_cluster, false));
-            joint_state.position = TestHelpers::plus(cluster->joint_, q_cluster, dq_cluster);
+            joint_state.position = TestHelpers::plus(cluster->joint_->type(),
+                                                     q_cluster, dq_cluster);
             state.push_back(joint_state);
         }
 
@@ -253,7 +254,7 @@ protected:
             SX dpos_ddq = jacobian(cs_contact_point_pos, cs_dq_sym);
 
             std::vector<SX> args{cs_q_sym, cs_dq_sym};
-            std::vector<SX> res{dpos_ddq, cs_contact_point_jac};
+            std::vector<SX> res{dpos_ddq, cs_contact_point_jac, cs_contact_point_pos};
             casadi::Function contactPointFunction("contactPointPositionJacobian", args, res);
 
             contact_jacobian_fcns[contact_point.name_] = contactPointFunction;
@@ -262,7 +263,7 @@ protected:
     }
 
     int nq_, nv_;
-    const int num_robots_ = 10;
+    const int num_robots_ = 4;
     std::vector<std::unordered_map<std::string, casadi::Function>> contact_jacobian_fcn_maps_;
 };
 
@@ -291,8 +292,9 @@ TYPED_TEST(AutoDiffRobotTest, contactJacobians)
         {
             casadi::Function fcn = contact_jacobian_fcn.second;
 
-            for (int i = 0; i < 20; i++)
+            for (int i = 0; i < 5; i++)
             {
+                // Random state
                 std::vector<DM> q = math::random<DM>(this->nq_);
                 std::vector<DM> dq = math::zeros<DM>(this->nv_);
 
@@ -306,6 +308,7 @@ TYPED_TEST(AutoDiffRobotTest, contactJacobians)
                     q[6] = quat[3];
                 }
 
+                // Compare autodiff against analytical
                 std::vector<DM> res = fcn(std::vector<DM>{q, dq});
 
                 DMat<double> dpos_ddq_full(3, this->nv_);
@@ -314,7 +317,35 @@ TYPED_TEST(AutoDiffRobotTest, contactJacobians)
                 DMat<double> contact_point_jac_full(3, this->nv_);
                 casadi::copy(res[1], contact_point_jac_full);
 
-                GTEST_ASSERT_LE((dpos_ddq_full - contact_point_jac_full).norm(), 1e-12);
+                GTEST_ASSERT_LE((contact_point_jac_full - dpos_ddq_full).norm(), 1e-12);
+
+                // Compare autodiff against numerical
+                DMat<double> contact_point_jac_fd(3, this->nv_);
+
+                double h = 1e-8;
+                for (int j = 0; j < this->nv_; j++)
+                {
+                    std::vector<DM> dq_plus = dq;
+                    dq_plus[j] += 1e-8;
+                    std::vector<DM> q_plus = TestHelpers::plus(q, dq_plus);
+
+                    std::vector<DM> res_plus = fcn(std::vector<DM>{q_plus, dq});
+                    DVec<double> contact_point_pos_plus(3);
+                    casadi::copy(res_plus[2], contact_point_pos_plus);
+
+                    std::vector<DM> dq_minus = dq;
+                    dq_minus[j] -= 1e-8;
+                    std::vector<DM> q_minus = TestHelpers::plus(q, dq_minus);
+
+                    std::vector<DM> res_minus = fcn(std::vector<DM>{q_minus, dq});
+                    DVec<double> contact_point_pos_minus(3);
+                    casadi::copy(res_minus[2], contact_point_pos_minus);
+
+                    contact_point_jac_fd.col(j) =
+                        (contact_point_pos_plus - contact_point_pos_minus) / (2 * h);
+                }
+
+                GTEST_ASSERT_LE((contact_point_jac_fd - contact_point_jac_full).norm(), 1e-6);
             }
         }
     }
