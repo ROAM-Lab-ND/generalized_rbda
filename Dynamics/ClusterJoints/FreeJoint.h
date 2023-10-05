@@ -8,13 +8,13 @@ namespace grbda
 
     namespace LoopConstraint
     {
-        template <typename Scalar = double>
+        template <typename Scalar = double, typename OrientationRepresentation>
         struct Free : Base<Scalar>
         {
             Free();
 
-            int numSpanningPos() const override { return 7; }
-            int numIndependentPos() const override { return 7; }
+            int numSpanningPos() const override { return OrientationRepresentation::numSpanningPos; }
+            int numIndependentPos() const override { return OrientationRepresentation::numIndependentPos; }
 
             std::shared_ptr<Base<Scalar>> clone() const override;
 

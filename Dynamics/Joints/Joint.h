@@ -37,14 +37,14 @@ namespace grbda
             DMat<Scalar> Psi_;
         };
 
-        template <typename Scalar = double>
+        template <typename Scalar = double, typename OrientationRepresentation>
         class Free : public Base<Scalar>
         {
         public:
-            Free() : Base<Scalar>(7, 6)
+            Free() : Base<Scalar>(OrientationRepresentation::num_ori_parameter + 3, 6)
             {
-                this->S_ = D6Mat<Scalar>::Identity(6, 6);
-                this->Psi_ = D6Mat<Scalar>::Identity(6, 6);
+                S_ = D6Mat<double>::Identity(6, 6);
+                Psi_ = D6Mat<double>::Identity(6, 6);
             }
             ~Free() {}
 
@@ -54,11 +54,13 @@ namespace grbda
             }
 
             void updateKinematics(const DVec<Scalar> &q, const DVec<Scalar> &qd) override
-            {
-                const Mat3<Scalar> R = ori::quaternionToRotationMatrix(q.template tail<4>());
+            {   
+                const Mat3<Scalar> orientation_repensentation_.getRotationMatrix(q.template tail<OrientationRepresentation::num_ori_parameter>())
                 const Vec3<Scalar> q_pos = q.template head<3>();
                 this->XJ_ = spatial::Transform<Scalar>(R, q_pos);
             }
+            
+            OrientationRepresentation orientation_repensentation_;
         };
 
         template <typename Scalar = double>

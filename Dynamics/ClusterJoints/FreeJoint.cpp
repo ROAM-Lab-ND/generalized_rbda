@@ -35,8 +35,8 @@ namespace grbda
     namespace ClusterJoints
     {
 
-        template <typename Scalar>
-        Free<Scalar>::Free(const Body<Scalar> &body) : Base<Scalar>(1, 7, 6), body_(body)
+        template <typename Scalar, typename OrientationRepresentation>
+        Free<Scalar>::Free(const Body<Scalar> &body) : Base<Scalar>(1, OrientationRepresentation::num_ori_parameter + 3, 6), body_(body)
         {
             if (body.parent_index_ >= 0)
                 throw std::runtime_error("Free joint is only valid as the first joint in a tree and thus cannot have a parent body");
@@ -44,11 +44,11 @@ namespace grbda
             this->S_.setIdentity();
             this->Psi_.setIdentity();
 
-            this->single_joints_.emplace_back(new Joints::Free<Scalar>());
+            this->single_joints_.emplace_back(new Joints::Free<Scalar, OrientationRepresentation>());
 
             this->spanning_tree_to_independent_coords_conversion_ = DMat<int>::Identity(6, 6);
 
-            this->loop_constraint_ = std::make_shared<LoopConstraint::Free<Scalar>>();
+            this->loop_constraint_ = std::make_shared<LoopConstraint::Free<Scalar, OrientationRepresentation>>();
         }
 
         template <typename Scalar>
@@ -90,8 +90,10 @@ namespace grbda
             return bodies_joints_and_ref_inertias;
         }
 
-        template class Free<double>;
-        template class Free<casadi::SX>;
+        template class Free<double, rpy>;
+        template class Free<double, quat>;
+        template class Free<casadi::SX, RollPithYawRepresentation>;
+        template class Free<casadi::SX, QuaternionRepresentation>;
 
     }
 
