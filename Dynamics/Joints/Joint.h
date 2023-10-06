@@ -43,8 +43,8 @@ namespace grbda
         public:
             Free() : Base<Scalar>(OrientationRepresentation::num_ori_parameter + 3, 6)
             {
-                S_ = D6Mat<double>::Identity(6, 6);
-                Psi_ = D6Mat<double>::Identity(6, 6);
+                this->S_ = D6Mat<Scalar>::Identity(6, 6);
+                this->Psi_ = D6Mat<Scalar>::Identity(6, 6);
             }
             ~Free() {}
 
