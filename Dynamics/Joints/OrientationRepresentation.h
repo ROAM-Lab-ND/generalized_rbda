@@ -2,44 +2,39 @@
 #define GRBDA_ORI_REPRESENTATION_H
 
 #include "Utils/SpatialTransforms.h"
-
-#include <Eigen/Core>  // for Eigen core functionalities
+#include "cppTypes.h"
 
 namespace grbda
 {
     namespace ori_representation
     {
-        struct OrientationBase {
-            static const int num_ori_parameter;      // Initialize in source file or inline if C++17
-            static const int numSpanningPos;         // Initialize in source file or inline if C++17
-            static const int numIndependentPos;      // Initialize in source file or inline if C++17
+        struct Base {
+            static const int num_ori_parameter;      
+            static const int numSpanningPos;         
+            static const int numIndependentPos;
 
             virtual RotMat<double> getRotationMatrix(const DVec<double>& q) const = 0; // pure virtual method
         };
 
-        struct Quaternion : public OrientationBase {
+        struct Quaternion : public Base {
             static const int num_ori_parameter = 4;
             static const int numSpanningPos = 7;
             static const int numIndependentPos = 7;
 
             RotMat<double> getRotationMatrix(const DVec<double>& q) const override {
-                // Implement the logic to convert quaternion to rotation matrix
-                RotMat<double> rotationMatrix;
+                const RotMat<Scalar> R = ori::quaternionToRotationMatrix(q.template tail<4>());
                 // ... 
                 return rotationMatrix;
             }
         };
 
-        struct RollPitchYaw : public OrientationBase {
+        struct RollPitchYaw : public Base {
             static const int num_ori_parameter = 3;
             static const int numSpanningPos = 6;
             static const int numIndependentPos = 6;
 
             RotMat<double> getRotationMatrix(const DVec<double>& q) const override {
-                // Implement the logic to convert roll-pitch-yaw to rotation matrix
-                RotMat<double> rotationMatrix;
-                // ...
-                return rotationMatrix;
+                return ori::rpyToRotMat(q);
             }
         };
     }  // namespace ori_representation
