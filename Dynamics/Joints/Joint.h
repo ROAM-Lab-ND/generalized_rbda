@@ -2,6 +2,7 @@
 #define GRBDA_JOINT_H
 
 #include "Utils/SpatialTransforms.h"
+#include "OrientationRepresentation.h"
 
 namespace grbda
 {
@@ -37,7 +38,7 @@ namespace grbda
             DMat<Scalar> Psi_;
         };
 
-        template <typename Scalar = double, typename OrientationRepresentation>
+        template <typename Scalar = double, typename OrientationRepresentation = ori_representation::QuaternionRepresentation<Scalar>>
         class Free : public Base<Scalar>
         {
         public:
@@ -50,17 +51,17 @@ namespace grbda
 
             std::shared_ptr<Base<Scalar>> clone() const override
             {
-                return std::make_shared<Free<Scalar>>(*this);
+                return std::make_shared<Free<Scalar, OrientationRepresentation>>(*this);
             }
 
             void updateKinematics(const DVec<Scalar> &q, const DVec<Scalar> &qd) override
             {   
-                const Mat3<Scalar> orientation_repensentation_.getRotationMatrix(q.template tail<OrientationRepresentation::num_ori_parameter>())
+                const Mat3<Scalar> R = orientation_representation_.getRotationMatrix(q.template tail<OrientationRepresentation::num_ori_parameter>());
                 const Vec3<Scalar> q_pos = q.template head<3>();
                 this->XJ_ = spatial::Transform<Scalar>(R, q_pos);
             }
             
-            OrientationRepresentation orientation_repensentation_;
+            OrientationRepresentation orientation_representation_;
         };
 
         template <typename Scalar = double>

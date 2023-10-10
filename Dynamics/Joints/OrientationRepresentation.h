@@ -14,29 +14,28 @@ namespace grbda
             static const int numSpanningPos;         
             static const int numIndependentPos;
 
-            virtual RotMat<T> getRotationMatrix(const DVec<T>& q) const = 0; // pure virtual method
+            virtual const RotMat<T> getRotationMatrix(const DVec<T>& q) const = 0; // pure virtual method
         };
 
         template <typename T = double>
-        struct Quaternion : public Base<T> {`
+        struct QuaternionRepresentation : public Base<T> {
             static const int num_ori_parameter = 4;
             static const int numSpanningPos = 7;
             static const int numIndependentPos = 7;
 
-            RotMat<T> getRotationMatrix(const DVec<T>& q) const override {
-                const RotMat<Scalar> R = ori::quaternionToRotationMatrix(q.template tail<4>());
-                // ... 
-                return rotationMatrix;
+            const RotMat<T> getRotationMatrix(const DVec<T>& q) const override {
+                const RotMat<T> R = ori::quaternionToRotationMatrix(q.template tail<4>());
+                return R;
             }
         };
 
         template <typename T = double>
-        struct RollPitchYaw : public Base<T> {
+        struct RollPitchYawRepresentation : public Base<T> {
             static const int num_ori_parameter = 3;
             static const int numSpanningPos = 6;
             static const int numIndependentPos = 6;
 
-            RotMat<T> getRotationMatrix(const DVec<T>& q) const override {
+            const RotMat<T> getRotationMatrix(const DVec<T>& q) const override {
                 return ori::rpyToRotMat(q);
             }
         };

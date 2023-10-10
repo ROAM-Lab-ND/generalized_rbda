@@ -2,13 +2,14 @@
 #define GRBDA_GENERALIZED_JOINTS_FREE_JOINT_H
 
 #include "ClusterJoint.h"
+#include "Joints/OrientationRepresentation.h"
 
 namespace grbda
 {
 
     namespace LoopConstraint
     {
-        template <typename Scalar = double, typename OrientationRepresentation>
+        template <typename Scalar = double, typename OrientationRepresentation = ori_representation::QuaternionRepresentation<Scalar>>
         struct Free : Base<Scalar>
         {
             Free();
@@ -29,7 +30,7 @@ namespace grbda
     namespace ClusterJoints
     {
 
-        template <typename Scalar = double>
+        template <typename Scalar = double, typename OrientationRepresentation = ori_representation::QuaternionRepresentation<Scalar>>
         class Free : public Base<Scalar>
         {
         public:
