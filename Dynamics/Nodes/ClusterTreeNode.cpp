@@ -90,7 +90,7 @@ namespace grbda
         return joint_->bodiesJointsAndReflectedInertias();
     }
 
-    template class ClusterTreeNode<double>;
-    template class ClusterTreeNode<casadi::SX>;
+    template struct ClusterTreeNode<double>;
+    template struct ClusterTreeNode<casadi::SX>;
 
 } // namespace grbda

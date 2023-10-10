@@ -47,7 +47,7 @@ namespace grbda
         this->f_ext_.template segment<6>(0) = force;
     }
 
-    template class RigidBodyTreeNode<double>;
-    template class RigidBodyTreeNode<casadi::SX>;
+    template struct RigidBodyTreeNode<double>;
+    template struct RigidBodyTreeNode<casadi::SX>;
 
 } // namespace grbda

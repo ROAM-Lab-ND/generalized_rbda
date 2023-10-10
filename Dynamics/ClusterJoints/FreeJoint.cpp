@@ -27,8 +27,8 @@ namespace grbda
             return joint_pos;
         }
 
-        template class Free<double>;
-        template class Free<casadi::SX>;
+        template struct Free<double>;
+        template struct Free<casadi::SX>;
 
     }
 
