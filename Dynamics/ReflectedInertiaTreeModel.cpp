@@ -1,7 +1,5 @@
 #include "ReflectedInertiaTreeModel.h"
 
-#include "Utils/math.h"
-
 namespace grbda
 {
 
@@ -330,7 +328,7 @@ namespace grbda
         this->compositeRigidBodyAlgorithm();
         this->updateBiasForceVector();
         const DMat<Scalar> H_reflected = this->H_ + reflected_inertia_;
-        DVec<Scalar> qdd_ref_inertia = math::matrixInverse(H_reflected) * (tau - this->C_);
+        DVec<Scalar> qdd_ref_inertia = matrixInverse(H_reflected) * (tau - this->C_);
         return qdd_ref_inertia;
     }
 
@@ -437,7 +435,7 @@ namespace grbda
             DMat<Scalar> D = joint->S().transpose() * link_node->U_;
             if (use_reflected_inertia)
                 D += reflected_inertia_.block(vel_idx, vel_idx, num_vel, num_vel);
-            link_node->D_inv_ = math::matrixInverse(D);
+            link_node->D_inv_ = matrixInverse(D);
 
             // Articulated body inertia recursion
             if (link_node->parent_index_ >= 0)
@@ -519,7 +517,7 @@ namespace grbda
     {
         const D3Mat<Scalar> J = contactJacobianWorldFrame(cp_name).template bottomRows<3>();
         const DMat<Scalar> H = getMassMatrix();
-        const DMat<Scalar> H_inv = math::matrixInverse(H);
+        const DMat<Scalar> H_inv = matrixInverse(H);
         const DMat<Scalar> inv_ops_inertia = J * H_inv * J.transpose();
         dstate_out = H_inv * (J.transpose() * force);
         return force.dot(inv_ops_inertia * force);
@@ -563,7 +561,7 @@ namespace grbda
 
             // Compute Psi
             const DMat<Scalar> &ST = joint->S().transpose();
-            D6Mat<Scalar> Psi = math::matrixRightPseudoInverse(ST);
+            D6Mat<Scalar> Psi = matrixRightPseudoInverse(ST);
 
             D6Mat<Scalar> F =
                 (node->ChiUp_.transpose() - node->Xup_.toMatrix().transpose()) * Psi;
@@ -737,7 +735,7 @@ namespace grbda
                 continue;
             J_stacked.template middleRows<6>(6 * ee_cnt++) = contactJacobianBodyFrame(cp.name_);
         }
-        return J_stacked * math::matrixInverse(H) * J_stacked.transpose();
+        return J_stacked * matrixInverse(H) * J_stacked.transpose();
     }
 
     template class ReflectedInertiaTreeModel<double>;

@@ -14,7 +14,7 @@ namespace grbda
         {
             for (int k = H.rows() - 1; k > -1; k--)
             {
-                H(k, k) = math::sqrt(H(k, k));
+                H(k, k) = sqrt(H(k, k));
                 int i = parent(k);
                 while (i != -1)
                 {

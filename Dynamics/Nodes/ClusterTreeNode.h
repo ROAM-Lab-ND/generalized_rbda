@@ -3,7 +3,6 @@
 
 #include "TreeNode.h"
 #include "Dynamics/ClusterJoints/ClusterJointTypes.h"
-#include "Utils/math.h"
 
 namespace grbda
 {
@@ -11,7 +10,7 @@ namespace grbda
     template <typename Scalar = double>
     struct ClusterTreeNode : TreeNode<Scalar>
     {
-        typedef typename math::CorrectMatrixInverseType<Scalar>::type InverseType;
+        typedef typename CorrectMatrixInverseType<Scalar>::type InverseType;
         typedef std::shared_ptr<ClusterJoints::Base<Scalar>> ClusterJointPtr;
         typedef std::pair<Body<Scalar>, JointPtr<Scalar>> BodyJointPair;
         typedef std::tuple<Body<Scalar>, JointPtr<Scalar>, DMat<Scalar>> BodyJointRefInertiaTriple;

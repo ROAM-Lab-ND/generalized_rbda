@@ -1,6 +1,5 @@
 #include "RigidBodyTreeModel.h"
 
-#include "Utils/math.h"
 namespace grbda
 {
 
@@ -75,7 +74,7 @@ namespace grbda
     template <typename Scalar>
     DVec<Scalar> RigidBodyTreeModel<Scalar>::forwardDynamics(const DVec<Scalar> &tau)
     {
-        typedef typename math::CorrectMatrixLltType<Scalar>::type LltType;
+        typedef typename CorrectMatrixLltType<Scalar>::type LltType;
      
         this->forwardKinematics();
         updateLoopConstraints();
@@ -117,7 +116,7 @@ namespace grbda
             DVec<Scalar> b = loop_constraints_.k() - Y.transpose() * z;
 
             // Solve Linear System A*lambda = b
-            DVec<Scalar> lambda = A.size() > 0 ? math::solveLinearSystem(A, b)
+            DVec<Scalar> lambda = A.size() > 0 ? solveLinearSystem(A, b)
                                                : DVec<Scalar>::Zero(0);
 
             // Solve for qdd using the factors from step 1
@@ -134,7 +133,7 @@ namespace grbda
             DVec<Scalar> tau_prime = tau_full - this->C_;
             DVec<Scalar> b = loop_constraints_.k() -
                              loop_constraints_.K() * lltOfH.solve(tau_prime);
-            DVec<Scalar> lambda = A.size() > 0 ? math::solveLinearSystem(A, b)
+            DVec<Scalar> lambda = A.size() > 0 ? solveLinearSystem(A, b)
                                                : DVec<Scalar>::Zero(0);
             return lltOfH.solve(tau_prime + loop_constraints_.K_transpose() * lambda);
         }
@@ -169,7 +168,7 @@ namespace grbda
                 continue;
             J_stacked.template middleRows<6>(6 * ee_cnt++) = contactJacobianBodyFrame(cp.name_);
         }
-        return J_stacked * math::matrixInverse(H) * J_stacked.transpose();
+        return J_stacked * matrixInverse(H) * J_stacked.transpose();
     }
 
     template <typename Scalar>
@@ -178,7 +177,7 @@ namespace grbda
     {
         const D3Mat<Scalar> J = contactJacobianWorldFrame(cp_name).template bottomRows<3>();
         const DMat<Scalar> H = getMassMatrix();
-        const DMat<Scalar> H_inv = math::matrixInverse(H);
+        const DMat<Scalar> H_inv = matrixInverse(H);
         const DMat<Scalar> inv_ops_inertia = J * H_inv * J.transpose();
         dstate_out = H_inv * (J.transpose() * force);
         return force.dot(inv_ops_inertia * force);

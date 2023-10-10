@@ -1,9 +1,6 @@
 #include "gtest/gtest.h"
 
 #include "Utils/OrientationTools.h"
-// #include "Utils/math.h"
-// #include "Utils/SpatialInertia.h"
-// #include "Utils/SpatialTransforms.h"
 
 #include <casadi/casadi.hpp>
 

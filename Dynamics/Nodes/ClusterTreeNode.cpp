@@ -1,7 +1,5 @@
 #include "ClusterTreeNode.h"
 
-#include "Utils/math.h"
-
 namespace grbda
 {
 

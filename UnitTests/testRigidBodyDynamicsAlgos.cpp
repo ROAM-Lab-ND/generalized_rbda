@@ -3,7 +3,6 @@
 #include "testHelpers.hpp"
 #include "Dynamics/RigidBodyTreeModel.h"
 #include "Robots/RobotTypes.h"
-#include "Utils/math.h"
 
 using namespace grbda;
 
@@ -151,7 +150,7 @@ TYPED_TEST(RigidBodyDynamicsAlgosTest, MassMatrix)
             DMat<double> H_generic = generic_model.getMassMatrix();
             DMat<double> H_projection = projection_model.getMassMatrix();
 
-            ASSERT_TRUE(math::isPositiveDefinite(H_cluster)) << H_cluster;
+            ASSERT_TRUE(isPositiveDefinite(H_cluster)) << H_cluster;
             GTEST_ASSERT_LT((H_cluster - H_generic).norm(), tol);
             GTEST_ASSERT_LT((H_cluster - H_projection).norm(), tol);
         }
