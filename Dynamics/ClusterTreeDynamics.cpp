@@ -269,7 +269,7 @@ namespace grbda
 
             // Compute Psi
             const DMat<Scalar> &ST = cluster->S().transpose();
-            DMat<Scalar> Psi = math::matrixRightPseudoInverse(ST);
+            DMat<Scalar> Psi = matrixRightPseudoInverse(ST);
 
             DMat<Scalar> F =
                 (cluster->ChiUp_.transpose() - cluster->Xup_.toMatrix().transpose()) * Psi;
@@ -295,7 +295,7 @@ namespace grbda
     {
         // Based on the EFPA from "https://www3.nd.edu/~pwensing/Papers/WensingFeatherstoneOrin12-ICRA.pdf"
 
-        typedef typename math::CorrectMatrixLltType<Scalar>::type LltType;
+        typedef typename CorrectMatrixLltType<Scalar>::type LltType;
 
         this->forwardKinematics();
         for (auto &cluster : cluster_nodes_)

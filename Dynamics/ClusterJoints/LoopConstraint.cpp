@@ -1,6 +1,6 @@
 #include "LoopConstraint.h"
 
-#include "Utils/math.h"
+#include "Utils/Utilities.h"
 #include <casadi/casadi.hpp>
 
 namespace grbda
@@ -65,7 +65,7 @@ namespace grbda
         {
             if (!G_pinv_computed_)
             {
-                G_pinv_ = math::matrixLeftPseudoInverse(G_);
+                G_pinv_ = matrixLeftPseudoInverse(G_);
                 G_pinv_computed_ = true;
             }
 
@@ -77,7 +77,7 @@ namespace grbda
         {
             if (!G_tranpose_pinv_computed_)
             {
-                G_tranpose_pinv_ = math::matrixRightPseudoInverse(G_transpose());
+                G_tranpose_pinv_ = matrixRightPseudoInverse(G_transpose());
                 G_tranpose_pinv_computed_ = true;
             }
             return G_tranpose_pinv_;

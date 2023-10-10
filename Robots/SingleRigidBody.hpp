@@ -12,7 +12,7 @@ namespace grbda
     public:
         SingleRigidBody()
         {
-            _mass = math::random<Scalar>();
+            _mass = random<Scalar>();
             _COM = Vec3<Scalar>::Random();
             _rotational_inertia = Vec3<Scalar>::Random().asDiagonal();
         }

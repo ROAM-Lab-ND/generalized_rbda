@@ -1,7 +1,7 @@
 #include "gtest/gtest.h"
 
 #include "testHelpers.hpp"
-#include "Utils/math.h"
+#include "Utils/Utilities.h"
 #include "Utils/SpatialInertia.h"
 #include "Utils/SpatialTransforms.h"
 #include "Dynamics/ClusterJoints/ClusterJointTypes.h"
@@ -74,9 +74,9 @@ namespace biasVelocityTestHelpers
 
     bool biasVelocitiesAreEqual(const casadi::Function &fcn, int nq, int nv)
     {
-        std::vector<casadi::DM> q = math::random<casadi::DM>(nq);
-        std::vector<casadi::DM> dq = math::zeros<casadi::DM>(nv);
-        std::vector<casadi::DM> qd = math::random<casadi::DM>(nv);
+        std::vector<casadi::DM> q = random<casadi::DM>(nq);
+        std::vector<casadi::DM> dq = zeros<casadi::DM>(nv);
+        std::vector<casadi::DM> qd = random<casadi::DM>(nv);
         casadi::DMVector res = fcn(casadi::DMVector{q, dq, qd});
 
         DVec<double> Sring_qd_full(res[0].size1());
@@ -128,10 +128,10 @@ GTEST_TEST(Derivatives, BiasVelocities)
 
         ClusterJoints::ParallelBeltTransmissionModule<SX> module1{
             link1, rotor1, ori::randomCoordinateAxis(), ori::randomCoordinateAxis(),
-            math::random<SX>(), math::random<SX>()};
+            random<SX>(), random<SX>()};
         ClusterJoints::ParallelBeltTransmissionModule<SX> module2{
             link2, rotor2, ori::randomCoordinateAxis(), ori::randomCoordinateAxis(),
-            math::random<SX>(), math::random<SX>()};
+            random<SX>(), random<SX>()};
 
         std::shared_ptr<JointType> joint = std::make_shared<JointType>(module1, module2);
 
@@ -155,7 +155,7 @@ GTEST_TEST(Derivatives, BiasVelocities)
     //     ClusterJoints::TelloDifferentialModule<SX> module{
     //         rotor1, rotor2, link1, link2,
     //         ori::randomCoordinateAxis(), ori::randomCoordinateAxis(),
-    //         ori::randomCoordinateAxis(), ori::randomCoordinateAxis(), math::random<SX>()};
+    //         ori::randomCoordinateAxis(), ori::randomCoordinateAxis(), random<SX>()};
 
     //     std::shared_ptr<ClusterJoints::TelloHipDifferential<SX>> joint = std::make_shared<ClusterJoints::TelloHipDifferential<SX>>(module);
 
@@ -326,8 +326,8 @@ TYPED_TEST(AutoDiffRobotTest, contactJacobians)
             for (int i = 0; i < 5; i++)
             {
                 // Random state
-                std::vector<DM> q = math::random<DM>(this->nq_);
-                std::vector<DM> dq = math::zeros<DM>(this->nv_);
+                std::vector<DM> q = random<DM>(this->nq_);
+                std::vector<DM> dq = zeros<DM>(this->nv_);
 
                 // TODO(@MatthewChignoli): Fix this current method for dealing with floating base robots
                 if (this->nq_ != this->nv_)
@@ -394,10 +394,10 @@ TYPED_TEST(AutoDiffRobotTest, rnea)
         for (int i = 0; i < 5; i++)
         {
             // Random state
-            std::vector<DM> q = math::random<DM>(this->nq_);
-            std::vector<DM> dq = math::zeros<DM>(this->nv_);
-            std::vector<DM> qd = math::random<DM>(this->nv_);
-            std::vector<DM> tau = math::random<DM>(this->nv_);
+            std::vector<DM> q = random<DM>(this->nq_);
+            std::vector<DM> dq = zeros<DM>(this->nv_);
+            std::vector<DM> qd = random<DM>(this->nv_);
+            std::vector<DM> tau = random<DM>(this->nv_);
 
             // TODO(@MatthewChignoli): Fix this current method for dealing with floating base robots
             if (this->nq_ != this->nv_)

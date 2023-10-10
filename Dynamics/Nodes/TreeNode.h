@@ -7,6 +7,7 @@
 #include "Dynamics/Body.h"
 #include "Utils/StateRepresentation.h"
 #include "Utils/SpatialTransforms.h"
+#include "Utils/Utilities.h"
 
 namespace grbda
 {
