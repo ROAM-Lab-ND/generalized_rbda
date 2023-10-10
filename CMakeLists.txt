@@ -47,19 +47,30 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -ggdb -Wall \
 # TODO(@MatthewChignoli): Maybe want to check out the TOLRAS repo for examples on how to setup this CMake in a more general way
 
 find_package(Eigen3 REQUIRED)
-include_directories("/usr/local/include/eigen3")
+if(Eigen3_FOUND)
+  message(STATUS "Eigen3 found")
+  include_directories(${EIGEN3_INCLUDE_DIR}/..)
+else()
+  message(FATAL_ERROR "Eigen3 not found. Please install it or specify its location.")
+endif()
 
-# for using casadi
+
 find_package(casadi REQUIRED)
-set(CASADI_INCLUDE_DIR /usr/local/include/casadi)
-include_directories(${CASADI_INCLUDE_DIR})
-
-find_library(CASADI_LIBRARY
+if(casadi_FOUND)
+  message(STATUS "CasADi found")
+  set(CASADI_INCLUDE_DIR "/usr/local/include/casadi" CACHE PATH "Path to Casadi include directory")
+  include_directories(${CASADI_INCLUDE_DIR}/..)
+  find_library(CASADI_LIBRARY
     NAMES casadi
     HINTS ${CASADI_INCLUDE_DIR}/../lib $ENV{CASADI_PREFIX}/lib)
-if(CASADI_LIBRARY)
+  if(CASADI_LIBRARY)
     set(CASADI_LIBRARIES ${CASADI_LIBRARIES} ${CASADI_LIBRARY})
+  endif()
+else()
+  message(FATAL_ERROR "CasADi not found. Please install it or specify its location.")
 endif()
+
+
 
 #------------------------------------------------------------------------
 # Directory setup

@@ -2,8 +2,6 @@
 
 #include "Utils/OrientationTools.h"
 
-#include <casadi/casadi.hpp>
-
 using namespace grbda;
 
 GTEST_TEST(OrientationTools, TestQuaternionIntegration)
