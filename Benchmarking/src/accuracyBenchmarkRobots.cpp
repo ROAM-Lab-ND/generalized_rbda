@@ -190,45 +190,150 @@ void runApplyTestForceBenchmark(std::ofstream &file, const std::string contact_p
     }
 }
 
+// TODO(@MatthewChignoli): Finish this test...
+template <typename RobotType>
+void runOpenLoopTrajectoryBenchmark(std::ofstream &file, const std::string& contact_point)
+{
+    // TODO(@MatthewChignoli): Write a description of this benchmark
+
+    RobotType robot;
+    ClusterTreeModel<> model_cl = robot.buildClusterTreeModel();
+
+    ReflectedInertiaTreePtr model_rf_diag = std::make_shared<ReflectedInertiaTreeModel<>>(model_cl, RotorInertiaApproximation::DIAGONAL);
+    ReflectedInertiaTreePtr model_rf_none = std::make_shared<ReflectedInertiaTreeModel<>>(model_cl, RotorInertiaApproximation::NONE);
+    std::vector<ReflectedInertiaTreePtr> ref_inertia_models{model_rf_diag, model_rf_none};
+
+    const int nq = model_cl.getNumPositions();
+    const int nv = model_cl.getNumDegreesOfFreedom();
+
+    std::vector<DVec<double>> tau_diag_trajectory;
+    std::vector<DVec<double>> tau_none_trajectory;
+
+    // f(t) = A * sin(omega * t + phi)
+    // f'(t) = A * omega * cos(omega * t + phi)
+    // f''(t) = -A * omega^2 * sin(omega * t + phi)
+    const double A = 0.1;
+    const double omega = 2. * M_PI * 0.5;
+    const double phi = 0.;
+
+    double T = 0.1;
+    const double dt = 5e-4;
+
+    // Generate the torque trajectory using the approximate model
+    for (double t = 0; t < T; t += dt)
+    {
+        DVec<double> q(nq);
+        for (int i = 0; i < nq; i++)
+        {
+            q(i) = A * sin(omega * t + phi);
+        }
+        DVec<double> qd(nv);
+        DVec<double> qdd(nv);
+        for (int i = 0; i < nv; i++)
+        {
+            qd(i) = A * omega * cos(omega * t + phi);
+            qdd(i) = -A * omega * omega * sin(omega * t + phi);
+        }
+        model_rf_diag->setIndependentStates(q, qd);
+        model_rf_none->setIndependentStates(q, qd);
+
+        tau_diag_trajectory.push_back(model_rf_diag->inverseDynamics(qdd));
+        tau_none_trajectory.push_back(model_rf_none->inverseDynamics(qdd));
+    }
+
+    std::cout << "Trajectory generated" << std::endl;
+
+    // Simulate the exact model forward in time using the approximate models' torque trajectories
+    DVec<double> q0(nq);
+    for (int i = 0; i < nq; i++)
+    {
+        q0(i) = A * sin(phi);
+    }
+    DVec<double> qd0(nv);
+    for (int i = 0; i < nv; i++)
+    {
+        qd0(i) = A * omega * cos(phi);
+    }
+
+    ModelState<> model_state;
+    for (const auto &cluster : model_cl.clusters())
+    {
+        JointState<> joint_state;
+        joint_state.position = q0.segment(cluster->position_index_, cluster->num_positions_);
+        joint_state.velocity = qd0.segment(cluster->velocity_index_, cluster->num_velocities_);
+        model_state.push_back(joint_state);
+    }
+
+    model_cl.setState(model_state);
+    for (const DVec<double> &tau : tau_diag_trajectory)
+    {
+        // TODO(@MatthewChignoli): Log the relevant data (joint positions, end-effector positions, etc.)
+        model_cl.forwardKinematicsIncludingContactPoints();
+        const ContactPoint<double> &cp = model_cl.contactPoint(contact_point);
+        file << cp.position_.transpose() << std::endl;
+
+        // TODO(@MatthewChignoli): This won't work with floating base joint
+        DVec<double> qdd = model_cl.forwardDynamics(tau);
+        for (size_t i = 0; i < model_state.size(); i++)
+        {
+            JointState<double>& joint_state = model_state[i]; 
+            const auto& cluster = model_cl.cluster(i);
+
+            joint_state.position += dt * joint_state.velocity;
+            joint_state.velocity += dt * qdd.segment(cluster->velocity_index_,
+                                                     cluster->num_velocities_);
+        }
+        model_cl.setState(model_state);
+    }
+}
+
 int main()
 {
-    // Inverse Dynamics Benchmark
-    std::cout << "\n\n**Starting Inverse Dynamics Accuracy Benchmark for Robots**" << std::endl;
+    // // Inverse Dynamics Benchmark
+    // std::cout << "\n\n**Starting Inverse Dynamics Accuracy Benchmark for Robots**" << std::endl;
     std::string path_to_data = "../Benchmarking/data/AccuracyID_";
-    std::ofstream id_file;
-    id_file.open(path_to_data + "Robots.csv");
-    runInverseDynamicsBenchmark<TelloWithArms>(id_file, 50.);
-    runInverseDynamicsBenchmark<MIT_Humanoid<>>(id_file, 50.);
-    runInverseDynamicsBenchmark<MiniCheetah<>>(id_file, 30.);
-    id_file.close();
+    // std::ofstream id_file;
+    // id_file.open(path_to_data + "Robots.csv");
+    // runInverseDynamicsBenchmark<TelloWithArms>(id_file, 50.);
+    // runInverseDynamicsBenchmark<MIT_Humanoid<>>(id_file, 50.);
+    // runInverseDynamicsBenchmark<MiniCheetah<>>(id_file, 30.);
+    // id_file.close();
 
-    // Forward Dynamics Benchmark
-    std::cout << "\n\n**Starting Forward Dynamics Accuracy Benchmark for Robots**" << std::endl;
-    path_to_data = "../Benchmarking/data/AccuracyFD_";
-    std::ofstream fd_file;
-    fd_file.open(path_to_data + "Robots.csv");
-    runForwardDynamicsBenchmark<TelloWithArms>(fd_file, 50.);
-    runForwardDynamicsBenchmark<MIT_Humanoid<>>(fd_file, 50.);
-    runForwardDynamicsBenchmark<MiniCheetah<>>(fd_file, 20.);
-    fd_file.close();
+    // // Forward Dynamics Benchmark
+    // std::cout << "\n\n**Starting Forward Dynamics Accuracy Benchmark for Robots**" << std::endl;
+    // path_to_data = "../Benchmarking/data/AccuracyFD_";
+    // std::ofstream fd_file;
+    // fd_file.open(path_to_data + "Robots.csv");
+    // runForwardDynamicsBenchmark<TelloWithArms>(fd_file, 50.);
+    // runForwardDynamicsBenchmark<MIT_Humanoid<>>(fd_file, 50.);
+    // runForwardDynamicsBenchmark<MiniCheetah<>>(fd_file, 20.);
+    // fd_file.close();
 
-    // Inverse Operational Space Inertia Matrix Benchmark
-    std::cout << "\n\n**Starting Inverse OSIM Accuracy Benchmark for Robots**" << std::endl;
-    path_to_data = "../Benchmarking/data/AccuracyIOSIM_";
-    std::ofstream iosim_file;
-    iosim_file.open(path_to_data + "Robots.csv");
-    runInverseOperationalSpaceInertiaBenchmark<TelloWithArms>(iosim_file);
-    runInverseOperationalSpaceInertiaBenchmark<MIT_Humanoid<>>(iosim_file);
-    runInverseOperationalSpaceInertiaBenchmark<MiniCheetah<>>(iosim_file);
-    iosim_file.close();
+    // // Inverse Operational Space Inertia Matrix Benchmark
+    // std::cout << "\n\n**Starting Inverse OSIM Accuracy Benchmark for Robots**" << std::endl;
+    // path_to_data = "../Benchmarking/data/AccuracyIOSIM_";
+    // std::ofstream iosim_file;
+    // iosim_file.open(path_to_data + "Robots.csv");
+    // runInverseOperationalSpaceInertiaBenchmark<TelloWithArms>(iosim_file);
+    // runInverseOperationalSpaceInertiaBenchmark<MIT_Humanoid<>>(iosim_file);
+    // runInverseOperationalSpaceInertiaBenchmark<MiniCheetah<>>(iosim_file);
+    // iosim_file.close();
 
-    // Apply Test Force Benchmark
-    std::cout << "\n\n**Starting Apply Test Force Accuracy Benchmark for Robots**" << std::endl;
-    path_to_data = "../Benchmarking/data/AccuracyATF_";
-    std::ofstream atf_file;
-    atf_file.open(path_to_data + "Robots.csv");
-    runApplyTestForceBenchmark<TelloWithArms>(atf_file, "left-toe_contact", 500.);
-    runApplyTestForceBenchmark<MIT_Humanoid<>>(atf_file, "left_toe_contact", 500.);
-    runApplyTestForceBenchmark<MiniCheetah<>>(atf_file, "FL_foot_contact", 150.);
-    atf_file.close();
+    // // Apply Test Force Benchmark
+    // std::cout << "\n\n**Starting Apply Test Force Accuracy Benchmark for Robots**" << std::endl;
+    // path_to_data = "../Benchmarking/data/AccuracyATF_";
+    // std::ofstream atf_file;
+    // atf_file.open(path_to_data + "Robots.csv");
+    // runApplyTestForceBenchmark<TelloWithArms>(atf_file, "left-toe_contact", 500.);
+    // runApplyTestForceBenchmark<MIT_Humanoid<>>(atf_file, "left_toe_contact", 500.);
+    // runApplyTestForceBenchmark<MiniCheetah<>>(atf_file, "FL_foot_contact", 150.);
+    // atf_file.close();
+
+    // Trajectory Benchmark
+    std::cout << "\n\n**Starting Trajectory Accuracy Benchmark for Robots**" << std::endl;
+    path_to_data = "../Benchmarking/data/AccuracyTrajectory_";
+    std::ofstream trajectory_file;
+    trajectory_file.open(path_to_data + "Robots.csv");
+    runOpenLoopTrajectoryBenchmark<RevoluteChainWithRotor<6>>(trajectory_file, "cp-5");
+    trajectory_file.close();
 }
