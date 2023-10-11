@@ -190,9 +190,33 @@ void runApplyTestForceBenchmark(std::ofstream &file, const std::string contact_p
     }
 }
 
-// TODO(@MatthewChignoli): Finish this test...
+struct TrajectoryPoint
+{
+    double p; // position
+    double v; // velocity
+    double a; // acceleration
+};
+
+// TODO(@MatthewChignoli): Use casadi and lambda functions to generate the trajectory
+TrajectoryPoint trajectory(double t)
+{
+    // f(t) = A * sin(omega * t + phi)
+    // f'(t) = A * omega * cos(omega * t + phi)
+    // f''(t) = -A * omega^2 * sin(omega * t + phi)
+
+    const double A = 0.1;
+    const double omega = 2. * M_PI * 0.5;
+    const double phi = 0.;
+
+    TrajectoryPoint point;
+    point.p = A * sin(omega * t + phi);
+    point.v = A * omega * cos(omega * t + phi);
+    point.a = -A * omega * omega * sin(omega * t + phi);
+    return point;
+}
+
 template <typename RobotType>
-void runOpenLoopTrajectoryBenchmark(std::ofstream &file, const std::string& contact_point)
+void runOpenLoopTrajectoryBenchmark(std::ofstream &file, const std::string &contact_point)
 {
     // TODO(@MatthewChignoli): Write a description of this benchmark
 
@@ -206,84 +230,66 @@ void runOpenLoopTrajectoryBenchmark(std::ofstream &file, const std::string& cont
     const int nq = model_cl.getNumPositions();
     const int nv = model_cl.getNumDegreesOfFreedom();
 
-    std::vector<DVec<double>> tau_diag_trajectory;
-    std::vector<DVec<double>> tau_none_trajectory;
-
-    // f(t) = A * sin(omega * t + phi)
-    // f'(t) = A * omega * cos(omega * t + phi)
-    // f''(t) = -A * omega^2 * sin(omega * t + phi)
-    const double A = 0.1;
-    const double omega = 2. * M_PI * 0.5;
-    const double phi = 0.;
-
+    // Generate the torque trajectory using the approximate model
     double T = 0.1;
     const double dt = 5e-4;
-
-    // Generate the torque trajectory using the approximate model
-    for (double t = 0; t < T; t += dt)
+    std::vector<DVec<double>> tau_diag_trajectory;
+    std::vector<DVec<double>> tau_none_trajectory;
+    for (double t = 0; t <= T; t += dt)
     {
-        DVec<double> q(nq);
-        for (int i = 0; i < nq; i++)
-        {
-            q(i) = A * sin(omega * t + phi);
-        }
-        DVec<double> qd(nv);
-        DVec<double> qdd(nv);
-        for (int i = 0; i < nv; i++)
-        {
-            qd(i) = A * omega * cos(omega * t + phi);
-            qdd(i) = -A * omega * omega * sin(omega * t + phi);
-        }
+        // Set State
+        const TrajectoryPoint point = trajectory(t);
+        DVec<double> q = DVec<double>::Constant(nq, point.p);
+        DVec<double> qd = DVec<double>::Constant(nv, point.v);
+        DVec<double> qdd = DVec<double>::Constant(nv, point.a);
         model_rf_diag->setIndependentStates(q, qd);
         model_rf_none->setIndependentStates(q, qd);
 
+        // Compute Desired Contact Point Position
+        model_rf_diag->forwardKinematicsIncludingContactPoints();
+        const ContactPoint<double> &cp = model_rf_diag->contactPoint(contact_point);
+        file << t << ", " << cp.position_.transpose() << std::endl;
+
+        // Compute torque needed to track the trajectory via inverse dynamics
         tau_diag_trajectory.push_back(model_rf_diag->inverseDynamics(qdd));
         tau_none_trajectory.push_back(model_rf_none->inverseDynamics(qdd));
     }
 
-    std::cout << "Trajectory generated" << std::endl;
-
     // Simulate the exact model forward in time using the approximate models' torque trajectories
-    DVec<double> q0(nq);
-    for (int i = 0; i < nq; i++)
-    {
-        q0(i) = A * sin(phi);
-    }
-    DVec<double> qd0(nv);
-    for (int i = 0; i < nv; i++)
-    {
-        qd0(i) = A * omega * cos(phi);
-    }
-
     ModelState<> model_state;
     for (const auto &cluster : model_cl.clusters())
     {
+        const TrajectoryPoint point = trajectory(0);
         JointState<> joint_state;
-        joint_state.position = q0.segment(cluster->position_index_, cluster->num_positions_);
-        joint_state.velocity = qd0.segment(cluster->velocity_index_, cluster->num_velocities_);
+        joint_state.position = DVec<double>::Constant(cluster->num_positions_, point.p);
+        joint_state.velocity = DVec<double>::Constant(cluster->num_velocities_, point.v);
         model_state.push_back(joint_state);
     }
-
     model_cl.setState(model_state);
+
+    double t = 0;
     for (const DVec<double> &tau : tau_diag_trajectory)
     {
-        // TODO(@MatthewChignoli): Log the relevant data (joint positions, end-effector positions, etc.)
+        // Compute the realized Contact Point Position
         model_cl.forwardKinematicsIncludingContactPoints();
         const ContactPoint<double> &cp = model_cl.contactPoint(contact_point);
-        file << cp.position_.transpose() << std::endl;
+        file << t << ", " << cp.position_.transpose() << std::endl;
 
         // TODO(@MatthewChignoli): This won't work with floating base joint
+        // Simulate forward in time using the torque from the approximate model
         DVec<double> qdd = model_cl.forwardDynamics(tau);
         for (size_t i = 0; i < model_state.size(); i++)
         {
-            JointState<double>& joint_state = model_state[i]; 
-            const auto& cluster = model_cl.cluster(i);
+            JointState<double> &joint_state = model_state[i];
+            const auto &cluster = model_cl.cluster(i);
 
             joint_state.position += dt * joint_state.velocity;
             joint_state.velocity += dt * qdd.segment(cluster->velocity_index_,
                                                      cluster->num_velocities_);
         }
         model_cl.setState(model_state);
+
+        t += dt;
     }
 }
 
