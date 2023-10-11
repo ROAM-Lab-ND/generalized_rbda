@@ -10,6 +10,7 @@
 #include <casadi/casadi.hpp>
 
 using namespace grbda;
+using namespace grbda::ori_representation;
 
 namespace biasVelocityTestHelpers
 {
@@ -301,8 +302,9 @@ protected:
 using testing::Types;
 
 typedef Types<
-    SingleRigidBody<casadi::SX>,
-    MiniCheetah<casadi::SX>, MIT_Humanoid<casadi::SX>,
+    SingleRigidBody<casadi::SX, QuaternionRepresentation<casadi::SX>>,
+    MiniCheetah<casadi::SX, QuaternionRepresentation<casadi::SX>>,
+    MIT_Humanoid<casadi::SX, QuaternionRepresentation<casadi::SX>>,
     RevoluteChainWithRotor<2, casadi::SX>,
     RevoluteChainWithRotor<4, casadi::SX>,
     RevoluteChainWithRotor<8, casadi::SX>>
