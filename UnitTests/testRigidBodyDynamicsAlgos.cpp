@@ -107,6 +107,7 @@ using testing::Types;
 typedef Types<
     TeleopArm, Tello, TelloWithArms,
     MIT_Humanoid<double, QuaternionRepresentation< Quat<double> >>, 
+    MIT_Humanoid<double, RollPitchYawRepresentation< Vec3<double> >>, 
     MiniCheetah<double, QuaternionRepresentation< Quat<double> >>,
     RevoluteChainWithRotor<2>,
     RevoluteChainWithRotor<4>,

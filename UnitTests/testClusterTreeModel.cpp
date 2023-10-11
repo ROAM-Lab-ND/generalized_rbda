@@ -26,6 +26,7 @@ typedef Types<
     RevoluteChainWithAndWithoutRotor<4ul, 4ul>,
     Tello, TeleopArm,
     MIT_Humanoid<double, QuaternionRepresentation< Quat<double> >>, 
+    MIT_Humanoid<double, RollPitchYawRepresentation< Vec3<double> >>, 
     MIT_Humanoid_no_rotors<double, QuaternionRepresentation< Quat<double> >>, 
     MiniCheetah<double, QuaternionRepresentation< Quat<double> >>>
     Robots;
