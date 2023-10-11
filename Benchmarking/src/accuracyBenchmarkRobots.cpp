@@ -205,7 +205,7 @@ TrajectoryPoint trajectory(double t)
     // f''(t) = -A * omega^2 * sin(omega * t + phi)
 
     const double A = 0.1;
-    const double omega = 2. * M_PI * 0.5;
+    const double omega = 2. * M_PI * 1.0;
     const double phi = 0.;
 
     TrajectoryPoint point;
@@ -215,10 +215,29 @@ TrajectoryPoint trajectory(double t)
     return point;
 }
 
+ModelState<> eulerIntegrateModelState(ModelState<> model_state, const ClusterTreeModel<> &model,
+                                      const DVec<double> &qdd, const double dt)
+{
+    for (size_t i = 0; i < model_state.size(); i++)
+    {
+        JointState<double> &joint_state = model_state[i];
+        const auto &cluster = model.cluster(i);
+
+        // Euler integration
+        joint_state.position += dt * joint_state.velocity;
+        joint_state.velocity += dt * qdd.segment(cluster->velocity_index_,
+                                                 cluster->num_velocities_);
+    }
+
+    return model_state;
+}
+
 template <typename RobotType>
 void runOpenLoopTrajectoryBenchmark(std::ofstream &file, const std::string &contact_point)
 {
     // TODO(@MatthewChignoli): Write a description of this benchmark
+
+    using TauTrajectory = std::vector<DVec<double>>;
 
     RobotType robot;
     ClusterTreeModel<> model_cl = robot.buildClusterTreeModel();
@@ -231,10 +250,11 @@ void runOpenLoopTrajectoryBenchmark(std::ofstream &file, const std::string &cont
     const int nv = model_cl.getNumDegreesOfFreedom();
 
     // Generate the torque trajectory using the approximate model
-    double T = 0.1;
-    const double dt = 5e-4;
-    std::vector<DVec<double>> tau_diag_trajectory;
-    std::vector<DVec<double>> tau_none_trajectory;
+    double T = 5.0;
+    const double dt = 5e-5;
+    TauTrajectory tau_diag_trajectory;
+    TauTrajectory tau_none_trajectory;
+    TauTrajectory tau_exact_trajectory;
     for (double t = 0; t <= T; t += dt)
     {
         // Set State
@@ -242,54 +262,123 @@ void runOpenLoopTrajectoryBenchmark(std::ofstream &file, const std::string &cont
         DVec<double> q = DVec<double>::Constant(nq, point.p);
         DVec<double> qd = DVec<double>::Constant(nv, point.v);
         DVec<double> qdd = DVec<double>::Constant(nv, point.a);
+
         model_rf_diag->setIndependentStates(q, qd);
         model_rf_none->setIndependentStates(q, qd);
+
+        ModelState<> model_state;
+        for (const auto &cluster : model_cl.clusters())
+        {
+            JointState<> joint_state;
+            joint_state.position = DVec<double>::Constant(cluster->num_positions_, point.p);
+            joint_state.velocity = DVec<double>::Constant(cluster->num_velocities_, point.v);
+            model_state.push_back(joint_state);
+        }
+        model_cl.setState(model_state);
 
         // Compute Desired Contact Point Position
         model_rf_diag->forwardKinematicsIncludingContactPoints();
         const ContactPoint<double> &cp = model_rf_diag->contactPoint(contact_point);
-        file << t << ", " << cp.position_.transpose() << std::endl;
+        file << t << " " << cp.position_.transpose() << std::endl;
 
         // Compute torque needed to track the trajectory via inverse dynamics
         tau_diag_trajectory.push_back(model_rf_diag->inverseDynamics(qdd));
         tau_none_trajectory.push_back(model_rf_none->inverseDynamics(qdd));
+        tau_exact_trajectory.push_back(model_cl.inverseDynamics(qdd));
     }
 
-    // Simulate the exact model forward in time using the approximate models' torque trajectories
-    ModelState<> model_state;
-    for (const auto &cluster : model_cl.clusters())
+    // Simulate the exact model forward in time using the various torque trajectories
+    for (const TauTrajectory &tau_trajectory : {tau_exact_trajectory,
+                                                tau_diag_trajectory,
+                                                tau_none_trajectory})
     {
-        const TrajectoryPoint point = trajectory(0);
-        JointState<> joint_state;
-        joint_state.position = DVec<double>::Constant(cluster->num_positions_, point.p);
-        joint_state.velocity = DVec<double>::Constant(cluster->num_velocities_, point.v);
-        model_state.push_back(joint_state);
-    }
-    model_cl.setState(model_state);
-
-    double t = 0;
-    for (const DVec<double> &tau : tau_diag_trajectory)
-    {
-        // Compute the realized Contact Point Position
-        model_cl.forwardKinematicsIncludingContactPoints();
-        const ContactPoint<double> &cp = model_cl.contactPoint(contact_point);
-        file << t << ", " << cp.position_.transpose() << std::endl;
-
-        // TODO(@MatthewChignoli): This won't work with floating base joint
-        // Simulate forward in time using the torque from the approximate model
-        DVec<double> qdd = model_cl.forwardDynamics(tau);
-        for (size_t i = 0; i < model_state.size(); i++)
+        ModelState<> model_state;
+        for (const auto &cluster : model_cl.clusters())
         {
-            JointState<double> &joint_state = model_state[i];
-            const auto &cluster = model_cl.cluster(i);
-
-            joint_state.position += dt * joint_state.velocity;
-            joint_state.velocity += dt * qdd.segment(cluster->velocity_index_,
-                                                     cluster->num_velocities_);
+            const TrajectoryPoint point = trajectory(0);
+            JointState<> joint_state;
+            joint_state.position = DVec<double>::Constant(cluster->num_positions_, point.p);
+            joint_state.velocity = DVec<double>::Constant(cluster->num_velocities_, point.v);
+            model_state.push_back(joint_state);
         }
         model_cl.setState(model_state);
 
-        t += dt;
+        double t = 0;
+        for (const DVec<double> &tau : tau_trajectory)
+        {
+            // Compute the realized Contact Point Position
+            model_cl.forwardKinematicsIncludingContactPoints();
+            const ContactPoint<double> &cp = model_cl.contactPoint(contact_point);
+            file << t << " " << cp.position_.transpose() << std::endl;
+
+            // TODO(@MatthewChignoli): This won't work with floating base joint
+            // Simulate forward in time using the torque from the approximate model
+
+            // Euler
+            // DVec<double> qdd = model_cl.forwardDynamics(tau);
+            // for (size_t i = 0; i < model_state.size(); i++)
+            // {
+            //     JointState<double> &joint_state = model_state[i];
+            //     const auto &cluster = model_cl.cluster(i);
+
+            //     // Euler integration
+            //     joint_state.position += dt * joint_state.velocity;
+            //     joint_state.velocity += dt * qdd.segment(cluster->velocity_index_,
+            //                                              cluster->num_velocities_);
+
+            // }
+
+            // RK4
+            {
+                // Compute k1
+                DVec<double> k1 = model_cl.forwardDynamics(tau);
+
+                // Compute k2
+                ModelState<> model_state_k2 = eulerIntegrateModelState(model_state, model_cl,
+                                                                       k1, dt / 2.);
+                model_cl.setState(model_state_k2);
+                DVec<double> k2 = model_cl.forwardDynamics(tau);
+
+                // Compute k3
+                ModelState<> model_state_k3 = eulerIntegrateModelState(model_state, model_cl,
+                                                                       k2, dt / 2.);
+                model_cl.setState(model_state_k3);
+                DVec<double> k3 = model_cl.forwardDynamics(tau);
+
+                // Compute k4
+                ModelState<> model_state_k4 = eulerIntegrateModelState(model_state, model_cl,
+                                                                       k3, dt);
+                model_cl.setState(model_state_k4);
+                DVec<double> k4 = model_cl.forwardDynamics(tau);
+
+                // Compute qdd
+                DVec<double> qdd = (k1 + 2. * k2 + 2. * k3 + k4) / 6.;
+
+                for (size_t i = 0; i < model_state.size(); i++)
+                {
+                    const auto &cluster = model_cl.cluster(i);
+
+                    JointState<double> &joint_state = model_state[i];
+                    const JointState<double> &joint_state_k2 = model_state_k2[i];
+                    const JointState<double> &joint_state_k3 = model_state_k3[i];
+                    const JointState<double> &joint_state_k4 = model_state_k4[i];
+
+                    DVec<double> qd = (joint_state.velocity + 2. * joint_state_k2.velocity +
+                                       2. * joint_state_k3.velocity + joint_state_k4.velocity) /
+                                      6.;
+
+                    // Euler integration
+                    joint_state.position += dt * qd;
+                    joint_state.velocity += dt * qdd.segment(cluster->velocity_index_,
+                                                             cluster->num_velocities_);
+
+                }
+            }
+
+            model_cl.setState(model_state);
+
+            t += dt;
+        }
     }
 }
 
@@ -337,7 +426,7 @@ int main()
 
     // Trajectory Benchmark
     std::cout << "\n\n**Starting Trajectory Accuracy Benchmark for Robots**" << std::endl;
-    path_to_data = "../Benchmarking/data/AccuracyTrajectory_";
+    path_to_data = "../Benchmarking/data/AccuracyTT_";
     std::ofstream trajectory_file;
     trajectory_file.open(path_to_data + "Robots.csv");
     runOpenLoopTrajectoryBenchmark<RevoluteChainWithRotor<6>>(trajectory_file, "cp-5");

@@ -11,6 +11,7 @@ namespace grbda
 
         using RigidBodyTreePtr = std::shared_ptr<RigidBodyTreeModel<>>;
         using ReflectedInertiaTreePtr = std::shared_ptr<ReflectedInertiaTreeModel<>>;
+        using TreeModelPtr = std::shared_ptr<TreeModel<>>;
 
         inline bool setRandomStates(ClusterTreeModel<> &cluster_model,
                                     std::vector<RigidBodyTreePtr> rigid_body_models,
