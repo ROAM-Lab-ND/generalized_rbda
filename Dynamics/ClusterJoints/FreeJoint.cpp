@@ -75,9 +75,9 @@ namespace grbda
         JointState<Scalar> Free<Scalar, OrientationRepresentation>::randomJointState() const
         {
             JointState<Scalar> joint_state(false, false);
-            joint_state.position = DVec<Scalar>::Zero(7);
+            joint_state.position = DVec<Scalar>::Zero(OrientationRepresentation::num_ori_parameter + 3);
             joint_state.position.template segment<3>(0) = Vec3<Scalar>::Random(3);
-            joint_state.position.template segment<4>(3) = ori::rpyToQuat(Vec3<Scalar>::Random(3));
+            joint_state.position.template segment<OrientationRepresentation::num_ori_parameter>(3) = OrientationRepresentation::randomOrientation();
             joint_state.velocity = DVec<Scalar>::Random(6);
             return joint_state;
         }

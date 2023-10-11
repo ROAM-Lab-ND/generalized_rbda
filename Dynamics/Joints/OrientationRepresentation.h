@@ -15,7 +15,7 @@ namespace grbda
             static const int numIndependentPos;
 
             virtual const RotMat<typename Derived::Scalar> getRotationMatrix(const Eigen::MatrixBase<Derived> & q) const = 0;
-            virtual const Derived randomOrientation() const = 0;
+            static const Derived randomOrientation();
         };
 
         template <typename Derived>
@@ -28,7 +28,7 @@ namespace grbda
                 const RotMat<typename Derived::Scalar> R = ori::quaternionToRotationMatrix(q);
                 return R;
             }
-            const Derived randomOrientation() const override {
+            static const Derived randomOrientation() {
                 return ori::rpyToQuat(Vec3<typename Derived::Scalar>::Random(3));
             }
         };
@@ -43,7 +43,7 @@ namespace grbda
                 return ori::rpyToRotMat(q);
             }
 
-            const Derived randomOrientation() const override {
+            static const Derived randomOrientation() {
                 return Derived::Random(3);
             }
         };
