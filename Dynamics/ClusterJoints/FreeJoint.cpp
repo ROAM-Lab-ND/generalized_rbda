@@ -27,10 +27,10 @@ namespace grbda
             return joint_pos;
         }
 
-        template class Free<double, ori_representation::QuaternionRepresentation<double>>; 
-        template class Free<double, ori_representation::RollPitchYawRepresentation<double>>;
-        template class Free<casadi::SX, ori_representation::RollPitchYawRepresentation<casadi::SX>>;
-        template class Free<casadi::SX, ori_representation::QuaternionRepresentation<casadi::SX>>;
+        template class Free<double, ori_representation::RollPitchYawRepresentation< Vec3<double> >>;
+        template class Free<double, ori_representation::QuaternionRepresentation< Quat<casadi::SX> >>;
+        template class Free<casadi::SX, ori_representation::RollPitchYawRepresentation< Vec3<casadi::SX> >>;
+        template class Free<casadi::SX, ori_representation::QuaternionRepresentation< Quat<casadi::SX> >>;
 
     }
 
@@ -92,10 +92,10 @@ namespace grbda
             return bodies_joints_and_ref_inertias;
         }
 
-        template class Free<double, ori_representation::RollPitchYawRepresentation<double>>;
-        template class Free<double, ori_representation::QuaternionRepresentation<double>>;
-        template class Free<casadi::SX, ori_representation::RollPitchYawRepresentation<casadi::SX>>;
-        template class Free<casadi::SX, ori_representation::QuaternionRepresentation<casadi::SX>>;
+        template class Free<double, ori_representation::RollPitchYawRepresentation< Vec3<double> >>;
+        template class Free<double, ori_representation::QuaternionRepresentation< Quat<double> >>;
+        template class Free<casadi::SX, ori_representation::RollPitchYawRepresentation< Vec3<casadi::SX> >>;
+        template class Free<casadi::SX, ori_representation::QuaternionRepresentation< Quat<casadi::SX> >>;
 
     }
 

@@ -199,8 +199,8 @@ int main()
     std::ofstream id_file;
     id_file.open(path_to_data + "Robots.csv");
     runInverseDynamicsBenchmark<TelloWithArms>(id_file, 50.);
-    runInverseDynamicsBenchmark<MIT_Humanoid<double, QuaternionRepresentation<double>>>(id_file, 50.);
-    runInverseDynamicsBenchmark<MiniCheetah<double, QuaternionRepresentation<double>>>(id_file, 30.);
+    runInverseDynamicsBenchmark<MIT_Humanoid<double, QuaternionRepresentation< Quat<double> >>>(id_file, 50.);
+    runInverseDynamicsBenchmark<MiniCheetah<double, QuaternionRepresentation< Quat<double> >>>(id_file, 30.);
     id_file.close();
 
     // Forward Dynamics Benchmark
@@ -209,8 +209,8 @@ int main()
     std::ofstream fd_file;
     fd_file.open(path_to_data + "Robots.csv");
     runForwardDynamicsBenchmark<TelloWithArms>(fd_file, 50.);
-    runForwardDynamicsBenchmark<MIT_Humanoid<double, QuaternionRepresentation<double>>>(fd_file, 50.);
-    runForwardDynamicsBenchmark<MiniCheetah<double, QuaternionRepresentation<double>>>(fd_file, 20.);
+    runForwardDynamicsBenchmark<MIT_Humanoid<double, QuaternionRepresentation< Quat<double> >>>(fd_file, 50.);
+    runForwardDynamicsBenchmark<MiniCheetah<double, QuaternionRepresentation< Quat<double> >>>(fd_file, 20.);
     fd_file.close();
 
     // Inverse Operational Space Inertia Matrix Benchmark
@@ -219,8 +219,8 @@ int main()
     std::ofstream iosim_file;
     iosim_file.open(path_to_data + "Robots.csv");
     runInverseOperationalSpaceInertiaBenchmark<TelloWithArms>(iosim_file);
-    runInverseOperationalSpaceInertiaBenchmark<MIT_Humanoid<double, QuaternionRepresentation<double>>>(iosim_file);
-    runInverseOperationalSpaceInertiaBenchmark<MiniCheetah<double, QuaternionRepresentation<double>>>(iosim_file);
+    runInverseOperationalSpaceInertiaBenchmark<MIT_Humanoid<double, QuaternionRepresentation< Quat<double> >>>(iosim_file);
+    runInverseOperationalSpaceInertiaBenchmark<MiniCheetah<double, QuaternionRepresentation< Quat<double> >>>(iosim_file);
     iosim_file.close();
 
     // Apply Test Force Benchmark
@@ -229,7 +229,7 @@ int main()
     std::ofstream atf_file;
     atf_file.open(path_to_data + "Robots.csv");
     runApplyTestForceBenchmark<TelloWithArms>(atf_file, "left-toe_contact", 500.);
-    runApplyTestForceBenchmark<MIT_Humanoid<double, QuaternionRepresentation<double>>>(atf_file, "left_toe_contact", 500.);
-    runApplyTestForceBenchmark<MiniCheetah<double, QuaternionRepresentation<double>>>(atf_file, "FL_foot_contact", 150.);
+    runApplyTestForceBenchmark<MIT_Humanoid<double, QuaternionRepresentation< Quat<double> >>>(atf_file, "left_toe_contact", 500.);
+    runApplyTestForceBenchmark<MiniCheetah<double, QuaternionRepresentation< Quat<double> >>>(atf_file, "FL_foot_contact", 150.);
     atf_file.close();
 }

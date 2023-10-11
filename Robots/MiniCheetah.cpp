@@ -121,8 +121,8 @@ namespace grbda
         return model;
     }
 
-    template class MiniCheetah<double, ori_representation::RollPitchYawRepresentation<double>>;
-    template class MiniCheetah<double, ori_representation::QuaternionRepresentation<double>>;
-    template class MiniCheetah<casadi::SX, ori_representation::RollPitchYawRepresentation<casadi::SX>>;
-    template class MiniCheetah<casadi::SX, ori_representation::QuaternionRepresentation<casadi::SX>>;
+    template class MiniCheetah<double, ori_representation::RollPitchYawRepresentation< Vec3<double> >>;
+    template class MiniCheetah<double, ori_representation::QuaternionRepresentation< Quat<double> >>;
+    template class MiniCheetah<casadi::SX, ori_representation::RollPitchYawRepresentation< Vec3<casadi::SX> >>;
+    template class MiniCheetah<casadi::SX, ori_representation::QuaternionRepresentation< Quat<casadi::SX> >>;
 }

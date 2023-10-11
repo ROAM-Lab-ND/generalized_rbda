@@ -9,7 +9,7 @@ namespace grbda
 
     namespace LoopConstraint
     {
-        template <typename Scalar = double, typename OrientationRepresentation = ori_representation::QuaternionRepresentation<Scalar>>
+        template <typename Scalar = double, typename OrientationRepresentation = ori_representation::QuaternionRepresentation< Quat<Scalar> >>
         struct Free : Base<Scalar>
         {
             Free();
@@ -30,7 +30,7 @@ namespace grbda
     namespace ClusterJoints
     {
 
-        template <typename Scalar = double, typename OrientationRepresentation = ori_representation::QuaternionRepresentation<Scalar>>
+        template <typename Scalar = double, typename OrientationRepresentation = ori_representation::QuaternionRepresentation< Quat<Scalar> >>
         class Free : public Base<Scalar>
         {
         public:

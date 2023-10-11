@@ -25,9 +25,9 @@ typedef Types<
     RevolutePairChainWithRotor<4>,
     RevoluteChainWithAndWithoutRotor<4ul, 4ul>,
     Tello, TeleopArm,
-    MIT_Humanoid<double, QuaternionRepresentation<double>>, 
-    MIT_Humanoid_no_rotors<double, QuaternionRepresentation<double>>, 
-    MiniCheetah<double, QuaternionRepresentation<double>>>
+    MIT_Humanoid<double, QuaternionRepresentation< Quat<double> >>, 
+    MIT_Humanoid_no_rotors<double, QuaternionRepresentation< Quat<double> >>, 
+    MiniCheetah<double, QuaternionRepresentation< Quat<double> >>>
     Robots;
 
 TYPED_TEST_SUITE(ClusterTreeModelTest, Robots);

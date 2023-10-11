@@ -6,7 +6,7 @@
 namespace grbda
 {
 
-    template <typename Scalar = double, typename OrientationRepresentation = ori_representation::QuaternionRepresentation<Scalar>>
+    template <typename Scalar = double, typename OrientationRepresentation = ori_representation::QuaternionRepresentation< Quat<Scalar> >>
     class SingleRigidBody : public Robot<Scalar>
     {
     public:
