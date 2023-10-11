@@ -305,6 +305,7 @@ typedef Types<
     SingleRigidBody<casadi::SX, QuaternionRepresentation<casadi::SX>>,
     MiniCheetah<casadi::SX, QuaternionRepresentation<casadi::SX>>,
     MIT_Humanoid<casadi::SX, QuaternionRepresentation<casadi::SX>>,
+    MIT_Humanoid_no_rotors<casadi::SX, QuaternionRepresentation<casadi::SX>>,
     RevoluteChainWithRotor<2, casadi::SX>,
     RevoluteChainWithRotor<4, casadi::SX>,
     RevoluteChainWithRotor<8, casadi::SX>>
