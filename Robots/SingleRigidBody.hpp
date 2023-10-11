@@ -6,7 +6,7 @@
 namespace grbda
 {
 
-    template <typename Scalar = double>
+    template <typename Scalar = double, typename OrientationRepresentation = ori_representation::QuaternionRepresentation<Scalar>>
     class SingleRigidBody : public Robot<Scalar>
     {
     public:
@@ -24,7 +24,7 @@ namespace grbda
             const std::string name = "Floating Base";
             const std::string parent_name = "ground";
             const SpatialInertia<Scalar> inertia(_mass, _COM, _rotational_inertia);
-            model.template appendBody<ClusterJoints::Free<Scalar>>(name, inertia, parent_name,
+            model.template appendBody<ClusterJoints::Free<Scalar, OrientationRepresentation>>(name, inertia, parent_name,
                                                                    spatial::Transform<Scalar>{});
 
             Vec3<Scalar> dims = Vec3<Scalar>::Random();

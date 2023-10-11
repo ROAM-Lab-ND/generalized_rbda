@@ -3,8 +3,8 @@
 namespace grbda
 {
 
-    template <typename Scalar>
-    ClusterTreeModel<Scalar> MiniCheetah<Scalar>::buildClusterTreeModel() const
+    template <typename Scalar, typename OrientationRepresentation>
+    ClusterTreeModel<Scalar> MiniCheetah<Scalar, OrientationRepresentation>::buildClusterTreeModel() const
     {
         typedef spatial::Transform<Scalar> Xform;
         typedef ClusterJoints::GearedTransmissionModule<Scalar> TransmissionModule;
@@ -18,7 +18,7 @@ namespace grbda
         const std::string torso_name = "Floating Base";
         const std::string torso_parent_name = "ground";
         const SpatialInertia<Scalar> torsoInertia(_bodyMass, _bodyCOM, _bodyRotationalInertia);
-        model.template appendBody<ClusterJoints::Free<Scalar>>(torso_name, torsoInertia,
+        model.template appendBody<ClusterJoints::Free<Scalar, OrientationRepresentation>>(torso_name, torsoInertia,
                                                                torso_parent_name, Xform{});
 
         Vec3<Scalar> torsoDims(_bodyLength, _bodyWidth, _bodyHeight);
@@ -121,6 +121,8 @@ namespace grbda
         return model;
     }
 
-    template class MiniCheetah<double>;
-    template class MiniCheetah<casadi::SX>;
+    template class MiniCheetah<double, ori_representation::RollPitchYawRepresentation<double>>;
+    template class MiniCheetah<double, ori_representation::QuaternionRepresentation<double>>;
+    template class MiniCheetah<casadi::SX, ori_representation::RollPitchYawRepresentation<casadi::SX>>;
+    template class MiniCheetah<casadi::SX, ori_representation::QuaternionRepresentation<casadi::SX>>;
 }

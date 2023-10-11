@@ -6,7 +6,7 @@
 namespace grbda
 {
 
-    template <typename Scalar = double>
+    template <typename Scalar = double, typename OrientationRepresentation = ori_representation::QuaternionRepresentation<Scalar>>
     class MIT_Humanoid : public Robot<Scalar>
     {
     public:

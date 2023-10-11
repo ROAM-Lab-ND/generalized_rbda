@@ -3,8 +3,8 @@
 namespace grbda
 {
 
-    template <typename Scalar>
-    ClusterTreeModel<Scalar> MIT_Humanoid_no_rotors<Scalar>::buildClusterTreeModel() const
+    template <typename Scalar, typename OrientationRepresentation>
+    ClusterTreeModel<Scalar> MIT_Humanoid_no_rotors<Scalar, OrientationRepresentation>::buildClusterTreeModel() const
     {
         typedef spatial::Transform<Scalar> Xform;
         typedef ClusterJoints::Revolute<Scalar> Revolute;
@@ -20,7 +20,7 @@ namespace grbda
         const std::string torso_parent_name = "ground";
         const SpatialInertia<Scalar> torsoInertia(this->_torsoMass, this->_torsoCOM,
                                                   this->_torsoRotInertia);
-        model.template appendBody<ClusterJoints::Free<Scalar>>(torso_name, torsoInertia,
+        model.template appendBody<ClusterJoints::Free<Scalar, OrientationRepresentation>>(torso_name, torsoInertia,
                                                                torso_parent_name, Xform{});
 
         Vec3<Scalar> torsoDims(this->_torsoLength, this->_torsoWidth, this->_torsoHeight);
@@ -191,6 +191,8 @@ namespace grbda
         return model;
     }
 
-    template class MIT_Humanoid_no_rotors<double>;
-    template class MIT_Humanoid_no_rotors<casadi::SX>;
+    template class MIT_Humanoid_no_rotors<double, ori_representation::RollPitchYawRepresentation<double>>;
+    template class MIT_Humanoid_no_rotors<double, ori_representation::QuaternionRepresentation<double>>;
+    template class MIT_Humanoid_no_rotors<casadi::SX, ori_representation::RollPitchYawRepresentation<casadi::SX>>;
+    template class MIT_Humanoid_no_rotors<casadi::SX, ori_representation::QuaternionRepresentation<casadi::SX>>;
 }
