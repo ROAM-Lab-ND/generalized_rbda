@@ -36,7 +36,8 @@ namespace grbda
             static const int numIndependentPos = 6;
 
             const RotMat<T> getRotationMatrix(const DVec<T>& q) const override {
-                return ori::rpyToRotMat(q);
+                const Vec3<T>& q_vec3 = static_cast<const Vec3<T>&>(q);
+                return ori::rpyToRotMat(q_vec3);
             }
         };
     }  // namespace ori_representation
