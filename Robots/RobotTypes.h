@@ -1,6 +1,7 @@
 #include "TeleopArm.hpp"
 #include "Tello.hpp"
 #include "TelloWithArms.hpp"
+#include "TelloLeg.hpp"
 #include "MIT_Humanoid.hpp"
 #include "MIT_Humanoid_no_rotors.hpp"
 #include "MIT_Humanoid_Leg.hpp"

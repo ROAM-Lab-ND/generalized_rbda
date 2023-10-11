@@ -7,12 +7,6 @@
 using namespace grbda;
 using namespace grbda::BenchmarkHelpers;
 
-// Random notes
-// - Can just skip the integration of any floating base joints
-// - Maybe we can gather a lot of data for many different robots and show their average error? That makes no sense now that I think about it. What would we change? Inertia parameters and gear ratios I guess...
-// - We should use a realistic robot. So maybe we do Tello and Humanoid, but with no FB integration...
-// - Should probably make a class here
-
 struct TrajectoryPoint
 {
     double p; // position
@@ -236,14 +230,20 @@ template <typename RobotType>
 void runOpenLoopTrajectoryBenchmark(std::ofstream &file, const std::string &contact_point,
                                     double duration, double dt)
 {
-    // TODO(@MatthewChignoli): Write a description of this benchmark
+    // This test demonstrates the important of accounting for the complete closed loop effects of 
+    // actuation sub-mechanisms. It does so via the following steps:
+    // 1) Given a trajectory q(t), qd(t), qdd(t), use inverse dynamics to compute the torque 
+    // trajectory tau(t) needed to accomplish the trajectory. We do so using the exact model as 
+    // well as two approximate models
+    // 2) Simulate the exact model forward in time using the various torque trajectories
+    // 3) Compare the realized 3D trajectories of a contact point on the robot resulting from the 
+    // various torque trajectories
+
     RobotType robot;
     ClusterTreeModel<> model = robot.buildClusterTreeModel();
 
-    // Generate the torque trajectories
     TorqueTrajectoryGenerator trajectory_generator(file, model, contact_point, duration, dt);
 
-    // Simulate the exact model forward in time using the various torque trajectories
     OpenLoopSimulator simulator(file, model, trajectory(0), contact_point);
     simulator.dt_ = trajectory_generator.dt_;
     simulator.run(trajectory_generator.getTorqueTrajectory("exact"));
@@ -258,8 +258,10 @@ int main()
     std::string path_to_data = "../Benchmarking/data/AccuracyTT_";
     std::ofstream trajectory_file;
     trajectory_file.open(path_to_data + "Robots.csv");
-    // runOpenLoopTrajectoryBenchmark<RevoluteChainWithRotor<8>>(trajectory_file, "cp-7", 5.0, 1e-5);
     runOpenLoopTrajectoryBenchmark<MIT_Humanoid_Leg>(trajectory_file, "toe_contact", 5.0, 1e-5);
+
+    // TODO(@MatthewChignoli: Tello joint requires spanning trajectory?
+    // runOpenLoopTrajectoryBenchmark<TelloLeg>(trajectory_file, "toe_contact", 5.0, 1e-5);
     trajectory_file.close();
 
     return 0;
