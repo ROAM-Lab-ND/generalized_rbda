@@ -1,7 +1,6 @@
 #include "LoopConstraint.h"
 
 #include "Utils/Utilities.h"
-#include <casadi/casadi.hpp>
 
 namespace grbda
 {
@@ -25,8 +24,8 @@ namespace grbda
             return this->G_ * joint_pos;
         }
 
-        template class Static<double>;
-        template class Static<casadi::SX>;
+        template struct Static<double>;
+        template struct Static<casadi::SX>;
 
         template <typename Scalar>
         DVec<Scalar> Collection<Scalar>::gamma(const DVec<Scalar> y) const
@@ -185,8 +184,8 @@ namespace grbda
             K_transpose_computed_ = false;
         }
 
-        template class Collection<double>;
-        template class Collection<casadi::SX>;
+        template struct Collection<double>;
+        template struct Collection<casadi::SX>;
 
     }
 

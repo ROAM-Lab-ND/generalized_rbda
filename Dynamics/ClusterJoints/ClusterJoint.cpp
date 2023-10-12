@@ -1,7 +1,5 @@
 #include "ClusterJoint.h"
 
-#include <casadi/casadi.hpp>
-
 namespace grbda
 {
 

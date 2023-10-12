@@ -1,7 +1,5 @@
 #include "SpatialTransforms.h"
 
-#include <casadi/casadi.hpp>
-
 namespace grbda
 {
 

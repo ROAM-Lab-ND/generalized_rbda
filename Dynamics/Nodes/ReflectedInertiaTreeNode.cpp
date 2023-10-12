@@ -48,7 +48,7 @@ namespace grbda
         this->f_ext_.template segment<6>(0) = force;
     }
 
-    template class ReflectedInertiaTreeNode<double>;
-    template class ReflectedInertiaTreeNode<casadi::SX>;
+    template struct ReflectedInertiaTreeNode<double>;
+    template struct ReflectedInertiaTreeNode<casadi::SX>;
 
 } // namespace grbda

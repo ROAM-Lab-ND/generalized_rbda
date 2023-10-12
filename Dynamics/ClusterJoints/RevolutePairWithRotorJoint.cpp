@@ -13,10 +13,10 @@ namespace grbda
             : Base<Scalar>(4, 2, 2), link1_(module_1.body_), link2_(module_2.body_),
               rotor1_(module_1.rotor_), rotor2_(module_2.rotor_)
         {
-            const double gear_ratio_2 = module_2.gear_ratio_;
-            const double belt_ratio_1 = module_1.belt_ratio_;
-            const double net_ratio_1 = module_1.gear_ratio_ * belt_ratio_1;
-            const double net_ratio_2 = gear_ratio_2 * module_2.belt_ratio_;
+            const Scalar gear_ratio_2 = module_2.gear_ratio_;
+            const Scalar belt_ratio_1 = module_1.belt_ratio_;
+            const Scalar net_ratio_1 = module_1.gear_ratio_ * belt_ratio_1;
+            const Scalar net_ratio_2 = gear_ratio_2 * module_2.belt_ratio_;
 
             using Rev = Joints::Revolute<Scalar>;
 

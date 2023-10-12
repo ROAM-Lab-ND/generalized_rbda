@@ -37,9 +37,9 @@ namespace grbda
 
             DMat<Scalar> G = DMat<Scalar>::Zero(6, 3);
             G.template topRows<3>().setIdentity();
-            G.template row(3) << gr1 * br1, 0., 0.;
-            G.template row(4) << gr2 * br1, gr2 * br2, 0.;
-            G.template row(5) << -gr3 * br1, -gr3 * br2, gr3 * br3;
+            G.row(3) << gr1 * br1, 0., 0.;
+            G.row(4) << gr2 * br1, gr2 * br2, 0.;
+            G.row(5) << -gr3 * br1, -gr3 * br2, gr3 * br3;
 
             DMat<Scalar> K = DMat<Scalar>::Zero(3, 6);
             K.template leftCols(3) = -G.bottomRows(3);

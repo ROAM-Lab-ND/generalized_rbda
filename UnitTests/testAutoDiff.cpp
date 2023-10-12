@@ -7,8 +7,6 @@
 #include "Dynamics/ClusterJoints/ClusterJointTypes.h"
 #include "Robots/RobotTypes.h"
 
-#include <casadi/casadi.hpp>
-
 using namespace grbda;
 
 namespace biasVelocityTestHelpers
@@ -208,7 +206,7 @@ protected:
         casadi::copy(cs_qd_sym, qd_sym);
 
         ModelState<SX> state;
-        for (const auto cluster : model.clusters())
+        for (const ClusterTreeNodePtr<SX> &cluster : model.clusters())
         {
 
             DVec<SX> q_cluster = q_sym.segment(cluster->position_index_, cluster->num_positions_);

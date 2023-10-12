@@ -64,8 +64,8 @@ namespace grbda
 			casadi_interface(arg, b, bias_helpers_);
 		}
 
-		template class TelloDifferential<double>;
-		template class TelloDifferential<casadi::SX>;
+		template struct TelloDifferential<double>;
+		template struct TelloDifferential<casadi::SX>;
 
 	}
 
