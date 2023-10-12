@@ -4,7 +4,8 @@ namespace grbda
 {
 
     template <typename Scalar, typename OrientationRepresentation>
-    ClusterTreeModel<Scalar> MIT_Humanoid<Scalar, OrientationRepresentation>::buildClusterTreeModel() const
+    ClusterTreeModel<Scalar>
+    MIT_Humanoid<Scalar, OrientationRepresentation>::buildClusterTreeModel() const
     {
         typedef spatial::Transform<Scalar> Xform;
         typedef ClusterJoints::GearedTransmissionModule<Scalar> GearedTransModule;
@@ -321,9 +322,9 @@ namespace grbda
         return model;
     }
 
-    template class MIT_Humanoid<double, ori_representation::RollPitchYawRepresentation< Vec3<double> >>;
-    template class MIT_Humanoid<double, ori_representation::QuaternionRepresentation< Quat<double> >>;
-    template class MIT_Humanoid<casadi::SX, ori_representation::RollPitchYawRepresentation< Vec3<casadi::SX> >>;
-    template class MIT_Humanoid<casadi::SX, ori_representation::QuaternionRepresentation< Quat<casadi::SX> >>;
+    template class MIT_Humanoid<double, ori_representation::RollPitchYaw>;
+    template class MIT_Humanoid<double, ori_representation::Quaternion>;
+    template class MIT_Humanoid<casadi::SX, ori_representation::RollPitchYaw>;
+    template class MIT_Humanoid<casadi::SX, ori_representation::Quaternion>;
 
 }

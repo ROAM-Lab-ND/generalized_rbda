@@ -5,7 +5,6 @@
 #include "Robots/RobotTypes.h"
 
 using namespace grbda;
-using namespace grbda::ori_representation;
 
 static const double tol = 5e-8;
 
@@ -106,9 +105,8 @@ using testing::Types;
 
 typedef Types<
     TeleopArm, Tello, TelloWithArms,
-    MIT_Humanoid<double, QuaternionRepresentation< Quat<double> >>, 
-    MIT_Humanoid<double, RollPitchYawRepresentation< Vec3<double> >>, 
-    MiniCheetah<double, QuaternionRepresentation< Quat<double> >>,
+    MIT_Humanoid<>, MIT_Humanoid<double, ori_representation::RollPitchYaw>,
+    MiniCheetah<>, MiniCheetah<double, ori_representation::RollPitchYaw>,
     RevoluteChainWithRotor<2>,
     RevoluteChainWithRotor<4>,
     RevoluteChainWithRotor<8>,

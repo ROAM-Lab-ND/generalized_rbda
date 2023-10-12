@@ -9,20 +9,41 @@ namespace grbda
 
     namespace LoopConstraint
     {
-        template <typename Scalar = double, typename OrientationRepresentation = ori_representation::QuaternionRepresentation< Quat<Scalar> >>
+        template <typename Scalar = double,
+                  typename OrientationRepresentation = ori_representation::Quaternion>
         struct Free : Base<Scalar>
         {
-            Free();
+            Free()
+            {
+                this->G_ = DMat<Scalar>::Identity(6, 6);
+                this->g_ = DVec<Scalar>::Zero(6);
 
-            int numSpanningPos() const override { return OrientationRepresentation::numSpanningPos; }
-            int numIndependentPos() const override { return OrientationRepresentation::numIndependentPos; }
+                this->K_ = DMat<Scalar>::Zero(0, 6);
+                this->k_ = DVec<Scalar>::Zero(0);
+            }
 
-            std::shared_ptr<Base<Scalar>> clone() const override;
+            int numSpanningPos() const override
+            {
+                return OrientationRepresentation::numSpanningPos;
+            }
+
+            int numIndependentPos() const override
+            {
+                return OrientationRepresentation::numIndependentPos;
+            }
+
+            std::shared_ptr<Base<Scalar>> clone() const override
+            {
+                return std::make_shared<Free<Scalar, OrientationRepresentation>>(*this);
+            }
 
             void updateJacobians(const JointCoordinate<Scalar> &joint_pos) override {}
             void updateBiases(const JointState<Scalar> &joint_state) override {}
 
-            DVec<Scalar> gamma(const JointCoordinate<Scalar> &joint_pos) const override;
+            DVec<Scalar> gamma(const JointCoordinate<Scalar> &joint_pos) const override
+            {
+                return joint_pos;
+            }
         };
 
     }
@@ -30,7 +51,8 @@ namespace grbda
     namespace ClusterJoints
     {
 
-        template <typename Scalar = double, typename OrientationRepresentation = ori_representation::QuaternionRepresentation< Quat<Scalar> >>
+        template <typename Scalar = double,
+                  typename OrientationRepresentation = ori_representation::Quaternion>
         class Free : public Base<Scalar>
         {
         public:

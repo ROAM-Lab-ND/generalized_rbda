@@ -6,7 +6,6 @@
 #include "Robots/RobotTypes.h"
 
 using namespace grbda;
-using namespace grbda::ori_representation;
 
 static const double tol = 1e-10;
 static const double loose_tol = 1e-3;
@@ -76,10 +75,9 @@ typedef Types<
     RevoluteChainWithAndWithoutRotor<4ul, 4ul>,
     RevoluteChainWithAndWithoutRotor<8ul, 0ul>,
     Tello, TeleopArm,
-    MIT_Humanoid<double, QuaternionRepresentation< Quat<double> >>,
-    MIT_Humanoid<double, RollPitchYawRepresentation< Vec3<double> >>,
-    MIT_Humanoid_no_rotors<double, QuaternionRepresentation< Quat<double> >>, 
-    MiniCheetah<double, QuaternionRepresentation< Quat<double> >>>
+    MIT_Humanoid<>, MIT_Humanoid<double, ori_representation::RollPitchYaw>,
+    MIT_Humanoid_no_rotors<>,
+    MiniCheetah<>, MiniCheetah<double, ori_representation::RollPitchYaw>>
     Robots;
 
 TYPED_TEST_SUITE(RigidBodyKinematicsTest, Robots);
@@ -175,10 +173,10 @@ TYPED_TEST(RigidBodyKinematicsTest, ForwardKinematics)
 GTEST_TEST(ForwardKinematics, HumanoidModelComparison)
 {
     // Build the models
-    MIT_Humanoid<double, QuaternionRepresentation< Quat<double> >> robot_with_rotors;
+    MIT_Humanoid<double> robot_with_rotors;
     ClusterTreeModel<> rotor_model(robot_with_rotors.buildClusterTreeModel());
 
-    MIT_Humanoid_no_rotors<double, QuaternionRepresentation< Quat<double> >> robot_no_rotors;
+    MIT_Humanoid_no_rotors<double> robot_no_rotors;
     ClusterTreeModel<> no_rotor_model(robot_no_rotors.buildClusterTreeModel());
 
     for (int i = 0; i < 20; i++)

@@ -18,17 +18,18 @@ protected:
 };
 
 using testing::Types;
-using namespace grbda::ori_representation;  
+using namespace grbda::ori_representation;
 
 typedef Types<
     RevoluteChainWithRotor<4>,
     RevolutePairChainWithRotor<4>,
     RevoluteChainWithAndWithoutRotor<4ul, 4ul>,
     Tello, TeleopArm,
-    MIT_Humanoid<double, QuaternionRepresentation< Quat<double> >>, 
-    MIT_Humanoid<double, RollPitchYawRepresentation< Vec3<double> >>, 
-    MIT_Humanoid_no_rotors<double, QuaternionRepresentation< Quat<double> >>, 
-    MiniCheetah<double, QuaternionRepresentation< Quat<double> >>>
+    MIT_Humanoid<>,
+    MIT_Humanoid<double, RollPitchYaw>,
+    MIT_Humanoid_no_rotors<>,
+    MiniCheetah<>,
+    MiniCheetah<double, RollPitchYaw>>
     Robots;
 
 TYPED_TEST_SUITE(ClusterTreeModelTest, Robots);
