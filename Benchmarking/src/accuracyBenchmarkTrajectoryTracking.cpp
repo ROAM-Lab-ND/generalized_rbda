@@ -7,6 +7,15 @@
 using namespace grbda;
 using namespace grbda::BenchmarkHelpers;
 
+struct TrajectoryParameters
+{
+    double A;        // amplitude
+    double omega;    // frequency
+    double phi;      // phase
+    double dt;       // time step
+    double duration; // duration of trajectory
+};
+
 struct TrajectoryPoint
 {
     double p; // position
@@ -14,24 +23,32 @@ struct TrajectoryPoint
     double a; // acceleration
 };
 
-// TODO(@MatthewChignoli): Use casadi and lambda functions to generate the trajectory
-TrajectoryPoint trajectory(double t)
+struct Trajectory
 {
     // f(t) = A * sin(omega * t + phi)
     // f'(t) = A * omega * cos(omega * t + phi)
     // f''(t) = -A * omega^2 * sin(omega * t + phi)
 
-    const double A = 0.1;
-    const double omega = 0.5 * (2. * M_PI);
-    const double phi = 0.;
+    Trajectory(const TrajectoryParameters &params)
+        : A_(params.A), omega_(params.omega), phi_(params.phi),
+          dt_(params.dt), duration_(params.duration) {}
 
-    TrajectoryPoint point;
-    point.p = A * sin(omega * t + phi);
-    point.v = A * omega * cos(omega * t + phi);
-    point.a = -A * omega * omega * sin(omega * t + phi);
+    TrajectoryPoint at(double t) const
+    {
+        TrajectoryPoint point;
+        point.p = A_ * sin(omega_ * t + phi_);
+        point.v = A_ * omega_ * cos(omega_ * t + phi_);
+        point.a = -A_ * omega_ * omega_ * sin(omega_ * t + phi_);
+        return point;
+    }
 
-    return point;
-}
+    const double A_;
+    const double omega_;
+    const double phi_;
+
+    const double dt_;
+    const double duration_;
+};
 
 class TorqueTrajectoryGenerator
 {
@@ -41,8 +58,8 @@ public:
     TorqueTrajectoryGenerator(std::ofstream &trajectory_file,
                               ClusterTreeModel<> model_cl,
                               const std::string contact_point,
-                              const double duration, const double dt)
-        : dt_(dt), file_(trajectory_file), contact_point_(contact_point)
+                              const Trajectory &trajectory)
+        : file_(trajectory_file), contact_point_(contact_point)
     {
         ReflectedInertiaTreeModel<> model_rf_diag(model_cl, RotorInertiaApproximation::DIAGONAL);
         ReflectedInertiaTreeModel<> model_rf_none(model_cl, RotorInertiaApproximation::NONE);
@@ -50,10 +67,10 @@ public:
         const int nq = model_cl.getNumPositions();
         const int nv = model_cl.getNumDegreesOfFreedom();
 
-        for (double t = 0; t <= duration; t += dt_)
+        for (double t = 0; t <= trajectory.duration_; t += trajectory.dt_)
         {
             // Set State
-            const TrajectoryPoint point = trajectory(t);
+            const TrajectoryPoint point = trajectory.at(t);
             DVec<double> q = DVec<double>::Constant(nq, point.p);
             DVec<double> qd = DVec<double>::Constant(nv, point.v);
             DVec<double> qdd = DVec<double>::Constant(nv, point.a);
@@ -64,8 +81,8 @@ public:
 
             // Compute Desired Contact Point Position
             model_cl.forwardKinematicsIncludingContactPoints();
-            const ContactPoint<double> &cp = model_cl.contactPoint(contact_point_);
-            file_ << t << " " << cp.position_.transpose() << std::endl;
+            const Vec3<double> cp_pos = model_cl.contactPoint(contact_point_).position_;
+            file_ << trajectory.omega_ << " " << t << " " << cp_pos.transpose() << std::endl;
 
             // Compute torque needed to track the trajectory via inverse dynamics
             tau_traj_map_["exact"].push_back(model_cl.inverseDynamics(qdd));
@@ -78,8 +95,6 @@ public:
     {
         return tau_traj_map_.at(model_name);
     }
-
-    const double dt_;
 
 private:
     void setState(ReflectedInertiaTreeModel<> &model_rf,
@@ -110,11 +125,10 @@ private:
 class OpenLoopSimulator
 {
 public:
-    OpenLoopSimulator(std::ofstream &trajectory_file,
-                      const ClusterTreeModel<> &model,
-                      const TrajectoryPoint x0,
-                      const std::string contact_point)
-        : file_(trajectory_file), model_(model), x0_(x0), contact_point_(contact_point) {}
+    OpenLoopSimulator(std::ofstream &trajectory_file, const ClusterTreeModel<> &model,
+                      const std::string contact_point, const Trajectory &trajectory)
+        : file_(trajectory_file), model_(model), contact_point_(contact_point),
+          x0_(trajectory.at(0)), dt_(trajectory.dt_), omega_(trajectory.omega_) {}
 
     void run(const std::vector<DVec<double>> &tau_trajectory)
     {
@@ -135,8 +149,8 @@ public:
         {
             // Compute the realized Contact Point Position
             model_.forwardKinematicsIncludingContactPoints();
-            const ContactPoint<double> &cp = model_.contactPoint(contact_point_);
-            file_ << t << " " << cp.position_.transpose() << std::endl;
+            const Vec3<double> cp_pos = model_.contactPoint(contact_point_).position_;
+            file_ << omega_ << " " << t << " " << cp_pos.transpose() << std::endl;
 
             // Simulate forward in time using the torque from the approximate model
             model_state = rk4IntegrateModelState(model_state, tau);
@@ -145,8 +159,6 @@ public:
             t += dt_;
         }
     }
-
-    double dt_ = 5e-5;
 
 private:
     ModelState<> eulerIntegrateModelState(ModelState<> model_state,
@@ -214,7 +226,7 @@ private:
             // Euler integration
             joint_state.position += dt_ * qd;
             joint_state.velocity += dt_ * qdd.segment(cluster->velocity_index_,
-                                                     cluster->num_velocities_);
+                                                      cluster->num_velocities_);
         }
 
         return model_state;
@@ -222,33 +234,48 @@ private:
 
     std::ofstream &file_;
     ClusterTreeModel<> model_;
-    const TrajectoryPoint x0_;
     const std::string contact_point_;
+
+    const TrajectoryPoint x0_;
+    const double dt_;
+    const double omega_;
 };
 
 template <typename RobotType>
 void runOpenLoopTrajectoryBenchmark(std::ofstream &file, const std::string &contact_point,
                                     double duration, double dt)
 {
-    // This test demonstrates the important of accounting for the complete closed loop effects of 
+    // TODO(@MatthewChignoli): Update this description
+    
+    // This test demonstrates the important of accounting for the complete closed loop effects of
     // actuation sub-mechanisms. It does so via the following steps:
-    // 1) Given a trajectory q(t), qd(t), qdd(t), use inverse dynamics to compute the torque 
-    // trajectory tau(t) needed to accomplish the trajectory. We do so using the exact model as 
+    // 1) Given a trajectory q(t), qd(t), qdd(t), use inverse dynamics to compute the torque
+    // trajectory tau(t) needed to accomplish the trajectory. We do so using the exact model as
     // well as two approximate models
     // 2) Simulate the exact model forward in time using the various torque trajectories
-    // 3) Compare the realized 3D trajectories of a contact point on the robot resulting from the 
+    // 3) Compare the realized 3D trajectories of a contact point on the robot resulting from the
     // various torque trajectories
 
     RobotType robot;
     ClusterTreeModel<> model = robot.buildClusterTreeModel();
 
-    TorqueTrajectoryGenerator trajectory_generator(file, model, contact_point, duration, dt);
+    TrajectoryParameters trajectory_params;
+    trajectory_params.A = 0.1;
+    trajectory_params.phi = 0.;
+    trajectory_params.dt = dt;
+    trajectory_params.duration = duration;
 
-    OpenLoopSimulator simulator(file, model, trajectory(0), contact_point);
-    simulator.dt_ = trajectory_generator.dt_;
-    simulator.run(trajectory_generator.getTorqueTrajectory("exact"));
-    simulator.run(trajectory_generator.getTorqueTrajectory("diag"));
-    simulator.run(trajectory_generator.getTorqueTrajectory("none"));
+    for (double omega = 0.2; omega <= 2.0; omega += 0.2)
+    {
+        trajectory_params.omega = omega * 2. * M_PI;
+        Trajectory trajectory(trajectory_params);
+        TorqueTrajectoryGenerator trajectory_generator(file, model, contact_point, trajectory);
+
+        OpenLoopSimulator simulator(file, model, contact_point, trajectory);
+        simulator.run(trajectory_generator.getTorqueTrajectory("exact"));
+        simulator.run(trajectory_generator.getTorqueTrajectory("diag"));
+        simulator.run(trajectory_generator.getTorqueTrajectory("none"));
+    }
 }
 
 int main()
@@ -258,10 +285,11 @@ int main()
     std::string path_to_data = "../Benchmarking/data/AccuracyTT_";
     std::ofstream trajectory_file;
     trajectory_file.open(path_to_data + "Robots.csv");
-    runOpenLoopTrajectoryBenchmark<MIT_Humanoid_Leg>(trajectory_file, "toe_contact", 5.0, 1e-5);
+    runOpenLoopTrajectoryBenchmark<MIT_Humanoid_Leg>(trajectory_file, "toe_contact", 6.0, 2e-3);
 
     // TODO(@MatthewChignoli: Tello joint requires spanning trajectory?
     // runOpenLoopTrajectoryBenchmark<TelloLeg>(trajectory_file, "toe_contact", 5.0, 1e-5);
+
     trajectory_file.close();
 
     return 0;
