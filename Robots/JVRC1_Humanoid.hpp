@@ -1,15 +1,15 @@
-#ifndef GRBDA_ROBOTS_HUMANOID_H
-#define GRBDA_ROBOTS_HUMANOID_H
+#ifndef GRBDA_ROBOTS_JVRC1_HUMANOID_H
+#define GRBDA_ROBOTS_JVRC1_HUMANOID_H
 
-#include "Humanoid.h"
+#include "Robot.h"
 
 namespace grbda
 {
 
-    class Humanoid : public Robot
+    class JVRC1_Humanoid : public Robot
     {
     public:
-        Humanoid() {}
+        JVRC1_Humanoid() {}
 
         ClusterTreeModel buildClusterTreeModel() const override;
 
@@ -49,7 +49,7 @@ namespace grbda
 
         // Orientation and position of right leg
         const Mat3<double> R_right_hip_p = Mat3<double>::Identity();
-        const Vec3<double> p_right_hip_p = Vec3<double>{0. -0.096, 0.};
+        const Vec3<double> p_right_hip_p = Vec3<double>{0., -0.096, 0.};
         const Mat3<double> R_right_hip_p_rotor = R_right_hip_p;
         const Vec3<double> p_right_hip_p_rotor = p_right_hip_p;
 
@@ -128,7 +128,7 @@ namespace grbda
         const Mat3<double> R_left_elbow_p = Mat3<double>::Identity();
         const Vec3<double> p_left_elbow_p = Vec3<double>{0.004, -2.78e-17, -0.305};
         const Mat3<double> R_left_elbow_p_rotor = R_left_elbow_p;
-        const Vec3<double> p_left_elbow_p_left_rotor = p_left_elbow_p;
+        const Vec3<double> p_left_elbow_p_rotor = p_left_elbow_p;
 
         const Mat3<double> R_left_elbow_y = Mat3<double>::Identity();
         const Vec3<double> p_left_elbow_y = Vec3<double>{-0.004, 3.89e-16, -0.239};
@@ -149,7 +149,7 @@ namespace grbda
         const Mat3<double> R_right_shoulder_p = Mat3<double>::Identity();
         const Vec3<double> p_right_shoulder_p = Vec3<double>{0., -0.24, 0.33};
         const Mat3<double> R_right_shoulder_p_rotor = R_right_shoulder_p;
-        const Vec3<double> p_right_shoulder_p_right_rotor = p_right_shoulder_p;
+        const Vec3<double> p_right_shoulder_p_rotor = p_right_shoulder_p;
 
         const Mat3<double> R_right_shoulder_r = Mat3<double>::Identity();
         const Vec3<double> p_right_shoulder_r = Vec3<double>{0., -2.78e-17, -7.77e-16};
@@ -184,7 +184,7 @@ namespace grbda
         // mass, CoM and inertia values
         const double gear_ratio = 6.;
         const double rotor_mass = 0.07;
-        const Vec3<double> rotor_CoM = Vec3<doube>::Zero();
+        const Vec3<double> rotor_CoM = Vec3<double>::Zero();
         const Mat3<double> rotor_inertia = (Mat3<double>() << 2e-5, 0., 0., 0., 2e-5, 0., 0., 0., 5e-5).finished();
 
         const double pelvis_mass = 10.;
@@ -209,11 +209,11 @@ namespace grbda
 
         const double ankle_r_mass = 1.; 
         const Vec3<double> ankle_r_CoM = Vec3<double>{0., 0., 0.};
-        const Mat3<double> knee_inertia = (Mat3<double>() << 0.00064, 0., 0., 0., 0.00064, 0., 0., 0., 0.00064).finished();
+        const Mat3<double> ankle_r_inertia = (Mat3<double>() << 0.00064, 0., 0., 0., 0.00064, 0., 0., 0., 0.00064).finished();
 
         const double ankle_p_mass = 1.5; 
         const Vec3<double> ankle_p_CoM = Vec3<double>{0.03, 0., -0.07};
-        const Mat3<double> knee_inertia = (Mat3<double>() << 0.001417, 0., 0., 0., 0.005617, 0., 0., 0., 0.006217).finished();
+        const Mat3<double> ankle_p_inertia = (Mat3<double>() << 0.001417, 0., 0., 0., 0.005617, 0., 0., 0., 0.006217).finished();
         
         const double waist_y_mass = 1.; 
         const Vec3<double> waist_y_CoM = Vec3<double>{0., 0., -0.07};
@@ -267,5 +267,7 @@ namespace grbda
         const Vec3<double> left_wrist_y_CoM = Vec3<double>{0., -0.01, -0.06};
         const Vec3<double> right_wrist_y_CoM = Vec3<double>{0., 0.01, -0.06};
         const Mat3<double> wrist_y_inertia = (Mat3<double>() << 0.0004625, 0., 0., 0., 0.0007625, 0., 0., 0., 0.0004625).finished();
-    }
+    };
 }
+
+#endif // GRBDA_ROBOTS_JVRC1_HUMANOID_H

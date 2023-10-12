@@ -3,6 +3,7 @@
 #include "TelloWithArms.hpp"
 #include "MIT_Humanoid.hpp"
 #include "MiniCheetah.hpp"
+#include "JVRC1_Humanoid.hpp"
 #include "SerialChains/RevoluteChainWithRotor.hpp"
 #include "SerialChains/RevolutePairChain.hpp"
 #include "SerialChains/RevolutePairChainWithRotor.hpp"
