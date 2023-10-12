@@ -13,7 +13,14 @@ namespace grbda
                   typename OrientationRepresentation = ori_representation::Quaternion>
         struct Free : Base<Scalar>
         {
-            Free();
+            Free()
+            {
+                this->G_ = DMat<Scalar>::Identity(6, 6);
+                this->g_ = DVec<Scalar>::Zero(6);
+
+                this->K_ = DMat<Scalar>::Zero(0, 6);
+                this->k_ = DVec<Scalar>::Zero(0);
+            }
 
             int numSpanningPos() const override
             {
@@ -25,12 +32,18 @@ namespace grbda
                 return OrientationRepresentation::numIndependentPos;
             }
 
-            std::shared_ptr<Base<Scalar>> clone() const override;
+            std::shared_ptr<Base<Scalar>> clone() const override
+            {
+                return std::make_shared<Free<Scalar, OrientationRepresentation>>(*this);
+            }
 
             void updateJacobians(const JointCoordinate<Scalar> &joint_pos) override {}
             void updateBiases(const JointState<Scalar> &joint_state) override {}
 
-            DVec<Scalar> gamma(const JointCoordinate<Scalar> &joint_pos) const override;
+            DVec<Scalar> gamma(const JointCoordinate<Scalar> &joint_pos) const override
+            {
+                return joint_pos;
+            }
         };
 
     }
