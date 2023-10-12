@@ -4,7 +4,8 @@ namespace grbda
 {
 
     template <typename Scalar, typename OrientationRepresentation>
-    ClusterTreeModel<Scalar> MiniCheetah<Scalar, OrientationRepresentation>::buildClusterTreeModel() const
+    ClusterTreeModel<Scalar>
+    MiniCheetah<Scalar, OrientationRepresentation>::buildClusterTreeModel() const
     {
         typedef spatial::Transform<Scalar> Xform;
         typedef ClusterJoints::GearedTransmissionModule<Scalar> TransmissionModule;
@@ -121,8 +122,8 @@ namespace grbda
         return model;
     }
 
-    template class MiniCheetah<double, ori_representation::RollPitchYawRepresentation< Vec3<double> >>;
-    template class MiniCheetah<double, ori_representation::QuaternionRepresentation< Quat<double> >>;
-    template class MiniCheetah<casadi::SX, ori_representation::RollPitchYawRepresentation< Vec3<casadi::SX> >>;
-    template class MiniCheetah<casadi::SX, ori_representation::QuaternionRepresentation< Quat<casadi::SX> >>;
+    template class MiniCheetah<double, ori_representation::RollPitchYaw>;
+    template class MiniCheetah<double, ori_representation::Quaternion>;
+    template class MiniCheetah<casadi::SX, ori_representation::RollPitchYaw>;
+    template class MiniCheetah<casadi::SX, ori_representation::Quaternion>;
 }

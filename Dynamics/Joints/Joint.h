@@ -38,7 +38,8 @@ namespace grbda
             DMat<Scalar> Psi_;
         };
 
-        template <typename Scalar = double, typename OrientationRepresentation = ori_representation::QuaternionRepresentation< Quat<Scalar> >>
+        template <typename Scalar = double,
+                  typename OrientationRepresentation = ori_representation::Quaternion>
         class Free : public Base<Scalar>
         {
         public:
@@ -59,10 +60,14 @@ namespace grbda
                 // using OriVecType = const Eigen::Matrix<Scalar, OrientationRepresentation::num_ori_parameter, 1>;
                 // Eigen::Ref<OriVecType> q_ori(q.template tail<OrientationRepresentation::num_ori_parameter>());
 
-                Eigen::Matrix<Scalar, OrientationRepresentation::num_ori_parameter, 1> q_ori;
-                q_ori = q.template tail<OrientationRepresentation::num_ori_parameter>();
+                // Eigen::Matrix<Scalar, OrientationRepresentation::num_ori_parameter, 1> q_ori;
+                // q_ori = q.template tail<OrientationRepresentation::num_ori_parameter>();
 
-                const RotMat<Scalar> R = orientation_representation_.getRotationMatrix(q_ori);
+                const RotMat<Scalar> R =
+                    OrientationRepresentation::getRotationMatrix(
+                        q.template tail<OrientationRepresentation::num_ori_parameter>());
+
+                // const RotMat<Scalar> R = orientation_representation_.getRotationMatrix(q_ori);
                 const Vec3<Scalar> q_pos = q.template head<3>();
                 this->XJ_ = spatial::Transform<Scalar>(R, q_pos);
             }

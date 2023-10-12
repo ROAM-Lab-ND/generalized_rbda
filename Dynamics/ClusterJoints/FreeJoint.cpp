@@ -27,10 +27,10 @@ namespace grbda
             return joint_pos;
         }
 
-        template class Free<double, ori_representation::RollPitchYawRepresentation< Vec3<double> >>;
-        template class Free<double, ori_representation::QuaternionRepresentation< Quat<casadi::SX> >>;
-        template class Free<casadi::SX, ori_representation::RollPitchYawRepresentation< Vec3<casadi::SX> >>;
-        template class Free<casadi::SX, ori_representation::QuaternionRepresentation< Quat<casadi::SX> >>;
+        template class Free<double, ori_representation::RollPitchYaw>;
+        template class Free<double, ori_representation::Quaternion>;
+        template class Free<casadi::SX, ori_representation::RollPitchYaw>;
+        template class Free<casadi::SX, ori_representation::Quaternion>;
 
     }
 
@@ -74,10 +74,13 @@ namespace grbda
         template <typename Scalar, typename OrientationRepresentation>
         JointState<Scalar> Free<Scalar, OrientationRepresentation>::randomJointState() const
         {
+            const int num_ori_param = OrientationRepresentation::num_ori_parameter;
+
             JointState<Scalar> joint_state(false, false);
-            joint_state.position = DVec<Scalar>::Zero(OrientationRepresentation::num_ori_parameter + 3);
+            joint_state.position = DVec<Scalar>::Zero(num_ori_param + 3);
             joint_state.position.template segment<3>(0) = Vec3<Scalar>::Random(3);
-            joint_state.position.template segment<OrientationRepresentation::num_ori_parameter>(3) = OrientationRepresentation::randomOrientation();
+            joint_state.position.template segment<num_ori_param>(3) =
+                OrientationRepresentation::template randomOrientation<Scalar>();
             joint_state.velocity = DVec<Scalar>::Random(6);
             return joint_state;
         }
@@ -92,11 +95,10 @@ namespace grbda
             return bodies_joints_and_ref_inertias;
         }
 
-        template class Free<double, ori_representation::RollPitchYawRepresentation< Vec3<double> >>;
-        template class Free<double, ori_representation::QuaternionRepresentation< Quat<double> >>;
-        template class Free<casadi::SX, ori_representation::RollPitchYawRepresentation< Vec3<casadi::SX> >>;
-        template class Free<casadi::SX, ori_representation::QuaternionRepresentation< Quat<casadi::SX> >>;
-
+        template class Free<double, ori_representation::RollPitchYaw>;
+        template class Free<double, ori_representation::Quaternion>;
+        template class Free<casadi::SX, ori_representation::RollPitchYaw>;
+        template class Free<casadi::SX, ori_representation::Quaternion>;
     }
 
 } // namespace grbda
