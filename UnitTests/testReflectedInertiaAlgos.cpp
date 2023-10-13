@@ -66,8 +66,8 @@ protected:
 
     T robot = T(false);
     ClusterTreeModel<> cluster_model;
-    ReflectedInertiaTreeModel<>reflected_inertia_model;
-    ReflectedInertiaTreeModel<>reflected_inertia_diag_model;
+    ReflectedInertiaTreeModel<> reflected_inertia_model;
+    ReflectedInertiaTreeModel<> reflected_inertia_diag_model;
 
     DVec<double> independent_joint_pos_;
     DVec<double> independent_joint_vel_;

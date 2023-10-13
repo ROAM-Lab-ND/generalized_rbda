@@ -18,8 +18,7 @@ namespace grbda
         // Torso
         const std::string torso_name = "Floating Base";
         const std::string torso_parent_name = "ground";
-        const SpatialInertia<Scalar> torsoInertia(this->_torsoMass, this->_torsoCOM,
-                                                  this->_torsoRotInertia);
+        const SpatialInertia<Scalar> torsoInertia(this->_torsoLinearInertialParams);
         model.template appendBody<ClusterJoints::Free<Scalar>>(torso_name, torsoInertia,
                                                                torso_parent_name, Xform{});
 
@@ -33,8 +32,7 @@ namespace grbda
             const std::string hip_rz_parent_name = torso_name;
             const std::string hip_rz_name = this->withLeftRightSigns("hip_rz_link", legID);
 
-            SpatialInertia<Scalar> hip_rz_link_inertia(this->_hipRzMass, this->_hipRzCOM,
-                                                       this->_hipRzRotInertia);
+            SpatialInertia<Scalar> hip_rz_link_inertia(this->_hipRzLinearInertialParams);
             hip_rz_link_inertia = this->withLeftRightSigns(hip_rz_link_inertia, legID);
 
             Mat3<Scalar> Xrot_HipZ = ori::coordinateRotation<Scalar>(Axis::Y, this->_hipRzPitch);
@@ -48,8 +46,7 @@ namespace grbda
             const std::string hip_rx_parent_name = hip_rz_name;
             const std::string hip_rx_name = this->withLeftRightSigns("hip_rx_link", legID);
 
-            SpatialInertia<Scalar> hip_rx_link_inertia(this->_hipRxMass, this->_hipRxCOM,
-                                                       this->_hipRxRotInertia);
+            SpatialInertia<Scalar> hip_rx_link_inertia(this->_hipRxLinearInertialParams);
             hip_rx_link_inertia = this->withLeftRightSigns(hip_rx_link_inertia, legID);
 
             Mat3<Scalar> Xrot_HipX = ori::coordinateRotation<Scalar>(Axis::Y, this->_hipRxPitch);
@@ -63,8 +60,7 @@ namespace grbda
             const std::string hip_ry_parent_name = hip_rx_name;
             const std::string hip_ry_name = this->withLeftRightSigns("hip_ry_link", legID);
 
-            SpatialInertia<Scalar> hip_ry_link_inertia(this->_hipRyMass, this->_hipRyCOM,
-                                                       this->_hipRyRotInertia);
+            SpatialInertia<Scalar> hip_ry_link_inertia(this->_hipRyLinearInertialParams);
             hip_ry_link_inertia = this->withLeftRightSigns(hip_ry_link_inertia, legID);
 
             Mat3<Scalar> Xrot_HipY = ori::coordinateRotation<Scalar>(Axis::Y, this->_hipRyPitch);
@@ -82,8 +78,7 @@ namespace grbda
             const std::string knee_parent_name = hip_ry_name;
             const std::string knee_name = this->withLeftRightSigns("knee_link", legID);
 
-            SpatialInertia<Scalar> knee_link_inertia(this->_kneeMass, this->_kneeCOM,
-                                                     this->_kneeRotInertia);
+            SpatialInertia<Scalar> knee_link_inertia(this->_kneeLinearInertialParams);
             knee_link_inertia = this->withLeftRightSigns(knee_link_inertia, legID);
 
             const Vec3<Scalar> kneeLocation = this->withLeftRightSigns(this->_kneeLocation, legID);
@@ -96,8 +91,7 @@ namespace grbda
             const std::string ankle_parent_name = knee_name;
             const std::string ankle_name = this->withLeftRightSigns("ankle_link", legID);
 
-            SpatialInertia<Scalar> ankle_link_inertia(this->_ankleMass, this->_ankleCOM,
-                                                      this->_ankleRotInertia);
+            SpatialInertia<Scalar> ankle_link_inertia(this->_ankleLinearInertialParams);
             ankle_link_inertia = this->withLeftRightSigns(ankle_link_inertia, legID);
 
             const Vec3<Scalar> ankleLocation = this->withLeftRightSigns(this->_ankleLocation, legID);
@@ -133,8 +127,7 @@ namespace grbda
             const std::string shoulder_ry_parent_name = torso_name;
             const std::string shoulder_ry_name = this->withLeftRightSigns("shoulder_ry_link", armID);
 
-            SpatialInertia<Scalar> shoulder_ry_link_inertia(
-                this->_shoulderRyMass, this->_shoulderRyCOM, this->_shoulderRyRotInertia);
+            SpatialInertia<Scalar> shoulder_ry_link_inertia(this->_shoulderRyLinearInertialParams);
             shoulder_ry_link_inertia = this->withLeftRightSigns(shoulder_ry_link_inertia, armID);
 
             const Xform xtreeShoulderRy(I3, this->withLeftRightSigns(this->_shoulderRyLocation, armID));
@@ -146,8 +139,7 @@ namespace grbda
             const std::string shoulder_rx_parent_name = shoulder_ry_name;
             const std::string shoulder_rx_name = this->withLeftRightSigns("shoulder_rx_link", armID);
 
-            SpatialInertia<Scalar> shoulder_rx_link_inertia(
-                this->_shoulderRxMass, this->_shoulderRxCOM, this->_shoulderRxRotInertia);
+            SpatialInertia<Scalar> shoulder_rx_link_inertia(this->_shoulderRxLinearInertialParams);
             shoulder_rx_link_inertia = this->withLeftRightSigns(shoulder_rx_link_inertia, armID);
 
             Xform xtreeShoulderRx(I3, this->withLeftRightSigns(this->_shoulderRxLocation, armID));
@@ -159,8 +151,7 @@ namespace grbda
             const std::string shoulder_rz_parent_name = shoulder_rx_name;
             const std::string shoulder_rz_name = this->withLeftRightSigns("shoulder_rz_link", armID);
 
-            SpatialInertia<Scalar> shoulder_rz_link_inertia(
-                this->_shoulderRzMass, this->_shoulderRzCOM, this->_shoulderRzRotInertia);
+            SpatialInertia<Scalar> shoulder_rz_link_inertia(this->_shoulderRzLinearInertialParams);
             shoulder_rz_link_inertia = this->withLeftRightSigns(shoulder_rz_link_inertia, armID);
 
             const Xform xtreeShoulderRz(I3, this->withLeftRightSigns(this->_shoulderRzLocation, armID));
@@ -172,8 +163,7 @@ namespace grbda
             const std::string elbow_parent_name = shoulder_rz_name;
             const std::string elbow_name = this->withLeftRightSigns("elbow_link", armID);
 
-            SpatialInertia<Scalar> elbow_link_inertia(this->_elbowMass, this->_elbowCOM,
-                                                      this->_elbowRotInertia);
+            SpatialInertia<Scalar> elbow_link_inertia(this->_elbowLinearInertialParams);
             elbow_link_inertia = this->withLeftRightSigns(elbow_link_inertia, armID);
 
             const Xform xtreeElbow(I3, this->withLeftRightSigns(this->_elbowLocation, armID));

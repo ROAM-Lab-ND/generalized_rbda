@@ -16,6 +16,30 @@
 namespace grbda
 {
 
+  template <typename Scalar = double>
+  struct InertialParams
+  {
+    Scalar m = 0;                           // mass
+    Vec3<Scalar> c = Vec3<Scalar>::Zero();  // vector from body frame to COM
+    Mat3<Scalar> Ic = Mat3<Scalar>::Zero(); // rotational inertia about COM
+  };
+
+  template <typename Scalar = double>
+  struct LinearInertialParams
+  {
+    Scalar m = 0;                          // mass
+    Vec3<Scalar> h = Vec3<Scalar>::Zero(); // first mass moment
+    Mat3<Scalar> I = Mat3<Scalar>::Zero(); // rotational inertia about coordinate frame origin
+
+    LinearInertialParams &operator=(const InertialParams<Scalar> &ip)
+    {
+      m = ip.m;
+      h = ip.m * ip.c;
+      I = ip.Ic + ip.m * ori::vectorToSkewMat(ip.c) * ori::vectorToSkewMat(ip.c).transpose();
+      return *this;
+    }
+  };
+
   /*!
    * Representation of Rigid Body Inertia as a 6x6 Spatial Inertia Tensor
    */
@@ -25,8 +49,7 @@ namespace grbda
   public:
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
     /*!
-     * Construct spatial inertia from mass, center of mass, and 3x3 rotational
-     * inertia
+     * Construct spatial inertia from mass, center of mass, and 3x3 rotational inertia
      */
     SpatialInertia(T mass, const Vec3<T> &com, const Mat3<T> &inertia)
     {
@@ -39,6 +62,25 @@ namespace grbda
     }
 
     /*!
+     * Construct spatial inertia from struct containting mass, center of mass, and 3x3 rotational
+     * inertia about the center of mass
+     */
+    SpatialInertia(const InertialParams<T> &ip) : SpatialInertia(ip.m, ip.c, ip.Ic) {}
+
+    /*!
+     * Construct spatial inertia from struct containting mass, first mass moment, and 3x3 rotational
+     * inertia about the coordinate frame origin
+     */
+    SpatialInertia(const LinearInertialParams<T> &ip)
+    {
+      Mat3<T> hSkew = ori::vectorToSkewMat(ip.h);
+      _inertia.template topLeftCorner<3, 3>() = ip.I;
+      _inertia.template topRightCorner<3, 3>() = hSkew;
+      _inertia.template bottomLeftCorner<3, 3>() = hSkew.transpose();
+      _inertia.template bottomRightCorner<3, 3>() = ip.m * Mat3<T>::Identity();
+    }
+
+    /*!
      * Construct spatial inertia from 6x6 matrix
      */
     explicit SpatialInertia(const Mat6<T> &inertia) { _inertia = inertia; }
@@ -47,26 +89,6 @@ namespace grbda
      * If no argument is given, zero.
      */
     SpatialInertia() { _inertia = Mat6<T>::Zero(); }
-
-    /*!
-     * Construct spatial inertia from mass property vector
-     */
-    explicit SpatialInertia(const MassProperties<T> &a)
-    {
-      _inertia(0, 0) = a(4);
-      _inertia(0, 1) = a(9);
-      _inertia(0, 2) = a(8);
-      _inertia(1, 0) = a(9);
-      _inertia(1, 1) = a(5);
-      _inertia(1, 2) = a(7);
-      _inertia(2, 0) = a(8);
-      _inertia(2, 1) = a(7);
-      _inertia(2, 2) = a(6);
-      Mat3<T> cSkew = ori::vectorToSkewMat(Vec3<T>(a(1), a(2), a(3)));
-      _inertia.template topRightCorner<3, 3>() = cSkew;
-      _inertia.template bottomLeftCorner<3, 3>() = cSkew.transpose();
-      _inertia.template bottomRightCorner<3, 3>() = a(0) * Mat3<T>::Identity();
-    }
 
     /*!
      * Construct spatial inertia from pseudo-inertia. This is described in
@@ -99,25 +121,9 @@ namespace grbda
     }
 
     /*!
-     * Convert spatial inertia to mass property vector
-     */
-    MassProperties<T> asMassPropertyVector()
-    {
-      MassProperties<T> a;
-      Vec3<T> h = ori::matToSkewVec(_inertia.template topRightCorner<3, 3>());
-      a << _inertia(5, 5), h(0), h(1), h(2), _inertia(0, 0), _inertia(1, 1),
-          _inertia(2, 2), _inertia(2, 1), _inertia(2, 0), _inertia(1, 0);
-      return a;
-    }
-
-    /*!
      * Get 6x6 spatial inertia
      */
     const Mat6<T> &getMatrix() const { return _inertia; }
-
-    void setMatrix(const Mat6<T> &mat) { _inertia = mat; }
-
-    void addMatrix(const Mat6<T> &mat) { _inertia += mat; }
 
     /*!
      * Get mass
