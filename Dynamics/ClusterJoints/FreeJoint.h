@@ -2,7 +2,7 @@
 #define GRBDA_GENERALIZED_JOINTS_FREE_JOINT_H
 
 #include "ClusterJoint.h"
-#include "Joints/OrientationRepresentation.h"
+#include "Dynamics/Joints/OrientationRepresentation.h"
 
 namespace grbda
 {

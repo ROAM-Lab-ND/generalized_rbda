@@ -1,6 +1,9 @@
 #ifndef GRBDA_CASADIGEN_H
 #define GRBDA_CASADIGEN_H
 
+#include <casadi/casadi.hpp>
+
+
 #define int_T long long int
 
 #include "cppTypes.h"
