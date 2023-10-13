@@ -5,6 +5,7 @@ close all; clear; clc;
 purple = [0.5, 0.0, 1.0];
 dark_green = [0.0, 0.5, 0.0];
 gold = [0.8, 0.6, 0.0];
+blue = [0.0, 0.0, 0.1];
 
 path_to_data = '../Benchmarking/data/AccuracyID_';
 path_to_figures = '../Benchmarking/figures/AccuracyID_';
@@ -23,7 +24,7 @@ end
 
 figure
 
-colors = {purple, dark_green, gold};
+colors = {purple, dark_green, gold, blue};
 lgd = {};
 
 for i = 1:length(datasets)
@@ -40,6 +41,7 @@ clear;
 purple = [0.5, 0.0, 1.0];
 dark_green = [0.0, 0.5, 0.0];
 gold = [0.8, 0.6, 0.0];
+blue = [0.0, 0.0, 1.0];
 
 path_to_data = '../Benchmarking/data/AccuracyFD_';
 path_to_figures = '../Benchmarking/figures/AccuracyFD_';
@@ -57,7 +59,7 @@ for i = 1:length(datasets)
 end
 
 figure
-colors = {purple, dark_green, gold};
+colors = {purple, dark_green, gold, blue};
 lgd = {};
 
 for i = 1:length(datasets)
@@ -74,6 +76,7 @@ clear;
 purple = [0.5, 0.0, 1.0];
 dark_green = [0.0, 0.5, 0.0];
 gold = [0.8, 0.6, 0.0];
+blue = [0.0, 0.0, 1.0];
 
 path_to_data = '../Benchmarking/data/AccuracyATF_';
 path_to_figures = '../Benchmarking/figures/AccuracyATF_';
@@ -91,7 +94,7 @@ for i = 1:length(datasets)
 end
 
 figure
-colors = {purple, dark_green, gold};
+colors = {purple, dark_green, gold, blue};
 lgd = {};
 
 for i = 1:length(datasets)
