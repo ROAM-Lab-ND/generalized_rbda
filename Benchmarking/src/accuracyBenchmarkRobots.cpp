@@ -199,6 +199,7 @@ int main()
     id_file.open(path_to_data + "Robots.csv");
     runInverseDynamicsBenchmark<TelloWithArms>(id_file, 50.);
     runInverseDynamicsBenchmark<MIT_Humanoid>(id_file, 50.);
+    runInverseDynamicsBenchmark<JVRC1_Humanoid>(id_file, 50.);
     runInverseDynamicsBenchmark<MiniCheetah>(id_file, 30.);
     id_file.close();
 
@@ -209,6 +210,7 @@ int main()
     fd_file.open(path_to_data + "Robots.csv");
     runForwardDynamicsBenchmark<TelloWithArms>(fd_file, 50.);
     runForwardDynamicsBenchmark<MIT_Humanoid>(fd_file, 50.);
+    runForwardDynamicsBenchmark<JVRC1_Humanoid>(fd_file, 50.);
     runForwardDynamicsBenchmark<MiniCheetah>(fd_file, 20.);
     fd_file.close();
 
@@ -219,6 +221,7 @@ int main()
     iosim_file.open(path_to_data + "Robots.csv");
     runInverseOperationalSpaceInertiaBenchmark<TelloWithArms>(iosim_file);
     runInverseOperationalSpaceInertiaBenchmark<MIT_Humanoid>(iosim_file);
+    runInverseOperationalSpaceInertiaBenchmark<JVRC1_Humanoid>(iosim_file);
     runInverseOperationalSpaceInertiaBenchmark<MiniCheetah>(iosim_file);
     iosim_file.close();
 

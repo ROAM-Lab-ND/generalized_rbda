@@ -15,7 +15,7 @@ alpha = unique(data(:, 1));
 rows_per_dataset = length(alpha);
 
 datasets = cell(length(data(:, 1)) / rows_per_dataset, 1);
-robot_names = {'Tello Humanoid', 'MIT Humanoid', 'Mini Cheetah'};
+robot_names = {'Tello Humanoid', 'MIT Humanoid', 'JVRC1 Humanoid', 'Mini Cheetah'};
 
 for i = 1:length(datasets)
     datasets{i} = data((i - 1) * rows_per_dataset + 1:i * rows_per_dataset, :);
@@ -50,7 +50,7 @@ alpha = unique(data(:, 1));
 rows_per_dataset = length(alpha);
 
 datasets = cell(length(data(:, 1)) / rows_per_dataset, 1);
-robot_names = {'Tello Humanoid', 'MIT Humanoid', 'Mini Cheetah'};
+robot_names = {'Tello Humanoid', 'MIT Humanoid', 'JVRC1 Humanoid', 'Mini Cheetah'};
 
 for i = 1:length(datasets)
     datasets{i} = data((i - 1) * rows_per_dataset + 1:i * rows_per_dataset, :);
