@@ -6,7 +6,8 @@
 namespace grbda
 {
 
-    template <typename Scalar = double>
+    template <typename Scalar = double,
+              typename OrientationRepresentation = ori_representation::Quaternion>
     class MiniCheetah : public Robot<Scalar>
     {
     public:

@@ -3,40 +3,12 @@
 namespace grbda
 {
 
-    namespace LoopConstraint
-    {
-        template <typename Scalar>
-        Free<Scalar>::Free()
-        {
-            this->G_ = DMat<Scalar>::Identity(6, 6);
-            this->g_ = DVec<Scalar>::Zero(6);
-
-            this->K_ = DMat<Scalar>::Zero(0, 6);
-            this->k_ = DVec<Scalar>::Zero(0);
-        }
-
-        template <typename Scalar>
-        std::shared_ptr<Base<Scalar>> Free<Scalar>::clone() const
-        {
-            return std::make_shared<Free<Scalar>>(*this);
-        }
-
-        template <typename Scalar>
-        DVec<Scalar> Free<Scalar>::gamma(const JointCoordinate<Scalar> &joint_pos) const
-        {
-            return joint_pos;
-        }
-
-        template struct Free<double>;
-        template struct Free<casadi::SX>;
-
-    }
-
     namespace ClusterJoints
     {
 
-        template <typename Scalar>
-        Free<Scalar>::Free(const Body<Scalar> &body) : Base<Scalar>(1, 7, 6), body_(body)
+        template <typename Scalar, typename OrientationRepresentation>
+        Free<Scalar, OrientationRepresentation>::Free(const Body<Scalar> &body)
+            : Base<Scalar>(1, OrientationRepresentation::num_ori_parameter + 3, 6), body_(body)
         {
             if (body.parent_index_ >= 0)
                 throw std::runtime_error("Free joint is only valid as the first joint in a tree and thus cannot have a parent body");
@@ -44,22 +16,25 @@ namespace grbda
             this->S_.setIdentity();
             this->Psi_.setIdentity();
 
-            this->single_joints_.emplace_back(new Joints::Free<Scalar>());
+            this->single_joints_.emplace_back(new Joints::Free<Scalar, OrientationRepresentation>());
 
             this->spanning_tree_to_independent_coords_conversion_ = DMat<int>::Identity(6, 6);
 
-            this->loop_constraint_ = std::make_shared<LoopConstraint::Free<Scalar>>();
+            this->loop_constraint_ =
+                std::make_shared<LoopConstraint::Free<Scalar, OrientationRepresentation>>();
         }
 
-        template <typename Scalar>
-        void Free<Scalar>::updateKinematics(const JointState<Scalar> &joint_state)
+        template <typename Scalar, typename OrientationRepresentation>
+        void Free<Scalar, OrientationRepresentation>::updateKinematics(
+            const JointState<Scalar> &joint_state)
         {
             this->single_joints_[0]->updateKinematics(joint_state.position, joint_state.velocity);
             this->vJ_ = this->S_ * joint_state.velocity;
         }
 
-        template <typename Scalar>
-        void Free<Scalar>::computeSpatialTransformFromParentToCurrentCluster(
+        template <typename Scalar, typename OrientationRepresentation>
+        void
+        Free<Scalar, OrientationRepresentation>::computeSpatialTransformFromParentToCurrentCluster(
             spatial::GeneralizedTransform<Scalar> &Xup) const
         {
 #ifdef DEBUG_MODE
@@ -69,20 +44,23 @@ namespace grbda
             Xup[0] = this->single_joints_[0]->XJ();
         }
 
-        template <typename Scalar>
-        JointState<Scalar> Free<Scalar>::randomJointState() const
+        template <typename Scalar, typename OrientationRepresentation>
+        JointState<Scalar> Free<Scalar, OrientationRepresentation>::randomJointState() const
         {
+            const int num_ori_param = OrientationRepresentation::num_ori_parameter;
+
             JointState<Scalar> joint_state(false, false);
-            joint_state.position = DVec<Scalar>::Zero(7);
+            joint_state.position = DVec<Scalar>::Zero(num_ori_param + 3);
             joint_state.position.template segment<3>(0) = Vec3<Scalar>::Random(3);
-            joint_state.position.template segment<4>(3) = ori::rpyToQuat(Vec3<Scalar>::Random(3));
+            joint_state.position.template segment<num_ori_param>(3) =
+                OrientationRepresentation::template randomOrientation<Scalar>();
             joint_state.velocity = DVec<Scalar>::Random(6);
             return joint_state;
         }
 
-        template <typename Scalar>
+        template <typename Scalar, typename OrientationRepresentation>
         std::vector<std::tuple<Body<Scalar>, JointPtr<Scalar>, DMat<Scalar>>>
-        Free<Scalar>::bodiesJointsAndReflectedInertias() const
+        Free<Scalar, OrientationRepresentation>::bodiesJointsAndReflectedInertias() const
         {
             std::vector<std::tuple<Body<Scalar>, JointPtr<Scalar>, DMat<Scalar>>> bodies_joints_and_ref_inertias;
             bodies_joints_and_ref_inertias.push_back(std::make_tuple(body_, this->single_joints_[0],
@@ -90,9 +68,10 @@ namespace grbda
             return bodies_joints_and_ref_inertias;
         }
 
-        template class Free<double>;
-        template class Free<casadi::SX>;
-
+        template class Free<double, ori_representation::RollPitchYaw>;
+        template class Free<double, ori_representation::Quaternion>;
+        template class Free<casadi::SX, ori_representation::RollPitchYaw>;
+        template class Free<casadi::SX, ori_representation::Quaternion>;
     }
 
 } // namespace grbda

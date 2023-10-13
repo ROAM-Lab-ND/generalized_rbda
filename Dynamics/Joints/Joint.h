@@ -2,6 +2,7 @@
 #define GRBDA_JOINT_H
 
 #include "Utils/SpatialTransforms.h"
+#include "OrientationRepresentation.h"
 
 namespace grbda
 {
@@ -37,11 +38,12 @@ namespace grbda
             DMat<Scalar> Psi_;
         };
 
-        template <typename Scalar = double>
+        template <typename Scalar = double,
+                  typename OrientationRepresentation = ori_representation::Quaternion>
         class Free : public Base<Scalar>
         {
         public:
-            Free() : Base<Scalar>(7, 6)
+            Free() : Base<Scalar>(OrientationRepresentation::num_ori_parameter + 3, 6)
             {
                 this->S_ = D6Mat<Scalar>::Identity(6, 6);
                 this->Psi_ = D6Mat<Scalar>::Identity(6, 6);
@@ -50,15 +52,27 @@ namespace grbda
 
             std::shared_ptr<Base<Scalar>> clone() const override
             {
-                return std::make_shared<Free<Scalar>>(*this);
+                return std::make_shared<Free<Scalar, OrientationRepresentation>>(*this);
             }
 
             void updateKinematics(const DVec<Scalar> &q, const DVec<Scalar> &qd) override
-            {
-                const Mat3<Scalar> R = ori::quaternionToRotationMatrix(q.template tail<4>());
+            {   
+                // using OriVecType = const Eigen::Matrix<Scalar, OrientationRepresentation::num_ori_parameter, 1>;
+                // Eigen::Ref<OriVecType> q_ori(q.template tail<OrientationRepresentation::num_ori_parameter>());
+
+                // Eigen::Matrix<Scalar, OrientationRepresentation::num_ori_parameter, 1> q_ori;
+                // q_ori = q.template tail<OrientationRepresentation::num_ori_parameter>();
+
+                const RotMat<Scalar> R =
+                    OrientationRepresentation::getRotationMatrix(
+                        q.template tail<OrientationRepresentation::num_ori_parameter>());
+
+                // const RotMat<Scalar> R = orientation_representation_.getRotationMatrix(q_ori);
                 const Vec3<Scalar> q_pos = q.template head<3>();
                 this->XJ_ = spatial::Transform<Scalar>(R, q_pos);
             }
+            
+            OrientationRepresentation orientation_representation_;
         };
 
         template <typename Scalar = double>

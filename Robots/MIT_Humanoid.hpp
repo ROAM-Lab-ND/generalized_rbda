@@ -6,7 +6,8 @@
 namespace grbda
 {
 
-    template <typename Scalar = double>
+    template <typename Scalar = double,
+              typename OrientationRepresentation = ori_representation::Quaternion>
     class MIT_Humanoid : public Robot<Scalar>
     {
     public:
@@ -71,7 +72,7 @@ namespace grbda
         Scalar _torsoMass = 8.52; // from measuring the total weight of the humanoid
 
         Scalar _hipRzMass = 0.84563;
-        Scalar _hipRxMass = 1.908683;
+        Scalar _hipRxMass = 1.208683;
         Scalar _hipRyMass = 2.64093;
         Scalar _kneeMass = 0.3543355;
         Scalar _ankleMass = 0.280951;

@@ -74,7 +74,10 @@ typedef Types<
     RevoluteChainWithAndWithoutRotor<0ul, 8ul>,
     RevoluteChainWithAndWithoutRotor<4ul, 4ul>,
     RevoluteChainWithAndWithoutRotor<8ul, 0ul>,
-    Tello, TeleopArm, MIT_Humanoid<>, MiniCheetah<>>
+    Tello, TeleopArm,
+    MIT_Humanoid<>, MIT_Humanoid<double, ori_representation::RollPitchYaw>,
+    MIT_Humanoid_no_rotors<>,
+    MiniCheetah<>, MiniCheetah<double, ori_representation::RollPitchYaw>>
     Robots;
 
 TYPED_TEST_SUITE(RigidBodyKinematicsTest, Robots);
@@ -170,10 +173,10 @@ TYPED_TEST(RigidBodyKinematicsTest, ForwardKinematics)
 GTEST_TEST(ForwardKinematics, HumanoidModelComparison)
 {
     // Build the models
-    MIT_Humanoid<> robot_with_rotors;
+    MIT_Humanoid<double> robot_with_rotors;
     ClusterTreeModel<> rotor_model(robot_with_rotors.buildClusterTreeModel());
 
-    MIT_Humanoid_no_rotors<> robot_no_rotors;
+    MIT_Humanoid_no_rotors<double> robot_no_rotors;
     ClusterTreeModel<> no_rotor_model(robot_no_rotors.buildClusterTreeModel());
 
     for (int i = 0; i < 20; i++)

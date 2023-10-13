@@ -300,7 +300,9 @@ using testing::Types;
 
 typedef Types<
     SingleRigidBody<casadi::SX>,
-    MiniCheetah<casadi::SX>, MIT_Humanoid<casadi::SX>,
+    MiniCheetah<casadi::SX>,
+    MIT_Humanoid<casadi::SX>,
+    MIT_Humanoid_no_rotors<casadi::SX>,
     RevoluteChainWithRotor<2, casadi::SX>,
     RevoluteChainWithRotor<4, casadi::SX>,
     RevoluteChainWithRotor<8, casadi::SX>>

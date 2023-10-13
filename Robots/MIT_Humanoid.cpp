@@ -3,8 +3,9 @@
 namespace grbda
 {
 
-    template <typename Scalar>
-    ClusterTreeModel<Scalar> MIT_Humanoid<Scalar>::buildClusterTreeModel() const
+    template <typename Scalar, typename OrientationRepresentation>
+    ClusterTreeModel<Scalar>
+    MIT_Humanoid<Scalar, OrientationRepresentation>::buildClusterTreeModel() const
     {
         typedef spatial::Transform<Scalar> Xform;
         typedef ClusterJoints::GearedTransmissionModule<Scalar> GearedTransModule;
@@ -20,7 +21,7 @@ namespace grbda
         const std::string torso_name = "Floating Base";
         const std::string torso_parent_name = "ground";
         const SpatialInertia<Scalar> torsoInertia(_torsoMass, _torsoCOM, _torsoRotInertia);
-        model.template appendBody<ClusterJoints::Free<Scalar>>(torso_name, torsoInertia,
+        model.template appendBody<ClusterJoints::Free<Scalar, OrientationRepresentation>>(torso_name, torsoInertia,
                                                                torso_parent_name, Xform{});
 
         Vec3<Scalar> torsoDims(_torsoLength, _torsoWidth, _torsoHeight);
@@ -321,6 +322,9 @@ namespace grbda
         return model;
     }
 
-    template class MIT_Humanoid<double>;
-    template class MIT_Humanoid<casadi::SX>;
+    template class MIT_Humanoid<double, ori_representation::RollPitchYaw>;
+    template class MIT_Humanoid<double, ori_representation::Quaternion>;
+    template class MIT_Humanoid<casadi::SX, ori_representation::RollPitchYaw>;
+    template class MIT_Humanoid<casadi::SX, ori_representation::Quaternion>;
+
 }

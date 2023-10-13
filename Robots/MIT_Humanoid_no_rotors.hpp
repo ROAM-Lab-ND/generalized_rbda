@@ -6,8 +6,9 @@
 namespace grbda
 {
 
-    template <typename Scalar = double>
-    class MIT_Humanoid_no_rotors : public MIT_Humanoid<Scalar>
+    template <typename Scalar = double,
+              typename OrientationRepresentation = ori_representation::Quaternion>
+    class MIT_Humanoid_no_rotors : public MIT_Humanoid<Scalar, OrientationRepresentation>
     {
     public:
         MIT_Humanoid_no_rotors() {}

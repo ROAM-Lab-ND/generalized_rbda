@@ -7,6 +7,7 @@
 
 using namespace grbda;
 using namespace grbda::BenchmarkHelpers;
+using namespace grbda::ori_representation;
 
 template <typename RobotType>
 void runInverseDynamicsBenchmark(std::ofstream &file, const double max_torque)

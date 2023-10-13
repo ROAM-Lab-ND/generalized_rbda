@@ -105,7 +105,8 @@ using testing::Types;
 
 typedef Types<
     TeleopArm, Tello, TelloWithArms,
-    MIT_Humanoid<>, MiniCheetah<>,
+    MIT_Humanoid<>, MIT_Humanoid<double, ori_representation::RollPitchYaw>,
+    MiniCheetah<>, MiniCheetah<double, ori_representation::RollPitchYaw>,
     RevoluteChainWithRotor<2>,
     RevoluteChainWithRotor<4>,
     RevoluteChainWithRotor<8>,
