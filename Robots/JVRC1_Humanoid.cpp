@@ -410,6 +410,19 @@ namespace grbda
                                                   gear_ratio};
             model.appendRegisteredBodiesAsCluster<RevoluteWithRotor>(ankle_p_cluster_name,
                                                                      ankle_p_module);
+
+            // Append contact points for the ankle
+            const std::string toe_contact_name = side + "_toe_contact";
+            const std::string heel_contact_name = side + "_heel_contact";
+            if (i == 0)
+                model.appendEndEffector(ankle_p_name, Vec3<double>(_footToeLength, 0, -_footHeight),
+                                        toe_contact_name);
+            else
+                model.appendContactPoint(ankle_p_name, Vec3<double>(-_footToeLength, 0, -_footHeight),
+                                         toe_contact_name);
+            model.appendContactPoint(ankle_p_name, Vec3<double>(-_footHeelLength, 0, -_footHeight),
+                                     heel_contact_name);
+
         }
 
         const std::string shoulder_p_parent_name = waist_r_name;
@@ -701,6 +714,18 @@ namespace grbda
                                                      gear_ratio};
         model.appendRegisteredBodiesAsCluster<RevoluteWithRotor>(right_wrist_y_cluster_name,
                                                                  right_wrist_y_module);
+
+        const std::string left_wrist_contact_name = "left_wrist_contact";
+        const std::string left_hand_contact_name = "left_hand_contact";
+        model.appendContactPoint(left_wrist_y_name, Vec3<double>(0, 0, 0), left_wrist_contact_name);
+        model.appendContactPoint(left_wrist_y_name, Vec3<double>(0, 0, -_lowerArmLength),
+                                 left_hand_contact_name);
+
+        const std::string right_wrist_contact_name = "right_wrist_contact";
+        const std::string right_hand_contact_name = "right_hand_contact";
+        model.appendContactPoint(right_wrist_y_name, Vec3<double>(0, 0, 0), right_wrist_contact_name);
+        model.appendContactPoint(right_wrist_y_name, Vec3<double>(0, 0, -_lowerArmLength),
+                                 right_hand_contact_name);
 
         return model;
     }

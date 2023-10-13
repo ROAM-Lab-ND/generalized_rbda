@@ -232,6 +232,7 @@ int main()
     atf_file.open(path_to_data + "Robots.csv");
     runApplyTestForceBenchmark<TelloWithArms>(atf_file, "left-toe_contact", 500.);
     runApplyTestForceBenchmark<MIT_Humanoid>(atf_file, "left_toe_contact", 500.);
+    runApplyTestForceBenchmark<JVRC1_Humanoid>(atf_file, "left_toe_contact", 500.);
     runApplyTestForceBenchmark<MiniCheetah>(atf_file, "FL_foot_contact", 150.);
     atf_file.close();
 }

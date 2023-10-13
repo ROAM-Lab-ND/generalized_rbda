@@ -267,6 +267,11 @@ namespace grbda
         const Vec3<double> left_wrist_y_CoM = Vec3<double>{0., -0.01, -0.06};
         const Vec3<double> right_wrist_y_CoM = Vec3<double>{0., 0.01, -0.06};
         const Mat3<double> wrist_y_inertia = (Mat3<double>() << 0.0004625, 0., 0., 0., 0.0007625, 0., 0., 0., 0.0004625).finished();
+        
+        const double _footToeLength = 0.1;
+        const double _footHeelLength = 0.05;
+        const double _footHeight = 0.041;
+        const double _lowerArmLength = 0.27;
     };
 }
 
