@@ -324,8 +324,6 @@ namespace grbda
 
     template class MIT_Humanoid<double, ori_representation::RollPitchYaw>;
     template class MIT_Humanoid<double, ori_representation::Quaternion>;
-    template class MIT_Humanoid<float, ori_representation::RollPitchYaw>;
-    template class MIT_Humanoid<float, ori_representation::Quaternion>;
     template class MIT_Humanoid<casadi::SX, ori_representation::RollPitchYaw>;
     template class MIT_Humanoid<casadi::SX, ori_representation::Quaternion>;
 

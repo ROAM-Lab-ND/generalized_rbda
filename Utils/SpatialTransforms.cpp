@@ -247,6 +247,7 @@ namespace grbda
         }
 
         template class GeneralizedAbsoluteTransform<double>;
+        template class GeneralizedAbsoluteTransform<float>;
         template class GeneralizedAbsoluteTransform<casadi::SX>;
 
         ///////////////////////////////////////////////////////////////////////////////////////////

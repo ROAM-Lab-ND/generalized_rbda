@@ -171,15 +171,16 @@ namespace grbda
     /*!
      * Convert a coordinate transformation matrix to an orientation quaternion.
      */
-    inline Quat<double> rotationMatrixToQuaternion(const Mat3<double> &r1)
+    template <typename T>
+    inline Quat<T> rotationMatrixToQuaternion(const Mat3<T> &r1)
     {
-      Quat<double> q;
-      Mat3<double> r = r1.transpose();
-      double tr = r.trace();
+      Quat<T> q;
+      Mat3<T> r = r1.transpose();
+      T tr = r.trace();
 
       if (tr > 0.0)
       {
-        double S = sqrt(tr + 1.0) * 2.0;
+        T S = sqrt(tr + 1.0) * 2.0;
         q(0) = 0.25 * S;
         q(1) = (r(2, 1) - r(1, 2)) / S;
         q(2) = (r(0, 2) - r(2, 0)) / S;
@@ -187,7 +188,7 @@ namespace grbda
       }
       else if ((r(0, 0) > r(1, 1)) && (r(0, 0) > r(2, 2)))
       {
-        double S = sqrt(1.0 + r(0, 0) - r(1, 1) - r(2, 2)) * 2.0;
+        T S = sqrt(1.0 + r(0, 0) - r(1, 1) - r(2, 2)) * 2.0;
         q(0) = (r(2, 1) - r(1, 2)) / S;
         q(1) = 0.25 * S;
         q(2) = (r(0, 1) + r(1, 0)) / S;
@@ -195,7 +196,7 @@ namespace grbda
       }
       else if (r(1, 1) > r(2, 2))
       {
-        double S = sqrt(1.0 + r(1, 1) - r(0, 0) - r(2, 2)) * 2.0;
+        T S = sqrt(1.0 + r(1, 1) - r(0, 0) - r(2, 2)) * 2.0;
         q(0) = (r(0, 2) - r(2, 0)) / S;
         q(1) = (r(0, 1) + r(1, 0)) / S;
         q(2) = 0.25 * S;
@@ -203,7 +204,7 @@ namespace grbda
       }
       else
       {
-        double S = sqrt(1.0 + r(2, 2) - r(0, 0) - r(1, 1)) * 2.0;
+        T S = sqrt(1.0 + r(2, 2) - r(0, 0) - r(1, 1)) * 2.0;
         q(0) = (r(1, 0) - r(0, 1)) / S;
         q(1) = (r(0, 2) + r(2, 0)) / S;
         q(2) = (r(1, 2) + r(2, 1)) / S;

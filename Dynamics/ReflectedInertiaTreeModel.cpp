@@ -739,7 +739,6 @@ namespace grbda
     }
 
     template class ReflectedInertiaTreeModel<double>;
-    template class ReflectedInertiaTreeModel<float>;
     template class ReflectedInertiaTreeModel<casadi::SX>;
 
 } // namespace grbda

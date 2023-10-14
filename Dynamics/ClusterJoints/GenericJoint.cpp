@@ -150,7 +150,6 @@ namespace grbda
         }
 
         template class Generic<double>;
-        template class Generic<float>;
         template class Generic<casadi::SX>;
     }
 
