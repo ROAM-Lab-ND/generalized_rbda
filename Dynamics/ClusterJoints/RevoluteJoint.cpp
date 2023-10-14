@@ -50,6 +50,7 @@ namespace grbda
         }
 
         template class Revolute<double>;
+        template class Revolute<float>;
         template class Revolute<casadi::SX>;
 
     }

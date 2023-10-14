@@ -70,6 +70,8 @@ namespace grbda
 
         template class Free<double, ori_representation::RollPitchYaw>;
         template class Free<double, ori_representation::Quaternion>;
+        template class Free<float, ori_representation::RollPitchYaw>;
+        template class Free<float, ori_representation::Quaternion>;
         template class Free<casadi::SX, ori_representation::RollPitchYaw>;
         template class Free<casadi::SX, ori_representation::Quaternion>;
     }

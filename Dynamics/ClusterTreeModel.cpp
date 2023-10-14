@@ -466,6 +466,7 @@ namespace grbda
     }
 
     template class ClusterTreeModel<double>;
+    template class ClusterTreeModel<float>;
     template class ClusterTreeModel<casadi::SX>;
 
 } // namespace grbda

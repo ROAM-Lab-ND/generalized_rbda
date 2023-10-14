@@ -25,6 +25,7 @@ namespace grbda
         }
 
         template struct Static<double>;
+        template struct Static<float>;
         template struct Static<casadi::SX>;
 
         template <typename Scalar>
@@ -185,6 +186,7 @@ namespace grbda
         }
 
         template struct Collection<double>;
+        template struct Collection<float>;
         template struct Collection<casadi::SX>;
 
     }

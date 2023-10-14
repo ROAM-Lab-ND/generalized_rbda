@@ -91,6 +91,7 @@ namespace grbda
     }
 
     template struct ClusterTreeNode<double>;
+    template struct ClusterTreeNode<float>;
     template struct ClusterTreeNode<casadi::SX>;
 
 } // namespace grbda

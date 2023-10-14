@@ -48,6 +48,7 @@ namespace grbda
     }
 
     template struct RigidBodyTreeNode<double>;
+    template struct RigidBodyTreeNode<float>;
     template struct RigidBodyTreeNode<casadi::SX>;
 
 } // namespace grbda
