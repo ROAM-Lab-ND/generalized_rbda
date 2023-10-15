@@ -13,7 +13,7 @@ if [[ $# -eq 1 ]]; then
   benchmark=$1
 else
   echo "Usage: $0 [benchmark]"
-  echo -e "  benchmark: Specify which accuracy benchmark to run ('f', 'i', 'a', or 'r')\n"
+  echo -e "  benchmark: Specify which accuracy benchmark to run ('f', 'i', 'a', 'e', or 'r')\n"
   exit 1
 fi
 
@@ -31,14 +31,11 @@ case "$benchmark" in
   "r" | "R" | "robots" | "Robots")
     benchmark="robots"
     ;;
-  "t" | "T" | "tracking")
-    benchmark="traj_tracking"
-    ;;
-  "s" | "S" | "sysID")
-    benchmark="sysID"
+  "e" | "E" | "tracking")
+    benchmark="ee_tracking"
     ;;
   *)
-    echo "Invalid benchmark argument. Choose one of 'f', 'i', 'a', 't', 's', or 'r'."
+    echo "Invalid benchmark argument. Choose one of 'f', 'i', 'a', 'e', or 'r'."
     exit 1
     ;;
 esac
