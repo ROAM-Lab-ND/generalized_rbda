@@ -126,6 +126,77 @@ namespace grbda
             const double duration_;
         };
 
+        class InverseDynamicsTorqueTrajectoryGeneratorBase
+        {
+        public:
+            typedef std::vector<DVec<double>> TauTrajectory;
+            
+            const TauTrajectory &getTorqueTrajectory(const std::string &model_name) const
+            {
+                if (tau_traj_map_.at(model_name).empty())
+                    throw std::runtime_error("Torque trajectory not generated for model " + model_name);
+                return tau_traj_map_.at(model_name);
+            }
+
+        protected:
+
+            void generateTorqueTrajectories(ClusterTreeModel<> &model_cl,
+                                            const Trajectory &trajectory)
+            {
+                ReflectedInertiaTreeModel<> model_rf_diag(model_cl,
+                                                          RotorInertiaApproximation::DIAGONAL);
+                ReflectedInertiaTreeModel<> model_rf_none(model_cl,
+                                                          RotorInertiaApproximation::NONE);
+
+                const int nq = model_cl.getNumPositions();
+                const int nv = model_cl.getNumDegreesOfFreedom();
+
+                for (double t = 0; t <= trajectory.duration_; t += trajectory.dt_)
+                {
+                    const TrajectoryPoint point = trajectory.at(t);
+                    DVec<double> q = DVec<double>::Constant(nq, point.p);
+                    DVec<double> qd = DVec<double>::Constant(nv, point.v);
+                    DVec<double> qdd = DVec<double>::Constant(nv, point.a);
+
+                    setState(model_cl, q, qd);
+                    setState(model_rf_diag, q, qd);
+                    setState(model_rf_none, q, qd);
+
+                    tau_traj_map_["exact"].push_back(model_cl.inverseDynamics(qdd));
+                    tau_traj_map_["diag"].push_back(model_rf_diag.inverseDynamics(qdd));
+                    tau_traj_map_["none"].push_back(model_rf_none.inverseDynamics(qdd));
+
+                    perTimestepCallback(t, model_cl);
+                }
+            }
+
+            virtual void perTimestepCallback(double t, ClusterTreeModel<> &model_cl) {}
+
+            void setState(ReflectedInertiaTreeModel<> &model_rf,
+                          const DVec<double> &q, const DVec<double> &qd)
+            {
+                model_rf.setIndependentStates(q, qd);
+            }
+
+            void setState(ClusterTreeModel<> &model_cl,
+                          const DVec<double> &q, const DVec<double> &qd)
+            {
+                ModelState<> model_state;
+                for (const auto &cluster : model_cl.clusters())
+                {
+                    JointState<> joint_state;
+                    joint_state.position = q.segment(cluster->position_index_,
+                                                     cluster->num_positions_);
+                    joint_state.velocity = qd.segment(cluster->velocity_index_,
+                                                      cluster->num_velocities_);
+                    model_state.push_back(joint_state);
+                }
+                model_cl.setState(model_state);
+            }
+
+            std::map<std::string, TauTrajectory> tau_traj_map_;
+        };
+
         class OpenLoopSimulatorBase
         {
         public:
@@ -157,13 +228,16 @@ namespace grbda
                     postIntegrationCallback(t, model_state, tau);
                     t += dt_;
                 }
+
+                onExitCallback();
             }
 
         protected:
             virtual void preIntegrationCallback(double t, const ModelState<> &state,
                                                 const DVec<double> &tau) {}
             virtual void postIntegrationCallback(double t, const ModelState<> &state,
-                                                const DVec<double> &tau) {}
+                                                 const DVec<double> &tau) {}
+            virtual void onExitCallback() {}
 
             ModelState<> eulerIntegrateModelState(ModelState<> model_state,
                                                   const DVec<double> &qdd, const double dt)

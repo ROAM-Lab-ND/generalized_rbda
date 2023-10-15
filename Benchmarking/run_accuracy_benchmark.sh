@@ -34,8 +34,11 @@ case "$benchmark" in
   "t" | "T" | "tracking")
     benchmark="traj_tracking"
     ;;
+  "s" | "S" | "sysID")
+    benchmark="sysID"
+    ;;
   *)
-    echo "Invalid benchmark argument. Choose one of 'f', 'i', 'a', 't', or 'r'."
+    echo "Invalid benchmark argument. Choose one of 'f', 'i', 'a', 't', 's', or 'r'."
     exit 1
     ;;
 esac

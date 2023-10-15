@@ -7,74 +7,29 @@
 using namespace grbda;
 using namespace grbda::BenchmarkHelpers;
 
-class InverseDynamicsTorqueTrajectoryGenerator
+class InverseDynamicsTorqueTrajectoryGenerator : public InverseDynamicsTorqueTrajectoryGeneratorBase
 {
 public:
-    typedef std::vector<DVec<double>> TauTrajectory;
-
     InverseDynamicsTorqueTrajectoryGenerator(std::ofstream &file,
                                              ClusterTreeModel<> &model_cl,
                                              const std::string &contact_point,
                                              const Trajectory &trajectory)
+        : file_(file), contact_point_(contact_point), omega_(trajectory.omega_)
     {
-        ReflectedInertiaTreeModel<> model_rf_diag(model_cl,
-                                                  RotorInertiaApproximation::DIAGONAL);
-        ReflectedInertiaTreeModel<> model_rf_none(model_cl,
-                                                  RotorInertiaApproximation::NONE);
-
-        const int nq = model_cl.getNumPositions();
-        const int nv = model_cl.getNumDegreesOfFreedom();
-
-        for (double t = 0; t <= trajectory.duration_; t += trajectory.dt_)
-        {
-            const TrajectoryPoint point = trajectory.at(t);
-            DVec<double> q = DVec<double>::Constant(nq, point.p);
-            DVec<double> qd = DVec<double>::Constant(nv, point.v);
-            DVec<double> qdd = DVec<double>::Constant(nv, point.a);
-
-            setState(model_cl, q, qd);
-            setState(model_rf_diag, q, qd);
-            setState(model_rf_none, q, qd);
-
-            model_cl.forwardKinematicsIncludingContactPoints();
-            const Vec3<double> cp_pos = model_cl.contactPoint(contact_point).position_;
-            file << trajectory.omega_ << " " << t << " " << cp_pos.transpose() << std::endl;
-
-            tau_traj_map_["exact"].push_back(model_cl.inverseDynamics(qdd));
-            tau_traj_map_["diag"].push_back(model_rf_diag.inverseDynamics(qdd));
-            tau_traj_map_["none"].push_back(model_rf_none.inverseDynamics(qdd));
-        }
+        generateTorqueTrajectories(model_cl, trajectory);
     }
 
-    const TauTrajectory &getTorqueTrajectory(const std::string &model_name) const
+private:
+    void perTimestepCallback(double t, ClusterTreeModel<> &model_cl) override
     {
-        return tau_traj_map_.at(model_name);
+        model_cl.forwardKinematicsIncludingContactPoints();
+        const Vec3<double> cp_pos = model_cl.contactPoint(contact_point_).position_;
+        file_ << omega_ << " " << t << " " << cp_pos.transpose() << std::endl;
     }
 
-protected:
-    void setState(ReflectedInertiaTreeModel<> &model_rf,
-                  const DVec<double> &q, const DVec<double> &qd)
-    {
-        model_rf.setIndependentStates(q, qd);
-    }
-
-    void setState(ClusterTreeModel<> &model_cl,
-                  const DVec<double> &q, const DVec<double> &qd)
-    {
-        ModelState<> model_state;
-        for (const auto &cluster : model_cl.clusters())
-        {
-            JointState<> joint_state;
-            joint_state.position = q.segment(cluster->position_index_,
-                                             cluster->num_positions_);
-            joint_state.velocity = qd.segment(cluster->velocity_index_,
-                                              cluster->num_velocities_);
-            model_state.push_back(joint_state);
-        }
-        model_cl.setState(model_state);
-    }
-
-    std::map<std::string, TauTrajectory> tau_traj_map_;
+    std::ofstream &file_;
+    const std::string contact_point_;
+    const double omega_;
 };
 
 class OpenLoopSimulator : public OpenLoopSimulatorBase
@@ -89,6 +44,7 @@ private:
     void
     preIntegrationCallback(double t, const ModelState<> &state, const DVec<double> &tau) override
     {
+        // std::cout << "Simulator callback" << std::endl;
         model_.forwardKinematicsIncludingContactPoints();
         const Vec3<double> cp_pos = model_.contactPoint(contact_point_).position_;
         file_ << omega_ << " " << t << " " << cp_pos.transpose() << std::endl;

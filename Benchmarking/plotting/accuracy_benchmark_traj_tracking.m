@@ -1,7 +1,6 @@
 %% Trajectory Tracking
 close all; clear; clc;
 
-
 % Define RGB colors
 purple = [0.5, 0.0, 1.0];
 dark_green = [0.0, 0.5, 0.0];
