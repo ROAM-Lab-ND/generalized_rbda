@@ -6,7 +6,7 @@ namespace grbda
     template <size_t N, size_t M>
     ClusterTreeModel RevoluteChainWithAndWithoutRotor<N, M>::buildRandomClusterTreeModel() const
     {
-        using namespace GeneralizedJoints;
+        using namespace ClusterJoints;
 
         ClusterTreeModel model{};
 
@@ -42,7 +42,7 @@ namespace grbda
             const auto link_Xtree = spatial::randomSpatialRotation<double>();
             const auto link_inertia = randomLinkSpatialInertia();
             ori::CoordinateAxis link_joint_axis = ori::randomCoordinateAxis<double>();
-            model.appendBody<GeneralizedJoints::Revolute>(link_name, link_inertia, prev_link_name,
+            model.appendBody<ClusterJoints::Revolute>(link_name, link_inertia, prev_link_name,
                                                           link_Xtree, link_joint_axis);
 
             prev_link_name = link_name;

@@ -17,37 +17,35 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 set(CMAKE_MODULE_PATH "${CMAKE_MODULE_PATH};${PROJECT_SOURCE_DIR}/cmake")
 set(CMAKE_PREFIX_PATH "${CMAKE_PREFIX_PATH};${PROJECT_SOURCE_DIR}/cmake")
 
-#set(CMAKE_VERBOSE_MAKEFILE ON)
 set(CMAKE_BUILD_TYPE Release)
-# set(CMAKE_BUILD_TYPE Debug)
-
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")
   add_definitions(-DDEBUG_MODE)
 endif()
 
+#------------------------------------------------------------------------
+# Compiler flags
+#------------------------------------------------------------------------
 option(M1_BUILD "set compile options for Mac M1 chip" OFF)
-
-if(CMAKE_SYSTEM_NAME MATCHES Linux)
-  set(CMAKE_CXX_FLAGS "-O3 -march=native -ggdb -Wall \
-  -Wextra -Wcast-align -Wdisabled-optimization -Wformat=2 \
-  -Winit-self -Wmissing-include-dirs -Woverloaded-virtual \
-  -Wshadow -Wsign-promo \
-  -Wno-sign-compare")
-
-elseif(APPLE)
-  if(M1_BUILD)
-    set(CMAKE_CXX_FLAGS "-mcpu=apple-m1")
-  else()
-    set(CMAKE_CXX_FLAGS "-march=native")
-  endif()
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -ggdb -Wall \
-  -Wextra -Wcast-align -Wdisabled-optimization -Wformat=2 \
-  -Winit-self -Wmissing-include-dirs -Woverloaded-virtual \
-  -Wshadow -Wsign-promo ")
-  include_directories("/usr/local/include/")
+if(M1_BUILD AND CMAKE_SYSTEM_NAME MATCHES Darwin)
+  set(CMAKE_CXX_FLAGS "-mcpu=apple-m1")
+else()
+  set(CMAKE_CXX_FLAGS "-march=native")
 endif()
 
 set(CMAKE_C_FLAGS "-O3  -ggdb  -march=native -std=gnu99 -I.")
+
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -ggdb -Wall \
+  -Wextra -Wcast-align -Wdisabled-optimization -Wformat=2 \
+  -Winit-self -Wmissing-include-dirs -Woverloaded-virtual \
+  -Wshadow -Wsign-promo -Wno-sign-compare -Wno-unused-const-variable \
+  -Wno-unused-parameter -Wno-unused-variable -Wno-uninitialized")
+
+#------------------------------------------------------------------------
+# Dependencies
+#------------------------------------------------------------------------
+find_package(Eigen3 REQUIRED)
+include_directories("/usr/local/include/eigen3")
 
 #------------------------------------------------------------------------
 # Directory setup
@@ -55,14 +53,6 @@ set(CMAKE_C_FLAGS "-O3  -ggdb  -march=native -std=gnu99 -I.")
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/Utils)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/Dynamics)
-include_directories("/usr/local/include/eigen3")
-include_directories("/usr/local/include/lcm/")   # lcm includes
-include_directories(${CMAKE_BINARY_DIR})
-
-find_package(lcm REQUIRED)
-set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unused-const-variable \
-  -Wno-unused-parameter -Wno-unused-variable -Wno-uninitialized")
 
 add_subdirectory(Utils)
 add_subdirectory(Dynamics)

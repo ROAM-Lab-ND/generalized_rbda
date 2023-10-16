@@ -1,9 +1,9 @@
-#include "GeneralizedJoint.h"
+#include "ClusterJoint.h"
 
 namespace grbda
 {
 
-    namespace GeneralizedJoints
+    namespace ClusterJoints
     {
 
         Base::Base(int num_bodies, int num_positions, int num_velocities)

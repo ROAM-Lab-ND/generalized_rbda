@@ -5,7 +5,7 @@ namespace grbda
 
     ClusterTreeModel MIT_Humanoid::buildClusterTreeModel() const
     {
-        using namespace GeneralizedJoints;
+        using namespace ClusterJoints;
 
         ClusterTreeModel model;
 

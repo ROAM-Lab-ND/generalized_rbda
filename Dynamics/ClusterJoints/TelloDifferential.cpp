@@ -58,7 +58,7 @@ namespace grbda
 
 	}
 
-	namespace GeneralizedJoints
+	namespace ClusterJoints
 	{
 
 		TelloDifferential::TelloDifferential(TelloDifferentialModule &module)

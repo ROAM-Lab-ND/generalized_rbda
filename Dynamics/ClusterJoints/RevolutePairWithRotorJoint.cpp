@@ -3,7 +3,7 @@
 namespace grbda
 {
 
-    namespace GeneralizedJoints
+    namespace ClusterJoints
     {
 
         RevolutePairWithRotor::RevolutePairWithRotor(ParallelBeltTransmissionModule &module_1,

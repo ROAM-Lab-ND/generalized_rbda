@@ -35,21 +35,21 @@ namespace grbda
         Body registerBody(const std::string name, const SpatialInertia<double> inertia,
                           const std::string parent_name, const spatial::Transform Xtree);
 
-        template <typename T, typename... Args>
+        template <typename ClusterJointType, typename... Args>
         void appendRegisteredBodiesAsCluster(const std::string name, Args&&... args)
         {
-            auto cluster_joint = std::make_shared<T>(args...);
+            auto cluster_joint = std::make_shared<ClusterJointType>(args...);
             appendRegisteredBodiesAsCluster(name, cluster_joint);
         }
 
         // Alternatively, this function can be used when appending individual bodies to the model
-        template <typename T, typename... Args>
+        template <typename ClusterJointType, typename... Args>
         void appendBody(const std::string name, const SpatialInertia<double> inertia,
                         const std::string parent_name, const spatial::Transform Xtree,
                         Args &&...args)
         {
             Body body = registerBody(name, inertia, parent_name, Xtree);
-            std::shared_ptr<GeneralizedJoints::Base> joint = std::make_shared<T>(body, args...);
+            std::shared_ptr<ClusterJointType> joint = std::make_shared<ClusterJointType>(body, args...);
             appendRegisteredBodiesAsCluster(name, joint);
         }
 
@@ -131,7 +131,7 @@ namespace grbda
 
     protected:
         void appendRegisteredBodiesAsCluster(const std::string name,
-                                             std::shared_ptr<GeneralizedJoints::Base> joint);
+                                             std::shared_ptr<ClusterJoints::Base> joint);
 
         void checkValidParentClusterForBodiesInCluster(const ClusterTreeNodePtr cluster);
         void checkValidParentClusterForBodiesInCluster(const int cluster_index);

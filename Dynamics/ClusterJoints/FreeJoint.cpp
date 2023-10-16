@@ -26,7 +26,7 @@ namespace grbda
 
     }
 
-    namespace GeneralizedJoints
+    namespace ClusterJoints
     {
 
         Free::Free(const Body &body) : Base(1, 7, 6), body_(body)

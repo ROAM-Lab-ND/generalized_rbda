@@ -22,7 +22,6 @@ using testing::Types;
 typedef Types<
     RevoluteChainWithRotor<4>,
     RevolutePairChainWithRotor<4>,
-    RevoluteChainMultipleRotorsPerLink<4, 3>,
     RevoluteChainWithAndWithoutRotor<4ul, 4ul>,
     Tello, TeleopArm, MIT_Humanoid, MiniCheetah>
     Robots;

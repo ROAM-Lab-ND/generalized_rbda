@@ -3,7 +3,7 @@
 namespace grbda
 {
 
-    namespace GeneralizedJoints
+    namespace ClusterJoints
     {
         RevoluteWithRotor::RevoluteWithRotor(GearedTransmissionModule &module)
         : Base(2, 1, 1), link_(module.body_), rotor_(module.rotor_)

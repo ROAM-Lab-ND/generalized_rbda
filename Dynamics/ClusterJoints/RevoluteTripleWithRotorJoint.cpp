@@ -3,7 +3,7 @@
 namespace grbda
 {
 
-    namespace GeneralizedJoints
+    namespace ClusterJoints
     {
 
         RevoluteTripleWithRotor::RevoluteTripleWithRotor(

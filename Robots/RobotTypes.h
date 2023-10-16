@@ -8,5 +8,4 @@
 #include "SerialChains/RevolutePairChain.hpp"
 #include "SerialChains/RevolutePairChainWithRotor.hpp"
 #include "SerialChains/RevoluteTripleChainWithRotor.hpp"
-#include "SerialChains/RevoluteChainMultiplerRotorsPerLink.hpp"
 #include "SerialChains/RevoluteChainWithAndWithoutRotor.hpp"
