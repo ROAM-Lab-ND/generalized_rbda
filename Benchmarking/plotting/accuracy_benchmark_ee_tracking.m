@@ -33,7 +33,7 @@ legend({['Approximate RNEA, $\omega = \frac{1}{4}$'], ...
         ['Unconstrained RNEA, $\omega = \frac{3}{4}$']}, ...
         'Location', 'northwest', 'Interpreter', 'latex')
 grid on
-set(gca, 'FontSize', 14)
+set(gca, 'FontSize', 14,'TickLabelInterpreter','latex')
 
 saveas(gcf, [path_to_figures, 'HumanoidLeg_end_eff.png'])
 
@@ -53,7 +53,8 @@ xlabel('Time (s)', 'Interpreter', 'latex')
 ylabel('Joint Torque (Nm)', 'Interpreter', 'latex')
 legend({'C-RNEA', 'Approximate RNEA', 'Unconstrained RNEA'}, 'Location', 'northwest', 'Interpreter', 'latex')
 grid on
-set(gca, 'FontSize', 14)
+set(gca, 'FontSize', 14,'TickLabelInterpreter','latex')
+axis([-inf inf -12 20])
 
 saveas(gcf, [path_to_figures, 'HumanoidLeg_torque.png'])
 
