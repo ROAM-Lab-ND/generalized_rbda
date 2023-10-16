@@ -21,8 +21,8 @@ namespace grbda
         const std::string torso_name = "Floating Base";
         const std::string torso_parent_name = "ground";
         const SpatialInertia<Scalar> torsoInertia(_torsoMass, _torsoCOM, _torsoRotInertia);
-        model.template appendBody<ClusterJoints::Free<Scalar, OrientationRepresentation>>(torso_name, torsoInertia,
-                                                               torso_parent_name, Xform{});
+        model.template appendBody<ClusterJoints::Free<Scalar, OrientationRepresentation>>(
+            torso_name, torsoInertia, torso_parent_name, Xform{});
 
         Vec3<Scalar> torsoDims(_torsoLength, _torsoWidth, _torsoHeight);
         model.appendContactBox(torso_name, torsoDims);
