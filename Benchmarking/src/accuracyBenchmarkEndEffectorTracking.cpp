@@ -91,7 +91,7 @@ void runEndEffectorTrackingBenchmark(std::ofstream &tau_traj_file,
     trajectory_params.dt = dt;
     trajectory_params.duration = duration;
 
-    for (double omega : {0.1, 0.25, 0.5, 0.75, 1.5})
+    for (double omega : {0.25, 0.5, 0.75, 1.5})
     {
         trajectory_params.omega = omega * 2. * M_PI;
         Trajectory trajectory(trajectory_params);

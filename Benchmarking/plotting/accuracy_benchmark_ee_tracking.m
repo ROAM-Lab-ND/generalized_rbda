@@ -16,18 +16,22 @@ ee_trajectories = extractEndEffTrajectories(ee_data);
 
 % Plot average tracking error over the sampled frequencies
 figure
-% plotMean(ee_trajectories.t, ee_trajectories.exact, gold)
 hold on
-plotMean(ee_trajectories.t, ee_trajectories.diag, dark_green)
-plotMean(ee_trajectories.t, ee_trajectories.none, purple)
-
-plotStd(ee_trajectories.t, ee_trajectories.none, purple)
-plotStd(ee_trajectories.t, ee_trajectories.diag, dark_green)
-% plotStd(ee_trajectories.t, ee_trajectories.exact, gold)
+line_style = {'-', '--', ':'};
+for i = 1:(length(ee_trajectories.omega)-1)
+    plot(ee_trajectories.t, ee_trajectories.diag.error(i, :), line_style{i}, 'Linewidth', 2.0, 'MarkerSize', 8.0, 'Color', dark_green)
+    plot(ee_trajectories.t, ee_trajectories.none.error(i, :), line_style{i}, 'Linewidth', 2.0, 'MarkerSize', 8.0, 'Color', purple)
+end
 
 xlabel('Time (s)', 'Interpreter', 'latex')
 ylabel('End-Effector Tracking Error (m)', 'Interpreter', 'latex')
-legend({'Approximate RNEA', 'Unconstrained RNEA'}, 'Location', 'northwest', 'Interpreter', 'latex')
+legend({['Approximate RNEA, $\omega = \frac{1}{4}$'], ...
+        ['Unconstrained RNEA, $\omega = \frac{1}{4}$'], ...
+        ['Approximate RNEA, $\omega = \frac{1}{2}$'], ...
+        ['Unconstrained RNEA, $\omega = \frac{1}{2}$'], ...
+        ['Approximate RNEA, $\omega = \frac{3}{4}$'], ...
+        ['Unconstrained RNEA, $\omega = \frac{3}{4}$']}, ...
+        'Location', 'northwest', 'Interpreter', 'latex')
 grid on
 set(gca, 'FontSize', 14)
 
@@ -61,6 +65,7 @@ none_error = rms(tau_trajectories.none(joint_idx,:) - tau_trajectories.exact(joi
 function ee_trajectories = extractEndEffTrajectories(ee_data)
     % Separate data by wave frequency
     omega = unique(ee_data(:, 1));
+    ee_trajectories.omega = omega;
     num_freq_sets = length(omega);
     freq_set = cell(num_freq_sets, 1);
 
@@ -77,7 +82,7 @@ function ee_trajectories = extractEndEffTrajectories(ee_data)
     diag_error = zeros(num_freq_sets, traj_length);
     none_error = zeros(num_freq_sets, traj_length);
 
-    for i = 1:(num_freq_sets-1)
+    for i = 1:(num_freq_sets - 1)
         data_subset = freq_set{i};
 
         % Separate the data by model type
@@ -96,6 +101,10 @@ function ee_trajectories = extractEndEffTrajectories(ee_data)
     end
 
     ee_trajectories.t = t;
+
+    ee_trajectories.exact.error = exact_error;
+    ee_trajectories.diag.error = diag_error;
+    ee_trajectories.none.error = none_error;
 
     ee_trajectories.exact.mean = mean(exact_error, 1);
     ee_trajectories.diag.mean = mean(diag_error, 1);
