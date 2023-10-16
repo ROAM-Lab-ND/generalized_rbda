@@ -71,8 +71,6 @@ void runEndEffectorTrackingBenchmark(std::ofstream &tau_traj_file,
                                      std::ofstream &ee_traj_file, const std::string &cp_name,
                                      double duration, double dt)
 {
-    // TODO(@MatthewChignoli): Update this description
-
     // This test demonstrates the important of accounting for the complete closed loop effects of
     // actuation sub-mechanisms. It does so via the following steps:
     // 1) Given a trajectory q(t), qd(t), qdd(t), use inverse dynamics to compute the torque
