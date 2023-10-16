@@ -9,15 +9,15 @@ namespace grbda
     namespace BenchmarkHelpers
     {
 
-        using RigidBodyTreePtr = std::shared_ptr<RigidBodyTreeModel>;
-        using ReflectedInertiaTreePtr = std::shared_ptr<ReflectedInertiaTreeModel>;
+        using RigidBodyTreePtr = std::shared_ptr<RigidBodyTreeModel<>>;
+        using ReflectedInertiaTreePtr = std::shared_ptr<ReflectedInertiaTreeModel<>>;
 
-        inline bool setRandomStates(ClusterTreeModel &cluster_model,
+        inline bool setRandomStates(ClusterTreeModel<> &cluster_model,
                                     std::vector<RigidBodyTreePtr> rigid_body_models,
                                     std::vector<ReflectedInertiaTreePtr> reflected_inertia_models)
         {
 
-            ModelState model_state;
+            ModelState<> model_state;
             DVec<double> independent_joint_pos = DVec<double>::Zero(0);
             DVec<double> independent_joint_vel = DVec<double>::Zero(0);
             DVec<double> spanning_joint_pos = DVec<double>::Zero(0);
@@ -25,13 +25,13 @@ namespace grbda
 
             for (const auto &cluster : cluster_model.clusters())
             {
-                JointState joint_state = cluster->joint_->randomJointState();
+                JointState<> joint_state = cluster->joint_->randomJointState();
                 if (joint_state.position.hasNaN())
                 {
                     return true;
                 }
 
-                JointState spanning_joint_state = cluster->joint_->toSpanningTreeState(joint_state);
+                JointState<> spanning_joint_state = cluster->joint_->toSpanningTreeState(joint_state);
 
                 DVec<double> independent_joint_pos_i;
                 DVec<double> independent_joint_vel_i;
@@ -73,7 +73,7 @@ namespace grbda
             return false;
         }
 
-        inline bool setRandomStates(ClusterTreeModel &cluster_model,
+        inline bool setRandomStates(ClusterTreeModel<> &cluster_model,
                                     RigidBodyTreePtr rigid_body_model,
                                     ReflectedInertiaTreePtr reflected_inertia_model)
         {

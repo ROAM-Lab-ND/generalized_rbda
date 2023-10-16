@@ -15,7 +15,7 @@ class RigidBodyKinematicsTest : public testing::Test
 {
 protected:
     RigidBodyKinematicsTest() : cluster_model(robot.buildClusterTreeModel()),
-                                generic_model(extractGenericJointModel(cluster_model)),
+                                generic_model(TestHelpers::extractGenericJointModel(cluster_model)),
                                 rigid_body_model(cluster_model) {}
 
     bool initializeRandomStates()
@@ -25,8 +25,8 @@ protected:
         DVec<double> spanning_joint_vel = DVec<double>::Zero(0);
         for (const auto &cluster : cluster_model.clusters())
         {
-            JointState joint_state = cluster->joint_->randomJointState();
-            JointState spanning_joint_state = cluster->joint_->toSpanningTreeState(joint_state);
+            JointState<> joint_state = cluster->joint_->randomJointState();
+            JointState<> spanning_joint_state = cluster->joint_->toSpanningTreeState(joint_state);
 
             spanning_joint_pos = appendEigenVector(spanning_joint_pos,
                                                    spanning_joint_state.position);
@@ -53,11 +53,11 @@ protected:
     }
 
     T robot;
-    ClusterTreeModel cluster_model;
-    ClusterTreeModel generic_model;
-    RigidBodyTreeModel rigid_body_model;
+    ClusterTreeModel<> cluster_model;
+    ClusterTreeModel<> generic_model;
+    grbda::RigidBodyTreeModel<> rigid_body_model;
 
-    ModelState model_state;
+    ModelState<> model_state;
 };
 
 using testing::Types;
@@ -74,7 +74,10 @@ typedef Types<
     RevoluteChainWithAndWithoutRotor<0ul, 8ul>,
     RevoluteChainWithAndWithoutRotor<4ul, 4ul>,
     RevoluteChainWithAndWithoutRotor<8ul, 0ul>,
-    Tello, TeleopArm, MIT_Humanoid, MiniCheetah>
+    Tello, TeleopArm,
+    MIT_Humanoid<>, MIT_Humanoid<double, ori_representation::RollPitchYaw>,
+    MIT_Humanoid_no_rotors<>,
+    MiniCheetah<>, MiniCheetah<double, ori_representation::RollPitchYaw>>
     Robots;
 
 TYPED_TEST_SUITE(RigidBodyKinematicsTest, Robots);
@@ -100,7 +103,7 @@ TYPED_TEST(RigidBodyKinematicsTest, ForwardKinematics)
         this->rigid_body_model.forwardKinematicsIncludingContactPoints();
 
         // Verify link kinematics
-        for (const auto& body : this->cluster_model.bodies())
+        for (const auto &body : this->cluster_model.bodies())
         {
             const Vec3<double> p_cluster = this->cluster_model.getPosition(body.name_);
             const Vec3<double> p_generic = this->generic_model.getPosition(body.name_);
@@ -135,8 +138,8 @@ TYPED_TEST(RigidBodyKinematicsTest, ForwardKinematics)
         this->rigid_body_model.updateContactPointJacobians();
         for (int j = 0; j < (int)this->cluster_model.contactPoints().size(); j++)
         {
-            const ContactPoint &cluster_cp = this->cluster_model.contactPoint(j);
-            const ContactPoint &rigid_body_cp = this->rigid_body_model.contactPoint(j);
+            const ContactPoint<double> &cluster_cp = this->cluster_model.contactPoint(j);
+            const ContactPoint<double> &rigid_body_cp = this->rigid_body_model.contactPoint(j);
 
             // Verify positions
             const Vec3<double> p_cp_cluster = cluster_cp.position_;
@@ -167,47 +170,74 @@ TYPED_TEST(RigidBodyKinematicsTest, ForwardKinematics)
     }
 }
 
-TYPED_TEST(RigidBodyKinematicsTest, MotionSubspaceApparentDerivative)
+GTEST_TEST(ForwardKinematics, HumanoidModelComparison)
 {
-    // This test compares the apparent derivative of the motion subspace (S_ring) as computed by
-    // the cluster tree model to the apparent derivative as computed by finite difference
+    // Build the models
+    MIT_Humanoid<double> robot_with_rotors;
+    ClusterTreeModel<> rotor_model(robot_with_rotors.buildClusterTreeModel());
 
-    double dt = 0.00001;
-    const int nq = this->cluster_model.getNumPositions();
-    const int nv = this->cluster_model.getNumDegreesOfFreedom();
+    MIT_Humanoid_no_rotors<double> robot_no_rotors;
+    ClusterTreeModel<> no_rotor_model(robot_no_rotors.buildClusterTreeModel());
 
-    for (int k = 0; k < 5; k++)
+    for (int i = 0; i < 20; i++)
     {
-        bool nan_detected_in_state = this->initializeRandomStates();
-        if (nan_detected_in_state)
+        // Initialize Random States
+        ModelState<> model_state;
+        for (const auto &cluster : rotor_model.clusters())
         {
-            continue;
+            JointState<> joint_state = cluster->joint_->randomJointState();
+            model_state.push_back(joint_state);
         }
-        this->cluster_model.forwardKinematics();
+        rotor_model.setState(model_state);
+        no_rotor_model.setState(model_state);
 
-        for (auto &cluster : this->cluster_model.clusters())
+        // Forward Kinematics
+        rotor_model.forwardKinematicsIncludingContactPoints();
+        no_rotor_model.forwardKinematicsIncludingContactPoints();
+
+        // Compare
+        for (const auto &body : no_rotor_model.bodies())
         {
-            auto joint = cluster->joint_;
-            JointState joint_state = cluster->joint_state_;
+            const Vec3<double> p_rotor = rotor_model.getPosition(body.name_);
+            const Vec3<double> p_no_rotor = no_rotor_model.getPosition(body.name_);
+            GTEST_ASSERT_LT((p_rotor - p_no_rotor).norm(), tol);
 
-            const DVec<double> cJ = joint->cJ();
+            const Mat3<double> R_rotor = rotor_model.getOrientation(body.name_);
+            const Mat3<double> R_no_rotor = no_rotor_model.getOrientation(body.name_);
+            GTEST_ASSERT_LT((R_rotor - R_no_rotor).norm(), tol);
 
-            JointState q_plus_joint_state = cluster->joint_state_;
-            q_plus_joint_state.position = cluster->integratePosition(joint_state, dt);
-            q_plus_joint_state.velocity = cluster->jointVelocity();
-            joint->updateKinematics(q_plus_joint_state);
-            DMat<double> S_plus = joint->S();
+            const Vec3<double> v_rotor = rotor_model.getLinearVelocity(body.name_);
+            const Vec3<double> v_no_rotor = no_rotor_model.getLinearVelocity(body.name_);
+            GTEST_ASSERT_LT((v_rotor - v_no_rotor).norm(), tol);
 
-            JointState q_minus_joint_state = cluster->joint_state_;
-            q_minus_joint_state.position = cluster->integratePosition(joint_state, -dt);
-            q_minus_joint_state.velocity = cluster->jointVelocity();
-            joint->updateKinematics(q_minus_joint_state);
-            DMat<double> S_minus = joint->S();
+            const Vec3<double> w_rotor = rotor_model.getAngularVelocity(body.name_);
+            const Vec3<double> w_no_rotor = no_rotor_model.getAngularVelocity(body.name_);
+            GTEST_ASSERT_LT((w_rotor - w_no_rotor).norm(), tol);
+        }
 
-            DMat<double> S_ring_fd = (S_plus - S_minus) / (2 * dt);
-            DVec<double> cJ_fd = S_ring_fd * joint_state.velocity;
+        GTEST_ASSERT_EQ(rotor_model.contactPoints().size(), no_rotor_model.contactPoints().size());
 
-            GTEST_ASSERT_LT((cJ - cJ_fd).norm(), loose_tol);
+        rotor_model.updateContactPointJacobians();
+        no_rotor_model.updateContactPointJacobians();
+        for (int j = 0; j < (int)rotor_model.contactPoints().size(); j++)
+        {
+            const ContactPoint<double> &rotor_cp = rotor_model.contactPoint(j);
+            const ContactPoint<double> &no_rotor_cp = no_rotor_model.contactPoint(j);
+
+            // Verify positions
+            const Vec3<double> p_cp_rotor = rotor_cp.position_;
+            const Vec3<double> p_cp_no_rotor = no_rotor_cp.position_;
+            GTEST_ASSERT_LT((p_cp_rotor - p_cp_no_rotor).norm(), tol);
+
+            // Verify velocities
+            const Vec3<double> v_cp_rotor = rotor_cp.velocity_;
+            const Vec3<double> v_cp_no_rotor = no_rotor_cp.velocity_;
+            GTEST_ASSERT_LT((v_cp_rotor - v_cp_no_rotor).norm(), tol);
+
+            // Verify jacobians
+            const D6Mat<double> J_cp_rotor = rotor_cp.jacobian_;
+            const D6Mat<double> J_cp_no_rotor = no_rotor_cp.jacobian_;
+            GTEST_ASSERT_LT((J_cp_rotor - J_cp_no_rotor).norm(), tol);
         }
     }
 }

@@ -37,33 +37,6 @@ namespace grbda
     };
 
     /*!
-     * Square a number
-     */
-    template <typename T>
-    T square(T a)
-    {
-      return a * a;
-    }
-
-    /*!
-     * Convert radians to degrees
-     */
-    template <typename T>
-    T rad2deg(T rad)
-    {
-      return rad * T(180) / T(M_PI);
-    }
-
-    /*!
-     * Convert degrees to radians
-     */
-    template <typename T>
-    T deg2rad(T deg)
-    {
-      return deg * T(M_PI) / T(180);
-    }
-
-    /*!
      * Compute rotation matrix for coordinate transformation. Note that
      * coordinateRotation(CoordinateAxis:X, .1) * v will rotate v by -.1 radians -
      * this transforms into a frame rotated by .1 radians!.
@@ -92,8 +65,7 @@ namespace grbda
       return R;
     }
 
-    template <typename T>
-    CoordinateAxis randomCoordinateAxis()
+    inline CoordinateAxis randomCoordinateAxis()
     {
       const int x = rand() % 3;
       if (x == 0)
@@ -158,18 +130,57 @@ namespace grbda
     /*!
      * Convert a coordinate transformation matrix to an orientation quaternion.
      */
-    template <typename T>
-    Quat<typename T::Scalar> rotationMatrixToQuaternion(
-        const Eigen::MatrixBase<T> &r1)
+    inline Quat<casadi::SX> rotationMatrixToQuaternion(const Mat3<casadi::SX> &r1)
     {
-      static_assert(T::ColsAtCompileTime == 3 && T::RowsAtCompileTime == 3,
-                    "Must have 3x3 matrix");
-      Quat<typename T::Scalar> q;
-      Mat3<typename T::Scalar> r = r1.transpose();
-      typename T::Scalar tr = r.trace();
+      Quat<casadi::SX> q;
+      Mat3<casadi::SX> r = r1.transpose();
+      casadi::SX tr = r.trace();
+
+      casadi::SX cond1 = tr > 0.;
+      casadi::SX cond2 = (r(0, 0) > r(1, 1)) && (r(0, 0) > r(2, 2));
+      casadi::SX cond3 = r(1, 1) > r(2, 2);
+
+      casadi::SX S = casadi::SX::if_else(cond1, sqrt(tr + 1.0) * 2.0,
+                     casadi::SX::if_else(cond2, sqrt(1.0 + r(0, 0) - r(1, 1) - r(2, 2)) * 2.0,
+                     casadi::SX::if_else(cond3, sqrt(1.0 + r(1, 1) - r(0, 0) - r(2, 2)) * 2.0,
+                                                sqrt(1.0 + r(2, 2) - r(0, 0) - r(1, 1)) * 2.0)));
+
+      q(0) = casadi::SX::if_else(cond1, 0.25 * S,
+             casadi::SX::if_else(cond2, (r(2, 1) - r(1, 2)) / S,
+             casadi::SX::if_else(cond3, (r(0, 2) - r(2, 0)) / S,
+                                        (r(1, 0) - r(0, 1)) / S)));
+
+      q(1) = casadi::SX::if_else(cond1, (r(2, 1) - r(1, 2)) / S,
+             casadi::SX::if_else(cond2, 0.25 * S,
+             casadi::SX::if_else(cond3, (r(1, 0) + r(0, 1)) / S,
+                                        (r(0, 2) + r(2, 0)) / S)));
+
+      q(2) = casadi::SX::if_else(cond1, (r(0, 2) - r(2, 0)) / S,
+             casadi::SX::if_else(cond2, (r(1, 0) + r(0, 1)) / S,
+             casadi::SX::if_else(cond3, 0.25 * S,
+                                        (r(1, 2) + r(2, 1)) / S)));
+
+      q(3) = casadi::SX::if_else(cond1, (r(1, 0) - r(0, 1)) / S,
+             casadi::SX::if_else(cond2, (r(0, 2) + r(2, 0)) / S,
+             casadi::SX::if_else(cond3, (r(1, 2) + r(2, 1)) / S,
+                                        0.25 * S)));
+
+      return q;
+    }
+
+    /*!
+     * Convert a coordinate transformation matrix to an orientation quaternion.
+     */
+    template <typename T>
+    inline Quat<T> rotationMatrixToQuaternion(const Mat3<T> &r1)
+    {
+      Quat<T> q;
+      Mat3<T> r = r1.transpose();
+      T tr = r.trace();
+
       if (tr > 0.0)
       {
-        typename T::Scalar S = sqrt(tr + 1.0) * 2.0;
+        T S = sqrt(tr + 1.0) * 2.0;
         q(0) = 0.25 * S;
         q(1) = (r(2, 1) - r(1, 2)) / S;
         q(2) = (r(0, 2) - r(2, 0)) / S;
@@ -177,7 +188,7 @@ namespace grbda
       }
       else if ((r(0, 0) > r(1, 1)) && (r(0, 0) > r(2, 2)))
       {
-        typename T::Scalar S = sqrt(1.0 + r(0, 0) - r(1, 1) - r(2, 2)) * 2.0;
+        T S = sqrt(1.0 + r(0, 0) - r(1, 1) - r(2, 2)) * 2.0;
         q(0) = (r(2, 1) - r(1, 2)) / S;
         q(1) = 0.25 * S;
         q(2) = (r(0, 1) + r(1, 0)) / S;
@@ -185,7 +196,7 @@ namespace grbda
       }
       else if (r(1, 1) > r(2, 2))
       {
-        typename T::Scalar S = sqrt(1.0 + r(1, 1) - r(0, 0) - r(2, 2)) * 2.0;
+        T S = sqrt(1.0 + r(1, 1) - r(0, 0) - r(2, 2)) * 2.0;
         q(0) = (r(0, 2) - r(2, 0)) / S;
         q(1) = (r(0, 1) + r(1, 0)) / S;
         q(2) = 0.25 * S;
@@ -193,7 +204,7 @@ namespace grbda
       }
       else
       {
-        typename T::Scalar S = sqrt(1.0 + r(2, 2) - r(0, 0) - r(1, 1)) * 2.0;
+        T S = sqrt(1.0 + r(2, 2) - r(0, 0) - r(1, 1)) * 2.0;
         q(0) = (r(1, 0) - r(0, 1)) / S;
         q(1) = (r(0, 2) + r(2, 0)) / S;
         q(2) = (r(1, 2) + r(2, 1)) / S;
@@ -371,10 +382,19 @@ namespace grbda
       return quatNew;
     }
 
+    template <>
+    inline Quat<casadi::SX> integrateQuat(const Eigen::MatrixBase<Quat<casadi::SX>> &quat,
+                                          const Eigen::MatrixBase<Vec3<casadi::SX>> &omega,
+                                          casadi::SX dt)
+    {
+      Quat<casadi::SX> quat_new = quat + 0.5 * quatProduct(Quat<casadi::SX>(0, omega[0], omega[1], omega[2]), quat) * dt;
+      return quat_new / quat_new.norm();
+    }
+
     /*!
      * Compute new quaternion given:
      * @param quat The old quaternion
-     * @param omega The angular velocity (IN INERTIAL COORDINATES!)
+     * @param omega The angular velocity (IN BODY COORDINATES!)
      * @param dt The timestep
      * @return
      */
@@ -405,6 +425,15 @@ namespace grbda
       Quat<typename T::Scalar> quatNew = quatProduct(quat, quatD);
       quatNew = quatNew / quatNew.norm();
       return quatNew;
+    }
+
+    template <>
+    inline Quat<casadi::SX> integrateQuatImplicit(const Eigen::MatrixBase<Quat<casadi::SX>> &quat,
+                                                  const Eigen::MatrixBase<Vec3<casadi::SX>> &omega,
+                                                  casadi::SX dt)
+    {
+      Quat<casadi::SX> quat_new = quat + 0.5 * quatProduct(quat, Quat<casadi::SX>(0, omega[0], omega[1], omega[2])) * dt;
+      return quat_new / quat_new.norm();
     }
 
     template <typename T>

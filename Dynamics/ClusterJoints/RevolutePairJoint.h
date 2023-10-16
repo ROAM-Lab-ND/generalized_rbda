@@ -9,34 +9,35 @@ namespace grbda
     namespace ClusterJoints
     {
 
-        class RevolutePair : public Base
+        template <typename Scalar = double>
+        class RevolutePair : public Base<Scalar>
         {
         public:
-            RevolutePair(Body &link_1, Body &link_2,
+            RevolutePair(Body<Scalar> &link_1, Body<Scalar> &link_2,
                          ori::CoordinateAxis joint_axis_1, ori::CoordinateAxis joint_axis_2);
             virtual ~RevolutePair() {}
 
             ClusterJointTypes type() const override { return ClusterJointTypes::RevolutePair; }
 
-            void updateKinematics(const JointState &joint_state) override;
+            void updateKinematics(const JointState<Scalar> &joint_state) override;
                                   
             void computeSpatialTransformFromParentToCurrentCluster(
-                spatial::GeneralizedTransform &Xup) const override;
+                spatial::GeneralizedTransform<Scalar> &Xup) const override;
 
-            std::vector<std::tuple<Body, JointPtr, DMat<double>>>
+            std::vector<std::tuple<Body<Scalar>, JointPtr<Scalar>, DMat<Scalar>>>
             bodiesJointsAndReflectedInertias() const override;
 
         private:
-            JointPtr link_1_joint_;
-            JointPtr link_2_joint_;
+            JointPtr<Scalar> link_1_joint_;
+            JointPtr<Scalar> link_2_joint_;
 
-            spatial::Transform X21_;
+            spatial::Transform<Scalar> X21_;
 
-            const Body link_1_;
-            const Body link_2_;
+            const Body<Scalar> link_1_;
+            const Body<Scalar> link_2_;
 
-            DMat<double> X_intra_S_span_;
-            DMat<double> X_intra_S_span_ring_;
+            DMat<Scalar> X_intra_S_span_;
+            DMat<Scalar> X_intra_S_span_ring_;
         };
 
     }

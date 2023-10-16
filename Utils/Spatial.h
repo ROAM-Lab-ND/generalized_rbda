@@ -33,25 +33,25 @@ namespace grbda
      * theta about axis.
      */
     template <typename T>
-    Transform spatialRotation(ori::CoordinateAxis axis, T theta)
+    Transform<T> spatialRotation(ori::CoordinateAxis axis, T theta)
     {
       RotMat<T> E = coordinateRotation(axis, theta);
-      return Transform(E);
+      return Transform<T>(E);
     }
 
     template <typename T>
-    Transform randomSpatialRotation()
+    Transform<T> randomSpatialRotation()
     {
       Vec3<T> r = Vec3<T>::Random();
       Mat3<T> E = ori::rpyToRotMat(Vec3<T>::Random());
-      return Transform(E, r);
+      return Transform<T>(E, r);
     }
 
     /*!
      * Compute the spatial motion cross product matrix. Prefer motionCrossProduct when possible.
      */
     template <typename T>
-    auto motionCrossMatrix(const Eigen::MatrixBase<T> &v)
+    Mat6<typename T::Scalar> motionCrossMatrix(const Eigen::MatrixBase<T> &v)
     {
       static_assert(T::ColsAtCompileTime == 1 && T::RowsAtCompileTime == 6, "Must have 6x1 vector");
       Mat6<typename T::Scalar> m;
@@ -319,9 +319,9 @@ namespace grbda
      * Compute joint transformation
      */
     template <typename T>
-    Transform jointXform(JointType joint, ori::CoordinateAxis axis, T q)
+    Transform<T> jointXform(JointType joint, ori::CoordinateAxis axis, T q)
     {
-      Transform X;
+      Transform<T> X;
       if (joint == JointType::Revolute)
       {
         X = spatialRotation(axis, q);
@@ -335,7 +335,7 @@ namespace grbda
           v(1) = q;
         else if (axis == ori::CoordinateAxis::Z)
           v(2) = q;
-        X = Transform(RotMat<T>::Identity(), v);
+        X = Transform<T>(RotMat<T>::Identity(), v);
       }
       else
       {

@@ -10,24 +10,25 @@ namespace grbda
     {
 
         // From Featherstone Ch 6.5
-        class LTL : public DMat<double>
+        template <typename Scalar>
+        class LTL : public DMat<Scalar>
         {
         public:
-            LTL(DMat<double> H, const std::vector<int> &expanded_tree_parent_indices);
+            LTL(DMat<Scalar> H, const std::vector<int> &expanded_tree_parent_indices);
 
-            DVec<double> product(const DVec<double> &x) const;
+            DVec<Scalar> product(const DVec<Scalar> &x) const;
 
-            DVec<double> transposeProduct(const DVec<double> &x) const;
-            DMat<double> transposeMatrixProduct(const DMat<double> &X) const;
+            DVec<Scalar> transposeProduct(const DVec<Scalar> &x) const;
+            DMat<Scalar> transposeMatrixProduct(const DMat<Scalar> &X) const;
 
-            void inverseProductInSitu(DVec<double> &x) const;
-            DVec<double> inverseProduct(const DVec<double> &x) const;
+            void inverseProductInSitu(DVec<Scalar> &x) const;
+            DVec<Scalar> inverseProduct(const DVec<Scalar> &x) const;
 
-            void inverseTransposeProductInSitu(DVec<double> &x) const;
-            DVec<double> inverseTransposeProduct(const DVec<double> &x) const;
-            DMat<double> inverseTransposeMatrixProduct(const DMat<double> &X) const;
+            void inverseTransposeProductInSitu(DVec<Scalar> &x) const;
+            DVec<Scalar> inverseTransposeProduct(const DVec<Scalar> &x) const;
+            DMat<Scalar> inverseTransposeMatrixProduct(const DMat<Scalar> &X) const;
 
-            DVec<double> solve(const DVec<double> &x) const;
+            DVec<Scalar> solve(const DVec<Scalar> &x) const;
 
         private:
             int parent(const int i) const { return expanded_tree_parent_indices_[i]; }

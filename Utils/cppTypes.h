@@ -9,7 +9,7 @@
 #define GRBDA_CPPTYPES_H
 
 #include <vector>
-#include <eigen3/Eigen/Dense>
+#include "casadi_eigen_compatibility.h"
 
 namespace grbda
 {
@@ -25,6 +25,10 @@ namespace grbda
     // 3x1 Vector
     template <typename T>
     using Vec3 = typename Eigen::Matrix<T, 3, 1>;
+
+    // 7x1 Vector
+    template <typename T>
+    using Vec7 = typename Eigen::Matrix<T, 7, 1>;
 
     // 2x2 Matrix
     template <typename T>

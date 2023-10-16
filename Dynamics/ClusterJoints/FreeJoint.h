@@ -2,25 +2,48 @@
 #define GRBDA_GENERALIZED_JOINTS_FREE_JOINT_H
 
 #include "ClusterJoint.h"
+#include "Dynamics/Joints/OrientationRepresentation.h"
 
 namespace grbda
 {
 
     namespace LoopConstraint
     {
-        struct Free : Base
+        template <typename Scalar = double,
+                  typename OrientationRepresentation = ori_representation::Quaternion>
+        struct Free : Base<Scalar>
         {
-            Free();
+            Free()
+            {
+                this->G_ = DMat<Scalar>::Identity(6, 6);
+                this->g_ = DVec<Scalar>::Zero(6);
 
-            int numSpanningPos() const override { return 7; }
-            int numIndependentPos() const override { return 7; }
+                this->K_ = DMat<Scalar>::Zero(0, 6);
+                this->k_ = DVec<Scalar>::Zero(0);
+            }
 
-            std::shared_ptr<Base> clone() const override;
+            int numSpanningPos() const override
+            {
+                return OrientationRepresentation::numSpanningPos;
+            }
 
-            void updateJacobians(const JointCoordinate &joint_pos) override {}
-            void updateBiases(const JointState &joint_state) override {}
+            int numIndependentPos() const override
+            {
+                return OrientationRepresentation::numIndependentPos;
+            }
 
-            DVec<double> gamma(const JointCoordinate &joint_pos) const override;
+            std::shared_ptr<Base<Scalar>> clone() const override
+            {
+                return std::make_shared<Free<Scalar, OrientationRepresentation>>(*this);
+            }
+
+            void updateJacobians(const JointCoordinate<Scalar> &joint_pos) override {}
+            void updateBiases(const JointState<Scalar> &joint_state) override {}
+
+            DVec<Scalar> gamma(const JointCoordinate<Scalar> &joint_pos) const override
+            {
+                return joint_pos;
+            }
         };
 
     }
@@ -28,30 +51,30 @@ namespace grbda
     namespace ClusterJoints
     {
 
-        class Free : public Base
+        template <typename Scalar = double,
+                  typename OrientationRepresentation = ori_representation::Quaternion>
+        class Free : public Base<Scalar>
         {
         public:
-            Free(const Body &body);
+            Free(const Body<Scalar> &body);
             virtual ~Free() {}
 
             ClusterJointTypes type() const override { return ClusterJointTypes::Free; }
 
             int numUnactuatedVelocities() const override { return 6; }
 
-            void updateKinematics(const JointState &joint_state) override;
+            void updateKinematics(const JointState<Scalar> &joint_state) override;
 
             void computeSpatialTransformFromParentToCurrentCluster(
-                spatial::GeneralizedTransform &Xup) const override;
+                spatial::GeneralizedTransform<Scalar> &Xup) const override;
 
-            std::vector<std::tuple<Body, JointPtr, DMat<double>>>
+            std::vector<std::tuple<Body<Scalar>, JointPtr<Scalar>, DMat<Scalar>>>
             bodiesJointsAndReflectedInertias() const override;
 
-            JointCoordinate integratePosition(JointState joint_state, double dt) const override;
-
-            JointState randomJointState() const override;
+            JointState<Scalar> randomJointState() const override;
 
         private:
-            const Body body_;
+            const Body<Scalar> body_;
         };
 
     }

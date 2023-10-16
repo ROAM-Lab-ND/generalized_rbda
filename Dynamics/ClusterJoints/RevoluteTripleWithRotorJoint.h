@@ -9,12 +9,13 @@ namespace grbda
     namespace ClusterJoints
     {
 
-        class RevoluteTripleWithRotor : public Base
+        template <typename Scalar = double>
+        class RevoluteTripleWithRotor : public Base<Scalar>
         {
         public:
-            RevoluteTripleWithRotor(const ParallelBeltTransmissionModule& module_1,
-                                    const ParallelBeltTransmissionModule& module_2,
-                                    const ParallelBeltTransmissionModule& module_3);
+            RevoluteTripleWithRotor(const ParallelBeltTransmissionModule<Scalar>& module_1,
+                                    const ParallelBeltTransmissionModule<Scalar>& module_2,
+                                    const ParallelBeltTransmissionModule<Scalar>& module_3);
             virtual ~RevoluteTripleWithRotor() {}
 
             ClusterJointTypes type() const override
@@ -22,35 +23,35 @@ namespace grbda
                 return ClusterJointTypes::RevoluteTripleWithRotor;
             }
 
-            void updateKinematics(const JointState &joint_state) override;
+            void updateKinematics(const JointState<Scalar> &joint_state) override;
 
             void computeSpatialTransformFromParentToCurrentCluster(
-                spatial::GeneralizedTransform &Xup) const override;
+                spatial::GeneralizedTransform<Scalar> &Xup) const override;
 
-            std::vector<std::tuple<Body, JointPtr, DMat<double>>>
+            std::vector<std::tuple<Body<Scalar>, JointPtr<Scalar>, DMat<Scalar>>>
             bodiesJointsAndReflectedInertias() const override;
 
         private:
-            JointPtr link_1_joint_;
-            JointPtr link_2_joint_;
-            JointPtr link_3_joint_;
-            JointPtr rotor_1_joint_;
-            JointPtr rotor_2_joint_;
-            JointPtr rotor_3_joint_;
+            JointPtr<Scalar> link_1_joint_;
+            JointPtr<Scalar> link_2_joint_;
+            JointPtr<Scalar> link_3_joint_;
+            JointPtr<Scalar> rotor_1_joint_;
+            JointPtr<Scalar> rotor_2_joint_;
+            JointPtr<Scalar> rotor_3_joint_;
 
-            spatial::Transform X21_;
-            spatial::Transform X32_;
-            spatial::Transform X31_;
+            spatial::Transform<Scalar> X21_;
+            spatial::Transform<Scalar> X32_;
+            spatial::Transform<Scalar> X31_;
 
-            const Body link_1_;
-            const Body link_2_;
-            const Body link_3_;
-            const Body rotor_1_;
-            const Body rotor_2_;
-            const Body rotor_3_;
+            const Body<Scalar> link_1_;
+            const Body<Scalar> link_2_;
+            const Body<Scalar> link_3_;
+            const Body<Scalar> rotor_1_;
+            const Body<Scalar> rotor_2_;
+            const Body<Scalar> rotor_3_;
 
-            DMat<double> X_intra_S_span_;
-            DMat<double> X_intra_S_span_ring_;
+            DMat<Scalar> X_intra_S_span_;
+            DMat<Scalar> X_intra_S_span_ring_;
         };
 
     }

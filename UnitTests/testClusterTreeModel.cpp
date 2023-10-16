@@ -14,16 +14,22 @@ protected:
     ClusterTreeModelTest() : cluster_model(robot.buildClusterTreeModel()) {}
 
     T robot;
-    ClusterTreeModel cluster_model;
+    ClusterTreeModel<> cluster_model;
 };
 
 using testing::Types;
+using namespace grbda::ori_representation;
 
 typedef Types<
     RevoluteChainWithRotor<4>,
     RevolutePairChainWithRotor<4>,
     RevoluteChainWithAndWithoutRotor<4ul, 4ul>,
-    Tello, TeleopArm, MIT_Humanoid, MiniCheetah>
+    Tello, TeleopArm,
+    MIT_Humanoid<>,
+    MIT_Humanoid<double, RollPitchYaw>,
+    MIT_Humanoid_no_rotors<>,
+    MiniCheetah<>,
+    MiniCheetah<double, RollPitchYaw>>
     Robots;
 
 TYPED_TEST_SUITE(ClusterTreeModelTest, Robots);

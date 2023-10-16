@@ -19,12 +19,12 @@ protected:
 
     bool initializeRandomStates()
     {
-        ModelState model_state;
+        ModelState<> model_state;
         independent_joint_pos_ = DVec<double>::Zero(0);
         independent_joint_vel_ = DVec<double>::Zero(0);
         for (const auto &cluster : cluster_model.clusters())
         {
-            JointState joint_state = cluster->joint_->randomJointState();
+            JointState<> joint_state = cluster->joint_->randomJointState();
 
             if (joint_state.position.isSpanning() || joint_state.velocity.isSpanning())
                 throw std::runtime_error("Initializing reflected inertia model requires all independent coordinates");
@@ -56,7 +56,8 @@ protected:
         return nan_detected;
     }
 
-    void setForcesForAllModels(std::vector<ExternalForceAndBodyIndexPair> force_and_index_pairs)
+    void setForcesForAllModels(
+        std::vector<ExternalForceAndBodyIndexPair<double>> force_and_index_pairs)
     {
         cluster_model.setExternalForces(force_and_index_pairs);
         reflected_inertia_model.setExternalForces(force_and_index_pairs);
@@ -64,9 +65,9 @@ protected:
     }
 
     T robot = T(false);
-    ClusterTreeModel cluster_model;
-    ReflectedInertiaTreeModel reflected_inertia_model;
-    ReflectedInertiaTreeModel reflected_inertia_diag_model;
+    ClusterTreeModel<> cluster_model;
+    ReflectedInertiaTreeModel<>reflected_inertia_model;
+    ReflectedInertiaTreeModel<>reflected_inertia_diag_model;
 
     DVec<double> independent_joint_pos_;
     DVec<double> independent_joint_vel_;
@@ -139,8 +140,8 @@ TYPED_TEST(ReflectedInertiaDynamicsAlgosTest, ForwardKinematics)
         this->reflected_inertia_model.updateContactPointJacobians();
         for (int j = 0; j < (int)this->cluster_model.contactPoints().size(); j++)
         {
-            const ContactPoint &cluster_cp = this->cluster_model.contactPoint(j);
-            const ContactPoint &ref_inertia_cp = this->reflected_inertia_model.contactPoint(j);
+            const ContactPoint<double> &cluster_cp = this->cluster_model.contactPoint(j);
+            const ContactPoint<double> &ref_inertia_cp = this->reflected_inertia_model.contactPoint(j);
 
             // Verify positions
             const Vec3<double> p_cp_cluster = cluster_cp.position_;
@@ -272,8 +273,8 @@ TYPED_TEST(ReflectedInertiaDynamicsAlgosTest, LambdaInv)
             continue;
         }
 
-        std::vector<ReflectedInertiaTreeModel> models{this->reflected_inertia_model,
-                                                      this->reflected_inertia_diag_model};
+        std::vector<ReflectedInertiaTreeModel<>> models{this->reflected_inertia_model,
+                                                        this->reflected_inertia_diag_model};
 
         for (auto &model : models)
         {
@@ -285,7 +286,7 @@ TYPED_TEST(ReflectedInertiaDynamicsAlgosTest, LambdaInv)
             int ee_cnt = 0;
             for (int k = 0; k < (int)model.contactPoints().size(); k++)
             {
-                const ContactPoint &cp = model.contactPoint(k);
+                const ContactPoint<double> &cp = model.contactPoint(k);
                 if (!cp.is_end_effector_)
                     continue;
                 J_stacked.middleRows<6>(6 * ee_cnt++) = model.contactJacobianBodyFrame(cp.name_);
