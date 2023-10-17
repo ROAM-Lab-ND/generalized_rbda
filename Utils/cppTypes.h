@@ -9,7 +9,7 @@
 #define GRBDA_CPPTYPES_H
 
 #include <vector>
-#include "casadi_eigen_compatibility.h"
+#include "CasadiEigenCompatibility.h"
 
 namespace grbda
 {
