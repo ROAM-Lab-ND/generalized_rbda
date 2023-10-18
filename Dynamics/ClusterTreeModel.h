@@ -65,6 +65,9 @@ namespace grbda
         void print() const;
 
         void setState(const ModelState<Scalar> &model_state);
+        void setState(const std::pair<DVec<Scalar>, DVec<Scalar>> &q_qd_pair);
+        void setState(const DVec<Scalar>& q_qd_vec);
+        ModelState<Scalar> stateVectorToModelState(const std::pair<DVec<Scalar>, DVec<Scalar>>& q_qd_pair);
 
         int getNumBodies() const override { return (int)bodies_.size(); }
 
