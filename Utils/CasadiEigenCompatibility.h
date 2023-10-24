@@ -54,6 +54,22 @@ namespace casadi
             for (Eigen::DenseIndex j = 0; j < n; ++j)
                 dst(i, j) = (typename MT::Scalar)src(i, j);
     }
+
+
+    // Copy std::vector of Eigen matrix to std::vector casadi matrix
+    template <typename MT>
+    inline void copy(std::vector< MT > const &src,
+                     std::vector <::casadi::SX > &dst)
+    {
+        static_assert(std::is_base_of<Eigen::MatrixBase<MT>, MT>::value,
+                  "MT must be an Eigen matrix type");
+                  
+        for (const auto& vec : src){
+            SX cs_vec = SX(Sparsity::dense(vec.rows(), vec.cols()));
+            casadi::copy(vec, cs_vec);
+            dst.push_back(cs_vec);
+        }
+    }
 }
 
 namespace Eigen
