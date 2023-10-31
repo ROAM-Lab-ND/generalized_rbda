@@ -97,7 +97,8 @@ namespace grbda
 
             Transform<Scalar> &operator[](int output_body_index);
             GeneralizedTransform<Scalar> operator*(const GeneralizedTransform<Scalar> &X_in) const;
-            GeneralizedAbsoluteTransform<Scalar> operator*(const GeneralizedAbsoluteTransform<Scalar> &X_in) const;
+            GeneralizedAbsoluteTransform<Scalar> operator*(
+                const GeneralizedAbsoluteTransform<Scalar> &X_in) const;
 
             DMat<Scalar> rightMultiplyMotionTransform(const DMat<Scalar> &M_in) const;
             DMat<Scalar> leftMultiplyForceTransform(const DMat<Scalar> &M_in) const;

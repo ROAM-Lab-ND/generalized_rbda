@@ -1,17 +1,11 @@
-/*! @file cTypes.h
- *  @brief Common types that are only valid in C++
- *
- *  This file contains types which are only used in C++ code.  This includes
- * Eigen types, template types, aliases, ...
- */
-
 #ifndef GRBDA_CASADI_EIGEN_COMPATIBILITY_H
 #define GRBDA_CASADI_EIGEN_COMPATIBILITY_H
 
 #include <eigen3/Eigen/Dense>
 #include <casadi/casadi.hpp>
 
-// TODO(@MatthewChignoli): Eigen and Casadi compatibility is mostly taken from Pinnocchio. Need to make sure to give them credit
+// This code is based the workaround implemented by Pinocchio to make CasADi compatible with Eigen
+// https://github.com/stack-of-tasks/pinocchio/blob/master/src/autodiff/casadi.hpp
 
 namespace casadi
 {
@@ -55,16 +49,16 @@ namespace casadi
                 dst(i, j) = (typename MT::Scalar)src(i, j);
     }
 
-
     // Copy std::vector of Eigen matrix to std::vector casadi matrix
     template <typename MT>
-    inline void copy(std::vector< MT > const &src,
-                     std::vector <::casadi::SX > &dst)
+    inline void copy(std::vector<MT> const &src,
+                     std::vector<::casadi::SX> &dst)
     {
         static_assert(std::is_base_of<Eigen::MatrixBase<MT>, MT>::value,
-                  "MT must be an Eigen matrix type");
-                  
-        for (const auto& vec : src){
+                      "MT must be an Eigen matrix type");
+
+        for (const auto &vec : src)
+        {
             SX cs_vec = SX(Sparsity::dense(vec.rows(), vec.cols()));
             casadi::copy(vec, cs_vec);
             dst.push_back(cs_vec);
@@ -127,4 +121,4 @@ namespace Eigen
     };
 } // namespace Eigen
 
-#endif // PROJECT_CPPTYPES_H
+#endif // GRBDA_CASADI_EIGEN_COMPATIBILITY_H

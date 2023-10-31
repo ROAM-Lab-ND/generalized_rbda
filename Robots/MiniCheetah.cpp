@@ -10,6 +10,7 @@ namespace grbda
         typedef spatial::Transform<Scalar> Xform;
         typedef ClusterJoints::GearedTransmissionModule<Scalar> TransmissionModule;
         typedef ClusterJoints::RevoluteWithRotor<Scalar> RevoluteWithRotor;
+        typedef ClusterJoints::Free<Scalar, OrientationRepresentation> Free;
 
         ClusterTreeModel<Scalar> model;
 
@@ -19,8 +20,7 @@ namespace grbda
         const std::string torso_name = "Floating Base";
         const std::string torso_parent_name = "ground";
         const SpatialInertia<Scalar> torsoInertia(_bodyMass, _bodyCOM, _bodyRotationalInertia);
-        model.template appendBody<ClusterJoints::Free<Scalar, OrientationRepresentation>>(torso_name, torsoInertia,
-                                                               torso_parent_name, Xform{});
+        model.template appendBody<Free>(torso_name, torsoInertia, torso_parent_name, Xform{});
 
         Vec3<Scalar> torsoDims(_bodyLength, _bodyWidth, _bodyHeight);
         model.appendContactBox(torso_name, torsoDims);

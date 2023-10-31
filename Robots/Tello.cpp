@@ -15,8 +15,8 @@ namespace grbda
         // Torso
         const std::string torso_name = "torso";
         const std::string torso_parent_name = "ground";
-        const SpatialInertia<double> torso_spatial_inertia = SpatialInertia<double>{torso_mass,
-                                                                                    torso_CoM, torso_inertia};
+        const SpatialInertia<double> torso_spatial_inertia =
+            SpatialInertia<double>{torso_mass, torso_CoM, torso_inertia};
         model.appendBody<Free<>>(torso_name, torso_spatial_inertia,
                                  torso_parent_name, spatial::Transform{});
 
@@ -31,7 +31,8 @@ namespace grbda
             // Hip clamp
             const Mat3<double> R_hip_clamp = i == 0 ? R_left_hip_clamp : R_right_hip_clamp;
             const Vec3<double> p_hip_clamp = i == 0 ? p_left_hip_clamp : p_right_hip_clamp;
-            const spatial::Transform<> hip_clamp_Xtree = spatial::Transform(R_hip_clamp, p_hip_clamp);
+            const spatial::Transform<> hip_clamp_Xtree = spatial::Transform(R_hip_clamp,
+                                                                            p_hip_clamp);
             const std::string hip_clamp_name = side + "-hip-clamp";
             const SpatialInertia<double> hip_clamp_spatial_inertia =
                 SpatialInertia<double>{hip_clamp_mass, hip_clamp_CoM, hip_clamp_inertia};

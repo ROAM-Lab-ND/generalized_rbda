@@ -5,7 +5,6 @@
 
 using namespace grbda;
 
-// TODO(@MatthewChignoli): include other functions in this namespace
 namespace TestHelpers
 {
     inline ClusterTreeModel<> extractGenericJointModel(const ClusterTreeModel<> &model)
@@ -60,7 +59,8 @@ namespace TestHelpers
             const Mat3<SX> R = ori::quaternionToRotationMatrix(quat);
             q_plus_dq_vec.head<3>() = pos + R.transpose() * dpos;
 
-            q_plus_dq_vec.template tail<4>() = quat + 0.5 * ori::quatProduct(quat, Quat<casadi::SX>(0, dquat[0], dquat[1], dquat[2]));
+            Quat<casadi::SX> dquat_vec(0, dquat[0], dquat[1], dquat[2]);
+            q_plus_dq_vec.template tail<4>() = quat + 0.5 * ori::quatProduct(quat, dquat_vec);
 
             return q_plus_dq_vec;
         }

@@ -15,8 +15,7 @@ namespace grbda
     using ClusterTreeNodePtr = std::shared_ptr<ClusterTreeNode<Scalar>>;
 
     /*!
-     * Class to represent a floating base rigid body model with rotors and ground
-     * contacts. No concept of state.
+     * Class to represent a floating base rigid body model with rotors and ground contacts.
      */
     template <typename Scalar = double>
     class ClusterTreeModel : public TreeModel<Scalar>
@@ -64,10 +63,11 @@ namespace grbda
 
         void print() const;
 
+        typedef std::pair<DVec<Scalar>, DVec<Scalar>> StatePair;
         void setState(const ModelState<Scalar> &model_state);
-        void setState(const std::pair<DVec<Scalar>, DVec<Scalar>> &q_qd_pair);
+        void setState(const StatePair &q_qd_pair);
         void setState(const DVec<Scalar>& q_qd_vec);
-        ModelState<Scalar> stateVectorToModelState(const std::pair<DVec<Scalar>, DVec<Scalar>>& q_qd_pair);
+        ModelState<Scalar> stateVectorToModelState(const StatePair& q_qd_pair);
 
         int getNumBodies() const override { return (int)bodies_.size(); }
 

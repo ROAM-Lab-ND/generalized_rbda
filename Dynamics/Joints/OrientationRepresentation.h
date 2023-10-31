@@ -52,4 +52,4 @@ namespace grbda
 
 } // namespace grbda
 
-#endif // GRBDA_JOINT_H
+#endif // GRBDA_ORI_REPRESENTATION_H

@@ -26,7 +26,8 @@ void runBenchmark(std::ofstream &file, const std::string& id)
         RigidBodyTreePtr projection_model =
             std::make_shared<RigidBodyTreeModel<>>(cluster_model, FwdDynMethod::Projection);
         ReflectedInertiaTreePtr reflected_inertia_model =
-            std::make_shared<ReflectedInertiaTreeModel<>>(cluster_model, RotorInertiaApproximation::DIAGONAL);
+            std::make_shared<ReflectedInertiaTreeModel<>>(cluster_model,
+                                                          RotorInertiaApproximation::DIAGONAL);
 
         const int nq = cluster_model.getNumPositions();
         const int nv = cluster_model.getNumDegreesOfFreedom();

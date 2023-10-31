@@ -26,14 +26,16 @@ void runBenchmark(std::ofstream &file, const std::string &id)
         T robot = T(true);
         ClusterTreeModel<> cluster_model = robot.buildClusterTreeModel();
         RigidBodyTreePtr lg_custom_mult_model =
-            std::make_shared<RigidBodyTreeModel<>>(cluster_model, FwdDynMethod::LagrangeMultiplierCustom);
+            std::make_shared<RigidBodyTreeModel<>>(cluster_model,
+                                                   FwdDynMethod::LagrangeMultiplierCustom);
         RigidBodyTreePtr lg_eigen_mult_model =
-            std::make_shared<RigidBodyTreeModel<>>(cluster_model, FwdDynMethod::LagrangeMultiplierEigen);
+            std::make_shared<RigidBodyTreeModel<>>(cluster_model,
+                                                   FwdDynMethod::LagrangeMultiplierEigen);
         RigidBodyTreePtr projection_model =
             std::make_shared<RigidBodyTreeModel<>>(cluster_model, FwdDynMethod::Projection);
         ReflectedInertiaTreePtr reflected_inertia_model =
             std::make_shared<ReflectedInertiaTreeModel<>>(cluster_model,
-                                                        RotorInertiaApproximation::DIAGONAL);
+                                                          RotorInertiaApproximation::DIAGONAL);
 
         std::vector<RigidBodyTreePtr> rigid_body_models{lg_custom_mult_model,
                                                         lg_eigen_mult_model,

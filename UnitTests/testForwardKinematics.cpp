@@ -172,6 +172,9 @@ TYPED_TEST(RigidBodyKinematicsTest, ForwardKinematics)
 
 GTEST_TEST(ForwardKinematics, HumanoidModelComparison)
 {
+    // This test compares the forward kinematics of the MIT humanoid model with and without rotors 
+    // to ensure that the only difference is the rotor joints.
+
     // Build the models
     MIT_Humanoid<double> robot_with_rotors;
     ClusterTreeModel<> rotor_model(robot_with_rotors.buildClusterTreeModel());

@@ -242,44 +242,44 @@ namespace grbda
     }
 
     template <typename Scalar>
-    void ClusterTreeModel<Scalar>::setState(const std::pair<DVec<Scalar>, DVec<Scalar>>& q_qd_pair)
+    void ClusterTreeModel<Scalar>::setState(const StatePair &q_qd_pair)
     {
         ModelState<Scalar> state = stateVectorToModelState(q_qd_pair);
         setState(state);
     }
 
     template <typename Scalar>
-    void ClusterTreeModel<Scalar>::setState(const DVec<Scalar>& q_qd_vec)
-    {   
+    void ClusterTreeModel<Scalar>::setState(const DVec<Scalar> &q_qd_vec)
+    {
         const int nq = this->getNumPositions();
         const int nv = this->getNumDegreesOfFreedom();
 
-        std::pair<DVec<Scalar>, DVec<Scalar>> q_qd_pair = {q_qd_vec.segment(0, nq), q_qd_vec.segment(nq, nv)};
+        StatePair q_qd_pair = {q_qd_vec.segment(0, nq), q_qd_vec.segment(nq, nv)};
         ModelState<Scalar> state = stateVectorToModelState(q_qd_pair);
         setState(state);
     }
 
-
     template <typename Scalar>
     // TODO (MatthewChignoli): This function is only for non-spanning joint coordinates
-    ModelState<Scalar> ClusterTreeModel<Scalar>::stateVectorToModelState(const std::pair<DVec<Scalar>, DVec<Scalar>>& q_qd_pair){
+    ModelState<Scalar> ClusterTreeModel<Scalar>::stateVectorToModelState(const StatePair &q_qd_pair)
+    {
 
         ModelState<Scalar> state;
 
         for (const auto cluster : cluster_nodes_)
         {
-            DVec<Scalar> q_cluster = q_qd_pair.first.segment(cluster->position_index_, cluster->num_positions_);
+            DVec<Scalar> q_cluster = q_qd_pair.first.segment(cluster->position_index_,
+                                                             cluster->num_positions_);
             const int &vel_idx = cluster->velocity_index_;
             const int &num_vel = cluster->num_velocities_;
             DVec<Scalar> qd_cluster = q_qd_pair.second.segment(vel_idx, num_vel);
 
             JointState<Scalar> joint_state(JointCoordinate<Scalar>(q_cluster, false),
-                                        JointCoordinate<Scalar>(qd_cluster, false));
+                                           JointCoordinate<Scalar>(qd_cluster, false));
             state.push_back(joint_state);
         }
 
         return state;
-
     }
 
     template <typename Scalar>

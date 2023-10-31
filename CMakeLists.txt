@@ -44,8 +44,6 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -ggdb -Wall \
 #------------------------------------------------------------------------
 # Dependencies
 #------------------------------------------------------------------------
-# TODO(@MatthewChignoli): Maybe want to check out the TOLRAS repo for examples on how to setup this CMake in a more general way
-
 find_package(Eigen3 REQUIRED)
 if(Eigen3_FOUND)
   message(STATUS "Eigen3 found")
@@ -53,7 +51,6 @@ if(Eigen3_FOUND)
 else()
   message(FATAL_ERROR "Eigen3 not found. Please install it or specify its location.")
 endif()
-
 
 find_package(casadi REQUIRED)
 if(casadi_FOUND)

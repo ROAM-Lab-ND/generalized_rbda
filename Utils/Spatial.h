@@ -33,7 +33,7 @@ namespace grbda
      * theta about axis.
      */
     template <typename T>
-    Transform<T> spatialRotation(ori::CoordinateAxis axis, T theta)
+    Transform<T> rotation(ori::CoordinateAxis axis, T theta)
     {
       RotMat<T> E = coordinateRotation(axis, theta);
       return Transform<T>(E);
@@ -324,7 +324,7 @@ namespace grbda
       Transform<T> X;
       if (joint == JointType::Revolute)
       {
-        X = spatialRotation(axis, q);
+        X = rotation(axis, q);
       }
       else if (joint == JointType::Prismatic)
       {

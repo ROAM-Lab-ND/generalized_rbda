@@ -16,7 +16,6 @@ namespace grbda
         const bool &isSpanning() const { return _is_spanning; }
 
         // TODO(@MatthewChignoli): Should this be a copy constructor?
-        // TODO(@MatthewChignoli): Regardless, it should deduce the scalar type, not assume it
         JointCoordinate(const JointCoordinate<Scalar> &other)
             : DVec<Scalar>(other), _is_spanning(other._is_spanning) {}
 

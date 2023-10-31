@@ -223,8 +223,8 @@ namespace grbda
         }
 
         template <typename Scalar>
-        DVec<Scalar>
-        GeneralizedAbsoluteTransform<Scalar>::transformExternalForceVector(const DVec<Scalar> &f_in) const
+        DVec<Scalar> GeneralizedAbsoluteTransform<Scalar>::transformExternalForceVector(
+            const DVec<Scalar> &f_in) const
         {
             if (f_in.rows() != 6 * num_output_bodies_)
                 throw std::runtime_error("Invalid dimension for external force vector being transformed");
@@ -301,7 +301,8 @@ namespace grbda
         }
 
         template <typename Scalar>
-        DVec<Scalar> GeneralizedTransform<Scalar>::transformMotionVector(const DVec<Scalar> &m_in) const
+        DVec<Scalar>
+        GeneralizedTransform<Scalar>::transformMotionVector(const DVec<Scalar> &m_in) const
         {
             DVec<Scalar> m_out = DVec<Scalar>::Zero(6 * num_output_bodies_);
             int output_body = 0;
@@ -352,7 +353,8 @@ namespace grbda
         }
 
         template <typename Scalar>
-        DMat<Scalar> GeneralizedTransform<Scalar>::inverseTransformSpatialInertia(const DMat<Scalar> &I_in) const
+        DMat<Scalar>
+        GeneralizedTransform<Scalar>::inverseTransformSpatialInertia(const DMat<Scalar> &I_in) const
         {
             return leftMultiplyForceTransform(rightMultiplyMotionTransform(I_in));
         }

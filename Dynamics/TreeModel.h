@@ -72,12 +72,12 @@ namespace grbda
         const TreeNodePtr<Scalar> node(const int index) const { return nodes_[index]; }
         const std::vector<TreeNodePtr<Scalar>> &nodes() const { return nodes_; }
 
-        const std::vector<ContactPoint<Scalar> > &contactPoints() const { return contact_points_; }
+        const std::vector<ContactPoint<Scalar>> &contactPoints() const { return contact_points_; }
         const ContactPoint<Scalar>  &contactPoint(const int index) const
         {
             return contact_points_[index];
         }
-        const ContactPoint<Scalar>  &contactPoint(const std::string &name) const
+        const ContactPoint<Scalar> &contactPoint(const std::string &name) const
         {
             return contact_points_[contact_name_to_contact_index_.at(name)];
         }

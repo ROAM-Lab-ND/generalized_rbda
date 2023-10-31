@@ -191,8 +191,6 @@ void runApplyTestForceBenchmark(std::ofstream &file, const std::string contact_p
     }
 }
 
-
-
 int main()
 {
     // Inverse Dynamics Benchmark

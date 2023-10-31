@@ -8,8 +8,6 @@
 
 #include "cppTypes.h"
 
-// TODO(@MatthewChignoli): This file is very long and could probably use some organizing
-
 namespace grbda
 {
   /*!

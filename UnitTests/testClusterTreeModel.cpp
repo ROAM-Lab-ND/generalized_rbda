@@ -18,7 +18,6 @@ protected:
 };
 
 using testing::Types;
-using namespace grbda::ori_representation;
 
 typedef Types<
     RevoluteChainWithRotor<4>,
@@ -26,10 +25,10 @@ typedef Types<
     RevoluteChainWithAndWithoutRotor<4ul, 4ul>,
     Tello, TeleopArm,
     MIT_Humanoid<>,
-    MIT_Humanoid<double, RollPitchYaw>,
+    MIT_Humanoid<double, ori_representation::RollPitchYaw>,
     MIT_Humanoid_no_rotors<>,
     MiniCheetah<>,
-    MiniCheetah<double, RollPitchYaw>>
+    MiniCheetah<double, ori_representation::RollPitchYaw>>
     Robots;
 
 TYPED_TEST_SUITE(ClusterTreeModelTest, Robots);

@@ -19,8 +19,7 @@ namespace grbda
     using RigidBodyTreeNodePtr = std::shared_ptr<RigidBodyTreeNode<Scalar>>;
 
     /*!
-     * Class to represent a floating base rigid body model with rotors and ground
-     * contacts. No concept of state.
+     * Class to represent a floating base rigid body model with rotors and ground contacts.
      */
     template <typename Scalar = double>
     class RigidBodyTreeModel : public TreeModel<Scalar>

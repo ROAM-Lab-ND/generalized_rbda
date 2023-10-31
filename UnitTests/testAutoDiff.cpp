@@ -91,7 +91,7 @@ namespace biasVelocityTestHelpers
 GTEST_TEST(Derivatives, BiasVelocities)
 {
     // This test validates that the bias velocities for each of the cluster joints is equal to the
-    // time derivative of the motion subspace matrix
+    // time derivative of the motion subspace matrix computed via autodiff
 
     using namespace biasVelocityTestHelpers;
     using SX = casadi::SX;
@@ -192,7 +192,6 @@ protected:
         }
     }
 
-    // TODO(@MatthewChignoli): Make this a more general helper function?
     ModelState<SX> createSymbolicModelState(const ClusterTreeModel<SX> &model,
                                             SX &cs_q_sym, SX &cs_dq_sym, SX &cs_qd_sym) const
     {

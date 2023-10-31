@@ -130,47 +130,6 @@ namespace grbda
     /*!
      * Convert a coordinate transformation matrix to an orientation quaternion.
      */
-    inline Quat<casadi::SX> rotationMatrixToQuaternion(const Mat3<casadi::SX> &r1)
-    {
-      Quat<casadi::SX> q;
-      Mat3<casadi::SX> r = r1.transpose();
-      casadi::SX tr = r.trace();
-
-      casadi::SX cond1 = tr > 0.;
-      casadi::SX cond2 = (r(0, 0) > r(1, 1)) && (r(0, 0) > r(2, 2));
-      casadi::SX cond3 = r(1, 1) > r(2, 2);
-
-      casadi::SX S = casadi::SX::if_else(cond1, sqrt(tr + 1.0) * 2.0,
-                     casadi::SX::if_else(cond2, sqrt(1.0 + r(0, 0) - r(1, 1) - r(2, 2)) * 2.0,
-                     casadi::SX::if_else(cond3, sqrt(1.0 + r(1, 1) - r(0, 0) - r(2, 2)) * 2.0,
-                                                sqrt(1.0 + r(2, 2) - r(0, 0) - r(1, 1)) * 2.0)));
-
-      q(0) = casadi::SX::if_else(cond1, 0.25 * S,
-             casadi::SX::if_else(cond2, (r(2, 1) - r(1, 2)) / S,
-             casadi::SX::if_else(cond3, (r(0, 2) - r(2, 0)) / S,
-                                        (r(1, 0) - r(0, 1)) / S)));
-
-      q(1) = casadi::SX::if_else(cond1, (r(2, 1) - r(1, 2)) / S,
-             casadi::SX::if_else(cond2, 0.25 * S,
-             casadi::SX::if_else(cond3, (r(1, 0) + r(0, 1)) / S,
-                                        (r(0, 2) + r(2, 0)) / S)));
-
-      q(2) = casadi::SX::if_else(cond1, (r(0, 2) - r(2, 0)) / S,
-             casadi::SX::if_else(cond2, (r(1, 0) + r(0, 1)) / S,
-             casadi::SX::if_else(cond3, 0.25 * S,
-                                        (r(1, 2) + r(2, 1)) / S)));
-
-      q(3) = casadi::SX::if_else(cond1, (r(1, 0) - r(0, 1)) / S,
-             casadi::SX::if_else(cond2, (r(0, 2) + r(2, 0)) / S,
-             casadi::SX::if_else(cond3, (r(1, 2) + r(2, 1)) / S,
-                                        0.25 * S)));
-
-      return q;
-    }
-
-    /*!
-     * Convert a coordinate transformation matrix to an orientation quaternion.
-     */
     template <typename T>
     inline Quat<T> rotationMatrixToQuaternion(const Mat3<T> &r1)
     {
@@ -210,6 +169,45 @@ namespace grbda
         q(2) = (r(1, 2) + r(2, 1)) / S;
         q(3) = 0.25 * S;
       }
+      return q;
+    }
+
+    template <>
+    inline Quat<casadi::SX> rotationMatrixToQuaternion(const Mat3<casadi::SX> &r1)
+    {
+      Quat<casadi::SX> q;
+      Mat3<casadi::SX> r = r1.transpose();
+      casadi::SX tr = r.trace();
+
+      casadi::SX cond1 = tr > 0.;
+      casadi::SX cond2 = (r(0, 0) > r(1, 1)) && (r(0, 0) > r(2, 2));
+      casadi::SX cond3 = r(1, 1) > r(2, 2);
+
+      casadi::SX S = casadi::SX::if_else(cond1, sqrt(tr + 1.0) * 2.0,
+                     casadi::SX::if_else(cond2, sqrt(1.0 + r(0, 0) - r(1, 1) - r(2, 2)) * 2.0,
+                     casadi::SX::if_else(cond3, sqrt(1.0 + r(1, 1) - r(0, 0) - r(2, 2)) * 2.0,
+                                                sqrt(1.0 + r(2, 2) - r(0, 0) - r(1, 1)) * 2.0)));
+
+      q(0) = casadi::SX::if_else(cond1, 0.25 * S,
+             casadi::SX::if_else(cond2, (r(2, 1) - r(1, 2)) / S,
+             casadi::SX::if_else(cond3, (r(0, 2) - r(2, 0)) / S,
+                                        (r(1, 0) - r(0, 1)) / S)));
+
+      q(1) = casadi::SX::if_else(cond1, (r(2, 1) - r(1, 2)) / S,
+             casadi::SX::if_else(cond2, 0.25 * S,
+             casadi::SX::if_else(cond3, (r(1, 0) + r(0, 1)) / S,
+                                        (r(0, 2) + r(2, 0)) / S)));
+
+      q(2) = casadi::SX::if_else(cond1, (r(0, 2) - r(2, 0)) / S,
+             casadi::SX::if_else(cond2, (r(1, 0) + r(0, 1)) / S,
+             casadi::SX::if_else(cond3, 0.25 * S,
+                                        (r(1, 2) + r(2, 1)) / S)));
+
+      q(3) = casadi::SX::if_else(cond1, (r(1, 0) - r(0, 1)) / S,
+             casadi::SX::if_else(cond2, (r(0, 2) + r(2, 0)) / S,
+             casadi::SX::if_else(cond3, (r(1, 2) + r(2, 1)) / S,
+                                        0.25 * S)));
+
       return q;
     }
 
