@@ -118,9 +118,6 @@ int main()
 
     tau_trajectory_file.close();
     ee_trajectory_file.close();
-
-    // TODO(@MatthewChignoli: Tello joint requires spanning trajectory?
-    // runOpenLoopTrajectoryBenchmark<TelloLeg>(trajectory_file, "toe_contact", 5.0, 1e-5);
-
+    
     return 0;
 }

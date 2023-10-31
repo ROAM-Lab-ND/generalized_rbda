@@ -123,8 +123,6 @@ function tau_trajectories = extractTorqueTrajectories(tau_data)
     tau_trajectories.exact = data_subset(:, 3:7)';
     tau_trajectories.diag = data_subset(:, 8:12)';
     tau_trajectories.none = data_subset(:, 13:17)';
-
-    % TODO(@MatthewChignoli): Compute rms error
 end
 
 function plotMean(t, traj, color)

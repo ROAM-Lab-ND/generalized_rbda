@@ -13,11 +13,10 @@ namespace grbda
         JointCoordinate(const DVec<Scalar> &vec, bool is_spanning)
             : DVec<Scalar>(vec), _is_spanning(is_spanning) {}
 
-        const bool &isSpanning() const { return _is_spanning; }
-
-        // TODO(@MatthewChignoli): Should this be a copy constructor?
         JointCoordinate(const JointCoordinate<Scalar> &other)
             : DVec<Scalar>(other), _is_spanning(other._is_spanning) {}
+
+        const bool &isSpanning() const { return _is_spanning; }
 
         JointCoordinate &operator=(const JointCoordinate<Scalar> &other)
         {
