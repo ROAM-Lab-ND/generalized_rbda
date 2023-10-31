@@ -4,6 +4,7 @@
 #include "MIT_Humanoid.hpp"
 #include "MIT_Humanoid_no_rotors.hpp"
 #include "MiniCheetah.hpp"
+#include "JVRC1_Humanoid.hpp"
 #include "SingleRigidBody.hpp"
 #include "SerialChains/RevoluteChainWithRotor.hpp"
 #include "SerialChains/RevolutePairChain.hpp"

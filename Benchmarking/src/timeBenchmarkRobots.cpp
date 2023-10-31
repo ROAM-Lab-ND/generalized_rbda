@@ -244,6 +244,7 @@ int main()
     runForwardDynamicsBenchmark<MiniCheetah<>>(fd_file);
     runForwardDynamicsBenchmark<MIT_Humanoid<>>(fd_file);
     runForwardDynamicsBenchmark<TelloWithArms>(fd_file);
+    runForwardDynamicsBenchmark<JVRC1_Humanoid>(fd_file);
     fd_file.close();
 
     std::cout << "\n\n**Starting Inverse Dynamics Timing Benchmark for Robots**" << std::endl;
@@ -255,6 +256,7 @@ int main()
     runInverseDynamicsBenchmark<MiniCheetah<>>(id_file);
     runInverseDynamicsBenchmark<MIT_Humanoid<>>(id_file);
     runInverseDynamicsBenchmark<TelloWithArms>(id_file);
+    runInverseDynamicsBenchmark<JVRC1_Humanoid>(id_file);
     id_file.close();
 
     std::cout << "\n\n**Starting Inv OSIM Timing Benchmark for Robots**" << std::endl;
@@ -266,6 +268,7 @@ int main()
     runInverseOperationalSpaceInertiaBenchmark<MiniCheetah<>>(iosim_file);
     runInverseOperationalSpaceInertiaBenchmark<MIT_Humanoid<>>(iosim_file);
     runInverseOperationalSpaceInertiaBenchmark<TelloWithArms>(iosim_file);
+    runInverseOperationalSpaceInertiaBenchmark<JVRC1_Humanoid>(iosim_file);
     iosim_file.close();
 
     std::cout << "\n\n**Starting Apply Test Force Timing Benchmark for Robots**" << std::endl;
