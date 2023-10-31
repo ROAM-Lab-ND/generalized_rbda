@@ -33,7 +33,7 @@ function compareTimes(data)
 
     xlabel('Degrees of Freedom', 'Interpreter', 'latex')
     ylabel('Computation Time (ms)', 'Interpreter', 'latex')
-    legend({'EFPA', 'C-EFPA', 'Projected IOSI'}, 'Location', 'Best', 'Interpreter', 'latex')
+    legend({'Approximate EFPA', 'C-EFPA', 'Projected IOSI'}, 'Location', 'Best', 'Interpreter', 'latex')
     set(gca, 'Fontsize', 16)
     set(gca, 'TickLabelInterpreter', 'latex')
     axis([0 25 0 0.2])

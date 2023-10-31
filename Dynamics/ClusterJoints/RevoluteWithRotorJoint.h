@@ -9,29 +9,30 @@ namespace grbda
     namespace ClusterJoints
     {
 
-        class RevoluteWithRotor : public Base
+        template <typename Scalar = double>
+        class RevoluteWithRotor : public Base<Scalar>
         {
         public:
-            RevoluteWithRotor(GearedTransmissionModule &module);
+            RevoluteWithRotor(GearedTransmissionModule<Scalar> &module);
 
             virtual ~RevoluteWithRotor() {}
 
             ClusterJointTypes type() const override { return ClusterJointTypes::RevoluteWithRotor; }
 
-            void updateKinematics(const JointState &joint_state) override;
+            void updateKinematics(const JointState<Scalar> &joint_state) override;
 
             void computeSpatialTransformFromParentToCurrentCluster(
-                spatial::GeneralizedTransform &Xup) const override;
+                spatial::GeneralizedTransform<Scalar> &Xup) const override;
 
-            std::vector<std::tuple<Body, JointPtr, DMat<double>>>
+            std::vector<std::tuple<Body<Scalar>, JointPtr<Scalar>, DMat<Scalar>>>
             bodiesJointsAndReflectedInertias() const override;
 
         private:
-            JointPtr link_joint_;
-            JointPtr rotor_joint_;
+            JointPtr<Scalar> link_joint_;
+            JointPtr<Scalar> rotor_joint_;
 
-            const Body link_;
-            const Body rotor_;
+            const Body<Scalar> link_;
+            const Body<Scalar> rotor_;
         };
 
     }

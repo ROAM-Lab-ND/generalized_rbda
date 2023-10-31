@@ -1,28 +1,37 @@
 #include "LoopConstraint.h"
 
+#include "Utils/Utilities.h"
+
 namespace grbda
 {
 
     namespace LoopConstraint
     {
 
-        Static::Static(DMat<double> G, DMat<double> K)
+        template <typename Scalar>
+        Static<Scalar>::Static(DMat<Scalar> G, DMat<Scalar> K)
         {
-            G_ = G;
-            g_ = DVec<double>::Zero(G.rows());
+            this->G_ = G;
+            this->g_ = DVec<Scalar>::Zero(G.rows());
 
-            K_ = K;
-            k_ = DVec<double>::Zero(K.rows());
+            this->K_ = K;
+            this->k_ = DVec<Scalar>::Zero(K.rows());
         }
 
-        DVec<double> Static::gamma(const JointCoordinate &joint_pos) const
+        template <typename Scalar>
+        DVec<Scalar> Static<Scalar>::gamma(const JointCoordinate<Scalar> &joint_pos) const
         {
-            return G_ * joint_pos;
+            return this->G_ * joint_pos;
         }
 
-        DVec<double> Collection::gamma(const DVec<double> y) const
+        template struct Static<double>;
+        template struct Static<float>;
+        template struct Static<casadi::SX>;
+
+        template <typename Scalar>
+        DVec<Scalar> Collection<Scalar>::gamma(const DVec<Scalar> y) const
         {
-            DVec<double> spanning_pos(span_pos_cnt_);
+            DVec<Scalar> spanning_pos(span_pos_cnt_);
 
             int span_pos_cnt = 0;
             int ind_pos_cnt = 0;
@@ -31,7 +40,7 @@ namespace grbda
                 const int n_span_pos = constraint->numSpanningPos();
                 const int n_ind_pos = constraint->numIndependentPos();
 
-                JointCoordinate position(y.segment(ind_pos_cnt, n_ind_pos), false);
+                JointCoordinate<Scalar> position(y.segment(ind_pos_cnt, n_ind_pos), false);
                 spanning_pos.segment(span_pos_cnt, n_span_pos) = constraint->gamma(position);
 
                 span_pos_cnt += n_span_pos;
@@ -40,7 +49,8 @@ namespace grbda
             return spanning_pos;
         }
 
-        const DMat<double> &Collection::G_transpose() const
+        template <typename Scalar>
+        const DMat<Scalar> &Collection<Scalar>::G_transpose() const
         {
             if (!G_transpose_computed_)
             {
@@ -50,27 +60,31 @@ namespace grbda
             return G_transpose_;
         }
 
-        const DMat<double> &Collection::G_pinv() const
+        template <typename Scalar>
+        const DMat<Scalar> &Collection<Scalar>::G_pinv() const
         {
             if (!G_pinv_computed_)
             {
-                G_pinv_ = G_.completeOrthogonalDecomposition().pseudoInverse();
+                G_pinv_ = matrixLeftPseudoInverse(G_);
                 G_pinv_computed_ = true;
             }
 
             return G_pinv_;
         }
-        const DMat<double> &Collection::G_tranpose_pinv() const
+
+        template <typename Scalar>
+        const DMat<Scalar> &Collection<Scalar>::G_tranpose_pinv() const
         {
             if (!G_tranpose_pinv_computed_)
             {
-                G_tranpose_pinv_ = G_transpose().completeOrthogonalDecomposition().pseudoInverse();
+                G_tranpose_pinv_ = matrixRightPseudoInverse(G_transpose());
                 G_tranpose_pinv_computed_ = true;
             }
             return G_tranpose_pinv_;
         }
 
-        const DMat<double> &Collection::K_transpose() const
+        template <typename Scalar>
+        const DMat<Scalar> &Collection<Scalar>::K_transpose() const
         {
             if (!K_transpose_computed_)
             {
@@ -80,22 +94,24 @@ namespace grbda
             return K_transpose_;
         }
 
-        void Collection::push_back(const std::shared_ptr<Base> loop_constraint)
+        template <typename Scalar>
+        void Collection<Scalar>::push_back(const std::shared_ptr<Base<Scalar>> loop_constraint)
         {
-            std::vector<std::shared_ptr<Base>>::push_back(loop_constraint);
+            std::vector<std::shared_ptr<Base<Scalar>>>::push_back(loop_constraint);
 
             span_pos_cnt_ += loop_constraint->numSpanningPos();
 
-            G_ = DMat<double>::Zero(G_.rows() + loop_constraint->G().rows(),
+            G_ = DMat<Scalar>::Zero(G_.rows() + loop_constraint->G().rows(),
                                     G_.cols() + loop_constraint->G().cols());
-            g_ = DVec<double>::Zero(G_.rows());
+            g_ = DVec<Scalar>::Zero(G_.rows());
 
-            K_ = DMat<double>::Zero(K_.rows() + loop_constraint->K().rows(),
+            K_ = DMat<Scalar>::Zero(K_.rows() + loop_constraint->K().rows(),
                                     K_.cols() + loop_constraint->K().cols());
-            k_ = DVec<double>::Zero(K_.rows());
+            k_ = DVec<Scalar>::Zero(K_.rows());
         }
 
-        void Collection::update(DVec<double> q)
+        template <typename Scalar>
+        void Collection<Scalar>::update(DVec<Scalar> q)
         {
             int pos_cnt = 0;
             int span_vel_cnt = 0;
@@ -109,7 +125,7 @@ namespace grbda
                 const int n_ind_vel = constraint->numIndependentVel();
                 const int n_cnstr = constraint->numConstraints();
 
-                JointCoordinate position(q.segment(pos_cnt, n_span_pos), true);
+                JointCoordinate<Scalar> position(q.segment(pos_cnt, n_span_pos), true);
                 constraint->updateJacobians(position);
 
                 G_.block(span_vel_cnt, ind_vel_cnt, n_span_vel, n_ind_vel) = constraint->G();
@@ -124,7 +140,8 @@ namespace grbda
             resetCache();
         }
 
-        void Collection::update(DVec<double> q, DVec<double> qd)
+        template <typename Scalar>
+        void Collection<Scalar>::update(DVec<Scalar> q, DVec<Scalar> qd)
         {
             int pos_cnt = 0;
             int span_vel_cnt = 0;
@@ -138,9 +155,9 @@ namespace grbda
                 const int n_ind_vel = constraint->numIndependentVel();
                 const int n_cnstr = constraint->numConstraints();
 
-                JointCoordinate position(q.segment(pos_cnt, n_span_pos), true);
-                JointCoordinate velocity(qd.segment(span_vel_cnt, n_span_vel), true);
-                JointState state(position, velocity);
+                JointCoordinate<Scalar> position(q.segment(pos_cnt, n_span_pos), true);
+                JointCoordinate<Scalar> velocity(qd.segment(span_vel_cnt, n_span_vel), true);
+                JointState<Scalar> state(position, velocity);
                 constraint->updateJacobians(position);
                 constraint->updateBiases(state);
 
@@ -159,13 +176,18 @@ namespace grbda
             resetCache();
         }
 
-        void Collection::resetCache()
+        template <typename Scalar>
+        void Collection<Scalar>::resetCache()
         {
             G_transpose_computed_ = false;
             G_pinv_computed_ = false;
             G_tranpose_pinv_computed_ = false;
             K_transpose_computed_ = false;
         }
+
+        template struct Collection<double>;
+        template struct Collection<float>;
+        template struct Collection<casadi::SX>;
 
     }
 

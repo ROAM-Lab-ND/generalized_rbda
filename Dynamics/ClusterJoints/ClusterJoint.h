@@ -10,8 +10,8 @@
 
 namespace grbda
 {
-
-    using JointPtr = std::shared_ptr<Joints::Base>;
+    template <typename Scalar>
+    using JointPtr = std::shared_ptr<Joints::Base<Scalar>>;
 
     enum class ClusterJointTypes
     {
@@ -29,23 +29,23 @@ namespace grbda
     namespace ClusterJoints
     {
 
+        template <typename Scalar = double>
         class Base
         {
         public:
-
             Base(int num_bodies, int num_independent_positions, int num_independent_velocities);
             virtual ~Base() {}
 
             virtual ClusterJointTypes type() const = 0;
 
-            virtual void updateKinematics(const JointState &joint_state) = 0;
+            virtual void updateKinematics(const JointState<Scalar> &joint_state) = 0;
 
             virtual void computeSpatialTransformFromParentToCurrentCluster(
-                spatial::GeneralizedTransform &Xup) const = 0;
+                spatial::GeneralizedTransform<Scalar> &Xup) const = 0;
 
-            const std::vector<JointPtr> singleJoints() const { return single_joints_; };
+            const std::vector<JointPtr<Scalar>> singleJoints() const { return single_joints_; };
 
-            virtual std::vector<std::tuple<Body, JointPtr, DMat<double>>>
+            virtual std::vector<std::tuple<Body<Scalar>, JointPtr<Scalar>, DMat<Scalar>>>
             bodiesJointsAndReflectedInertias() const
             {
                 throw std::runtime_error("Reflected Inertia not setup for this generalized joint type");
@@ -55,79 +55,80 @@ namespace grbda
             const int &numVelocities() const { return num_velocities_; }
             virtual int numUnactuatedVelocities() const { return 0; }
 
-            virtual JointCoordinate integratePosition(JointState joint_state, double dt) const;
+            const DMat<Scalar> &S() const { return S_; }
+            const DMat<Scalar> &Psi() const { return Psi_; }
+            const DVec<Scalar> &vJ() const { return vJ_; }
+            const DVec<Scalar> &cJ() const { return cJ_; }
 
-            const DMat<double> &S() const { return S_; }
-            const DMat<double> &Psi() const { return Psi_; }
-            const DVec<double> &vJ() const { return vJ_; }
-            const DVec<double> &cJ() const { return cJ_; }
-
-            std::shared_ptr<LoopConstraint::Base> cloneLoopConstraint() const
+            std::shared_ptr<LoopConstraint::Base<Scalar>> cloneLoopConstraint() const
             {
                 return loop_constraint_->clone();
             }
 
-            virtual JointState randomJointState() const;
+            virtual JointState<Scalar> randomJointState() const;
 
-            const DMat<double> &G() const { return loop_constraint_->G(); }
-            const DVec<double> &g() const { return loop_constraint_->g(); }
+            const DMat<Scalar> &G() const { return loop_constraint_->G(); }
+            const DVec<Scalar> &g() const { return loop_constraint_->g(); }
 
-            const DMat<double> &K() const { return loop_constraint_->K(); }
-            const DVec<double> &k() const { return loop_constraint_->k(); }
+            const DMat<Scalar> &K() const { return loop_constraint_->K(); }
+            const DVec<Scalar> &k() const { return loop_constraint_->k(); }
 
-            const DMat<double> &spanningTreeToIndependentCoordsConversion() const
+            const DMat<int> &spanningTreeToIndependentCoordsConversion() const
             {
                 return spanning_tree_to_independent_coords_conversion_;
             }
 
-            JointState toSpanningTreeState(const JointState &joint_state);
+            JointState<Scalar> toSpanningTreeState(const JointState<Scalar> &joint_state);
 
         protected:
             const int num_bodies_;
             const int num_positions_;
             const int num_velocities_;
 
-            DMat<double> S_;
-            DMat<double> Psi_;
-            DVec<double> vJ_;
-            DVec<double> cJ_;
+            DMat<Scalar> S_;
+            DMat<Scalar> Psi_;
+            DVec<Scalar> vJ_;
+            DVec<Scalar> cJ_;
 
-            std::shared_ptr<LoopConstraint::Base> loop_constraint_;
-            std::vector<JointPtr> single_joints_;
+            std::shared_ptr<LoopConstraint::Base<Scalar>> loop_constraint_;
+            std::vector<JointPtr<Scalar>> single_joints_;
 
-            DMat<double> spanning_tree_to_independent_coords_conversion_;
+            DMat<int> spanning_tree_to_independent_coords_conversion_;
         };
 
+        template <typename Scalar = double>
         struct GearedTransmissionModule
         {
-            Body body_;
-            Body rotor_;
+            Body<Scalar> body_;
+            Body<Scalar> rotor_;
             ori::CoordinateAxis joint_axis_;
             ori::CoordinateAxis rotor_axis_;
-            double gear_ratio_;
+            Scalar gear_ratio_;
         };
 
+        template <typename Scalar = double>
         struct ParallelBeltTransmissionModule
         {
-            Body body_;
-            Body rotor_;
+            Body<Scalar> body_;
+            Body<Scalar> rotor_;
             ori::CoordinateAxis joint_axis_;
             ori::CoordinateAxis rotor_axis_;
-            double gear_ratio_;
-            double belt_ratio_;
+            Scalar gear_ratio_;
+            Scalar belt_ratio_;
         };
 
+        template <typename Scalar = double>
         struct TelloDifferentialModule
         {
-            Body rotor1_;
-            Body rotor2_;
-            Body link1_;
-            Body link2_;
+            Body<Scalar> rotor1_;
+            Body<Scalar> rotor2_;
+            Body<Scalar> link1_;
+            Body<Scalar> link2_;
             ori::CoordinateAxis rotor1_axis_;
             ori::CoordinateAxis rotor2_axis_;
             ori::CoordinateAxis link1_axis_;
             ori::CoordinateAxis link2_axis_;
-            double gear_ratio_;
+            Scalar gear_ratio_;
         };
 
     }

@@ -3,11 +3,11 @@
 namespace grbda
 {
 
-    ClusterTreeModel JVRC1_Humanoid::buildClusterTreeModel() const
+    ClusterTreeModel<double> JVRC1_Humanoid::buildClusterTreeModel() const
     {
-        using namespace GeneralizedJoints;
+        using namespace ClusterJoints;
 
-        ClusterTreeModel model{};
+        ClusterTreeModel<double> model{};
 
         // Set gravity in z direction
         model.setGravity(Vec3<double>{0., 0., grav});
@@ -17,8 +17,8 @@ namespace grbda
         const std::string pelvis_parent_name = "ground";
         const SpatialInertia<double> pelvis_spatial_inertia = SpatialInertia<double>{pelvis_mass,
             pelvis_CoM, pelvis_inertia};
-        model.appendBody<Free>(pelvis_name, pelvis_spatial_inertia,
-                               pelvis_parent_name, spatial::Transform{});
+        model.template appendBody<Free<double, ori_representation::Quaternion>>(
+            pelvis_name, pelvis_spatial_inertia, pelvis_parent_name, spatial::Transform{});
 
         // Waist yaw
         const std::string waist_y_name = "waist_y";
@@ -40,11 +40,11 @@ namespace grbda
 
         // Waist yaw cluster
         const std::string waist_y_cluster_name = "waist_y";
-        GearedTransmissionModule waist_y_module{waist_y, waist_y_rotor,
+        GearedTransmissionModule<> waist_y_module{waist_y, waist_y_rotor,
                                                 ori::CoordinateAxis::Z,
                                                 ori::CoordinateAxis::Z,
                                                 gear_ratio};
-        model.appendRegisteredBodiesAsCluster<RevoluteWithRotor>(waist_y_cluster_name,
+        model.appendRegisteredBodiesAsCluster<RevoluteWithRotor<>>(waist_y_cluster_name,
                                                                  waist_y_module);
 
         // Waist pitch
@@ -67,11 +67,11 @@ namespace grbda
 
         // Waist pitch cluster
         const std::string waist_p_cluster_name = "waist_p";
-        GearedTransmissionModule waist_p_module{waist_p, waist_p_rotor,
+        GearedTransmissionModule<> waist_p_module{waist_p, waist_p_rotor,
                                                 ori::CoordinateAxis::Y,
                                                 ori::CoordinateAxis::Y,
                                                 gear_ratio};
-        model.appendRegisteredBodiesAsCluster<RevoluteWithRotor>(waist_p_cluster_name,
+        model.appendRegisteredBodiesAsCluster<RevoluteWithRotor<>>(waist_p_cluster_name,
                                                                  waist_p_module);
 
         // Waist roll
@@ -94,11 +94,11 @@ namespace grbda
 
         // Waist roll cluster
         const std::string waist_r_cluster_name = "waist_r";
-        GearedTransmissionModule waist_r_module{waist_r, waist_r_rotor,
+        GearedTransmissionModule<> waist_r_module{waist_r, waist_r_rotor,
                                                 ori::CoordinateAxis::X,
                                                 ori::CoordinateAxis::X,
                                                 gear_ratio};
-        model.appendRegisteredBodiesAsCluster<RevoluteWithRotor>(waist_r_cluster_name,
+        model.appendRegisteredBodiesAsCluster<RevoluteWithRotor<>>(waist_r_cluster_name,
                                                                  waist_r_module);
 
         // Neck yaw
@@ -121,11 +121,11 @@ namespace grbda
 
         // Neck yaw cluster
         const std::string neck_y_cluster_name = "neck_y";
-        GearedTransmissionModule neck_y_module{neck_y, neck_y_rotor,
+        GearedTransmissionModule<> neck_y_module{neck_y, neck_y_rotor,
                                                ori::CoordinateAxis::Z,
                                                ori::CoordinateAxis::Z,
                                                gear_ratio};
-        model.appendRegisteredBodiesAsCluster<RevoluteWithRotor>(neck_y_cluster_name,
+        model.appendRegisteredBodiesAsCluster<RevoluteWithRotor<>>(neck_y_cluster_name,
                                                                  neck_y_module);
 
         // Neck roll
@@ -148,11 +148,11 @@ namespace grbda
 
         // Neck roll cluster
         const std::string neck_r_cluster_name = "neck_r";
-        GearedTransmissionModule neck_r_module{neck_r, neck_r_rotor,
+        GearedTransmissionModule<> neck_r_module{neck_r, neck_r_rotor,
                                                ori::CoordinateAxis::X,
                                                ori::CoordinateAxis::X,
                                                gear_ratio};
-        model.appendRegisteredBodiesAsCluster<RevoluteWithRotor>(neck_r_cluster_name,
+        model.appendRegisteredBodiesAsCluster<RevoluteWithRotor<>>(neck_r_cluster_name,
                                                                  neck_r_module);
 
         // Neck pitch
@@ -175,11 +175,11 @@ namespace grbda
 
         // Neck pitch cluster
         const std::string neck_p_cluster_name = "neck_p";
-        GearedTransmissionModule neck_p_module{neck_p, neck_p_rotor,
+        GearedTransmissionModule<> neck_p_module{neck_p, neck_p_rotor,
                                                ori::CoordinateAxis::Y,
                                                ori::CoordinateAxis::Y,
                                                gear_ratio};
-        model.appendRegisteredBodiesAsCluster<RevoluteWithRotor>(neck_p_cluster_name,
+        model.appendRegisteredBodiesAsCluster<RevoluteWithRotor<>>(neck_p_cluster_name,
                                                                  neck_p_module);
 
         std::vector<std::string> sides = {"left","right"};
@@ -219,11 +219,11 @@ namespace grbda
 
             // Hip pitch cluster
             const std::string hip_p_cluster_name = side + "_hip_p";
-            GearedTransmissionModule hip_p_module{hip_p, hip_p_rotor,
+            GearedTransmissionModule<> hip_p_module{hip_p, hip_p_rotor,
                                                   ori::CoordinateAxis::Y,
                                                   ori::CoordinateAxis::Y,
                                                   gear_ratio};
-            model.appendRegisteredBodiesAsCluster<RevoluteWithRotor>(hip_p_cluster_name,
+            model.appendRegisteredBodiesAsCluster<RevoluteWithRotor<>>(hip_p_cluster_name,
                                                                      hip_p_module);
 
             // Hip roll
@@ -256,11 +256,11 @@ namespace grbda
 
             // Hip roll cluster
             const std::string hip_r_cluster_name = side + "_hip_r";
-            GearedTransmissionModule hip_r_module{hip_r, hip_r_rotor,
+            GearedTransmissionModule<> hip_r_module{hip_r, hip_r_rotor,
                                                   ori::CoordinateAxis::X,
                                                   ori::CoordinateAxis::X,
                                                   gear_ratio};
-            model.appendRegisteredBodiesAsCluster<RevoluteWithRotor>(hip_r_cluster_name,
+            model.appendRegisteredBodiesAsCluster<RevoluteWithRotor<>>(hip_r_cluster_name,
                                                                      hip_r_module);
 
             // Hip yaw
@@ -293,11 +293,11 @@ namespace grbda
 
             // Hip yaw cluster
             const std::string hip_y_cluster_name = side + "_hip_y";
-            GearedTransmissionModule hip_y_module{hip_y, hip_y_rotor,
+            GearedTransmissionModule<> hip_y_module{hip_y, hip_y_rotor,
                                                   ori::CoordinateAxis::Z,
                                                   ori::CoordinateAxis::Z,
                                                   gear_ratio};
-            model.appendRegisteredBodiesAsCluster<RevoluteWithRotor>(hip_y_cluster_name,
+            model.appendRegisteredBodiesAsCluster<RevoluteWithRotor<>>(hip_y_cluster_name,
                                                                      hip_y_module);
 
             // Knee
@@ -330,11 +330,11 @@ namespace grbda
 
             // Knee cluster
             const std::string knee_cluster_name = side + "_knee";
-            GearedTransmissionModule knee_module{knee, knee_rotor,
+            GearedTransmissionModule<> knee_module{knee, knee_rotor,
                                                  ori::CoordinateAxis::Y,
                                                  ori::CoordinateAxis::Y,
                                                  gear_ratio};
-            model.appendRegisteredBodiesAsCluster<RevoluteWithRotor>(knee_cluster_name,
+            model.appendRegisteredBodiesAsCluster<RevoluteWithRotor<>>(knee_cluster_name,
                                                                      knee_module);
 
             // Ankle roll
@@ -367,11 +367,11 @@ namespace grbda
 
             // Ankle roll cluster
             const std::string ankle_r_cluster_name = side + "_ankle_r";
-            GearedTransmissionModule ankle_r_module{ankle_r, ankle_r_rotor,
+            GearedTransmissionModule<> ankle_r_module{ankle_r, ankle_r_rotor,
                                                   ori::CoordinateAxis::X,
                                                   ori::CoordinateAxis::X,
                                                   gear_ratio};
-            model.appendRegisteredBodiesAsCluster<RevoluteWithRotor>(ankle_r_cluster_name,
+            model.appendRegisteredBodiesAsCluster<RevoluteWithRotor<>>(ankle_r_cluster_name,
                                                                      ankle_r_module);
 
             // Ankle pitch
@@ -404,11 +404,11 @@ namespace grbda
 
             // Ankle pitch cluster
             const std::string ankle_p_cluster_name = side + "_ankle_p";
-            GearedTransmissionModule ankle_p_module{ankle_p, ankle_p_rotor,
+            GearedTransmissionModule<> ankle_p_module{ankle_p, ankle_p_rotor,
                                                   ori::CoordinateAxis::Y,
                                                   ori::CoordinateAxis::Y,
                                                   gear_ratio};
-            model.appendRegisteredBodiesAsCluster<RevoluteWithRotor>(ankle_p_cluster_name,
+            model.appendRegisteredBodiesAsCluster<RevoluteWithRotor<>>(ankle_p_cluster_name,
                                                                      ankle_p_module);
 
             // Append contact points for the ankle
@@ -461,11 +461,11 @@ namespace grbda
 
             // Shoulder pitch cluster
             const std::string shoulder_p_cluster_name = side + "_shoulder_p";
-            GearedTransmissionModule shoulder_p_module{shoulder_p, shoulder_p_rotor,
+            GearedTransmissionModule<> shoulder_p_module{shoulder_p, shoulder_p_rotor,
                                                        ori::CoordinateAxis::Y,
                                                        ori::CoordinateAxis::Y,
                                                        gear_ratio};
-            model.appendRegisteredBodiesAsCluster<RevoluteWithRotor>(shoulder_p_cluster_name,
+            model.appendRegisteredBodiesAsCluster<RevoluteWithRotor<>>(shoulder_p_cluster_name,
                                                                      shoulder_p_module);
 
             // Shoulder roll
@@ -498,11 +498,11 @@ namespace grbda
 
             // Shoulder roll cluster
             const std::string shoulder_r_cluster_name = side + "_shoulder_r";
-            GearedTransmissionModule shoulder_r_module{shoulder_r, shoulder_r_rotor,
+            GearedTransmissionModule<> shoulder_r_module{shoulder_r, shoulder_r_rotor,
                                                        ori::CoordinateAxis::X,
                                                        ori::CoordinateAxis::X,
                                                        gear_ratio};
-            model.appendRegisteredBodiesAsCluster<RevoluteWithRotor>(shoulder_r_cluster_name,
+            model.appendRegisteredBodiesAsCluster<RevoluteWithRotor<>>(shoulder_r_cluster_name,
                                                                      shoulder_r_module);
 
             // Shoulder yaw
@@ -535,12 +535,12 @@ namespace grbda
 
             // Shoulder yaw cluster
             const std::string shoulder_y_cluster_name = side + "_shoulder_y";
-            GearedTransmissionModule shoulder_y_module{shoulder_y, shoulder_y_rotor,
+            GearedTransmissionModule<> shoulder_y_module{shoulder_y, shoulder_y_rotor,
                                                        ori::CoordinateAxis::Z,
                                                        ori::CoordinateAxis::Z,
                                                        gear_ratio};
-            model.appendRegisteredBodiesAsCluster<RevoluteWithRotor>(shoulder_y_cluster_name,
-                                                                     shoulder_y_module);
+            model.appendRegisteredBodiesAsCluster<RevoluteWithRotor<>>(shoulder_y_cluster_name,
+                                                                       shoulder_y_module);
 
             // Elbow pitch
             const Mat3<double> R_elbow_p = i == 0 ? R_left_elbow_p : R_right_elbow_p;
@@ -572,11 +572,11 @@ namespace grbda
 
             // Elbow pitch cluster
             const std::string elbow_p_cluster_name = side + "_elbow_p";
-            GearedTransmissionModule elbow_p_module{elbow_p, elbow_p_rotor,
+            GearedTransmissionModule<> elbow_p_module{elbow_p, elbow_p_rotor,
                                                     ori::CoordinateAxis::Y,
                                                     ori::CoordinateAxis::Y,
                                                     gear_ratio};
-            model.appendRegisteredBodiesAsCluster<RevoluteWithRotor>(elbow_p_cluster_name,
+            model.appendRegisteredBodiesAsCluster<RevoluteWithRotor<>>(elbow_p_cluster_name,
                                                                      elbow_p_module);
 
             // Elbow yaw
@@ -609,11 +609,11 @@ namespace grbda
 
             // Elbow yaw cluster
             const std::string elbow_y_cluster_name = side + "_elbow_y";
-            GearedTransmissionModule elbow_y_module{elbow_y, elbow_y_rotor,
+            GearedTransmissionModule<> elbow_y_module{elbow_y, elbow_y_rotor,
                                                     ori::CoordinateAxis::Z,
                                                     ori::CoordinateAxis::Z,
                                                     gear_ratio};
-            model.appendRegisteredBodiesAsCluster<RevoluteWithRotor>(elbow_y_cluster_name,
+            model.appendRegisteredBodiesAsCluster<RevoluteWithRotor<>>(elbow_y_cluster_name,
                                                                      elbow_y_module);
 
             // Wrist roll
@@ -646,11 +646,11 @@ namespace grbda
 
             // Wrist roll cluster
             const std::string wrist_r_cluster_name = side + "_wrist_r";
-            GearedTransmissionModule wrist_r_module{wrist_r, wrist_r_rotor,
+            GearedTransmissionModule<> wrist_r_module{wrist_r, wrist_r_rotor,
                                                     ori::CoordinateAxis::X,
                                                     ori::CoordinateAxis::X,
                                                     gear_ratio};
-            model.appendRegisteredBodiesAsCluster<RevoluteWithRotor>(wrist_r_cluster_name,
+            model.appendRegisteredBodiesAsCluster<RevoluteWithRotor<>>(wrist_r_cluster_name,
                                                                      wrist_r_module);
 
         }
@@ -678,11 +678,11 @@ namespace grbda
 
         // Left wrist yaw cluster
         const std::string left_wrist_y_cluster_name = "left_wrist_y";
-        GearedTransmissionModule left_wrist_y_module{left_wrist_y, left_wrist_y_rotor,
+        GearedTransmissionModule<> left_wrist_y_module{left_wrist_y, left_wrist_y_rotor,
                                                      ori::CoordinateAxis::Z,
                                                      ori::CoordinateAxis::Z,
                                                      gear_ratio};
-        model.appendRegisteredBodiesAsCluster<RevoluteWithRotor>(left_wrist_y_cluster_name,
+        model.appendRegisteredBodiesAsCluster<RevoluteWithRotor<>>(left_wrist_y_cluster_name,
                                                                  left_wrist_y_module);
 
         // Right wrist yaw
@@ -708,11 +708,11 @@ namespace grbda
 
         // Right wrist yaw cluster
         const std::string right_wrist_y_cluster_name = "right_wrist_y";
-        GearedTransmissionModule right_wrist_y_module{right_wrist_y, right_wrist_y_rotor,
+        GearedTransmissionModule<> right_wrist_y_module{right_wrist_y, right_wrist_y_rotor,
                                                      ori::CoordinateAxis::Z,
                                                      ori::CoordinateAxis::Z,
                                                      gear_ratio};
-        model.appendRegisteredBodiesAsCluster<RevoluteWithRotor>(right_wrist_y_cluster_name,
+        model.appendRegisteredBodiesAsCluster<RevoluteWithRotor<>>(right_wrist_y_cluster_name,
                                                                  right_wrist_y_module);
 
         const std::string left_wrist_contact_name = "left_wrist_contact";

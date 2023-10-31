@@ -6,12 +6,12 @@
 namespace grbda
 {
 
-    class TeleopArm : public Robot
+    class TeleopArm : public Robot<double>
     {
     public:
         TeleopArm();
 
-        ClusterTreeModel buildClusterTreeModel() const override;
+        ClusterTreeModel<> buildClusterTreeModel() const override;
 
     private:
         // Base Cluster

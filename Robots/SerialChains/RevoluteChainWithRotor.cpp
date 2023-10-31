@@ -3,34 +3,32 @@
 namespace grbda
 {
 
-    template <size_t N>
-    ClusterTreeModel RevoluteChainWithRotor<N>::buildRandomClusterTreeModel() const
+    template <size_t N, typename Scalar>
+    ClusterTreeModel<Scalar> RevoluteChainWithRotor<N, Scalar>::buildRandomClusterTreeModel() const
     {
-        using namespace ClusterJoints;
-
-        ClusterTreeModel model{};
+        ClusterTreeModel<Scalar> model{};
 
         std::string prev_link_name = "ground";
         for (size_t i(0); i < N; i++)
         {
             // Link
             const std::string link_name = "link-" + std::to_string(i);
-            const auto link_Xtree = spatial::randomSpatialRotation<double>();
-            const auto link_inertia = randomLinkSpatialInertia();
-            ori::CoordinateAxis link_axis = ori::randomCoordinateAxis<double>();
+            const auto link_Xtree = spatial::randomSpatialRotation<Scalar>();
+            const auto link_inertia = this->randomLinkSpatialInertia();
+            ori::CoordinateAxis link_axis = ori::randomCoordinateAxis();
             auto link = model.registerBody(link_name, link_inertia, prev_link_name, link_Xtree);
 
             // Rotor
             const std::string rotor_name = "rotor-" + std::to_string(i);
-            const auto rotor_Xtree = spatial::randomSpatialRotation<double>();
-            const auto rotor_inertia = randomRotorSpatialInertia();
-            ori::CoordinateAxis rotor_axis = ori::randomCoordinateAxis<double>();
+            const auto rotor_Xtree = spatial::randomSpatialRotation<Scalar>();
+            const auto rotor_inertia = this->randomRotorSpatialInertia();
+            ori::CoordinateAxis rotor_axis = ori::randomCoordinateAxis();
             auto rotor = model.registerBody(rotor_name, rotor_inertia, prev_link_name, rotor_Xtree);
 
             // Cluster
             const std::string cluster_name = "cluster-" + std::to_string(i);
-            GearedTransmissionModule module{link, rotor, link_axis, rotor_axis, randomGearRatio()};
-            model.appendRegisteredBodiesAsCluster<RevoluteWithRotor>(cluster_name, module);
+            TransmissionModule module{link, rotor, link_axis, rotor_axis, this->randomGearRatio()};
+            model.template appendRegisteredBodiesAsCluster<RevoluteWithRotor>(cluster_name, module);
 
             // Contact point
             appendContactPoints(model, i, link_name);
@@ -41,46 +39,44 @@ namespace grbda
         return model;
     }
 
-    template <size_t N>
-    ClusterTreeModel RevoluteChainWithRotor<N>::buildUniformClusterTreeModel() const
+    template <size_t N, typename Scalar>
+    ClusterTreeModel<Scalar> RevoluteChainWithRotor<N, Scalar>::buildUniformClusterTreeModel() const
     {
-        using namespace ClusterJoints;
+        ClusterTreeModel<Scalar> model{};
 
-        ClusterTreeModel model{};
+        Mat3<Scalar> I3 = Mat3<Scalar>::Identity();
+        Vec3<Scalar> z3 = Vec3<Scalar>::Zero();
 
-        Mat3<double> I3 = Mat3<double>::Identity();
-        Vec3<double> z3 = Vec3<double>::Zero();
-
-        const double grav = 9.81;
-        model.setGravity(Vec3<double>{grav, 0., 0.});
+        const Scalar grav = 9.81;
+        model.setGravity(Vec3<Scalar>{grav, 0., 0.});
 
         // Inertia params
-        const double I = 1.;
-        const double Irot = 1e-4;
-        const double m = 1.;
-        const double l = 1.;
-        const double c = 0.5;
-        const double gr = 2.;
-        const double br = 3.;
+        const Scalar I = 1.;
+        const Scalar Irot = 1e-4;
+        const Scalar m = 1.;
+        const Scalar l = 1.;
+        const Scalar c = 0.5;
+        const Scalar gr = 2.;
+        const Scalar br = 3.;
 
         // Uniform quantities
         ori::CoordinateAxis axis = ori::CoordinateAxis::Z;
 
-        Mat3<double> link_inertia;
+        Mat3<Scalar> link_inertia;
         link_inertia << 0., 0., 0., 0., 0., 0., 0., 0., I;
-        const SpatialInertia<double> link_spatiala_inertia(m, Vec3<double>(c, 0., 0.),
+        const SpatialInertia<Scalar> link_spatiala_inertia(m, Vec3<Scalar>(c, 0., 0.),
                                                            link_inertia);
 
-        Mat3<double> rotor_inertia;
+        Mat3<Scalar> rotor_inertia;
         rotor_inertia << 0., 0., 0., 0., 0., 0., 0., 0., Irot;
-        const SpatialInertia<double> rotor_spatial_inertia(0., Vec3<double>::Zero(),
+        const SpatialInertia<Scalar> rotor_spatial_inertia(0., Vec3<Scalar>::Zero(),
                                                            rotor_inertia);
 
         std::string prev_link_name = "ground";
         for (size_t i(0); i < N; i++)
         {
             spatial::Transform Xtree = i == 0 ? spatial::Transform(I3, z3)
-                                              : spatial::Transform(I3, Vec3<double>(l, 0., 0.));
+                                              : spatial::Transform(I3, Vec3<Scalar>(l, 0., 0.));
 
             // Link
             const std::string link_name = "link-" + std::to_string(i);
@@ -94,8 +90,8 @@ namespace grbda
 
             // Cluster
             const std::string cluster_name = "cluster-" + std::to_string(i);
-            GearedTransmissionModule module{link, rotor, axis, axis, gr * br};
-            model.appendRegisteredBodiesAsCluster<RevoluteWithRotor>(cluster_name, module);
+            TransmissionModule module{link, rotor, axis, axis, gr * br};
+            model.template appendRegisteredBodiesAsCluster<RevoluteWithRotor>(cluster_name, module);
 
             // Contact point
             appendContactPoints(model, i, link_name);
@@ -106,20 +102,20 @@ namespace grbda
         return model;
     }
 
-    template <size_t N>
-    void RevoluteChainWithRotor<N>::appendContactPoints(ClusterTreeModel &model, const int i,
-                                                        const std::string link_name) const
+    template <size_t N, typename Scalar>
+    void RevoluteChainWithRotor<N, Scalar>::appendContactPoints(
+        ClusterTreeModel<Scalar> &model, const int i, const std::string link_name) const
     {
         const std::string cp_name = "cp-" + std::to_string(i);
-        const Vec3<double> cp_local_offset = Vec3<double>::Random();
+        const Vec3<Scalar> cp_local_offset = Vec3<Scalar>::Random();
         if (i == N - 1)
             model.appendEndEffector(link_name, cp_local_offset, cp_name);
         else
             model.appendContactPoint(link_name, cp_local_offset, cp_name);
     }
 
-    template <size_t N>
-    DVec<double> RevoluteChainWithRotor<N>::forwardDynamics(
+    template <size_t N, typename Scalar>
+    DVec<double> RevoluteChainWithRotor<N, Scalar>::forwardDynamics(
         const DVec<double> &y, const DVec<double> &yd, const DVec<double> &tau) const
     {
         std::vector<DVec<double>> arg = {y, yd, tau};
@@ -141,8 +137,8 @@ namespace grbda
         return eom;
     }
 
-    template <size_t N>
-    DVec<double> RevoluteChainWithRotor<N>::forwardDynamicsReflectedInertia(
+    template <size_t N, typename Scalar>
+    DVec<double> RevoluteChainWithRotor<N, Scalar>::forwardDynamicsReflectedInertia(
         const DVec<double> &y, const DVec<double> &yd, const DVec<double> &tau) const
     {
         std::vector<DVec<double>> arg = {y, yd, tau};
@@ -164,8 +160,8 @@ namespace grbda
         return eom;
     }
 
-    template <size_t N>
-    DVec<double> RevoluteChainWithRotor<N>::forwardDynamicsReflectedInertiaDiag(
+    template <size_t N, typename Scalar>
+    DVec<double> RevoluteChainWithRotor<N, Scalar>::forwardDynamicsReflectedInertiaDiag(
         const DVec<double> &y, const DVec<double> &yd, const DVec<double> &tau) const
     {
         std::vector<DVec<double>> arg = {y, yd, tau};
@@ -187,8 +183,8 @@ namespace grbda
         return eom;
     }
 
-    template <size_t N>
-    DVec<double> RevoluteChainWithRotor<N>::inverseDynamics(
+    template <size_t N, typename Scalar>
+    DVec<double> RevoluteChainWithRotor<N, Scalar>::inverseDynamics(
         const DVec<double> &y, const DVec<double> &yd, const DVec<double> &ydd) const
     {
         std::vector<DVec<double>> arg = {y, yd, ydd};
@@ -210,8 +206,8 @@ namespace grbda
         return eom;
     }
 
-    template <size_t N>
-    DVec<double> RevoluteChainWithRotor<N>::inverseDynamicsReflectedInertia(
+    template <size_t N, typename Scalar>
+    DVec<double> RevoluteChainWithRotor<N, Scalar>::inverseDynamicsReflectedInertia(
         const DVec<double> &y, const DVec<double> &yd, const DVec<double> &ydd) const
     {
         std::vector<DVec<double>> arg = {y, yd, ydd};
@@ -233,8 +229,8 @@ namespace grbda
         return eom;
     }
 
-    template <size_t N>
-    DVec<double> RevoluteChainWithRotor<N>::inverseDynamicsReflectedInertiaDiag(
+    template <size_t N, typename Scalar>
+    DVec<double> RevoluteChainWithRotor<N, Scalar>::inverseDynamicsReflectedInertiaDiag(
         const DVec<double> &y, const DVec<double> &yd, const DVec<double> &ydd) const
     {
         std::vector<DVec<double>> arg = {y, yd, ydd};
@@ -265,5 +261,9 @@ namespace grbda
     template class RevoluteChainWithRotor<16ul>;
     template class RevoluteChainWithRotor<20ul>;
     template class RevoluteChainWithRotor<24ul>;
+
+    template class RevoluteChainWithRotor<2ul, casadi::SX>;
+    template class RevoluteChainWithRotor<4ul, casadi::SX>;
+    template class RevoluteChainWithRotor<8ul, casadi::SX>;
 
 } // namespace grbda

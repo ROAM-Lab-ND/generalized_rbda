@@ -3,43 +3,53 @@
 namespace grbda
 {
 
-    ReflectedInertiaTreeNode::ReflectedInertiaTreeNode(const int index, const Body &link,
-                                                       const std::shared_ptr<Joints::Base> &joint,
-                                                       const int parent_index,
-                                                       const int position_index,
-                                                       const int velocity_index,
-                                                       const int motion_subspace_index)
-        : TreeNode(index, link.name_, parent_index, 1,
-                   motion_subspace_index, 6,
-                   position_index, joint->numPositions(),
-                   velocity_index, joint->numVelocities()),
+    template <typename Scalar>
+    ReflectedInertiaTreeNode<Scalar>::ReflectedInertiaTreeNode(
+        const int index, const Body<Scalar> &link,
+        const std::shared_ptr<Joints::Base<Scalar>> &joint,
+        const int parent_index, const int position_index, const int velocity_index,
+        const int motion_subspace_index)
+        : TreeNode<Scalar>(index, link.name_, parent_index, 1,
+                           motion_subspace_index, 6,
+                           position_index, joint->numPositions(),
+                           velocity_index, joint->numVelocities()),
           link_(link), joint_(joint), Xtree_(link.Xtree_)
     {
-        I_ = link.inertia_.getMatrix();
-        Xup_.appendTransformWithClusterAncestorSubIndex(spatial::Transform{}, 0);
-        Xa_.appendTransform(spatial::Transform{});
+        this->I_ = link.inertia_.getMatrix();
+        this->Xup_.appendTransformWithClusterAncestorSubIndex(spatial::Transform<Scalar>{}, 0);
+        this->Xa_.appendTransform(spatial::Transform<Scalar>{});
     }
 
-    void ReflectedInertiaTreeNode::updateKinematics()
+    template <typename Scalar>
+    void ReflectedInertiaTreeNode<Scalar>::updateKinematics()
     {
-        joint_->updateKinematics(joint_state_.position, joint_state_.velocity);
-        Xup_[0] = joint_->XJ() * Xtree_;
-        vJ_ = joint_->S() * joint_state_.velocity;
+        joint_->updateKinematics(this->joint_state_.position, this->joint_state_.velocity);
+        this->Xup_[0] = joint_->XJ() * this->Xtree_;
+        this->vJ_ = joint_->S() * this->joint_state_.velocity;
     }
 
-    const spatial::Transform &ReflectedInertiaTreeNode::getAbsoluteTransformForBody(const Body &body)
+    template <typename Scalar>
+    const spatial::Transform<Scalar> &
+    ReflectedInertiaTreeNode<Scalar>::getAbsoluteTransformForBody(const Body<Scalar> &body)
     {
-        return Xa_[0];
+        return this->Xa_[0];
     };
 
-    DVec<double> ReflectedInertiaTreeNode::getVelocityForBody(const Body &body)
+    template <typename Scalar>
+    DVec<Scalar> ReflectedInertiaTreeNode<Scalar>::getVelocityForBody(const Body<Scalar> &body)
     {
-        return v_;
+        return this->v_;
     };
 
-    void ReflectedInertiaTreeNode::applyForceToBody(const SVec<double> &force, const Body &body)
+    template <typename Scalar>
+    void ReflectedInertiaTreeNode<Scalar>::applyForceToBody(const SVec<Scalar> &force,
+                                                            const Body<Scalar> &body)
     {
-        f_ext_.segment<6>(0) = force;
+        this->f_ext_.template segment<6>(0) = force;
     }
+
+    template struct ReflectedInertiaTreeNode<double>;
+    template struct ReflectedInertiaTreeNode<float>;
+    template struct ReflectedInertiaTreeNode<casadi::SX>;
 
 } // namespace grbda

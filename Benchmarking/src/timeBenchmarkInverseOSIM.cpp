@@ -22,12 +22,12 @@ void runBenchmark(std::ofstream &file, const std::string& id)
     for (int i = 0; i < num_robot_samples; i++)
     {
         T robot = T(true);
-        ClusterTreeModel cluster_model = robot.buildClusterTreeModel();
+        ClusterTreeModel<> cluster_model = robot.buildClusterTreeModel();
         RigidBodyTreePtr projection_model =
-            std::make_shared<RigidBodyTreeModel>(cluster_model, FwdDynMethod::Projection);
+            std::make_shared<RigidBodyTreeModel<>>(cluster_model, FwdDynMethod::Projection);
         ReflectedInertiaTreePtr reflected_inertia_model =
-            std::make_shared<ReflectedInertiaTreeModel>(cluster_model,
-                                                        RotorInertiaApproximation::DIAGONAL);
+            std::make_shared<ReflectedInertiaTreeModel<>>(cluster_model,
+                                                          RotorInertiaApproximation::DIAGONAL);
 
         const int nq = cluster_model.getNumPositions();
         const int nv = cluster_model.getNumDegreesOfFreedom();

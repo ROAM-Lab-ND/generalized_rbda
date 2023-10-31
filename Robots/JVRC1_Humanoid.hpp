@@ -6,12 +6,12 @@
 namespace grbda
 {
 
-    class JVRC1_Humanoid : public Robot
+    class JVRC1_Humanoid : public Robot<double>
     {
     public:
         JVRC1_Humanoid() {}
 
-        ClusterTreeModel buildClusterTreeModel() const override;
+        ClusterTreeModel<double> buildClusterTreeModel() const override;
 
     private:
         const double grav = -9.81;

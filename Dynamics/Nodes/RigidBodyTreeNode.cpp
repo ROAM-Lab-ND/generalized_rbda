@@ -3,41 +3,52 @@
 namespace grbda
 {
 
-    RigidBodyTreeNode::RigidBodyTreeNode(const Body &body,
-                                         const std::shared_ptr<Joints::Base> &joint,
-                                         const int position_index, const int velocity_index,
-                                         const int motion_subspace_index)
-        : TreeNode(body.index_, body.name_, body.parent_index_, 1,
-                   motion_subspace_index, 6,
-                   position_index, joint->numPositions(),
-                   velocity_index, joint->numVelocities()),
+    template <typename Scalar>
+    RigidBodyTreeNode<Scalar>::RigidBodyTreeNode(const Body<Scalar> &body,
+                                                 const std::shared_ptr<Joints::Base<Scalar>> &joint,
+                                                 const int position_index, const int velocity_index,
+                                                 const int motion_subspace_index)
+        : TreeNode<Scalar>(body.index_, body.name_, body.parent_index_, 1,
+                           motion_subspace_index, 6,
+                           position_index, joint->numPositions(),
+                           velocity_index, joint->numVelocities()),
           body_(body), joint_(joint), Xtree_(body.Xtree_)
     {
-        I_ = body.inertia_.getMatrix();
-        Xup_.appendTransformWithClusterAncestorSubIndex(spatial::Transform{}, 0);
-        Xa_.appendTransform(spatial::Transform{});
+        this->I_ = body.inertia_.getMatrix();
+        this->Xup_.appendTransformWithClusterAncestorSubIndex(spatial::Transform<Scalar>{}, 0);
+        this->Xa_.appendTransform(spatial::Transform<Scalar>{});
     }
 
-    void RigidBodyTreeNode::updateKinematics()
+    template <typename Scalar>
+    void RigidBodyTreeNode<Scalar>::updateKinematics()
     {
-        joint_->updateKinematics(joint_state_.position, joint_state_.velocity);
-        Xup_[0] = joint_->XJ() * Xtree_;
-        vJ_ = joint_->S() * joint_state_.velocity;
+        joint_->updateKinematics(this->joint_state_.position, this->joint_state_.velocity);
+        this->Xup_[0] = joint_->XJ() * this->Xtree_;
+        this->vJ_ = joint_->S() * this->joint_state_.velocity;
     }
 
-    const spatial::Transform &RigidBodyTreeNode::getAbsoluteTransformForBody(const Body &body)
+    template <typename Scalar>
+    const spatial::Transform<Scalar> &
+    RigidBodyTreeNode<Scalar>::getAbsoluteTransformForBody(const Body<Scalar> &body)
     {
-        return Xa_[0];
+        return this->Xa_[0];
     };
 
-    DVec<double> RigidBodyTreeNode::getVelocityForBody(const Body &body)
+    template <typename Scalar>
+    DVec<Scalar> RigidBodyTreeNode<Scalar>::getVelocityForBody(const Body<Scalar> &body)
     {
-        return v_;
+        return this->v_;
     };
 
-    void RigidBodyTreeNode::applyForceToBody(const SVec<double> &force, const Body &body)
+    template <typename Scalar>
+    void RigidBodyTreeNode<Scalar>::applyForceToBody(const SVec<Scalar> &force,
+                                                     const Body<Scalar> &body)
     {
-        f_ext_.segment<6>(0) = force;
+        this->f_ext_.template segment<6>(0) = force;
     }
+
+    template struct RigidBodyTreeNode<double>;
+    template struct RigidBodyTreeNode<float>;
+    template struct RigidBodyTreeNode<casadi::SX>;
 
 } // namespace grbda
