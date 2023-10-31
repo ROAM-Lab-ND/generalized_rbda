@@ -38,7 +38,7 @@ set(gca, 'FontName', 'Times New Roman')
 
 % Set the x-axis tick labels
 xticks(x)
-xticklabels({'12 Link Serial Chain (GT)', '12 Link Serial Chain (PBT)', 'Mini Cheetah', 'MIT Humanoid', 'Tello Humanoid'})
+xticklabels({'12 Link Serial Chain (GT)', '12 Link Serial Chain (PBT)', 'Mini Cheetah', 'MIT Humanoid', 'Tello Humanoid', 'JVRC1 Humanoid'})
 
 % Adjust the y-axis limits
 ylim([0 max(data, [], 'all') * 1.2])
@@ -85,7 +85,7 @@ set(gca, 'FontName', 'Times New Roman')
 
 % Set the x-axis tick labels
 xticks(x)
-xticklabels({'12 Link Serial Chain (GT)', '12 Link Serial Chain (PBT)', 'Mini Cheetah', 'MIT Humanoid', 'Tello Humanoid'})
+xticklabels({'12 Link Serial Chain (GT)', '12 Link Serial Chain (PBT)', 'Mini Cheetah', 'MIT Humanoid', 'Tello Humanoid', 'JVRC1 Humanoid'})
 
 % Adjust the y-axis limits
 ylim([0 max(data, [], 'all') * 1.2])
@@ -132,7 +132,7 @@ set(gca, 'FontName', 'Times New Roman')
 
 % Set the x-axis tick labels
 xticks(x)
-xticklabels({'12 Link Serial Chain (GT)', '12 Link Serial Chain (PBT)', 'Mini Cheetah', 'MIT Humanoid', 'Tello Humanoid'})
+xticklabels({'12 Link Serial Chain (GT)', '12 Link Serial Chain (PBT)', 'Mini Cheetah', 'MIT Humanoid', 'Tello Humanoid', 'JVRC1 Humanoid'})
 
 % Adjust the y-axis limits
 ylim([0 max(data, [], 'all') * 1.2])
