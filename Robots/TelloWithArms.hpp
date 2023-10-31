@@ -39,7 +39,7 @@ namespace grbda
             _smallRotorRotInertiaZ = _smallRotorRotationalInertiaZ;
         }
 
-        ClusterTreeModel buildClusterTreeModel() const override;
+        ClusterTreeModel<> buildClusterTreeModel() const override;
 
     private:
         double _shoulderRyMass = 0.788506;

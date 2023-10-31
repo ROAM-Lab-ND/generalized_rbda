@@ -7,16 +7,17 @@
 
 using namespace grbda;
 using namespace grbda::BenchmarkHelpers;
+using namespace grbda::ori_representation;
 
 template <typename RobotType>
 void runInverseDynamicsBenchmark(std::ofstream &file, const double max_torque)
 {
     RobotType robot;
-    ClusterTreeModel model_cl = robot.buildClusterTreeModel();
+    ClusterTreeModel<> model_cl = robot.buildClusterTreeModel();
 
-    ReflectedInertiaTreePtr model_rf = std::make_shared<ReflectedInertiaTreeModel>(model_cl, RotorInertiaApproximation::BLOCK_DIAGONAL);
-    ReflectedInertiaTreePtr model_rf_diag = std::make_shared<ReflectedInertiaTreeModel>(model_cl, RotorInertiaApproximation::DIAGONAL);
-    ReflectedInertiaTreePtr model_rf_none = std::make_shared<ReflectedInertiaTreeModel>(model_cl, RotorInertiaApproximation::NONE);
+    ReflectedInertiaTreePtr model_rf = std::make_shared<ReflectedInertiaTreeModel<>>(model_cl, RotorInertiaApproximation::BLOCK_DIAGONAL);
+    ReflectedInertiaTreePtr model_rf_diag = std::make_shared<ReflectedInertiaTreeModel<>>(model_cl, RotorInertiaApproximation::DIAGONAL);
+    ReflectedInertiaTreePtr model_rf_none = std::make_shared<ReflectedInertiaTreeModel<>>(model_cl, RotorInertiaApproximation::NONE);
     std::vector<ReflectedInertiaTreePtr> ref_inertia_models{model_rf, model_rf_diag, model_rf_none};
 
     const int nv = model_cl.getNumDegreesOfFreedom();
@@ -65,10 +66,10 @@ template <typename RobotType>
 void runForwardDynamicsBenchmark(std::ofstream &file, const double max_torque)
 {
     RobotType robot;
-    ClusterTreeModel model_cl = robot.buildClusterTreeModel();
+    ClusterTreeModel<> model_cl = robot.buildClusterTreeModel();
 
-    ReflectedInertiaTreePtr model_rf_diag = std::make_shared<ReflectedInertiaTreeModel>(model_cl, RotorInertiaApproximation::DIAGONAL);
-    ReflectedInertiaTreePtr model_rf_none = std::make_shared<ReflectedInertiaTreeModel>(model_cl, RotorInertiaApproximation::NONE);
+    ReflectedInertiaTreePtr model_rf_diag = std::make_shared<ReflectedInertiaTreeModel<>>(model_cl, RotorInertiaApproximation::DIAGONAL);
+    ReflectedInertiaTreePtr model_rf_none = std::make_shared<ReflectedInertiaTreeModel<>>(model_cl, RotorInertiaApproximation::NONE);
     std::vector<ReflectedInertiaTreePtr> ref_inertia_models{model_rf_diag, model_rf_none};
 
     const int nv = model_cl.getNumDegreesOfFreedom();
@@ -110,10 +111,10 @@ template <typename RobotType>
 void runInverseOperationalSpaceInertiaBenchmark(std::ofstream &file)
 {
     RobotType robot;
-    ClusterTreeModel model_cl = robot.buildClusterTreeModel();
+    ClusterTreeModel<> model_cl = robot.buildClusterTreeModel();
 
-    ReflectedInertiaTreePtr model_rf_diag = std::make_shared<ReflectedInertiaTreeModel>(model_cl, RotorInertiaApproximation::DIAGONAL);
-    ReflectedInertiaTreePtr model_rf_none = std::make_shared<ReflectedInertiaTreeModel>(model_cl, RotorInertiaApproximation::NONE);
+    ReflectedInertiaTreePtr model_rf_diag = std::make_shared<ReflectedInertiaTreeModel<>>(model_cl, RotorInertiaApproximation::DIAGONAL);
+    ReflectedInertiaTreePtr model_rf_none = std::make_shared<ReflectedInertiaTreeModel<>>(model_cl, RotorInertiaApproximation::NONE);
     std::vector<ReflectedInertiaTreePtr> ref_inertia_models{model_rf_diag, model_rf_none};
 
     double lambda_inv_diag_rel_error = 0.;
@@ -146,10 +147,10 @@ void runApplyTestForceBenchmark(std::ofstream &file, const std::string contact_p
                                 const double max_force)
 {
     RobotType robot;
-    ClusterTreeModel model_cl = robot.buildClusterTreeModel();
+    ClusterTreeModel<> model_cl = robot.buildClusterTreeModel();
 
-    ReflectedInertiaTreePtr model_rf_diag = std::make_shared<ReflectedInertiaTreeModel>(model_cl, RotorInertiaApproximation::DIAGONAL);
-    ReflectedInertiaTreePtr model_rf_none = std::make_shared<ReflectedInertiaTreeModel>(model_cl, RotorInertiaApproximation::NONE);
+    ReflectedInertiaTreePtr model_rf_diag = std::make_shared<ReflectedInertiaTreeModel<>>(model_cl, RotorInertiaApproximation::DIAGONAL);
+    ReflectedInertiaTreePtr model_rf_none = std::make_shared<ReflectedInertiaTreeModel<>>(model_cl, RotorInertiaApproximation::NONE);
     std::vector<ReflectedInertiaTreePtr> ref_inertia_models{model_rf_diag, model_rf_none};
 
     const int nv = model_cl.getNumDegreesOfFreedom();
@@ -198,9 +199,9 @@ int main()
     std::ofstream id_file;
     id_file.open(path_to_data + "Robots.csv");
     runInverseDynamicsBenchmark<TelloWithArms>(id_file, 50.);
-    runInverseDynamicsBenchmark<MIT_Humanoid>(id_file, 50.);
+    runInverseDynamicsBenchmark<MIT_Humanoid<>>(id_file, 50.);
     runInverseDynamicsBenchmark<JVRC1_Humanoid>(id_file, 50.);
-    runInverseDynamicsBenchmark<MiniCheetah>(id_file, 30.);
+    runInverseDynamicsBenchmark<MiniCheetah<>>(id_file, 30.);
     id_file.close();
 
     // Forward Dynamics Benchmark
@@ -209,9 +210,9 @@ int main()
     std::ofstream fd_file;
     fd_file.open(path_to_data + "Robots.csv");
     runForwardDynamicsBenchmark<TelloWithArms>(fd_file, 50.);
-    runForwardDynamicsBenchmark<MIT_Humanoid>(fd_file, 50.);
+    runForwardDynamicsBenchmark<MIT_Humanoid<>>(fd_file, 50.);
     runForwardDynamicsBenchmark<JVRC1_Humanoid>(fd_file, 50.);
-    runForwardDynamicsBenchmark<MiniCheetah>(fd_file, 20.);
+    runForwardDynamicsBenchmark<MiniCheetah<>>(fd_file, 20.);
     fd_file.close();
 
     // Inverse Operational Space Inertia Matrix Benchmark
@@ -220,9 +221,9 @@ int main()
     std::ofstream iosim_file;
     iosim_file.open(path_to_data + "Robots.csv");
     runInverseOperationalSpaceInertiaBenchmark<TelloWithArms>(iosim_file);
-    runInverseOperationalSpaceInertiaBenchmark<MIT_Humanoid>(iosim_file);
+    runInverseOperationalSpaceInertiaBenchmark<MIT_Humanoid<>>(iosim_file);
     runInverseOperationalSpaceInertiaBenchmark<JVRC1_Humanoid>(iosim_file);
-    runInverseOperationalSpaceInertiaBenchmark<MiniCheetah>(iosim_file);
+    runInverseOperationalSpaceInertiaBenchmark<MiniCheetah<>>(iosim_file);
     iosim_file.close();
 
     // Apply Test Force Benchmark
@@ -231,8 +232,8 @@ int main()
     std::ofstream atf_file;
     atf_file.open(path_to_data + "Robots.csv");
     runApplyTestForceBenchmark<TelloWithArms>(atf_file, "left-toe_contact", 500.);
-    runApplyTestForceBenchmark<MIT_Humanoid>(atf_file, "left_toe_contact", 500.);
+    runApplyTestForceBenchmark<MIT_Humanoid<>>(atf_file, "left_toe_contact", 500.);
     runApplyTestForceBenchmark<JVRC1_Humanoid>(atf_file, "left_toe_contact", 500.);
-    runApplyTestForceBenchmark<MiniCheetah>(atf_file, "FL_foot_contact", 150.);
+    runApplyTestForceBenchmark<MiniCheetah<>>(atf_file, "FL_foot_contact", 150.);
     atf_file.close();
 }

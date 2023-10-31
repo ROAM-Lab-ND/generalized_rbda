@@ -82,9 +82,17 @@ namespace grbda
         delete[] res;
     }
 
-    template void casadi_interface<double>(std::vector<double *> ARG, std::vector<double *> RES, int max_sz_res,
+    template void casadi_interface<double>(std::vector<double *> ARG, std::vector<double *> RES,
+                                           int max_sz_res,
                                            int f(const double **, double **, int_T *, double *, int),
                                            const int_T *f_sparse_out(int_T),
                                            int f_work(int_T *, int_T *, int_T *, int_T *));
+
+    template void casadi_interface<casadi::SX>(std::vector<casadi::SX *> ARG,
+                                               std::vector<casadi::SX *> RES,
+                                               int max_sz_res,
+                                               int f(const casadi::SX **, casadi::SX **, int_T *, casadi::SX *, int),
+                                               const int_T *f_sparse_out(int_T),
+                                               int f_work(int_T *, int_T *, int_T *, int_T *));
 
 } // namespace grbda

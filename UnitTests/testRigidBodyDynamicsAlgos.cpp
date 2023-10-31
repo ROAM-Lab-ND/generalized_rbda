@@ -22,14 +22,16 @@ protected:
         for (int i = 0; i < num_robots; i++)
         {
             T robot;
-            ClusterTreeModel cluster_model(robot.buildClusterTreeModel());
-            ClusterTreeModel generic_model = extractGenericJointModel(cluster_model);
-            RigidBodyTreeModel lg_mult_custom_model(cluster_model,
-                                                    FwdDynMethod::LagrangeMultiplierCustom);
-            RigidBodyTreeModel lg_mult_eigen_model(cluster_model,
-                                                   FwdDynMethod::LagrangeMultiplierEigen);
-            RigidBodyTreeModel projection_model(cluster_model,
-                                                FwdDynMethod::Projection);
+            
+            ClusterTreeModel<> cluster_model(robot.buildClusterTreeModel());
+            ClusterTreeModel<> generic_model = TestHelpers::extractGenericJointModel(cluster_model);
+            
+            grbda::RigidBodyTreeModel<> lg_mult_custom_model(
+                cluster_model, FwdDynMethod::LagrangeMultiplierCustom);
+            grbda::RigidBodyTreeModel<> lg_mult_eigen_model(
+                cluster_model, FwdDynMethod::LagrangeMultiplierEigen);
+            grbda::RigidBodyTreeModel<> projection_model(
+                cluster_model, FwdDynMethod::Projection);
 
             robots.push_back(robot);
             cluster_models.push_back(cluster_model);
@@ -42,14 +44,14 @@ protected:
 
     bool initializeRandomStates(const int robot_idx, bool use_spanning_state)
     {
-        ModelState model_state;
+        ModelState<> model_state;
         DVec<double> spanning_joint_pos = DVec<double>::Zero(0);
         DVec<double> spanning_joint_vel = DVec<double>::Zero(0);
 
         for (const auto &cluster : cluster_models.at(robot_idx).clusters())
         {
-            JointState joint_state = cluster->joint_->randomJointState();
-            JointState spanning_joint_state = cluster->joint_->toSpanningTreeState(joint_state);
+            JointState<> joint_state = cluster->joint_->randomJointState();
+            JointState<> spanning_joint_state = cluster->joint_->toSpanningTreeState(joint_state);
 
             spanning_joint_pos = appendEigenVector(spanning_joint_pos,
                                                    spanning_joint_state.position);
@@ -81,8 +83,9 @@ protected:
         return nan_detected;
     }
 
-    void setForcesForAllModels(std::vector<ExternalForceAndBodyIndexPair> force_and_index_pairs,
-                               const int robot_idx)
+    void setForcesForAllModels(
+        std::vector<ExternalForceAndBodyIndexPair<double>> force_and_index_pairs,
+        const int robot_idx)
     {
         cluster_models[robot_idx].setExternalForces(force_and_index_pairs);
         generic_models[robot_idx].setExternalForces(force_and_index_pairs);
@@ -92,17 +95,18 @@ protected:
     }
 
     std::vector<T> robots;
-    std::vector<ClusterTreeModel> cluster_models;
-    std::vector<ClusterTreeModel> generic_models;
-    std::vector<RigidBodyTreeModel> lg_mult_custom_models, lg_mult_eigen_models;
-    std::vector<RigidBodyTreeModel> projection_models;
+    std::vector<ClusterTreeModel<>> cluster_models;
+    std::vector<ClusterTreeModel<>> generic_models;
+    std::vector<grbda::RigidBodyTreeModel<>> lg_mult_custom_models, lg_mult_eigen_models;
+    std::vector<grbda::RigidBodyTreeModel<>> projection_models;
 };
 
 using testing::Types;
 
 typedef Types<
     TeleopArm, Tello, TelloWithArms,
-    MIT_Humanoid, MiniCheetah,
+    MIT_Humanoid<>, MIT_Humanoid<double, ori_representation::RollPitchYaw>,
+    MiniCheetah<>, MiniCheetah<double, ori_representation::RollPitchYaw>,
     RevoluteChainWithRotor<2>,
     RevoluteChainWithRotor<4>,
     RevoluteChainWithRotor<8>,
@@ -111,9 +115,6 @@ typedef Types<
     RevolutePairChainWithRotor<8>,
     RevoluteTripleChainWithRotor<3>,
     RevoluteTripleChainWithRotor<6>,
-    RevoluteChainMultipleRotorsPerLink<2, 2>,
-    RevoluteChainMultipleRotorsPerLink<4, 1>,
-    RevoluteChainMultipleRotorsPerLink<4, 3>,
     RevoluteChainWithAndWithoutRotor<0ul, 8ul>,
     RevoluteChainWithAndWithoutRotor<4ul, 4ul>,
     RevoluteChainWithAndWithoutRotor<8ul, 0ul>>
@@ -129,9 +130,9 @@ TYPED_TEST(RigidBodyDynamicsAlgosTest, MassMatrix)
     const int num_tests_per_robot = 20;
     for (int i = 0; i < (int)this->cluster_models.size(); i++)
     {
-        ClusterTreeModel &cluster_model = this->cluster_models.at(i);
-        ClusterTreeModel &generic_model = this->generic_models.at(i);
-        RigidBodyTreeModel &projection_model = this->projection_models.at(i);
+        ClusterTreeModel<> &cluster_model = this->cluster_models.at(i);
+        ClusterTreeModel<> &generic_model = this->generic_models.at(i);
+        grbda::RigidBodyTreeModel<> &projection_model = this->projection_models.at(i);
 
         const int nq = cluster_model.getNumPositions();
         const int nv = cluster_model.getNumDegreesOfFreedom();
@@ -165,9 +166,9 @@ TYPED_TEST(RigidBodyDynamicsAlgosTest, BiasForceVector)
     const int num_tests_per_robot = 20;
     for (int i = 0; i < (int)this->cluster_models.size(); i++)
     {
-        ClusterTreeModel &cluster_model = this->cluster_models[i];
-        ClusterTreeModel &generic_model = this->generic_models[i];
-        RigidBodyTreeModel &projection_model = this->projection_models[i];
+        ClusterTreeModel<> &cluster_model = this->cluster_models[i];
+        ClusterTreeModel<> &generic_model = this->generic_models[i];
+        grbda::RigidBodyTreeModel<> &projection_model = this->projection_models[i];
 
         const int nq = cluster_model.getNumPositions();
         const int nv = cluster_model.getNumDegreesOfFreedom();
@@ -202,11 +203,11 @@ TYPED_TEST(RigidBodyDynamicsAlgosTest, ForwardAndInverseDyanmics)
     const int num_tests_per_robot = 20;
     for (int i = 0; i < (int)this->cluster_models.size(); i++)
     {
-        ClusterTreeModel &cluster_model = this->cluster_models[i];
-        ClusterTreeModel &generic_model = this->generic_models[i];
-        RigidBodyTreeModel &lg_mult_custom_model = this->lg_mult_custom_models[i];
-        RigidBodyTreeModel &lg_mult_eigen_model = this->lg_mult_eigen_models[i];
-        RigidBodyTreeModel &projection_model = this->projection_models[i];
+        ClusterTreeModel<> &cluster_model = this->cluster_models[i];
+        ClusterTreeModel<> &generic_model = this->generic_models[i];
+        grbda::RigidBodyTreeModel<> &lg_mult_custom_model = this->lg_mult_custom_models[i];
+        grbda::RigidBodyTreeModel<> &lg_mult_eigen_model = this->lg_mult_eigen_models[i];
+        grbda::RigidBodyTreeModel<> &projection_model = this->projection_models[i];
 
         const int nq = cluster_model.getNumPositions();
         const int nv = cluster_model.getNumDegreesOfFreedom();
@@ -223,7 +224,7 @@ TYPED_TEST(RigidBodyDynamicsAlgosTest, ForwardAndInverseDyanmics)
             }
 
             // Set random spatial forces on bodies
-            std::vector<ExternalForceAndBodyIndexPair> force_and_index_pairs;
+            std::vector<ExternalForceAndBodyIndexPair<double>> force_and_index_pairs;
             for (const auto &body : cluster_model.bodies())
                 force_and_index_pairs.emplace_back(body.index_, SVec<double>::Random());
             this->setForcesForAllModels(force_and_index_pairs, i);
@@ -273,9 +274,9 @@ TYPED_TEST(RigidBodyDynamicsAlgosTest, LambdaInv)
     const int num_tests_per_robot = 20;
     for (int i = 0; i < (int)this->cluster_models.size(); i++)
     {
-        ClusterTreeModel &cluster_model = this->cluster_models[i];
-        ClusterTreeModel &gen_model = this->generic_models[i];
-        RigidBodyTreeModel &proj_model = this->projection_models[i];
+        ClusterTreeModel<> &cluster_model = this->cluster_models[i];
+        ClusterTreeModel<> &gen_model = this->generic_models[i];
+        grbda::RigidBodyTreeModel<> &proj_model = this->projection_models[i];
 
         for (int j = 0; j < num_tests_per_robot; j++)
         {
@@ -313,8 +314,8 @@ TYPED_TEST(RigidBodyDynamicsAlgosTest, ApplyTestForceTest)
     const int num_tests_per_robot = 20;
     for (int i = 0; i < (int)this->cluster_models.size(); i++)
     {
-        ClusterTreeModel &cluster_model = this->cluster_models[i];
-        RigidBodyTreeModel &projection_model = this->projection_models[i];
+        ClusterTreeModel<> &cluster_model = this->cluster_models[i];
+        grbda::RigidBodyTreeModel<> &projection_model = this->projection_models[i];
 
         const int nq = cluster_model.getNumPositions();
         const int nv = cluster_model.getNumDegreesOfFreedom();
@@ -336,7 +337,7 @@ TYPED_TEST(RigidBodyDynamicsAlgosTest, ApplyTestForceTest)
             }
 
             cluster_model.updateContactPointJacobians();
-            for (const ContactPoint &cp : cluster_model.contactPoints())
+            for (const ContactPoint<double> &cp : cluster_model.contactPoints())
             {
                 const D6Mat<double> J = cluster_model.contactJacobianWorldFrame(cp.name_);
                 const D3Mat<double> J_lin = J.bottomRows<3>();

@@ -3,71 +3,73 @@
 namespace grbda
 {
 
-    ClusterTreeModel TeleopArm::buildClusterTreeModel() const
+    ClusterTreeModel<> TeleopArm::buildClusterTreeModel() const
     {
-        using namespace GeneralizedJoints;
-        using SpatialTransform = spatial::Transform;
-        
-        ClusterTreeModel model{};
+        using namespace ClusterJoints;
+        using SpatialTransform = spatial::Transform<>;
+
+        ClusterTreeModel<> model{};
 
         Mat3<double> I3 = Mat3<double>::Identity();
 
         // Base
         SpatialTransform base_Xtree = SpatialTransform(I3, base_location_);
-        Body base = model.registerBody(base_name_, base_spatial_inertia_,
+        Body<> base = model.registerBody(base_name_, base_spatial_inertia_,
                                        base_parent_name_, base_Xtree);
 
         SpatialTransform base_rotor_Xtree = SpatialTransform(I3, base_rotor_location_);
-        Body base_rotor = model.registerBody(base_rotor_name_, base_rotor_spatial_inertia_,
+        Body<> base_rotor = model.registerBody(base_rotor_name_, base_rotor_spatial_inertia_,
                                              base_rotor_parent_name_, base_rotor_Xtree);
 
-        GearedTransmissionModule base_module{base, base_rotor, ori::CoordinateAxis::Z,
-                                             ori::CoordinateAxis::Z, base_rotor_gear_ratio_};
-        model.appendRegisteredBodiesAsCluster<RevoluteWithRotor>(base_cluster_name_, base_module);
+        GearedTransmissionModule<> base_module{base, base_rotor, ori::CoordinateAxis::Z,
+                                               ori::CoordinateAxis::Z, base_rotor_gear_ratio_};
+        model.appendRegisteredBodiesAsCluster<RevoluteWithRotor<>>(base_cluster_name_, base_module);
 
         // Shoulder Rx
         SpatialTransform shoulder_rx_link_Xtree = SpatialTransform(I3, shoulder_rx_link_location_);
-        Body shoulder_rx_link = model.registerBody(shoulder_rx_link_name_,
+        Body<> shoulder_rx_link = model.registerBody(shoulder_rx_link_name_,
                                                    shoulder_rx_link_spatial_inertia_,
                                                    shoulder_rx_link_parent_name_,
                                                    shoulder_rx_link_Xtree);
 
         SpatialTransform shoulder_rx_rotor_Xtree = SpatialTransform(I3, shoulder_rx_rotor_location_);
-        Body shoulder_rx_rotor = model.registerBody(shoulder_rx_rotor_name_,
+        Body<> shoulder_rx_rotor = model.registerBody(shoulder_rx_rotor_name_,
                                                     shoulder_rx_rotor_spatial_inertia_,
                                                     shoulder_rx_rotor_parent_name_,
                                                     shoulder_rx_rotor_Xtree);
 
-        GearedTransmissionModule shoulder_rx_module{shoulder_rx_link, shoulder_rx_rotor,
-                                                    ori::CoordinateAxis::X, ori::CoordinateAxis::X,
-                                                    shoulder_rx_rotor_gear_ratio_};
-        model.appendRegisteredBodiesAsCluster<RevoluteWithRotor>(shoulder_rx_cluster_name_,
-                                                                 shoulder_rx_module);
+        GearedTransmissionModule<> shoulder_rx_module{shoulder_rx_link, shoulder_rx_rotor,
+                                                      ori::CoordinateAxis::X,
+                                                      ori::CoordinateAxis::X,
+                                                      shoulder_rx_rotor_gear_ratio_};
+        model.appendRegisteredBodiesAsCluster<RevoluteWithRotor<>>(shoulder_rx_cluster_name_,
+                                                                   shoulder_rx_module);
 
         // Shoulder Ry
         SpatialTransform shoulder_ry_link_Xtree = SpatialTransform(I3, shoulder_ry_link_location_);
-        Body shoulder_ry_link = model.registerBody(shoulder_ry_link_name_,
+        Body<> shoulder_ry_link = model.registerBody(shoulder_ry_link_name_,
                                                    shoulder_ry_link_spatial_inertia_,
                                                    shoulder_ry_link_parent_name_,
                                                    shoulder_ry_link_Xtree);
 
         SpatialTransform shoulder_ry_rotor_Xtree = SpatialTransform(I3, shoulder_ry_rotor_location_);
-        Body shoulder_ry_rotor = model.registerBody(shoulder_ry_rotor_name_,
+        Body<> shoulder_ry_rotor = model.registerBody(shoulder_ry_rotor_name_,
                                                     shoulder_ry_rotor_spatial_inertia_,
                                                     shoulder_ry_rotor_parent_name_,
                                                     shoulder_ry_rotor_Xtree);
 
-        GearedTransmissionModule shoulder_ry_module{shoulder_ry_link, shoulder_ry_rotor,
-                                                    ori::CoordinateAxis::Y, ori::CoordinateAxis::Y,
-                                                    shoulder_ry_rotor_gear_ratio_};
-        model.appendRegisteredBodiesAsCluster<RevoluteWithRotor>(shoulder_ry_cluster_name_,
-                                                                 shoulder_ry_module);
+        GearedTransmissionModule<> shoulder_ry_module{shoulder_ry_link, shoulder_ry_rotor,
+                                                      ori::CoordinateAxis::Y,
+                                                      ori::CoordinateAxis::Y,
+                                                      shoulder_ry_rotor_gear_ratio_};
+        model.appendRegisteredBodiesAsCluster<RevoluteWithRotor<>>(shoulder_ry_cluster_name_,
+                                                                   shoulder_ry_module);
 
         // Upper Link
         SpatialTransform upper_link_Xtree = SpatialTransform(I3, upper_link_location_);
-        Body upper_link = model.registerBody(upper_link_name_, upper_link_spatial_inertia_,
+        Body<> upper_link = model.registerBody(upper_link_name_, upper_link_spatial_inertia_,
                                              upper_link_parent_name_, upper_link_Xtree);
-        auto elbow_joint = std::make_shared<Joints::Revolute>(ori::CoordinateAxis::Y);
+        auto elbow_joint = std::make_shared<Joints::Revolute<>>(ori::CoordinateAxis::Y);
 
         // Wrist Pitch Link
         SpatialTransform wrist_pitch_link_Xtree = SpatialTransform(I3, wrist_pitch_link_location_);
@@ -75,7 +77,7 @@ namespace grbda
                                                    wrist_pitch_link_spatial_inertia_,
                                                    wrist_pitch_link_parent_name_,
                                                    wrist_pitch_link_Xtree);
-        auto wrist_pitch_joint = std::make_shared<Joints::Revolute>(ori::CoordinateAxis::Y);
+        auto wrist_pitch_joint = std::make_shared<Joints::Revolute<>>(ori::CoordinateAxis::Y);
 
         // Wrist Roll Link
         SpatialTransform wrist_roll_link_Xtree = SpatialTransform(I3, wrist_roll_link_location_);
@@ -83,13 +85,13 @@ namespace grbda
                                                   wrist_roll_link_spatial_inertia_,
                                                   wrist_roll_link_parent_name_,
                                                   wrist_roll_link_Xtree);
-        auto wrist_roll_joint = std::make_shared<Joints::Revolute>(ori::CoordinateAxis::Z);
+        auto wrist_roll_joint = std::make_shared<Joints::Revolute<>>(ori::CoordinateAxis::Z);
 
         // Elbow Rotor
         SpatialTransform elbow_rotor_Xtree = SpatialTransform(I3, elbow_rotor_location_);
-        Body elbow_rotor = model.registerBody(elbow_rotor_name_, elbow_rotor_spatial_inertia_,
+        Body<> elbow_rotor = model.registerBody(elbow_rotor_name_, elbow_rotor_spatial_inertia_,
                                               elbow_rotor_parent_name_, elbow_rotor_Xtree);
-        auto elbow_rotor_joint = std::make_shared<Joints::Revolute>(ori::CoordinateAxis::Y);
+        auto elbow_rotor_joint = std::make_shared<Joints::Revolute<>>(ori::CoordinateAxis::Y);
 
         // Wrist Pitch Rotor
         SpatialTransform wrist_pitch_rotor_Xtree = SpatialTransform(I3, wrist_pitch_rotor_location_);
@@ -97,7 +99,7 @@ namespace grbda
                                                     wrist_pitch_rotor_spatial_inertia_,
                                                     wrist_pitch_rotor_parent_name_,
                                                     wrist_pitch_rotor_Xtree);
-        auto wrist_pitch_rotor_joint = std::make_shared<Joints::Revolute>(ori::CoordinateAxis::Y);
+        auto wrist_pitch_rotor_joint = std::make_shared<Joints::Revolute<>>(ori::CoordinateAxis::Y);
 
         // Wrist Roll Rotor
         SpatialTransform wrist_roll_rotor_Xtree = SpatialTransform(I3, wrist_roll_rotor_location_);
@@ -105,42 +107,44 @@ namespace grbda
                                                    wrist_roll_rotor_spatial_inertia_,
                                                    wrist_roll_rotor_parent_name_,
                                                    wrist_roll_rotor_Xtree);
-        auto wrist_roll_rotor_joint = std::make_shared<Joints::Revolute>(ori::CoordinateAxis::Z);
+        auto wrist_roll_rotor_joint = std::make_shared<Joints::Revolute<>>(ori::CoordinateAxis::Z);
 
         // Upper Arm Cluster
-        ParallelBeltTransmissionModule upper_arm_module{upper_link, elbow_rotor,
-                                                        ori::CoordinateAxis::Y, 
-                                                        ori::CoordinateAxis::Y,
-                                                        elbow_rotor_gear_ratio_,
-                                                        elbow_rotor_belt_ratio_};
-        ParallelBeltTransmissionModule wrist_pitch_module{wrist_pitch_link, wrist_pitch_rotor,
+        ParallelBeltTransmissionModule<> upper_arm_module{upper_link, elbow_rotor,
                                                           ori::CoordinateAxis::Y,
                                                           ori::CoordinateAxis::Y,
-                                                          wrist_pitch_rotor_gear_ratio_,
-                                                          wrist_pitch_rotor_belt_ratio_};
-        ParallelBeltTransmissionModule wrist_roll_module{wrist_roll_link, wrist_roll_rotor,
-                                                         ori::CoordinateAxis::Z, 
-                                                         ori::CoordinateAxis::Z,
-                                                         wrist_roll_rotor_gear_ratio_,
-                                                         wrist_roll_rotor_belt_ratio_};
-        model.appendRegisteredBodiesAsCluster<RevoluteTripleWithRotor>(upper_arm_cluster_name_,
-                                                                       upper_arm_module,
-                                                                       wrist_pitch_module,
-                                                                       wrist_roll_module);
+                                                          elbow_rotor_gear_ratio_,
+                                                          elbow_rotor_belt_ratio_};
+        ParallelBeltTransmissionModule<> wrist_pitch_module{wrist_pitch_link, wrist_pitch_rotor,
+                                                            ori::CoordinateAxis::Y,
+                                                            ori::CoordinateAxis::Y,
+                                                            wrist_pitch_rotor_gear_ratio_,
+                                                            wrist_pitch_rotor_belt_ratio_};
+        ParallelBeltTransmissionModule<> wrist_roll_module{wrist_roll_link, wrist_roll_rotor,
+                                                           ori::CoordinateAxis::Z,
+                                                           ori::CoordinateAxis::Z,
+                                                           wrist_roll_rotor_gear_ratio_,
+                                                           wrist_roll_rotor_belt_ratio_};
+        model.appendRegisteredBodiesAsCluster<RevoluteTripleWithRotor<>>(upper_arm_cluster_name_,
+                                                                         upper_arm_module,
+                                                                         wrist_pitch_module,
+                                                                         wrist_roll_module);
 
         // Gripper
         SpatialTransform gripper_Xtree = SpatialTransform(I3, gripper_location_);
-        Body gripper = model.registerBody(gripper_name_, gripper_spatial_inertia_,
+        Body<> gripper = model.registerBody(gripper_name_, gripper_spatial_inertia_,
                                           gripper_parent_name_, gripper_Xtree);
 
         SpatialTransform gripper_rotor_Xtree = SpatialTransform(I3, gripper_rotor_location_);
-        Body gripper_rotor = model.registerBody(gripper_rotor_name_, gripper_rotor_spatial_inertia_,
+        Body<> gripper_rotor = model.registerBody(gripper_rotor_name_, gripper_rotor_spatial_inertia_,
                                                 gripper_rotor_parent_name_, gripper_rotor_Xtree);
 
-        GearedTransmissionModule gripper_module{gripper, gripper_rotor, ori::CoordinateAxis::X,
-                                                ori::CoordinateAxis::X, gripper_rotor_gear_ratio_};
-        model.appendRegisteredBodiesAsCluster<RevoluteWithRotor>(gripper_cluster_name_,
-                                                                 gripper_module);
+        GearedTransmissionModule<> gripper_module{gripper, gripper_rotor,
+                                                  ori::CoordinateAxis::X,
+                                                  ori::CoordinateAxis::X,
+                                                  gripper_rotor_gear_ratio_};
+        model.appendRegisteredBodiesAsCluster<RevoluteWithRotor<>>(gripper_cluster_name_,
+                                                                   gripper_module);
 
         // Add contact points
         model.appendContactPoint("upper-link", Vec3<double>(0., 0., 0.), "elbow-contact");

@@ -7,6 +7,7 @@
 
 using namespace grbda;
 using namespace grbda::BenchmarkHelpers;
+using namespace grbda::ori_representation;
 
 template <typename RobotType>
 void runForwardDynamicsBenchmark(std::ofstream &file)
@@ -19,17 +20,22 @@ void runForwardDynamicsBenchmark(std::ofstream &file)
     double t_reflected_inertia = 0.;
 
     RobotType robot;
-    ClusterTreeModel cluster_model = robot.buildClusterTreeModel();
+
+    ClusterTreeModel<> cluster_model = robot.buildClusterTreeModel();
+
     RigidBodyTreePtr lg_custom_mult_model =
-        std::make_shared<RigidBodyTreeModel>(cluster_model, FwdDynMethod::LagrangeMultiplierCustom);
+        std::make_shared<RigidBodyTreeModel<>>(cluster_model,
+                                               FwdDynMethod::LagrangeMultiplierCustom);
     RigidBodyTreePtr lg_eigen_mult_model =
-        std::make_shared<RigidBodyTreeModel>(cluster_model, FwdDynMethod::LagrangeMultiplierEigen);
+        std::make_shared<RigidBodyTreeModel<>>(cluster_model,
+                                               FwdDynMethod::LagrangeMultiplierEigen);
     RigidBodyTreePtr projection_model =
-        std::make_shared<RigidBodyTreeModel>(cluster_model, FwdDynMethod::Projection);
+        std::make_shared<RigidBodyTreeModel<>>(cluster_model, FwdDynMethod::Projection);
+
     ReflectedInertiaTreePtr reflected_inertia_model =
-        std::make_shared<ReflectedInertiaTreeModel>(cluster_model,
-                                                    RotorInertiaApproximation::DIAGONAL);
-                                                    
+        std::make_shared<ReflectedInertiaTreeModel<>>(cluster_model,
+                                                      RotorInertiaApproximation::DIAGONAL);
+
     std::vector<RigidBodyTreePtr> rigid_body_models{lg_custom_mult_model,
                                                     lg_eigen_mult_model,
                                                     projection_model};
@@ -87,12 +93,12 @@ void runInverseDynamicsBenchmark(std::ofstream &file)
     double t_reflected_inertia = 0.;
 
     RobotType robot;
-    ClusterTreeModel cluster_model = robot.buildClusterTreeModel();
+    ClusterTreeModel<> cluster_model = robot.buildClusterTreeModel();
     RigidBodyTreePtr projection_model =
-        std::make_shared<RigidBodyTreeModel>(cluster_model, FwdDynMethod::Projection);
+        std::make_shared<RigidBodyTreeModel<>>(cluster_model, FwdDynMethod::Projection);
     ReflectedInertiaTreePtr reflected_inertia_model =
-        std::make_shared<ReflectedInertiaTreeModel>(cluster_model,
-                                                    RotorInertiaApproximation::DIAGONAL);
+        std::make_shared<ReflectedInertiaTreeModel<>>(cluster_model,
+                                                      RotorInertiaApproximation::DIAGONAL);
 
     std::vector<RigidBodyTreePtr> rigid_body_models{projection_model};
     std::vector<ReflectedInertiaTreePtr> ref_inertia_models{reflected_inertia_model};
@@ -139,12 +145,12 @@ void runInverseOperationalSpaceInertiaBenchmark(std::ofstream &file)
     double t_reflected_inertia = 0.;
 
     RobotType robot;
-    ClusterTreeModel cluster_model = robot.buildClusterTreeModel();
+    ClusterTreeModel<> cluster_model = robot.buildClusterTreeModel();
     RigidBodyTreePtr projection_model =
-        std::make_shared<RigidBodyTreeModel>(cluster_model, FwdDynMethod::Projection);
+        std::make_shared<RigidBodyTreeModel<>>(cluster_model, FwdDynMethod::Projection);
     ReflectedInertiaTreePtr reflected_inertia_model =
-        std::make_shared<ReflectedInertiaTreeModel>(cluster_model,
-                                                    RotorInertiaApproximation::DIAGONAL);
+        std::make_shared<ReflectedInertiaTreeModel<>>(cluster_model,
+                                                      RotorInertiaApproximation::DIAGONAL);
     std::vector<RigidBodyTreePtr> rigid_body_models{projection_model};
     std::vector<ReflectedInertiaTreePtr> ref_inertia_models{reflected_inertia_model};
 
@@ -188,12 +194,12 @@ void runApplyTestForceBenchmark(std::ofstream &file, const std::string &contact_
     double t_reflected_inertia = 0.;
 
     RobotType robot;
-    ClusterTreeModel cluster_model = robot.buildClusterTreeModel();
+    ClusterTreeModel<> cluster_model = robot.buildClusterTreeModel();
     RigidBodyTreePtr projection_model =
-        std::make_shared<RigidBodyTreeModel>(cluster_model, FwdDynMethod::Projection);
+        std::make_shared<RigidBodyTreeModel<>>(cluster_model, FwdDynMethod::Projection);
     ReflectedInertiaTreePtr ref_inertia_model =
-        std::make_shared<ReflectedInertiaTreeModel>(cluster_model,
-                                                    RotorInertiaApproximation::DIAGONAL);
+        std::make_shared<ReflectedInertiaTreeModel<>>(cluster_model,
+                                                      RotorInertiaApproximation::DIAGONAL);
     std::vector<RigidBodyTreePtr> rigid_body_models{projection_model};
     std::vector<ReflectedInertiaTreePtr> ref_inertia_models{ref_inertia_model};
 
@@ -241,8 +247,8 @@ int main()
     fd_file.open(path_to_data + "Robots.csv");
     runForwardDynamicsBenchmark<RevoluteChainWithRotor<N_CHAIN>>(fd_file);
     runForwardDynamicsBenchmark<RevolutePairChainWithRotor<N_CHAIN>>(fd_file);
-    runForwardDynamicsBenchmark<MiniCheetah>(fd_file);
-    runForwardDynamicsBenchmark<MIT_Humanoid>(fd_file);
+    runForwardDynamicsBenchmark<MiniCheetah<>>(fd_file);
+    runForwardDynamicsBenchmark<MIT_Humanoid<>>(fd_file);
     runForwardDynamicsBenchmark<TelloWithArms>(fd_file);
     runForwardDynamicsBenchmark<JVRC1_Humanoid>(fd_file);
     fd_file.close();
@@ -253,8 +259,8 @@ int main()
     id_file.open(path_to_data + "Robots.csv");
     runInverseDynamicsBenchmark<RevoluteChainWithRotor<N_CHAIN>>(id_file);
     runInverseDynamicsBenchmark<RevolutePairChainWithRotor<N_CHAIN>>(id_file);
-    runInverseDynamicsBenchmark<MiniCheetah>(id_file);
-    runInverseDynamicsBenchmark<MIT_Humanoid>(id_file);
+    runInverseDynamicsBenchmark<MiniCheetah<>>(id_file);
+    runInverseDynamicsBenchmark<MIT_Humanoid<>>(id_file);
     runInverseDynamicsBenchmark<TelloWithArms>(id_file);
     runInverseDynamicsBenchmark<JVRC1_Humanoid>(id_file);
     id_file.close();
@@ -265,8 +271,8 @@ int main()
     iosim_file.open(path_to_data + "Robots.csv");
     runInverseOperationalSpaceInertiaBenchmark<RevoluteChainWithRotor<N_CHAIN>>(iosim_file);
     runInverseOperationalSpaceInertiaBenchmark<RevolutePairChainWithRotor<N_CHAIN>>(iosim_file);
-    runInverseOperationalSpaceInertiaBenchmark<MiniCheetah>(iosim_file);
-    runInverseOperationalSpaceInertiaBenchmark<MIT_Humanoid>(iosim_file);
+    runInverseOperationalSpaceInertiaBenchmark<MiniCheetah<>>(iosim_file);
+    runInverseOperationalSpaceInertiaBenchmark<MIT_Humanoid<>>(iosim_file);
     runInverseOperationalSpaceInertiaBenchmark<TelloWithArms>(iosim_file);
     runInverseOperationalSpaceInertiaBenchmark<JVRC1_Humanoid>(iosim_file);
     iosim_file.close();
@@ -279,8 +285,8 @@ int main()
     runApplyTestForceBenchmark<RevoluteChainWithRotor<N_CHAIN>>(atf_file, rev_chain_cp);
     std::string rev_pair_chain_cp = "cp-B-" + std::to_string(N_CHAIN / 2 - 1);
     runApplyTestForceBenchmark<RevolutePairChainWithRotor<N_CHAIN>>(atf_file, rev_pair_chain_cp);
-    runApplyTestForceBenchmark<MiniCheetah>(atf_file, "FL_foot_contact");
-    runApplyTestForceBenchmark<MIT_Humanoid>(atf_file, "left_toe_contact");
+    runApplyTestForceBenchmark<MiniCheetah<>>(atf_file, "FL_foot_contact");
+    runApplyTestForceBenchmark<MIT_Humanoid<>>(atf_file, "left_toe_contact");
     runApplyTestForceBenchmark<TelloWithArms>(atf_file, "left-toe_contact");
     atf_file.close();
 }

@@ -1,4 +1,4 @@
-add_subdirectory(GeneralizedJoints)
+add_subdirectory(ClusterJoints)
 add_subdirectory(Nodes)
 
 file(GLOB sources *.cpp)
