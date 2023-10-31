@@ -6,11 +6,14 @@
 namespace grbda
 {
 
-    template <size_t N>
-    class RevolutePairChain : public SerialChain
+    template <size_t N, typename Scalar = double>
+    class RevolutePairChain : public SerialChain<Scalar>
     {
     public:
-        RevolutePairChain(const bool random_parameters = true) : SerialChain(random_parameters)
+        typedef typename ClusterJoints::RevolutePair<Scalar> RevolutePair;
+        
+        RevolutePairChain(const bool random_parameters = true)
+            : SerialChain<Scalar>(random_parameters)
         {
             if (N % 2 != 0)
             {
@@ -21,8 +24,8 @@ namespace grbda
         size_t getNumDofs() const override { return N; }
 
     private:
-        ClusterTreeModel buildRandomClusterTreeModel() const override;
-        ClusterTreeModel buildUniformClusterTreeModel() const override;
+        ClusterTreeModel<Scalar> buildRandomClusterTreeModel() const override;
+        ClusterTreeModel<Scalar> buildUniformClusterTreeModel() const override;
     };
 
 } // namespace grbda

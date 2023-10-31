@@ -23,7 +23,7 @@ groupWidth = 1.0;
 barWidth = groupWidth / num_algos;
 offset = 0.5 * barWidth;
 
-bar(x - 3 * offset, data(:, 5), barWidth, 'FaceColor', subdued_yellow, 'DisplayName', 'ABA');
+bar(x - 3 * offset, data(:, 5), barWidth, 'FaceColor', subdued_yellow, 'DisplayName', 'Approximate ABA');
 bar(x - offset, data(:, 1), barWidth, 'FaceColor', subdued_red, 'DisplayName', 'C-ABA');
 bar(x + offset, data(:, 4), barWidth, 'FaceColor', subdued_blue, 'DisplayName', 'Projection Method');
 bar(x + 3 * offset, data(:, 3), barWidth, 'FaceColor', subdued_green, 'DisplayName', 'Lagrange Multipler Method');
@@ -38,13 +38,21 @@ set(gca, 'FontName', 'Times New Roman')
 
 % Set the x-axis tick labels
 xticks(x)
-xticklabels({'12 Link Serial Chain (GT)', '12 Link Serial Chain (PBT)', 'Mini Cheetah', 'MIT Humanoid', 'Tello Humanoid'})
+xticklabels({'12 Link Serial Chain (GT)', '12 Link Serial Chain (PBT)', 'Mini Cheetah', 'MIT Humanoid', 'Tello Humanoid', 'JVRC-1 Humanoid'})
 
 % Adjust the y-axis limits
 ylim([0 max(data, [], 'all') * 1.2])
 
 % Save the figure
 saveas(gcf, [path_to_figures, 'Robots.png'])
+
+% Compute percent speed reductions/additions relative to C-ABA
+for i = 1:size(data,1)
+    disp(['Robot ', num2str(i)])
+    disp(['Approximate ABA: ', num2str(100 * (data(i, 5) - data(i, 1)) / data(i, 1)), '%'])
+    disp(['Projection Method: ', num2str(100 * (data(i, 4) - data(i, 1)) / data(i, 1)), '%'])
+    disp(['Lagrange Multipler Method: ', num2str(100 * (data(i, 3) - data(i, 1)) / data(i, 1)), '%'])
+end
 
 %% Inverse Dynamics
 clear;
@@ -71,7 +79,7 @@ groupWidth = 0.75;
 barWidth = groupWidth / num_algos;
 offset = 0.5 * barWidth;
 
-bar(x - 2 * offset, data(:, 3), barWidth, 'FaceColor', subdued_yellow, 'DisplayName', 'RNEA');
+bar(x - 2 * offset, data(:, 3), barWidth, 'FaceColor', subdued_yellow, 'DisplayName', 'Approximate RNEA');
 bar(x, data(:, 1), barWidth, 'FaceColor', subdued_red, 'DisplayName', 'C-RNEA');
 bar(x + 2 * offset, data(:, 2), barWidth, 'FaceColor', subdued_blue, 'DisplayName', 'Projected RNEA');
 
@@ -85,13 +93,21 @@ set(gca, 'FontName', 'Times New Roman')
 
 % Set the x-axis tick labels
 xticks(x)
-xticklabels({'12 Link Serial Chain (GT)', '12 Link Serial Chain (PBT)', 'Mini Cheetah', 'MIT Humanoid', 'Tello Humanoid'})
+xticklabels({'12 Link Serial Chain (GT)', '12 Link Serial Chain (PBT)', 'Mini Cheetah', 'MIT Humanoid', 'Tello Humanoid', 'JVRC-1 Humanoid'})
 
 % Adjust the y-axis limits
 ylim([0 max(data, [], 'all') * 1.2])
 
 % Save the figure
 saveas(gcf, [path_to_figures, 'Robots.png'])
+
+% Compute percent speed reductions/additions relative to C-RNEA
+disp(' ')
+for i = 1:size(data,1)
+    disp(['Robot ', num2str(i)])
+    disp(['Approximate RNEA: ', num2str(100 * (data(i, 3) - data(i, 1)) / data(i, 1)), '%'])
+    disp(['Projected RNEA: ', num2str(100 * (data(i, 2) - data(i, 1)) / data(i, 1)), '%'])
+end
 
 %% Apply Test Force
 clear;
@@ -118,7 +134,7 @@ groupWidth = 0.75;
 barWidth = groupWidth / num_algos;
 offset = 0.5 * barWidth;
 
-bar(x - 2 * offset, data(:, 3), barWidth, 'FaceColor', subdued_yellow, 'DisplayName', 'EFPA');
+bar(x - 2 * offset, data(:, 3), barWidth, 'FaceColor', subdued_yellow, 'DisplayName', 'Approximate EFPA');
 bar(x, data(:, 1), barWidth, 'FaceColor', subdued_red, 'DisplayName', 'C-EFPA');
 bar(x + 2 * offset, data(:, 2), barWidth, 'FaceColor', subdued_blue, 'DisplayName', 'Projected IOSI');
 
@@ -132,10 +148,18 @@ set(gca, 'FontName', 'Times New Roman')
 
 % Set the x-axis tick labels
 xticks(x)
-xticklabels({'12 Link Serial Chain (GT)', '12 Link Serial Chain (PBT)', 'Mini Cheetah', 'MIT Humanoid', 'Tello Humanoid'})
+xticklabels({'12 Link Serial Chain (GT)', '12 Link Serial Chain (PBT)', 'Mini Cheetah', 'MIT Humanoid', 'Tello Humanoid', 'JVRC-1 Humanoid'})
 
 % Adjust the y-axis limits
 ylim([0 max(data, [], 'all') * 1.2])
 
 % Save the figure
 saveas(gcf, [path_to_figures, 'Robots.png'])
+
+% Compute percent speed reductions/additions relative to C-EFPA
+disp(' ')
+for i = 1:size(data,1)
+    disp(['Robot ', num2str(i)])
+    disp(['Approximate EFPA: ', num2str(100 * (data(i, 3) - data(i, 1)) / data(i, 1)), '%'])
+    disp(['Projected IOSI: ', num2str(100 * (data(i, 2) - data(i, 1)) / data(i, 1)), '%'])
+end

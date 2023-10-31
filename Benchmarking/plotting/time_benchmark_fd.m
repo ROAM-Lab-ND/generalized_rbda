@@ -42,7 +42,7 @@ function compareTimes(data)
     if plot_both_lg
         legend({'Cluster-Based', 'Lagrange Multipliers (Custom)', 'Lagrange Multipliers (Eigen)', 'Projection', 'Original ABA'}, 'Location', 'Best', 'Interpreter', 'latex')
     else
-        legend({'Cluster-Based', 'Lagrange Multipliers', 'Projection', 'Original ABA'}, 'Location', 'Best', 'Interpreter', 'latex')
+        legend({'Cluster-Based', 'Lagrange Multipliers', 'Projection', 'Approximate ABA'}, 'Location', 'Best', 'Interpreter', 'latex')
     end
 
     set(gca, 'Fontsize', 16)

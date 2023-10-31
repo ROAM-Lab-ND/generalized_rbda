@@ -6,14 +6,14 @@
 namespace grbda
 {
 
-    class Tello : public Robot
+    class Tello : public Robot<double>
     {
     public:
         Tello() {}
 
-        ClusterTreeModel buildClusterTreeModel() const override;
+        ClusterTreeModel<> buildClusterTreeModel() const override;
 
-    private:
+    protected:
         const double grav = -9.81;
     
         const Mat3<double> R_down = (Mat3<double>() << 1., 0., 0., 0., -1., 0., 0., 0., -1.).finished();
