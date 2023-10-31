@@ -60,6 +60,19 @@ namespace grbda
     using ModelState = std::vector<JointState<Scalar>>;
 
     template <typename Scalar>
+    inline std::pair<DVec<Scalar>, DVec<Scalar>> modelStateToVector(const ModelState<Scalar>& state)
+    {
+        DVec<Scalar> position(0);
+        DVec<Scalar> velocity(0);
+        for (int i = 0; i < state.size(); ++i)
+        {
+            position = appendEigenVector(position, state[i].position);
+            velocity = appendEigenVector(velocity, state[i].velocity);
+        }
+        return std::make_pair(position, velocity);
+    }
+
+    template <typename Scalar>
     struct ExternalForceAndBodyIndexPair
     {
         ExternalForceAndBodyIndexPair(int index, const SVec<Scalar> &force)

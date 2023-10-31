@@ -13,7 +13,7 @@ namespace grbda
 
         ClusterTreeModel<> buildClusterTreeModel() const override;
 
-    private:
+    protected:
         const double grav = -9.81;
     
         const Mat3<double> R_down = (Mat3<double>() << 1., 0., 0., 0., -1., 0., 0., 0., -1.).finished();

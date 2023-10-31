@@ -18,3 +18,6 @@ target_link_libraries(accuracy_benchmark_atf dyna-utils robots)
 
 add_executable(accuracy_benchmark_robots src/accuracyBenchmarkRobots.cpp)
 target_link_libraries(accuracy_benchmark_robots dyna-utils robots)
+
+add_executable(accuracy_benchmark_ee_tracking src/accuracyBenchmarkEndEffectorTracking.cpp)
+target_link_libraries(accuracy_benchmark_ee_tracking dyna-utils robots)
