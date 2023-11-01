@@ -65,7 +65,7 @@ namespace grbda
                 return loop_constraint_->clone();
             }
 
-            virtual JointState<Scalar> randomJointState() const;
+            virtual JointState<double> randomJointState() const;
 
             const DMat<Scalar> &G() const { return loop_constraint_->G(); }
             const DVec<Scalar> &g() const { return loop_constraint_->g(); }

@@ -45,16 +45,16 @@ namespace grbda
         }
 
         template <typename Scalar, typename OrientationRepresentation>
-        JointState<Scalar> Free<Scalar, OrientationRepresentation>::randomJointState() const
+        JointState<double> Free<Scalar, OrientationRepresentation>::randomJointState() const
         {
             const int num_ori_param = OrientationRepresentation::num_ori_parameter;
 
-            JointState<Scalar> joint_state(false, false);
-            joint_state.position = DVec<Scalar>::Zero(num_ori_param + 3);
-            joint_state.position.template segment<3>(0) = Vec3<Scalar>::Random(3);
+            JointState<double> joint_state(false, false);
+            joint_state.position = DVec<double>::Zero(num_ori_param + 3);
+            joint_state.position.template segment<3>(0) = Vec3<double>::Random(3);
             joint_state.position.template segment<num_ori_param>(3) =
-                OrientationRepresentation::template randomOrientation<Scalar>();
-            joint_state.velocity = DVec<Scalar>::Random(6);
+                OrientationRepresentation::template randomOrientation<double>();
+            joint_state.velocity = DVec<double>::Random(6);
             return joint_state;
         }
 

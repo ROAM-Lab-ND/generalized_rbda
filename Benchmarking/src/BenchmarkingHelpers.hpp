@@ -26,18 +26,15 @@ namespace grbda
 
             for (const auto &cluster : cluster_model.clusters())
             {
-                JointState<> joint_state = cluster->joint_->randomJointState();
-                if (joint_state.position.hasNaN())
-                {
-                    return true;
-                }
+                const std::shared_ptr<ClusterJoints::Base<double>> joint = cluster->joint_;
 
-                JointState<> spanning_joint_state = cluster->joint_->toSpanningTreeState(joint_state);
+                JointState<> joint_state = joint->randomJointState();
+                JointState<> spanning_joint_state = joint->toSpanningTreeState(joint_state);
 
                 DVec<double> independent_joint_pos_i;
                 DVec<double> independent_joint_vel_i;
-                if (cluster->joint_->type() == ClusterJointTypes::TelloHipDifferential ||
-                    cluster->joint_->type() == ClusterJointTypes::TelloKneeAnkleDifferential)
+                if (joint->type() == ClusterJointTypes::TelloHipDifferential ||
+                    joint->type() == ClusterJointTypes::TelloKneeAnkleDifferential)
                 {
                     independent_joint_pos_i = spanning_joint_state.position.tail<2>();
                     independent_joint_vel_i = spanning_joint_state.velocity.tail<2>();

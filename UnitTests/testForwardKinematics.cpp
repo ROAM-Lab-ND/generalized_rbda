@@ -18,7 +18,7 @@ protected:
                                 generic_model(TestHelpers::extractGenericJointModel(cluster_model)),
                                 rigid_body_model(cluster_model) {}
 
-    bool initializeRandomStates()
+    void initializeRandomStates()
     {
         model_state.clear();
         DVec<double> spanning_joint_pos = DVec<double>::Zero(0);
@@ -38,18 +38,6 @@ protected:
         cluster_model.setState(model_state);
         generic_model.setState(model_state);
         rigid_body_model.setState(spanning_joint_pos, spanning_joint_vel);
-
-        // Check for NaNs
-        bool nan_detected = false;
-        for (const auto &cluster : this->cluster_model.clusters())
-        {
-            if (cluster->joint_state_.position.hasNaN())
-            {
-                nan_detected = true;
-                break;
-            }
-        }
-        return nan_detected;
     }
 
     T robot;
@@ -90,14 +78,8 @@ TYPED_TEST(RigidBodyKinematicsTest, ForwardKinematics)
 
     for (int k = 0; k < 20; k++)
     {
-        // Initialize random state
-        bool nan_detected_in_state = this->initializeRandomStates();
-        if (nan_detected_in_state)
-        {
-            continue;
-        }
-
         // Forward kinematics
+        this->initializeRandomStates();
         this->cluster_model.forwardKinematicsIncludingContactPoints();
         this->generic_model.forwardKinematicsIncludingContactPoints();
         this->rigid_body_model.forwardKinematicsIncludingContactPoints();

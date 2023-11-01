@@ -48,11 +48,11 @@ namespace grbda
         }
 
         template <typename Scalar>
-        JointState<Scalar> Base<Scalar>::randomJointState() const
+        JointState<double> Base<Scalar>::randomJointState() const
         {
-            JointState<Scalar> joint_state(false, false);
-            joint_state.position = DVec<Scalar>::Random(numPositions());
-            joint_state.velocity = DVec<Scalar>::Random(numVelocities());
+            JointState<double> joint_state(false, false);
+            joint_state.position = DVec<double>::Random(numPositions());
+            joint_state.velocity = DVec<double>::Random(numVelocities());
             return joint_state;
         }
 

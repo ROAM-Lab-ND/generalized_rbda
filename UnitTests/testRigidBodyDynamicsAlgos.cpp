@@ -42,7 +42,7 @@ protected:
         }
     }
 
-    bool initializeRandomStates(const int robot_idx, bool use_spanning_state)
+    void initializeRandomStates(const int robot_idx, bool use_spanning_state)
     {
         ModelState<> model_state;
         DVec<double> spanning_joint_pos = DVec<double>::Zero(0);
@@ -69,18 +69,6 @@ protected:
         lg_mult_custom_models[robot_idx].setState(spanning_joint_pos, spanning_joint_vel);
         lg_mult_eigen_models[robot_idx].setState(spanning_joint_pos, spanning_joint_vel);
         projection_models[robot_idx].setState(spanning_joint_pos, spanning_joint_vel);
-
-        // Check for NaNs
-        bool nan_detected = false;
-        for (const auto &cluster : this->cluster_models[robot_idx].clusters())
-        {
-            if (cluster->joint_state_.position.hasNaN())
-            {
-                nan_detected = true;
-                break;
-            }
-        }
-        return nan_detected;
     }
 
     void setForcesForAllModels(
@@ -140,12 +128,7 @@ TYPED_TEST(RigidBodyDynamicsAlgosTest, MassMatrix)
         for (int j = 0; j < num_tests_per_robot; j++)
         {
             const bool use_spanning_state = i % 2 == 0;
-            bool nan_detected_in_state = this->initializeRandomStates(i, use_spanning_state);
-            if (nan_detected_in_state)
-            {
-                j--;
-                continue;
-            }
+            this->initializeRandomStates(i, use_spanning_state);
 
             DMat<double> H_cluster = cluster_model.getMassMatrix();
             DMat<double> H_generic = generic_model.getMassMatrix();
@@ -176,12 +159,7 @@ TYPED_TEST(RigidBodyDynamicsAlgosTest, BiasForceVector)
         for (int j = 0; j < num_tests_per_robot; j++)
         {
             const bool use_spanning_state = i % 2 == 0;
-            bool nan_detected_in_state = this->initializeRandomStates(i, use_spanning_state);
-            if (nan_detected_in_state)
-            {
-                j--;
-                continue;
-            }
+            this->initializeRandomStates(i, use_spanning_state);
 
             DVec<double> C_cluster = cluster_model.getBiasForceVector();
             DVec<double> C_generic = generic_model.getBiasForceVector();
@@ -216,12 +194,7 @@ TYPED_TEST(RigidBodyDynamicsAlgosTest, ForwardAndInverseDyanmics)
         {
             // Set random state
             const bool use_spanning_state = i % 2 == 0;
-            bool nan_detected_in_state = this->initializeRandomStates(i, use_spanning_state);
-            if (nan_detected_in_state)
-            {
-                j--;
-                continue;
-            }
+            this->initializeRandomStates(i, use_spanning_state);
 
             // Set random spatial forces on bodies
             std::vector<ExternalForceAndBodyIndexPair<double>> force_and_index_pairs;
@@ -281,12 +254,7 @@ TYPED_TEST(RigidBodyDynamicsAlgosTest, LambdaInv)
         for (int j = 0; j < num_tests_per_robot; j++)
         {
             const bool use_spanning_state = i % 2 == 0;
-            bool nan_detected_in_state = this->initializeRandomStates(i, use_spanning_state);
-            if (nan_detected_in_state)
-            {
-                j--;
-                continue;
-            }
+            this->initializeRandomStates(i, use_spanning_state);
 
             if (cluster_model.getNumEndEffectors() == 0)
             {
@@ -327,14 +295,8 @@ TYPED_TEST(RigidBodyDynamicsAlgosTest, ApplyTestForceTest)
 
         for (int j = 0; j < num_tests_per_robot; j++)
         {
-            // Set random state
             const bool use_spanning_state = i % 2 == 0;
-            bool nan_detected_in_state = this->initializeRandomStates(i, use_spanning_state);
-            if (nan_detected_in_state)
-            {
-                j--;
-                continue;
-            }
+            this->initializeRandomStates(i, use_spanning_state);
 
             cluster_model.updateContactPointJacobians();
             for (const ContactPoint<double> &cp : cluster_model.contactPoints())
