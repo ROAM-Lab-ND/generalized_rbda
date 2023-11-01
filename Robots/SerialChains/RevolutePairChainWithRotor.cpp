@@ -44,10 +44,10 @@ namespace grbda
 
             // Cluster
             const std::string name = "cluster-" + std::to_string(i);
-            TransmissionModule moduleA{linkA, rotorA, linkA_joint_axis, rotorA_joint_axis,
-                                       this->randomGearRatio(), this->randomGearRatio()};
-            TransmissionModule moduleB{linkB, rotorB, linkB_joint_axis, rotorB_joint_axis,
-                                       this->randomGearRatio(), this->randomGearRatio()};
+            ProxTransModule moduleA{linkA, rotorA, linkA_joint_axis, rotorA_joint_axis,
+                                    this->randomGearRatio(), this->template randomBeltRatios<1>()};
+            DistTransModule moduleB{linkB, rotorB, linkB_joint_axis, rotorB_joint_axis,
+                                    this->randomGearRatio(), this->template randomBeltRatios<2>()};
             model.template appendRegisteredBodiesAsCluster<RevPairRotor>(name, moduleA, moduleB);
 
             // Contact points
@@ -124,8 +124,8 @@ namespace grbda
 
             // Cluster
             const std::string name = "cluster-" + std::to_string(i);
-            TransmissionModule moduleA{linkA, rotorA, axis, axis, gr, br};
-            TransmissionModule moduleB{linkB, rotorB, axis, axis, gr, br};
+            ProxTransModule moduleA{linkA, rotorA, axis, axis, gr, Vec1<Scalar>{br}};
+            DistTransModule moduleB{linkB, rotorB, axis, axis, gr, Vec2<Scalar>{br, 1.}};
             model.template appendRegisteredBodiesAsCluster<RevPairRotor>(name, moduleA, moduleB);
 
             // Contact points

@@ -18,6 +18,10 @@ namespace grbda
     template <typename T>
     using RotMat = typename Eigen::Matrix<T, 3, 3>;
 
+    // 1x1 Vector
+    template <typename T>
+    using Vec1 = typename Eigen::Matrix<T, 1, 1>;
+
     // 2x1 Vector
     template <typename T>
     using Vec2 = typename Eigen::Matrix<T, 2, 1>;

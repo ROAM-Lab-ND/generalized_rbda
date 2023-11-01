@@ -8,16 +8,10 @@ namespace grbda
 
         template <typename Scalar>
         RevolutePairWithRotor<Scalar>::RevolutePairWithRotor(
-            ParallelBeltTransmissionModule<Scalar> &module_1,
-            ParallelBeltTransmissionModule<Scalar> &module_2)
+            ProximalTransmission &module_1, DistalTransmission &module_2)
             : Base<Scalar>(4, 2, 2), link1_(module_1.body_), link2_(module_2.body_),
               rotor1_(module_1.rotor_), rotor2_(module_2.rotor_)
         {
-            const Scalar gear_ratio_2 = module_2.gear_ratio_;
-            const Scalar belt_ratio_1 = module_1.belt_ratio_;
-            const Scalar net_ratio_1 = module_1.gear_ratio_ * belt_ratio_1;
-            const Scalar net_ratio_2 = gear_ratio_2 * module_2.belt_ratio_;
-
             using Rev = Joints::Revolute<Scalar>;
 
             link1_joint_ = this->single_joints_.emplace_back(new Rev(module_1.joint_axis_));
@@ -28,14 +22,20 @@ namespace grbda
             this->spanning_tree_to_independent_coords_conversion_ = DMat<int>::Identity(2, 4);
             this->spanning_tree_to_independent_coords_conversion_ << 1, 0, 0, 0, 0, 0, 0, 1;
 
+            Vec2<Scalar> gear_ratios{module_1.gear_ratio_, module_2.gear_ratio_};
+            Eigen::DiagonalMatrix<Scalar, 2> rotor_matrix(gear_ratios);
+
+            DMat<Scalar> belt_matrix = DMat<Scalar>::Zero(2, 2);
+            belt_matrix << beltMatrixRowFromBeltRatios(module_1.belt_ratios_), 0.,
+                beltMatrixRowFromBeltRatios(module_2.belt_ratios_);
+
             DMat<Scalar> G = DMat<Scalar>::Zero(4, 2);
-            G << 1., 0.,
-                net_ratio_1, 0.,
-                gear_ratio_2 * belt_ratio_1, net_ratio_2,
-                0., 1.;
+            G(0, 0) = 1.;
+            G.template block<2, 2>(1, 0) = rotor_matrix * belt_matrix;
+            G(3, 1) = 1.;
             DMat<Scalar> K = DMat<Scalar>::Identity(2, 4);
-            K << net_ratio_1, -1., 0., 0.,
-                gear_ratio_2 * belt_ratio_1, 0, -1., net_ratio_2;
+            K << G(1, 0), -1., 0., 0.,
+                G(2, 0), 0, -1., G(2, 1);
             this->loop_constraint_ = std::make_shared<LoopConstraint::Static<Scalar>>(G, K);
 
             X_intra_S_span_ = DMat<Scalar>::Zero(24, 4);

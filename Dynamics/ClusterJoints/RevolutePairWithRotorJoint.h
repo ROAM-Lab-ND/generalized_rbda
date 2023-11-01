@@ -13,8 +13,10 @@ namespace grbda
         class RevolutePairWithRotor : public Base<Scalar>
         {
         public:
-            RevolutePairWithRotor(ParallelBeltTransmissionModule<Scalar> &module_1,
-                                  ParallelBeltTransmissionModule<Scalar> &module_2);
+            typedef ParallelBeltTransmissionModule<1, Scalar> ProximalTransmission;
+            typedef ParallelBeltTransmissionModule<2, Scalar> DistalTransmission;
+
+            RevolutePairWithRotor(ProximalTransmission &module_1, DistalTransmission &module_2);
             virtual ~RevolutePairWithRotor() {}
 
             ClusterJointTypes type() const override

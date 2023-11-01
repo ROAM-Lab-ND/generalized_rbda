@@ -8,9 +8,9 @@ namespace grbda
 
         template <typename Scalar>
         RevoluteTripleWithRotor<Scalar>::RevoluteTripleWithRotor(
-            const ParallelBeltTransmissionModule<Scalar> &module_1,
-            const ParallelBeltTransmissionModule<Scalar> &module_2,
-            const ParallelBeltTransmissionModule<Scalar> &module_3)
+            const ProximalTransmission &module_1,
+            const IntermediateTransmission &module_2,
+            const DistalTransmission &module_3)
             : Base<Scalar>(6, 3, 3), link_1_(module_1.body_), link_2_(module_2.body_),
               link_3_(module_3.body_), rotor_1_(module_1.rotor_), rotor_2_(module_2.rotor_),
               rotor_3_(module_3.rotor_)
@@ -28,18 +28,17 @@ namespace grbda
             this->spanning_tree_to_independent_coords_conversion_ = DMat<int>::Zero(3, 6);
             this->spanning_tree_to_independent_coords_conversion_.template topLeftCorner<3, 3>().setIdentity();
 
-            const Scalar &gr1 = module_1.gear_ratio_;
-            const Scalar &gr2 = module_2.gear_ratio_;
-            const Scalar &gr3 = module_3.gear_ratio_;
-            const Scalar &br1 = module_1.belt_ratio_;
-            const Scalar &br2 = module_2.belt_ratio_;
-            const Scalar &br3 = module_3.belt_ratio_;
+            Vec3<Scalar> gear_ratios{module_1.gear_ratio_, module_2.gear_ratio_, module_3.gear_ratio_};
+            Eigen::DiagonalMatrix<Scalar, 3> rotor_matrix(gear_ratios);
+
+            DMat<Scalar> belt_matrix = DMat<Scalar>::Zero(3, 3);
+            belt_matrix << beltMatrixRowFromBeltRatios(module_1.belt_ratios_), 0., 0.,
+                beltMatrixRowFromBeltRatios(module_2.belt_ratios_), 0.,
+                beltMatrixRowFromBeltRatios(module_3.belt_ratios_);
 
             DMat<Scalar> G = DMat<Scalar>::Zero(6, 3);
             G.template topRows<3>().setIdentity();
-            G.row(3) << gr1 * br1, 0., 0.;
-            G.row(4) << gr2 * br1, gr2 * br2, 0.;
-            G.row(5) << -gr3 * br1, -gr3 * br2, gr3 * br3;
+            G.template bottomRows<3>() = rotor_matrix * belt_matrix;
 
             DMat<Scalar> K = DMat<Scalar>::Zero(3, 6);
             K.template leftCols(3) = -G.bottomRows(3);

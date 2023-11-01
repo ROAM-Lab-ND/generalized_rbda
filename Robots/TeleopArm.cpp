@@ -8,6 +8,10 @@ namespace grbda
         using namespace ClusterJoints;
         using SpatialTransform = spatial::Transform<>;
 
+        typedef typename ClusterJoints::ParallelBeltTransmissionModule<1> ProximalTransModule;
+        typedef typename ClusterJoints::ParallelBeltTransmissionModule<2> IntermedTransModule;
+        typedef typename ClusterJoints::ParallelBeltTransmissionModule<3> DistalTransModule;
+
         ClusterTreeModel<> model{};
 
         Mat3<double> I3 = Mat3<double>::Identity();
@@ -110,21 +114,21 @@ namespace grbda
         auto wrist_roll_rotor_joint = std::make_shared<Joints::Revolute<>>(ori::CoordinateAxis::Z);
 
         // Upper Arm Cluster
-        ParallelBeltTransmissionModule<> upper_arm_module{upper_link, elbow_rotor,
-                                                          ori::CoordinateAxis::Y,
-                                                          ori::CoordinateAxis::Y,
-                                                          elbow_rotor_gear_ratio_,
-                                                          elbow_rotor_belt_ratio_};
-        ParallelBeltTransmissionModule<> wrist_pitch_module{wrist_pitch_link, wrist_pitch_rotor,
-                                                            ori::CoordinateAxis::Y,
-                                                            ori::CoordinateAxis::Y,
-                                                            wrist_pitch_rotor_gear_ratio_,
-                                                            wrist_pitch_rotor_belt_ratio_};
-        ParallelBeltTransmissionModule<> wrist_roll_module{wrist_roll_link, wrist_roll_rotor,
-                                                           ori::CoordinateAxis::Z,
-                                                           ori::CoordinateAxis::Z,
-                                                           wrist_roll_rotor_gear_ratio_,
-                                                           wrist_roll_rotor_belt_ratio_};
+        ProximalTransModule upper_arm_module{upper_link, elbow_rotor,
+                                             ori::CoordinateAxis::Y,
+                                             ori::CoordinateAxis::Y,
+                                             elbow_rotor_gear_ratio_,
+                                             elbow_rotor_belt_ratios_};
+        IntermedTransModule wrist_pitch_module{wrist_pitch_link, wrist_pitch_rotor,
+                                               ori::CoordinateAxis::Y,
+                                               ori::CoordinateAxis::Y,
+                                               wrist_pitch_rotor_gear_ratio_,
+                                               wrist_pitch_rotor_belt_ratios_};
+        DistalTransModule wrist_roll_module{wrist_roll_link, wrist_roll_rotor,
+                                            ori::CoordinateAxis::Z,
+                                            ori::CoordinateAxis::Z,
+                                            wrist_roll_rotor_gear_ratio_,
+                                            wrist_roll_rotor_belt_ratios_};
         model.appendRegisteredBodiesAsCluster<RevoluteTripleWithRotor<>>(upper_arm_cluster_name_,
                                                                          upper_arm_module,
                                                                          wrist_pitch_module,

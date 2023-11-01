@@ -58,12 +58,12 @@ namespace grbda
                                              parent_name, rotorC_Xtree);
 
             // Cluster
-            TransmissionModule moduleA{linkA, rotorA, linkA_joint_axis, rotorA_joint_axis,
-                                       this->randomGearRatio(), this->randomGearRatio()};
-            TransmissionModule moduleB{linkB, rotorB, linkB_joint_axis, rotorB_joint_axis,
-                                       this->randomGearRatio(), this->randomGearRatio()};
-            TransmissionModule moduleC{linkC, rotorC, linkC_joint_axis, rotorC_joint_axis,
-                                       this->randomGearRatio(), this->randomGearRatio()};
+            ProxTransModule moduleA{linkA, rotorA, linkA_joint_axis, rotorA_joint_axis,
+                                    this->randomGearRatio(), this->template randomBeltRatios<1>()};
+            InterTransModule moduleB{linkB, rotorB, linkB_joint_axis, rotorB_joint_axis,
+                                     this->randomGearRatio(), this->template randomBeltRatios<2>()};
+            DistTransModule moduleC{linkC, rotorC, linkC_joint_axis, rotorC_joint_axis,
+                                    this->randomGearRatio(), this->template randomBeltRatios<3>()};
 
             const std::string cluster_name = "cluster-" + std::to_string(i);
             model.template appendRegisteredBodiesAsCluster<RevTripleWithRotor>(
