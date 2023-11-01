@@ -29,13 +29,13 @@ namespace grbda
 
 		template <typename Scalar>
 		DVec<Scalar>
-		TelloDifferential<Scalar>::gamma(const JointCoordinate<Scalar> &joint_pos) const
+		TelloDifferential<Scalar>::gamma(const PositionCoordinate<Scalar> &joint_pos) const
 		{
 			throw std::runtime_error("Tello loop constraint does not have a gamma function");
 		}
 
 		template <typename Scalar>
-		void TelloDifferential<Scalar>::updateJacobians(const JointCoordinate<Scalar> &joint_pos)
+		void TelloDifferential<Scalar>::updateJacobians(const PositionCoordinate<Scalar> &joint_pos)
 		{
 #ifdef DEBUG_MODE
 			if (!joint_pos.isSpanning())
@@ -51,8 +51,8 @@ namespace grbda
 		void TelloDifferential<Scalar>::updateBiases(const JointState<Scalar> &joint_state)
 		{
 #ifdef DEBUG_MODE
-			if (!joint_state.position.isSpanning() || !joint_state.velocity.isSpanning())
-				throw std::runtime_error("[TelloDifferential] Position and velocity for updating constraint bias must be spanning");
+			if (!joint_state.position.isSpanning())
+				throw std::runtime_error("[TelloDifferential] Position for updating constraint bias must be spanning");
 #endif
 
 			const DVec<Scalar> &q = joint_state.position;
@@ -151,8 +151,8 @@ namespace grbda
 		JointState<Scalar> TelloDifferential<Scalar>::randomJointState() const
 		{
 			// TODO(@MatthewChignoli): If this while loop works, then can get rid of all the downstream NaN checking
-			JointCoordinate<Scalar> joint_pos(DVec<Scalar>::Zero(this->num_positions_), true);
-			JointCoordinate<Scalar> joint_vel(DVec<Scalar>::Zero(this->num_velocities_), false);
+			PositionCoordinate<Scalar> joint_pos(DVec<Scalar>::Zero(this->num_positions_), true);
+			VelocityCoordinate<Scalar> joint_vel(DVec<Scalar>::Zero(this->num_velocities_));
 			JointState<Scalar> joint_state(joint_pos, joint_vel);
 
 			bool nan_detected = true;

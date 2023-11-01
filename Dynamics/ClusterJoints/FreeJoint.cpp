@@ -49,7 +49,7 @@ namespace grbda
         {
             const int num_ori_param = OrientationRepresentation::num_ori_parameter;
 
-            JointState<Scalar> joint_state(false, false);
+            JointState<Scalar> joint_state(false);
             joint_state.position = DVec<Scalar>::Zero(num_ori_param + 3);
             joint_state.position.template segment<3>(0) = Vec3<Scalar>::Random(3);
             joint_state.position.template segment<num_ori_param>(3) =

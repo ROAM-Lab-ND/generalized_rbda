@@ -44,7 +44,7 @@ namespace grbda
                 }
                 else
                 {
-                    if (joint_state.position.isSpanning() || joint_state.velocity.isSpanning())
+                    if (joint_state.position.isSpanning())
                         throw std::runtime_error("Initializing reflected inertia model requires all independent coordinates");
                     independent_joint_pos_i = joint_state.position;
                     independent_joint_vel_i = joint_state.velocity;

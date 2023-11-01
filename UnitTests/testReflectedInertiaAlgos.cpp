@@ -26,7 +26,7 @@ protected:
         {
             JointState<> joint_state = cluster->joint_->randomJointState();
 
-            if (joint_state.position.isSpanning() || joint_state.velocity.isSpanning())
+            if (joint_state.position.isSpanning())
                 throw std::runtime_error("Initializing reflected inertia model requires all independent coordinates");
 
             independent_joint_pos_ = appendEigenVector(independent_joint_pos_,

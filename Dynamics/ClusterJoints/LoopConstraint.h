@@ -23,10 +23,10 @@ namespace grbda
             int numIndependentVel() const { return G_.cols(); }
             int numConstraints() const { return K_.rows(); }
 
-            virtual void updateJacobians(const JointCoordinate<Scalar> &joint_pos) = 0;
+            virtual void updateJacobians(const PositionCoordinate<Scalar> &joint_pos) = 0;
             virtual void updateBiases(const JointState<Scalar> &joint_state) = 0;
 
-            virtual DVec<Scalar> gamma(const JointCoordinate<Scalar> &joint_pos) const = 0;
+            virtual DVec<Scalar> gamma(const PositionCoordinate<Scalar> &joint_pos) const = 0;
             const DMat<Scalar> &G() const { return G_; }
             const DVec<Scalar> &g() const { return g_; }
 
@@ -51,10 +51,10 @@ namespace grbda
                 return std::make_shared<Static<Scalar>>(*this);
             }
 
-            void updateJacobians(const JointCoordinate<Scalar> &joint_pos) override {}
+            void updateJacobians(const PositionCoordinate<Scalar> &joint_pos) override {}
             void updateBiases(const JointState<Scalar> &joint_state) override {}
 
-            DVec<Scalar> gamma(const JointCoordinate<Scalar> &joint_pos) const override;
+            DVec<Scalar> gamma(const PositionCoordinate<Scalar> &joint_pos) const override;
         };
 
         template <typename Scalar = double>

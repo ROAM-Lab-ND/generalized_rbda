@@ -37,10 +37,10 @@ namespace grbda
                 return std::make_shared<Free<Scalar, OrientationRepresentation>>(*this);
             }
 
-            void updateJacobians(const JointCoordinate<Scalar> &joint_pos) override {}
+            void updateJacobians(const PositionCoordinate<Scalar> &joint_pos) override {}
             void updateBiases(const JointState<Scalar> &joint_state) override {}
 
-            DVec<Scalar> gamma(const JointCoordinate<Scalar> &joint_pos) const override
+            DVec<Scalar> gamma(const PositionCoordinate<Scalar> &joint_pos) const override
             {
                 return joint_pos;
             }

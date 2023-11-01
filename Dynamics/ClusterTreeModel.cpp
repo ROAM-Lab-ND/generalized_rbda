@@ -274,8 +274,8 @@ namespace grbda
             const int &num_vel = cluster->num_velocities_;
             DVec<Scalar> qd_cluster = q_qd_pair.second.segment(vel_idx, num_vel);
 
-            JointState<Scalar> joint_state(JointCoordinate<Scalar>(q_cluster, false),
-                                           JointCoordinate<Scalar>(qd_cluster, false));
+            JointState<Scalar> joint_state(PositionCoordinate<Scalar>(q_cluster, false),
+                                           VelocityCoordinate<Scalar>(qd_cluster));
             state.push_back(joint_state);
         }
 

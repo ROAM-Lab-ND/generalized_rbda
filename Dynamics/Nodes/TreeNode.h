@@ -34,8 +34,8 @@ namespace grbda
 
         virtual void updateKinematics() = 0;
 
-        const JointCoordinate<Scalar> &jointPosition() const { return joint_state_.position; }
-        const JointCoordinate<Scalar> &jointVelocity() const { return joint_state_.velocity; }
+        const PositionCoordinate<Scalar> &jointPosition() const { return joint_state_.position; }
+        const VelocityCoordinate<Scalar> &jointVelocity() const { return joint_state_.velocity; }
         virtual const DVec<Scalar> &vJ() const = 0;
         virtual const DMat<Scalar> &S() const = 0;
         virtual const DVec<Scalar> &cJ() const = 0;

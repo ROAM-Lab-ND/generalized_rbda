@@ -31,8 +31,8 @@ namespace biasVelocityTestHelpers
         casadi::copy(cs_qd_sym, qd_sym);
 
         // Set state and update kinematics
-        JointState<SX> joint_state(JointCoordinate<SX>(q_sym, false),
-                                   JointCoordinate<SX>(qd_sym, false));
+        JointState<SX> joint_state(PositionCoordinate<SX>(q_sym, false),
+                                   VelocityCoordinate<SX>(qd_sym));
         joint_state.position = TestHelpers::plus(joint->type(), q_sym, dq_sym);
         joint->updateKinematics(joint_state);
 
@@ -214,8 +214,8 @@ protected:
             DVec<SX> dq_cluster = dq_sym.segment(vel_idx, num_vel);
             DVec<SX> qd_cluster = qd_sym.segment(vel_idx, num_vel);
 
-            JointState<SX> joint_state(JointCoordinate<SX>(q_cluster, false),
-                                       JointCoordinate<SX>(qd_cluster, false));
+            JointState<SX> joint_state(PositionCoordinate<SX>(q_cluster, false),
+                                       VelocityCoordinate<SX>(qd_cluster));
             joint_state.position = TestHelpers::plus(cluster->joint_->type(),
                                                      q_cluster, dq_cluster);
             state.push_back(joint_state);

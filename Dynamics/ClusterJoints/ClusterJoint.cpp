@@ -22,7 +22,7 @@ namespace grbda
         template <typename Scalar>
         JointState<Scalar> Base<Scalar>::toSpanningTreeState(const JointState<Scalar> &joint_state)
         {
-            JointState<Scalar> spanning_joint_state(true, true);
+            JointState<Scalar> spanning_joint_state(true);
 
             if (!joint_state.position.isSpanning())
             {
@@ -34,14 +34,7 @@ namespace grbda
             }
             loop_constraint_->updateJacobians(spanning_joint_state.position);
 
-            if (!joint_state.velocity.isSpanning())
-            {
-                spanning_joint_state.velocity = G() * joint_state.velocity;
-            }
-            else
-            {
-                spanning_joint_state.velocity = joint_state.velocity;
-            }
+            spanning_joint_state.velocity = G() * joint_state.velocity;
             loop_constraint_->updateBiases(spanning_joint_state);
 
             return spanning_joint_state;
@@ -50,7 +43,7 @@ namespace grbda
         template <typename Scalar>
         JointState<Scalar> Base<Scalar>::randomJointState() const
         {
-            JointState<Scalar> joint_state(false, false);
+            JointState<Scalar> joint_state(false);
             joint_state.position = DVec<Scalar>::Random(numPositions());
             joint_state.velocity = DVec<Scalar>::Random(numVelocities());
             return joint_state;

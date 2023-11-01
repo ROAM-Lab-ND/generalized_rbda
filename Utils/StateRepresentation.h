@@ -7,18 +7,18 @@ namespace grbda
 {
 
     template <typename Scalar = double>
-    class JointCoordinate : public DVec<Scalar>
+    class PositionCoordinate : public DVec<Scalar>
     {
     public:
-        JointCoordinate(const DVec<Scalar> &vec, bool is_spanning)
+        PositionCoordinate(const DVec<Scalar> &vec, bool is_spanning)
             : DVec<Scalar>(vec), _is_spanning(is_spanning) {}
 
-        JointCoordinate(const JointCoordinate<Scalar> &other)
+        PositionCoordinate(const PositionCoordinate<Scalar> &other)
             : DVec<Scalar>(other), _is_spanning(other._is_spanning) {}
 
         const bool &isSpanning() const { return _is_spanning; }
 
-        JointCoordinate &operator=(const JointCoordinate<Scalar> &other)
+        PositionCoordinate &operator=(const PositionCoordinate<Scalar> &other)
         {
             this->DVec<Scalar>::operator=(other);
             _is_spanning = other._is_spanning;
@@ -26,7 +26,7 @@ namespace grbda
         }
 
         template <typename Derived>
-        JointCoordinate<Scalar> &operator=(const Eigen::DenseBase<Derived> &x)
+        PositionCoordinate<Scalar> &operator=(const Eigen::DenseBase<Derived> &x)
         {
             this->DVec<Scalar>::operator=(x);
             return *this;
@@ -37,21 +37,21 @@ namespace grbda
     };
 
     template <typename Scalar = double>
+    using VelocityCoordinate = DVec<Scalar>;
+
+    template <typename Scalar = double>
     struct JointState
     {
-        JointState(const JointCoordinate<Scalar> &pos, const JointCoordinate<Scalar> &vel)
+        JointState(const PositionCoordinate<Scalar> &pos, const VelocityCoordinate<Scalar> &vel)
             : position(pos), velocity(vel) {}
 
-        JointState(bool position_is_spanning, bool velocity_is_spanning)
-            : position(JointCoordinate<Scalar>(DVec<Scalar>::Zero(0), position_is_spanning)),
-              velocity(JointCoordinate<Scalar>(DVec<Scalar>::Zero(0), velocity_is_spanning)) {}
+        JointState(bool is_pos_spanning) : position(DVec<Scalar>::Zero(0), is_pos_spanning),
+                                           velocity(DVec<Scalar>::Zero(0)) {}
 
-        JointState()
-            : position(JointCoordinate<Scalar>(DVec<Scalar>::Zero(0), false)),
-              velocity(JointCoordinate<Scalar>(DVec<Scalar>::Zero(0), false)) {}
+        JointState() : position(DVec<Scalar>::Zero(0), false), velocity(DVec<Scalar>::Zero(0)) {}
 
-        JointCoordinate<Scalar> position;
-        JointCoordinate<Scalar> velocity;
+        PositionCoordinate<Scalar> position;
+        VelocityCoordinate<Scalar> velocity;
     };
 
     template <typename Scalar = double>

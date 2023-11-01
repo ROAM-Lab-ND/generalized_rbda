@@ -19,7 +19,7 @@ namespace grbda
         }
 
         template <typename Scalar>
-        DVec<Scalar> Static<Scalar>::gamma(const JointCoordinate<Scalar> &joint_pos) const
+        DVec<Scalar> Static<Scalar>::gamma(const PositionCoordinate<Scalar> &joint_pos) const
         {
             return this->G_ * joint_pos;
         }
@@ -40,7 +40,7 @@ namespace grbda
                 const int n_span_pos = constraint->numSpanningPos();
                 const int n_ind_pos = constraint->numIndependentPos();
 
-                JointCoordinate<Scalar> position(y.segment(ind_pos_cnt, n_ind_pos), false);
+                PositionCoordinate<Scalar> position(y.segment(ind_pos_cnt, n_ind_pos), false);
                 spanning_pos.segment(span_pos_cnt, n_span_pos) = constraint->gamma(position);
 
                 span_pos_cnt += n_span_pos;
@@ -125,7 +125,7 @@ namespace grbda
                 const int n_ind_vel = constraint->numIndependentVel();
                 const int n_cnstr = constraint->numConstraints();
 
-                JointCoordinate<Scalar> position(q.segment(pos_cnt, n_span_pos), true);
+                PositionCoordinate<Scalar> position(q.segment(pos_cnt, n_span_pos), true);
                 constraint->updateJacobians(position);
 
                 G_.block(span_vel_cnt, ind_vel_cnt, n_span_vel, n_ind_vel) = constraint->G();
@@ -155,8 +155,8 @@ namespace grbda
                 const int n_ind_vel = constraint->numIndependentVel();
                 const int n_cnstr = constraint->numConstraints();
 
-                JointCoordinate<Scalar> position(q.segment(pos_cnt, n_span_pos), true);
-                JointCoordinate<Scalar> velocity(qd.segment(span_vel_cnt, n_span_vel), true);
+                PositionCoordinate<Scalar> position(q.segment(pos_cnt, n_span_pos), true);
+                VelocityCoordinate<Scalar> velocity(qd.segment(span_vel_cnt, n_span_vel));
                 JointState<Scalar> state(position, velocity);
                 constraint->updateJacobians(position);
                 constraint->updateBiases(state);
