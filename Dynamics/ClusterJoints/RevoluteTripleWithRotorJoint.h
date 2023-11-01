@@ -13,9 +13,14 @@ namespace grbda
         class RevoluteTripleWithRotor : public Base<Scalar>
         {
         public:
-            RevoluteTripleWithRotor(const ParallelBeltTransmissionModule<1, Scalar>& module_1,
-                                    const ParallelBeltTransmissionModule<2, Scalar>& module_2,
-                                    const ParallelBeltTransmissionModule<3, Scalar>& module_3);
+            typedef ParallelBeltTransmissionModule<1, Scalar> ProximalTransmission;
+            typedef ParallelBeltTransmissionModule<2, Scalar> IntermediateTransmission;
+            typedef ParallelBeltTransmissionModule<3, Scalar> DistalTransmission;
+
+
+            RevoluteTripleWithRotor(const ProximalTransmission& module_1,
+                                    const IntermediateTransmission& module_2,
+                                    const DistalTransmission& module_3);
             virtual ~RevoluteTripleWithRotor() {}
 
             ClusterJointTypes type() const override

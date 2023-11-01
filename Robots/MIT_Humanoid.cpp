@@ -147,7 +147,7 @@ namespace grbda
 
             KneeTransModule knee_module{knee_link, knee_rotor,
                                         ori::CoordinateAxis::Y, ori::CoordinateAxis::Y,
-                                        _kneeGearRatio, this->_kneeBeltRatios};
+                                        _kneeGearRatio, _kneeBeltRatios};
 
             // Ankle
             const std::string ankle_parent_name = knee_link_name;
@@ -172,7 +172,7 @@ namespace grbda
 
             AnkleTransModule ankle_module{ankle_link, ankle_rotor,
                                           ori::CoordinateAxis::Y, ori::CoordinateAxis::Y,
-                                          _ankleGearRatio, this->_ankleBeltRatios};
+                                          _ankleGearRatio, _ankleBeltRatios};
 
             // Cluster
             const std::string knee_and_ankle_name = withLeftRightSigns("knee_and_ankle", legID);
