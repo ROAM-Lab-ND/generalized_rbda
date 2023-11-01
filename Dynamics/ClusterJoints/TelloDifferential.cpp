@@ -148,13 +148,13 @@ namespace grbda
 		}
 
 		template <typename Scalar>
-		JointState<Scalar> TelloDifferential<Scalar>::randomJointState() const
+		JointState<double> TelloDifferential<Scalar>::randomJointState() const
 		{
-			// TODO(@MatthewChignoli): If this while loop works, then can get rid of all the downstream NaN checking
-			JointCoordinate<Scalar> joint_pos(DVec<Scalar>::Zero(this->num_positions_), true);
-			JointCoordinate<Scalar> joint_vel(DVec<Scalar>::Zero(this->num_velocities_), false);
-			JointState<Scalar> joint_state(joint_pos, joint_vel);
+			JointCoordinate<double> joint_pos(DVec<double>::Zero(this->num_positions_), true);
+			JointCoordinate<double> joint_vel(DVec<double>::Zero(this->num_velocities_), false);
+			JointState<double> joint_state(joint_pos, joint_vel);
 
+			int nan_counter = 0;
 			bool nan_detected = true;
 			while (nan_detected)
 			{
@@ -163,20 +163,22 @@ namespace grbda
 				Vec2<Scalar> minimal_pos = Vec2<Scalar>::Zero(2);
 				casadi_interface(dependent_state, minimal_pos, tello_constraint_->IK_pos_helpers_);
 				Vec2<Scalar> independent_pos = gear_ratio_ * minimal_pos;
-				joint_state.position << independent_pos, dependent_state[0];
+				joint_state.position << (double)independent_pos[0], (double)independent_pos[1],
+					(double)dependent_state[0][0], (double)dependent_state[0][1];
 
-				// TODO(@MatthewChignoli): How to handle NaNs when Scalar = casadi::SX?
-				// NaN check
-				// if (joint_state.position.hasNaN())
-				// 	continue;
-				// else
+				if (nan_counter++ > 10)
+					throw std::runtime_error("[TelloDifferential] Too many attempts to compute a random state resulted in NaNs");
+
+				if (joint_state.position.hasNaN())
+					continue;
+
 				nan_detected = false;
 
 				// Velocity
 				dependent_state.push_back(DVec<Scalar>::Random(2));
 				Vec2<Scalar> minimal_vel = Vec2<Scalar>::Zero(2);
 				casadi_interface(dependent_state, minimal_vel, tello_constraint_->IK_vel_helpers_);
-				joint_state.velocity << minimal_vel;
+				joint_state.velocity << (double)minimal_vel[0], (double)minimal_vel[1];
 			}
 
 			return joint_state;

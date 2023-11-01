@@ -17,7 +17,7 @@ protected:
           reflected_inertia_model{cluster_model, RotorInertiaApproximation::BLOCK_DIAGONAL},
           reflected_inertia_diag_model{cluster_model, RotorInertiaApproximation::DIAGONAL} {}
 
-    bool initializeRandomStates()
+    void initializeRandomStates()
     {
         ModelState<> model_state;
         independent_joint_pos_ = DVec<double>::Zero(0);
@@ -39,21 +39,9 @@ protected:
 
         cluster_model.setState(model_state);
         reflected_inertia_model.setIndependentStates(independent_joint_pos_,
-                                                            independent_joint_vel_);
+                                                     independent_joint_vel_);
         reflected_inertia_diag_model.setIndependentStates(independent_joint_pos_,
-                                                                 independent_joint_vel_);
-
-        // Check for NaNs
-        bool nan_detected = false;
-        for (const auto &cluster : this->cluster_model.clusters())
-        {
-            if (cluster->joint_state_.position.hasNaN())
-            {
-                nan_detected = true;
-                break;
-            }
-        }
-        return nan_detected;
+                                                          independent_joint_vel_);
     }
 
     void setForcesForAllModels(
@@ -93,16 +81,8 @@ TYPED_TEST(ReflectedInertiaDynamicsAlgosTest, ForwardKinematics)
 
     for (int k = 0; k < 20; k++)
     {
-
-        // Set random state
-        bool nan_detected_in_state = this->initializeRandomStates();
-        if (nan_detected_in_state)
-        {
-            k--;
-            continue;
-        }
-
         // Forward kinematics
+        this->initializeRandomStates();
         this->cluster_model.forwardKinematics();
         this->reflected_inertia_model.forwardKinematics();
 
@@ -174,14 +154,7 @@ TYPED_TEST(ReflectedInertiaDynamicsAlgosTest, CompareFwdDynAgainstLagrangianDeri
     for (int i = 0; i < num_tests; i++)
     {
         const int nv = this->cluster_model.getNumDegreesOfFreedom();
-
-        bool nan_detected_in_state = this->initializeRandomStates();
-        if (nan_detected_in_state)
-        {
-            i--;
-            continue;
-        }
-
+        this->initializeRandomStates();
         DVec<double> tau = DVec<double>::Random(nv);
 
         // Case 1: Cluster based model versus the exact Lagrangian derivation
@@ -221,14 +194,7 @@ TYPED_TEST(ReflectedInertiaDynamicsAlgosTest, CompareInvDynAgainstLagrangianDeri
     for (int i = 0; i < num_tests; i++)
     {
         const int nv = this->cluster_model.getNumDegreesOfFreedom();
-
-        bool nan_detected_in_state = this->initializeRandomStates();
-        if (nan_detected_in_state)
-        {
-            i--;
-            continue;
-        }
-
+        this->initializeRandomStates();
         const DVec<double> ydd = DVec<double>::Random(nv);
 
         // Case 1: Cluster based model versus the exact Lagrangian derivation
@@ -264,14 +230,7 @@ TYPED_TEST(ReflectedInertiaDynamicsAlgosTest, LambdaInv)
     const int num_tests = 100;
     for (int i = 0; i < num_tests; i++)
     {
-        const int nv = this->cluster_model.getNumDegreesOfFreedom();
-
-        bool nan_detected_in_state = this->initializeRandomStates();
-        if (nan_detected_in_state)
-        {
-            i--;
-            continue;
-        }
+        this->initializeRandomStates();
 
         std::vector<ReflectedInertiaTreeModel<>> models{this->reflected_inertia_model,
                                                         this->reflected_inertia_diag_model};
