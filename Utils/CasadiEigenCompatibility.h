@@ -19,6 +19,8 @@ namespace casadi
         return x;
     }
 
+    inline bool hasNaN(const casadi::Matrix<SXElem> &) { return true; }
+
     // Copy Eigen matrix to casadi matrix
     template <typename MT, typename Scalar>
     inline void copy(Eigen::MatrixBase<MT> const &src,
@@ -119,6 +121,14 @@ namespace Eigen
             return std::numeric_limits<double>::digits10;
         }
     };
+
+
+    // template <>
+    // bool internal::scalar_cmp_op<casadi::Matrix<casadi::SXElem>,casadi::Matrix<casadi::SXElem>, (internal::ComparisonName)0>::operator()(
+    //     const casadi::Matrix<casadi::SXElem> & /*x*/, const casadi::Matrix<casadi::SXElem> & /*y*/)
+    // {
+    //     return false;
+    // }
 } // namespace Eigen
 
 #endif // GRBDA_CASADI_EIGEN_COMPATIBILITY_H

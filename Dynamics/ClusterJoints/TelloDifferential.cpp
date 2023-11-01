@@ -148,12 +148,12 @@ namespace grbda
 		}
 
 		template <typename Scalar>
-		JointState<Scalar> TelloDifferential<Scalar>::randomJointState() const
+		JointState<double> TelloDifferential<Scalar>::randomJointState() const
 		{
 			// TODO(@MatthewChignoli): If this while loop works, then can get rid of all the downstream NaN checking
-			PositionCoordinate<Scalar> joint_pos(DVec<Scalar>::Zero(this->num_positions_), true);
-			VelocityCoordinate<Scalar> joint_vel(DVec<Scalar>::Zero(this->num_velocities_));
-			JointState<Scalar> joint_state(joint_pos, joint_vel);
+			PositionCoordinate<double> joint_pos(DVec<double>::Zero(this->num_positions_), true);
+			VelocityCoordinate<double> joint_vel(DVec<double>::Zero(this->num_velocities_));
+			JointState<double> joint_state(joint_pos, joint_vel);
 
 			bool nan_detected = true;
 			while (nan_detected)
@@ -163,20 +163,29 @@ namespace grbda
 				Vec2<Scalar> minimal_pos = Vec2<Scalar>::Zero(2);
 				casadi_interface(dependent_state, minimal_pos, tello_constraint_->IK_pos_helpers_);
 				Vec2<Scalar> independent_pos = gear_ratio_ * minimal_pos;
-				joint_state.position << independent_pos, dependent_state[0];
 
-				// TODO(@MatthewChignoli): How to handle NaNs when Scalar = casadi::SX?
+				// TODO(@MatthewChignoli): Can we do this more efficiently
+				joint_state.position[0] = (double) independent_pos[0];
+				joint_state.position[1] = (double) independent_pos[1];
+				joint_state.position[2] = (double) dependent_state[0][0];
+				joint_state.position[3] = (double) dependent_state[0][1];
+				// joint_state.position << independent_pos, dependent_state[0];
+
+				// TODO(@MatthewChignoli): How to handle NaNs when double = casadi::SX?
 				// NaN check
-				// if (joint_state.position.hasNaN())
-				// 	continue;
-				// else
-				nan_detected = false;
+				if (joint_state.position.hasNaN())
+					continue;
+				else
+					nan_detected = false;
 
 				// Velocity
 				dependent_state.push_back(DVec<Scalar>::Random(2));
 				Vec2<Scalar> minimal_vel = Vec2<Scalar>::Zero(2);
 				casadi_interface(dependent_state, minimal_vel, tello_constraint_->IK_vel_helpers_);
-				joint_state.velocity << minimal_vel;
+
+				joint_state.velocity[0] = (double) minimal_vel[0];
+				joint_state.velocity[1] = (double) minimal_vel[1];
+				// joint_state.velocity << minimal_vel;
 			}
 
 			return joint_state;

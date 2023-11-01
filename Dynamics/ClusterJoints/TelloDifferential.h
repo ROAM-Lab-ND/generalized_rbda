@@ -64,7 +64,7 @@ namespace grbda
             std::vector<std::tuple<Body<Scalar>, JointPtr<Scalar>, DMat<Scalar>>>
             bodiesJointsAndReflectedInertias() const override;
 
-            JointState<Scalar> randomJointState() const override;
+            JointState<double> randomJointState() const override;
 
         protected:
             std::shared_ptr<LoopConstraint::TelloDifferential<Scalar>> tello_constraint_;

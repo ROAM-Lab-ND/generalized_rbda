@@ -65,7 +65,8 @@ namespace grbda
                 return loop_constraint_->clone();
             }
 
-            virtual JointState<Scalar> randomJointState() const;
+            // TODO(@MatthewChignoli): Would there ever be a case we need random symbolics?
+            virtual JointState<double> randomJointState() const;
 
             const DMat<Scalar> &G() const { return loop_constraint_->G(); }
             const DVec<Scalar> &g() const { return loop_constraint_->g(); }
