@@ -4,7 +4,7 @@
 #include <memory>
 
 #include "LoopConstraint.h"
-#include "Dynamics/Body.h"
+#include "Transmissions.h"
 #include "Dynamics/Joints/Joint.h"
 #include "Utils/SpatialTransforms.h"
 
@@ -94,58 +94,6 @@ namespace grbda
             std::vector<JointPtr<Scalar>> single_joints_;
 
             DMat<int> spanning_tree_to_independent_coords_conversion_;
-        };
-
-        // TODO(@MatthewChignoli): We need to move all of these to their own file I think. Right now they are not really utilities...
-        // I think I should move all of these to a "transmission" namespace
-
-
-        template <typename Scalar = double>
-        struct GearedTransmissionModule
-        {
-            Body<Scalar> body_;
-            Body<Scalar> rotor_;
-            ori::CoordinateAxis joint_axis_;
-            ori::CoordinateAxis rotor_axis_;
-            Scalar gear_ratio_;
-        };
-
-
-        // TODO(@MatthewChignoli): I thihnk this needs a variable number of belt ratios that depend on how many parents it has... kind of tricky...
-        template <size_t N_belts, typename Scalar = double>
-        struct ParallelBeltTransmissionModule
-        {
-            Body<Scalar> body_;
-            Body<Scalar> rotor_;
-            ori::CoordinateAxis joint_axis_;
-            ori::CoordinateAxis rotor_axis_;
-            Scalar gear_ratio_;
-            Eigen::Matrix<Scalar, N_belts, 1> belt_ratios_;
-        };
-
-        template <typename DerivedScalar, int DerivedSize>
-        inline Eigen::Matrix<DerivedScalar, 1, DerivedSize>
-        beltMatrixRowFromBeltRatios(Eigen::Matrix<DerivedScalar, DerivedSize, 1> ratios)
-        {
-            for (int i = 1; i < ratios.size(); ++i)
-            {
-                ratios(i) = ratios(i - 1) * ratios(i);
-            }
-            return ratios.transpose();
-        }
-
-        template <typename Scalar = double>
-        struct TelloDifferentialModule
-        {
-            Body<Scalar> rotor1_;
-            Body<Scalar> rotor2_;
-            Body<Scalar> link1_;
-            Body<Scalar> link2_;
-            ori::CoordinateAxis rotor1_axis_;
-            ori::CoordinateAxis rotor2_axis_;
-            ori::CoordinateAxis link1_axis_;
-            ori::CoordinateAxis link2_axis_;
-            Scalar gear_ratio_;
         };
 
     }
