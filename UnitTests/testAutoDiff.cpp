@@ -1,11 +1,11 @@
 #include "gtest/gtest.h"
 
 #include "testHelpers.hpp"
-#include "Utils/Utilities.h"
-#include "Utils/SpatialInertia.h"
-#include "Utils/SpatialTransforms.h"
-#include "Dynamics/ClusterJoints/ClusterJointTypes.h"
-#include "Robots/RobotTypes.h"
+#include "grbda/Utils/Utilities.h"
+#include "grbda/Utils/SpatialInertia.h"
+#include "grbda/Utils/SpatialTransforms.h"
+#include "grbda/Dynamics/ClusterJoints/ClusterJointTypes.h"
+#include "grbda/Robots/RobotTypes.h"
 
 using namespace grbda;
 

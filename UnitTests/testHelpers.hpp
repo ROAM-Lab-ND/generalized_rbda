@@ -1,7 +1,7 @@
 #ifndef GRBDA_TEST_HELPERS_H
 #define GRBDA_TEST_HELPERS_H
 
-#include "Dynamics/ClusterTreeModel.h"
+#include "grbda/Dynamics/ClusterTreeModel.h"
 
 using namespace grbda;
 

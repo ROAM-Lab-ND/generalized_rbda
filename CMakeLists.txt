@@ -1,49 +1,21 @@
 cmake_minimum_required(VERSION 3.2)
 
-project(generalized_rbda)
+project(generalized_rbda VERSION 0.1.0)
 
-set(CMAKE_DISABLE_IN_SOURCE_BUILD ON)
-set(CMAKE_DISABLE_SOURCE_CHANGES  ON)
+message(STATUS "=============  !Generalized Rigid-Body Dynamics Algorithms!  =============")
 
-if ("${CMAKE_SOURCE_DIR}" STREQUAL "${CMAKE_BINARY_DIR}")
-  message(SEND_ERROR "In-source builds are not allowed.")
-endif ()
-
-set(CMAKE_INCLUDE_CURRENT_DIR ON)
-set(CMAKE_COLOR_MAKEFILE   ON)
-set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
-
-set(CMAKE_MODULE_PATH "${CMAKE_MODULE_PATH};${PROJECT_SOURCE_DIR}/cmake")
-set(CMAKE_PREFIX_PATH "${CMAKE_PREFIX_PATH};${PROJECT_SOURCE_DIR}/cmake")
-
-set(CMAKE_BUILD_TYPE Release)
-if(CMAKE_BUILD_TYPE STREQUAL "Debug")
-  add_definitions(-DDEBUG_MODE)
-endif()
-
-#------------------------------------------------------------------------
-# Compiler flags
-#------------------------------------------------------------------------
+################################################################################
+# Options
+################################################################################
+option(BUILD_TESTS "Building the tests" ON)
+option(BUILD_BENCHMARKS "Building the benchmarks" OFF)
 option(M1_BUILD "set compile options for Mac M1 chip" OFF)
-if(M1_BUILD AND CMAKE_SYSTEM_NAME MATCHES Darwin)
-  set(CMAKE_CXX_FLAGS "-mcpu=apple-m1")
-else()
-  set(CMAKE_CXX_FLAGS "-march=native")
-endif()
 
-set(CMAKE_C_FLAGS "-O3  -ggdb  -march=native -std=gnu99 -I.")
+################################################################################
+# Finding Dependencies
+################################################################################
+message(STATUS "======> Find Dependencies")
 
-set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -ggdb -Wall \
-  -Wextra -Wcast-align -Wdisabled-optimization -Wformat=2 \
-  -Winit-self -Wmissing-include-dirs -Woverloaded-virtual \
-  -Wshadow -Wsign-promo -Wno-sign-compare -Wno-unused-const-variable \
-  -Wno-unused-parameter -Wno-unused-variable -Wno-uninitialized")
-
-#------------------------------------------------------------------------
-# Dependencies
-#------------------------------------------------------------------------
 find_package(Eigen3 REQUIRED)
 if(Eigen3_FOUND)
   message(STATUS "Eigen3 found")
@@ -67,43 +39,82 @@ else()
   message(FATAL_ERROR "CasADi not found. Please install it or specify its location.")
 endif()
 
+################################################################################
+# Setup Compilation
+################################################################################
+message(STATUS "======> Setup Compilation")
 
+# TODO(@MatthewChignoli): Not really sure what a lot of this does
 
-#------------------------------------------------------------------------
-# Directory setup
-#------------------------------------------------------------------------
-include_directories(${CMAKE_CURRENT_SOURCE_DIR})
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/Utils)
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/Dynamics)
+set(CMAKE_DISABLE_IN_SOURCE_BUILD ON)
+set(CMAKE_DISABLE_SOURCE_CHANGES  ON)
 
-add_subdirectory(Utils)
-add_subdirectory(Dynamics)
-add_subdirectory(Robots)
-add_subdirectory(Benchmarking)
+if ("${CMAKE_SOURCE_DIR}" STREQUAL "${CMAKE_BINARY_DIR}")
+  message(SEND_ERROR "In-source builds are not allowed.")
+endif ()
 
-# Check if the project is being built as a subdirectory
-if (${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_CURRENT_SOURCE_DIR})
-  set(SUBMOD_MESSAGE "GRBDA compiled as main project")
-  
-  set(THIS_COM "${PROJECT_SOURCE_DIR}/" )
-  configure_file(${CMAKE_CURRENT_SOURCE_DIR}/config.h.cmake
-    ${CMAKE_BINARY_DIR}/Configuration.h)
+set(CMAKE_INCLUDE_CURRENT_DIR ON)
+set(CMAKE_COLOR_MAKEFILE   ON)
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
-  add_subdirectory(UnitTests)
-else()
-  set(SUBMOD_MESSAGE "GRBDA compiled as sub-module")
+set(CMAKE_MODULE_PATH "${CMAKE_MODULE_PATH};${PROJECT_SOURCE_DIR}/cmake")
+set(CMAKE_PREFIX_PATH "${CMAKE_PREFIX_PATH};${PROJECT_SOURCE_DIR}/cmake")
+
+set(CMAKE_BUILD_TYPE Release)
+if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+  add_definitions(-DDEBUG_MODE)
 endif()
 
-#------------------------------------------------------------------------
-# Printout
-#------------------------------------------------------------------------
-message ("")
-message ("--------------------------------------------------------------")
-message (" *** ${SUBMOD_MESSAGE} *** ")
-message ("")
-message (" The project name/ Build Type: ${PROJECT_NAME}/${CMAKE_BUILD_TYPE}")
-message (" The system name: ${CMAKE_SYSTEM_NAME}")
-message (" The project source directory: ${PROJECT_SOURCE_DIR}")
-message (" The project binary directory: ${CMAKE_BINARY_DIR}")
-message ("--------------------------------------------------------------")
-message ("")
+if(M1_BUILD AND CMAKE_SYSTEM_NAME MATCHES Darwin)
+  set(CMAKE_CXX_FLAGS "-mcpu=apple-m1")
+else()
+  set(CMAKE_CXX_FLAGS "-march=native")
+endif()
+
+set(CMAKE_C_FLAGS "-O3  -ggdb  -march=native -std=gnu99 -I.")
+
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -ggdb -Wall \
+  -Wextra -Wcast-align -Wdisabled-optimization -Wformat=2 \
+  -Winit-self -Wmissing-include-dirs -Woverloaded-virtual \
+  -Wshadow -Wsign-promo -Wno-sign-compare -Wno-unused-const-variable \
+  -Wno-unused-parameter -Wno-unused-variable -Wno-uninitialized")
+
+
+################################################################################
+# Specify Build Resources
+################################################################################
+message(STATUS "======>  Setup Build  ")
+
+# TODO(@MatthewChignoli): This is very ugly. Want a different way to deal with the codegen
+add_subdirectory(codegen/casadi)
+include_directories(codegen/casadi/header)
+
+include_directories(include)
+file(GLOB_RECURSE GRBDA_SRCS "src/*.cpp")
+
+################################################################################
+# Setup Build
+################################################################################
+
+if(NOT GRBDA_SRCS)
+  message(FATAL_ERROR "No source files found. Please add something")
+	set(LIBRARY_NAME)
+else()
+  add_library(${PROJECT_NAME} ${GRBDA_SRCS})
+  target_link_libraries(${PROJECT_NAME} PRIVATE ${CASADI_LIBRARIES} casadi_codegen)
+
+  # TODO(@MatthewChignoli): Not sure what this does
+  set(LIBRARY_NAME ${PROJECT_NAME})
+  set_target_properties(${PROJECT_NAME} PROPERTIES POSITION_INDEPENDENT_CODE TRUE) 
+endif()
+
+if (BUILD_TESTS)
+  message(STATUS "======>  Setup Tests  ")
+  # TODO(@MatthewChignoli): Not sure what the enable testing does
+  enable_testing()
+  add_subdirectory(UnitTests)
+endif()
+
+# TODO(@MatthewChignoli): Need to straighten out where all the files get written to

@@ -1,8 +1,8 @@
 #include "gtest/gtest.h"
 
 #include "testHelpers.hpp"
-#include "Dynamics/RigidBodyTreeModel.h"
-#include "Robots/RobotTypes.h"
+#include "grbda/Dynamics/RigidBodyTreeModel.h"
+#include "grbda/Robots/RobotTypes.h"
 
 using namespace grbda;
 
