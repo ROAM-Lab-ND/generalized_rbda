@@ -13,7 +13,8 @@ namespace grbda
         ClusterTreeModel<Scalar> buildClusterTreeModel() const override
         {
             typedef ClusterJoints::GearedTransmissionModule<Scalar> GearedTransModule;
-            typedef ClusterJoints::ParallelBeltTransmissionModule<Scalar> ParallelBeltTransModule;
+            typedef ClusterJoints::ParallelBeltTransmissionModule<1, Scalar> KneeTransModule;
+            typedef ClusterJoints::ParallelBeltTransmissionModule<2, Scalar> AnkleTransModule;
             typedef ClusterJoints::RevoluteWithRotor<Scalar> RevoluteWithRotor;
             typedef ClusterJoints::RevolutePairWithRotor<Scalar> RevolutePairWithRotor;
 
@@ -122,9 +123,10 @@ namespace grbda
                                                         knee_parent_name, xtreeKnee);
             Body<Scalar> knee_rotor = model.registerBody(knee_rotor_name, knee_rotor_inertia,
                                                          knee_parent_name, xtreeKneeRotor);
-            ParallelBeltTransModule knee_module{knee_link, knee_rotor,
-                                                ori::CoordinateAxis::Y, ori::CoordinateAxis::Y,
-                                                this->_kneeGearRatio, this->_kneeBeltRatio};
+            
+            KneeTransModule knee_module{knee_link, knee_rotor,
+                                        ori::CoordinateAxis::Y, ori::CoordinateAxis::Y,
+                                        this->_kneeGearRatio, this->_kneeBeltRatios};
 
             // Ankle
             const std::string ankle_parent_name = knee_link_name;
@@ -143,9 +145,10 @@ namespace grbda
                                                           knee_parent_name, xtreeAnkleRotor);
             Body<Scalar> ankle_link = model.registerBody(ankle_link_name, ankle_link_inertia,
                                                          ankle_parent_name, xtreeAnkle);
-            ParallelBeltTransModule ankle_module{ankle_link, ankle_rotor,
-                                                 ori::CoordinateAxis::Y, ori::CoordinateAxis::Y,
-                                                 this->_ankleGearRatio, this->_ankleBeltRatio};
+
+            AnkleTransModule ankle_module{ankle_link, ankle_rotor,
+                                          ori::CoordinateAxis::Y, ori::CoordinateAxis::Y,
+                                          this->_ankleGearRatio, this->_ankleBeltRatios};
 
             // Cluster
             const std::string knee_and_ankle_name = "knee_and_ankle";

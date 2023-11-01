@@ -11,7 +11,9 @@ namespace grbda
     {
     public:
         typedef typename ClusterJoints::RevoluteTripleWithRotor<Scalar> RevTripleWithRotor;
-        typedef typename ClusterJoints::ParallelBeltTransmissionModule<Scalar> TransmissionModule;
+        typedef typename ClusterJoints::ParallelBeltTransmissionModule<1, Scalar> ProxTransModule;
+        typedef typename ClusterJoints::ParallelBeltTransmissionModule<2, Scalar> InterTransModule;
+        typedef typename ClusterJoints::ParallelBeltTransmissionModule<3, Scalar> DistTransModule;
 
         RevoluteTripleChainWithRotor(const bool random_parameters = true)
             : SerialChain<Scalar>(random_parameters)

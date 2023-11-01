@@ -89,7 +89,7 @@ namespace grbda
         const Vec3<double> elbow_rotor_location_{0., 0., 0.};
         SpatialInertia<double> elbow_rotor_spatial_inertia_;
         const double elbow_rotor_gear_ratio_ = 6.0;
-        const double elbow_rotor_belt_ratio_ = 1.0;
+        const Vec1<double> elbow_rotor_belt_ratios_{1.0};
 
         // Wrist Pitch Rotor
         const std::string wrist_pitch_rotor_name_ = "wrist-pitch-rotor";
@@ -97,7 +97,7 @@ namespace grbda
         const Vec3<double> wrist_pitch_rotor_location_{0., 0., 0.};
         SpatialInertia<double> wrist_pitch_rotor_spatial_inertia_;
         const double wrist_pitch_rotor_gear_ratio_ = 6.0;
-        const double wrist_pitch_rotor_belt_ratio_ = 1.0;
+        const Vec2<double> wrist_pitch_rotor_belt_ratios_{1.0, 1.0};
 
         // Wrist Roll Rotor
         const std::string wrist_roll_rotor_name_ = "wrist-roll-rotor";
@@ -105,7 +105,7 @@ namespace grbda
         const Vec3<double> wrist_roll_rotor_location_{0., 0., 0.};
         SpatialInertia<double> wrist_roll_rotor_spatial_inertia_;
         const double wrist_roll_rotor_gear_ratio_ = 6.0;
-        const double wrist_roll_rotor_belt_ratio_ = 1.0;
+        const Vec3<double> wrist_roll_rotor_belt_ratios_{-1.0, 1.0, -1.0};
 
         // Gripper Cluster
         const std::string gripper_cluster_name_ = "gripper-cluster";
@@ -121,7 +121,7 @@ namespace grbda
         const std::string gripper_rotor_parent_name_ = "wrist-roll-link";
         Vec3<double> gripper_rotor_location_{0, 0, 0};
         SpatialInertia<double> gripper_rotor_spatial_inertia_;
-        double gripper_rotor_gear_ratio_ = 2.0;
+        const double gripper_rotor_gear_ratio_ = 2.0;
     };
 
 } // namespace grbda

@@ -41,8 +41,20 @@ namespace grbda
             return static_cast<Scalar>(rand() % _gear_ratio_scale + 1);
         }
 
+        template <size_t N>
+        Eigen::Matrix<Scalar, N, 1> randomBeltRatios() const
+        {
+            Eigen::Matrix<Scalar, N, 1> ratios;
+            for (size_t i = 0; i < N; ++i)
+            {
+                ratios[i] = static_cast<Scalar>(rand() % _belt_ratio_scale + 1);
+            }
+            return ratios;
+        }
+
         const bool _random_parameters;
         int _gear_ratio_scale = 5;
+        int _belt_ratio_scale = 5;
         };
 
 } // namespace grbda

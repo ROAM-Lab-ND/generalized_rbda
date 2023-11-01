@@ -96,6 +96,10 @@ namespace grbda
             DMat<int> spanning_tree_to_independent_coords_conversion_;
         };
 
+        // TODO(@MatthewChignoli): We need to move all of these to their own file I think. Right now they are not really utilities...
+        // I think I should move all of these to a "transmission" namespace
+
+
         template <typename Scalar = double>
         struct GearedTransmissionModule
         {
@@ -106,7 +110,9 @@ namespace grbda
             Scalar gear_ratio_;
         };
 
-        template <typename Scalar = double>
+
+        // TODO(@MatthewChignoli): I thihnk this needs a variable number of belt ratios that depend on how many parents it has... kind of tricky...
+        template <size_t N_belts, typename Scalar = double>
         struct ParallelBeltTransmissionModule
         {
             Body<Scalar> body_;
@@ -114,8 +120,19 @@ namespace grbda
             ori::CoordinateAxis joint_axis_;
             ori::CoordinateAxis rotor_axis_;
             Scalar gear_ratio_;
-            Scalar belt_ratio_;
+            Eigen::Matrix<Scalar, N_belts, 1> belt_ratios_;
         };
+
+        template <typename DerivedScalar, int DerivedSize>
+        inline Eigen::Matrix<DerivedScalar, 1, DerivedSize>
+        beltMatrixRowFromBeltRatios(Eigen::Matrix<DerivedScalar, DerivedSize, 1> ratios)
+        {
+            for (int i = 1; i < ratios.size(); ++i)
+            {
+                ratios(i) = ratios(i - 1) * ratios(i);
+            }
+            return ratios.transpose();
+        }
 
         template <typename Scalar = double>
         struct TelloDifferentialModule

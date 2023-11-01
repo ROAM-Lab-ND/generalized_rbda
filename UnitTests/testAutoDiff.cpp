@@ -124,12 +124,12 @@ GTEST_TEST(Derivatives, BiasVelocities)
         Body<SX> rotor2 = randomBody<SX>(2, -1, 2, 0, 0);
         Body<SX> link2 = randomBody<SX>(3, 0, 3, 0, 0);
 
-        ClusterJoints::ParallelBeltTransmissionModule<SX> module1{
+        ClusterJoints::ParallelBeltTransmissionModule<1, SX> module1{
             link1, rotor1, ori::randomCoordinateAxis(), ori::randomCoordinateAxis(),
-            random<SX>(), random<SX>()};
-        ClusterJoints::ParallelBeltTransmissionModule<SX> module2{
+            random<SX>(), Vec1<SX>{random<SX>()}};
+        ClusterJoints::ParallelBeltTransmissionModule<2, SX> module2{
             link2, rotor2, ori::randomCoordinateAxis(), ori::randomCoordinateAxis(),
-            random<SX>(), random<SX>()};
+            random<SX>(), Vec2<SX>{random<SX>(), random<SX>()}};
 
         std::shared_ptr<JointType> joint = std::make_shared<JointType>(module1, module2);
 
