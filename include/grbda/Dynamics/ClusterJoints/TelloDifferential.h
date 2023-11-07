@@ -17,7 +17,7 @@
 #define GRBDA_GENERALIZED_JOINTS_TELLO_DIFFERENTIAL_H
 
 #include "grbda/Dynamics/ClusterJoints/ClusterJoint.h"
-#include "CasadiGen.h"
+#include "grbda/Codegen/CasadiGen.h"
 
 namespace grbda
 {

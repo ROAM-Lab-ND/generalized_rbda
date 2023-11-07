@@ -87,10 +87,6 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -ggdb -Wall \
 ################################################################################
 message(STATUS "======>  Setup Build  ")
 
-# TODO(@MatthewChignoli): This is very ugly. Want a different way to deal with the codegen
-add_subdirectory(codegen/casadi)
-include_directories(codegen/casadi/header)
-
 include_directories(include)
 file(GLOB_RECURSE GRBDA_SRCS "src/*.cpp")
 
@@ -103,7 +99,7 @@ if(NOT GRBDA_SRCS)
 	set(LIBRARY_NAME)
 else()
   add_library(${PROJECT_NAME} ${GRBDA_SRCS})
-  target_link_libraries(${PROJECT_NAME} PRIVATE ${CASADI_LIBRARIES} casadi_codegen)
+  target_link_libraries(${PROJECT_NAME} PRIVATE ${CASADI_LIBRARIES})
 
   # TODO(@MatthewChignoli): Not sure what this does
   set(LIBRARY_NAME ${PROJECT_NAME})

@@ -2,7 +2,7 @@
 #define GRBDA_GENERALIZED_JOINTS_TELLO_KNEE_ANKLE_DIFFERENTIAL_H
 
 #include "grbda/Dynamics/ClusterJoints/TelloDifferential.h"
-#include "CasadiGen.h"
+#include "grbda/Codegen/CasadiGen.h"
 
 namespace grbda
 {

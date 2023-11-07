@@ -37,7 +37,7 @@
 *.swp
 *.pyc
 *.cache
-# **casadi/
+**casadi/
 *.casadi
 .vscode/
 .DS_Store
