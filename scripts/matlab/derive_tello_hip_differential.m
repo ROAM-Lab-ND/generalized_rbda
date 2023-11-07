@@ -81,11 +81,3 @@ function thd = derive_tello_hip_differential_fn()
     thd.IK_vel = Function('thd_IK_vel', {ql, ql_dot}, {ik_y_dot});
     thd.jacobian = Function('thd_jacobian', {qr, ql}, {G, K});
     thd.bias = Function('thd_bias', {qr, ql, qr_dot, ql_dot}, {g, k});
-
-    % TODO(@nicholasadr): is this needed?
-    % % Generate C code
-    % opts = struct('mex', true);
-    % thd.G.generate('gen_thd_G.c', opts);
-    % thd.G_dot.generate('gen_thd_G_dot.c', opts);
-    % thd.IK_pos.generate('gen_thd_IK_ql_to_y', opts);
-    % thd.IK_vel.generate('gen_thd_IK_dql_to_dy', opts);

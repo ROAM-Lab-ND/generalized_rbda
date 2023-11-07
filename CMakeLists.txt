@@ -108,7 +108,6 @@ endif()
 
 if(BUILD_TESTS)
   message(STATUS "======>  Setup Tests  ")
-  # TODO(@MatthewChignoli): Not sure what the enable testing does
   enable_testing()
   add_subdirectory(UnitTests)
 endif()
