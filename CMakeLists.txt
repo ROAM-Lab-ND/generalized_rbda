@@ -110,11 +110,16 @@ else()
   set_target_properties(${PROJECT_NAME} PROPERTIES POSITION_INDEPENDENT_CODE TRUE) 
 endif()
 
-if (BUILD_TESTS)
+if(BUILD_TESTS)
   message(STATUS "======>  Setup Tests  ")
   # TODO(@MatthewChignoli): Not sure what the enable testing does
   enable_testing()
   add_subdirectory(UnitTests)
+endif()
+
+if(BUILD_BENCHMARKS)
+  message(STATUS "======>  Setup Benchmarks  ")
+  add_subdirectory(Benchmarking)
 endif()
 
 # TODO(@MatthewChignoli): Need to straighten out where all the files get written to

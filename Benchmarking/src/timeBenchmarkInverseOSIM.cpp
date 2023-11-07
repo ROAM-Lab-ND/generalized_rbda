@@ -2,8 +2,8 @@
 #include <fstream>
 
 #include "BenchmarkingHelpers.hpp"
-#include "Robots/RobotTypes.h"
-#include "Utils/Timer.h"
+#include "grbda/Robots/RobotTypes.h"
+#include "grbda/Utils/Timer.h"
 
 using namespace grbda;
 using namespace grbda::BenchmarkHelpers;
