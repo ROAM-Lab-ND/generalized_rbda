@@ -5,6 +5,7 @@
 #include <vector>
 #include <stdio.h>
 #include <stdexcept>
+#include <optional>
 
 #include "TreeModel.h"
 #include "Dynamics/Nodes/ClusterTreeNode.h"
