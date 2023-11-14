@@ -266,7 +266,7 @@ namespace grbda
 
         ModelState<Scalar> state;
 
-        for (const auto cluster : cluster_nodes_)
+        for (const auto& cluster : cluster_nodes_)
         {
             DVec<Scalar> q_cluster = q_qd_pair.first.segment(cluster->position_index_,
                                                              cluster->num_positions_);

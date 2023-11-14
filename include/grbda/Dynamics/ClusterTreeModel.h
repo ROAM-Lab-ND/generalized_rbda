@@ -5,6 +5,7 @@
 #include <vector>
 #include <stdio.h>
 #include <stdexcept>
+#include <optional>
 
 #include "grbda/Dynamics/TreeModel.h"
 #include "grbda/Dynamics/Nodes/ClusterTreeNode.h"
