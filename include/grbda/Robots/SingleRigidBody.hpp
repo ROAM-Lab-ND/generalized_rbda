@@ -18,6 +18,13 @@ namespace grbda
             _rotational_inertia = Vec3<Scalar>::Random().asDiagonal();
         }
 
+        SingleRigidBody(Scalar mass, Vec3<Scalar> COM, Mat3<Scalar> rotational_inertia)
+        {
+            _mass = mass;
+            _COM = COM;
+            _rotational_inertia = rotational_inertia;
+        }
+
         ClusterTreeModel<Scalar> buildClusterTreeModel() const override
         {
             ClusterTreeModel<Scalar> model;
