@@ -1,7 +1,7 @@
 #!/bin/bash
 
 CURRENT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
-GRBDA_DIR=${CURRENT_DIR}/../..
+GRBDA_DIR=${CURRENT_DIR}/..
 cd $GRBDA_DIR
 mkdir grbda-dependencies
 cd grbda-dependencies
@@ -14,6 +14,7 @@ sudo apt install \
     libglib2.0-dev libusb-1.0-0-dev libsdl2-dev -y
 
 # Install CMake 3.15.0
+cd $DEP_PATH 
 echo "[CMAKE] BUILDING CMAKE 3.15.0..."
 if command -v cmake &> /dev/null
 then
@@ -36,16 +37,17 @@ cmake --version
 echo "[CMAKE] CMAKE installed"
 
 # Eigen 3.4.0 Installation
+cd $DEP_PATH 
 echo "[EIGEN] BUILDING EIGEN 3.4.0..."
 wget https://gitlab.com/libeigen/eigen/-/archive/3.4.0/eigen-3.4.0.zip
 unzip eigen-3.4.0.zip
 rm eigen-3.4.0.zip
 cd eigen-3.4.0
 mkdir build && cd build && cmake .. && sudo make -j8 && sudo make install 
-cd $DEP_PATH 
 echo "[EIGEN] EIGEN 3.4.0 INSTALLED"
 
 # Casadi 3.6.3 Installation
+cd $DEP_PATH 
 echo "[CASADI] BUILDING CASADI 3.6.3..."
 mkdir -p casadi
 cd casadi
