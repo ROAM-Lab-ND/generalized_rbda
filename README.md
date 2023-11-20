@@ -57,7 +57,7 @@ The process for building a model proceeds as follows:
 - Register all of the bodies contained in a cluster by providing their connectivity and inertia information.
 - Append those bodies to the model by providing information about the cluster joint that connects them.
 - Repeat the above steps for each cluster in the system.
-Specific examples of how to build a model can be found in the [Robots](Robots/) folder, along with a more detailed [README](Dynamics/README.md) detailing the process.
+Specific examples of how to build a model can be found in the [Robots](include/grbda/Robots/) folder, along with a more detailed [README](include/grbda/Dynamics/README.md) detailing the process.
 
 ## Configuration
 
@@ -82,11 +82,12 @@ target_link_libraries(${PROJECT_NAME} ${GRBDA_LIBRARIES})
 ## Benchmarking
 We have included a set of [benchmarks](Benchmarking/) to compare the performance of our algorithms against existing algorithms.
 We test the algorithms on the following robots:
-- [12 Link Serial Chain Actuated via Geared Transmissions](Robots/SerialChains/RevoluteChainWithRotor.hpp)
-- [12 Link Serial Chain Actuated via Paralell Belt Transmissions](Robots/SerialChains/RevolutePairChainWithRotor.hpp)
-- [MIT Mini Cheetah Quadruped](Robots/MiniCheetah.hpp)
-- [MIT Humanoid Robot](Robots/MIT_Humanoid.hpp)
-- [Tello Humanoid Robot](Robots/TelloWithArms.hpp)
+- [12 Link Serial Chain Actuated via Geared Transmissions](include/grbda/Robots/SerialChains/RevoluteChainWithRotor.hpp)
+- [12 Link Serial Chain Actuated via Paralell Belt Transmissions](include/grbda/Robots/SerialChains/RevolutePairChainWithRotor.hpp)
+- [MIT Mini Cheetah Quadruped](include/grbda/Robots/MiniCheetah.hpp)
+- [MIT Humanoid Robot](include/grbda/Robots/MIT_Humanoid.hpp)
+- [Tello Humanoid Robot](include/grbda/Robots/TelloWithArms.hpp)
+- [JVRC Humanoid Robot](include/grbda/Robots/JVRC1_Humanoid.hpp)
 
 ### Forward Dynamics
 We compare our constrained forward dynamics algorithm, the Cluster-based Articulated Body Algorithm (C-ABA) against the following algorithms:
@@ -133,7 +134,7 @@ If you use this code in your research, please cite the repository as follows:
 ```
 @misc{grbdaweb,
    author = {Matthew Chignoli, Nicholas Adrian, Patrick M. Wensing, and others},
-   title = {GRBDA: Generalzied Rigid-Body Dynamics Algorithms},
+   title = {GRBDA: Generalized Rigid-Body Dynamics Algorithms},
    howpublished = {https://github.com/ROAM-Lab-ND/generalized_rbda},
    year = {2023}
 }
