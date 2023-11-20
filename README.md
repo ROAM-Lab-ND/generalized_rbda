@@ -29,7 +29,9 @@ Our approach is functionally similar to Jain's [Local Constraint Embedding](http
 - C++17 or higher
 - CMake 3.15 or higher
 - Eigen 3.3.7 or higher
-- Casadi 3.6.3 or higher (built from [source](https://github.com/casadi/casadi/wiki/SourceBuild))
+- Casadi 3.6.3 or higher
+
+They can be installed using the provided [install script](scripts/install_dependencies.sh).
 
 ### Supported Operating Systems
 - Ubuntu 18.04 or higher
