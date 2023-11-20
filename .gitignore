@@ -45,3 +45,4 @@ build*/
 *build/
 Benchmarking/data/*
 Benchmarking/figures/*
+grbda_dependencies/*

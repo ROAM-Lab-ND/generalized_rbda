@@ -27,7 +27,7 @@ Our approach is functionally similar to Jain's [Local Constraint Embedding](http
 ## Installation
 ### Dependencies
 - C++17 or higher
-- CMake 3.20 or higher
+- CMake 3.15 or higher
 - Eigen 3.3.7 or higher
 - Casadi 3.6.3 or higher (built from [source](https://github.com/casadi/casadi/wiki/SourceBuild))
 
