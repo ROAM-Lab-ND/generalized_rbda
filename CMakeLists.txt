@@ -10,6 +10,7 @@ message(STATUS "=============  !Generalized Rigid-Body Dynamics Algorithms!  ===
 option(BUILD_TESTS "Building the tests" ON)
 option(BUILD_BENCHMARKS "Building the benchmarks" OFF)
 option(M1_BUILD "set compile options for Mac M1 chip" OFF)
+option(ASAN "set compile options for Address Sanitizer" OFF)
 
 ################################################################################
 # Finding Dependencies
@@ -81,6 +82,9 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -ggdb -Wall \
   -Wshadow -Wsign-promo -Wno-sign-compare -Wno-unused-const-variable \
   -Wno-unused-parameter -Wno-unused-variable -Wno-uninitialized")
 
+if(ASAN)
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address")
+endif()
 
 ################################################################################
 # Specify Build Resources
