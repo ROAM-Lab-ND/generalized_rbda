@@ -1,0 +1,15 @@
+#!/bin/bash
+
+echo "WARNING: This script will delete all docker containers and images locally. Enter y to continue, or any other key to exit"
+
+read input
+
+if [ "$input" = "y" ]
+then
+    sudo docker stop $(sudo docker ps -aq)
+    sudo docker rm -vf $(sudo docker ps -aq)
+    sudo docker rmi -f $(sudo docker images -aq)
+    sudo docker images purge
+else
+    echo "Containers and images unchanged."
+fi
