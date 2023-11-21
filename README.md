@@ -95,7 +95,7 @@ We test the algorithms on the following robots:
 We compare our constrained forward dynamics algorithm, the Cluster-based Articulated Body Algorithm (C-ABA) against the following algorithms:
 - **Articulated Body Algorithm (ABA)**: The conventional recursive algorithm for computing the forward dynamics of kinematic chains and branched models. This algorithm is not capable of handling actuation sub-mechanisms.
 - **Projection Method**: A non-recursive algorithm that computes the constrained forward dynamics by projecting the equations of motion for the spanning tree coordinates onto the independent coordinates. See Method 3 in Chapter 8.5 of [Rigid Body Dynamics Algorithms](https://link.springer.com/book/10.1007/978-1-4899-7560-7) for more details.
-- **Lagrange Multiplier Method**: A non-recusrive algorithm that first computes the constraint forces necessary to satisfy closed loop constraints and then uses those forces to compute the forward dynamics. See Method 2 in Chapter 8.5 of [Rigid Body Dynamics Algorithms](https://link.springer.com/book/10.1007/978-1-4899-7560-7) for more details.
+- **Lagrange Multiplier Method**: A non-recursive algorithm that first computes the constraint forces necessary to satisfy closed loop constraints and then uses those forces to compute the forward dynamics. See Method 2 in Chapter 8.5 of [Rigid Body Dynamics Algorithms](https://link.springer.com/book/10.1007/978-1-4899-7560-7) for more details.
 
 <div style="text-align:center;">
    <img src="images/ForwardDynamicsBenchmark.png" alt="drawing" width="500"/>
@@ -111,7 +111,7 @@ We compare our constrained inverse dynamics algorithm, the Cluster-based Recursi
 </div>
 
 ### Inverse Operational-Space Inertia Matrix
-We compaore our constrained inverse operational-space inertia matrix algorithm, the Cluster-based Extended Force Propagator Algorithm (C-EFPA) against the following algorithms:
+We compare our constrained inverse operational-space inertia matrix algorithm, the Cluster-based Extended Force Propagator Algorithm (C-EFPA) against the following algorithms:
 - **[Extended Force Propagator Algorithm (EFPA)](https://www3.nd.edu/~pwensing/Papers/WensingFeatherstoneOrin12-ICRA.pdf)**: The conventional recursive algorithm for computing the inverse operational-space inertia matrix of kinematic chains and branched models. This algorithm is not capable of handling actuation sub-mechanisms.
 - **Projected EFPA**: Computes the inverse operational-space inertia matrix of the spanning tree via EFPA by ignoring the closed loop constraints, and then projects the resulting matrix onto the independent coordinates.
 
