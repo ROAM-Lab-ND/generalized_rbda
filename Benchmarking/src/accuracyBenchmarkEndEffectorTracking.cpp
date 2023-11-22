@@ -2,7 +2,7 @@
 #include <fstream>
 
 #include "BenchmarkingHelpers.hpp"
-#include "Robots/RobotTypes.h"
+#include "grbda/Robots/RobotTypes.h"
 
 using namespace grbda;
 using namespace grbda::BenchmarkHelpers;

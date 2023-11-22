@@ -1,8 +1,8 @@
 #ifndef GRBDA_BENCHMARK_HELPERS_H
 #define GRBDA_BENCHMARK_HELPERS_H
 
-#include "Dynamics/RigidBodyTreeModel.h"
-#include "Dynamics/ReflectedInertiaTreeModel.h"
+#include "grbda/Dynamics/RigidBodyTreeModel.h"
+#include "grbda/Dynamics/ReflectedInertiaTreeModel.h"
 
 namespace grbda
 {

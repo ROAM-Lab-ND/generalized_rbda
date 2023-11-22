@@ -1,0 +1,26 @@
+#!/bin/bash
+
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
+GBRA_DIR=$DIR/../
+cd $GBRA_DIR
+
+if [ "$(sudo docker ps -aq -f status=running -f name=generalized_rbda-18.04)" ]; then
+    # cleanup
+    echo "Previous container still running. Stopping and restarting..."
+    sudo docker kill generalized_rbda-18.04
+    sudo docker rm generalized_rbda-18.04
+elif [ "$(sudo docker ps -aq -f status=exited -f name=generalized_rbda-18.04)" ]; then
+    # cleanup
+    echo "Previous container found. Cleaning up..."
+    sudo docker rm generalized_rbda-18.04
+fi
+
+# Run container
+echo "Starting container..."
+sudo docker run -it \
+    --rm \
+    --hostname="grbda-docker" \
+    -u root \
+    --mount type=bind,source="$(pwd)",target=/home/docker/generalized_rbda/ \
+    --name generalized_rbda-18.04 \
+    grbda-docker /bin/bash

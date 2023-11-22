@@ -1,7 +1,7 @@
 #include "gtest/gtest.h"
 
-#include "Dynamics/ClusterTreeModel.h"
-#include "Robots/RobotTypes.h"
+#include "grbda/Dynamics/ClusterTreeModel.h"
+#include "grbda/Robots/RobotTypes.h"
 
 using namespace grbda;
 
