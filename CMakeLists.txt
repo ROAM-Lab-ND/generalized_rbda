@@ -45,8 +45,6 @@ endif()
 ################################################################################
 message(STATUS "======> Setup Compilation")
 
-# TODO(@MatthewChignoli): Not really sure what a lot of this does
-
 set(CMAKE_DISABLE_IN_SOURCE_BUILD ON)
 set(CMAKE_DISABLE_SOURCE_CHANGES  ON)
 
@@ -105,11 +103,9 @@ else()
   add_library(${PROJECT_NAME} ${GRBDA_SRCS})
   target_link_libraries(${PROJECT_NAME} PRIVATE ${CASADI_LIBRARIES})
 
-  # TODO(@MatthewChignoli): Not sure what this does
   set(LIBRARY_NAME ${PROJECT_NAME})
   set_target_properties(${PROJECT_NAME} PROPERTIES POSITION_INDEPENDENT_CODE TRUE) 
 
-  # Add installation rules
   install(TARGETS ${PROJECT_NAME}
           EXPORT ${PROJECT_NAME}Targets
           LIBRARY DESTINATION lib
@@ -154,5 +150,3 @@ if(BUILD_BENCHMARKS)
   message(STATUS "======>  Setup Benchmarks  ")
   add_subdirectory(Benchmarking)
 endif()
-
-# TODO(@MatthewChignoli): Need to straighten out where all the files get written to

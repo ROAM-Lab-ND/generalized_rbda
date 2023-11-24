@@ -260,7 +260,7 @@ namespace grbda
     }
 
     template <typename Scalar>
-    // TODO(@MatthewChignoli): This function is only for non-spanning joint coordinates
+    // NOTE: This function is only for non-spanning joint coordinates
     ModelState<Scalar> ClusterTreeModel<Scalar>::stateVectorToModelState(const StatePair &q_qd_pair)
     {
 
