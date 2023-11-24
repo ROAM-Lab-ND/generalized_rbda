@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.2)
 
-project(generalized_rbda VERSION 0.1.0)
+project(grbda VERSION 0.1.0)
 
 message(STATUS "=============  !Generalized Rigid-Body Dynamics Algorithms!  =============")
 
@@ -108,6 +108,40 @@ else()
   # TODO(@MatthewChignoli): Not sure what this does
   set(LIBRARY_NAME ${PROJECT_NAME})
   set_target_properties(${PROJECT_NAME} PROPERTIES POSITION_INDEPENDENT_CODE TRUE) 
+
+  # Add installation rules
+  install(TARGETS ${PROJECT_NAME}
+          EXPORT ${PROJECT_NAME}Targets
+          LIBRARY DESTINATION lib
+          ARCHIVE DESTINATION lib
+          RUNTIME DESTINATION bin
+          INCLUDES DESTINATION include)
+
+  install(DIRECTORY include/ DESTINATION include)
+
+  include(CMakePackageConfigHelpers)
+  write_basic_package_version_file(
+    ${PROJECT_NAME}ConfigVersion.cmake
+    VERSION ${PACKAGE_VERSION}
+    COMPATIBILITY AnyNewerVersion
+  )
+
+  configure_package_config_file(
+    ${PROJECT_SOURCE_DIR}/cmake/${PROJECT_NAME}Config.cmake.in
+    ${PROJECT_BINARY_DIR}/${PROJECT_NAME}Config.cmake
+    INSTALL_DESTINATION lib/cmake/${PROJECT_NAME}
+  )
+
+  install(EXPORT ${PROJECT_NAME}Targets
+    FILE ${PROJECT_NAME}Targets.cmake
+    NAMESPACE ${PROJECT_NAME}::
+    DESTINATION lib/cmake/${PROJECT_NAME})
+
+  install(FILES
+    ${PROJECT_BINARY_DIR}/${PROJECT_NAME}Config.cmake
+    ${PROJECT_BINARY_DIR}/${PROJECT_NAME}ConfigVersion.cmake
+    DESTINATION lib/cmake/${PROJECT_NAME}
+  )
 endif()
 
 if(BUILD_TESTS)

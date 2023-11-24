@@ -12,7 +12,7 @@ foreach(test_source ${test_sources})
     add_executable(${test_name} ${test_source})
 
     # Link the necessary libraries
-    target_link_libraries(${test_name} gtest gmock_main ${PROJECT_NAME})
+    target_link_libraries(${test_name} PRIVATE gtest gmock_main ${PROJECT_NAME})
 
     # Add the test to CTest
     add_test(NAME ${test_name} COMMAND ${test_name})
