@@ -2,6 +2,7 @@
 
 This repository contains a C++ library of generalized rigid-body dynamics algorithms.
 The algorithms are based on the recursive algorithms of [Featherstone](http://royfeatherstone.org/), but modified such that they can efficiently compute the constrained dynamics of robotic systems with kinematic loops between small groups of bodies, also known as "local loop constraints."
+Full details of the algorithms can be found in our accompanying [paper](https://arxiv.org/abs/2311.13732).
 Local loop constraints are common in robotic systems that use actuation sub-mechanisms.
 Actuation sub-mechanisms (e.g., geared transmissions, differential drives, and linkages) are increasingly common in robotic systems, yet to date there has been no efficient method for computing their dynamics.
 The reason for this is that the local kinematic loops induced by the actuation sub-mechanisms violate the assumptions of conventional recursive dynamics algorithms.
@@ -18,11 +19,10 @@ Our approach is functionally similar to Jain's [Local Constraint Embedding](http
 2. [Usage](#usage)
 3. [Configuration](#configuration)
 4. [Benchmarking](#benchmarking)
-5. [Contributing](#contributing)
-6. [Testing](#testing)
-7. [License](#license)
-8. [Contact Information](#contact-information)
-9. [Citation](#citation)
+5. [Testing](#testing)
+6. [License](#license)
+7. [Contact Information](#contact-information)
+8. [Citation](#citation)
 
 ## Installation
 ### Dependencies
@@ -119,11 +119,6 @@ We compare our constrained inverse operational-space inertia matrix algorithm, t
    <img src="images/InverseOsimBenchmark.png" alt="drawing" width="500"/>
 </div>
 
-## Contributing
-- Provide guidelines for contributors, including how to submit bug reports, feature requests, or pull requests.
-- Specify your preferred coding style or conventions.
-- Explain the process of contributing to the project.
-
 ## License
 The code is licensed under the MIT license. See the [LICENSE](LICENSE) file for more details.
 
@@ -132,7 +127,16 @@ For further questions or collaboration inquiries, please contact the developers 
 - [Matthew Chignoli](mailto:chignoli@mit.edu)
 
 ## Citation
-If you use this code in your research, please cite the repository as follows:
+To cite this library in your research, please use the following citation for the accompanying paper:
+```
+@article{chignoli2023recursive,
+  title={Recursive rigid-body dynamics algorithms for systems with kinematic loops},
+  author={Chignoli, Matthew and Adrian, Nicholas and Kim, Sangbae and Wensing, Patrick M.},
+  journal={arXiv preprint arXiv:2311.13732},
+  year={2023}
+}
+```
+and the following citation for the codebase:
 ```
 @misc{grbdaweb,
    author = {Matthew Chignoli, Nicholas Adrian, Patrick M. Wensing, and others},
