@@ -10,6 +10,7 @@ message(STATUS "=============  !Generalized Rigid-Body Dynamics Algorithms!  ===
 option(BUILD_TESTS "Building the tests" ON)
 option(BUILD_BENCHMARKS "Building the benchmarks" OFF)
 option(M1_BUILD "set compile options for Mac M1 chip" OFF)
+option(MARCH_NATIVE "set compile options to optimize for native architecture" OFF)
 option(ASAN "set compile options for Address Sanitizer" OFF)
 
 ################################################################################
@@ -65,13 +66,14 @@ if(CMAKE_BUILD_TYPE STREQUAL "Debug")
   add_definitions(-DDEBUG_MODE)
 endif()
 
-if(M1_BUILD AND CMAKE_SYSTEM_NAME MATCHES Darwin)
+if (M1_BUILD AND MARCH_NATIVE)
+  message(SEND_ERROR "Cannot enable M1 build and optimize for native architecture")
+elseif(M1_BUILD AND CMAKE_SYSTEM_NAME MATCHES Darwin)
   set(CMAKE_CXX_FLAGS "-mcpu=apple-m1")
-else()
+elseif(MARCH_NATIVE)
   set(CMAKE_CXX_FLAGS "-march=native")
+  set(CMAKE_C_FLAGS "-march=native")
 endif()
-
-set(CMAKE_C_FLAGS "-O3  -ggdb  -march=native -std=gnu99 -I.")
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -ggdb -Wall \
@@ -79,6 +81,7 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -ggdb -Wall \
   -Winit-self -Wmissing-include-dirs -Woverloaded-virtual \
   -Wshadow -Wsign-promo -Wno-sign-compare -Wno-unused-const-variable \
   -Wno-unused-parameter -Wno-unused-variable -Wno-uninitialized")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O3  -ggdb -std=gnu99 -I.")
 
 if(ASAN)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address")
