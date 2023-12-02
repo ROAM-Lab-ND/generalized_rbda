@@ -80,6 +80,8 @@ namespace grbda
         independent_coord_indices_ =
             spanning_tree_to_independent_coords_conversion_ *
             DVec<int>::LinSpaced(num_bodies, 0, num_bodies - 1);
+
+        body_name_to_body_spanning_index_ = cluster_tree_model.body_name_to_body_index_;
     }
 
     template <typename Scalar>
