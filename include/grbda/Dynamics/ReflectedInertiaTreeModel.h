@@ -108,6 +108,7 @@ namespace grbda
         std::vector<ReflectedInertiaTreeNodePtr<Scalar>> reflected_inertia_nodes_;
 
         DMat<Scalar> reflected_inertia_;
+        DMat<Scalar> diag_reflected_inertia_;
 
         DMat<int> spanning_tree_to_independent_coords_conversion_;
         DVec<int> independent_coord_indices_;

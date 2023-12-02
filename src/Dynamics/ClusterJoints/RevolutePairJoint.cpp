@@ -16,7 +16,7 @@ namespace grbda
             link_1_joint_ =  this->single_joints_.emplace_back(new Rev(joint_axis_1));
             link_2_joint_ =  this->single_joints_.emplace_back(new Rev(joint_axis_2));
 
-            this->spanning_tree_to_independent_coords_conversion_ = DMat<int>::Zero(0, 0);
+            this->spanning_tree_to_independent_coords_conversion_ = DMat<int>::Identity(2, 2);
 
             DMat<Scalar> G = DMat<Scalar>::Zero(2, 2);
             G << 1., 0.,
@@ -76,13 +76,13 @@ namespace grbda
         {
             std::vector<std::tuple<Body<Scalar>, JointPtr<Scalar>, DMat<Scalar>>> bodies_joints_and_reflected_inertias;
 
-            const DMat<Scalar> reflected_inertia_1 =
-                DMat<Scalar>::Zero(link_1_joint_->numVelocities(), link_1_joint_->numVelocities());
+            const DMat<Scalar> reflected_inertia_1 = DMat<Scalar>::Zero(this->numVelocities(),
+                                                                        this->numVelocities());
             bodies_joints_and_reflected_inertias.push_back(
                 std::make_tuple(link_1_, link_1_joint_, reflected_inertia_1));
 
-            const DMat<Scalar> reflected_inertia_2 =
-                DMat<Scalar>::Zero(link_2_joint_->numVelocities(), link_2_joint_->numVelocities());
+            const DMat<Scalar> reflected_inertia_2 = DMat<Scalar>::Zero(this->numVelocities(),
+                                                                        this->numVelocities());
             bodies_joints_and_reflected_inertias.push_back(
                 std::make_tuple(link_2_, link_2_joint_, reflected_inertia_2));
 
