@@ -77,6 +77,12 @@ namespace grbda
             return loop_constraints_.G() * ydd + loop_constraints_.g();
         }
 
+        // TODO(@MatthewChignoli): Make this a common function for all TreeModels
+        const Body<Scalar> &body(const std::string body_name) const
+        {
+            return getBody(body_name_to_body_index_.at(body_name));
+        }
+
     private:
         void extractRigidBodiesAndJointsFromClusterModel(
             const ClusterTreeModel<Scalar> &cluster_tree_model);
