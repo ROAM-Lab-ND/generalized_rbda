@@ -40,6 +40,10 @@ else()
   message(FATAL_ERROR "CasADi not found. Please install it or specify its location.")
 endif()
 
+# TODO(@MatthewChignoli): Once repo is stable, install the binaries rather than compile them from submodule
+add_subdirectory(third-parties/URDF-Parser)
+include_directories(${CMAKE_SOURCE_DIR}/third-parties/URDF-Parser/include)
+
 ################################################################################
 # Setup Compilation
 ################################################################################
@@ -101,43 +105,44 @@ if(NOT GRBDA_SRCS)
 	set(LIBRARY_NAME)
 else()
   add_library(${PROJECT_NAME} ${GRBDA_SRCS})
-  target_link_libraries(${PROJECT_NAME} PRIVATE ${CASADI_LIBRARIES})
+  target_link_libraries(${PROJECT_NAME} PRIVATE ${CASADI_LIBRARIES} custom_urdf)
 
   set(LIBRARY_NAME ${PROJECT_NAME})
   set_target_properties(${PROJECT_NAME} PROPERTIES POSITION_INDEPENDENT_CODE TRUE) 
 
-  install(TARGETS ${PROJECT_NAME}
-          EXPORT ${PROJECT_NAME}Targets
-          LIBRARY DESTINATION lib
-          ARCHIVE DESTINATION lib
-          RUNTIME DESTINATION bin
-          INCLUDES DESTINATION include)
+  # TODO(@MatthewChignoli): Add back in once parser dependency is stable
+  # install(TARGETS ${PROJECT_NAME}
+  #         EXPORT ${PROJECT_NAME}Targets
+  #         LIBRARY DESTINATION lib
+  #         ARCHIVE DESTINATION lib
+  #         RUNTIME DESTINATION bin
+  #         INCLUDES DESTINATION include)
 
-  install(DIRECTORY include/ DESTINATION include)
+  # install(DIRECTORY include/ DESTINATION include)
 
-  include(CMakePackageConfigHelpers)
-  write_basic_package_version_file(
-    ${PROJECT_NAME}ConfigVersion.cmake
-    VERSION ${PACKAGE_VERSION}
-    COMPATIBILITY AnyNewerVersion
-  )
+  # include(CMakePackageConfigHelpers)
+  # write_basic_package_version_file(
+  #   ${PROJECT_NAME}ConfigVersion.cmake
+  #   VERSION ${PACKAGE_VERSION}
+  #   COMPATIBILITY AnyNewerVersion
+  # )
 
-  configure_package_config_file(
-    ${PROJECT_SOURCE_DIR}/cmake/${PROJECT_NAME}Config.cmake.in
-    ${PROJECT_BINARY_DIR}/${PROJECT_NAME}Config.cmake
-    INSTALL_DESTINATION lib/cmake/${PROJECT_NAME}
-  )
+  # configure_package_config_file(
+  #   ${PROJECT_SOURCE_DIR}/cmake/${PROJECT_NAME}Config.cmake.in
+  #   ${PROJECT_BINARY_DIR}/${PROJECT_NAME}Config.cmake
+  #   INSTALL_DESTINATION lib/cmake/${PROJECT_NAME}
+  # )
 
-  install(EXPORT ${PROJECT_NAME}Targets
-    FILE ${PROJECT_NAME}Targets.cmake
-    NAMESPACE ${PROJECT_NAME}::
-    DESTINATION lib/cmake/${PROJECT_NAME})
+  # install(EXPORT ${PROJECT_NAME}Targets
+  #   FILE ${PROJECT_NAME}Targets.cmake
+  #   NAMESPACE ${PROJECT_NAME}::
+  #   DESTINATION lib/cmake/${PROJECT_NAME})
 
-  install(FILES
-    ${PROJECT_BINARY_DIR}/${PROJECT_NAME}Config.cmake
-    ${PROJECT_BINARY_DIR}/${PROJECT_NAME}ConfigVersion.cmake
-    DESTINATION lib/cmake/${PROJECT_NAME}
-  )
+  # install(FILES
+  #   ${PROJECT_BINARY_DIR}/${PROJECT_NAME}Config.cmake
+  #   ${PROJECT_BINARY_DIR}/${PROJECT_NAME}ConfigVersion.cmake
+  #   DESTINATION lib/cmake/${PROJECT_NAME}
+  # )
 endif()
 
 if(BUILD_TESTS)

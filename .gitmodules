@@ -1,0 +1,3 @@
+[submodule "third-parties/URDF-Parser"]
+	path = third-parties/URDF-Parser
+	url = git@github.com:mit-biomimetics/URDF-Parser.git
