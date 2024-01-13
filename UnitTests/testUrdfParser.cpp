@@ -6,19 +6,12 @@
 
 using namespace grbda;
 
-// TODO(@MatthewChignoli): Change this name to denote it deals with adding to tree
-void dfs_first_pass(const std::string &cluster_name, std::map<std::string, bool> &visited,
-                    std::shared_ptr<dynacore::urdf::Cluster> cluster,
-                    ClusterTreeModel<double> &cluster_model)
+void appendClusterFromUrdfCluster(std::shared_ptr<dynacore::urdf::Cluster> cluster,
+                                  ClusterTreeModel<double> &cluster_model)
 {
-    using ConstLinkPtr = std::shared_ptr<const dynacore::urdf::Link>;
-    using ClusterPtr = std::shared_ptr<dynacore::urdf::Cluster>;
-
-    visited[cluster_name] = true;
-
     std::vector<Body<double>> bodies;
     std::vector<JointPtr<double>> joints;
-    for (ConstLinkPtr link : cluster->links)
+    for (std::shared_ptr<const dynacore::urdf::Link> link : cluster->links)
     {
         const std::string name = link->name;
         const std::string parent_name = link->getParent()->name;
@@ -40,19 +33,26 @@ void dfs_first_pass(const std::string &cluster_name, std::map<std::string, bool>
 
     // TODO(@MatthewChignoli): Are there cases where we can detect specialized versions of clusters? For example, is there a way that we can detect "revolute pair with rotors" or "revolute with rotor"?
     cluster_model.appendRegisteredBodiesAsCluster<ClusterJoints::Generic<double>>(cluster->name, bodies, joints, constraint);
+}
 
-    for (const ClusterPtr child : cluster->child_clusters)
+void appendClustersViaDFS(const std::string &cluster_name, std::map<std::string, bool> &visited,
+                          std::shared_ptr<dynacore::urdf::Cluster> cluster,
+                          ClusterTreeModel<double> &cluster_model)
+{
+    visited[cluster_name] = true;
+    appendClusterFromUrdfCluster(cluster, cluster_model);
+
+    for (const std::shared_ptr<dynacore::urdf::Cluster> child : cluster->child_clusters)
     {
         const std::string &child_name = child->name;
         if (!visited[child_name])
         {
-            dfs_first_pass(child_name, visited, child, cluster_model);
+            appendClustersViaDFS(child_name, visited, child, cluster_model);
         }
     }
 }
 
-// TODO(@MatthewChignoli): Should this actually be a constructor? 
-
+// TODO(@MatthewChignoli): Should this actually be a constructor?
 // TODO(@MatthewChignoli): Assumes we are importing floating base model where root link is the floating base. Eventually generalize this to any model
 ClusterTreeModel<double> clusterModelFromUrdfModel()
 {
@@ -84,7 +84,7 @@ ClusterTreeModel<double> clusterModelFromUrdfModel()
     std::map<std::string, bool> visited;
     for (ClusterPtr child : root_cluster->child_clusters)
     {
-        dfs_first_pass(child->name, visited, child, cluster_model);
+        appendClustersViaDFS(child->name, visited, child, cluster_model);
     }
 
     return cluster_model;
@@ -94,4 +94,6 @@ GTEST_TEST(UrdfParser, parseFile)
 {
     ClusterTreeModel<double> cluster_model = clusterModelFromUrdfModel();
     cluster_model.print();
+
+    // TODO(@MatthewChignoli): We should have this test for many different URDFs. In each case we should compare the actual number of clusters to the expected number of clusters. Likewise with the actual number of joints and expected number of joints
 }
