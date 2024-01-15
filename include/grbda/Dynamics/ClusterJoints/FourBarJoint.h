@@ -6,39 +6,49 @@ namespace grbda
 
     namespace LoopConstraint
     {
+        // TODO(@MatthewChignoli): Later we can worry about how we handle the fixed offset with this loop constraint compared to the generic one
         // TODO(@MatthewChignoli): Missing the fixed offset between the joints of link 1 and link 3
         template <typename Scalar = double>
         struct FourBar : Base<Scalar>
         {
-            FourBar(std::vector<Scalar> path1_lengths, std::vector<Scalar> path2_lengths)
+            // TODO(@MatthewChignoli): Pass by reference?
+            FourBar(std::vector<Scalar> path1_lengths,
+                    std::vector<Scalar> path2_lengths,
+                    Vec2<Scalar> offset) :
+                path1_size_(path1_lengths.size()), path2_size_(path2_lengths.size()),
+                path1_lengths_(path1_lengths), path2_lengths_(path2_lengths)
             {
-                if (path1_lengths.size() + path2_lengths.size() != 3)
+                if (path1_size_ + path2_size_ != 3)
                 {
-                    throw std::runtime_error("FourBar: path lengths must be of size 3");
+                    throw std::runtime_error("FourBar: Must contain 3 links");
                 }
-                path1_lengths_ = path1_lengths;
-                path2_lengths_ = path2_lengths;
 
-                this->phi_ = [this](const JointCoordinate<Scalar> &joint_pos)
+                this->phi_ = [this, offset](const JointCoordinate<Scalar> &joint_pos)
                 {
                     DVec<Scalar> phi = DVec<Scalar>::Zero(2);
 
+                    DVec<Scalar> path1_joints = joint_pos.head(path1_size_);
+                    DVec<Scalar> path2_joints = joint_pos.tail(path2_size_);
+
                     Scalar cumulative_angle = 0.;
-                    for (size_t i = 0; i < path1_lengths_.size(); i++)
+                    DVec<Scalar> path1 = DVec<Scalar>::Zero(2);
+                    for (size_t i = 0; i < path1_size_; i++)
                     {
-                        cumulative_angle += joint_pos(i);
-                        phi(0) += path1_lengths_[i] * cos(cumulative_angle);
-                        phi(1) += path1_lengths_[i] * sin(cumulative_angle);
+                        cumulative_angle += path1_joints(i);
+                        path1(0) += path1_lengths_[i] * cos(cumulative_angle);
+                        path1(1) += path1_lengths_[i] * sin(cumulative_angle);
                     }
 
                     cumulative_angle = 0.;
-                    for (size_t i = 0; i < path2_lengths_.size(); i++)
+                    DVec<Scalar> path2 = offset;
+                    for (size_t i = 0; i < path2_size_; i++)
                     {
-                        cumulative_angle += joint_pos(path1_lengths_.size() + i);
-                        phi(0) -= path2_lengths_[i] * cos(cumulative_angle);
-                        phi(1) -= path2_lengths_[i] * sin(cumulative_angle);
+                        cumulative_angle += path2_joints(i);
+                        path2(0) += path2_lengths_[i] * cos(cumulative_angle);
+                        path2(1) += path2_lengths_[i] * sin(cumulative_angle);
                     }
 
+                    phi = path1 - path2;
                     return phi;
                 };
 
@@ -56,34 +66,35 @@ namespace grbda
 
             void updateJacobians(const JointCoordinate<Scalar> &joint_pos) override
             {
-                // Update K
-                DMat<Scalar> K(2, 3);
-                K.setZero();
+                DVec<Scalar> path1_joints = joint_pos.head(path1_size_);
+                DVec<Scalar> path2_joints = joint_pos.tail(path2_size_);
 
+                // Update K
                 Scalar cumulative_angle = 0.;
+                DMat<Scalar> K1 = DMat<Scalar>::Zero(2, path1_size_);
                 for (size_t i = 0; i < path1_lengths_.size(); i++)
                 {
-                    cumulative_angle += joint_pos(i);
+                    cumulative_angle += path1_joints(i);
                     for (size_t j = 0; j <= i; j++)
                     {
-                        K(0, j) += -path1_lengths_[i] * sin(cumulative_angle);
-                        K(1, j) += path1_lengths_[i] * cos(cumulative_angle);
+                        K1(0, j) += -path1_lengths_[i] * sin(cumulative_angle);
+                        K1(1, j) += path1_lengths_[i] * cos(cumulative_angle);
                     }
                 }
 
                 cumulative_angle = 0.;
-                for (size_t i = 0; i < path2_lengths_.size(); i++)
+                DMat<Scalar> K2 = DMat<Scalar>::Zero(2, path2_size_);
+                for (size_t i = 0; i < path2_size_; i++)
                 {
-                    size_t offset = path1_lengths_.size();
-                    cumulative_angle += joint_pos(offset + i);
+                    cumulative_angle += path2_joints(i);
                     for (size_t j = 0; j <= i; j++)
                     {
-                        K(0, offset + j) += path2_lengths_[i] * sin(cumulative_angle);
-                        K(1, offset + j) += -path2_lengths_[i] * cos(cumulative_angle);
+                        K2(0, j) += path2_lengths_[i] * sin(cumulative_angle);
+                        K2(1, j) += -path2_lengths_[i] * cos(cumulative_angle);
                     }
                 }
 
-                this->K_ = K;
+                this->K_ << K1, K2;
 
                 // TODO(@MatthewChignoli): Do this part later
                 // Update G
@@ -96,8 +107,11 @@ namespace grbda
             DVec<Scalar> gamma(const JointCoordinate<Scalar> &joint_pos) const override { return DVec<Scalar>::Zero(0); }
 
             private:
-                std::vector<Scalar> path1_lengths_;
-                std::vector<Scalar> path2_lengths_;
+                // TODO(@MatthewChignoli): The naming here is pretty confusing
+                const size_t path1_size_;
+                const size_t path2_size_;
+                const std::vector<Scalar> path1_lengths_;
+                const std::vector<Scalar> path2_lengths_;
         };
     }
 
