@@ -27,6 +27,7 @@ namespace grbda
             virtual void updateBiases(const JointState<Scalar> &joint_state) = 0;
 
             // TODO(@MatthewChignoli): should be a lambda function
+            DVec<Scalar> phi(const JointCoordinate<Scalar> &joint_pos) const { return phi_(joint_pos); }
             virtual DVec<Scalar> gamma(const JointCoordinate<Scalar> &joint_pos) const = 0;
             const DMat<Scalar> &G() const { return G_; }
             const DVec<Scalar> &g() const { return g_; }
@@ -35,6 +36,8 @@ namespace grbda
             const DVec<Scalar> &k() const { return k_; }
 
         protected:
+            std::function<DVec<Scalar>(const JointCoordinate<Scalar> &)> phi_;
+
             DMat<Scalar> G_;
             DVec<Scalar> g_;
 
