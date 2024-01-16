@@ -242,6 +242,45 @@ namespace grbda
     using type = CasadiLLT;
   };
 
+  // TODO(@MatthewChignoli): Implement CasadiFullPivLU
+  /*!
+   * Analaogous to Eigen::FullPivLU, but for casadi::SX matrices
+   */
+  class CasadiFullPivLU
+  {
+  public:
+    CasadiFullPivLU() {}
+    CasadiFullPivLU(const DMat<casadi::SX> &mat) {}
+
+    DMat<casadi::SX> permutationP() const
+    {
+      return DMat<casadi::SX>::Identity(0, 0);
+    }
+
+    DMat<casadi::SX> permutationQ() const
+    {
+      return DMat<casadi::SX>::Identity(0, 0);
+    }
+
+    DMat<casadi::SX> matrixLU() const
+    {
+      return DMat<casadi::SX>::Identity(0, 0);
+    }
+  };
+
+  template <typename Scalar>
+  struct CorrectMatrixFullPivLuType
+  {
+    using type = Eigen::FullPivLU<DMat<Scalar>>;
+  };
+
+  // Specialization for casadi::SX
+  template <>
+  struct CorrectMatrixFullPivLuType<casadi::SX>
+  {
+    using type = CasadiFullPivLU;
+  };
+
   /*!
    * Analaogous to Eigen::ColPivHouseholderQR, but for casadi::SX matrices
    */

@@ -5,6 +5,13 @@
 
 using namespace grbda;
 
+// TODO(@MatthewChignoli): Maybe we shouldn't call these file derivatives? We should just have separate files for testing loop constraints vs. cluster joints vs. full algos
+
+// TODO(@MatthewChignoli): Unit test that makes sure
+// phi(gamma(y)) = 0 for all y in the joint space
+// q = Gy + g
+// Where is the right place to put this unit test?
+
 casadi::Function
 createImplicitConstraintFunction(std::shared_ptr<LoopConstraint::Base<casadi::SX>> loop)
 {
@@ -14,6 +21,10 @@ createImplicitConstraintFunction(std::shared_ptr<LoopConstraint::Base<casadi::SX
     SX cs_q_sym = SX::sym("q", loop->numSpanningPos(), 1);
     DVec<SX> q_sym(loop->numSpanningPos());
     casadi::copy(cs_q_sym, q_sym);
+
+    SX cs_v_sym = SX::sym("qd", loop->numSpanningVel(), 1);
+    DVec<SX> v_sym(loop->numSpanningVel());
+    casadi::copy(cs_v_sym, v_sym);
 
     // Set state and update kinematics
     JointCoordinate<SX> joint_pos(q_sym, false);
@@ -25,12 +36,18 @@ createImplicitConstraintFunction(std::shared_ptr<LoopConstraint::Base<casadi::SX
 
     // Compute constraint jacobian
     SX cs_K = jacobian(cs_phi, cs_q_sym);
-    // DMat<SX> K(cs_K.size1(), cs_K.size2());
-    // casadi::copy(cs_K, K);
+
+    // Compute constraint bias
+    SX cs_Kdot = SX(cs_K.size1(), cs_K.size2());
+    for (size_t i = 0; i < cs_K.size2(); i++)
+    {
+        cs_Kdot(casadi::Slice(), i) = jtimes(cs_K(casadi::Slice(), i), cs_q_sym, cs_v_sym);
+    }
+    SX cs_k = casadi::SX::mtimes(cs_Kdot, cs_v_sym);
 
     // Create casadi function
-    std::vector<SX> args{cs_q_sym};
-    std::vector<SX> res{cs_phi, cs_K};
+    std::vector<SX> args{cs_q_sym, cs_v_sym};
+    std::vector<SX> res{cs_phi, cs_K, cs_k};
     casadi::Function implicitConstraintFunction("implicit", args, res);
 
     return implicitConstraintFunction;
@@ -73,19 +90,38 @@ GTEST_TEST(LoopConstraintDerivatives, implicit)
     DVec<double> q(3);
     casadi::copy(q_dm, q);
 
-    std::vector<casadi::DM> res_ad = implicitConstraintFunction(q_dm);
+    casadi::DM v_dm = random<casadi::DM>(3);
+    DVec<double> v(3);
+    casadi::copy(v_dm, v);
+
+    std::vector<casadi::DM> arg_ad = std::vector<casadi::DM>{q_dm, v_dm};
+    std::vector<casadi::DM> res_ad = implicitConstraintFunction(arg_ad);
     DVec<double> phi_ad(2);
     casadi::copy(res_ad[0], phi_ad);
     DMat<double> K_ad(2, 3);
     casadi::copy(res_ad[1], K_ad);
+    DVec<double> k_ad(2);
+    casadi::copy(res_ad[2], k_ad);
 
     JointCoordinate<double> joint_pos(q, false);
+    JointCoordinate<double> joint_vel(v, false);
+    JointState<double> joint_state(joint_pos, joint_vel);
     DVec<double> phi = four_bar_num->phi(joint_pos);
     four_bar_num->updateJacobians(joint_pos);
+    four_bar_num->updateBiases(joint_state);
     DMat<double> K = four_bar_num->K();
+    DVec<double> k = four_bar_num->k();
+    DMat<double> G = four_bar_num->G();
+    DVec<double> g = four_bar_num->g();
 
-    GTEST_ASSERT_LE((phi - phi_ad).norm(), 1e-12) << "phi: " << phi << "\nphi_ad: " << phi_ad;
-    GTEST_ASSERT_LE((K - K_ad).norm(), 1e-12) << "K: " << K << "\nK_ad: " << K_ad;
+    GTEST_ASSERT_LE((phi - phi_ad).norm(), 1e-12) << "phi:\n" << phi << "\nphi_ad:\n" << phi_ad;
+    GTEST_ASSERT_LE((K - K_ad).norm(), 1e-12) << "K:\n" << K << "\nK_ad:\n" << K_ad;
+    GTEST_ASSERT_LE((k - k_ad).norm(), 1e-12) << "k:\n" << k << "\nk_ad:\n" << k_ad;
+
+    // Verify agreement between implicit and explicit jacobians and biases
+    GTEST_ASSERT_LE((K * G).norm(), 1e-12) << "K*G:\n" << K * G;
+    GTEST_ASSERT_LE((K * g - k).norm(), 1e-12) << "K*g - k:\n" << K * g - k;
+
 }
 
 // TODO(@MatthewChignoli): Let's think more clearly about the next steps
