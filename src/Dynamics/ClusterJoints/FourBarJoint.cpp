@@ -160,7 +160,7 @@ namespace grbda
 
             DMat<Scalar> Kdot(2, 3);
             Kdot << Kd1, Kd2;
-            this->k_ = Kdot * joint_vel;
+            this->k_ = -Kdot * joint_vel;
 
             // Update g
             DVec<Scalar> k_prime = Q1inv_ * this->k_;
