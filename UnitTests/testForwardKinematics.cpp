@@ -62,7 +62,9 @@ typedef Types<
     RevoluteChainWithAndWithoutRotor<0ul, 8ul>,
     RevoluteChainWithAndWithoutRotor<4ul, 4ul>,
     RevoluteChainWithAndWithoutRotor<8ul, 0ul>,
-    Tello, TeleopArm,
+    SingleLegHopper,
+    Tello,
+    TeleopArm,
     MIT_Humanoid<>, MIT_Humanoid<double, ori_representation::RollPitchYaw>,
     MIT_Humanoid_no_rotors<>,
     MiniCheetah<>, MiniCheetah<double, ori_representation::RollPitchYaw>>

@@ -114,6 +114,7 @@ public:
     }
 
 private:
+    // TODO(@MatthewChignoli): Might want this root finder to be a member of LoopConstraint::Base?
     void createPhiRootFinder()
     {
         // Define symbolic variables

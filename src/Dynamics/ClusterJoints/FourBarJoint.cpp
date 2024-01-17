@@ -12,7 +12,7 @@ namespace grbda
               links_in_path2_(path2_link_lengths.size()),
               path1_link_lengths_(path1_link_lengths),
               path2_link_lengths_(path2_link_lengths),
-              independent_coordinate_(independent_coordinate)
+              offset_(offset), independent_coordinate_(independent_coordinate)
         {
             if (links_in_path1_ + links_in_path2_ != 3)
             {
@@ -74,6 +74,7 @@ namespace grbda
             default:
                 throw std::runtime_error("FourBar: Invalid independent coordinate");
             }
+
         }
 
         template <typename Scalar>

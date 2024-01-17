@@ -15,6 +15,8 @@ namespace grbda
 
             this->K_ = K;
             this->k_ = DVec<Scalar>::Zero(K.rows());
+
+            this->is_explicit_ = true;
         }
 
         template <typename Scalar>

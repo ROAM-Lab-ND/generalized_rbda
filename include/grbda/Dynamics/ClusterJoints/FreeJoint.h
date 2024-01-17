@@ -20,6 +20,8 @@ namespace grbda
 
                 this->K_ = DMat<Scalar>::Zero(0, 6);
                 this->k_ = DVec<Scalar>::Zero(0);
+
+                this->is_explicit_ = true;
             }
 
             int numSpanningPos() const override

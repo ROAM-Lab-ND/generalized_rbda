@@ -15,13 +15,14 @@ namespace grbda
 
     enum class ClusterJointTypes
     {
+        FourBar,
         Free,
+        Generic,
         Revolute,
         RevolutePair,
         RevolutePairWithRotor,
         RevoluteTripleWithRotor,
         RevoluteWithRotor,
-        Generic,
         TelloHipDifferential,
         TelloKneeAnkleDifferential
     };
@@ -33,6 +34,7 @@ namespace grbda
         class Base
         {
         public:
+            // TODO(@MatthewChignoli): I think that we can get rid of the num_independent_positions since we only need independent velocities
             Base(int num_bodies, int num_independent_positions, int num_independent_velocities);
             virtual ~Base() {}
 

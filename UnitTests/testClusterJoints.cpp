@@ -131,6 +131,8 @@ GTEST_TEST(ClusterJoints, BiasVelocities)
         }
     }
 
+    // TODO(@MatthewChignoli): Add four bar joint
+
     // TODO(@nicholasadr): add this joint to the unit test
     // Tello Differential Cluster Joint
     // for (int i = 0; i < joint_samples; i++)
