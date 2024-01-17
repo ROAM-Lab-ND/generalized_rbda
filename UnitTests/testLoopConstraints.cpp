@@ -5,8 +5,6 @@
 
 using namespace grbda;
 
-// TODO(@MatthewChignoli): Maybe we shouldn't call these file derivatives? We should just have separate files for testing loop constraints vs. cluster joints vs. full algos
-
 // TODO(@MatthewChignoli): For now, it is specialized for the four bar
 // TODO(@MatthewChignoli): Template this test so that it is valid for all loop constraints?
 class LoopConstraintDerivatives : public ::testing::Test
