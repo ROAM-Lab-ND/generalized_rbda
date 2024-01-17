@@ -15,11 +15,9 @@ namespace grbda
         struct FourBar : Base<Scalar>
         {
             typedef typename CorrectMatrixInverseType<Scalar>::type InverseType;
-            typedef typename CorrectMatrixFullPivLuType<Scalar>::type FullPivLuType;
 
-            // TODO(@MatthewChignoli): Pass by reference?
             FourBar(std::vector<Scalar> path1_lengths, std::vector<Scalar> path2_lengths,
-                    Vec2<Scalar> offset);
+                    Vec2<Scalar> offset, int independent_coordinate);
 
             std::shared_ptr<Base<Scalar>> clone() const override
             {
@@ -30,26 +28,26 @@ namespace grbda
 
             void updateBiases(const JointState<Scalar> &joint_state) override;
 
-            DVec<Scalar> gamma(const JointCoordinate<Scalar> &joint_pos) const override { return DVec<Scalar>::Zero(0); }
+            DVec<Scalar> gamma(const JointCoordinate<Scalar> &joint_pos) const override
+            {
+                throw std::runtime_error("FourBar: Explicit constraint does not exist");
+            }
 
         private:
             void updateImplicitJacobian(const JointCoordinate<Scalar> &joint_pos);
             void updateExplicitJacobian(const DMat<Scalar> &K);
 
-            // TODO(@MatthewChignoli): The naming here is pretty confusing
-            const size_t path1_size_;
-            const size_t path2_size_;
-            const std::vector<Scalar> path1_lengths_;
-            const std::vector<Scalar> path2_lengths_;
+            const size_t links_in_path1_;
+            const size_t links_in_path2_;
+            const std::vector<Scalar> path1_link_lengths_;
+            const std::vector<Scalar> path2_link_lengths_;
 
-            // TODO(@MatthewChignoli): Perhaps I should just make a factorization info struct
-            InverseType K11inv_;
-            // Note: Q2T_ is the transpose of Q2 but is of type InverseType and Q1inv_ is the
-            // inverse of Q1 but is of type DMat<Scalar> because Eigen treats LU factorization 
-            // in the form K = P^{-1}*L*U*Q^{-1} while Featherstone (our reference) treats it in 
-            // the form K = Q1*L*U*Q2
-            InverseType Q2T_;
-            DMat<Scalar> Q1inv_;
+            const int independent_coordinate_;
+            // The independent coordinate map is a 3x3 matrix that maps the stacked indepedent
+            // coordinates [y;q_dep] to the spanning coordinate vector [q1;q2;q3]
+            Mat3<Scalar> indepenent_coordinate_map_;
+
+            InverseType Kd_inv_;
         };
     }
 

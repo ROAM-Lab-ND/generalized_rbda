@@ -6,6 +6,7 @@
 #ifndef GRBDA_UTILITIES_H
 #define GRBDA_UTILITIES_H
 
+#include <random>
 #include "cppTypes.h"
 
 namespace grbda
@@ -53,6 +54,13 @@ namespace grbda
       v[i] = random<T>();
     }
     return v;
+  }
+
+  inline bool randomBool()
+  {
+    static auto gen = std::bind(std::uniform_int_distribution<>(0, 1),
+                                std::default_random_engine());
+    return gen();
   }
 
   /*!
@@ -240,45 +248,6 @@ namespace grbda
   struct CorrectMatrixLltType<casadi::SX>
   {
     using type = CasadiLLT;
-  };
-
-  // TODO(@MatthewChignoli): Implement CasadiFullPivLU
-  /*!
-   * Analaogous to Eigen::FullPivLU, but for casadi::SX matrices
-   */
-  class CasadiFullPivLU
-  {
-  public:
-    CasadiFullPivLU() {}
-    CasadiFullPivLU(const DMat<casadi::SX> &mat) {}
-
-    DMat<casadi::SX> permutationP() const
-    {
-      return DMat<casadi::SX>::Identity(0, 0);
-    }
-
-    DMat<casadi::SX> permutationQ() const
-    {
-      return DMat<casadi::SX>::Identity(0, 0);
-    }
-
-    DMat<casadi::SX> matrixLU() const
-    {
-      return DMat<casadi::SX>::Identity(0, 0);
-    }
-  };
-
-  template <typename Scalar>
-  struct CorrectMatrixFullPivLuType
-  {
-    using type = Eigen::FullPivLU<DMat<Scalar>>;
-  };
-
-  // Specialization for casadi::SX
-  template <>
-  struct CorrectMatrixFullPivLuType<casadi::SX>
-  {
-    using type = CasadiFullPivLU;
   };
 
   /*!
