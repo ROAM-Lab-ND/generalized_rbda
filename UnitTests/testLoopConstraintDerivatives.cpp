@@ -9,7 +9,7 @@ using namespace grbda;
 
 // TODO(@MatthewChignoli): For now, it is specialized for the four bar
 // TODO(@MatthewChignoli): Template this test so that it is valid for all loop constraints?
-class LoopConstraintDerivativesF : public ::testing::Test
+class LoopConstraintDerivatives : public ::testing::Test
 {
 protected:
     using SX = casadi::SX;
@@ -28,7 +28,7 @@ protected:
     } casadi_fcns_;
 
 private:
-    // TODO(@MatthewChignoli): Randomize these?
+    // TODO(@MatthewChignoli): Randomize these? How do we know these are feasible?
     const double l1 = 1.4;
     const double l2 = 1.1;
     const double l3 = 1.7;
@@ -58,28 +58,29 @@ protected:
 
     std::vector<casadi::DM> randomJointState() const
     {
-        // TODO(@MatthewChignoli): add comments
+        // Find a feasible joint position
         casadi::DMDict arg;
         arg["x0"] = random<casadi::DM>(four_bar_sym_->numSpanningPos());
         casadi::DM q_dm = casadi_fcns_.phiRootFinder(arg).at("x");
         DVec<double> q(four_bar_sym_->numSpanningPos());
         casadi::copy(q_dm, q);
-
-        DMat<double> K(2, 3);
-        casadi::copy(casadi_fcns_.K({q_dm})[0], K);
-
         JointCoordinate<double> joint_pos(q, false);
+
+        // Compute the explicit constraint jacobians
         four_bar_num_->updateJacobians(joint_pos);
         DMat<double> G = four_bar_num_->G();
 
+        // Compute a valid joint velocity
         DVec<double> v = G * DVec<double>::Random(four_bar_num_->numIndependentVel());
         casadi::DM v_dm = casadi::DM::zeros(four_bar_sym_->numSpanningVel(), 1);
         casadi::copy(v, v_dm);
-
         JointCoordinate<double> joint_vel(v, false);
+
+        // Compute the constraint biases
         four_bar_num_->updateBiases(JointState<double>(joint_pos, joint_vel));
         DVec<double> g = four_bar_num_->g();
 
+        // Compute a valid joint acceleration
         DVec<double> vd = G * DVec<double>::Random(four_bar_num_->numIndependentVel()) + g;
         casadi::DM vd_dm = casadi::DM::zeros(four_bar_sym_->numSpanningVel(), 1);
         casadi::copy(vd, vd_dm);
@@ -154,66 +155,73 @@ private:
     }
 };
 
-TEST_F(LoopConstraintDerivativesF, implicitConstraintAutoDiff)
+TEST_F(LoopConstraintDerivatives, implicitConstraintAutoDiff)
 {
-    // TODO(@MatthewChignoli): add description of test
+    // This test:
+    // 1) Verifies that the method of generating random joint states results in feasible states 
+    // that satisfy the implicit loop constraints
+    // 2) Verifies that the analytical method of computing the implicit loop constraint jacobian 
+    // and bias returns the same result as the autodiff method
+    // 3) Verifies that the implicit and explicit constraint jacobians and biases are consistent
 
-    // TODO(@MatthewChignoli): Run the test multiple times with different random values
-    std::vector<casadi::DM> q_v_vd_dm = randomJointState();
-    casadi::DM q_dm = q_v_vd_dm[0];
-    casadi::DM v_dm = q_v_vd_dm[1];
-    casadi::DM vd_dm = q_v_vd_dm[2];
-    std::vector<casadi::DM> state_dm{q_dm, v_dm};
+    for (int i = 0; i < 25; i++)
+    {
+        std::vector<casadi::DM> q_v_vd_dm = randomJointState();
+        casadi::DM q_dm = q_v_vd_dm[0];
+        casadi::DM v_dm = q_v_vd_dm[1];
+        casadi::DM vd_dm = q_v_vd_dm[2];
+        std::vector<casadi::DM> state_dm{q_dm, v_dm};
 
-    DVec<double> q(3);
-    casadi::copy(q_dm, q);
+        DVec<double> q(3);
+        casadi::copy(q_dm, q);
 
-    DVec<double> v(3);
-    casadi::copy(v_dm, v);
+        DVec<double> v(3);
+        casadi::copy(v_dm, v);
 
-    DVec<double> vd(3);
-    casadi::copy(vd_dm, vd);
+        DVec<double> vd(3);
+        casadi::copy(vd_dm, vd);
 
-    JointCoordinate<double> joint_pos(q, false);
-    JointCoordinate<double> joint_vel(v, false);
-    JointState<double> joint_state(joint_pos, joint_vel);
+        JointCoordinate<double> joint_pos(q, false);
+        JointCoordinate<double> joint_vel(v, false);
+        JointState<double> joint_state(joint_pos, joint_vel);
 
-    DVec<double> phi = four_bar_num_->phi(joint_pos);
-    four_bar_num_->updateJacobians(joint_pos);
-    DMat<double> K = four_bar_num_->K();
-    four_bar_num_->updateBiases(joint_state);
-    DVec<double> k = four_bar_num_->k();
+        DVec<double> phi = four_bar_num_->phi(joint_pos);
+        four_bar_num_->updateJacobians(joint_pos);
+        DMat<double> K = four_bar_num_->K();
+        four_bar_num_->updateBiases(joint_state);
+        DVec<double> k = four_bar_num_->k();
 
-    // Verify that the constraints are satisfied
-    GTEST_ASSERT_LE(phi.norm(), 1e-8) << "phi:\n"
-                                      << phi;
+        // Verify that the constraints are satisfied
+        GTEST_ASSERT_LE(phi.norm(), 1e-8) << "phi:\n"
+                                          << phi;
 
-    GTEST_ASSERT_LE((K * v).norm(), 1e-8) << "K*v:\n"
-                                          << K * v;
+        GTEST_ASSERT_LE((K * v).norm(), 1e-8) << "K*v:\n"
+                                              << K * v;
 
-    GTEST_ASSERT_LE((K * vd - k).norm(), 1e-8) << "K*vd + k:\n"
-                                               << K * vd + k;
+        GTEST_ASSERT_LE((K * vd - k).norm(), 1e-8) << "K*vd + k:\n"
+                                                   << K * vd + k;
 
-    // Compare analytical vs. autodiff implicit constraints
-    DMat<double> K_ad(2, 3);
-    casadi::copy(casadi_fcns_.K(q_dm)[0], K_ad);
-    GTEST_ASSERT_LE((K - K_ad).norm(), 1e-12) << "K:\n"
-                                              << K << "\nK_ad:\n"
-                                              << K_ad;
+        // Compare analytical vs. autodiff implicit constraints
+        DMat<double> K_ad(2, 3);
+        casadi::copy(casadi_fcns_.K(q_dm)[0], K_ad);
+        GTEST_ASSERT_LE((K - K_ad).norm(), 1e-12) << "K:\n"
+                                                  << K << "\nK_ad:\n"
+                                                  << K_ad;
 
-    DVec<double> k_ad(2);
-    casadi::copy(casadi_fcns_.k(state_dm)[0], k_ad);
-    GTEST_ASSERT_LE((k - k_ad).norm(), 1e-12) << "k:\n"
-                                              << k << "\nk_ad:\n"
-                                              << k_ad;
+        DVec<double> k_ad(2);
+        casadi::copy(casadi_fcns_.k(state_dm)[0], k_ad);
+        GTEST_ASSERT_LE((k - k_ad).norm(), 1e-12) << "k:\n"
+                                                  << k << "\nk_ad:\n"
+                                                  << k_ad;
 
-    // Verify agreement between implicit and explicit jacobians and biases
-    DMat<double> G = four_bar_num_->G();
-    GTEST_ASSERT_LE((K * G).norm(), 1e-12) << "K*G:\n"
-                                           << K * G;
+        // Verify agreement between implicit and explicit jacobians and biases
+        DMat<double> G = four_bar_num_->G();
+        GTEST_ASSERT_LE((K * G).norm(), 1e-12) << "K*G:\n"
+                                               << K * G;
 
-    DVec<double> g = four_bar_num_->g();
-    GTEST_ASSERT_LE((K * g - k).norm(), 1e-12) << "K*g:\n"
-                                               << K * g << "\nk:\n"
-                                               << k;
+        DVec<double> g = four_bar_num_->g();
+        GTEST_ASSERT_LE((K * g - k).norm(), 1e-12) << "K*g:\n"
+                                                   << K * g << "\nk:\n"
+                                                   << k;
+    }
 }
