@@ -59,6 +59,32 @@ namespace grbda
             DVec<Scalar> k_;
         };
 
+        // TODO(@MatthewChignoli): Should we have a middle layer of abstraction for implicit vs explicit constraints? The independent coordinate mapping is one example of something that could be abstracted for all implicit constraints.
+
+        template <typename Scalar = double>
+        struct GenericImplicit : Base<Scalar>
+        {
+            using SX = casadi::SX;
+            using SymPhiFcn = std::function<DVec<SX>(const JointCoordinate<SX> &)>;
+
+            // TODO(@MatthewChignoli): Pass this by reference?
+            GenericImplicit(int state_dim, SymPhiFcn phi_fcn);
+
+            std::shared_ptr<Base<Scalar>> clone() const override
+            {
+                return std::make_shared<GenericImplicit<Scalar>>(*this);
+            }
+
+            void updateJacobians(const JointCoordinate<Scalar> &joint_pos) override;
+            void updateBiases(const JointState<Scalar> &joint_state) override;
+
+            DVec<Scalar> gamma(const JointCoordinate<Scalar> &joint_pos) const override;
+
+        private:
+            casadi::Function K_fcn_;
+            casadi::Function k_fcn_;
+        };
+
         template <typename Scalar = double>
         struct Static : Base<Scalar>
         {

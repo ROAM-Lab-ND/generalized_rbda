@@ -89,7 +89,7 @@ namespace grbda
             // Implicit constraint jacobian
             SX cs_K_sym = jacobian(cs_phi_sym, cs_q_sym);
 
-            // Compute constraint bias
+            // Implict constraint bias
             SX cs_Kdot_sym = SX(constraint_dim, state_dim);
             for (size_t i = 0; i < state_dim; i++)
             {
