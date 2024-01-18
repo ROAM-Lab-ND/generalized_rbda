@@ -6,12 +6,49 @@
 namespace grbda
 {
 
-    // TODO(@MatthewChignoli): Template on Scalar?
+    // 
+    // TODO(@MatthewChignoli): Template on Scalar
     // TODO(@MatthewChignoli): This is the robot from 2.74. Maybe the name should reflect that. Although it is not floating base. Also I should get parameters for the robot from the homework/matlab code. And then unit test it against the matlab code.
     class SingleLegHopper : public Robot<double>
     {
     public:
-        SingleLegHopper() {}
+        SingleLegHopper() 
+        {
+            // TODO(@MatthewChignoli): Get correct values later
+
+            // Thigh
+            Mat3<double> thigh_rotiatonal_inertia;
+            thigh_rotiatonal_inertia << 0.1, 0., 0.,
+                0., 0.1, 0.,
+                0., 0., 0.1;
+            Vec3<double> thigh_com{0., 0., 0.};
+            thigh_spatial_inertia_ = SpatialInertia<double>(1., thigh_com, thigh_rotiatonal_inertia);
+
+            // Shank Driver
+            Mat3<double> shank_driver_rotiatonal_inertia;
+            shank_driver_rotiatonal_inertia << 0.1, 0., 0.,
+                0., 0.1, 0.,
+                0., 0., 0.1;
+            Vec3<double> shank_driver_com{0., 0., 0.};
+            shank_driver_spatial_inertia_ = SpatialInertia<double>(1., shank_driver_com, shank_driver_rotiatonal_inertia);
+
+            // Shank Support
+            Mat3<double> shank_support_rotiatonal_inertia;
+            shank_support_rotiatonal_inertia << 0.1, 0., 0.,
+                0., 0.1, 0.,
+                0., 0., 0.1;
+            Vec3<double> shank_support_com{0., 0., 0.};
+            shank_support_spatial_inertia_ = SpatialInertia<double>(1., shank_support_com, shank_support_rotiatonal_inertia);
+
+            // Foot
+            Mat3<double> foot_rotiatonal_inertia;
+            foot_rotiatonal_inertia << 0.1, 0., 0.,
+                0., 0.1, 0.,
+                0., 0., 0.1;
+            Vec3<double> foot_com{0., 0., 0.};
+            foot_spatial_inertia_ = SpatialInertia<double>(1., foot_com, foot_rotiatonal_inertia);
+
+        }
 
         ClusterTreeModel<> buildClusterTreeModel() const override
         {

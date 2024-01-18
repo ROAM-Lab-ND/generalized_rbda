@@ -24,27 +24,21 @@ namespace grbda
         {
             JointState<Scalar> spanning_joint_state(true, true);
 
-            // TODO(@MatthewChignoli): Should we always expect to deal with spanning positions? I think that is a good assumption? For now support both. But if the input position is spanning, then we need to check to make sure that it is valid
-
             // TODO(@MatthewChignoli): Should this be a helper function?
-            // Case 1: Indepedent positions provided, constraint is explicit
             if (!joint_state.position.isSpanning() && loop_constraint_->isExplicit())
             {
                 spanning_joint_state.position = loop_constraint_->gamma(joint_state.position);
             }
-            // Case 2: Independent positions provided, constraint is implicit
             else if (!joint_state.position.isSpanning() && !loop_constraint_->isExplicit())
             {
                 throw std::runtime_error("Independent positions cannot be converted to spanning positions when the constraint is implicit.");
             }
-            // Case 3: Spanning positions provided, constraint is explicit
             else if (joint_state.position.isSpanning() && loop_constraint_->isExplicit())
             {
-                // TODO(@MatthewChignoli): We should check to make sure that the spanning position is valid
-                printf("Warning: Spanning positions provided, but constraint is explicit. Assuming that the spanning positions are valid.\n");
+                // TODO(@MatthewChignoli): We should check to make sure that the spanning position is valid. Will require turning gamma into phi
+                // printf("Warning: Spanning positions provided, but constraint is explicit. Assuming that the spanning positions are valid.\n");
                 spanning_joint_state.position = joint_state.position;
             }
-            // Case 4: Spanning positions provided, constraint is implicit
             else if (joint_state.position.isSpanning() && !loop_constraint_->isExplicit())
             {
                 if (!loop_constraint_->isValidSpanningPosition(joint_state.position))
@@ -65,6 +59,10 @@ namespace grbda
             }
             else
             {
+                if (!loop_constraint_->isValidSpanningVelocity(joint_state.velocity))
+                {
+                    throw std::runtime_error("Spanning velocity is not valid");
+                }
                 spanning_joint_state.velocity = joint_state.velocity;
             }
             loop_constraint_->updateBiases(spanning_joint_state);

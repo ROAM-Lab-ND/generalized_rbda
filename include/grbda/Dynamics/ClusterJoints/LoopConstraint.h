@@ -28,7 +28,14 @@ namespace grbda
 
             bool isValidSpanningPosition(const JointCoordinate<Scalar> &joint_pos) const
             {
-                return nearZeroDefaultTrue(phi_(joint_pos));
+                DVec<Scalar> violation = phi_(joint_pos);
+                return nearZeroDefaultTrue(violation) && joint_pos.isSpanning();
+            }
+
+            bool isValidSpanningVelocity(const JointCoordinate<Scalar> &joint_vel) const
+            {
+                DVec<Scalar> violation = K_ * joint_vel;
+                return nearZeroDefaultTrue(violation) && joint_vel.isSpanning();
             }
 
             virtual void updateJacobians(const JointCoordinate<Scalar> &joint_pos) = 0;
