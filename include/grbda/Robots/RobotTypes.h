@@ -7,7 +7,7 @@
 #include "grbda/Robots/MIT_Humanoid_Leg.hpp"
 #include "grbda/Robots/MiniCheetah.hpp"
 #include "grbda/Robots/JVRC1_Humanoid.hpp"
-#include "grbda/Robots/SingleLegHopper.hpp"
+#include "grbda/Robots/PlanarLegLinkage.hpp"
 #include "grbda/Robots/SingleRigidBody.hpp"
 #include "grbda/Robots/SerialChains/RevoluteChainWithRotor.hpp"
 #include "grbda/Robots/SerialChains/RevolutePairChain.hpp"

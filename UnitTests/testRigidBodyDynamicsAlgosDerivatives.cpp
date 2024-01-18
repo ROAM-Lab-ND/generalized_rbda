@@ -135,6 +135,7 @@ protected:
 
 using testing::Types;
 
+// TODO(@MatthewChignoli): Eventually add the planar leg linkage back in. Difficult at the moment because it requires createSymbolicModelState work for clusters with implicit constraints 
 typedef Types<
     SingleRigidBody<casadi::SX>,
     MiniCheetah<casadi::SX>,
