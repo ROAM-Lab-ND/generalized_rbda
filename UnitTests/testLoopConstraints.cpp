@@ -21,7 +21,6 @@ public:
 
     struct
     {
-        CasFcn phiRootFinder;
         CasFcn K;
         CasFcn k;
     } casadi_fcns;
@@ -74,10 +73,10 @@ public:
         four_bar_sym_ = std::make_shared<FourBarSX>(path1_lengths_sym, path2_lengths_sym,
                                                     offset_sym, independent_coordinate);
         four_bar_num = std::make_shared<FourBar>(path1_lengths, path2_lengths,
-                                                  offset, independent_coordinate);
+                                                 offset, independent_coordinate);
 
         // Create casadi functions
-        createPhiRootFinder();
+        four_bar_sym_->createRandomStateHelpers();
         createImplictConstraintFcns();
     }
 
@@ -86,7 +85,7 @@ public:
         // Find a feasible joint position
         casadi::DMDict arg;
         arg["x0"] = random<casadi::DM>(four_bar_sym_->numSpanningPos());
-        casadi::DM q_dm = casadi_fcns.phiRootFinder(arg).at("x");
+        casadi::DM q_dm = four_bar_sym_->random_state_helpers_.phi_root_finder(arg).at("x");
         DVec<double> q(four_bar_sym_->numSpanningPos());
         casadi::copy(q_dm, q);
         JointCoordinate<double> joint_pos(q, false);
@@ -114,28 +113,6 @@ public:
     }
 
 private:
-    // TODO(@MatthewChignoli): Might want this root finder to be a member of LoopConstraint::Base?
-    void createPhiRootFinder()
-    {
-        // Define symbolic variables
-        SX cs_q_sym = SX::sym("q", four_bar_sym_->numSpanningPos(), 1);
-        DVec<SX> q_sym(four_bar_sym_->numSpanningPos());
-        casadi::copy(cs_q_sym, q_sym);
-
-        // Compute constraint violation
-        JointCoordinate<SX> joint_pos(q_sym, false);
-        DVec<SX> phi = four_bar_sym_->phi(joint_pos);
-        SX f = phi.transpose() * phi;
-
-        // Create root finder nlp
-        casadi::SXDict nlp = {{"x", cs_q_sym}, {"f", f}};
-        casadi::Dict opts = {};
-        opts.insert(std::make_pair("print_time", false));
-        opts.insert(std::make_pair("ipopt.linear_solver", "ma27"));
-        opts.insert(std::make_pair("ipopt.print_level", 0));
-        casadi_fcns.phiRootFinder = casadi::nlpsol("solver", "ipopt", nlp, opts);
-    }
-
     void createImplictConstraintFcns()
     {
         // Define symbolic variables

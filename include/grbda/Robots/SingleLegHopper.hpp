@@ -136,7 +136,7 @@ namespace grbda
         Vec3<double> foot_location_{4.5, 0., 0.};
         SpatialInertia<double> foot_spatial_inertia_;
 
-        // TODO(@MatthewChignoli): Better way to encode this?
+        // TODO(@MatthewChignoli): Better way to encode this? Probably using xtree so that it can match the URDF?
         const double foot_joint_to_constraint_length_ = 5.;
         const double support_joint_to_constraint_length_ = 3.;
     };

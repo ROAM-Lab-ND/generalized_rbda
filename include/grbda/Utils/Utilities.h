@@ -117,8 +117,10 @@ namespace grbda
     return true;
   }
 
-  // TODO(@MatthewChignoli): This is hacky and crimey
-  // TODO(@MatthewChignoli): Add description
+  /*!
+   * Check if an Eigen vector is approximately zero
+   * NOTE: Operates on the entire vector, not element-wise
+   */
   template <typename T>
   bool nearZero(const Eigen::MatrixBase<T> &vec, const typename T::Scalar &tol = 1e-8)
   {
@@ -127,13 +129,16 @@ namespace grbda
     return false;
   }
 
+  /*!
+   * These variants of nearZero are used to handle the casadi::SX type because casadi::SX type 
+   * objects cannot be converted to bool
+   */
   template <typename T>
   bool nearZeroDefaultTrue(const Eigen::MatrixBase<T> &vec, const typename T::Scalar &tol = 1e-8)
   {
     return nearZero(vec, tol);
   }
 
-  // TODO(@MatthewChignoli): What should this return by default?
   template <>
   inline bool nearZeroDefaultTrue<DVec<casadi::SX>>(const Eigen::MatrixBase<DVec<casadi::SX>> &vec,
                                                     const casadi::SX &tol)
@@ -147,37 +152,11 @@ namespace grbda
     return nearZero(vec, tol);
   }
 
-  // TODO(@MatthewChignoli): What should this return by default?
   template <>
   inline bool nearZeroDefaultFalse<DVec<casadi::SX>>(const Eigen::MatrixBase<DVec<casadi::SX>> &vec,
                                                      const casadi::SX &tol)
   {
     return false;
-  }
-
-  // TODO(@MatthewChignoli): I actually think we do not need these functions
-  /*!
-   * Deadband function for Eigen vectors
-   * NOTE: Operates on the entire vector, not element-wise
-   */
-  template <typename T>
-  void deadband(Eigen::MatrixBase<T> &vec, const typename T::Scalar &deadband)
-  {
-    if (vec.norm() < deadband)
-    {
-      vec.setZero();
-    }
-  }
-
-  template <>
-  inline void deadband<DVec<casadi::SX>>(Eigen::MatrixBase<DVec<casadi::SX>> &vec,
-                                         const casadi::SX &deadband)
-  {
-    casadi::SX deadband_condition = vec.norm() < deadband;
-    for (int i = 0; i < vec.rows(); ++i)
-    {
-      vec(i) = casadi::SX::if_else(deadband_condition, casadi::SX(0), vec[i]);
-    }
   }
 
   /*!

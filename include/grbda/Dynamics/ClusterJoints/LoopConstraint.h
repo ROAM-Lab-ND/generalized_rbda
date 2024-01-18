@@ -24,7 +24,7 @@ namespace grbda
             int numIndependentVel() const { return G_.cols(); }
             int numConstraints() const { return K_.rows(); }
 
-            const bool& isExplicit() const { return is_explicit_; }
+            bool isExplicit() const { return phi_ == nullptr; }
 
             bool isValidSpanningPosition(const JointCoordinate<Scalar> &joint_pos) const
             {
@@ -41,7 +41,6 @@ namespace grbda
             virtual void updateJacobians(const JointCoordinate<Scalar> &joint_pos) = 0;
             virtual void updateBiases(const JointState<Scalar> &joint_state) = 0;
 
-            // TODO(@MatthewChignoli): should be a lambda function
             DVec<Scalar> phi(const JointCoordinate<Scalar> &joint_pos) const { return phi_(joint_pos); }
             virtual DVec<Scalar> gamma(const JointCoordinate<Scalar> &joint_pos) const = 0;
             const DMat<Scalar> &G() const { return G_; }
@@ -50,13 +49,7 @@ namespace grbda
             const DMat<Scalar> &K() const { return K_; }
             const DVec<Scalar> &k() const { return k_; }
 
-            // TODO(@MatthewChignoli): this is hacky and dangerous. It should be a private member of LoopConstraint::FourBar
-            virtual void createPhiRootFinder() {}
-            casadi::Function phi_root_finder;
-
         protected:
-            // TODO(@MatthewChignoli): Do we need is_explicit? Or can we just check if phi_ is null?
-            bool is_explicit_ = false;
             std::function<DVec<Scalar>(const JointCoordinate<Scalar> &)> phi_;
 
             DMat<Scalar> G_;

@@ -24,7 +24,7 @@ namespace grbda
         {
             JointState<Scalar> spanning_joint_state(true, true);
 
-            // TODO(@MatthewChignoli): Should this be a helper function?
+            // Spanning positions
             if (!joint_state.position.isSpanning() && loop_constraint_->isExplicit())
             {
                 spanning_joint_state.position = loop_constraint_->gamma(joint_state.position);
@@ -36,7 +36,6 @@ namespace grbda
             else if (joint_state.position.isSpanning() && loop_constraint_->isExplicit())
             {
                 // TODO(@MatthewChignoli): We should check to make sure that the spanning position is valid. Will require turning gamma into phi
-                // printf("Warning: Spanning positions provided, but constraint is explicit. Assuming that the spanning positions are valid.\n");
                 spanning_joint_state.position = joint_state.position;
             }
             else if (joint_state.position.isSpanning() && !loop_constraint_->isExplicit())
@@ -51,8 +50,9 @@ namespace grbda
             {
                 throw std::runtime_error("Unhandled case");
             }
-            loop_constraint_->updateJacobians(spanning_joint_state.position);
 
+            // Spanning velocities
+            loop_constraint_->updateJacobians(spanning_joint_state.position);
             if (!joint_state.velocity.isSpanning())
             {
                 spanning_joint_state.velocity = G() * joint_state.velocity;

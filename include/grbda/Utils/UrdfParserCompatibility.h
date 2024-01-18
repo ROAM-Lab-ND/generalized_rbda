@@ -7,7 +7,6 @@
 
 namespace grbda
 {
-    // TODO(@MatthewChignoli): Make these a utilities somewhere?
     SpatialInertia<double> urdfInertialToSpatialInertia(const std::shared_ptr<dynacore::urdf::Inertial> &inertial)
     {
         double mass = inertial->mass;

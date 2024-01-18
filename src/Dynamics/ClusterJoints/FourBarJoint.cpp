@@ -74,7 +74,6 @@ namespace grbda
             default:
                 throw std::runtime_error("FourBar: Invalid independent coordinate");
             }
-
         }
 
         template <typename Scalar>
@@ -195,6 +194,100 @@ namespace grbda
             this->g_(0) = 0.;
             this->g_.template bottomRows<2>() = Kd_inv_.solve(this->k_);
             this->g_ = indepenent_coordinate_map_ * this->g_;
+        }
+
+        template <typename Scalar>
+        void FourBar<Scalar>::createRandomStateHelpers()
+        {
+            if (random_state_helpers_.created)
+            {
+                return;
+            }
+            random_state_helpers_.created = true;
+
+            using SX = casadi::SX;
+
+            // Create symbolic four bar loop constraint
+            std::vector<SX> path1_link_lengths_sym, path2_link_lengths_sym;
+            for (size_t i = 0; i < path1_link_lengths_.size(); i++)
+            {
+                path1_link_lengths_sym.push_back(path1_link_lengths_[i]);
+            }
+            for (size_t i = 0; i < path2_link_lengths_.size(); i++)
+            {
+                path2_link_lengths_sym.push_back(path2_link_lengths_[i]);
+            }
+            Vec2<SX> offset_sym{offset_[0], offset_[1]};
+            FourBar<SX> symbolic = FourBar<SX>(path1_link_lengths_sym,
+                                               path2_link_lengths_sym,
+                                               offset_sym, independent_coordinate_);
+
+            // Define symbolic variables
+            SX cs_q_sym = SX::sym("q", this->numSpanningPos(), 1);
+            DVec<SX> q_sym(this->numSpanningPos());
+            casadi::copy(cs_q_sym, q_sym);
+
+            // Compute constraint violation
+            JointCoordinate<SX> joint_pos(q_sym, false);
+            DVec<SX> phi_sx = symbolic.phi(joint_pos);
+            SX f_sym = phi_sx.transpose() * phi_sx;
+
+            // Create root finder nlp
+            casadi::SXDict nlp = {{"x", cs_q_sym}, {"f", f_sym}};
+            casadi::Dict opts = {};
+            opts.insert(std::make_pair("print_time", false));
+            opts.insert(std::make_pair("ipopt.linear_solver", "ma27"));
+            opts.insert(std::make_pair("ipopt.print_level", 0));
+            random_state_helpers_.phi_root_finder = casadi::nlpsol("solver", "ipopt", nlp, opts);
+
+            // Compute explicit constraint jacobian
+            symbolic.updateJacobians(joint_pos);
+            DMat<SX> G = symbolic.G();
+            SX G_sym = casadi::SX(casadi::Sparsity::dense(G.rows(), G.cols()));
+            casadi::copy(G, G_sym);
+
+            // Create G function
+            random_state_helpers_.G = casadi::Function("G", {cs_q_sym}, {G_sym}, {"q"}, {"G"});
+        }
+
+        template struct FourBar<double>;
+        template struct FourBar<casadi::SX>;
+
+    } // namespace LoopConstraint
+
+    namespace ClusterJoints
+    {
+        template <typename Scalar>
+        JointState<double> FourBar<Scalar>::randomJointState() const
+        {
+            using DM = casadi::DM;
+
+            // Create Helper functions
+            four_bar_constraint_->createRandomStateHelpers();
+
+            // Find a feasible joint position
+            casadi::DMDict arg;
+            arg["x0"] = random<DM>(four_bar_constraint_->numSpanningPos());
+            DM q_dm = four_bar_constraint_->random_state_helpers_.phi_root_finder(arg).at("x");
+            DVec<double> q(four_bar_constraint_->numSpanningPos());
+            casadi::copy(q_dm, q);
+            JointCoordinate<double> joint_pos(q, true);
+
+            // Compute the explicit constraint jacobians
+            arg.clear();
+            arg["q"] = q_dm;
+            DM G_dm = four_bar_constraint_->random_state_helpers_.G({arg}).at("G");
+            DMat<double> G(four_bar_constraint_->numSpanningVel(),
+                           four_bar_constraint_->numIndependentVel());
+            casadi::copy(G_dm, G);
+
+            // Compute a valid joint velocity
+            DVec<double> v = G * DVec<double>::Random(four_bar_constraint_->numIndependentVel());
+            DM v_dm = DM::zeros(four_bar_constraint_->numSpanningVel(), 1);
+            casadi::copy(v, v_dm);
+            JointCoordinate<double> joint_vel(v, true);
+
+            return JointState<double>(joint_pos, joint_vel);
         }
 
         template struct FourBar<double>;
