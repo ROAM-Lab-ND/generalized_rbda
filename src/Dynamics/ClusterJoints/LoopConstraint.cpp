@@ -3,9 +3,137 @@
 
 namespace grbda
 {
+    // TODO(@MatthewChignoli): Template so that we can use any MatrixBase
+    casadi::DM toCasadiArg(const DVec<double> &vec)
+    {
+        casadi::DM cs_vec(vec.rows(), vec.cols());
+        casadi::copy(vec, cs_vec);
+        return cs_vec;
+    }
+
+    casadi::SX toCasadiArg(const DVec<casadi::SX> &vec)
+    {
+        casadi::SX cs_vec(vec.rows(), vec.cols());
+        casadi::copy(vec, cs_vec);
+        return cs_vec;
+    }
+
+    casadi::DMVector toCasadiArgVector(const JointState<double> &joint_state)
+    {
+        casadi::DMVector cs_vec(2);
+        cs_vec[0] = toCasadiArg(joint_state.position);
+        cs_vec[1] = toCasadiArg(joint_state.velocity);
+        return cs_vec;
+    }
+
+    casadi::SXVector toCasadiArgVector(const JointState<casadi::SX> &joint_state)
+    {
+        casadi::SXVector cs_vec(2);
+        cs_vec[0] = toCasadiArg(joint_state.position);
+        cs_vec[1] = toCasadiArg(joint_state.velocity);
+        return cs_vec;
+    }
+
+    // TODO(@MatthewChignoli): No need for separate vec and mat functions
+    DVec<casadi::SX> toEigenVec(const casadi::SX &vec)
+    {
+        DVec<casadi::SX> vec_out(vec.rows());
+        casadi::copy(vec, vec_out);
+        return vec_out;
+    }
+
+    DVec<double> toEigenVec(const casadi::DM &vec)
+    {
+        DVec<double> vec_out(vec.rows());
+        casadi::copy(vec, vec_out);
+        return vec_out;
+    }
+
+    DMat<casadi::SX> toEigenMat(const casadi::SX &mat)
+    {
+        DMat<casadi::SX> mat_out(mat.size1(), mat.size2());
+        casadi::copy(mat, mat_out);
+        return mat_out;
+    }
+
+    DMat<double> toEigenMat(const casadi::DM &mat)
+    {
+        DMat<double> mat_out(mat.size1(), mat.size2());
+        casadi::copy(mat, mat_out);
+        return mat_out;
+    }
 
     namespace LoopConstraint
     {
+
+        template <typename Scalar>
+        GenericImplicit<Scalar>::GenericImplicit(int state_dim, SymPhiFcn phi_fcn)
+        {
+            // Symbolic state
+            SX cs_q_sym = SX::sym("q", state_dim, 1);
+            DVec<SX> q_sym(state_dim);
+            casadi::copy(cs_q_sym, q_sym);
+            JointCoordinate<SX> joint_pos_sym(q_sym, true);
+
+            SX cs_v_sym = SX::sym("v", state_dim, 1);
+            DVec<SX> v_sym(state_dim);
+            casadi::copy(cs_v_sym, v_sym);
+
+            // Implicit constraint violation function
+            DVec<SX> phi_sym = phi_fcn(joint_pos_sym);
+            const int constraint_dim = phi_sym.rows();
+            SX cs_phi_sym = casadi::SX(casadi::Sparsity::dense(constraint_dim, 1));
+            casadi::copy(phi_sym, cs_phi_sym);
+            casadi::Function cs_phi_fcn = casadi::Function("phi", {cs_q_sym}, {cs_phi_sym});
+
+            // Implicit constraint jacobian
+            SX cs_K_sym = jacobian(cs_phi_sym, cs_q_sym);
+
+            // Compute constraint bias
+            SX cs_Kdot_sym = SX(constraint_dim, state_dim);
+            for (size_t i = 0; i < state_dim; i++)
+            {
+                casadi::Slice all = casadi::Slice();
+                cs_Kdot_sym(all, i) = jtimes(cs_K_sym(all, i), cs_q_sym, cs_v_sym);
+            }
+            SX cs_k_sym = -casadi::SX::mtimes(cs_Kdot_sym, cs_v_sym);
+
+            // Assign member variables using casadi functions
+            this->phi_ = [cs_phi_fcn](const JointCoordinate<Scalar> &joint_pos)
+            {
+                return toEigenVec(cs_phi_fcn(toCasadiArg(joint_pos))[0]);
+            };
+
+            this->K_ = DMat<Scalar>::Zero(constraint_dim, state_dim);
+            K_fcn_ = casadi::Function("K", {cs_q_sym}, {cs_K_sym});
+
+            this->k_ = DVec<Scalar>::Zero(constraint_dim);
+            k_fcn_ = casadi::Function("k", {cs_q_sym, cs_v_sym}, {cs_k_sym});
+
+            // TODO(@MatthewChignoli): Still need lambda functions for G and g
+        }
+
+        template <typename Scalar>
+        DVec<Scalar> GenericImplicit<Scalar>::gamma(const JointCoordinate<Scalar> &joint_pos) const
+        {
+            throw std::runtime_error("GenericImplicit::gamma() not implemented");
+        }
+
+        template <typename Scalar>
+        void GenericImplicit<Scalar>::updateJacobians(const JointCoordinate<Scalar> &joint_pos)
+        {
+            this->K_ = toEigenMat(K_fcn_(toCasadiArg(joint_pos))[0]);
+        }
+
+        template <typename Scalar>
+        void GenericImplicit<Scalar>::updateBiases(const JointState<Scalar> &joint_state)
+        {
+            this->k_ = toEigenVec(k_fcn_(toCasadiArgVector(joint_state))[0]);
+        }
+
+        template struct GenericImplicit<double>;
+        // template struct GenericImplicit<float>;
+        template struct GenericImplicit<casadi::SX>;
 
         template <typename Scalar>
         Static<Scalar>::Static(DMat<Scalar> G, DMat<Scalar> K)

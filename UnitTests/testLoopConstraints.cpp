@@ -248,3 +248,39 @@ GTEST_TEST(LoopConstraint, fourBar)
                                                    << k;
     }
 }
+
+// TODO(@MatthewChignoli): How to test this?
+GTEST_TEST(LoopConstraint, GenericImplicit)
+{
+    using SX = casadi::SX;
+
+    std::function<DVec<SX>(const JointCoordinate<SX> &)> phi_fcn =
+        [](const JointCoordinate<SX> &joint_pos)
+    {
+        DVec<SX> phi(3);
+        phi(0) = joint_pos[0] + joint_pos[1] + joint_pos[2];
+        phi(1) = joint_pos[0] * joint_pos[1] + joint_pos[1] * joint_pos[2];
+        phi(2) = joint_pos[0] * joint_pos[1] * joint_pos[2];
+        return phi;
+    };
+
+    LoopConstraint::GenericImplicit<double> generic_implicit(3, phi_fcn);
+
+    DVec<double> q = DVec<double>::Random(3);
+    DVec<double> v = DVec<double>::Random(3);
+    JointCoordinate<double> joint_pos = JointCoordinate<double>(q, true);
+    JointCoordinate<double> joint_vel = JointCoordinate<double>(v, true);
+    JointState<double> joint_state(joint_pos, joint_vel);
+
+    generic_implicit.updateJacobians(joint_pos);
+    generic_implicit.updateBiases(joint_state);
+
+    std::cout << "q:\n"
+              << q << std::endl;
+    std::cout << "phi:\n"
+              << generic_implicit.phi(joint_pos) << std::endl;
+    std::cout << "K:\n"
+              << generic_implicit.K() << std::endl;
+    std::cout << "k:\n"
+              << generic_implicit.k() << std::endl;
+}
