@@ -236,6 +236,7 @@ namespace grbda
             casadi::SXDict nlp = {{"x", cs_q_sym}, {"f", f_sym}};
             casadi::Dict opts = {};
             opts.insert(std::make_pair("print_time", false));
+            opts.insert(std::make_pair("ipopt.tol", 1e-12));
             opts.insert(std::make_pair("ipopt.linear_solver", "ma27"));
             opts.insert(std::make_pair("ipopt.print_level", 0));
             random_state_helpers_.phi_root_finder = casadi::nlpsol("solver", "ipopt", nlp, opts);

@@ -69,13 +69,6 @@ namespace grbda
         class FourBar : public Generic<Scalar>
         {
         public:
-            // TODO(@MatthewChignoli): For now, assume a certain type of path
-            // using LinkJointPair = std::pair<Body<Scalar>, JointPtr<Scalar>>;
-            // FourBar(std::vector<LinkJointPair> link_joint_pairs) : Base<Scalar>(3, 1, 1)
-            // {
-            // }
-            // virtual ~FourBar() {}
-
             FourBar(const std::vector<Body<Scalar>> &bodies,
                     const std::vector<JointPtr<Scalar>> &joints,
                     std::shared_ptr<LoopConstraint::FourBar<Scalar>> loop_constraint)
@@ -85,15 +78,6 @@ namespace grbda
             virtual ~FourBar() {}
 
             ClusterJointTypes type() const override { return ClusterJointTypes::FourBar; }
-
-            // void updateKinematics(const JointState<Scalar> &joint_state) override
-            // {
-            //     const JointState<Scalar> spanning_joint_state = this->toSpanningTreeState(joint_state);
-            //     const DVec<Scalar> &q = spanning_joint_state.position;
-            //     const DVec<Scalar> &qd = spanning_joint_state.velocity;
-
-            //     // Need to compute: S, vJ, cJ
-            // }
 
             JointState<double> randomJointState() const override;
 

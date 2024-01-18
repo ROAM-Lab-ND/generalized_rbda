@@ -5,39 +5,29 @@ namespace grbda
     template <typename Scalar>
     PlanarLegLinkage<Scalar>::PlanarLegLinkage()
     {
-        // TODO(@MatthewChignoli): Get correct values from 2.74
-
         // Thigh
-        Mat3<Scalar> thigh_rotiatonal_inertia;
-        thigh_rotiatonal_inertia << 0.1, 0., 0.,
-            0., 0.1, 0.,
-            0., 0., 0.1;
-        Vec3<Scalar> thigh_com{0., 0., 0.};
-        thigh_spatial_inertia_ = SpatialInertia<Scalar>(1., thigh_com, thigh_rotiatonal_inertia);
+        Mat3<Scalar> thigh_rotiatonal_inertia = Mat3<Scalar>::Zero();
+        thigh_rotiatonal_inertia(2, 2) = 45.389e-6;
+        Vec3<Scalar> thigh_com{.0364, 0., 0.};
+        thigh_spatial_inertia_ = SpatialInertia<Scalar>(0.23, thigh_com, thigh_rotiatonal_inertia);
 
         // Shank Driver
-        Mat3<Scalar> shank_driver_rotiatonal_inertia;
-        shank_driver_rotiatonal_inertia << 0.1, 0., 0.,
-            0., 0.1, 0.,
-            0., 0., 0.1;
-        Vec3<Scalar> shank_driver_com{0., 0., 0.};
-        shank_driver_spatial_inertia_ = SpatialInertia<Scalar>(1., shank_driver_com, shank_driver_rotiatonal_inertia);
+        Mat3<Scalar> shank_driver_rotiatonal_inertia = Mat3<Scalar>::Zero();
+        shank_driver_rotiatonal_inertia(2, 2) = 3.257e-6;
+        Vec3<Scalar> shank_driver_com{.048, 0., 0.};
+        shank_driver_spatial_inertia_ = SpatialInertia<Scalar>(.004, shank_driver_com, shank_driver_rotiatonal_inertia);
 
         // Shank Support
-        Mat3<Scalar> shank_support_rotiatonal_inertia;
-        shank_support_rotiatonal_inertia << 0.1, 0., 0.,
-            0., 0.1, 0.,
-            0., 0., 0.1;
-        Vec3<Scalar> shank_support_com{0., 0., 0.};
-        shank_support_spatial_inertia_ = SpatialInertia<Scalar>(1., shank_support_com, shank_support_rotiatonal_inertia);
+        Mat3<Scalar> shank_support_rotiatonal_inertia = Mat3<Scalar>::Zero();
+        shank_support_rotiatonal_inertia(2, 2) = 22.918e-6;
+        Vec3<Scalar> shank_support_com{.04, 0., 0.};
+        shank_support_spatial_inertia_ = SpatialInertia<Scalar>(0.225, shank_support_com, shank_support_rotiatonal_inertia);
 
         // Foot
-        Mat3<Scalar> foot_rotiatonal_inertia;
-        foot_rotiatonal_inertia << 0.1, 0., 0.,
-            0., 0.1, 0.,
-            0., 0., 0.1;
-        Vec3<Scalar> foot_com{0., 0., 0.};
-        foot_spatial_inertia_ = SpatialInertia<Scalar>(1., foot_com, foot_rotiatonal_inertia);
+        Mat3<Scalar> foot_rotiatonal_inertia = Mat3<Scalar>::Zero();
+        foot_rotiatonal_inertia(2, 2) = 22.176e-6;
+        Vec3<Scalar> foot_com{.0635, 0., 0.};
+        foot_spatial_inertia_ = SpatialInertia<Scalar>(.017, foot_com, foot_rotiatonal_inertia);
     }
 
     template <typename Scalar>
@@ -78,11 +68,13 @@ namespace grbda
         JointPtr<Scalar> foot_joint = std::make_shared<Joints::Revolute<Scalar>>(common_axis);
 
         // Loop Constraint
+        // NOTE: Linkage is a parallelogram, so path1_lengths[0] = path2_lengths[1] and
+        // path1_lengths[1] = offset[0]
         std::vector<Scalar> path1_link_lengths, path2_link_lengths;
         path1_link_lengths.push_back(foot_location_[0]);
-        path1_link_lengths.push_back(foot_joint_to_constraint_length_);
-        path2_link_lengths.push_back(support_joint_to_constraint_length_);
-        Vec2<Scalar> offset{shank_driver_location_[0] - shank_support_location_[0], 0.};
+        path1_link_lengths.push_back(shank_support_location_[0] - shank_driver_location_[0]);
+        path2_link_lengths.push_back(path1_link_lengths[0]);
+        Vec2<Scalar> offset{path1_link_lengths[1], 0.};
         int indepedent_coord = 0.;
         std::shared_ptr<LoopConstraint::FourBar<Scalar>> loop_constraint =
             std::make_shared<LoopConstraint::FourBar<Scalar>>(path1_link_lengths, path2_link_lengths, offset, indepedent_coord);
@@ -96,7 +88,7 @@ namespace grbda
 
         // End-effector
         std::string end_effector_name = "end-effector";
-        Vec3<Scalar> end_effector_offset{foot_length_, 0., 0.};
+        Vec3<Scalar> end_effector_offset{path1_link_lengths[1] + .096, 0., 0.};
         model.appendEndEffector(foot_name_, end_effector_offset, end_effector_name);
 
         return model;
