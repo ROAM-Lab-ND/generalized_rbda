@@ -28,8 +28,57 @@ void appendClusterFromUrdfCluster(std::shared_ptr<dynacore::urdf::Cluster> clust
         joints.push_back(std::make_shared<Joints::Revolute<double>>(axis));
     }
 
+    // TODO(@MatthewChignoli): Now we deal with the constraint joints. At this point, there should only be one per cluster, but we will generalize this later
+    if (cluster->constraint_joints.size() != 1)
+    {
+        throw std::runtime_error("There should be exactly one constraint joint per cluster");
+    }
+
+    std::function<DVec<casadi::SX>(const JointCoordinate<casadi::SX> &)> phi;
+    for (std::shared_ptr<const dynacore::urdf::ConstraintJoint> constraint : cluster->constraint_joints)
+    {
+        // Nearest common ancester
+        std::shared_ptr<dynacore::urdf::Link> nca = constraint->nearest_common_ancestor;
+
+        // Find the corresponding body in the cluster tree model
+        Body<double> nca_body = cluster_model.body(nca->name);
+
+        std::vector<Body<double>> nca_to_parent_subtree, nca_to_child_subtree;
+        for (std::shared_ptr<dynacore::urdf::Link> link : constraint->nca_to_parent_subtree)
+        {
+            nca_to_parent_subtree.push_back(cluster_model.body(link->name));
+        }
+        for (std::shared_ptr<dynacore::urdf::Link> link : constraint->nca_to_child_subtree)
+        {
+            nca_to_child_subtree.push_back(cluster_model.body(link->name));
+        }
+
+        // Print out all of this info about ncas and subtrees
+        std::cout << "\nnca_body: " << nca_body.name_ << std::endl;
+        std::cout << "nca_to_parent_subtree: ";
+        for (Body<double> body : nca_to_parent_subtree)
+        {
+            std::cout << body.name_ << " ";
+        }
+        std::cout << std::endl;
+        std::cout << "nca_to_child_subtree: ";
+        for (Body<double> body : nca_to_child_subtree)
+        {
+            std::cout << body.name_ << " ";
+        }
+
+        // TODO(@MatthewChignoli): Now we create the lambda function for phi
+        // TODO(@MatthewChignoli): How do we know what the output dimension should be?
+        phi = [](const JointCoordinate<casadi::SX> &q)
+        {
+            return DVec<casadi::SX>::Zero(1);
+        };
+    }
+
     // TODO(@MatthewChignoli): This is the hardest part. Turning the constraint joint into a loop constraint. I think I need to use lambda functions. And then I can use autodiff to get G and K? Or supply it manually
-    std::shared_ptr<LoopConstraint::Base<double>> constraint = std::make_shared<LoopConstraint::Static<double>>(DMat<double>::Zero(0, 0), DMat<double>::Zero(0, 0));
+    // TODO(@MatthewChignoli): How do we know which coordinates are independent? Should come from the URDF
+    std::vector<bool> independent_coordinates{true, false};
+    std::shared_ptr<LoopConstraint::Base<double>> constraint = std::make_shared<LoopConstraint::GenericImplicit<double>>(independent_coordinates, phi);
 
     // TODO(@MatthewChignoli): Are there cases where we can detect specialized versions of clusters? For example, is there a way that we can detect "revolute pair with rotors" or "revolute with rotor"?
     cluster_model.appendRegisteredBodiesAsCluster<ClusterJoints::Generic<double>>(cluster->name, bodies, joints, constraint);
