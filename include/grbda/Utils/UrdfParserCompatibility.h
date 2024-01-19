@@ -7,27 +7,30 @@
 
 namespace grbda
 {
-    SpatialInertia<double> urdfInertialToSpatialInertia(const std::shared_ptr<dynacore::urdf::Inertial> &inertial)
+    template <typename Scalar>
+    SpatialInertia<Scalar> urdfInertialToSpatialInertia(const std::shared_ptr<dynacore::urdf::Inertial> &inertial)
     {
-        double mass = inertial->mass;
-        Vec3<double> COM = Vec3<double>(inertial->origin.position.x,
+        Scalar mass = inertial->mass;
+        Vec3<Scalar> COM = Vec3<Scalar>(inertial->origin.position.x,
                                         inertial->origin.position.y,
                                         inertial->origin.position.z);
-        Mat3<double> inertia;
+        Mat3<Scalar> inertia;
         inertia.row(0) << inertial->ixx, inertial->ixy, inertial->ixz;
         inertia.row(1) << inertial->ixy, inertial->iyy, inertial->iyz;
         inertia.row(2) << inertial->ixz, inertial->iyz, inertial->izz;
-        return SpatialInertia<double>(mass, COM, inertia);
+        return SpatialInertia<Scalar>(mass, COM, inertia);
     }
 
-    Vec3<double> urdfVector3ToVec3(const dynacore::urdf::Vector3 &vector)
+    template <typename Scalar>
+    Vec3<Scalar> urdfVector3ToVec3(const dynacore::urdf::Vector3 &vector)
     {
-        return Vec3<double>(vector.x, vector.y, vector.z);
+        return Vec3<Scalar>(vector.x, vector.y, vector.z);
     }
 
-    Mat3<double> urdfRotationToRotationMatrix(const dynacore::urdf::Rotation &rotation)
+    template <typename Scalar>
+    Mat3<Scalar> urdfRotationToRotationMatrix(const dynacore::urdf::Rotation &rotation)
     {
-        Quat<double> quat = Quat<double>(rotation.w, rotation.x, rotation.y, rotation.z);
+        Quat<Scalar> quat = Quat<Scalar>(rotation.w, rotation.x, rotation.y, rotation.z);
         return ori::quaternionToRotationMatrix(quat);
     }
 
