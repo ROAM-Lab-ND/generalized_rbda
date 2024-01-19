@@ -175,7 +175,7 @@ private:
     }
 };
 
-GTEST_TEST(LoopConstraint, fourBar)
+GTEST_TEST(LoopConstraint, FourBar)
 {
     // This test:
     // 1) Verifies that the method of generating random joint states results in feasible states
@@ -252,46 +252,50 @@ GTEST_TEST(LoopConstraint, fourBar)
 // TODO(@MatthewChignoli): How to test this?
 GTEST_TEST(LoopConstraint, GenericImplicit)
 {
+    // This test creates an abritrary generic implicit loop constraint and then verifies that
+    // the implicit and explicit constraint jacobians and biases are consistent
+
     using SX = casadi::SX;
 
+    // Define a generic implicit loop constraint
     std::function<DVec<SX>(const JointCoordinate<SX> &)> phi_fcn =
         [](const JointCoordinate<SX> &joint_pos)
     {
         DVec<SX> phi(2);
         phi(0) = joint_pos[0] + joint_pos[1] + joint_pos[2];
-        phi(1) = joint_pos[0] * joint_pos[1] + joint_pos[1] * joint_pos[2];
+        phi(1) = joint_pos[0] * joint_pos[1] + joint_pos[0] * joint_pos[1] * joint_pos[2];
         return phi;
     };
 
-    std::vector<bool> is_coordinate_independent{true, false, false};
-    LoopConstraint::GenericImplicit<double> generic_implicit(is_coordinate_independent, phi_fcn);
+    // Possible options for the independent coordinate
+    std::vector<std::vector<bool>> ind_coord_samples{
+        {true, false, false},
+        {false, true, false},
+        {false, false, true}};
 
-    int state_dim = is_coordinate_independent.size();
-    DVec<double> q = DVec<double>::Random(state_dim);
-    DVec<double> v = DVec<double>::Random(state_dim);
-    JointCoordinate<double> joint_pos = JointCoordinate<double>(q, true);
-    JointCoordinate<double> joint_vel = JointCoordinate<double>(v, true);
-    JointState<double> joint_state(joint_pos, joint_vel);
+    for (const std::vector<bool> &is_coordinate_independent : ind_coord_samples)
+    {
+        LoopConstraint::GenericImplicit<double> generic_implicit(is_coordinate_independent,
+                                                                 phi_fcn);
 
-    generic_implicit.updateJacobians(joint_pos);
-    generic_implicit.updateBiases(joint_state);
+        // Kinematics
+        int state_dim = is_coordinate_independent.size();
+        DVec<double> q = DVec<double>::Random(state_dim);
+        DVec<double> v = DVec<double>::Random(state_dim);
+        JointCoordinate<double> joint_pos = JointCoordinate<double>(q, true);
+        JointCoordinate<double> joint_vel = JointCoordinate<double>(v, true);
+        JointState<double> joint_state(joint_pos, joint_vel);
+        generic_implicit.updateJacobians(joint_pos);
+        generic_implicit.updateBiases(joint_state);
 
-    std::cout << "q:\n"
-              << q << std::endl;
-    std::cout << "phi:\n"
-              << generic_implicit.phi(joint_pos) << std::endl;
-    std::cout << "K:\n"
-              << generic_implicit.K() << std::endl;
-    std::cout << "G:\n"
-              << generic_implicit.G() << std::endl;
-    std::cout << "k:\n"
-              << generic_implicit.k() << std::endl;
-    std::cout << "g:\n"
-              << generic_implicit.g() << std::endl;
-
-    // Verify agreement between implicit and explicit jacobians and biases
-    GTEST_ASSERT_LE((generic_implicit.K() * generic_implicit.G()).norm(), 1e-10);
-    GTEST_ASSERT_LE((generic_implicit.K() * generic_implicit.g() - generic_implicit.k()).norm(), 1e-10);
+        // Verify agreement between implicit and explicit jacobians and biases
+        const DMat<double> &K = generic_implicit.K();
+        const DVec<double> &k = generic_implicit.k();
+        const DMat<double> &G = generic_implicit.G();
+        const DVec<double> &g = generic_implicit.g();
+        GTEST_ASSERT_LE((K * G).norm(), 1e-10);
+        GTEST_ASSERT_LE((K * g - k).norm(), 1e-10);
+    }
 
     // TODO(@MatthewChignoli): Unit test specialized loop constraints against generic loop constraints
 }

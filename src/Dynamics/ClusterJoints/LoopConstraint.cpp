@@ -85,6 +85,18 @@ namespace grbda
 
             // TODO(@MatthewChignoli): Should there be rules about the relationship between the number of independent and dependent coordinates and the dimension of the constraint?
 
+            // The coordinate map is a matrix that maps the stacked indepedent
+            // coordinates [y;q_dep] to the spanning coordinate vector q
+            SX coord_map = SX::zeros(state_dim, state_dim);
+            for (int i = 0; i < ind_dim; i++)
+            {
+                coord_map(ind_coords[i], i) = 1;
+            }
+            for (int i = 0; i < dep_dim; i++)
+            {
+                coord_map(dep_coords[i], i + ind_dim) = 1;
+            }
+
             // Symbolic state
             SX cs_q_sym = SX::sym("q", state_dim, 1);
             DVec<SX> q_sym(state_dim);
@@ -130,10 +142,12 @@ namespace grbda
             cs_G_sym(ind_slice, ind_slice) = SX::eye(ind_dim);
             casadi::Slice dep_slice = casadi::Slice(ind_dim, ind_dim + dep_dim);
             cs_G_sym(dep_slice, casadi::Slice()) = -SX::mtimes(SX::inv(cs_Kd_sym), cs_Ki_sym);
+            cs_G_sym = SX::mtimes(coord_map, cs_G_sym);
 
             // Explicit constraints bias
             SX cs_g_sym = SX::zeros(state_dim, 1);
             cs_g_sym(dep_slice) = SX::mtimes(SX::inv(cs_Kd_sym), cs_k_sym);
+            cs_g_sym = SX::mtimes(coord_map, cs_g_sym);
 
             // Assign member variables using casadi functions
             this->phi_ = [cs_phi_fcn](const JointCoordinate<Scalar> &joint_pos)
