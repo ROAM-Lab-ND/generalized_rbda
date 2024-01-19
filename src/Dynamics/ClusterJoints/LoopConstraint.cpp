@@ -67,8 +67,24 @@ namespace grbda
     {
 
         template <typename Scalar>
-        GenericImplicit<Scalar>::GenericImplicit(int state_dim, SymPhiFcn phi_fcn)
+        GenericImplicit<Scalar>::GenericImplicit(std::vector<bool> is_coordinate_independent,
+                                                 SymPhiFcn phi_fcn)
         {
+            // Separate coordinates into independent and dependent
+            int state_dim = is_coordinate_independent.size();
+            std::vector<int> ind_coords, dep_coords;
+            for (int i = 0; i < state_dim; i++)
+            {
+                if (is_coordinate_independent[i])
+                    ind_coords.push_back(i);
+                else
+                    dep_coords.push_back(i);
+            }
+            int ind_dim = ind_coords.size();
+            int dep_dim = dep_coords.size();
+
+            // TODO(@MatthewChignoli): Should there be rules about the relationship between the number of independent and dependent coordinates and the dimension of the constraint?
+
             // Symbolic state
             SX cs_q_sym = SX::sym("q", state_dim, 1);
             DVec<SX> q_sym(state_dim);
@@ -98,19 +114,45 @@ namespace grbda
             }
             SX cs_k_sym = -casadi::SX::mtimes(cs_Kdot_sym, cs_v_sym);
 
+            // Explicit constraint jacobian
+            SX cs_Ki_sym = SX(constraint_dim, ind_coords.size());
+            for (size_t i = 0; i < ind_coords.size(); i++)
+            {
+                cs_Ki_sym(casadi::Slice(), i) = cs_K_sym(casadi::Slice(), ind_coords[i]);
+            }
+            SX cs_Kd_sym = SX(constraint_dim, dep_coords.size());
+            for (size_t i = 0; i < dep_coords.size(); i++)
+            {
+                cs_Kd_sym(casadi::Slice(), i) = cs_K_sym(casadi::Slice(), dep_coords[i]);
+            }
+            SX cs_G_sym = SX::zeros(state_dim, ind_dim);
+            casadi::Slice ind_slice = casadi::Slice(0, ind_dim);
+            cs_G_sym(ind_slice, ind_slice) = SX::eye(ind_dim);
+            casadi::Slice dep_slice = casadi::Slice(ind_dim, ind_dim + dep_dim);
+            cs_G_sym(dep_slice, casadi::Slice()) = -SX::mtimes(SX::inv(cs_Kd_sym), cs_Ki_sym);
+
+            // Explicit constraints bias
+            SX cs_g_sym = SX::zeros(state_dim, 1);
+            cs_g_sym(dep_slice) = SX::mtimes(SX::inv(cs_Kd_sym), cs_k_sym);
+
             // Assign member variables using casadi functions
             this->phi_ = [cs_phi_fcn](const JointCoordinate<Scalar> &joint_pos)
             {
                 return toEigenVec(cs_phi_fcn(toCasadiArg(joint_pos))[0]);
             };
 
+            // TODO(@MatthewChignoli): Is there overhead in calling these? Should they be combined? K and G, and k and g?
             this->K_ = DMat<Scalar>::Zero(constraint_dim, state_dim);
             K_fcn_ = casadi::Function("K", {cs_q_sym}, {cs_K_sym});
+
+            this->G_ = DMat<Scalar>::Zero(state_dim, ind_dim);
+            G_fcn_ = casadi::Function("G", {cs_q_sym}, {cs_G_sym});
 
             this->k_ = DVec<Scalar>::Zero(constraint_dim);
             k_fcn_ = casadi::Function("k", {cs_q_sym, cs_v_sym}, {cs_k_sym});
 
-            // TODO(@MatthewChignoli): Still need lambda functions for G and g
+            this->g_ = DVec<Scalar>::Zero(state_dim);
+            g_fcn_ = casadi::Function("g", {cs_q_sym, cs_v_sym}, {cs_g_sym});
         }
 
         template <typename Scalar>
@@ -123,12 +165,14 @@ namespace grbda
         void GenericImplicit<Scalar>::updateJacobians(const JointCoordinate<Scalar> &joint_pos)
         {
             this->K_ = toEigenMat(K_fcn_(toCasadiArg(joint_pos))[0]);
+            this->G_ = toEigenMat(G_fcn_(toCasadiArg(joint_pos))[0]);
         }
 
         template <typename Scalar>
         void GenericImplicit<Scalar>::updateBiases(const JointState<Scalar> &joint_state)
         {
             this->k_ = toEigenVec(k_fcn_(toCasadiArgVector(joint_state))[0]);
+            this->g_ = toEigenVec(g_fcn_(toCasadiArgVector(joint_state))[0]);
         }
 
         template struct GenericImplicit<double>;

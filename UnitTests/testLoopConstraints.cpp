@@ -257,17 +257,18 @@ GTEST_TEST(LoopConstraint, GenericImplicit)
     std::function<DVec<SX>(const JointCoordinate<SX> &)> phi_fcn =
         [](const JointCoordinate<SX> &joint_pos)
     {
-        DVec<SX> phi(3);
+        DVec<SX> phi(2);
         phi(0) = joint_pos[0] + joint_pos[1] + joint_pos[2];
         phi(1) = joint_pos[0] * joint_pos[1] + joint_pos[1] * joint_pos[2];
-        phi(2) = joint_pos[0] * joint_pos[1] * joint_pos[2];
         return phi;
     };
 
-    LoopConstraint::GenericImplicit<double> generic_implicit(3, phi_fcn);
+    std::vector<bool> is_coordinate_independent{true, false, false};
+    LoopConstraint::GenericImplicit<double> generic_implicit(is_coordinate_independent, phi_fcn);
 
-    DVec<double> q = DVec<double>::Random(3);
-    DVec<double> v = DVec<double>::Random(3);
+    int state_dim = is_coordinate_independent.size();
+    DVec<double> q = DVec<double>::Random(state_dim);
+    DVec<double> v = DVec<double>::Random(state_dim);
     JointCoordinate<double> joint_pos = JointCoordinate<double>(q, true);
     JointCoordinate<double> joint_vel = JointCoordinate<double>(v, true);
     JointState<double> joint_state(joint_pos, joint_vel);
@@ -281,6 +282,16 @@ GTEST_TEST(LoopConstraint, GenericImplicit)
               << generic_implicit.phi(joint_pos) << std::endl;
     std::cout << "K:\n"
               << generic_implicit.K() << std::endl;
+    std::cout << "G:\n"
+              << generic_implicit.G() << std::endl;
     std::cout << "k:\n"
               << generic_implicit.k() << std::endl;
+    std::cout << "g:\n"
+              << generic_implicit.g() << std::endl;
+
+    // Verify agreement between implicit and explicit jacobians and biases
+    GTEST_ASSERT_LE((generic_implicit.K() * generic_implicit.G()).norm(), 1e-10);
+    GTEST_ASSERT_LE((generic_implicit.K() * generic_implicit.g() - generic_implicit.k()).norm(), 1e-10);
+
+    // TODO(@MatthewChignoli): Unit test specialized loop constraints against generic loop constraints
 }

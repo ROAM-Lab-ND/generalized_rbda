@@ -68,7 +68,9 @@ namespace grbda
             using SymPhiFcn = std::function<DVec<SX>(const JointCoordinate<SX> &)>;
 
             // TODO(@MatthewChignoli): Pass this by reference?
-            GenericImplicit(int state_dim, SymPhiFcn phi_fcn);
+            // TODO(@MatthewChignoli): Is the purpuse of this std::vector<bool> clear?
+            // GenericImplicit(int state_dim, SymPhiFcn phi_fcn);
+            GenericImplicit(std::vector<bool> is_coordinate_independent, SymPhiFcn phi_fcn);
 
             std::shared_ptr<Base<Scalar>> clone() const override
             {
@@ -82,7 +84,9 @@ namespace grbda
 
         private:
             casadi::Function K_fcn_;
+            casadi::Function G_fcn_;
             casadi::Function k_fcn_;
+            casadi::Function g_fcn_;
         };
 
         template <typename Scalar = double>
