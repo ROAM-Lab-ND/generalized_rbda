@@ -133,8 +133,6 @@ namespace grbda
 
             phi = [nca_to_parent_subtree, nca_to_child_subtree, constraint, joints_sx](const JointCoordinate<SX> &q)
             {
-                using RotMat = Mat3<SX>;
-
                 // Update kinematics
                 int jidx = 0;
                 for (const auto &joint : joints_sx)
@@ -145,40 +143,27 @@ namespace grbda
                 }
 
                 // Through parent
-                RotMat R_to_nca = RotMat::Identity();
-                Vec3<SX> r_nca_to_constraint_through_parent = Vec3<SX>::Zero();
+                using Xform = spatial::Transform<SX>;
+                Xform X_via_parent;
                 for (const Body<SX> &body : nca_to_parent_subtree)
                 {
-                    const spatial::Transform<SX> &Xtree = body.Xtree_;
-                    const spatial::Transform<SX> &XJ = joints_sx.at(body.name_)->XJ();
-
-                    r_nca_to_constraint_through_parent += R_to_nca * Xtree.getTranslation();
-                    RotMat Rup = (XJ * Xtree).getRotation();
-                    R_to_nca = R_to_nca * Rup.transpose();
+                    const Xform &Xtree = body.Xtree_;
+                    const Xform &XJ = joints_sx.at(body.name_)->XJ();
+                    X_via_parent = XJ * Xtree * X_via_parent;
                 }
-                Vec3<SX> r_parent_to_constraint{
-                    constraint->parent_to_joint_origin_transform.position.x,
-                    constraint->parent_to_joint_origin_transform.position.y,
-                    constraint->parent_to_joint_origin_transform.position.z};
-                r_nca_to_constraint_through_parent += R_to_nca * r_parent_to_constraint;
+                X_via_parent = Xform(constraint->parent_to_joint_origin_transform) * X_via_parent;
+                Vec3<SX> r_nca_to_constraint_through_parent = X_via_parent.getTranslation();
 
                 // Through child
-                R_to_nca = RotMat::Identity();
-                Vec3<SX> r_nca_to_constraint_through_child = Vec3<SX>::Zero();
+                Xform X_via_child;
                 for (const Body<SX> &body : nca_to_child_subtree)
                 {
-                    const spatial::Transform<SX> &Xtree = body.Xtree_;
-                    const spatial::Transform<SX> &XJ = joints_sx.at(body.name_)->XJ();
-
-                    r_nca_to_constraint_through_child += R_to_nca * Xtree.getTranslation();
-                    RotMat Rup = (XJ * Xtree).getRotation();
-                    R_to_nca = R_to_nca * Rup.transpose();
+                    const Xform &Xtree = body.Xtree_;
+                    const Xform &XJ = joints_sx.at(body.name_)->XJ();
+                    X_via_child = XJ * Xtree * X_via_child;
                 }
-                Vec3<SX> r_child_to_constraint{
-                    constraint->child_to_joint_origin_transform.position.x,
-                    constraint->child_to_joint_origin_transform.position.y,
-                    constraint->child_to_joint_origin_transform.position.z};
-                r_nca_to_constraint_through_child += R_to_nca * r_child_to_constraint;
+                X_via_child = Xform(constraint->child_to_joint_origin_transform) * X_via_child;
+                Vec3<SX> r_nca_to_constraint_through_child = X_via_child.getTranslation();
 
                 // Compute constraint
                 Vec3<SX> r_constraint = r_nca_to_constraint_through_parent -
