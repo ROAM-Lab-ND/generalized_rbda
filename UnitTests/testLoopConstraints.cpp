@@ -295,6 +295,15 @@ GTEST_TEST(LoopConstraint, GenericImplicit)
         const DVec<double> &g = generic_implicit.g();
         GTEST_ASSERT_LE((K * G).norm(), 1e-10);
         GTEST_ASSERT_LE((K * g - k).norm(), 1e-10);
+
+        // Make sure jacobians and biases are not trivially zero
+        if (q.norm() > 1e-8)
+        {
+            GTEST_ASSERT_GT(K.norm(), 1e-8);
+            GTEST_ASSERT_GT(G.norm(), 1e-8);
+            GTEST_ASSERT_GT(k.norm(), 1e-8);
+            GTEST_ASSERT_GT(g.norm(), 1e-8);
+        }
     }
 
     // TODO(@MatthewChignoli): Unit test specialized loop constraints against generic loop constraints

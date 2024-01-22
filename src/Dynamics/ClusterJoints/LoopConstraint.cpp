@@ -3,84 +3,6 @@
 
 namespace grbda
 {
-    // TODO(@MatthewChignoli): Also move this to the casadi compatibility header?
-    // TODO(@MatthewChignoli): Template so that we can use any MatrixBase
-    casadi::DM toCasadiArg(const DVec<double> &vec)
-    {
-        casadi::DM cs_vec(vec.rows(), vec.cols());
-        casadi::copy(vec, cs_vec);
-        return cs_vec;
-    }
-
-    casadi::DM toCasadiArg(const DVec<float> &vec)
-    {
-        casadi::DM cs_vec(vec.rows(), vec.cols());
-        casadi::copy(vec, cs_vec);
-        return cs_vec;
-    }
-
-    casadi::SX toCasadiArg(const DVec<casadi::SX> &vec)
-    {
-        casadi::SX cs_vec(vec.rows(), vec.cols());
-        casadi::copy(vec, cs_vec);
-        return cs_vec;
-    }
-
-    casadi::DMVector toCasadiArgVector(const JointState<double> &joint_state)
-    {
-        casadi::DMVector cs_vec(2);
-        cs_vec[0] = toCasadiArg(joint_state.position);
-        cs_vec[1] = toCasadiArg(joint_state.velocity);
-        return cs_vec;
-    }
-
-    casadi::DMVector toCasadiArgVector(const JointState<float> &joint_state)
-    {
-        casadi::DMVector cs_vec(2);
-        cs_vec[0] = toCasadiArg(joint_state.position);
-        cs_vec[1] = toCasadiArg(joint_state.velocity);
-        return cs_vec;
-    }
-
-    casadi::SXVector toCasadiArgVector(const JointState<casadi::SX> &joint_state)
-    {
-        casadi::SXVector cs_vec(2);
-        cs_vec[0] = toCasadiArg(joint_state.position);
-        cs_vec[1] = toCasadiArg(joint_state.velocity);
-        return cs_vec;
-    }
-
-    // TODO(@MatthewChignoli): No need for separate vec and mat functions
-    DVec<casadi::SX> toEigenVec(const casadi::SX &vec)
-    {
-        DVec<casadi::SX> vec_out(vec.rows());
-        casadi::copy(vec, vec_out);
-        return vec_out;
-    }
-
-    template <typename Scalar>
-    DVec<Scalar> toEigenVec(const casadi::DM &vec)
-    {
-        DVec<double> vec_out(vec.rows());
-        casadi::copy(vec, vec_out);
-        return vec_out.cast<Scalar>();
-    }
-
-    DMat<casadi::SX> toEigenMat(const casadi::SX &mat)
-    {
-        DMat<casadi::SX> mat_out(mat.size1(), mat.size2());
-        casadi::copy(mat, mat_out);
-        return mat_out;
-    }
-
-    template <typename Scalar>
-    DMat<Scalar> toEigenMat(const casadi::DM &mat)
-    {
-        DMat<double> mat_out(mat.size1(), mat.size2());
-        casadi::copy(mat, mat_out);
-        return mat_out.cast<Scalar>();
-    }
-
     namespace LoopConstraint
     {
 
@@ -170,7 +92,7 @@ namespace grbda
             // Assign member variables using casadi functions
             this->phi_ = [cs_phi_fcn](const JointCoordinate<Scalar> &joint_pos)
             {
-                return toEigenVec<Scalar>(cs_phi_fcn(toCasadiArg(joint_pos))[0]);
+                return runCasadiFcn(cs_phi_fcn, joint_pos);
             };
 
             // TODO(@MatthewChignoli): Is there overhead in calling these? Should they be combined? K and G, and k and g?
@@ -196,15 +118,51 @@ namespace grbda
         template <typename Scalar>
         void GenericImplicit<Scalar>::updateJacobians(const JointCoordinate<Scalar> &joint_pos)
         {
-            this->K_ = toEigenMat<Scalar>(K_fcn_(toCasadiArg(joint_pos))[0]);
-            this->G_ = toEigenMat<Scalar>(G_fcn_(toCasadiArg(joint_pos))[0]);
+            this->K_ = runCasadiFcn(K_fcn_, joint_pos);
+            this->G_ = runCasadiFcn(G_fcn_, joint_pos);
         }
 
         template <typename Scalar>
         void GenericImplicit<Scalar>::updateBiases(const JointState<Scalar> &joint_state)
         {
-            this->k_ = toEigenVec<Scalar>(k_fcn_(toCasadiArgVector(joint_state))[0]);
-            this->g_ = toEigenVec<Scalar>(g_fcn_(toCasadiArgVector(joint_state))[0]);
+            this->k_ = runCasadiFcn(k_fcn_, joint_state);
+            this->g_ = runCasadiFcn(g_fcn_, joint_state);
+        }
+
+        template <typename Scalar>
+        DMat<Scalar> GenericImplicit<Scalar>::runCasadiFcn(const casadi::Function &fcn,
+                                                           const JointCoordinate<Scalar> &arg)
+        {
+            using CasadiScalar = typename std::conditional<std::is_same<Scalar, casadi::SX>::value, casadi::SX, casadi::DM>::type;
+            using CasadiResult = typename std::conditional<std::is_same<Scalar, float>::value, double, Scalar>::type;
+
+            CasadiScalar arg_cs(arg.rows());
+            casadi::copy(arg, arg_cs);
+            CasadiScalar res_cs = fcn(arg_cs)[0];
+            DMat<CasadiResult> res(res_cs.size1(), res_cs.size2());
+            casadi::copy(res_cs, res);
+
+            return res.template cast<Scalar>();
+        }
+
+        template <typename Scalar>
+        DMat<Scalar> GenericImplicit<Scalar>::runCasadiFcn(const casadi::Function &fcn,
+                                                           const JointState<Scalar> &args)
+        {
+            using CasadiScalar = typename std::conditional<std::is_same<Scalar, casadi::SX>::value, casadi::SX, casadi::DM>::type;
+            using CasadiResult = typename std::conditional<std::is_same<Scalar, float>::value, double, Scalar>::type;
+
+            std::vector<CasadiScalar> args_cs(2);
+            args_cs[0] = CasadiScalar(args.position.rows());
+            casadi::copy(args.position, args_cs[0]);
+            args_cs[1] = CasadiScalar(args.velocity.rows());
+            casadi::copy(args.velocity, args_cs[1]);
+
+            CasadiScalar res_cs = fcn(args_cs)[0];
+            DMat<CasadiResult> res(res_cs.size1(), res_cs.size2());
+            casadi::copy(res_cs, res);
+
+            return res.template cast<Scalar>();
         }
 
         template struct GenericImplicit<double>;

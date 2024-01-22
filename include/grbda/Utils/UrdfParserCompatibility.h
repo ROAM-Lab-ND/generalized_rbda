@@ -33,10 +33,14 @@ namespace grbda
         return ori::quaternionToRotationMatrix(quat);
     }
 
-    // TODO(@MatthewChignoli): What if axis is something like [1 0.3 0.5]?
     // TODO(@MatthewChignoli): How to account for when an axis has a negative sign? I think we need to change Xtree?
     static ori::CoordinateAxis urdfAxisToCoordinateAxis(const dynacore::urdf::Vector3 &axis)
     {
+        if (axis.norm() != 1)
+        {
+            throw std::runtime_error("Error: Joint axis must be a unit vector");
+        }
+
         if (axis.x == 1 || axis.x == -1)
         {
             return ori::CoordinateAxis::X;
