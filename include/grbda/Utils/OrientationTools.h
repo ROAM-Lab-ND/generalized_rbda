@@ -21,6 +21,7 @@
 #include <type_traits>
 #include "cppTypes.h"
 #include "Utilities.h"
+#include "custom_urdf/pose.h"
 
 namespace grbda
 {
@@ -64,6 +65,31 @@ namespace grbda
       }
 
       return R;
+    }
+
+    inline CoordinateAxis urdfAxisToCoordinateAxis(const dynacore::urdf::Vector3 &axis)
+    {
+      if (axis.norm() != 1)
+      {
+        throw std::runtime_error("Error: Joint axis must be a unit vector");
+      }
+
+      if (axis.x == 1 || axis.x == -1)
+      {
+        return CoordinateAxis::X;
+      }
+      else if (axis.y == 1 || axis.y == -1)
+      {
+        return CoordinateAxis::Y;
+      }
+      else if (axis.z == 1 || axis.z == -1)
+      {
+        return CoordinateAxis::Z;
+      }
+      else
+      {
+        throw std::runtime_error("Error: Joint axis not defined");
+      }
     }
 
     inline CoordinateAxis randomCoordinateAxis()

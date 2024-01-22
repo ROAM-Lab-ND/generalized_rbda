@@ -12,6 +12,7 @@
 
 #include "OrientationTools.h"
 #include "Spatial.h"
+#include "custom_urdf/link.h"
 
 namespace grbda
 {
@@ -40,6 +41,22 @@ namespace grbda
      * Construct spatial inertia from 6x6 matrix
      */
     explicit SpatialInertia(const Mat6<T> &inertia) { _inertia = inertia; }
+
+    /*!
+     * Construct urdf Inertial
+     */
+    explicit SpatialInertia(const std::shared_ptr<const dynacore::urdf::Inertial> &inertial)
+    {
+      T mass = inertial->mass;
+      Vec3<T> COM = Vec3<T>(inertial->origin.position.x,
+                                      inertial->origin.position.y,
+                                      inertial->origin.position.z);
+      Mat3<T> inertia;
+      inertia.row(0) << inertial->ixx, inertial->ixy, inertial->ixz;
+      inertia.row(1) << inertial->ixy, inertial->iyy, inertial->iyz;
+      inertia.row(2) << inertial->ixz, inertial->iyz, inertial->izz;
+      SpatialInertia<T>(mass, COM, inertia);
+    }
 
     /*!
      * If no argument is given, zero.

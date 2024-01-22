@@ -3,7 +3,6 @@
  */
 
 #include "grbda/Dynamics/ClusterTreeModel.h"
-#include "grbda/Utils/UrdfParserCompatibility.h"
 
 namespace grbda
 {
@@ -25,7 +24,7 @@ namespace grbda
         {
             std::string name = link->name;
             std::string parent_name = "ground";
-            SpatialInertia<Scalar> inertia = urdfInertialToSpatialInertia<Scalar>(link->inertial);
+            SpatialInertia<Scalar> inertia(link->inertial);
             spatial::Transform xtree = spatial::Transform<Scalar>{};
 
             // using Free = ClusterJoints::Free<double, ori_representation::Quaternion>;
@@ -64,6 +63,7 @@ namespace grbda
     }
 
     // TODO(@MatthewChignoli): Eventually add some specialization and detection for common clusters so that we can use sparsity exploiting classes
+    // TODO(@MatthewChignoli): Long function with a lot of nested loops, consider refactoring
     template <typename Scalar>
     void ClusterTreeModel<Scalar>::appendClusterFromUrdfCluster(UrdfClusterPtr cluster)
     {
@@ -73,29 +73,41 @@ namespace grbda
         std::vector<JointPtr<Scalar>> joints;
         std::vector<Body<SX>> bodies_sx;
         std::map<std::string, JointPtr<SX>> joints_sx;
-        for (std::shared_ptr<const dynacore::urdf::Link> link : cluster->links)
+
+        std::vector<std::shared_ptr<dynacore::urdf::Link>> unregistered_links = cluster->links;
+        while (unregistered_links.size() > 0)
         {
-            const std::string name = link->name;
-            const std::string parent_name = link->getParent()->name;
-            const SpatialInertia<Scalar> inertia = urdfInertialToSpatialInertia<Scalar>(link->inertial);
-            SpatialInertia<SX> inertia_sx = urdfInertialToSpatialInertia<SX>(link->inertial);
+            std::vector<std::shared_ptr<dynacore::urdf::Link>> unregistered_links_next;
+            for (std::shared_ptr<dynacore::urdf::Link> link : unregistered_links)
+            {
+                // If the parent of this link is not registered, then we will try again
+                // next iteration
+                const std::string parent_name = link->getParent()->name;
+                if (body_name_to_body_index_.find(parent_name) == body_name_to_body_index_.end())
+                {
+                    unregistered_links_next.push_back(link);
+                    continue;
+                }
 
-            dynacore::urdf::Pose pose = link->parent_joint->parent_to_joint_origin_transform;
-            spatial::Transform<Scalar> xtree(urdfRotationToRotationMatrix<Scalar>(pose.rotation),
-                                             urdfVector3ToVec3<Scalar>(pose.position));
-            spatial::Transform<SX> xtree_sx(urdfRotationToRotationMatrix<SX>(pose.rotation),
-                                            urdfVector3ToVec3<SX>(pose.position));
+                // Register body
+                std::string name = link->name;
+                SpatialInertia<Scalar> inertia(link->inertial);
+                SpatialInertia<SX> inertia_sx(link->inertial);
 
-            // TODO(@MatthewChignoli): The order here matters because we need to register the parent body before we can register the child body.
-            // The issue now is that due to how the map stores links, they are ordered alphabetically.
-            // So for now, the fix is to just make sure that the parent link is alphabetically before the child link, but we need a better solution in the future
-            bodies.push_back(registerBody(name, inertia, parent_name, xtree));
-            bodies_sx.emplace_back(bodies.back().index_, name, bodies.back().parent_index_, xtree_sx, inertia_sx, bodies.back().sub_index_within_cluster_, bodies.back().cluster_ancestor_index_, bodies.back().cluster_ancestor_sub_index_within_cluster_);
+                dynacore::urdf::Pose pose = link->parent_joint->parent_to_joint_origin_transform;
+                spatial::Transform<Scalar> xtree(pose);
+                spatial::Transform<SX> xtree_sx(pose);
 
-            // TODO(@MatthewChignoli): Currently assumes all joints are revolute
-            ori::CoordinateAxis axis = urdfAxisToCoordinateAxis(link->parent_joint->axis);
-            joints.push_back(std::make_shared<Joints::Revolute<Scalar>>(axis));
-            joints_sx.insert({name, std::make_shared<Joints::Revolute<SX>>(axis)});
+                bodies.push_back(registerBody(name, inertia, parent_name, xtree));
+                bodies_sx.emplace_back(bodies.back().index_, name, bodies.back().parent_index_, xtree_sx, inertia_sx, bodies.back().sub_index_within_cluster_, bodies.back().cluster_ancestor_index_, bodies.back().cluster_ancestor_sub_index_within_cluster_);
+
+                // Create joint for registered body
+                ori::CoordinateAxis axis = ori::urdfAxisToCoordinateAxis(link->parent_joint->axis);
+                joints.push_back(std::make_shared<Joints::Revolute<Scalar>>(axis));
+                joints_sx.insert({name, std::make_shared<Joints::Revolute<SX>>(axis)});
+            }
+
+            unregistered_links = unregistered_links_next;
         }
 
         // TODO(@MatthewChignoli): At this point, there should only be one constraint joint per cluster, but we will generalize this later
@@ -144,9 +156,11 @@ namespace grbda
                     RotMat Rup = (XJ * Xtree).getRotation();
                     R_to_nca = R_to_nca * Rup.transpose();
                 }
-                r_nca_to_constraint_through_parent +=
-                    R_to_nca *
-                    urdfVector3ToVec3<SX>(constraint->parent_to_joint_origin_transform.position);
+                Vec3<SX> r_parent_to_constraint{
+                    constraint->parent_to_joint_origin_transform.position.x,
+                    constraint->parent_to_joint_origin_transform.position.y,
+                    constraint->parent_to_joint_origin_transform.position.z};
+                r_nca_to_constraint_through_parent += R_to_nca * r_parent_to_constraint;
 
                 // Through child
                 R_to_nca = RotMat::Identity();
@@ -160,25 +174,31 @@ namespace grbda
                     RotMat Rup = (XJ * Xtree).getRotation();
                     R_to_nca = R_to_nca * Rup.transpose();
                 }
-                r_nca_to_constraint_through_child +=
-                    R_to_nca *
-                    urdfVector3ToVec3<SX>(constraint->child_to_joint_origin_transform.position);
+                Vec3<SX> r_child_to_constraint{
+                    constraint->child_to_joint_origin_transform.position.x,
+                    constraint->child_to_joint_origin_transform.position.y,
+                    constraint->child_to_joint_origin_transform.position.z};
+                r_nca_to_constraint_through_child += R_to_nca * r_child_to_constraint;
 
                 // Compute constraint
                 Vec3<SX> r_constraint = r_nca_to_constraint_through_parent -
                                         r_nca_to_constraint_through_child;
 
                 // TODO(@MatthewChignoli): Make sure unit test covers all of these cases
-                Vec3<double> constraint_axis = urdfVector3ToVec3<double>(constraint->axis);
-                if (constraint_axis == Vec3<double>(1, 0, 0))
+                if (constraint->axis.norm() != 1)
+                {
+                    throw std::runtime_error("Constraint axis must be a unit vector");
+                }
+
+                if (constraint->axis.x == 1)
                 {
                     return DVec<SX>(r_constraint.tail<2>());
                 }
-                else if (constraint_axis == Vec3<double>(0, 1, 0))
+                else if (constraint->axis.y == 1)
                 {
                     return DVec<SX>(r_constraint({0, 2}));
                 }
-                else if (constraint_axis == Vec3<double>(0, 0, 1))
+                else if (constraint->axis.z == 1)
                 {
                     return DVec<SX>(r_constraint.head<2>());
                 }
@@ -457,7 +477,7 @@ namespace grbda
 
         ModelState<Scalar> state;
 
-        for (const auto& cluster : cluster_nodes_)
+        for (const auto &cluster : cluster_nodes_)
         {
             DVec<Scalar> q_cluster = q_qd_pair.first.segment(cluster->position_index_,
                                                              cluster->num_positions_);
