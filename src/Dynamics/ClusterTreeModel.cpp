@@ -63,17 +63,14 @@ namespace grbda
         }
     }
 
+    // TODO(@MatthewChignoli): Eventually add some specialization and detection for common clusters so that we can use sparsity exploiting classes
     template <typename Scalar>
     void ClusterTreeModel<Scalar>::appendClusterFromUrdfCluster(UrdfClusterPtr cluster)
     {
         using SX = casadi::SX;
 
-        // TODO(@MatthewChignoli): It's kind of gross that we need both double and SX versions of everything. Is there any way to avoid this?
-        // TODO(@MatthewChignoli): I think order matters here? So the joints should actually be a std::map. Which means we need to chante the constructor of the GenericCluster
-        // TODO(@MatthewChignoli): Yeah this needs clean up for sure
         std::vector<Body<Scalar>> bodies;
-        std::vector<JointPtr<Scalar>> joints_vec;
-        std::map<std::string, JointPtr<Scalar>> joints;
+        std::vector<JointPtr<Scalar>> joints;
         std::vector<Body<SX>> bodies_sx;
         std::map<std::string, JointPtr<SX>> joints_sx;
         for (std::shared_ptr<const dynacore::urdf::Link> link : cluster->links)
@@ -97,9 +94,7 @@ namespace grbda
 
             // TODO(@MatthewChignoli): Currently assumes all joints are revolute
             ori::CoordinateAxis axis = urdfAxisToCoordinateAxis(link->parent_joint->axis);
-            joints_vec.push_back(std::make_shared<Joints::Revolute<Scalar>>(axis));
-            // joints_sx.push_back(std::make_shared<Joints::Revolute<casadi::SX>>(axis));
-            joints.insert({name, std::make_shared<Joints::Revolute<Scalar>>(axis)});
+            joints.push_back(std::make_shared<Joints::Revolute<Scalar>>(axis));
             joints_sx.insert({name, std::make_shared<Joints::Revolute<SX>>(axis)});
         }
 
@@ -124,7 +119,6 @@ namespace grbda
                 nca_to_child_subtree.push_back(bodies_sx[body_i.sub_index_within_cluster_]);
             }
 
-            // TODO(@MatthewChignoli): Will things in the lambda function do out of scope if we pass with reference?
             phi = [nca_to_parent_subtree, nca_to_child_subtree, constraint, joints_sx](const JointCoordinate<SX> &q)
             {
                 using RotMat = Mat3<SX>;
@@ -201,7 +195,7 @@ namespace grbda
 
         // TODO(@MatthewChignoli): Are there cases where we can detect specialized versions of clusters? For example, is there a way that we can detect "revolute pair with rotors" or "revolute with rotor"?
         appendRegisteredBodiesAsCluster<ClusterJoints::Generic<Scalar>>(cluster->name, bodies,
-                                                                        joints_vec, constraint);
+                                                                        joints, constraint);
     }
 
     template <typename Scalar>
