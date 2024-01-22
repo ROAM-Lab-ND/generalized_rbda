@@ -13,6 +13,7 @@ namespace grbda
         class Generic : public Base<Scalar>
         {
         public:
+            // TODO(@MatthewChignoli): Maybe use pairs of bodies and joints instead of vectors? To make sure that the vectors are in the same order
             Generic(const std::vector<Body<Scalar>> &bodies,
                     const std::vector<JointPtr<Scalar>> &joints,
                     std::shared_ptr<LoopConstraint::Base<Scalar>> loop_constraint);
