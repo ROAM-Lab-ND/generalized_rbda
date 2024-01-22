@@ -3,8 +3,16 @@
 
 namespace grbda
 {
+    // TODO(@MatthewChignoli): Also move this to the casadi compatibility header?
     // TODO(@MatthewChignoli): Template so that we can use any MatrixBase
     casadi::DM toCasadiArg(const DVec<double> &vec)
+    {
+        casadi::DM cs_vec(vec.rows(), vec.cols());
+        casadi::copy(vec, cs_vec);
+        return cs_vec;
+    }
+
+    casadi::DM toCasadiArg(const DVec<float> &vec)
     {
         casadi::DM cs_vec(vec.rows(), vec.cols());
         casadi::copy(vec, cs_vec);
@@ -19,6 +27,14 @@ namespace grbda
     }
 
     casadi::DMVector toCasadiArgVector(const JointState<double> &joint_state)
+    {
+        casadi::DMVector cs_vec(2);
+        cs_vec[0] = toCasadiArg(joint_state.position);
+        cs_vec[1] = toCasadiArg(joint_state.velocity);
+        return cs_vec;
+    }
+
+    casadi::DMVector toCasadiArgVector(const JointState<float> &joint_state)
     {
         casadi::DMVector cs_vec(2);
         cs_vec[0] = toCasadiArg(joint_state.position);
@@ -42,11 +58,12 @@ namespace grbda
         return vec_out;
     }
 
-    DVec<double> toEigenVec(const casadi::DM &vec)
+    template <typename Scalar>
+    DVec<Scalar> toEigenVec(const casadi::DM &vec)
     {
         DVec<double> vec_out(vec.rows());
         casadi::copy(vec, vec_out);
-        return vec_out;
+        return vec_out.cast<Scalar>();
     }
 
     DMat<casadi::SX> toEigenMat(const casadi::SX &mat)
@@ -56,11 +73,12 @@ namespace grbda
         return mat_out;
     }
 
-    DMat<double> toEigenMat(const casadi::DM &mat)
+    template <typename Scalar>
+    DMat<Scalar> toEigenMat(const casadi::DM &mat)
     {
         DMat<double> mat_out(mat.size1(), mat.size2());
         casadi::copy(mat, mat_out);
-        return mat_out;
+        return mat_out.cast<Scalar>();
     }
 
     namespace LoopConstraint
@@ -152,7 +170,7 @@ namespace grbda
             // Assign member variables using casadi functions
             this->phi_ = [cs_phi_fcn](const JointCoordinate<Scalar> &joint_pos)
             {
-                return toEigenVec(cs_phi_fcn(toCasadiArg(joint_pos))[0]);
+                return toEigenVec<Scalar>(cs_phi_fcn(toCasadiArg(joint_pos))[0]);
             };
 
             // TODO(@MatthewChignoli): Is there overhead in calling these? Should they be combined? K and G, and k and g?
@@ -178,19 +196,19 @@ namespace grbda
         template <typename Scalar>
         void GenericImplicit<Scalar>::updateJacobians(const JointCoordinate<Scalar> &joint_pos)
         {
-            this->K_ = toEigenMat(K_fcn_(toCasadiArg(joint_pos))[0]);
-            this->G_ = toEigenMat(G_fcn_(toCasadiArg(joint_pos))[0]);
+            this->K_ = toEigenMat<Scalar>(K_fcn_(toCasadiArg(joint_pos))[0]);
+            this->G_ = toEigenMat<Scalar>(G_fcn_(toCasadiArg(joint_pos))[0]);
         }
 
         template <typename Scalar>
         void GenericImplicit<Scalar>::updateBiases(const JointState<Scalar> &joint_state)
         {
-            this->k_ = toEigenVec(k_fcn_(toCasadiArgVector(joint_state))[0]);
-            this->g_ = toEigenVec(g_fcn_(toCasadiArgVector(joint_state))[0]);
+            this->k_ = toEigenVec<Scalar>(k_fcn_(toCasadiArgVector(joint_state))[0]);
+            this->g_ = toEigenVec<Scalar>(g_fcn_(toCasadiArgVector(joint_state))[0]);
         }
 
         template struct GenericImplicit<double>;
-        // template struct GenericImplicit<float>;
+        template struct GenericImplicit<float>;
         template struct GenericImplicit<casadi::SX>;
 
         template <typename Scalar>

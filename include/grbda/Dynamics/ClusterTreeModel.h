@@ -9,11 +9,15 @@
 
 #include "grbda/Dynamics/TreeModel.h"
 #include "grbda/Dynamics/Nodes/ClusterTreeNode.h"
+#include "custom_urdf/urdf_parser.h"
+
 
 namespace grbda
 {
     template <typename Scalar>
     using ClusterTreeNodePtr = std::shared_ptr<ClusterTreeNode<Scalar>>;
+
+    using UrdfClusterPtr = std::shared_ptr<dynacore::urdf::Cluster>;
 
     /*!
      * Class to represent a floating base rigid body model with rotors and ground contacts.
@@ -28,6 +32,8 @@ namespace grbda
             body_index_to_cluster_index_[-1] = -1;
         }
         ~ClusterTreeModel() {}
+
+        void buildModelFromURDF(const std::string &urdf_filename);
 
         // The standard process for appending a cluster to the tree is to register all the bodies
         // in  given cluster and then append them as a cluster by specifying the type of cluster
@@ -138,6 +144,11 @@ namespace grbda
         DVec<Scalar> getBiasForceVector() override;
 
     protected:
+        void appendClustersViaDFS(const std::string &cluster_name,
+                                  std::map<std::string, bool> &visited,
+                                  UrdfClusterPtr cluster);
+        void appendClusterFromUrdfCluster(UrdfClusterPtr cluster);
+
         void appendRegisteredBodiesAsCluster(const std::string name,
                                              std::shared_ptr<ClusterJoints::Base<Scalar>> joint);
 

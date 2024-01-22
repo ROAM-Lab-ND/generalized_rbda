@@ -1,9 +1,8 @@
 #ifndef GRBDA_URDF_PARSER_COMPATIBILITY_H
 #define GRBDA_URDF_PARSER_COMPATIBILITY_H
 
-// TODO(@MatthewChignoli): Can we get away with including less?
 #include "custom_urdf/cluster.h"
-#include "grbda/Dynamics/ClusterTreeModel.h"
+#include "grbda/Utils/SpatialInertia.h"
 
 namespace grbda
 {
@@ -36,7 +35,7 @@ namespace grbda
 
     // TODO(@MatthewChignoli): What if axis is something like [1 0.3 0.5]?
     // TODO(@MatthewChignoli): How to account for when an axis has a negative sign? I think we need to change Xtree?
-    ori::CoordinateAxis urdfAxisToCoordinateAxis(const dynacore::urdf::Vector3 &axis)
+    static ori::CoordinateAxis urdfAxisToCoordinateAxis(const dynacore::urdf::Vector3 &axis)
     {
         if (axis.x == 1 || axis.x == -1)
         {
