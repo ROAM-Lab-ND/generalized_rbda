@@ -69,6 +69,7 @@ namespace grbda
     {
         using SX = casadi::SX;
 
+        // TODO(@MatthewChignoli): to avoid all of this confusion, maybe the body should just contain the parent joint?
         std::vector<Body<Scalar>> bodies;
         std::vector<JointPtr<Scalar>> joints;
         std::vector<Body<SX>> bodies_sx;
@@ -133,23 +134,18 @@ namespace grbda
 
             phi = [nca_to_parent_subtree, nca_to_child_subtree, constraint, joints_sx](const JointCoordinate<SX> &q)
             {
-                // Update kinematics
                 int jidx = 0;
-                for (const auto &joint : joints_sx)
-                {
-                    joint.second->updateKinematics(q.segment(jidx, joint.second->numPositions()),
-                                                   DVec<SX>::Zero(joint.second->numVelocities()));
-                    jidx += joint.second->numPositions();
-                }
+                using Xform = spatial::Transform<SX>;
 
                 // Through parent
-                using Xform = spatial::Transform<SX>;
                 Xform X_via_parent;
                 for (const Body<SX> &body : nca_to_parent_subtree)
                 {
-                    const Xform &Xtree = body.Xtree_;
-                    const Xform &XJ = joints_sx.at(body.name_)->XJ();
-                    X_via_parent = XJ * Xtree * X_via_parent;
+                    JointPtr<SX> joint = joints_sx.at(body.name_);
+                    joint->updateKinematics(q.segment(jidx, joint->numPositions()),
+                                            DVec<SX>::Zero(joint->numVelocities()));
+                    jidx += joint->numPositions();
+                    X_via_parent = joint->XJ() * body.Xtree_ * X_via_parent;
                 }
                 X_via_parent = Xform(constraint->parent_to_joint_origin_transform) * X_via_parent;
                 Vec3<SX> r_nca_to_constraint_through_parent = X_via_parent.getTranslation();
@@ -158,9 +154,11 @@ namespace grbda
                 Xform X_via_child;
                 for (const Body<SX> &body : nca_to_child_subtree)
                 {
-                    const Xform &Xtree = body.Xtree_;
-                    const Xform &XJ = joints_sx.at(body.name_)->XJ();
-                    X_via_child = XJ * Xtree * X_via_child;
+                    JointPtr<SX> joint = joints_sx.at(body.name_);
+                    joint->updateKinematics(q.segment(jidx, joint->numPositions()),
+                                            DVec<SX>::Zero(joint->numVelocities()));
+                    jidx += joint->numPositions();
+                    X_via_child = joint->XJ() * body.Xtree_ * X_via_child;
                 }
                 X_via_child = Xform(constraint->child_to_joint_origin_transform) * X_via_child;
                 Vec3<SX> r_nca_to_constraint_through_child = X_via_child.getTranslation();
