@@ -274,19 +274,9 @@ namespace grbda
             casadi::copy(q_dm, q);
             JointCoordinate<double> joint_pos(q, true);
 
-            // Compute the explicit constraint jacobians
-            arg.clear();
-            arg["q"] = q_dm;
-            DM G_dm = four_bar_constraint_->random_state_helpers_.G({arg}).at("G");
-            DMat<double> G(four_bar_constraint_->numSpanningVel(),
-                           four_bar_constraint_->numIndependentVel());
-            casadi::copy(G_dm, G);
-
-            // Compute a valid joint velocity
-            DVec<double> v = G * DVec<double>::Random(four_bar_constraint_->numIndependentVel());
-            DM v_dm = DM::zeros(four_bar_constraint_->numSpanningVel(), 1);
-            casadi::copy(v, v_dm);
-            JointCoordinate<double> joint_vel(v, true);
+            // Random independent joint velocity
+            DVec<double> v = DVec<double>::Random(four_bar_constraint_->numIndependentVel());
+            JointCoordinate<double> joint_vel(v, false);
 
             return JointState<double>(joint_pos, joint_vel);
         }

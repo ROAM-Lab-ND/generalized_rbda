@@ -75,6 +75,7 @@ namespace grbda
         // TODO(@MatthewChignoli): to avoid all of this confusion, maybe the body should just contain the parent joint?
         std::vector<Body<Scalar>> bodies;
         std::vector<JointPtr<Scalar>> joints;
+        std::vector<bool> independent_coordinates;
         std::vector<Body<SX>> bodies_sx;
         std::map<std::string, JointPtr<SX>> joints_sx;
 
@@ -109,6 +110,9 @@ namespace grbda
                 ori::CoordinateAxis axis = ori::urdfAxisToCoordinateAxis(link->parent_joint->axis);
                 joints.push_back(std::make_shared<Joints::Revolute<Scalar>>(axis));
                 joints_sx.insert({name, std::make_shared<Joints::Revolute<SX>>(axis)});
+
+                // Extract independent coordinates from joint
+                independent_coordinates.push_back(link->parent_joint->independent);
             }
 
             unregistered_links = unregistered_links_next;
@@ -149,6 +153,8 @@ namespace grbda
                 const auto &body_i = body(link->name);
                 nca_to_child_subtree.push_back(bodies_sx[body_i.sub_index_within_cluster_]);
             }
+
+            // TODO(@MatthewChignoli): Here is where we introduce the if statement for creating the correct phi function based on the constraint type
 
             // TODO(@MatthewChignoli): Reduce the number of captures?
             phi = [nca_to_parent_subtree, nca_to_child_subtree, constraint, joints_sx, constraint_axis](const JointCoordinate<SX> &q)
@@ -211,8 +217,6 @@ namespace grbda
             };
         }
 
-        // TODO(@MatthewChignoli): How do we know which coordinates are independent? Should come from the URDF
-        std::vector<bool> independent_coordinates{true, false, false};
         std::shared_ptr<LoopConstraint::Base<Scalar>> constraint = std::make_shared<LoopConstraint::GenericImplicit<Scalar>>(independent_coordinates, phi);
 
         // TODO(@MatthewChignoli): Are there cases where we can detect specialized versions of clusters? For example, is there a way that we can detect "revolute pair with rotors" or "revolute with rotor"?
