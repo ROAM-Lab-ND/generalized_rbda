@@ -7,11 +7,14 @@ using namespace grbda;
 
 GTEST_TEST(UrdfParser, parseFile)
 {
-    // TODO(@MatthewChignoli): Make sure test works for all of these files
     std::vector<std::string> urdf_files;
-    // urdf_files.push_back("/home/matt/repos/URDF-Parser/four_bar.urdf");
-    // urdf_files.push_back("/home/matt/repos/URDF-Parser/six_bar.urdf");
+    urdf_files.push_back("/home/matt/repos/URDF-Parser/four_bar.urdf");
+    urdf_files.push_back("/home/matt/repos/URDF-Parser/six_bar.urdf");
     urdf_files.push_back("/home/matt/repos/URDF-Parser/planar_leg_linkage.urdf");
+    urdf_files.push_back("/home/matt/repos/URDF-Parser/revolute_rotor_chain.urdf");
+
+    // TODO(@MatthewChignoli): Add these later
+    // urdf_files.push_back("/home/matt/repos/URDF-Parser/mini_cheetah_leg.urdf");
     // urdf_files.push_back("/home/matt/repos/URDF-Parser/mini_cheetah.urdf");
 
     for (const std::string &urdf_file : urdf_files)
@@ -24,12 +27,25 @@ GTEST_TEST(UrdfParser, parseFile)
     }
 }
 
-class URDFvsManualTests : public ::testing::Test
+using RobotPtr = std::shared_ptr<Robot<double>>;
+
+std::vector<std::pair<std::string, RobotPtr>> GetTestRobots()
+{
+    std::vector<std::pair<std::string, RobotPtr>> robots;
+    robots.push_back(std::make_pair("/home/matt/repos/URDF-Parser/planar_leg_linkage.urdf",
+                                    std::make_shared<PlanarLegLinkage<double>>()));
+    robots.push_back(std::make_pair("/home/matt/repos/URDF-Parser/revolute_rotor_chain.urdf",
+                                    std::make_shared<RevoluteChainWithRotor<3, double>>()));
+    return robots;
+}
+
+class URDFvsManualTests : public ::testing::TestWithParam<std::pair<std::string, RobotPtr>>
 {
 protected:
-    URDFvsManualTests() : manual_model(robot.buildClusterTreeModel())
+    URDFvsManualTests()
     {
-        urdf_model.buildModelFromURDF("/home/matt/repos/URDF-Parser/planar_leg_linkage.urdf");
+        urdf_model.buildModelFromURDF(GetParam().first);
+        manual_model = GetParam().second->buildClusterTreeModel();
     }
 
     void initializeRandomStates()
@@ -53,41 +69,46 @@ protected:
         manual_model.setState(model_state);
     }
 
-    PlanarLegLinkage<double> robot;
     ClusterTreeModel<double> urdf_model;
     ClusterTreeModel<double> manual_model;
 
     ModelState<double> model_state;
 };
 
+INSTANTIATE_TEST_SUITE_P(Robots, URDFvsManualTests, ::testing::ValuesIn(GetTestRobots()));
+
 static const double tol = 1e-10;
 
-// TODO(@MatthewChignoli): Add the rolling without slipping constraint to the URDF model
-
-// TODO(@MatthewChignoli): This is basicaly a direct copt of the testForwardKinematics unit test. Any way to reduce code duplication?
-TEST_F(URDFvsManualTests, compareToManuallyConstructed)
+TEST_P(URDFvsManualTests, compareToManuallyConstructed)
 {
-    this->initializeRandomStates();
+    // Make sure the robots have the same number of bodies
+    GTEST_ASSERT_EQ(this->manual_model.bodies().size(), this->urdf_model.bodies().size());
 
-    // Verify link kinematics
-    for (const auto &body : this->manual_model.bodies())
+    // Tests that vary with the state
+    for (int i = 0; i < 25; i++)
     {
-        const Vec3<double> p_manual = this->manual_model.getPosition(body.name_);
-        const Vec3<double> p_urdf = this->urdf_model.getPosition(body.name_);
-        GTEST_ASSERT_LT((p_manual - p_urdf).norm(), tol);
+        this->initializeRandomStates();
 
-        const Mat3<double> R_manual = this->manual_model.getOrientation(body.name_);
-        const Mat3<double> R_urdf = this->urdf_model.getOrientation(body.name_);
-        GTEST_ASSERT_LT((R_manual - R_urdf).norm(), tol);
+        // Verify link kinematics
+        for (const auto &body : this->manual_model.bodies())
+        {
+            const Vec3<double> p_manual = this->manual_model.getPosition(body.name_);
+            const Vec3<double> p_urdf = this->urdf_model.getPosition(body.name_);
+            GTEST_ASSERT_LT((p_manual - p_urdf).norm(), tol);
 
-        const Vec3<double> v_manual = this->manual_model.getLinearVelocity(body.name_);
-        const Vec3<double> v_urdf = this->urdf_model.getLinearVelocity(body.name_);
-        GTEST_ASSERT_LT((v_manual - v_urdf).norm(), tol);
+            const Mat3<double> R_manual = this->manual_model.getOrientation(body.name_);
+            const Mat3<double> R_urdf = this->urdf_model.getOrientation(body.name_);
+            GTEST_ASSERT_LT((R_manual - R_urdf).norm(), tol);
 
-        const Vec3<double> w_manual = this->manual_model.getAngularVelocity(body.name_);
-        const Vec3<double> w_urdf = this->urdf_model.getAngularVelocity(body.name_);
-        GTEST_ASSERT_LT((w_manual - w_urdf).norm(), tol);
+            const Vec3<double> v_manual = this->manual_model.getLinearVelocity(body.name_);
+            const Vec3<double> v_urdf = this->urdf_model.getLinearVelocity(body.name_);
+            GTEST_ASSERT_LT((v_manual - v_urdf).norm(), tol);
+
+            const Vec3<double> w_manual = this->manual_model.getAngularVelocity(body.name_);
+            const Vec3<double> w_urdf = this->urdf_model.getAngularVelocity(body.name_);
+            GTEST_ASSERT_LT((w_manual - w_urdf).norm(), tol);
+        }
+
+        // TODO(@MatthewChignoli): Still need to compare the dynamics
     }
-
-    // TODO(@MatthewChignoli): Still need to compare the dynamics
 }
