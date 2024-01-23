@@ -14,7 +14,10 @@ namespace grbda
         using ClusterPtr = std::shared_ptr<dynacore::urdf::Cluster>;
 
         std::shared_ptr<dynacore::urdf::ModelInterface> model;
-        model = dynacore::urdf::parseURDFFile(urdf_filename);
+        model = dynacore::urdf::parseURDFFile(urdf_filename, true);
+
+        if(model == nullptr)
+            throw std::runtime_error("Could not parse URDF file");
 
         // TODO(@MatthewChignoli): How to know whether to import as floating or fixed base? If you want fixed base, should the base be a link in the URDF?
         // Add floating base
@@ -120,6 +123,21 @@ namespace grbda
         std::function<DVec<SX>(const JointCoordinate<SX> &)> phi;
         for (std::shared_ptr<const dynacore::urdf::ConstraintJoint> constraint : cluster->constraint_joints)
         {
+
+            // TODO(@MatthewChignoli): Should have a case statement that distinguishes between position and rotation constraints. For now just assume we only ever have position constraints
+
+            // TODO(@MatthewChignoli): Detect the axis of the constraint. For now we are making the very limiting assumption that all joints must be continuous
+            dynacore::urdf::Vector3 constraint_axis = constraint->allLinks().front()->parent_joint->axis;
+            for (std::shared_ptr<dynacore::urdf::Link> link : constraint->allLinks())
+            {
+                if(link->parent_joint->type != dynacore::urdf::Joint::CONTINUOUS)
+                    throw std::runtime_error("All joints in a constraint must be revolute");
+                if (link->parent_joint->axis.x != constraint_axis.x ||
+                    link->parent_joint->axis.y != constraint_axis.y ||
+                    link->parent_joint->axis.z != constraint_axis.z)
+                    throw std::runtime_error("All joints in a constraint must have the same axis");
+            }
+
             std::vector<Body<SX>> nca_to_parent_subtree, nca_to_child_subtree;
             for (std::shared_ptr<dynacore::urdf::Link> link : constraint->nca_to_parent_subtree)
             {
@@ -132,7 +150,8 @@ namespace grbda
                 nca_to_child_subtree.push_back(bodies_sx[body_i.sub_index_within_cluster_]);
             }
 
-            phi = [nca_to_parent_subtree, nca_to_child_subtree, constraint, joints_sx](const JointCoordinate<SX> &q)
+            // TODO(@MatthewChignoli): Reduce the number of captures?
+            phi = [nca_to_parent_subtree, nca_to_child_subtree, constraint, joints_sx, constraint_axis](const JointCoordinate<SX> &q)
             {
                 int jidx = 0;
                 using Xform = spatial::Transform<SX>;
@@ -168,20 +187,20 @@ namespace grbda
                                         r_nca_to_constraint_through_child;
 
                 // TODO(@MatthewChignoli): Make sure unit test covers all of these cases
-                if (constraint->axis.norm() != 1)
+                if (constraint_axis.norm() != 1)
                 {
                     throw std::runtime_error("Constraint axis must be a unit vector");
                 }
 
-                if (constraint->axis.x == 1)
+                if (constraint_axis.x == 1)
                 {
                     return DVec<SX>(r_constraint.tail<2>());
                 }
-                else if (constraint->axis.y == 1)
+                else if (constraint_axis.y == 1)
                 {
                     return DVec<SX>(r_constraint({0, 2}));
                 }
-                else if (constraint->axis.z == 1)
+                else if (constraint_axis.z == 1)
                 {
                     return DVec<SX>(r_constraint.head<2>());
                 }
