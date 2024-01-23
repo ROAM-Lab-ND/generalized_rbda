@@ -70,8 +70,6 @@ namespace grbda
     template <typename Scalar>
     void ClusterTreeModel<Scalar>::appendClusterFromUrdfCluster(UrdfClusterPtr cluster)
     {
-        using SX = casadi::SX;
-
         // TODO(@MatthewChignoli): to avoid all of this confusion, maybe the body should just contain the parent joint?
         std::vector<Body<Scalar>> bodies;
         std::vector<JointPtr<Scalar>> joints;
@@ -154,67 +152,22 @@ namespace grbda
                 nca_to_child_subtree.push_back(bodies_sx[body_i.sub_index_within_cluster_]);
             }
 
-            // TODO(@MatthewChignoli): Here is where we introduce the if statement for creating the correct phi function based on the constraint type
-
-            // TODO(@MatthewChignoli): Reduce the number of captures?
-            phi = [nca_to_parent_subtree, nca_to_child_subtree, constraint, joints_sx, constraint_axis](const JointCoordinate<SX> &q)
+            if (constraint->type == dynacore::urdf::ConstraintJoint::POSITION)
             {
-                int jidx = 0;
-                using Xform = spatial::Transform<SX>;
-
-                // Through parent
-                Xform X_via_parent;
-                for (const Body<SX> &body : nca_to_parent_subtree)
-                {
-                    JointPtr<SX> joint = joints_sx.at(body.name_);
-                    joint->updateKinematics(q.segment(jidx, joint->numPositions()),
-                                            DVec<SX>::Zero(joint->numVelocities()));
-                    jidx += joint->numPositions();
-                    X_via_parent = joint->XJ() * body.Xtree_ * X_via_parent;
-                }
-                X_via_parent = Xform(constraint->parent_to_joint_origin_transform) * X_via_parent;
-                Vec3<SX> r_nca_to_constraint_through_parent = X_via_parent.getTranslation();
-
-                // Through child
-                Xform X_via_child;
-                for (const Body<SX> &body : nca_to_child_subtree)
-                {
-                    JointPtr<SX> joint = joints_sx.at(body.name_);
-                    joint->updateKinematics(q.segment(jidx, joint->numPositions()),
-                                            DVec<SX>::Zero(joint->numVelocities()));
-                    jidx += joint->numPositions();
-                    X_via_child = joint->XJ() * body.Xtree_ * X_via_child;
-                }
-                X_via_child = Xform(constraint->child_to_joint_origin_transform) * X_via_child;
-                Vec3<SX> r_nca_to_constraint_through_child = X_via_child.getTranslation();
-
-                // Compute constraint
-                Vec3<SX> r_constraint = r_nca_to_constraint_through_parent -
-                                        r_nca_to_constraint_through_child;
-
-                // TODO(@MatthewChignoli): Make sure unit test covers all of these cases
-                if (constraint_axis.norm() != 1)
-                {
-                    throw std::runtime_error("Constraint axis must be a unit vector");
-                }
-
-                if (constraint_axis.x == 1)
-                {
-                    return DVec<SX>(r_constraint.tail<2>());
-                }
-                else if (constraint_axis.y == 1)
-                {
-                    return DVec<SX>(r_constraint({0, 2}));
-                }
-                else if (constraint_axis.z == 1)
-                {
-                    return DVec<SX>(r_constraint.head<2>());
-                }
-                else
-                {
-                    throw std::runtime_error("Constraint axis must be one of the standard axes");
-                }
-            };
+                phi = implicitPositionConstraint(nca_to_parent_subtree, nca_to_child_subtree,
+                                                 constraint, joints_sx, constraint_axis);
+            }
+            else if (constraint->type == dynacore::urdf::ConstraintJoint::ROTATION)
+            {
+                // TODO(@MatthewChignoli): add logic for rotation constraints
+                throw std::runtime_error("Constraint type not supported");
+                // phi = implicitRotationConstraint(nca_to_parent_subtree, nca_to_child_subtree,
+                                                //  constraint, joints_sx, constraint_axis);
+            }
+            else
+            {
+                throw std::runtime_error("Constraint type not supported");
+            }
         }
 
         std::shared_ptr<LoopConstraint::Base<Scalar>> constraint = std::make_shared<LoopConstraint::GenericImplicit<Scalar>>(independent_coordinates, phi);
@@ -222,6 +175,75 @@ namespace grbda
         // TODO(@MatthewChignoli): Are there cases where we can detect specialized versions of clusters? For example, is there a way that we can detect "revolute pair with rotors" or "revolute with rotor"?
         appendRegisteredBodiesAsCluster<ClusterJoints::Generic<Scalar>>(cluster->name, bodies,
                                                                         joints, constraint);
+    }
+
+    template <typename Scalar>
+    std::function<DVec<casadi::SX>(const JointCoordinate<casadi::SX> &)>
+    ClusterTreeModel<Scalar>::implicitPositionConstraint(
+        std::vector<Body<SX>> &nca_to_parent_subtree,
+        std::vector<Body<SX>> &nca_to_child_subtree,
+        std::shared_ptr<const dynacore::urdf::ConstraintJoint> constraint,
+        std::map<std::string, JointPtr<SX>> joints_sx,
+        dynacore::urdf::Vector3 constraint_axis)
+    {
+        return [nca_to_parent_subtree, nca_to_child_subtree, constraint, joints_sx, constraint_axis](const JointCoordinate<SX> &q)
+        {
+            int jidx = 0;
+            using Xform = spatial::Transform<SX>;
+
+            // Through parent
+            Xform X_via_parent;
+            for (const Body<SX> &body : nca_to_parent_subtree)
+            {
+                JointPtr<SX> joint = joints_sx.at(body.name_);
+                joint->updateKinematics(q.segment(jidx, joint->numPositions()),
+                                        DVec<SX>::Zero(joint->numVelocities()));
+                jidx += joint->numPositions();
+                X_via_parent = joint->XJ() * body.Xtree_ * X_via_parent;
+            }
+            X_via_parent = Xform(constraint->parent_to_joint_origin_transform) * X_via_parent;
+            Vec3<SX> r_nca_to_constraint_through_parent = X_via_parent.getTranslation();
+
+            // Through child
+            Xform X_via_child;
+            for (const Body<SX> &body : nca_to_child_subtree)
+            {
+                JointPtr<SX> joint = joints_sx.at(body.name_);
+                joint->updateKinematics(q.segment(jidx, joint->numPositions()),
+                                        DVec<SX>::Zero(joint->numVelocities()));
+                jidx += joint->numPositions();
+                X_via_child = joint->XJ() * body.Xtree_ * X_via_child;
+            }
+            X_via_child = Xform(constraint->child_to_joint_origin_transform) * X_via_child;
+            Vec3<SX> r_nca_to_constraint_through_child = X_via_child.getTranslation();
+
+            // Compute constraint
+            Vec3<SX> r_constraint = r_nca_to_constraint_through_parent -
+                                    r_nca_to_constraint_through_child;
+
+            // TODO(@MatthewChignoli): Make sure unit test covers all of these cases
+            if (constraint_axis.norm() != 1)
+            {
+                throw std::runtime_error("Constraint axis must be a unit vector");
+            }
+
+            if (constraint_axis.x == 1)
+            {
+                return DVec<SX>(r_constraint.tail<2>());
+            }
+            else if (constraint_axis.y == 1)
+            {
+                return DVec<SX>(r_constraint({0, 2}));
+            }
+            else if (constraint_axis.z == 1)
+            {
+                return DVec<SX>(r_constraint.head<2>());
+            }
+            else
+            {
+                throw std::runtime_error("Constraint axis must be one of the standard axes");
+            }
+        };
     }
 
     template <typename Scalar>

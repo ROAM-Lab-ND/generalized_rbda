@@ -144,10 +144,25 @@ namespace grbda
         DVec<Scalar> getBiasForceVector() override;
 
     protected:
+        // TODO(@MatthewChignoli): Is this bad? Maybe
+        using SX = casadi::SX;
+
         void appendClustersViaDFS(const std::string &cluster_name,
                                   std::map<std::string, bool> &visited,
                                   UrdfClusterPtr cluster);
         void appendClusterFromUrdfCluster(UrdfClusterPtr cluster);
+
+        // TODO(@MatthewChignoli): Should these actually be static functions in the ClusterJoint folder?
+        std::function<DVec<SX>(const JointCoordinate<SX> &)> implicitPositionConstraint(
+            std::vector<Body<SX>> &nca_to_parent_subtree,
+            std::vector<Body<SX>> &nca_to_child_subtree,
+            std::shared_ptr<const dynacore::urdf::ConstraintJoint> constraint,
+            std::map<std::string, JointPtr<SX>> joints_sx,
+            dynacore::urdf::Vector3 constraint_axis);
+
+        // std::function<DVec<SX>(const JointCoordinate<SX> &)> implicitRotationConstraint();
+
+
 
         void appendRegisteredBodiesAsCluster(const std::string name,
                                              std::shared_ptr<ClusterJoints::Base<Scalar>> joint);
