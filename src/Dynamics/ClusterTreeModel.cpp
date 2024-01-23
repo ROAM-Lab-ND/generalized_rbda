@@ -125,9 +125,6 @@ namespace grbda
         std::function<DVec<SX>(const JointCoordinate<SX> &)> phi;
         for (std::shared_ptr<const dynacore::urdf::ConstraintJoint> constraint : cluster->constraint_joints)
         {
-
-            // TODO(@MatthewChignoli): Should have a case statement that distinguishes between position and rotation constraints. For now just assume we only ever have position constraints
-
             // TODO(@MatthewChignoli): Detect the axis of the constraint. For now we are making the very limiting assumption that all joints must be continuous
             dynacore::urdf::Vector3 constraint_axis = constraint->allLinks().front()->parent_joint->axis;
             for (std::shared_ptr<dynacore::urdf::Link> link : constraint->allLinks())
@@ -139,7 +136,12 @@ namespace grbda
                     link->parent_joint->axis.z != constraint_axis.z)
                     throw std::runtime_error("All joints in a constraint must have the same axis");
             }
+            if (constraint_axis.norm() != 1)
+            {
+                throw std::runtime_error("Constraint axis must be a unit vector");
+            }
 
+            // Get subtrees for the constraint
             std::vector<Body<SX>> nca_to_parent_subtree, nca_to_child_subtree;
             for (std::shared_ptr<dynacore::urdf::Link> link : constraint->nca_to_parent_subtree)
             {
@@ -152,6 +154,7 @@ namespace grbda
                 nca_to_child_subtree.push_back(bodies_sx[body_i.sub_index_within_cluster_]);
             }
 
+            // Create implicit constraint via lambda function
             if (constraint->type == dynacore::urdf::ConstraintJoint::POSITION)
             {
                 phi = implicitPositionConstraint(nca_to_parent_subtree, nca_to_child_subtree,
@@ -159,10 +162,8 @@ namespace grbda
             }
             else if (constraint->type == dynacore::urdf::ConstraintJoint::ROTATION)
             {
-                // TODO(@MatthewChignoli): add logic for rotation constraints
-                throw std::runtime_error("Constraint type not supported");
-                // phi = implicitRotationConstraint(nca_to_parent_subtree, nca_to_child_subtree,
-                                                //  constraint, joints_sx, constraint_axis);
+                phi = implicitRotationConstraint(nca_to_parent_subtree, nca_to_child_subtree,
+                                                 constraint, joints_sx, constraint_axis);
             }
             else
             {
@@ -190,6 +191,8 @@ namespace grbda
         {
             int jidx = 0;
             using Xform = spatial::Transform<SX>;
+
+            // TODO(@MatthewChignoli): A lot of duplicate code here. Maybe make a helper function that we can call once for parent and once for child
 
             // Through parent
             Xform X_via_parent;
@@ -222,11 +225,7 @@ namespace grbda
                                     r_nca_to_constraint_through_child;
 
             // TODO(@MatthewChignoli): Make sure unit test covers all of these cases
-            if (constraint_axis.norm() != 1)
-            {
-                throw std::runtime_error("Constraint axis must be a unit vector");
-            }
-
+            // TODO(@MatthewChignoli): Maybe a helper function can clean up this code and the code for computing the radii in the rotation constraint
             if (constraint_axis.x == 1)
             {
                 return DVec<SX>(r_constraint.tail<2>());
@@ -243,6 +242,77 @@ namespace grbda
             {
                 throw std::runtime_error("Constraint axis must be one of the standard axes");
             }
+        };
+    }
+
+    template <typename Scalar>
+    std::function<DVec<casadi::SX>(const JointCoordinate<casadi::SX> &)>
+    ClusterTreeModel<Scalar>::implicitRotationConstraint(
+        std::vector<Body<SX>> &nca_to_parent_subtree,
+        std::vector<Body<SX>> &nca_to_child_subtree,
+        std::shared_ptr<const dynacore::urdf::ConstraintJoint> constraint,
+        std::map<std::string, JointPtr<SX>> joints_sx,
+        dynacore::urdf::Vector3 constraint_axis)
+    {
+        return [nca_to_parent_subtree, nca_to_child_subtree, constraint, joints_sx, constraint_axis](const JointCoordinate<SX> &q)
+        {
+            // TODO(@MatthewChignoli): A lot of duplicate code here. Maybe make a helper function that we can call once for parent and once for child
+
+            // Compute radii
+            using Vector3 = dynacore::urdf::Vector3;
+            Vector3 parent_offset = constraint->parent_to_joint_origin_transform.position;
+            Vector3 child_offset = constraint->child_to_joint_origin_transform.position;
+            SX parent_radius, child_radius;
+            // TODO(@MatthewChignoli): Another instance of it not being allowed that the axis is negative?
+            if (constraint_axis.x == 1)
+            {
+                parent_radius = sqrt(parent_offset.y * parent_offset.y +
+                                     parent_offset.z * parent_offset.z);
+                child_radius = sqrt(child_offset.y * child_offset.y +
+                                    child_offset.z * child_offset.z);
+            }
+            else if (constraint_axis.y == 1)
+            {
+                parent_radius = sqrt(parent_offset.x * parent_offset.x +
+                                     parent_offset.z * parent_offset.z);
+                child_radius = sqrt(child_offset.x * child_offset.x +
+                                    child_offset.z * child_offset.z);
+            }
+            else if (constraint_axis.z == 1)
+            {
+                parent_radius = sqrt(parent_offset.x * parent_offset.x +
+                                     parent_offset.y * parent_offset.y);
+                child_radius = sqrt(child_offset.x * child_offset.x +
+                                    child_offset.y * child_offset.y);
+            }
+            else
+            {
+                throw std::runtime_error("Constraint axis must be one of the standard axes");
+            }
+
+            // Through parent
+            int jidx = 0;
+            SX parent_angle_rel_nca = 0;
+            for (const Body<SX> &body : nca_to_parent_subtree)
+            {
+                parent_angle_rel_nca += q(jidx);
+                JointPtr<SX> joint = joints_sx.at(body.name_);
+                jidx += joint->numPositions();
+            }
+
+            // Through child
+            SX child_angle_rel_nca = 0;
+            for (const Body<SX> &body : nca_to_child_subtree)
+            {
+                child_angle_rel_nca += q(jidx);
+                JointPtr<SX> joint = joints_sx.at(body.name_);
+                jidx += joint->numPositions();
+            }
+
+            DVec<SX> phi_out = DVec<SX>(1);
+            phi_out(0) = parent_radius * parent_angle_rel_nca -
+                         child_radius * child_angle_rel_nca;
+            return phi_out;
         };
     }
 

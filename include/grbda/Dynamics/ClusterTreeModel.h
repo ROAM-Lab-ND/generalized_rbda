@@ -160,9 +160,12 @@ namespace grbda
             std::map<std::string, JointPtr<SX>> joints_sx,
             dynacore::urdf::Vector3 constraint_axis);
 
-        // std::function<DVec<SX>(const JointCoordinate<SX> &)> implicitRotationConstraint();
-
-
+        std::function<DVec<SX>(const JointCoordinate<SX> &)> implicitRotationConstraint(
+            std::vector<Body<SX>> &nca_to_parent_subtree,
+            std::vector<Body<SX>> &nca_to_child_subtree,
+            std::shared_ptr<const dynacore::urdf::ConstraintJoint> constraint,
+            std::map<std::string, JointPtr<SX>> joints_sx,
+            dynacore::urdf::Vector3 constraint_axis);
 
         void appendRegisteredBodiesAsCluster(const std::string name,
                                              std::shared_ptr<ClusterJoints::Base<Scalar>> joint);
