@@ -75,7 +75,7 @@ namespace grbda
     void ClusterTreeModel<Scalar>::appendClusterFromUrdfCluster(UrdfClusterPtr cluster)
     {
         // TODO(@MatthewChignoli): This is kind of a hack, but I think we should have a special exception for when the cluster has one link, a revolute joint, and not constraint joints
-        if (cluster->links.size() == 1 && cluster->constraint_joints.size() == 0)
+        if (cluster->links.size() == 1 && cluster->constraints.size() == 0)
         {
             std::shared_ptr<urdf::Link> link = cluster->links.front();
 
@@ -92,7 +92,7 @@ namespace grbda
             appendBody<Revolute>(name, inertia, parent_name, xtree, axis);
             return;
         }
-        else if (cluster->constraint_joints.size() != 1)
+        else if (cluster->constraints.size() != 1)
         {
             throw std::runtime_error("Clusters that do not have exactly one constraint joint must contain a single link with a revolute joint");
         }
@@ -145,7 +145,7 @@ namespace grbda
 
         std::function<DVec<SX>(const JointCoordinate<SX> &)> phi;
         std::shared_ptr<LoopConstraint::Base<Scalar>> loop_constraint;
-        for (std::shared_ptr<const urdf::ConstraintJoint> constraint : cluster->constraint_joints)
+        for (std::shared_ptr<const urdf::Constraint> constraint : cluster->constraints)
         {
             // TODO(@MatthewChignoli): Detect the axis of the constraint. For now we are making the very limiting assumption that all joints must be continuous
             urdf::Vector3 constraint_axis = constraint->allLinks().front()->parent_joint->axis;
@@ -178,7 +178,7 @@ namespace grbda
 
             // TODO(@MatthewChignoli): Would like to do some more sophisticated detection and specialization here. For example, if the jacobian of phi is constant, then we can use an explicit constraint
             // Create constraints and add clusters
-            if (constraint->type == urdf::ConstraintJoint::POSITION)
+            if (constraint->type == urdf::Constraint::POSITION)
             {
                 phi = implicitPositionConstraint(nca_to_parent_subtree, nca_to_child_subtree,
                                                  constraint, joints_sx, constraint_axis);
@@ -186,7 +186,7 @@ namespace grbda
                 using LoopConstraintType = LoopConstraint::GenericImplicit<Scalar>;
                 loop_constraint = std::make_shared<LoopConstraintType>(independent_coordinates, phi);
             }
-            else if (constraint->type == urdf::ConstraintJoint::ROTATION)
+            else if (constraint->type == urdf::Constraint::ROTATION)
             {
                 // TODO(@MatthewChignoli): This seems like a very long way to do this. I think it can be streamlined. Yeah this desparately needs to be refactored
                 phi = implicitRotationConstraint(nca_to_parent_subtree, nca_to_child_subtree,
@@ -249,7 +249,7 @@ namespace grbda
     ClusterTreeModel<Scalar>::implicitPositionConstraint(
         std::vector<Body<SX>> &nca_to_parent_subtree,
         std::vector<Body<SX>> &nca_to_child_subtree,
-        std::shared_ptr<const urdf::ConstraintJoint> constraint,
+        std::shared_ptr<const urdf::Constraint> constraint,
         std::map<std::string, JointPtr<SX>> joints_sx,
         urdf::Vector3 constraint_axis)
     {
@@ -316,7 +316,7 @@ namespace grbda
     ClusterTreeModel<Scalar>::implicitRotationConstraint(
         std::vector<Body<SX>> &nca_to_parent_subtree,
         std::vector<Body<SX>> &nca_to_child_subtree,
-        std::shared_ptr<const urdf::ConstraintJoint> constraint,
+        std::shared_ptr<const urdf::Constraint> constraint,
         std::map<std::string, JointPtr<SX>> joints_sx,
         urdf::Vector3 constraint_axis)
     {

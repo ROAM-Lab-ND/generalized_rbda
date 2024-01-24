@@ -158,14 +158,14 @@ namespace grbda
         std::function<DVec<SX>(const JointCoordinate<SX> &)> implicitPositionConstraint(
             std::vector<Body<SX>> &nca_to_parent_subtree,
             std::vector<Body<SX>> &nca_to_child_subtree,
-            std::shared_ptr<const urdf::ConstraintJoint> constraint,
+            std::shared_ptr<const urdf::Constraint> constraint,
             std::map<std::string, JointPtr<SX>> joints_sx,
             urdf::Vector3 constraint_axis);
 
         std::function<DVec<SX>(const JointCoordinate<SX> &)> implicitRotationConstraint(
             std::vector<Body<SX>> &nca_to_parent_subtree,
             std::vector<Body<SX>> &nca_to_child_subtree,
-            std::shared_ptr<const urdf::ConstraintJoint> constraint,
+            std::shared_ptr<const urdf::Constraint> constraint,
             std::map<std::string, JointPtr<SX>> joints_sx,
             urdf::Vector3 constraint_axis);
 
