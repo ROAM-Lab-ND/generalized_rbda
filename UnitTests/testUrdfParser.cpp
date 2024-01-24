@@ -35,7 +35,7 @@ std::vector<std::pair<std::string, RobotPtr>> GetTestRobots()
     robots.push_back(std::make_pair("/home/matt/repos/URDF-Parser/planar_leg_linkage.urdf",
                                     std::make_shared<PlanarLegLinkage<double>>()));
     robots.push_back(std::make_pair("/home/matt/repos/URDF-Parser/revolute_rotor_chain.urdf",
-                                    std::make_shared<RevoluteChainWithRotor<3, double>>()));
+                                    std::make_shared<RevoluteChainWithRotor<3, double>>(false)));
     return robots;
 }
 

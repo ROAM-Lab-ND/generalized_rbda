@@ -144,13 +144,14 @@ namespace grbda
         }
 
         std::function<DVec<SX>(const JointCoordinate<SX> &)> phi;
+        std::shared_ptr<LoopConstraint::Base<Scalar>> loop_constraint;
         for (std::shared_ptr<const dynacore::urdf::ConstraintJoint> constraint : cluster->constraint_joints)
         {
             // TODO(@MatthewChignoli): Detect the axis of the constraint. For now we are making the very limiting assumption that all joints must be continuous
             dynacore::urdf::Vector3 constraint_axis = constraint->allLinks().front()->parent_joint->axis;
             for (std::shared_ptr<dynacore::urdf::Link> link : constraint->allLinks())
             {
-                if(link->parent_joint->type != dynacore::urdf::Joint::CONTINUOUS)
+                if (link->parent_joint->type != dynacore::urdf::Joint::CONTINUOUS)
                     throw std::runtime_error("All joints in a constraint must be revolute");
                 if (link->parent_joint->axis.x != constraint_axis.x ||
                     link->parent_joint->axis.y != constraint_axis.y ||
@@ -175,16 +176,63 @@ namespace grbda
                 nca_to_child_subtree.push_back(bodies_sx[body_i.sub_index_within_cluster_]);
             }
 
-            // Create implicit constraint via lambda function
+            // TODO(@MatthewChignoli): Would like to do some more sophisticated detection and specialization here. For example, if the jacobian of phi is constant, then we can use an explicit constraint
+            // Create constraints and add clusters
             if (constraint->type == dynacore::urdf::ConstraintJoint::POSITION)
             {
                 phi = implicitPositionConstraint(nca_to_parent_subtree, nca_to_child_subtree,
                                                  constraint, joints_sx, constraint_axis);
+
+                using LoopConstraintType = LoopConstraint::GenericImplicit<Scalar>;
+                loop_constraint = std::make_shared<LoopConstraintType>(independent_coordinates, phi);
             }
             else if (constraint->type == dynacore::urdf::ConstraintJoint::ROTATION)
             {
+                // TODO(@MatthewChignoli): This seems like a very long way to do this. I think it can be streamlined. Yeah this desparately needs to be refactored
                 phi = implicitRotationConstraint(nca_to_parent_subtree, nca_to_child_subtree,
                                                  constraint, joints_sx, constraint_axis);
+
+                // TODO(@MatthewChignoli): Assumes all joints are 1 DOF
+                SX cs_q_sym = SX::sym("cs_q_sym", constraint->allLinks().size());
+                DVec<SX> q_sym = DVec<SX>(constraint->allLinks().size());
+                casadi::copy(cs_q_sym, q_sym);
+                JointCoordinate<SX> joint_pos(q_sym, true);
+
+                DVec<SX> phi_sym = phi(joint_pos);
+                SX cs_phi_sym = SX(phi_sym.size());
+                casadi::copy(phi_sym, cs_phi_sym);
+
+                SX cs_K_sym = jacobian(cs_phi_sym, cs_q_sym);
+                DMat<SX> K_sym(cs_K_sym.size1(), cs_K_sym.size2());
+                casadi::copy(cs_K_sym, K_sym);
+
+                // Get explicit jacboian from implicit jacobian
+                // TODO(@MatthewChignoli): Throw an error if K contains a nan
+                // TODO(@MatthewChignoli): Do we really need to support float?
+                using IntermediateCastType = typename std::conditional<std::is_same<Scalar, float>::value, double, Scalar>::type;
+                DMat<Scalar> K = K_sym.cast<IntermediateCastType>().template cast<Scalar>();
+                DMat<Scalar> Ki(K.rows(), 0);
+                DMat<Scalar> Kd(K.rows(), 0);
+                for (int i = 0; i < K.cols(); i++)
+                {
+                    if (independent_coordinates[i])
+                    {
+                        Ki.conservativeResize(K.rows(), Ki.cols() + 1);
+                        Ki.template rightCols<1>() = K.col(i);
+                    }
+                    else
+                    {
+                        Kd.conservativeResize(K.rows(), Kd.cols() + 1);
+                        Kd.template rightCols<1>() = K.col(i);
+                    }
+                }
+
+                DMat<Scalar> G(K.cols(), Ki.cols());
+                typename CorrectMatrixInverseType<Scalar>::type Kd_inv(Kd);
+                G.topRows(Ki.cols()).setIdentity();
+                G.bottomRows(Kd.cols()) = -Kd_inv.solve(Ki);
+
+                loop_constraint = std::make_shared<LoopConstraint::Static<Scalar>>(G, K);
             }
             else
             {
@@ -192,11 +240,8 @@ namespace grbda
             }
         }
 
-        std::shared_ptr<LoopConstraint::Base<Scalar>> constraint = std::make_shared<LoopConstraint::GenericImplicit<Scalar>>(independent_coordinates, phi);
-
-        // TODO(@MatthewChignoli): Are there cases where we can detect specialized versions of clusters? For example, is there a way that we can detect "revolute pair with rotors" or "revolute with rotor"?
-        appendRegisteredBodiesAsCluster<ClusterJoints::Generic<Scalar>>(cluster->name, bodies,
-                                                                        joints, constraint);
+        appendRegisteredBodiesAsCluster<ClusterJoints::Generic<Scalar>>(
+            cluster->name, bodies, joints, loop_constraint);
     }
 
     template <typename Scalar>
