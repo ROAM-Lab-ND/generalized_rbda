@@ -17,7 +17,7 @@ namespace grbda
         std::shared_ptr<urdf::ModelInterface> model;
         model = urdf::parseURDFFile(urdf_filename, true);
 
-        if(model == nullptr)
+        if (model == nullptr)
             throw std::runtime_error("Could not parse URDF file");
 
         ConstLinkPtr root = model->getRoot();
@@ -164,23 +164,24 @@ namespace grbda
             }
 
             // Get subtrees for the constraint
-            std::vector<Body<SX>> nca_to_parent_subtree, nca_to_child_subtree;
-            for (std::shared_ptr<urdf::Link> link : constraint->nca_to_parent_subtree)
+            std::vector<Body<SX>> nca_to_predecessor_subtree, nca_to_successor_subtree;
+            for (std::shared_ptr<urdf::Link> link : constraint->nca_to_predecessor_subtree)
             {
                 const auto &body_i = body(link->name);
-                nca_to_parent_subtree.push_back(bodies_sx[body_i.sub_index_within_cluster_]);
+                nca_to_predecessor_subtree.push_back(bodies_sx[body_i.sub_index_within_cluster_]);
             }
-            for (std::shared_ptr<urdf::Link> link : constraint->nca_to_child_subtree)
+            for (std::shared_ptr<urdf::Link> link : constraint->nca_to_successor_subtree)
             {
                 const auto &body_i = body(link->name);
-                nca_to_child_subtree.push_back(bodies_sx[body_i.sub_index_within_cluster_]);
+                nca_to_successor_subtree.push_back(bodies_sx[body_i.sub_index_within_cluster_]);
             }
 
             // TODO(@MatthewChignoli): Would like to do some more sophisticated detection and specialization here. For example, if the jacobian of phi is constant, then we can use an explicit constraint
             // Create constraints and add clusters
             if (constraint->type == urdf::Constraint::POSITION)
             {
-                phi = implicitPositionConstraint(nca_to_parent_subtree, nca_to_child_subtree,
+                phi = implicitPositionConstraint(nca_to_predecessor_subtree,
+                                                 nca_to_successor_subtree,
                                                  constraint, joints_sx, constraint_axis);
 
                 using LoopConstraintType = LoopConstraint::GenericImplicit<Scalar>;
@@ -189,7 +190,8 @@ namespace grbda
             else if (constraint->type == urdf::Constraint::ROTATION)
             {
                 // TODO(@MatthewChignoli): This seems like a very long way to do this. I think it can be streamlined. Yeah this desparately needs to be refactored
-                phi = implicitRotationConstraint(nca_to_parent_subtree, nca_to_child_subtree,
+                phi = implicitRotationConstraint(nca_to_predecessor_subtree,
+                                                 nca_to_successor_subtree,
                                                  constraint, joints_sx, constraint_axis);
 
                 // TODO(@MatthewChignoli): Assumes all joints are 1 DOF
@@ -247,48 +249,50 @@ namespace grbda
     template <typename Scalar>
     std::function<DVec<casadi::SX>(const JointCoordinate<casadi::SX> &)>
     ClusterTreeModel<Scalar>::implicitPositionConstraint(
-        std::vector<Body<SX>> &nca_to_parent_subtree,
-        std::vector<Body<SX>> &nca_to_child_subtree,
+        std::vector<Body<SX>> &nca_to_predecessor_subtree,
+        std::vector<Body<SX>> &nca_to_successor_subtree,
         std::shared_ptr<const urdf::Constraint> constraint,
         std::map<std::string, JointPtr<SX>> joints_sx,
         urdf::Vector3 constraint_axis)
     {
-        return [nca_to_parent_subtree, nca_to_child_subtree, constraint, joints_sx, constraint_axis](const JointCoordinate<SX> &q)
+        return [nca_to_predecessor_subtree, nca_to_successor_subtree, constraint, joints_sx, constraint_axis](const JointCoordinate<SX> &q)
         {
             int jidx = 0;
             using Xform = spatial::Transform<SX>;
 
             // TODO(@MatthewChignoli): A lot of duplicate code here. Maybe make a helper function that we can call once for parent and once for child
 
-            // Through parent
-            Xform X_via_parent;
-            for (const Body<SX> &body : nca_to_parent_subtree)
+            // Through predecessor
+            Xform X_via_predecessor;
+            for (const Body<SX> &body : nca_to_predecessor_subtree)
             {
                 JointPtr<SX> joint = joints_sx.at(body.name_);
                 joint->updateKinematics(q.segment(jidx, joint->numPositions()),
                                         DVec<SX>::Zero(joint->numVelocities()));
                 jidx += joint->numPositions();
-                X_via_parent = joint->XJ() * body.Xtree_ * X_via_parent;
+                X_via_predecessor = joint->XJ() * body.Xtree_ * X_via_predecessor;
             }
-            X_via_parent = Xform(constraint->parent_to_joint_origin_transform) * X_via_parent;
-            Vec3<SX> r_nca_to_constraint_through_parent = X_via_parent.getTranslation();
+            X_via_predecessor = Xform(constraint->predecessor_to_constraint_origin_transform) *
+                                X_via_predecessor;
+            Vec3<SX> r_nca_to_constraint_through_predecessor = X_via_predecessor.getTranslation();
 
-            // Through child
-            Xform X_via_child;
-            for (const Body<SX> &body : nca_to_child_subtree)
+            // Through successor
+            Xform X_via_successor;
+            for (const Body<SX> &body : nca_to_successor_subtree)
             {
                 JointPtr<SX> joint = joints_sx.at(body.name_);
                 joint->updateKinematics(q.segment(jidx, joint->numPositions()),
                                         DVec<SX>::Zero(joint->numVelocities()));
                 jidx += joint->numPositions();
-                X_via_child = joint->XJ() * body.Xtree_ * X_via_child;
+                X_via_successor = joint->XJ() * body.Xtree_ * X_via_successor;
             }
-            X_via_child = Xform(constraint->child_to_joint_origin_transform) * X_via_child;
-            Vec3<SX> r_nca_to_constraint_through_child = X_via_child.getTranslation();
+            X_via_successor = Xform(constraint->successor_to_constraint_origin_transform) *
+                              X_via_successor;
+            Vec3<SX> r_nca_to_constraint_through_successor = X_via_successor.getTranslation();
 
             // Compute constraint
-            Vec3<SX> r_constraint = r_nca_to_constraint_through_parent -
-                                    r_nca_to_constraint_through_child;
+            Vec3<SX> r_constraint = r_nca_to_constraint_through_predecessor -
+                                    r_nca_to_constraint_through_successor;
 
             // TODO(@MatthewChignoli): Make sure unit test covers all of these cases
             // TODO(@MatthewChignoli): Maybe a helper function can clean up this code and the code for computing the radii in the rotation constraint
@@ -314,70 +318,70 @@ namespace grbda
     template <typename Scalar>
     std::function<DVec<casadi::SX>(const JointCoordinate<casadi::SX> &)>
     ClusterTreeModel<Scalar>::implicitRotationConstraint(
-        std::vector<Body<SX>> &nca_to_parent_subtree,
-        std::vector<Body<SX>> &nca_to_child_subtree,
+        std::vector<Body<SX>> &nca_to_predecessor_subtree,
+        std::vector<Body<SX>> &nca_to_successor_subtree,
         std::shared_ptr<const urdf::Constraint> constraint,
         std::map<std::string, JointPtr<SX>> joints_sx,
         urdf::Vector3 constraint_axis)
     {
-        return [nca_to_parent_subtree, nca_to_child_subtree, constraint, joints_sx, constraint_axis](const JointCoordinate<SX> &q)
+        return [nca_to_predecessor_subtree, nca_to_successor_subtree, constraint, joints_sx, constraint_axis](const JointCoordinate<SX> &q)
         {
             // TODO(@MatthewChignoli): A lot of duplicate code here. Maybe make a helper function that we can call once for parent and once for child
 
             // Compute radii
             using Vector3 = urdf::Vector3;
-            Vector3 parent_offset = constraint->parent_to_joint_origin_transform.position;
-            Vector3 child_offset = constraint->child_to_joint_origin_transform.position;
-            SX parent_radius, child_radius;
+            Vector3 predecessor_offset = constraint->predecessor_to_constraint_origin_transform.position;
+            Vector3 successor_offset = constraint->successor_to_constraint_origin_transform.position;
+            SX predecessor_radius, successor_radius;
             // TODO(@MatthewChignoli): Another instance of it not being allowed that the axis is negative?
             if (constraint_axis.x == 1)
             {
-                parent_radius = sqrt(parent_offset.y * parent_offset.y +
-                                     parent_offset.z * parent_offset.z);
-                child_radius = sqrt(child_offset.y * child_offset.y +
-                                    child_offset.z * child_offset.z);
+                predecessor_radius = sqrt(predecessor_offset.y * predecessor_offset.y +
+                                          predecessor_offset.z * predecessor_offset.z);
+                successor_radius = sqrt(successor_offset.y * successor_offset.y +
+                                        successor_offset.z * successor_offset.z);
             }
             else if (constraint_axis.y == 1)
             {
-                parent_radius = sqrt(parent_offset.x * parent_offset.x +
-                                     parent_offset.z * parent_offset.z);
-                child_radius = sqrt(child_offset.x * child_offset.x +
-                                    child_offset.z * child_offset.z);
+                predecessor_radius = sqrt(predecessor_offset.x * predecessor_offset.x +
+                                          predecessor_offset.z * predecessor_offset.z);
+                successor_radius = sqrt(successor_offset.x * successor_offset.x +
+                                        successor_offset.z * successor_offset.z);
             }
             else if (constraint_axis.z == 1)
             {
-                parent_radius = sqrt(parent_offset.x * parent_offset.x +
-                                     parent_offset.y * parent_offset.y);
-                child_radius = sqrt(child_offset.x * child_offset.x +
-                                    child_offset.y * child_offset.y);
+                predecessor_radius = sqrt(predecessor_offset.x * predecessor_offset.x +
+                                          predecessor_offset.y * predecessor_offset.y);
+                successor_radius = sqrt(successor_offset.x * successor_offset.x +
+                                        successor_offset.y * successor_offset.y);
             }
             else
             {
                 throw std::runtime_error("Constraint axis must be one of the standard axes");
             }
 
-            // Through parent
+            // Through predecessor
             int jidx = 0;
-            SX parent_angle_rel_nca = 0;
-            for (const Body<SX> &body : nca_to_parent_subtree)
+            SX predecessor_angle_rel_nca = 0;
+            for (const Body<SX> &body : nca_to_predecessor_subtree)
             {
-                parent_angle_rel_nca += q(jidx);
+                predecessor_angle_rel_nca += q(jidx);
                 JointPtr<SX> joint = joints_sx.at(body.name_);
                 jidx += joint->numPositions();
             }
 
-            // Through child
-            SX child_angle_rel_nca = 0;
-            for (const Body<SX> &body : nca_to_child_subtree)
+            // Through successor
+            SX successor_angle_rel_nca = 0;
+            for (const Body<SX> &body : nca_to_successor_subtree)
             {
-                child_angle_rel_nca += q(jidx);
+                successor_angle_rel_nca += q(jidx);
                 JointPtr<SX> joint = joints_sx.at(body.name_);
                 jidx += joint->numPositions();
             }
 
             DVec<SX> phi_out = DVec<SX>(1);
-            phi_out(0) = parent_radius * parent_angle_rel_nca -
-                         child_radius * child_angle_rel_nca;
+            phi_out(0) = predecessor_radius * predecessor_angle_rel_nca -
+                         successor_radius * successor_angle_rel_nca;
             return phi_out;
         };
     }
