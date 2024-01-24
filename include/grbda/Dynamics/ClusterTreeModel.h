@@ -28,12 +28,14 @@ namespace grbda
     public:
         ClusterTreeModel()
         {
+            // TODO(@MatthewChignoli): Kind of confusing that this is always done, but we undo it in the URDF import
             body_name_to_body_index_["ground"] = -1;
             body_index_to_cluster_index_[-1] = -1;
         }
         ~ClusterTreeModel() {}
 
-        void buildModelFromURDF(const std::string &urdf_filename);
+        // TODO(@MatthewChignoli): Should argument be default? Or should there be two functions with different names?
+        void buildModelFromURDF(const std::string &urdf_filename, bool floating_base);
 
         // The standard process for appending a cluster to the tree is to register all the bodies
         // in  given cluster and then append them as a cluster by specifying the type of cluster

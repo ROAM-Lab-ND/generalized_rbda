@@ -20,8 +20,8 @@ GTEST_TEST(UrdfParser, parseFile)
     for (const std::string &urdf_file : urdf_files)
     {
         ClusterTreeModel<double> cluster_model;
-        cluster_model.buildModelFromURDF(urdf_file);
-        std::cout << "URDF file: " << urdf_file << std::endl;
+        cluster_model.buildModelFromURDF(urdf_file, false);
+        std::cout << "\n\nURDF file: " << urdf_file << std::endl;
         cluster_model.print();
         GTEST_ASSERT_GT(cluster_model.bodies().size(), 0);
     }
@@ -44,7 +44,7 @@ class URDFvsManualTests : public ::testing::TestWithParam<std::pair<std::string,
 protected:
     URDFvsManualTests()
     {
-        urdf_model.buildModelFromURDF(GetParam().first);
+        urdf_model.buildModelFromURDF(GetParam().first, false);
         manual_model = GetParam().second->buildClusterTreeModel();
     }
 
@@ -55,6 +55,7 @@ protected:
         DVec<double> spanning_joint_vel = DVec<double>::Zero(0);
         for (const auto &cluster : manual_model.clusters())
         {
+            // TODO(@MatthewChignoli): The gneric cluster should override the randomJointState function. Maybe that means we need different generic clusters for implicit vs. explicit?
             JointState<> joint_state = cluster->joint_->randomJointState();
             JointState<> spanning_joint_state = cluster->joint_->toSpanningTreeState(joint_state);
 

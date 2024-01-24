@@ -8,7 +8,8 @@ namespace grbda
 {
 
     template <typename Scalar>
-    void ClusterTreeModel<Scalar>::buildModelFromURDF(const std::string &urdf_filename)
+    void ClusterTreeModel<Scalar>::buildModelFromURDF(const std::string &urdf_filename,
+                                                      bool floating_base)
     {
         using ConstLinkPtr = std::shared_ptr<const dynacore::urdf::Link>;
         using ClusterPtr = std::shared_ptr<dynacore::urdf::Cluster>;
@@ -19,23 +20,26 @@ namespace grbda
         if(model == nullptr)
             throw std::runtime_error("Could not parse URDF file");
 
-        // TODO(@MatthewChignoli): How to know whether to import as floating or fixed base? If you want fixed base, should the base be a link in the URDF?
-        // Add floating base
         ConstLinkPtr root = model->getRoot();
         ClusterPtr root_cluster = model->getClusterContaining(root->name);
-        for (ConstLinkPtr link : root_cluster->links)
+        if (root_cluster->links.size() != 1)
         {
-            std::string name = link->name;
+            throw std::runtime_error("The root cluster may only contain one body");
+        }
+
+        if (floating_base)
+        {
+            std::string name = root->name;
             std::string parent_name = "ground";
-            SpatialInertia<Scalar> inertia(link->inertial);
-            spatial::Transform xtree = spatial::Transform<Scalar>{};
-
-            // using Free = ClusterJoints::Free<double, ori_representation::Quaternion>;
-            // cluster_model.template appendBody<Free>(name, inertia, parent_name, xtree);
-
-            // TODO(@MatthewChignoli): Don't assume z axis
-            using Revolute = ClusterJoints::Revolute<Scalar>;
-            appendBody<Revolute>(name, inertia, parent_name, xtree, ori::CoordinateAxis::Z);
+            SpatialInertia<Scalar> inertia(root->inertial);
+            spatial::Transform<Scalar> xtree = spatial::Transform<Scalar>{};
+            using Free = ClusterJoints::Free<Scalar, ori_representation::Quaternion>;
+            appendBody<Free>(name, inertia, parent_name, xtree);
+        }
+        else
+        {
+            body_name_to_body_index_.clear();
+            body_name_to_body_index_[root->name] = -1;
         }
 
         // Add remaining bodies
@@ -70,6 +74,29 @@ namespace grbda
     template <typename Scalar>
     void ClusterTreeModel<Scalar>::appendClusterFromUrdfCluster(UrdfClusterPtr cluster)
     {
+        // TODO(@MatthewChignoli): This is kind of a hack, but I think we should have a special exception for when the cluster has one link, a revolute joint, and not constraint joints
+        if (cluster->links.size() == 1 && cluster->constraint_joints.size() == 0)
+        {
+            std::shared_ptr<dynacore::urdf::Link> link = cluster->links.front();
+
+            if (link->parent_joint->type != dynacore::urdf::Joint::CONTINUOUS)
+            {
+                throw std::runtime_error("The only joint in a cluster with one link must be revolute");
+            }
+            std::string name = link->name;
+            std::string parent_name = link->getParent()->name;
+            SpatialInertia<Scalar> inertia(link->inertial);
+            spatial::Transform<Scalar> xtree(link->parent_joint->parent_to_joint_origin_transform);
+            ori::CoordinateAxis axis = ori::urdfAxisToCoordinateAxis(link->parent_joint->axis);
+            using Revolute = ClusterJoints::Revolute<Scalar>;
+            appendBody<Revolute>(name, inertia, parent_name, xtree, axis);
+            return;
+        }
+        else if (cluster->constraint_joints.size() != 1)
+        {
+            throw std::runtime_error("Clusters that do not have exactly one constraint joint must contain a single link with a revolute joint");
+        }
+
         // TODO(@MatthewChignoli): to avoid all of this confusion, maybe the body should just contain the parent joint?
         std::vector<Body<Scalar>> bodies;
         std::vector<JointPtr<Scalar>> joints;
@@ -114,12 +141,6 @@ namespace grbda
             }
 
             unregistered_links = unregistered_links_next;
-        }
-
-        // TODO(@MatthewChignoli): At this point, there should only be one constraint joint per cluster, but we will generalize this later
-        if (cluster->constraint_joints.size() != 1)
-        {
-            throw std::runtime_error("There should be exactly one constraint joint per cluster");
         }
 
         std::function<DVec<SX>(const JointCoordinate<SX> &)> phi;
