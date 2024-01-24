@@ -45,7 +45,7 @@ namespace grbda
     /*!
      * Construct urdf Inertial
      */
-    explicit SpatialInertia(const std::shared_ptr<const dynacore::urdf::Inertial> &inertial)
+    explicit SpatialInertia(const std::shared_ptr<const urdf::Inertial> &inertial)
     {
       T mass = inertial->mass;
       Vec3<T> COM = Vec3<T>(inertial->origin.position.x,

@@ -11,11 +11,11 @@ namespace grbda
     void ClusterTreeModel<Scalar>::buildModelFromURDF(const std::string &urdf_filename,
                                                       bool floating_base)
     {
-        using ConstLinkPtr = std::shared_ptr<const dynacore::urdf::Link>;
-        using ClusterPtr = std::shared_ptr<dynacore::urdf::Cluster>;
+        using ConstLinkPtr = std::shared_ptr<const urdf::Link>;
+        using ClusterPtr = std::shared_ptr<urdf::Cluster>;
 
-        std::shared_ptr<dynacore::urdf::ModelInterface> model;
-        model = dynacore::urdf::parseURDFFile(urdf_filename, true);
+        std::shared_ptr<urdf::ModelInterface> model;
+        model = urdf::parseURDFFile(urdf_filename, true);
 
         if(model == nullptr)
             throw std::runtime_error("Could not parse URDF file");
@@ -77,9 +77,9 @@ namespace grbda
         // TODO(@MatthewChignoli): This is kind of a hack, but I think we should have a special exception for when the cluster has one link, a revolute joint, and not constraint joints
         if (cluster->links.size() == 1 && cluster->constraint_joints.size() == 0)
         {
-            std::shared_ptr<dynacore::urdf::Link> link = cluster->links.front();
+            std::shared_ptr<urdf::Link> link = cluster->links.front();
 
-            if (link->parent_joint->type != dynacore::urdf::Joint::CONTINUOUS)
+            if (link->parent_joint->type != urdf::Joint::CONTINUOUS)
             {
                 throw std::runtime_error("The only joint in a cluster with one link must be revolute");
             }
@@ -104,11 +104,11 @@ namespace grbda
         std::vector<Body<SX>> bodies_sx;
         std::map<std::string, JointPtr<SX>> joints_sx;
 
-        std::vector<std::shared_ptr<dynacore::urdf::Link>> unregistered_links = cluster->links;
+        std::vector<std::shared_ptr<urdf::Link>> unregistered_links = cluster->links;
         while (unregistered_links.size() > 0)
         {
-            std::vector<std::shared_ptr<dynacore::urdf::Link>> unregistered_links_next;
-            for (std::shared_ptr<dynacore::urdf::Link> link : unregistered_links)
+            std::vector<std::shared_ptr<urdf::Link>> unregistered_links_next;
+            for (std::shared_ptr<urdf::Link> link : unregistered_links)
             {
                 // If the parent of this link is not registered, then we will try again
                 // next iteration
@@ -124,7 +124,7 @@ namespace grbda
                 SpatialInertia<Scalar> inertia(link->inertial);
                 SpatialInertia<SX> inertia_sx(link->inertial);
 
-                dynacore::urdf::Pose pose = link->parent_joint->parent_to_joint_origin_transform;
+                urdf::Pose pose = link->parent_joint->parent_to_joint_origin_transform;
                 spatial::Transform<Scalar> xtree(pose);
                 spatial::Transform<SX> xtree_sx(pose);
 
@@ -145,13 +145,13 @@ namespace grbda
 
         std::function<DVec<SX>(const JointCoordinate<SX> &)> phi;
         std::shared_ptr<LoopConstraint::Base<Scalar>> loop_constraint;
-        for (std::shared_ptr<const dynacore::urdf::ConstraintJoint> constraint : cluster->constraint_joints)
+        for (std::shared_ptr<const urdf::ConstraintJoint> constraint : cluster->constraint_joints)
         {
             // TODO(@MatthewChignoli): Detect the axis of the constraint. For now we are making the very limiting assumption that all joints must be continuous
-            dynacore::urdf::Vector3 constraint_axis = constraint->allLinks().front()->parent_joint->axis;
-            for (std::shared_ptr<dynacore::urdf::Link> link : constraint->allLinks())
+            urdf::Vector3 constraint_axis = constraint->allLinks().front()->parent_joint->axis;
+            for (std::shared_ptr<urdf::Link> link : constraint->allLinks())
             {
-                if (link->parent_joint->type != dynacore::urdf::Joint::CONTINUOUS)
+                if (link->parent_joint->type != urdf::Joint::CONTINUOUS)
                     throw std::runtime_error("All joints in a constraint must be revolute");
                 if (link->parent_joint->axis.x != constraint_axis.x ||
                     link->parent_joint->axis.y != constraint_axis.y ||
@@ -165,12 +165,12 @@ namespace grbda
 
             // Get subtrees for the constraint
             std::vector<Body<SX>> nca_to_parent_subtree, nca_to_child_subtree;
-            for (std::shared_ptr<dynacore::urdf::Link> link : constraint->nca_to_parent_subtree)
+            for (std::shared_ptr<urdf::Link> link : constraint->nca_to_parent_subtree)
             {
                 const auto &body_i = body(link->name);
                 nca_to_parent_subtree.push_back(bodies_sx[body_i.sub_index_within_cluster_]);
             }
-            for (std::shared_ptr<dynacore::urdf::Link> link : constraint->nca_to_child_subtree)
+            for (std::shared_ptr<urdf::Link> link : constraint->nca_to_child_subtree)
             {
                 const auto &body_i = body(link->name);
                 nca_to_child_subtree.push_back(bodies_sx[body_i.sub_index_within_cluster_]);
@@ -178,7 +178,7 @@ namespace grbda
 
             // TODO(@MatthewChignoli): Would like to do some more sophisticated detection and specialization here. For example, if the jacobian of phi is constant, then we can use an explicit constraint
             // Create constraints and add clusters
-            if (constraint->type == dynacore::urdf::ConstraintJoint::POSITION)
+            if (constraint->type == urdf::ConstraintJoint::POSITION)
             {
                 phi = implicitPositionConstraint(nca_to_parent_subtree, nca_to_child_subtree,
                                                  constraint, joints_sx, constraint_axis);
@@ -186,7 +186,7 @@ namespace grbda
                 using LoopConstraintType = LoopConstraint::GenericImplicit<Scalar>;
                 loop_constraint = std::make_shared<LoopConstraintType>(independent_coordinates, phi);
             }
-            else if (constraint->type == dynacore::urdf::ConstraintJoint::ROTATION)
+            else if (constraint->type == urdf::ConstraintJoint::ROTATION)
             {
                 // TODO(@MatthewChignoli): This seems like a very long way to do this. I think it can be streamlined. Yeah this desparately needs to be refactored
                 phi = implicitRotationConstraint(nca_to_parent_subtree, nca_to_child_subtree,
@@ -249,9 +249,9 @@ namespace grbda
     ClusterTreeModel<Scalar>::implicitPositionConstraint(
         std::vector<Body<SX>> &nca_to_parent_subtree,
         std::vector<Body<SX>> &nca_to_child_subtree,
-        std::shared_ptr<const dynacore::urdf::ConstraintJoint> constraint,
+        std::shared_ptr<const urdf::ConstraintJoint> constraint,
         std::map<std::string, JointPtr<SX>> joints_sx,
-        dynacore::urdf::Vector3 constraint_axis)
+        urdf::Vector3 constraint_axis)
     {
         return [nca_to_parent_subtree, nca_to_child_subtree, constraint, joints_sx, constraint_axis](const JointCoordinate<SX> &q)
         {
@@ -316,16 +316,16 @@ namespace grbda
     ClusterTreeModel<Scalar>::implicitRotationConstraint(
         std::vector<Body<SX>> &nca_to_parent_subtree,
         std::vector<Body<SX>> &nca_to_child_subtree,
-        std::shared_ptr<const dynacore::urdf::ConstraintJoint> constraint,
+        std::shared_ptr<const urdf::ConstraintJoint> constraint,
         std::map<std::string, JointPtr<SX>> joints_sx,
-        dynacore::urdf::Vector3 constraint_axis)
+        urdf::Vector3 constraint_axis)
     {
         return [nca_to_parent_subtree, nca_to_child_subtree, constraint, joints_sx, constraint_axis](const JointCoordinate<SX> &q)
         {
             // TODO(@MatthewChignoli): A lot of duplicate code here. Maybe make a helper function that we can call once for parent and once for child
 
             // Compute radii
-            using Vector3 = dynacore::urdf::Vector3;
+            using Vector3 = urdf::Vector3;
             Vector3 parent_offset = constraint->parent_to_joint_origin_transform.position;
             Vector3 child_offset = constraint->child_to_joint_origin_transform.position;
             SX parent_radius, child_radius;

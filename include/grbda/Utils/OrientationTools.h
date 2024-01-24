@@ -67,7 +67,7 @@ namespace grbda
       return R;
     }
 
-    inline CoordinateAxis urdfAxisToCoordinateAxis(const dynacore::urdf::Vector3 &axis)
+    inline CoordinateAxis urdfAxisToCoordinateAxis(const urdf::Vector3 &axis)
     {
       if (axis.norm() != 1)
       {
