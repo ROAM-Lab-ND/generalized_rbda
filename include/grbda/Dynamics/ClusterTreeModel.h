@@ -123,10 +123,11 @@ namespace grbda
         {
             return cluster_nodes_[cluster_index];
         }
-        const ClusterTreeNodePtr<Scalar> cluster(const std::string &cluster_name) const
-        {
-            return cluster_nodes_[cluster_name_to_cluster_index_.at(cluster_name)];
-        }
+        // TODO(@MatthewChignoli): Need to figure out if we want to name the clusters. I actually think that we do not need to.
+        // const ClusterTreeNodePtr<Scalar> cluster(const std::string &cluster_name) const
+        // {
+        //     return cluster_nodes_[cluster_name_to_cluster_index_.at(cluster_name)];
+        // }
 
         Vec3<Scalar> getPosition(const std::string &body_name) override;
         Mat3<Scalar> getOrientation(const std::string &body_name) override;
@@ -149,9 +150,7 @@ namespace grbda
         // TODO(@MatthewChignoli): Is this bad? Maybe
         using SX = casadi::SX;
 
-        void appendClustersViaDFS(const std::string &cluster_name,
-                                  std::map<std::string, bool> &visited,
-                                  UrdfClusterPtr cluster);
+        void appendClustersViaDFS(std::map<UrdfClusterPtr, bool> &visited, UrdfClusterPtr cluster);
         void appendClusterFromUrdfCluster(UrdfClusterPtr cluster);
 
         // TODO(@MatthewChignoli): Should these actually be static functions in the ClusterJoint folder?

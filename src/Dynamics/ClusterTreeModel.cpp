@@ -11,17 +11,14 @@ namespace grbda
     void ClusterTreeModel<Scalar>::buildModelFromURDF(const std::string &urdf_filename,
                                                       bool floating_base)
     {
-        using ConstLinkPtr = std::shared_ptr<const urdf::Link>;
-        using ClusterPtr = std::shared_ptr<urdf::Cluster>;
-
         std::shared_ptr<urdf::ModelInterface> model;
         model = urdf::parseURDFFile(urdf_filename, true);
 
         if (model == nullptr)
             throw std::runtime_error("Could not parse URDF file");
 
-        ConstLinkPtr root = model->getRoot();
-        ClusterPtr root_cluster = model->getClusterContaining(root->name);
+        std::shared_ptr<const urdf::Link> root = model->getRoot();
+        UrdfClusterPtr root_cluster = model->getClusterContaining(root->name);
         if (root_cluster->links.size() != 1)
         {
             throw std::runtime_error("The root cluster may only contain one body");
@@ -43,28 +40,26 @@ namespace grbda
         }
 
         // Add remaining bodies
-        std::map<std::string, bool> visited;
-        for (ClusterPtr child : root_cluster->child_clusters)
+        std::map<UrdfClusterPtr, bool> visited;
+        for (UrdfClusterPtr child : root_cluster->child_clusters)
         {
-            appendClustersViaDFS(child->name, visited, child);
+            appendClustersViaDFS(visited, child);
         }
     }
 
     template <typename Scalar>
     void
-    ClusterTreeModel<Scalar>::appendClustersViaDFS(const std::string &cluster_name,
-                                                   std::map<std::string, bool> &visited,
+    ClusterTreeModel<Scalar>::appendClustersViaDFS(std::map<UrdfClusterPtr, bool> &visited,
                                                    UrdfClusterPtr cluster)
     {
-        visited[cluster_name] = true;
+        visited[cluster] = true;
         appendClusterFromUrdfCluster(cluster);
 
         for (const UrdfClusterPtr child : cluster->child_clusters)
         {
-            const std::string &child_name = child->name;
-            if (!visited[child_name])
+            if (!visited[child])
             {
-                appendClustersViaDFS(child_name, visited, child);
+                appendClustersViaDFS(visited, child);
             }
         }
     }
@@ -242,8 +237,9 @@ namespace grbda
             }
         }
 
+        std::string cluster_name = "cluster-" + std::to_string(cluster_nodes_.size());
         appendRegisteredBodiesAsCluster<ClusterJoints::Generic<Scalar>>(
-            cluster->name, bodies, joints, loop_constraint);
+            cluster_name, bodies, joints, loop_constraint);
     }
 
     template <typename Scalar>
