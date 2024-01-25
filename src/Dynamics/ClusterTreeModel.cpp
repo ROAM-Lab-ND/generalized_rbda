@@ -182,7 +182,7 @@ namespace grbda
                 using LoopConstraintType = LoopConstraint::GenericImplicit<Scalar>;
                 loop_constraint = std::make_shared<LoopConstraintType>(independent_coordinates, phi);
             }
-            else if (constraint->type == urdf::Constraint::ROTATION)
+            else if (constraint->type == urdf::Constraint::ROLLING)
             {
                 // TODO(@MatthewChignoli): This seems like a very long way to do this. I think it can be streamlined. Yeah this desparately needs to be refactored
                 phi = implicitRotationConstraint(nca_to_predecessor_subtree,

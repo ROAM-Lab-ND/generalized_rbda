@@ -49,13 +49,13 @@ namespace grbda
     {
       T mass = inertial->mass;
       Vec3<T> COM = Vec3<T>(inertial->origin.position.x,
-                                      inertial->origin.position.y,
-                                      inertial->origin.position.z);
+                            inertial->origin.position.y,
+                            inertial->origin.position.z);
       Mat3<T> inertia;
       inertia.row(0) << inertial->ixx, inertial->ixy, inertial->ixz;
       inertia.row(1) << inertial->ixy, inertial->iyy, inertial->iyz;
       inertia.row(2) << inertial->ixz, inertial->iyz, inertial->izz;
-      SpatialInertia<T>(mass, COM, inertia);
+      *this = SpatialInertia(mass, COM, inertia);
     }
 
     /*!

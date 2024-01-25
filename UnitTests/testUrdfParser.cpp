@@ -46,6 +46,7 @@ protected:
     {
         urdf_model.buildModelFromURDF(GetParam().first, false);
         manual_model = GetParam().second->buildClusterTreeModel();
+        urdf_model.setGravity(manual_model.getGravity().tail<3>());
     }
 
     void initializeRandomStates()
@@ -82,8 +83,13 @@ static const double tol = 1e-10;
 
 TEST_P(URDFvsManualTests, compareToManuallyConstructed)
 {
-    // Make sure the robots have the same number of bodies
-    GTEST_ASSERT_EQ(this->manual_model.bodies().size(), this->urdf_model.bodies().size());
+    // Tests that validate the model structure
+    GTEST_ASSERT_EQ(this->manual_model.bodies().size(),
+                    this->urdf_model.bodies().size());
+    GTEST_ASSERT_EQ(this->manual_model.getNumPositions(),
+                    this->urdf_model.getNumPositions());
+    GTEST_ASSERT_EQ(this->manual_model.getNumDegreesOfFreedom(),
+                    this->urdf_model.getNumDegreesOfFreedom());
 
     // Tests that vary with the state
     for (int i = 0; i < 25; i++)
@@ -110,6 +116,26 @@ TEST_P(URDFvsManualTests, compareToManuallyConstructed)
             GTEST_ASSERT_LT((w_manual - w_urdf).norm(), tol);
         }
 
-        // TODO(@MatthewChignoli): Still need to compare the dynamics
+        // Verify the mass matrix
+        const DMat<double> H_manual = this->manual_model.getMassMatrix();
+        const DMat<double> H_urdf = this->urdf_model.getMassMatrix();
+        GTEST_ASSERT_LT((H_manual - H_urdf).norm(), tol);
+
+        // Verify the bias forces
+        const DVec<double> C_manual = this->manual_model.getBiasForceVector();
+        const DVec<double> C_urdf = this->urdf_model.getBiasForceVector();
+        GTEST_ASSERT_LT((C_manual - C_urdf).norm(), tol);
+
+        // Verify the forward dynamics
+        const DVec<double> tau = DVec<double>::Random(this->manual_model.getNumDegreesOfFreedom());
+        const DVec<double> ydd_manual = this->manual_model.forwardDynamics(tau);
+        const DVec<double> ydd_urdf = this->urdf_model.forwardDynamics(tau);
+        GTEST_ASSERT_LT((ydd_manual - ydd_urdf).norm(), tol);
+
+        // Verify the inverse dynamics
+        const DVec<double> ydd = DVec<double>::Random(this->manual_model.getNumDegreesOfFreedom());
+        const DVec<double> tau_manual = this->manual_model.inverseDynamics(ydd);
+        const DVec<double> tau_urdf = this->urdf_model.inverseDynamics(ydd);
+        GTEST_ASSERT_LT((tau_manual - tau_urdf).norm(), tol);
     }
 }
