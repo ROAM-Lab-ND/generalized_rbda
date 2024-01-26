@@ -66,7 +66,7 @@ namespace grbda
         // TODO(@MatthewChignoli): This is kind of a hack, but I think we should have a special exception for when the cluster has one link, a revolute joint, and not constraint joints
         if (cluster->links.size() == 1 && cluster->constraints.size() == 0)
         {
-            std::shared_ptr<urdf::Link> link = cluster->links.front();
+            UrdfLinkPtr link = cluster->links.front();
             appendSimpleRevoluteJointFromUrdfCluster(link);
             return;
         }
@@ -76,50 +76,12 @@ namespace grbda
         }
 
         // TODO(@MatthewChignoli): to avoid all of this confusion, maybe the body should just contain the parent joint?
-        // bodies_in_current_cluster_.clear();
-        std::vector<JointPtr<Scalar>> joints;
+        std::vector<JointPtr<Scalar>> joints_in_current_cluster;
         std::vector<bool> independent_coordinates;
         std::vector<Body<SX>> bodies_sx;
         std::map<std::string, JointPtr<SX>> joints_sx;
-
-        std::vector<std::shared_ptr<urdf::Link>> unregistered_links = cluster->links;
-        while (unregistered_links.size() > 0)
-        {
-            std::vector<std::shared_ptr<urdf::Link>> unregistered_links_next;
-            for (std::shared_ptr<urdf::Link> link : unregistered_links)
-            {
-                // If the parent of this link is not registered, then we will try again
-                // next iteration
-                const std::string parent_name = link->getParent()->name;
-                if (body_name_to_body_index_.find(parent_name) == body_name_to_body_index_.end())
-                {
-                    unregistered_links_next.push_back(link);
-                    continue;
-                }
-
-                // Register body
-                std::string name = link->name;
-                SpatialInertia<Scalar> inertia(link->inertial);
-                SpatialInertia<SX> inertia_sx(link->inertial);
-
-                urdf::Pose pose = link->parent_joint->parent_to_joint_origin_transform;
-                spatial::Transform<Scalar> xtree(pose);
-                spatial::Transform<SX> xtree_sx(pose);
-
-                registerBody(name, inertia, parent_name, xtree);
-                bodies_sx.emplace_back(bodies_in_current_cluster_.back().index_, name, bodies_in_current_cluster_.back().parent_index_, xtree_sx, inertia_sx, bodies_in_current_cluster_.back().sub_index_within_cluster_, bodies_in_current_cluster_.back().cluster_ancestor_index_, bodies_in_current_cluster_.back().cluster_ancestor_sub_index_within_cluster_);
-
-                // Create joint for registered body
-                ori::CoordinateAxis axis = ori::urdfAxisToCoordinateAxis(link->parent_joint->axis);
-                joints.push_back(std::make_shared<Joints::Revolute<Scalar>>(axis));
-                joints_sx.insert({name, std::make_shared<Joints::Revolute<SX>>(axis)});
-
-                // Extract independent coordinates from joint
-                independent_coordinates.push_back(link->parent_joint->independent);
-            }
-
-            unregistered_links = unregistered_links_next;
-        }
+        registerBodiesInUrdfCluster(cluster, joints_in_current_cluster, independent_coordinates,
+                                    bodies_sx, joints_sx);
 
         std::function<DVec<SX>(const JointCoordinate<SX> &)> phi;
         std::shared_ptr<LoopConstraint::Base<Scalar>> loop_constraint;
@@ -127,7 +89,7 @@ namespace grbda
         {
             // TODO(@MatthewChignoli): Detect the axis of the constraint. For now we are making the very limiting assumption that all joints must be continuous
             urdf::Vector3 constraint_axis = constraint->allLinks().front()->parent_joint->axis;
-            for (std::shared_ptr<urdf::Link> link : constraint->allLinks())
+            for (UrdfLinkPtr link : constraint->allLinks())
             {
                 if (link->parent_joint->type != urdf::Joint::CONTINUOUS)
                     throw std::runtime_error("All joints in a constraint must be revolute");
@@ -143,12 +105,12 @@ namespace grbda
 
             // Get subtrees for the constraint
             std::vector<Body<SX>> nca_to_predecessor_subtree, nca_to_successor_subtree;
-            for (std::shared_ptr<urdf::Link> link : constraint->nca_to_predecessor_subtree)
+            for (UrdfLinkPtr link : constraint->nca_to_predecessor_subtree)
             {
                 const auto &body_i = body(link->name);
                 nca_to_predecessor_subtree.push_back(bodies_sx[body_i.sub_index_within_cluster_]);
             }
-            for (std::shared_ptr<urdf::Link> link : constraint->nca_to_successor_subtree)
+            for (UrdfLinkPtr link : constraint->nca_to_successor_subtree)
             {
                 const auto &body_i = body(link->name);
                 nca_to_successor_subtree.push_back(bodies_sx[body_i.sub_index_within_cluster_]);
@@ -222,7 +184,7 @@ namespace grbda
 
         std::string cluster_name = "cluster-" + std::to_string(cluster_nodes_.size());
         appendRegisteredBodiesAsCluster<ClusterJoints::Generic<Scalar>>(
-            cluster_name, bodies_in_current_cluster_, joints, loop_constraint);
+            cluster_name, bodies_in_current_cluster_, joints_in_current_cluster, loop_constraint);
     }
 
     template <typename Scalar>
@@ -239,6 +201,54 @@ namespace grbda
         ori::CoordinateAxis axis = ori::urdfAxisToCoordinateAxis(link->parent_joint->axis);
         using Revolute = ClusterJoints::Revolute<Scalar>;
         appendBody<Revolute>(name, inertia, parent_name, xtree, axis);
+    }
+
+    template <typename Scalar>
+    void ClusterTreeModel<Scalar>::registerBodiesInUrdfCluster(
+        UrdfClusterPtr cluster,
+        std::vector<JointPtr<Scalar>> &joints,
+        std::vector<bool> &independent_coordinates,
+        std::vector<Body<SX>> &bodies_sx,
+        std::map<std::string, JointPtr<SX>> &joints_sx)
+    {
+        std::vector<UrdfLinkPtr> unregistered_links = cluster->links;
+        while (unregistered_links.size() > 0)
+        {
+            std::vector<UrdfLinkPtr> unregistered_links_next;
+            for (UrdfLinkPtr link : unregistered_links)
+            {
+                // If the parent of this link is not registered, then we will try again
+                // next iteration
+                const std::string parent_name = link->getParent()->name;
+                if (body_name_to_body_index_.find(parent_name) == body_name_to_body_index_.end())
+                {
+                    unregistered_links_next.push_back(link);
+                    continue;
+                }
+
+                // Register body
+                std::string name = link->name;
+                SpatialInertia<Scalar> inertia(link->inertial);
+                SpatialInertia<SX> inertia_sx(link->inertial);
+
+                urdf::Pose pose = link->parent_joint->parent_to_joint_origin_transform;
+                spatial::Transform<Scalar> xtree(pose);
+                spatial::Transform<SX> xtree_sx(pose);
+
+                registerBody(name, inertia, parent_name, xtree);
+                bodies_sx.emplace_back(bodies_in_current_cluster_.back().index_, name, bodies_in_current_cluster_.back().parent_index_, xtree_sx, inertia_sx, bodies_in_current_cluster_.back().sub_index_within_cluster_, bodies_in_current_cluster_.back().cluster_ancestor_index_, bodies_in_current_cluster_.back().cluster_ancestor_sub_index_within_cluster_);
+
+                // Create joint for registered body
+                ori::CoordinateAxis axis = ori::urdfAxisToCoordinateAxis(link->parent_joint->axis);
+                joints.push_back(std::make_shared<Joints::Revolute<Scalar>>(axis));
+                joints_sx.insert({name, std::make_shared<Joints::Revolute<SX>>(axis)});
+
+                // Extract independent coordinates from joint
+                independent_coordinates.push_back(link->parent_joint->independent);
+            }
+
+            unregistered_links = unregistered_links_next;
+        }
     }
 
     template <typename Scalar>

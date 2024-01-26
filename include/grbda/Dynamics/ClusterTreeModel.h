@@ -154,6 +154,11 @@ namespace grbda
         void appendClustersViaDFS(std::map<UrdfClusterPtr, bool> &visited, UrdfClusterPtr cluster);
         void appendClusterFromUrdfCluster(UrdfClusterPtr cluster);
         void appendSimpleRevoluteJointFromUrdfCluster(UrdfLinkPtr link);
+        void registerBodiesInUrdfCluster(UrdfClusterPtr cluster,
+                                         std::vector<JointPtr<Scalar>>& joints,
+                                         std::vector<bool>& independent_coordinates,
+                                         std::vector<Body<SX>>& bodies_sx,
+                                         std::map<std::string, JointPtr<SX>>& joints_sx);
 
         // TODO(@MatthewChignoli): Should these actually be static functions in the ClusterJoint folder?
         std::function<DVec<SX>(const JointCoordinate<SX> &)> implicitPositionConstraint(
