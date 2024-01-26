@@ -18,6 +18,7 @@ namespace grbda
     using ClusterTreeNodePtr = std::shared_ptr<ClusterTreeNode<Scalar>>;
 
     using UrdfClusterPtr = std::shared_ptr<urdf::Cluster>;
+    using UrdfLinkPtr = std::shared_ptr<urdf::Link>;
 
     /*!
      * Class to represent a floating base rigid body model with rotors and ground contacts.
@@ -152,6 +153,7 @@ namespace grbda
 
         void appendClustersViaDFS(std::map<UrdfClusterPtr, bool> &visited, UrdfClusterPtr cluster);
         void appendClusterFromUrdfCluster(UrdfClusterPtr cluster);
+        void appendSimpleRevoluteJointFromUrdfCluster(UrdfLinkPtr link);
 
         // TODO(@MatthewChignoli): Should these actually be static functions in the ClusterJoint folder?
         std::function<DVec<SX>(const JointCoordinate<SX> &)> implicitPositionConstraint(

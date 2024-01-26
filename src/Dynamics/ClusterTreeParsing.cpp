@@ -67,18 +67,7 @@ namespace grbda
         if (cluster->links.size() == 1 && cluster->constraints.size() == 0)
         {
             std::shared_ptr<urdf::Link> link = cluster->links.front();
-
-            if (link->parent_joint->type != urdf::Joint::CONTINUOUS)
-            {
-                throw std::runtime_error("The only joint in a cluster with one link must be revolute");
-            }
-            std::string name = link->name;
-            std::string parent_name = link->getParent()->name;
-            SpatialInertia<Scalar> inertia(link->inertial);
-            spatial::Transform<Scalar> xtree(link->parent_joint->parent_to_joint_origin_transform);
-            ori::CoordinateAxis axis = ori::urdfAxisToCoordinateAxis(link->parent_joint->axis);
-            using Revolute = ClusterJoints::Revolute<Scalar>;
-            appendBody<Revolute>(name, inertia, parent_name, xtree, axis);
+            appendSimpleRevoluteJointFromUrdfCluster(link);
             return;
         }
         else if (cluster->constraints.size() != 1)
@@ -87,7 +76,7 @@ namespace grbda
         }
 
         // TODO(@MatthewChignoli): to avoid all of this confusion, maybe the body should just contain the parent joint?
-        std::vector<Body<Scalar>> bodies;
+        // bodies_in_current_cluster_.clear();
         std::vector<JointPtr<Scalar>> joints;
         std::vector<bool> independent_coordinates;
         std::vector<Body<SX>> bodies_sx;
@@ -117,8 +106,8 @@ namespace grbda
                 spatial::Transform<Scalar> xtree(pose);
                 spatial::Transform<SX> xtree_sx(pose);
 
-                bodies.push_back(registerBody(name, inertia, parent_name, xtree));
-                bodies_sx.emplace_back(bodies.back().index_, name, bodies.back().parent_index_, xtree_sx, inertia_sx, bodies.back().sub_index_within_cluster_, bodies.back().cluster_ancestor_index_, bodies.back().cluster_ancestor_sub_index_within_cluster_);
+                registerBody(name, inertia, parent_name, xtree);
+                bodies_sx.emplace_back(bodies_in_current_cluster_.back().index_, name, bodies_in_current_cluster_.back().parent_index_, xtree_sx, inertia_sx, bodies_in_current_cluster_.back().sub_index_within_cluster_, bodies_in_current_cluster_.back().cluster_ancestor_index_, bodies_in_current_cluster_.back().cluster_ancestor_sub_index_within_cluster_);
 
                 // Create joint for registered body
                 ori::CoordinateAxis axis = ori::urdfAxisToCoordinateAxis(link->parent_joint->axis);
@@ -233,7 +222,23 @@ namespace grbda
 
         std::string cluster_name = "cluster-" + std::to_string(cluster_nodes_.size());
         appendRegisteredBodiesAsCluster<ClusterJoints::Generic<Scalar>>(
-            cluster_name, bodies, joints, loop_constraint);
+            cluster_name, bodies_in_current_cluster_, joints, loop_constraint);
+    }
+
+    template <typename Scalar>
+    void ClusterTreeModel<Scalar>::appendSimpleRevoluteJointFromUrdfCluster(UrdfLinkPtr link)
+    {
+        if (link->parent_joint->type != urdf::Joint::CONTINUOUS)
+        {
+            throw std::runtime_error("The only joint in a cluster with one link must be revolute");
+        }
+        std::string name = link->name;
+        std::string parent_name = link->getParent()->name;
+        SpatialInertia<Scalar> inertia(link->inertial);
+        spatial::Transform<Scalar> xtree(link->parent_joint->parent_to_joint_origin_transform);
+        ori::CoordinateAxis axis = ori::urdfAxisToCoordinateAxis(link->parent_joint->axis);
+        using Revolute = ClusterJoints::Revolute<Scalar>;
+        appendBody<Revolute>(name, inertia, parent_name, xtree, axis);
     }
 
     template <typename Scalar>
