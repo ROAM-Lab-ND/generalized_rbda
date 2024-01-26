@@ -19,6 +19,16 @@ namespace grbda
 
     using UrdfClusterPtr = std::shared_ptr<urdf::Cluster>;
     using UrdfLinkPtr = std::shared_ptr<urdf::Link>;
+    using UrdfConstraintPtr = std::shared_ptr<urdf::Constraint>;
+
+    // TODO(@MatthewChignoli): Where to put this struct
+    struct ImplicitConstraintCapture
+    {
+        std::vector<Body<casadi::SX>> nca_to_predecessor_subtree;
+        std::vector<Body<casadi::SX>> nca_to_successor_subtree;
+        urdf::Pose predecessor_to_constraint_origin_transform;
+        urdf::Pose successor_to_constraint_origin_transform;
+    };
 
     /*!
      * Class to represent a floating base rigid body model with rotors and ground contacts.
@@ -162,16 +172,12 @@ namespace grbda
 
         // TODO(@MatthewChignoli): Should these actually be static functions in the ClusterJoint folder?
         std::function<DVec<SX>(const JointCoordinate<SX> &)> implicitPositionConstraint(
-            std::vector<Body<SX>> &nca_to_predecessor_subtree,
-            std::vector<Body<SX>> &nca_to_successor_subtree,
-            std::shared_ptr<const urdf::Constraint> constraint,
+            std::vector<ImplicitConstraintCapture> &captures,
             std::map<std::string, JointPtr<SX>> joints_sx,
             urdf::Vector3 constraint_axis);
 
         std::function<DVec<SX>(const JointCoordinate<SX> &)> implicitRotationConstraint(
-            std::vector<Body<SX>> &nca_to_predecessor_subtree,
-            std::vector<Body<SX>> &nca_to_successor_subtree,
-            std::shared_ptr<const urdf::Constraint> constraint,
+            std::vector<ImplicitConstraintCapture> &captures,
             std::map<std::string, JointPtr<SX>> joints_sx,
             urdf::Vector3 constraint_axis);
 
