@@ -14,6 +14,7 @@ GTEST_TEST(UrdfParser, parseFile)
     urdf_files.push_back("/home/matt/repos/URDF-Parser/revolute_rotor_chain.urdf");
     // urdf_files.push_back("/home/matt/repos/URDF-Parser/mini_cheetah_leg.urdf");
     urdf_files.push_back("/home/matt/repos/URDF-Parser/mini_cheetah.urdf");
+    // urdf_files.push_back("/home/matt/repos/URDF-Parser/mit_humanoid_leg.urdf");
 
     for (const std::string &urdf_file : urdf_files)
     {
