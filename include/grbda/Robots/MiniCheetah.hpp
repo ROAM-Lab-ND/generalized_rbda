@@ -92,13 +92,13 @@ namespace grbda
             switch (side)
             {
             case 0:
-                return Vec3<Scalar>(v[0], -v[1], v[2]);
-            case 1:
                 return Vec3<Scalar>(v[0], v[1], v[2]);
+            case 1:
+                return Vec3<Scalar>(v[0], -v[1], v[2]);
             case 2:
-                return Vec3<Scalar>(-v[0], -v[1], v[2]);
-            case 3:
                 return Vec3<Scalar>(-v[0], v[1], v[2]);
+            case 3:
+                return Vec3<Scalar>(-v[0], -v[1], v[2]);
             default:
                 throw std::runtime_error("Invalid leg id!");
             }
@@ -109,13 +109,13 @@ namespace grbda
             switch (side)
             {
             case 0:
-                return "FR_" + s;
-            case 1:
                 return "FL_" + s;
+            case 1:
+                return "FR_" + s;
             case 2:
-                return "HR_" + s;
-            case 3:
                 return "HL_" + s;
+            case 3:
+                return "HR_" + s;
             default:
                 throw std::runtime_error("Invalid leg id!");
             }

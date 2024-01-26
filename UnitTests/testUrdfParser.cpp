@@ -12,9 +12,8 @@ GTEST_TEST(UrdfParser, parseFile)
     urdf_files.push_back("/home/matt/repos/URDF-Parser/six_bar.urdf");
     urdf_files.push_back("/home/matt/repos/URDF-Parser/planar_leg_linkage.urdf");
     urdf_files.push_back("/home/matt/repos/URDF-Parser/revolute_rotor_chain.urdf");
-
-    // TODO(@MatthewChignoli): Add these later
     // urdf_files.push_back("/home/matt/repos/URDF-Parser/mini_cheetah_leg.urdf");
+    urdf_files.push_back("/home/matt/repos/URDF-Parser/mini_cheetah_test.urdf");
     // urdf_files.push_back("/home/matt/repos/URDF-Parser/mini_cheetah.urdf");
 
     for (const std::string &urdf_file : urdf_files)
@@ -29,41 +28,46 @@ GTEST_TEST(UrdfParser, parseFile)
 
 using RobotPtr = std::shared_ptr<Robot<double>>;
 
-std::vector<std::pair<std::string, RobotPtr>> GetTestRobots()
+struct URDFvsManualTestData
 {
-    std::vector<std::pair<std::string, RobotPtr>> robots;
-    robots.push_back(std::make_pair("/home/matt/repos/URDF-Parser/planar_leg_linkage.urdf",
-                                    std::make_shared<PlanarLegLinkage<double>>()));
-    robots.push_back(std::make_pair("/home/matt/repos/URDF-Parser/revolute_rotor_chain.urdf",
-                                    std::make_shared<RevoluteChainWithRotor<3, double>>(false)));
-    return robots;
+    std::string urdf_file;
+    RobotPtr robot;
+    bool floating_base;  
+};
+
+std::vector<URDFvsManualTestData> GetTestRobots()
+{
+    std::vector<URDFvsManualTestData> test_data;
+    test_data.push_back({"/home/matt/repos/URDF-Parser/planar_leg_linkage.urdf",
+                         std::make_shared<PlanarLegLinkage<double>>(),
+                         false});
+    test_data.push_back({"/home/matt/repos/URDF-Parser/revolute_rotor_chain.urdf",
+                         std::make_shared<RevoluteChainWithRotor<3, double>>(false),
+                         false});
+    test_data.push_back({"/home/matt/repos/URDF-Parser/mini_cheetah_test.urdf",
+                         std::make_shared<MiniCheetah<double>>(),
+                         true});
+    return test_data;
 }
 
-class URDFvsManualTests : public ::testing::TestWithParam<std::pair<std::string, RobotPtr>>
+class URDFvsManualTests : public ::testing::TestWithParam<URDFvsManualTestData>
 {
 protected:
     URDFvsManualTests()
     {
-        urdf_model.buildModelFromURDF(GetParam().first, false);
-        manual_model = GetParam().second->buildClusterTreeModel();
+        manual_model = GetParam().robot->buildClusterTreeModel();
+        urdf_model.buildModelFromURDF(GetParam().urdf_file, GetParam().floating_base);
         urdf_model.setGravity(manual_model.getGravity().tail<3>());
     }
 
     void initializeRandomStates()
     {
-        model_state.clear();
-        DVec<double> spanning_joint_pos = DVec<double>::Zero(0);
-        DVec<double> spanning_joint_vel = DVec<double>::Zero(0);
+        ModelState<double> model_state;
         for (const auto &cluster : manual_model.clusters())
         {
             // TODO(@MatthewChignoli): The gneric cluster should override the randomJointState function. Maybe that means we need different generic clusters for implicit vs. explicit?
             JointState<> joint_state = cluster->joint_->randomJointState();
             JointState<> spanning_joint_state = cluster->joint_->toSpanningTreeState(joint_state);
-
-            spanning_joint_pos = appendEigenVector(spanning_joint_pos,
-                                                   spanning_joint_state.position);
-            spanning_joint_vel = appendEigenVector(spanning_joint_vel,
-                                                   spanning_joint_state.velocity);
             model_state.push_back(joint_state);
         }
 
@@ -73,8 +77,6 @@ protected:
 
     ClusterTreeModel<double> urdf_model;
     ClusterTreeModel<double> manual_model;
-
-    ModelState<double> model_state;
 };
 
 INSTANTIATE_TEST_SUITE_P(Robots, URDFvsManualTests, ::testing::ValuesIn(GetTestRobots()));
