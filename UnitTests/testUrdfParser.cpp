@@ -13,8 +13,7 @@ GTEST_TEST(UrdfParser, parseFile)
     urdf_files.push_back("/home/matt/repos/URDF-Parser/planar_leg_linkage.urdf");
     urdf_files.push_back("/home/matt/repos/URDF-Parser/revolute_rotor_chain.urdf");
     // urdf_files.push_back("/home/matt/repos/URDF-Parser/mini_cheetah_leg.urdf");
-    urdf_files.push_back("/home/matt/repos/URDF-Parser/mini_cheetah_test.urdf");
-    // urdf_files.push_back("/home/matt/repos/URDF-Parser/mini_cheetah.urdf");
+    urdf_files.push_back("/home/matt/repos/URDF-Parser/mini_cheetah.urdf");
 
     for (const std::string &urdf_file : urdf_files)
     {
@@ -44,7 +43,7 @@ std::vector<URDFvsManualTestData> GetTestRobots()
     test_data.push_back({"/home/matt/repos/URDF-Parser/revolute_rotor_chain.urdf",
                          std::make_shared<RevoluteChainWithRotor<3, double>>(false),
                          false});
-    test_data.push_back({"/home/matt/repos/URDF-Parser/mini_cheetah_test.urdf",
+    test_data.push_back({"/home/matt/repos/URDF-Parser/mini_cheetah.urdf",
                          std::make_shared<MiniCheetah<double>>(),
                          true});
     return test_data;
