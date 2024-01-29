@@ -70,10 +70,6 @@ namespace grbda
             appendSimpleRevoluteJointFromUrdfCluster(link);
             return;
         }
-        else if (cluster->constraints.size() != 1)
-        {
-            throw std::runtime_error("Clusters that do not have exactly one constraint joint must contain a single link with a revolute joint");
-        }
 
         // TODO(@MatthewChignoli): to avoid all of this confusion, maybe the body should just contain the parent joint?
         std::vector<JointPtr<Scalar>> joints_in_current_cluster;
