@@ -25,7 +25,7 @@ namespace grbda
         Vec3<Scalar> torsoDims(_bodyLength, _bodyWidth, _bodyHeight);
         model.appendContactBox(torso_name, torsoDims);
 
-        int sideSign = 1; // start on the left side
+        int sideSign = -1;
         for (int legID = 0; legID < 4; legID++)
         {
             // Ab/Ad joint
