@@ -66,7 +66,7 @@ namespace grbda
         // TODO(@MatthewChignoli): This is kind of a hack, but I think we should have a special exception for when the cluster has one link, a revolute joint, and not constraint joints
         if (cluster->links.size() == 1 && cluster->constraints.size() == 0)
         {
-            UrdfLinkPtr link = cluster->links.front();
+            UrdfLinkPtr link = cluster->links.begin()->second;
             appendSimpleRevoluteJointFromUrdfCluster(link);
             return;
         }
@@ -182,10 +182,25 @@ namespace grbda
                 }
             }
 
+            int ind_cnt = 0, dep_cnt = 0;
+            DMat<Scalar> coordinate_jacobian = DMat<Scalar>::Zero(K.cols(), K.cols());
+            for (int i = 0; i < K.cols(); i++)
+            {
+                if (independent_coordinates[i])
+                {
+                    coordinate_jacobian(i, ind_cnt++) = 1;
+                }
+                else
+                {
+                    coordinate_jacobian(i, Ki.cols() + dep_cnt++) = 1;
+                }
+            }
+
             DMat<Scalar> G(K.cols(), Ki.cols());
             typename CorrectMatrixInverseType<Scalar>::type Kd_inv(Kd);
             G.topRows(Ki.cols()).setIdentity();
             G.bottomRows(Kd.cols()) = -Kd_inv.solve(Ki);
+            G = coordinate_jacobian * G;
 
             loop_constraint = std::make_shared<LoopConstraint::Static<Scalar>>(G, K);
         }
@@ -223,18 +238,20 @@ namespace grbda
         std::vector<Body<SX>> &bodies_sx,
         std::map<std::string, JointPtr<SX>> &joints_sx)
     {
-        std::vector<UrdfLinkPtr> unregistered_links = cluster->links;
+        std::map<int, UrdfLinkPtr> unregistered_links = cluster->links;
         while (unregistered_links.size() > 0)
         {
-            std::vector<UrdfLinkPtr> unregistered_links_next;
-            for (UrdfLinkPtr link : unregistered_links)
+            std::map<int, UrdfLinkPtr> unregistered_links_next;
+            for (const auto& pair : unregistered_links)
             {
+                UrdfLinkPtr link = pair.second;
+
                 // If the parent of this link is not registered, then we will try again
                 // next iteration
                 const std::string parent_name = link->getParent()->name;
                 if (body_name_to_body_index_.find(parent_name) == body_name_to_body_index_.end())
                 {
-                    unregistered_links_next.push_back(link);
+                    unregistered_links_next.insert({pair.first, link});
                     continue;
                 }
 
@@ -385,22 +402,18 @@ namespace grbda
                 }
 
                 // Through predecessor
-                int jidx = 0;
                 SX predecessor_angle_rel_nca = 0;
                 for (const Body<SX> &body : capture.nca_to_predecessor_subtree)
                 {
-                    predecessor_angle_rel_nca += q(jidx);
-                    JointPtr<SX> joint = joints_sx.at(body.name_);
-                    jidx += joint->numPositions();
+                    // TODO(@MatthewChignoli): How to make sure we are getting the right parts of q?
+                    predecessor_angle_rel_nca += q(body.sub_index_within_cluster_);
                 }
 
                 // Through successor
                 SX successor_angle_rel_nca = 0;
                 for (const Body<SX> &body : capture.nca_to_successor_subtree)
                 {
-                    successor_angle_rel_nca += q(jidx);
-                    JointPtr<SX> joint = joints_sx.at(body.name_);
-                    jidx += joint->numPositions();
+                    successor_angle_rel_nca += q(body.sub_index_within_cluster_);
                 }
 
                 phi_out(i) = predecessor_radius * predecessor_angle_rel_nca -

@@ -47,6 +47,9 @@ std::vector<URDFvsManualTestData> GetTestRobots()
     test_data.push_back({"/home/matt/repos/URDF-Parser/mini_cheetah.urdf",
                          std::make_shared<MiniCheetah<double>>(),
                          true});
+    test_data.push_back({"/home/matt/repos/URDF-Parser/mit_humanoid_leg.urdf",
+                         std::make_shared<MIT_Humanoid_Leg<double>>(),
+                         false});
     return test_data;
 }
 
@@ -67,7 +70,7 @@ protected:
         {
             // TODO(@MatthewChignoli): The gneric cluster should override the randomJointState function. Maybe that means we need different generic clusters for implicit vs. explicit?
             JointState<> joint_state = cluster->joint_->randomJointState();
-            JointState<> spanning_joint_state = cluster->joint_->toSpanningTreeState(joint_state);
+            // JointState<> spanning_joint_state = cluster->joint_->toSpanningTreeState(joint_state);
             model_state.push_back(joint_state);
         }
 
