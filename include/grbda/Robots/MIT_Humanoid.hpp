@@ -211,11 +211,10 @@ namespace grbda
         {
             switch (side)
             {
-            case -1: // right
             case 0:  // right
-                return I.flipAlongAxis(ori::CoordinateAxis::Y);
-            case 1: // left
                 return I;
+            case 1: // left
+                return I.flipAlongAxis(ori::CoordinateAxis::Y);
             default:
                 throw std::runtime_error("Invalid side id!");
             }

@@ -5,22 +5,28 @@
 
 using namespace grbda;
 
+struct URDFParserTestData
+{
+    std::string urdf_file;
+    bool floating_base;  
+};
+
 GTEST_TEST(UrdfParser, parseFile)
 {
-    std::vector<std::string> urdf_files;
-    urdf_files.push_back("/home/matt/repos/URDF-Parser/four_bar.urdf");
-    urdf_files.push_back("/home/matt/repos/URDF-Parser/six_bar.urdf");
-    urdf_files.push_back("/home/matt/repos/URDF-Parser/planar_leg_linkage.urdf");
-    urdf_files.push_back("/home/matt/repos/URDF-Parser/revolute_rotor_chain.urdf");
-    // urdf_files.push_back("/home/matt/repos/URDF-Parser/mini_cheetah_leg.urdf");
-    urdf_files.push_back("/home/matt/repos/URDF-Parser/mini_cheetah.urdf");
-    urdf_files.push_back("/home/matt/repos/URDF-Parser/mit_humanoid_leg.urdf");
+    std::vector<URDFParserTestData> test_data;
+    test_data.push_back({"/home/matt/repos/URDF-Parser/four_bar.urdf", false});
+    test_data.push_back({"/home/matt/repos/URDF-Parser/six_bar.urdf", false});
+    test_data.push_back({"/home/matt/repos/URDF-Parser/revolute_rotor_chain.urdf", false});
+    test_data.push_back({"/home/matt/repos/URDF-Parser/planar_leg_linkage.urdf", false});
+    test_data.push_back({"/home/matt/repos/URDF-Parser/mini_cheetah.urdf", true});
+    test_data.push_back({"/home/matt/repos/URDF-Parser/mit_humanoid_leg.urdf", false});
+    test_data.push_back({"/home/matt/repos/URDF-Parser/mit_humanoid.urdf", true});
 
-    for (const std::string &urdf_file : urdf_files)
+    for (const URDFParserTestData &sample : test_data)
     {
         ClusterTreeModel<double> cluster_model;
-        cluster_model.buildModelFromURDF(urdf_file, false);
-        std::cout << "\n\nURDF file: " << urdf_file << std::endl;
+        cluster_model.buildModelFromURDF(sample.urdf_file, sample.floating_base);
+        std::cout << "\n\nURDF file: " << sample.urdf_file << std::endl;
         cluster_model.print();
         GTEST_ASSERT_GT(cluster_model.bodies().size(), 0);
     }
@@ -50,6 +56,9 @@ std::vector<URDFvsManualTestData> GetTestRobots()
     test_data.push_back({"/home/matt/repos/URDF-Parser/mit_humanoid_leg.urdf",
                          std::make_shared<MIT_Humanoid_Leg<double>>(),
                          false});
+    test_data.push_back({"/home/matt/repos/URDF-Parser/mit_humanoid.urdf",
+                         std::make_shared<MIT_Humanoid<double>>(),
+                         true});
     return test_data;
 }
 
