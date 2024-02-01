@@ -37,7 +37,6 @@ namespace grbda
     struct RollingConstraintCapture : public ConstraintCapture
     {
         double ratio;
-        int polarity;
     };
 
     /*!

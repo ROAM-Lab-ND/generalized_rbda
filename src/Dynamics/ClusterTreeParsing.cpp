@@ -137,7 +137,6 @@ namespace grbda
                 capture.nca_to_predecessor_subtree = nca_to_predecessor_subtree;
                 capture.nca_to_successor_subtree = nca_to_successor_subtree;
                 capture.ratio = *constraint->ratio;
-                capture.polarity = *constraint->polarity;
                 rolling_constraint_captures.push_back(capture);
             }
             else
