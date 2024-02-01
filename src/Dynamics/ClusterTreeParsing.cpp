@@ -106,7 +106,8 @@ namespace grbda
 
         // For each constraint, collect the captures that will be supplied to the lambda function
         // encoding the constraint
-        std::vector<ImplicitConstraintCapture> implicit_constraint_captures;
+        std::vector<PositionConstraintCapture> position_constraint_captures;
+        std::vector<RollingConstraintCapture> rolling_constraint_captures;
         for (UrdfConstraintPtr constraint : cluster->constraints)
         {
             std::vector<Body<SX>> nca_to_predecessor_subtree, nca_to_successor_subtree;
@@ -121,12 +122,28 @@ namespace grbda
                 nca_to_successor_subtree.push_back(bodies_sx[body_i.sub_index_within_cluster_]);
             }
 
-            ImplicitConstraintCapture capture;
-            capture.nca_to_predecessor_subtree = nca_to_predecessor_subtree;
-            capture.nca_to_successor_subtree = nca_to_successor_subtree;
-            capture.predecessor_to_constraint_origin_transform = constraint->predecessor_to_constraint_origin_transform;
-            capture.successor_to_constraint_origin_transform = constraint->successor_to_constraint_origin_transform;
-            implicit_constraint_captures.push_back(capture);
+            if (constraint_type == urdf::Constraint::POSITION)
+            {
+                PositionConstraintCapture capture;
+                capture.nca_to_predecessor_subtree = nca_to_predecessor_subtree;
+                capture.nca_to_successor_subtree = nca_to_successor_subtree;
+                capture.predecessor_to_constraint_origin_transform = *constraint->predecessor_to_constraint_origin_transform;
+                capture.successor_to_constraint_origin_transform = *constraint->successor_to_constraint_origin_transform;
+                position_constraint_captures.push_back(capture);
+            }
+            else if (constraint_type == urdf::Constraint::ROLLING)
+            {
+                RollingConstraintCapture capture;
+                capture.nca_to_predecessor_subtree = nca_to_predecessor_subtree;
+                capture.nca_to_successor_subtree = nca_to_successor_subtree;
+                capture.ratio = *constraint->ratio;
+                capture.polarity = *constraint->polarity;
+                rolling_constraint_captures.push_back(capture);
+            }
+            else
+            {
+                throw std::runtime_error("Constraint type not supported");
+            }
         }
 
         // TODO(@MatthewChignoli): Would like to do some more sophisticated detection and specialization here. For example, if the jacobian of phi is constant, then we can use an explicit constraint
@@ -135,7 +152,7 @@ namespace grbda
         std::shared_ptr<LoopConstraint::Base<Scalar>> loop_constraint;
         if (constraint_type == urdf::Constraint::POSITION)
         {
-            phi = implicitPositionConstraint(implicit_constraint_captures,
+            phi = implicitPositionConstraint(position_constraint_captures,
                                              joints_sx, constraint_axis);
 
             using LoopConstraintType = LoopConstraint::GenericImplicit<Scalar>;
@@ -144,7 +161,7 @@ namespace grbda
         else if (constraint_type == urdf::Constraint::ROLLING)
         {
             // TODO(@MatthewChignoli): This seems like a very long way to do this. I think it can be streamlined. Yeah this desparately needs to be refactored
-            phi = implicitRotationConstraint(implicit_constraint_captures,
+            phi = implicitRotationConstraint(rolling_constraint_captures,
                                              joints_sx, constraint_axis);
 
             // TODO(@MatthewChignoli): Assumes all joints are 1 DOF
@@ -242,7 +259,7 @@ namespace grbda
         while (unregistered_links.size() > 0)
         {
             std::map<int, UrdfLinkPtr> unregistered_links_next;
-            for (const auto& pair : unregistered_links)
+            for (const auto &pair : unregistered_links)
             {
                 UrdfLinkPtr link = pair.second;
 
@@ -283,7 +300,7 @@ namespace grbda
     template <typename Scalar>
     std::function<DVec<casadi::SX>(const JointCoordinate<casadi::SX> &)>
     ClusterTreeModel<Scalar>::implicitPositionConstraint(
-        std::vector<ImplicitConstraintCapture> &captures,
+        std::vector<PositionConstraintCapture> &captures,
         std::map<std::string, JointPtr<SX>> joints_sx,
         urdf::Vector3 constraint_axis)
     {
@@ -296,7 +313,7 @@ namespace grbda
             DVec<SX> phi_out = DVec<SX>(2 * captures.size());
             for (size_t i = 0; i < captures.size(); i++)
             {
-                const ImplicitConstraintCapture &capture = captures[i];
+                const PositionConstraintCapture &capture = captures[i];
 
                 // Through predecessor
                 Xform X_via_predecessor;
@@ -357,7 +374,7 @@ namespace grbda
     template <typename Scalar>
     std::function<DVec<casadi::SX>(const JointCoordinate<casadi::SX> &)>
     ClusterTreeModel<Scalar>::implicitRotationConstraint(
-        std::vector<ImplicitConstraintCapture> &captures,
+        std::vector<RollingConstraintCapture> &captures,
         std::map<std::string, JointPtr<SX>> joints_sx,
         urdf::Vector3 constraint_axis)
     {
@@ -367,39 +384,7 @@ namespace grbda
             DVec<SX> phi_out = DVec<SX>(captures.size());
             for (size_t i = 0; i < captures.size(); i++)
             {
-                const ImplicitConstraintCapture &capture = captures[i];
-
-                // Compute radii
-                using Vector3 = urdf::Vector3;
-                Vector3 predecessor_offset = capture.predecessor_to_constraint_origin_transform.position;
-                Vector3 successor_offset = capture.successor_to_constraint_origin_transform.position;
-                SX predecessor_radius, successor_radius;
-                // TODO(@MatthewChignoli): Another instance of it not being allowed that the axis is negative?
-                if (constraint_axis.x == 1)
-                {
-                    predecessor_radius = sqrt(predecessor_offset.y * predecessor_offset.y +
-                                              predecessor_offset.z * predecessor_offset.z);
-                    successor_radius = sqrt(successor_offset.y * successor_offset.y +
-                                            successor_offset.z * successor_offset.z);
-                }
-                else if (constraint_axis.y == 1)
-                {
-                    predecessor_radius = sqrt(predecessor_offset.x * predecessor_offset.x +
-                                              predecessor_offset.z * predecessor_offset.z);
-                    successor_radius = sqrt(successor_offset.x * successor_offset.x +
-                                            successor_offset.z * successor_offset.z);
-                }
-                else if (constraint_axis.z == 1)
-                {
-                    predecessor_radius = sqrt(predecessor_offset.x * predecessor_offset.x +
-                                              predecessor_offset.y * predecessor_offset.y);
-                    successor_radius = sqrt(successor_offset.x * successor_offset.x +
-                                            successor_offset.y * successor_offset.y);
-                }
-                else
-                {
-                    throw std::runtime_error("Constraint axis must be one of the standard axes");
-                }
+                const RollingConstraintCapture &capture = captures[i];
 
                 // Through predecessor
                 SX predecessor_angle_rel_nca = 0;
@@ -416,8 +401,8 @@ namespace grbda
                     successor_angle_rel_nca += q(body.sub_index_within_cluster_);
                 }
 
-                phi_out(i) = predecessor_radius * predecessor_angle_rel_nca -
-                             successor_radius * successor_angle_rel_nca;
+                // TODO(@MatthewChignoli): Get rid of polarities and just use the sign of the ratio
+                phi_out(i) = capture.ratio * predecessor_angle_rel_nca - successor_angle_rel_nca;
             }
             return phi_out;
         };

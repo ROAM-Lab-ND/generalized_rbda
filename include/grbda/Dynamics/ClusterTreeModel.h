@@ -22,12 +22,22 @@ namespace grbda
     using UrdfConstraintPtr = std::shared_ptr<urdf::Constraint>;
 
     // TODO(@MatthewChignoli): Where to put this struct
-    struct ImplicitConstraintCapture
+    struct ConstraintCapture
     {
         std::vector<Body<casadi::SX>> nca_to_predecessor_subtree;
         std::vector<Body<casadi::SX>> nca_to_successor_subtree;
+    };
+
+    struct PositionConstraintCapture : public ConstraintCapture
+    {
         urdf::Pose predecessor_to_constraint_origin_transform;
         urdf::Pose successor_to_constraint_origin_transform;
+    };
+
+    struct RollingConstraintCapture : public ConstraintCapture
+    {
+        double ratio;
+        int polarity;
     };
 
     /*!
@@ -172,12 +182,12 @@ namespace grbda
 
         // TODO(@MatthewChignoli): Should these actually be static functions in the ClusterJoint folder?
         std::function<DVec<SX>(const JointCoordinate<SX> &)> implicitPositionConstraint(
-            std::vector<ImplicitConstraintCapture> &captures,
+            std::vector<PositionConstraintCapture> &captures,
             std::map<std::string, JointPtr<SX>> joints_sx,
             urdf::Vector3 constraint_axis);
 
         std::function<DVec<SX>(const JointCoordinate<SX> &)> implicitRotationConstraint(
-            std::vector<ImplicitConstraintCapture> &captures,
+            std::vector<RollingConstraintCapture> &captures,
             std::map<std::string, JointPtr<SX>> joints_sx,
             urdf::Vector3 constraint_axis);
 
