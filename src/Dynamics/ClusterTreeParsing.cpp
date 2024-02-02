@@ -59,7 +59,6 @@ namespace grbda
     }
 
     // TODO(@MatthewChignoli): Eventually add some specialization and detection for common clusters so that we can use sparsity exploiting classes
-    // TODO(@MatthewChignoli): Long function with a lot of nested loops, consider refactoring
     template <typename Scalar>
     void ClusterTreeModel<Scalar>::appendClusterFromUrdfCluster(UrdfClusterPtr cluster)
     {
