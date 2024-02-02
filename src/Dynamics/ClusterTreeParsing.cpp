@@ -300,7 +300,7 @@ namespace grbda
         std::vector<bool> independent_coordinates)
     {
         // TODO(@MatthewChignoli): Assumes all joints are 1 DOF?
-        DMat<Scalar> K = DMat<Scalar>(captures.size(), independent_coordinates.size());
+        DMat<Scalar> K = DMat<Scalar>::Zero(captures.size(), independent_coordinates.size());
         for (size_t i = 0; i < captures.size(); i++)
         {
             const RollingConstraintCapture &capture = captures[i];
@@ -353,9 +353,6 @@ namespace grbda
         G.topRows(Ki.cols()).setIdentity();
         G.bottomRows(Kd.cols()) = -Kd_inv.solve(Ki);
         G = coordinate_jacobian * G;
-
-        std::cout << "\nG:\n" << G << std::endl;
-        std::cout << "K:\n" << K << std::endl;
 
         return {K, G};
     }
