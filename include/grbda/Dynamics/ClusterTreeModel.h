@@ -182,13 +182,11 @@ namespace grbda
         // TODO(@MatthewChignoli): Should these actually be static functions in the ClusterJoint folder?
         std::function<DVec<SX>(const JointCoordinate<SX> &)> implicitPositionConstraint(
             std::vector<PositionConstraintCapture> &captures,
-            std::map<std::string, JointPtr<SX>> joints_sx,
-            urdf::Vector3 constraint_axis);
+            std::map<std::string, JointPtr<SX>> joints_sx);
 
         std::function<DVec<SX>(const JointCoordinate<SX> &)> implicitRotationConstraint(
             std::vector<RollingConstraintCapture> &captures,
-            std::map<std::string, JointPtr<SX>> joints_sx,
-            urdf::Vector3 constraint_axis);
+            std::map<std::string, JointPtr<SX>> joints_sx);
 
         void appendRegisteredBodiesAsCluster(const std::string name,
                                              std::shared_ptr<ClusterJoints::Base<Scalar>> joint);

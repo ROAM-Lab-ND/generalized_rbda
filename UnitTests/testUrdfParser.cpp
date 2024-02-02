@@ -5,6 +5,9 @@
 
 using namespace grbda;
 
+const std::string urdf_directory = "/home/matt/repos/URDF-Parser/";
+// const std::string urdf_directory = "/Users/matthewchignoli/repos/URDF-Parser/";
+
 struct URDFParserTestData
 {
     std::string urdf_file;
@@ -14,13 +17,13 @@ struct URDFParserTestData
 GTEST_TEST(UrdfParser, parseFile)
 {
     std::vector<URDFParserTestData> test_data;
-    test_data.push_back({"/home/matt/repos/URDF-Parser/four_bar.urdf", false});
-    test_data.push_back({"/home/matt/repos/URDF-Parser/six_bar.urdf", false});
-    test_data.push_back({"/home/matt/repos/URDF-Parser/revolute_rotor_chain.urdf", false});
-    test_data.push_back({"/home/matt/repos/URDF-Parser/planar_leg_linkage.urdf", false});
-    test_data.push_back({"/home/matt/repos/URDF-Parser/mini_cheetah.urdf", true});
-    test_data.push_back({"/home/matt/repos/URDF-Parser/mit_humanoid_leg.urdf", false});
-    test_data.push_back({"/home/matt/repos/URDF-Parser/mit_humanoid.urdf", true});
+    test_data.push_back({urdf_directory + "four_bar.urdf", false});
+    test_data.push_back({urdf_directory + "six_bar.urdf", false});
+    test_data.push_back({urdf_directory + "revolute_rotor_chain.urdf", false});
+    test_data.push_back({urdf_directory + "planar_leg_linkage.urdf", false});
+    test_data.push_back({urdf_directory + "mini_cheetah.urdf", true});
+    test_data.push_back({urdf_directory + "mit_humanoid_leg.urdf", false});
+    test_data.push_back({urdf_directory + "mit_humanoid.urdf", true});
 
     for (const URDFParserTestData &sample : test_data)
     {
@@ -44,19 +47,19 @@ struct URDFvsManualTestData
 std::vector<URDFvsManualTestData> GetTestRobots()
 {
     std::vector<URDFvsManualTestData> test_data;
-    test_data.push_back({"/home/matt/repos/URDF-Parser/planar_leg_linkage.urdf",
+    test_data.push_back({urdf_directory + "planar_leg_linkage.urdf",
                          std::make_shared<PlanarLegLinkage<double>>(),
                          false});
-    test_data.push_back({"/home/matt/repos/URDF-Parser/revolute_rotor_chain.urdf",
+    test_data.push_back({urdf_directory + "revolute_rotor_chain.urdf",
                          std::make_shared<RevoluteChainWithRotor<3, double>>(false),
                          false});
-    test_data.push_back({"/home/matt/repos/URDF-Parser/mini_cheetah.urdf",
+    test_data.push_back({urdf_directory + "mini_cheetah.urdf",
                          std::make_shared<MiniCheetah<double>>(),
                          true});
-    test_data.push_back({"/home/matt/repos/URDF-Parser/mit_humanoid_leg.urdf",
+    test_data.push_back({urdf_directory + "mit_humanoid_leg.urdf",
                          std::make_shared<MIT_Humanoid_Leg<double>>(),
                          false});
-    test_data.push_back({"/home/matt/repos/URDF-Parser/mit_humanoid.urdf",
+    test_data.push_back({urdf_directory + "mit_humanoid.urdf",
                          std::make_shared<MIT_Humanoid<double>>(),
                          true});
     return test_data;

@@ -49,7 +49,7 @@ namespace grbda
         visited[cluster] = true;
         appendClusterFromUrdfCluster(cluster);
 
-        for (const UrdfClusterPtr child : cluster->child_clusters)
+        for (const UrdfClusterPtr& child : cluster->child_clusters)
         {
             if (!visited[child])
             {
@@ -79,29 +79,13 @@ namespace grbda
         registerBodiesInUrdfCluster(cluster, joints_in_current_cluster, independent_coordinates,
                                     bodies_sx, joints_sx);
 
-        // Verify that all constraints in the cluster are of the same type and have the same axis
-        UrdfConstraintPtr first_constraint = cluster->constraints.front();
-        auto constraint_type = first_constraint->type;
-        urdf::Vector3 constraint_axis = first_constraint->allLinks().front()->parent_joint->axis;
+
+        // Verify that all constraints in the cluster are of the same type
+        auto constraint_type = cluster->constraints.front()->type;
         for (UrdfConstraintPtr constraint : cluster->constraints)
         {
             if (constraint->type != constraint_type)
                 throw std::runtime_error("All constraints in a cluster must be of the same type");
-
-            for (UrdfLinkPtr link : constraint->allLinks())
-            {
-                // TODO(@MatthewChignoli): For now we are making the very limiting assumption that all joints must be continuous. If not, then axis can be different yet still valid
-                if (link->parent_joint->type != urdf::Joint::CONTINUOUS)
-                    throw std::runtime_error("All joints in a constraint must be revolute");
-                if (link->parent_joint->axis.x != constraint_axis.x ||
-                    link->parent_joint->axis.y != constraint_axis.y ||
-                    link->parent_joint->axis.z != constraint_axis.z)
-                    throw std::runtime_error("All joints in a constraint must have the same axis");
-            }
-        }
-        if (constraint_axis.norm() != 1)
-        {
-            throw std::runtime_error("Constraint axis must be a unit vector");
         }
 
         // For each constraint, collect the captures that will be supplied to the lambda function
@@ -151,8 +135,7 @@ namespace grbda
         std::shared_ptr<LoopConstraint::Base<Scalar>> loop_constraint;
         if (constraint_type == urdf::Constraint::POSITION)
         {
-            phi = implicitPositionConstraint(position_constraint_captures,
-                                             joints_sx, constraint_axis);
+            phi = implicitPositionConstraint(position_constraint_captures, joints_sx);
 
             using LoopConstraintType = LoopConstraint::GenericImplicit<Scalar>;
             loop_constraint = std::make_shared<LoopConstraintType>(independent_coordinates, phi);
@@ -160,8 +143,7 @@ namespace grbda
         else if (constraint_type == urdf::Constraint::ROLLING)
         {
             // TODO(@MatthewChignoli): This seems like a very long way to do this. I think it can be streamlined. Yeah this desparately needs to be refactored
-            phi = implicitRotationConstraint(rolling_constraint_captures,
-                                             joints_sx, constraint_axis);
+            phi = implicitRotationConstraint(rolling_constraint_captures, joints_sx);
 
             // TODO(@MatthewChignoli): Assumes all joints are 1 DOF
             SX cs_q_sym = SX::sym("cs_q_sym", joints_sx.size());
@@ -300,16 +282,15 @@ namespace grbda
     std::function<DVec<casadi::SX>(const JointCoordinate<casadi::SX> &)>
     ClusterTreeModel<Scalar>::implicitPositionConstraint(
         std::vector<PositionConstraintCapture> &captures,
-        std::map<std::string, JointPtr<SX>> joints_sx,
-        urdf::Vector3 constraint_axis)
+        std::map<std::string, JointPtr<SX>> joints_sx)
     {
-        return [captures, joints_sx, constraint_axis](const JointCoordinate<SX> &q)
+        return [captures, joints_sx](const JointCoordinate<SX> &q)
         {
             int jidx = 0;
             using Xform = spatial::Transform<SX>;
 
             // TODO(@MatthewChignoli): A lot of duplicate code here. Maybe make a helper function that we can call once for parent and once for child
-            DVec<SX> phi_out = DVec<SX>(2 * captures.size());
+            DVec<SX> phi_out = DVec<SX>(0);
             for (size_t i = 0; i < captures.size(); i++)
             {
                 const PositionConstraintCapture &capture = captures[i];
@@ -342,27 +323,29 @@ namespace grbda
                                   X_via_successor;
                 Vec3<SX> r_nca_to_constraint_via_successor = X_via_successor.getTranslation();
 
+                // TODO(@MatthewChignoli): I actually think that we do not need the constraint axis. We can just use the which_depends. Which means we can remove that code from the urdf parser repo as well
+
                 // Compute constraint
                 Vec3<SX> r_constraint = r_nca_to_constraint_via_predecessor -
                                         r_nca_to_constraint_via_successor;
 
-                // TODO(@MatthewChignoli): Make sure unit test covers all of these cases
-                // TODO(@MatthewChignoli): Maybe a helper function can clean up this code and the code for computing the radii in the rotation constraint
-                if (constraint_axis.x == 1)
+                // TODO(@MatthewChignoli): The lambda function will do this check every time, which is wasted effort...
+                // Only enforce the constraint along axes that depend on joint coordinates
+                SX cs_r_constraint = SX(r_constraint.size());
+                casadi::copy(r_constraint, cs_r_constraint);
+                SX cs_q = SX(q.size());
+                casadi::copy(q, cs_q);
+                std::cout << "r_constraint: " << r_constraint << std::endl;
+                std::cout << "Which depends: " << which_depends(cs_r_constraint, cs_q, 2, true) << std::endl;
+                std::vector<bool> constraint_axes = which_depends(cs_r_constraint, cs_q, 2, true);
+
+                for (int i = 0; i < 3; i++)
                 {
-                    phi_out.segment(2 * i, 2) = DVec<SX>(r_constraint.tail<2>());
-                }
-                else if (constraint_axis.y == 1)
-                {
-                    phi_out.segment(2 * i, 2) = DVec<SX>(r_constraint({0, 2}));
-                }
-                else if (constraint_axis.z == 1)
-                {
-                    phi_out.segment(2 * i, 2) = DVec<SX>(r_constraint.head<2>());
-                }
-                else
-                {
-                    throw std::runtime_error("Constraint axis must be one of the standard axes");
+                    if (constraint_axes[i])
+                    {
+                        phi_out.conservativeResize(phi_out.size() + 1);
+                        phi_out(phi_out.size() - 1) = r_constraint(i);
+                    }
                 }
             }
 
@@ -370,14 +353,14 @@ namespace grbda
         };
     }
 
+    // TODO(@MatthewChignoli): Rename this rolling constraint. I also think that I can make the constraint directly with the K and G matrices rather than having to pass through casadi
     template <typename Scalar>
     std::function<DVec<casadi::SX>(const JointCoordinate<casadi::SX> &)>
     ClusterTreeModel<Scalar>::implicitRotationConstraint(
         std::vector<RollingConstraintCapture> &captures,
-        std::map<std::string, JointPtr<SX>> joints_sx,
-        urdf::Vector3 constraint_axis)
+        std::map<std::string, JointPtr<SX>> joints_sx)
     {
-        return [captures, joints_sx, constraint_axis](const JointCoordinate<SX> &q)
+        return [captures, joints_sx](const JointCoordinate<SX> &q)
         {
             // TODO(@MatthewChignoli): A lot of duplicate code here. Maybe make a helper function that we can call once for parent and once for child
             DVec<SX> phi_out = DVec<SX>(captures.size());
