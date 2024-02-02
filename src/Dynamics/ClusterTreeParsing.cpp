@@ -49,7 +49,7 @@ namespace grbda
         visited[cluster] = true;
         appendClusterFromUrdfCluster(cluster);
 
-        for (const UrdfClusterPtr& child : cluster->child_clusters)
+        for (const UrdfClusterPtr &child : cluster->child_clusters)
         {
             if (!visited[child])
             {
@@ -78,7 +78,6 @@ namespace grbda
         std::map<std::string, JointPtr<SX>> joints_sx;
         registerBodiesInUrdfCluster(cluster, joints_in_current_cluster, independent_coordinates,
                                     bodies_sx, joints_sx);
-
 
         // Verify that all constraints in the cluster are of the same type
         auto constraint_type = cluster->constraints.front()->type;
@@ -143,7 +142,7 @@ namespace grbda
         else if (constraint_type == urdf::Constraint::ROLLING)
         {
             // TODO(@MatthewChignoli): This seems like a very long way to do this. I think it can be streamlined. Yeah this desparately needs to be refactored
-            phi = implicitRotationConstraint(rolling_constraint_captures, joints_sx);
+            phi = implicitRollingConstraint(rolling_constraint_captures, joints_sx);
 
             // TODO(@MatthewChignoli): Assumes all joints are 1 DOF
             SX cs_q_sym = SX::sym("cs_q_sym", joints_sx.size());
@@ -289,7 +288,6 @@ namespace grbda
             int jidx = 0;
             using Xform = spatial::Transform<SX>;
 
-            // TODO(@MatthewChignoli): A lot of duplicate code here. Maybe make a helper function that we can call once for parent and once for child
             DVec<SX> phi_out = DVec<SX>(0);
             for (size_t i = 0; i < captures.size(); i++)
             {
@@ -323,8 +321,6 @@ namespace grbda
                                   X_via_successor;
                 Vec3<SX> r_nca_to_constraint_via_successor = X_via_successor.getTranslation();
 
-                // TODO(@MatthewChignoli): I actually think that we do not need the constraint axis. We can just use the which_depends. Which means we can remove that code from the urdf parser repo as well
-
                 // Compute constraint
                 Vec3<SX> r_constraint = r_nca_to_constraint_via_predecessor -
                                         r_nca_to_constraint_via_successor;
@@ -335,8 +331,6 @@ namespace grbda
                 casadi::copy(r_constraint, cs_r_constraint);
                 SX cs_q = SX(q.size());
                 casadi::copy(q, cs_q);
-                std::cout << "r_constraint: " << r_constraint << std::endl;
-                std::cout << "Which depends: " << which_depends(cs_r_constraint, cs_q, 2, true) << std::endl;
                 std::vector<bool> constraint_axes = which_depends(cs_r_constraint, cs_q, 2, true);
 
                 for (int j = 0; j < 3; j++)
@@ -356,7 +350,7 @@ namespace grbda
     // TODO(@MatthewChignoli): Rename this rolling constraint. I also think that I can make the constraint directly with the K and G matrices rather than having to pass through casadi
     template <typename Scalar>
     std::function<DVec<casadi::SX>(const JointCoordinate<casadi::SX> &)>
-    ClusterTreeModel<Scalar>::implicitRotationConstraint(
+    ClusterTreeModel<Scalar>::implicitRollingConstraint( 
         std::vector<RollingConstraintCapture> &captures,
         std::map<std::string, JointPtr<SX>> joints_sx)
     {

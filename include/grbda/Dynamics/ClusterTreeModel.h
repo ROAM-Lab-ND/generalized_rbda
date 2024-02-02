@@ -184,7 +184,7 @@ namespace grbda
             std::vector<PositionConstraintCapture> &captures,
             std::map<std::string, JointPtr<SX>> joints_sx);
 
-        std::function<DVec<SX>(const JointCoordinate<SX> &)> implicitRotationConstraint(
+        std::function<DVec<SX>(const JointCoordinate<SX> &)> implicitRollingConstraint(
             std::vector<RollingConstraintCapture> &captures,
             std::map<std::string, JointPtr<SX>> joints_sx);
 
