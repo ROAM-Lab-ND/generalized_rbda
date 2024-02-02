@@ -128,12 +128,12 @@ namespace grbda
             }
         }
 
-        // TODO(@MatthewChignoli): Would like to do some more sophisticated detection and specialization here. For example, if the jacobian of phi is constant, then we can use an explicit constraint
+        // TODO(@MatthewChignoli): Would like to do some more sophisticated detection and specialization here. For example, if the jacobian of phi is constant, then we can use an explicit constraint. The best solution might just be codegen
         // Create constraints and add clusters
-        std::function<DVec<SX>(const JointCoordinate<SX> &)> phi;
         std::shared_ptr<LoopConstraint::Base<Scalar>> loop_constraint;
         if (constraint_type == urdf::Constraint::POSITION)
         {
+            std::function<DVec<SX>(const JointCoordinate<SX> &)> phi;
             phi = implicitPositionConstraint(position_constraint_captures, joints_sx);
 
             using LoopConstraintType = LoopConstraint::GenericImplicit<Scalar>;
@@ -141,65 +141,11 @@ namespace grbda
         }
         else if (constraint_type == urdf::Constraint::ROLLING)
         {
-            // TODO(@MatthewChignoli): This seems like a very long way to do this. I think it can be streamlined. Yeah this desparately needs to be refactored
-            phi = implicitRollingConstraint(rolling_constraint_captures, joints_sx);
-
-            // TODO(@MatthewChignoli): Assumes all joints are 1 DOF
-            SX cs_q_sym = SX::sym("cs_q_sym", joints_sx.size());
-            DVec<SX> q_sym = DVec<SX>(joints_sx.size());
-            casadi::copy(cs_q_sym, q_sym);
-            JointCoordinate<SX> joint_pos(q_sym, true);
-
-            DVec<SX> phi_sym = phi(joint_pos);
-            SX cs_phi_sym = SX(phi_sym.size());
-            casadi::copy(phi_sym, cs_phi_sym);
-
-            SX cs_K_sym = jacobian(cs_phi_sym, cs_q_sym);
-            DMat<SX> K_sym(cs_K_sym.size1(), cs_K_sym.size2());
-            casadi::copy(cs_K_sym, K_sym);
-
-            // Get explicit jacboian from implicit jacobian
-            // TODO(@MatthewChignoli): Throw an error if K contains a nan
-            // TODO(@MatthewChignoli): Do we really need to support float?
-            using IntermediateCastType = typename std::conditional<std::is_same<Scalar, float>::value, double, Scalar>::type;
-            DMat<Scalar> K = K_sym.cast<IntermediateCastType>().template cast<Scalar>();
-            DMat<Scalar> Ki(K.rows(), 0);
-            DMat<Scalar> Kd(K.rows(), 0);
-            for (int i = 0; i < K.cols(); i++)
-            {
-                if (independent_coordinates[i])
-                {
-                    Ki.conservativeResize(K.rows(), Ki.cols() + 1);
-                    Ki.template rightCols<1>() = K.col(i);
-                }
-                else
-                {
-                    Kd.conservativeResize(K.rows(), Kd.cols() + 1);
-                    Kd.template rightCols<1>() = K.col(i);
-                }
-            }
-
-            int ind_cnt = 0, dep_cnt = 0;
-            DMat<Scalar> coordinate_jacobian = DMat<Scalar>::Zero(K.cols(), K.cols());
-            for (int i = 0; i < K.cols(); i++)
-            {
-                if (independent_coordinates[i])
-                {
-                    coordinate_jacobian(i, ind_cnt++) = 1;
-                }
-                else
-                {
-                    coordinate_jacobian(i, Ki.cols() + dep_cnt++) = 1;
-                }
-            }
-
-            DMat<Scalar> G(K.cols(), Ki.cols());
-            typename CorrectMatrixInverseType<Scalar>::type Kd_inv(Kd);
-            G.topRows(Ki.cols()).setIdentity();
-            G.bottomRows(Kd.cols()) = -Kd_inv.solve(Ki);
-            G = coordinate_jacobian * G;
-
-            loop_constraint = std::make_shared<LoopConstraint::Static<Scalar>>(G, K);
+            using KGPair = std::pair<DMat<Scalar>, DMat<Scalar>>;
+            KGPair K_G = explicitRollingConstraint(rolling_constraint_captures,
+                                                   independent_coordinates);
+            loop_constraint = std::make_shared<LoopConstraint::Static<Scalar>>(K_G.second,
+                                                                               K_G.first);
         }
         else
         {
@@ -347,41 +293,68 @@ namespace grbda
         };
     }
 
-    // TODO(@MatthewChignoli): Rename this rolling constraint. I also think that I can make the constraint directly with the K and G matrices rather than having to pass through casadi
     template <typename Scalar>
-    std::function<DVec<casadi::SX>(const JointCoordinate<casadi::SX> &)>
-    ClusterTreeModel<Scalar>::implicitRollingConstraint( 
+    std::pair<DMat<Scalar>, DMat<Scalar>>
+    ClusterTreeModel<Scalar>::explicitRollingConstraint(
         std::vector<RollingConstraintCapture> &captures,
-        std::map<std::string, JointPtr<SX>> joints_sx)
+        std::vector<bool> independent_coordinates)
     {
-        return [captures, joints_sx](const JointCoordinate<SX> &q)
+        // TODO(@MatthewChignoli): Assumes all joints are 1 DOF?
+        DMat<Scalar> K = DMat<Scalar>(captures.size(), independent_coordinates.size());
+        for (size_t i = 0; i < captures.size(); i++)
         {
-            // TODO(@MatthewChignoli): A lot of duplicate code here. Maybe make a helper function that we can call once for parent and once for child
-            DVec<SX> phi_out = DVec<SX>(captures.size());
-            for (size_t i = 0; i < captures.size(); i++)
+            const RollingConstraintCapture &capture = captures[i];
+
+            // Through predecessor
+            for (const Body<SX> &body : capture.nca_to_predecessor_subtree)
             {
-                const RollingConstraintCapture &capture = captures[i];
-
-                // Through predecessor
-                SX predecessor_angle_rel_nca = 0;
-                for (const Body<SX> &body : capture.nca_to_predecessor_subtree)
-                {
-                    // TODO(@MatthewChignoli): How to make sure we are getting the right parts of q?
-                    predecessor_angle_rel_nca += q(body.sub_index_within_cluster_);
-                }
-
-                // Through successor
-                SX successor_angle_rel_nca = 0;
-                for (const Body<SX> &body : capture.nca_to_successor_subtree)
-                {
-                    successor_angle_rel_nca += q(body.sub_index_within_cluster_);
-                }
-
-                // TODO(@MatthewChignoli): Get rid of polarities and just use the sign of the ratio
-                phi_out(i) = capture.ratio * predecessor_angle_rel_nca - successor_angle_rel_nca;
+                K(i, body.sub_index_within_cluster_) = capture.ratio;
             }
-            return phi_out;
-        };
+
+            // Through successor
+            for (const Body<SX> &body : capture.nca_to_successor_subtree)
+            {
+                K(i, body.sub_index_within_cluster_) = -1;
+            }
+        }
+
+        DMat<Scalar> Ki(K.rows(), 0);
+        DMat<Scalar> Kd(K.rows(), 0);
+        for (int i = 0; i < K.cols(); i++)
+        {
+            if (independent_coordinates[i])
+            {
+                Ki.conservativeResize(K.rows(), Ki.cols() + 1);
+                Ki.template rightCols<1>() = K.col(i);
+            }
+            else
+            {
+                Kd.conservativeResize(K.rows(), Kd.cols() + 1);
+                Kd.template rightCols<1>() = K.col(i);
+            }
+        }
+
+        int ind_cnt = 0, dep_cnt = 0;
+        DMat<Scalar> coordinate_jacobian = DMat<Scalar>::Zero(K.cols(), K.cols());
+        for (int i = 0; i < K.cols(); i++)
+        {
+            if (independent_coordinates[i])
+            {
+                coordinate_jacobian(i, ind_cnt++) = 1;
+            }
+            else
+            {
+                coordinate_jacobian(i, Ki.cols() + dep_cnt++) = 1;
+            }
+        }
+
+        DMat<Scalar> G(K.cols(), Ki.cols());
+        typename CorrectMatrixInverseType<Scalar>::type Kd_inv(Kd);
+        G.topRows(Ki.cols()).setIdentity();
+        G.bottomRows(Kd.cols()) = -Kd_inv.solve(Ki);
+        G = coordinate_jacobian * G;
+
+        return {K, G};
     }
 
     template class ClusterTreeModel<double>;

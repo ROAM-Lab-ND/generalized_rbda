@@ -184,9 +184,9 @@ namespace grbda
             std::vector<PositionConstraintCapture> &captures,
             std::map<std::string, JointPtr<SX>> joints_sx);
 
-        std::function<DVec<SX>(const JointCoordinate<SX> &)> implicitRollingConstraint(
+        std::pair<DMat<Scalar>, DMat<Scalar>> explicitRollingConstraint(
             std::vector<RollingConstraintCapture> &captures,
-            std::map<std::string, JointPtr<SX>> joints_sx);
+            std::vector<bool> independent_coordinates);
 
         void appendRegisteredBodiesAsCluster(const std::string name,
                                              std::shared_ptr<ClusterJoints::Base<Scalar>> joint);
