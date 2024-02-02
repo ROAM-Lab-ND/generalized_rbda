@@ -339,12 +339,12 @@ namespace grbda
                 std::cout << "Which depends: " << which_depends(cs_r_constraint, cs_q, 2, true) << std::endl;
                 std::vector<bool> constraint_axes = which_depends(cs_r_constraint, cs_q, 2, true);
 
-                for (int i = 0; i < 3; i++)
+                for (int j = 0; j < 3; i++)
                 {
-                    if (constraint_axes[i])
+                    if (constraint_axes[j])
                     {
                         phi_out.conservativeResize(phi_out.size() + 1);
-                        phi_out(phi_out.size() - 1) = r_constraint(i);
+                        phi_out(phi_out.size() - 1) = r_constraint(j);
                     }
                 }
             }
