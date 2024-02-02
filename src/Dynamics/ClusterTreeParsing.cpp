@@ -354,6 +354,9 @@ namespace grbda
         G.bottomRows(Kd.cols()) = -Kd_inv.solve(Ki);
         G = coordinate_jacobian * G;
 
+        std::cout << "\nG:\n" << G << std::endl;
+        std::cout << "K:\n" << K << std::endl;
+
         return {K, G};
     }
 
