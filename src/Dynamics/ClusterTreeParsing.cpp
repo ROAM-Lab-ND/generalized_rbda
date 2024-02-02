@@ -339,7 +339,7 @@ namespace grbda
                 std::cout << "Which depends: " << which_depends(cs_r_constraint, cs_q, 2, true) << std::endl;
                 std::vector<bool> constraint_axes = which_depends(cs_r_constraint, cs_q, 2, true);
 
-                for (int j = 0; j < 3; i++)
+                for (int j = 0; j < 3; j++)
                 {
                     if (constraint_axes[j])
                     {
