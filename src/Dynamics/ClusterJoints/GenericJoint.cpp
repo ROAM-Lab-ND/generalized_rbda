@@ -95,6 +95,8 @@ namespace grbda
                 return runCasadiFcn(cs_phi_fcn, joint_pos);
             };
 
+            // TODO(@MatthewChignoli): Create root finder for gamma_
+
             // TODO(@MatthewChignoli): Is there overhead in calling these? Should they be combined? K and G, and k and g?
             this->K_ = DMat<Scalar>::Zero(constraint_dim, state_dim);
             K_fcn_ = casadi::Function("K", {cs_q_sym}, {cs_K_sym});
@@ -107,12 +109,6 @@ namespace grbda
 
             this->g_ = DVec<Scalar>::Zero(state_dim);
             g_fcn_ = casadi::Function("g", {cs_q_sym, cs_v_sym}, {cs_g_sym});
-        }
-
-        template <typename Scalar>
-        DVec<Scalar> GenericImplicit<Scalar>::gamma(const JointCoordinate<Scalar> &joint_pos) const
-        {
-            throw std::runtime_error("GenericImplicit::gamma() not implemented");
         }
 
         template <typename Scalar>

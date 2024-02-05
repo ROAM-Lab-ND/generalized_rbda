@@ -24,13 +24,13 @@ namespace grbda
             void updateJacobians(const JointCoordinate<Scalar> &joint_pos) override;
             void updateBiases(const JointState<Scalar> &joint_state) override;
 
-            DVec<Scalar> gamma(const JointCoordinate<Scalar> &joint_pos) const override;
-
         private:
             static DMat<Scalar> runCasadiFcn(const casadi::Function &fcn,
                                              const JointCoordinate<Scalar> &arg);
             static DMat<Scalar> runCasadiFcn(const casadi::Function &fcn,
                                              const JointState<Scalar> &args);
+
+            // TODO(@MatthewChignoli): So we want a function that when given the independent coords return the spanning coords. This is what gamma does, right? So I think that actually is possible. But it is numerical, but that is fine with us I think. So then the next step is to make gamma a lambda function
 
             casadi::Function K_fcn_;
             casadi::Function G_fcn_;

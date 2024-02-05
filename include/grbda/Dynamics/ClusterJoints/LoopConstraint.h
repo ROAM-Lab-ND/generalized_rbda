@@ -40,21 +40,27 @@ namespace grbda
 
             virtual void updateJacobians(const JointCoordinate<Scalar> &joint_pos) = 0;
             virtual void updateBiases(const JointState<Scalar> &joint_state) = 0;
-
-            DVec<Scalar> phi(const JointCoordinate<Scalar> &joint_pos) const { return phi_(joint_pos); }
-            virtual DVec<Scalar> gamma(const JointCoordinate<Scalar> &joint_pos) const = 0;
+            
+            DVec<Scalar> gamma(const JointCoordinate<Scalar> &joint_pos) const
+            {
+                return gamma_(joint_pos);
+            }
             const DMat<Scalar> &G() const { return G_; }
             const DVec<Scalar> &g() const { return g_; }
 
+            DVec<Scalar> phi(const JointCoordinate<Scalar> &joint_pos) const
+            {
+                return phi_(joint_pos);
+            }
             const DMat<Scalar> &K() const { return K_; }
             const DVec<Scalar> &k() const { return k_; }
 
         protected:
-            std::function<DVec<Scalar>(const JointCoordinate<Scalar> &)> phi_;
-
+            std::function<DVec<Scalar>(const JointCoordinate<Scalar> &)> gamma_;
             DMat<Scalar> G_;
             DVec<Scalar> g_;
 
+            std::function<DVec<Scalar>(const JointCoordinate<Scalar> &)> phi_;
             DMat<Scalar> K_;
             DVec<Scalar> k_;
         };
@@ -73,8 +79,6 @@ namespace grbda
 
             void updateJacobians(const JointCoordinate<Scalar> &joint_pos) override {}
             void updateBiases(const JointState<Scalar> &joint_state) override {}
-
-            DVec<Scalar> gamma(const JointCoordinate<Scalar> &joint_pos) const override;
         };
 
         template <typename Scalar = double>

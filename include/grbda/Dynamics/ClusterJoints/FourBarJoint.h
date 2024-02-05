@@ -29,11 +29,6 @@ namespace grbda
 
             void updateBiases(const JointState<Scalar> &joint_state) override;
 
-            DVec<Scalar> gamma(const JointCoordinate<Scalar> &joint_pos) const override
-            {
-                throw std::runtime_error("FourBar: Explicit constraint does not exist");
-            }
-
             void createRandomStateHelpers();
             struct
             {

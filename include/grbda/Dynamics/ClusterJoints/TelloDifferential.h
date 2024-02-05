@@ -34,8 +34,6 @@ namespace grbda
 
             std::shared_ptr<Base<Scalar>> clone() const override;
 
-            DVec<Scalar> gamma(const JointCoordinate<Scalar> &joint_pos) const override;
-
             void updateJacobians(const JointCoordinate<Scalar> &joint_pos) override;
             void updateBiases(const JointState<Scalar> &joint_state) override;
 

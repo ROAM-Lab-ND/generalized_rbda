@@ -31,6 +31,7 @@ namespace grbda
             }
             else if (!joint_state.position.isSpanning() && !loop_constraint_->isExplicit())
             {
+                // TODO(@MatthewChignoli): This is not true, I think we can use a rootfinder to get the spanning position
                 throw std::runtime_error("Independent positions cannot be converted to spanning positions when the constraint is implicit.");
             }
             else if (joint_state.position.isSpanning() && loop_constraint_->isExplicit())

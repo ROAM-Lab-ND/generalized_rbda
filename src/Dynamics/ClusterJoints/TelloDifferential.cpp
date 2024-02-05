@@ -16,9 +16,17 @@ namespace grbda
 			  IK_pos_helpers_(IK_pos_helpers), IK_vel_helpers_(IK_vel_helpers)
 		{
 			// TODO(@nicholasadr): Fix this
-			this->phi_ = [this](const JointCoordinate<Scalar> &joint_pos) {
+			this->phi_ = [this](const JointCoordinate<Scalar> &joint_pos)
+			{
 				return DVec<Scalar>::Zero(2);
 			};
+
+			// TODO(@MatthewChignoli): root finder?
+			this->gamma_ = [](const JointCoordinate<Scalar> &joint_pos)
+            {
+                throw std::runtime_error("TelloDifferential: Explicit constraint does not exist");
+				return DVec<Scalar>::Zero(2);
+            };
 
 			this->G_.setZero(4, 2);
 			this->K_.setZero(2, 4);
@@ -30,13 +38,6 @@ namespace grbda
 		std::shared_ptr<Base<Scalar>> TelloDifferential<Scalar>::clone() const
 		{
 			return std::make_shared<TelloDifferential<Scalar>>(*this);
-		}
-
-		template <typename Scalar>
-		DVec<Scalar>
-		TelloDifferential<Scalar>::gamma(const JointCoordinate<Scalar> &joint_pos) const
-		{
-			throw std::runtime_error("Tello loop constraint does not have a gamma function");
 		}
 
 		template <typename Scalar>

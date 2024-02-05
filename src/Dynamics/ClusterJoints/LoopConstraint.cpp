@@ -8,17 +8,16 @@ namespace grbda
         template <typename Scalar>
         Static<Scalar>::Static(DMat<Scalar> G, DMat<Scalar> K)
         {
+            this->gamma_ = [G](const JointCoordinate<Scalar> &joint_pos)
+            {
+                return G * joint_pos;
+            };
+
             this->G_ = G;
             this->g_ = DVec<Scalar>::Zero(G.rows());
 
             this->K_ = K;
             this->k_ = DVec<Scalar>::Zero(K.rows());
-        }
-
-        template <typename Scalar>
-        DVec<Scalar> Static<Scalar>::gamma(const JointCoordinate<Scalar> &joint_pos) const
-        {
-            return this->G_ * joint_pos;
         }
 
         template struct Static<double>;

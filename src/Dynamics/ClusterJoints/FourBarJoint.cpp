@@ -48,6 +48,12 @@ namespace grbda
                 return phi;
             };
 
+            this->gamma_ = [](const JointCoordinate<Scalar> &joint_pos)
+            {
+                throw std::runtime_error("FourBar: Explicit constraint does not exist");
+                return joint_pos;
+            };
+
             this->G_ = DMat<Scalar>::Zero(3, 1);
             this->g_ = DVec<Scalar>::Zero(3);
 

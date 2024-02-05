@@ -15,6 +15,11 @@ namespace grbda
         {
             Free()
             {
+                this->gamma_ = [](const JointCoordinate<Scalar> &joint_pos)
+                {
+                    return joint_pos;
+                };
+
                 this->G_ = DMat<Scalar>::Identity(6, 6);
                 this->g_ = DVec<Scalar>::Zero(6);
 
@@ -39,11 +44,6 @@ namespace grbda
 
             void updateJacobians(const JointCoordinate<Scalar> &joint_pos) override {}
             void updateBiases(const JointState<Scalar> &joint_state) override {}
-
-            DVec<Scalar> gamma(const JointCoordinate<Scalar> &joint_pos) const override
-            {
-                return joint_pos;
-            }
         };
 
     }
