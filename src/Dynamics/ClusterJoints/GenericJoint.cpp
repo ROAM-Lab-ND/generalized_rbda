@@ -27,15 +27,17 @@ namespace grbda
 
             // The coordinate map is a matrix that maps the stacked indepedent
             // coordinates [y;q_dep] to the spanning coordinate vector q
-            SX coord_map = SX::zeros(state_dim, state_dim);
+            SX cs_coord_map = SX::zeros(state_dim, state_dim);
             for (int i = 0; i < ind_dim; i++)
             {
-                coord_map(ind_coords[i], i) = 1;
+                cs_coord_map(ind_coords[i], i) = 1;
             }
             for (int i = 0; i < dep_dim; i++)
             {
-                coord_map(dep_coords[i], i + ind_dim) = 1;
+                cs_coord_map(dep_coords[i], i + ind_dim) = 1;
             }
+            DMat<CasadiScalar> coord_map(state_dim, state_dim);
+            casadi::copy(cs_coord_map, coord_map);
 
             // Symbolic state
             SX cs_q_sym = SX::sym("q", state_dim, 1);
@@ -53,6 +55,14 @@ namespace grbda
             SX cs_phi_sym = casadi::SX(casadi::Sparsity::dense(constraint_dim, 1));
             casadi::copy(phi_sym, cs_phi_sym);
             casadi::Function cs_phi_fcn = casadi::Function("phi", {cs_q_sym}, {cs_phi_sym});
+
+            // Attempt to find the spanning positions from the independent positions
+            SX cs_y_sym = SX::sym("y", ind_dim, 1);
+            SX cs_q_dep_sym = SX::sym("q_dep", dep_dim, 1);
+            SX cs_y_and_q_dep_sym = SX::mtimes(cs_coord_map, SX::vertcat({cs_y_sym, cs_q_dep_sym}));
+            SX cs_root_fcn = cs_phi_fcn({cs_y_and_q_dep_sym})[0];
+            casadi::SXDict xgp = {{"x", cs_q_dep_sym}, {"g", cs_root_fcn}, {"p", cs_y_sym}};
+            casadi::Function root_finder = casadi::rootfinder("root_finder", "newton", xgp);
 
             // Implicit constraint jacobian
             SX cs_K_sym = jacobian(cs_phi_sym, cs_q_sym);
@@ -82,20 +92,29 @@ namespace grbda
             cs_G_sym(ind_slice, ind_slice) = SX::eye(ind_dim);
             casadi::Slice dep_slice = casadi::Slice(ind_dim, ind_dim + dep_dim);
             cs_G_sym(dep_slice, casadi::Slice()) = -SX::mtimes(SX::inv(cs_Kd_sym), cs_Ki_sym);
-            cs_G_sym = SX::mtimes(coord_map, cs_G_sym);
+            cs_G_sym = SX::mtimes(cs_coord_map, cs_G_sym);
 
             // Explicit constraints bias
             SX cs_g_sym = SX::zeros(state_dim, 1);
             cs_g_sym(dep_slice) = SX::mtimes(SX::inv(cs_Kd_sym), cs_k_sym);
-            cs_g_sym = SX::mtimes(coord_map, cs_g_sym);
+            cs_g_sym = SX::mtimes(cs_coord_map, cs_g_sym);
 
             // Assign member variables using casadi functions
-            this->phi_ = [cs_phi_fcn](const JointCoordinate<Scalar> &joint_pos)
+            this->gamma_ = [coord_map, dep_dim, root_finder](const JointCoordinate<Scalar> &joint_pos)
             {
-                return runCasadiFcn(cs_phi_fcn, joint_pos);
+                DVec<Scalar> q_dep = runCasadiFcn(root_finder, {DVec<Scalar>::Zero(dep_dim),
+                                                                joint_pos});
+                DVec<Scalar> y_and_q_dep(coord_map.rows());
+                y_and_q_dep << joint_pos, q_dep;
+
+                return (coord_map.template cast<CasadiResult>()).template cast<Scalar>() *
+                       y_and_q_dep;
             };
 
-            // TODO(@MatthewChignoli): Create root finder for gamma_
+            this->phi_ = [cs_phi_fcn](const JointCoordinate<Scalar> &joint_pos)
+            {
+                return runCasadiFcn(cs_phi_fcn, {joint_pos});
+            };
 
             // TODO(@MatthewChignoli): Is there overhead in calling these? Should they be combined? K and G, and k and g?
             this->K_ = DMat<Scalar>::Zero(constraint_dim, state_dim);
@@ -114,45 +133,27 @@ namespace grbda
         template <typename Scalar>
         void GenericImplicit<Scalar>::updateJacobians(const JointCoordinate<Scalar> &joint_pos)
         {
-            this->K_ = runCasadiFcn(K_fcn_, joint_pos);
-            this->G_ = runCasadiFcn(G_fcn_, joint_pos);
+            this->K_ = runCasadiFcn(K_fcn_, {joint_pos});
+            this->G_ = runCasadiFcn(G_fcn_, {joint_pos});
         }
 
         template <typename Scalar>
         void GenericImplicit<Scalar>::updateBiases(const JointState<Scalar> &joint_state)
         {
-            this->k_ = runCasadiFcn(k_fcn_, joint_state);
-            this->g_ = runCasadiFcn(g_fcn_, joint_state);
+            this->k_ = runCasadiFcn(k_fcn_, {joint_state.position, joint_state.velocity});
+            this->g_ = runCasadiFcn(g_fcn_, {joint_state.position, joint_state.velocity});
         }
 
         template <typename Scalar>
         DMat<Scalar> GenericImplicit<Scalar>::runCasadiFcn(const casadi::Function &fcn,
-                                                           const JointCoordinate<Scalar> &arg)
+                                                           const std::vector<DVec<Scalar>> &args)
         {
-            using CasadiScalar = typename std::conditional<std::is_same<Scalar, casadi::SX>::value, casadi::SX, casadi::DM>::type;
-            using CasadiResult = typename std::conditional<std::is_same<Scalar, float>::value, double, Scalar>::type;
-
-            CasadiScalar arg_cs(arg.rows());
-            casadi::copy(arg, arg_cs);
-            CasadiScalar res_cs = fcn(arg_cs)[0];
-            DMat<CasadiResult> res(res_cs.size1(), res_cs.size2());
-            casadi::copy(res_cs, res);
-
-            return res.template cast<Scalar>();
-        }
-
-        template <typename Scalar>
-        DMat<Scalar> GenericImplicit<Scalar>::runCasadiFcn(const casadi::Function &fcn,
-                                                           const JointState<Scalar> &args)
-        {
-            using CasadiScalar = typename std::conditional<std::is_same<Scalar, casadi::SX>::value, casadi::SX, casadi::DM>::type;
-            using CasadiResult = typename std::conditional<std::is_same<Scalar, float>::value, double, Scalar>::type;
-
-            std::vector<CasadiScalar> args_cs(2);
-            args_cs[0] = CasadiScalar(args.position.rows());
-            casadi::copy(args.position, args_cs[0]);
-            args_cs[1] = CasadiScalar(args.velocity.rows());
-            casadi::copy(args.velocity, args_cs[1]);
+            std::vector<CasadiScalar> args_cs(args.size());
+            for (size_t i = 0; i < args.size(); i++)
+            {
+                args_cs[i] = CasadiScalar(args[i].rows());
+                casadi::copy(args[i], args_cs[i]);
+            }
 
             CasadiScalar res_cs = fcn(args_cs)[0];
             DMat<CasadiResult> res(res_cs.size1(), res_cs.size2());

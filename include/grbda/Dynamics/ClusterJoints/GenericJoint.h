@@ -13,6 +13,8 @@ namespace grbda
         {
             using SX = casadi::SX;
             using SymPhiFcn = std::function<DVec<SX>(const JointCoordinate<SX> &)>;
+            using CasadiScalar = typename std::conditional<std::is_same<Scalar, casadi::SX>::value, casadi::SX, casadi::DM>::type;
+            using CasadiResult = typename std::conditional<std::is_same<Scalar, float>::value, double, Scalar>::type;
 
             GenericImplicit(std::vector<bool> is_coordinate_independent, SymPhiFcn phi_fcn);
 
@@ -26,9 +28,7 @@ namespace grbda
 
         private:
             static DMat<Scalar> runCasadiFcn(const casadi::Function &fcn,
-                                             const JointCoordinate<Scalar> &arg);
-            static DMat<Scalar> runCasadiFcn(const casadi::Function &fcn,
-                                             const JointState<Scalar> &args);
+                                             const std::vector<DVec<Scalar>> &args);
 
             // TODO(@MatthewChignoli): So we want a function that when given the independent coords return the spanning coords. This is what gamma does, right? So I think that actually is possible. But it is numerical, but that is fine with us I think. So then the next step is to make gamma a lambda function
 

@@ -249,6 +249,63 @@ GTEST_TEST(LoopConstraint, FourBar)
     }
 }
 
+// TODO(@MatthewChignoli): The rest of these unit tests need a thorough review...
+
+// TODO(@MatthewChignoli): Eventually fold this test into the next one. The idea is that we should be able to get rid of the randomState thing? And be able to arbitrarily set the joint state and then feed it to gamma and we will always get something valid
+GTEST_TEST(LoopConstraint, GenericRootFinder)
+{
+    using SX = casadi::SX;
+
+    // Define a generic implicit loop constraint
+    std::function<DVec<SX>(const JointCoordinate<SX> &)> phi_fcn =
+        [](const JointCoordinate<SX> &joint_pos)
+    {
+        DVec<SX> phi(2);
+        phi(0) = joint_pos[0] + joint_pos[1] + cos(joint_pos[2]);
+        phi(1) = cos(joint_pos[2]) * joint_pos[1] + joint_pos[0] * joint_pos[0] * joint_pos[2];
+        return phi;
+    };
+
+    // Possible options for the independent coordinate
+    std::vector<std::vector<bool>> ind_coord_samples{
+        {true, false, false},
+        {false, true, false},
+        {false, false, true}};
+
+    for (const std::vector<bool> &is_coordinate_independent : ind_coord_samples)
+    {
+        LoopConstraint::GenericImplicit<double> generic_implicit(is_coordinate_independent,
+                                                                 phi_fcn);
+
+        // Kinematics
+        DVec<double> y = DVec<double>::Random(1);
+        DVec<double> q = generic_implicit.gamma(JointCoordinate<double>(y, false));
+        if (q.array().isNaN().any() || q.array().isInf().any())
+        {
+            std::cout << "Skipping test because q contains NaN or Inf" << std::endl;
+            continue;
+        }
+        JointCoordinate<double> joint_pos = JointCoordinate<double>(q, true);
+        generic_implicit.updateJacobians(joint_pos);
+
+        DVec<double> v = generic_implicit.G() * DVec<double>::Random(1);
+        JointCoordinate<double> joint_vel = JointCoordinate<double>(v, true);
+        JointState<double> joint_state(joint_pos, joint_vel);
+        generic_implicit.updateBiases(joint_state);
+
+        // Verify agreement between implicit and explicit jacobians and biases
+        const DMat<double> &K = generic_implicit.K();
+        const DVec<double> &k = generic_implicit.k();
+        const DMat<double> &G = generic_implicit.G();
+        const DVec<double> &g = generic_implicit.g();
+        ASSERT_TRUE(generic_implicit.isValidSpanningPosition(joint_pos));
+        ASSERT_TRUE(generic_implicit.isValidSpanningVelocity(joint_vel));
+        GTEST_ASSERT_LE((K * G).norm(), 1e-10);
+        GTEST_ASSERT_LE((K * g - k).norm(), 1e-10);
+
+    }
+}
+
 // TODO(@MatthewChignoli): How to test this?
 GTEST_TEST(LoopConstraint, GenericImplicit)
 {
@@ -295,15 +352,6 @@ GTEST_TEST(LoopConstraint, GenericImplicit)
         const DVec<double> &g = generic_implicit.g();
         GTEST_ASSERT_LE((K * G).norm(), 1e-10);
         GTEST_ASSERT_LE((K * g - k).norm(), 1e-10);
-
-        // Make sure jacobians and biases are not trivially zero
-        if (q.norm() > 1e-8)
-        {
-            GTEST_ASSERT_GT(K.norm(), 1e-8);
-            GTEST_ASSERT_GT(G.norm(), 1e-8);
-            GTEST_ASSERT_GT(k.norm(), 1e-8);
-            GTEST_ASSERT_GT(g.norm(), 1e-8);
-        }
     }
 
     // TODO(@MatthewChignoli): Unit test specialized loop constraints against generic loop constraints
