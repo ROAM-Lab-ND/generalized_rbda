@@ -7,7 +7,7 @@ namespace grbda
                                                       bool floating_base)
     {
         std::shared_ptr<urdf::ModelInterface> model;
-        model = urdf::parseURDFFile(urdf_filename, true);
+        model = urdf::parseURDFFile(urdf_filename, false);
 
         if (model == nullptr)
             throw std::runtime_error("Could not parse URDF file");
