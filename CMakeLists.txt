@@ -42,7 +42,7 @@ endif()
 
 # TODO(@MatthewChignoli): Once repo is stable, install the binaries rather than compile them from submodule
 add_subdirectory(third-parties/URDF-Parser)
-include_directories(${CMAKE_SOURCE_DIR}/third-parties/URDF-Parser/include)
+include_directories(${PROJECT_SOURCE_DIR}/third-parties/URDF-Parser/include)
 
 ################################################################################
 # Setup Compilation
@@ -145,13 +145,14 @@ else()
   # )
 endif()
 
-if(BUILD_TESTS)
-  message(STATUS "======>  Setup Tests  ")
-  enable_testing()
-  add_subdirectory(UnitTests)
-endif()
+# TODO(@MatthewChignoli): Should be able to disable these from upstream CMakeLists
+# if(BUILD_TESTS)
+#   message(STATUS "======>  Setup Tests  ")
+#   enable_testing()
+#   add_subdirectory(UnitTests)
+# endif()
 
-if(BUILD_BENCHMARKS)
-  message(STATUS "======>  Setup Benchmarks  ")
-  add_subdirectory(Benchmarking)
-endif()
+# if(BUILD_BENCHMARKS)
+#   message(STATUS "======>  Setup Benchmarks  ")
+#   add_subdirectory(Benchmarking)
+# endif()
