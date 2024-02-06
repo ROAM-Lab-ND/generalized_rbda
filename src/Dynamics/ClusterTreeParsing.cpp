@@ -180,6 +180,8 @@ namespace grbda
         std::vector<Body<SX>> &bodies_sx,
         std::map<std::string, JointPtr<SX>> &joints_sx)
     {
+        // TODO(@MatthewChignoli): We need to add some assurance that phantom bodies are never parent bodies... worry about this later. We also need to make sure that the phantom bodies are the last in the cluster such that q_full = [q_normal; q_phantom]
+
         std::map<int, UrdfLinkPtr> unregistered_links = cluster->links;
         while (unregistered_links.size() > 0)
         {
@@ -197,10 +199,17 @@ namespace grbda
                     continue;
                 }
 
+                // TODO(@MatthewChignoli): This is a pretty hacky way to do deal with the phantom bodies
+
                 // Register body
                 std::string name = link->name;
-                SpatialInertia<Scalar> inertia(link->inertial);
-                SpatialInertia<SX> inertia_sx(link->inertial);
+                SpatialInertia<Scalar> inertia;
+                SpatialInertia<SX> inertia_sx;
+                if (link->inertial)
+                {
+                    inertia = SpatialInertia<Scalar>(link->inertial);
+                    inertia_sx = SpatialInertia<SX>(link->inertial);
+                }
 
                 urdf::Pose pose = link->parent_joint->parent_to_joint_origin_transform;
                 spatial::Transform<Scalar> xtree(pose);
@@ -208,6 +217,12 @@ namespace grbda
 
                 registerBody(name, inertia, parent_name, xtree);
                 bodies_sx.emplace_back(bodies_in_current_cluster_.back().index_, name, bodies_in_current_cluster_.back().parent_index_, xtree_sx, inertia_sx, bodies_in_current_cluster_.back().sub_index_within_cluster_, bodies_in_current_cluster_.back().cluster_ancestor_index_, bodies_in_current_cluster_.back().cluster_ancestor_sub_index_within_cluster_);
+
+                if (!link->inertial)
+                {
+                    bodies_.pop_back();
+                    bodies_in_current_cluster_.pop_back();
+                }
 
                 // Create joint for registered body
                 ori::CoordinateAxis axis = ori::urdfAxisToCoordinateAxis(link->parent_joint->axis);
