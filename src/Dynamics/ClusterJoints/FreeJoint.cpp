@@ -8,7 +8,7 @@ namespace grbda
 
         template <typename Scalar, typename OrientationRepresentation>
         Free<Scalar, OrientationRepresentation>::Free(const Body<Scalar> &body)
-            : Base<Scalar>(1, OrientationRepresentation::num_ori_parameter + 3, 6), body_(body)
+            : Explicit<Scalar>(1, OrientationRepresentation::num_ori_parameter + 3, 6), body_(body)
         {
             if (body.parent_index_ >= 0)
                 throw std::runtime_error("Free joint is only valid as the first joint in a tree and thus cannot have a parent body");
@@ -45,16 +45,16 @@ namespace grbda
         }
 
         template <typename Scalar, typename OrientationRepresentation>
-        JointState<double> Free<Scalar, OrientationRepresentation>::randomJointState() const
+        JointState<Scalar> Free<Scalar, OrientationRepresentation>::randomJointState()
         {
             const int num_ori_param = OrientationRepresentation::num_ori_parameter;
 
-            JointState<double> joint_state(false, false);
-            joint_state.position = DVec<double>::Zero(num_ori_param + 3);
-            joint_state.position.template segment<3>(0) = Vec3<double>::Random(3);
+            JointState<Scalar> joint_state(false, false);
+            joint_state.position = DVec<Scalar>::Zero(num_ori_param + 3);
+            joint_state.position.template segment<3>(0) = Vec3<Scalar>::Random(3);
             joint_state.position.template segment<num_ori_param>(3) =
-                OrientationRepresentation::template randomOrientation<double>();
-            joint_state.velocity = DVec<double>::Random(6);
+                OrientationRepresentation::template randomOrientation<Scalar>();
+            joint_state.velocity = DVec<Scalar>::Random(6);
             return joint_state;
         }
 

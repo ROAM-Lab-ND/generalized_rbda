@@ -7,7 +7,7 @@ namespace grbda
     {
         template <typename Scalar>
         RevoluteWithRotor<Scalar>::RevoluteWithRotor(GearedTransmissionModule<Scalar> &module)
-            : Base<Scalar>(2, 1, 1), link_(module.body_), rotor_(module.rotor_)
+            : Explicit<Scalar>(2, 1, 1), link_(module.body_), rotor_(module.rotor_)
         {
             using Rev = Joints::Revolute<Scalar>;
             link_joint_ = this->single_joints_.emplace_back(new Rev(module.joint_axis_));

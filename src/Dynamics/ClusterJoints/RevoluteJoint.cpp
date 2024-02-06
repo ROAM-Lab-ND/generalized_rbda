@@ -7,7 +7,7 @@ namespace grbda
 
         template <typename Scalar>
         Revolute<Scalar>::Revolute(const Body<Scalar> &body, ori::CoordinateAxis joint_axis)
-            : Base<Scalar>(1, 1, 1), body_(body)
+            : Explicit<Scalar>(1, 1, 1), body_(body)
         {
             this->single_joints_.emplace_back(new Joints::Revolute<Scalar>(joint_axis));
 

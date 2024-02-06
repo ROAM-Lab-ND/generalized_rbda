@@ -6,6 +6,39 @@ namespace grbda
     namespace LoopConstraint
     {
         template <typename Scalar>
+        bool Base<Scalar>::isValidSpanningPosition(const JointCoordinate<Scalar> &joint_pos) const
+        {
+            if (!joint_pos.isSpanning())
+            {
+                return false;
+            }
+
+            // TODO(@MatthewChignoli): This is a hack for now. To fix, I think we need to either be able to create phi from gamma or just accept that this check does not work for explicit constraints.
+            if (phi_ == nullptr)
+            {
+                return true;
+            }
+
+            DVec<Scalar> violation = phi_(joint_pos);
+            return nearZeroDefaultTrue(violation);
+        }
+
+        template <typename Scalar>
+        bool Base<Scalar>::isValidSpanningVelocity(const JointCoordinate<Scalar> &joint_vel) const
+        {
+            if (!joint_vel.isSpanning())
+            {
+                return false;
+            }
+            DVec<Scalar> violation = K_ * joint_vel;
+            return nearZeroDefaultTrue(violation);
+        }
+
+        template struct Base<double>;
+        template struct Base<float>;
+        template struct Base<casadi::SX>;
+
+        template <typename Scalar>
         Static<Scalar>::Static(DMat<Scalar> G, DMat<Scalar> K)
         {
             this->gamma_ = [G](const JointCoordinate<Scalar> &joint_pos)

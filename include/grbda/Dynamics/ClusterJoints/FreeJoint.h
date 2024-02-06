@@ -53,7 +53,7 @@ namespace grbda
 
         template <typename Scalar = double,
                   typename OrientationRepresentation = ori_representation::Quaternion>
-        class Free : public Base<Scalar>
+        class Free : public Explicit<Scalar>
         {
         public:
             Free(const Body<Scalar> &body);
@@ -71,7 +71,7 @@ namespace grbda
             std::vector<std::tuple<Body<Scalar>, JointPtr<Scalar>, DMat<Scalar>>>
             bodiesJointsAndReflectedInertias() const override;
 
-            JointState<double> randomJointState() const override;
+            JointState<Scalar> randomJointState() override;
 
         private:
             const Body<Scalar> body_;

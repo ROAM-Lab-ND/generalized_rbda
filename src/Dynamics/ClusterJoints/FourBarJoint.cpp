@@ -264,8 +264,9 @@ namespace grbda
 
     namespace ClusterJoints
     {
+        // TODO(@MatthewChignoli): I think this is hacky for now. Should probably share code with the root finder creation from the Generic loop constraint
         template <typename Scalar>
-        JointState<double> FourBar<Scalar>::randomJointState() const
+        JointState<Scalar> FourBar<Scalar>::randomJointState()
         {
             using DM = casadi::DM;
 
@@ -276,15 +277,15 @@ namespace grbda
             casadi::DMDict arg;
             arg["x0"] = random<DM>(four_bar_constraint_->numSpanningPos());
             DM q_dm = four_bar_constraint_->random_state_helpers_.phi_root_finder(arg).at("x");
-            DVec<double> q(four_bar_constraint_->numSpanningPos());
+            DVec<Scalar> q(four_bar_constraint_->numSpanningPos());
             casadi::copy(q_dm, q);
-            JointCoordinate<double> joint_pos(q, true);
+            JointCoordinate<Scalar> joint_pos(q, true);
 
             // Random independent joint velocity
-            DVec<double> v = DVec<double>::Random(four_bar_constraint_->numIndependentVel());
-            JointCoordinate<double> joint_vel(v, false);
+            DVec<Scalar> v = DVec<Scalar>::Random(four_bar_constraint_->numIndependentVel());
+            JointCoordinate<Scalar> joint_vel(v, false);
 
-            return JointState<double>(joint_pos, joint_vel);
+            return JointState<Scalar>(joint_pos, joint_vel);
         }
 
         template struct FourBar<double>;

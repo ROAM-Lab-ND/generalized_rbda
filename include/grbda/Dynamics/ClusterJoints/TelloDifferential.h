@@ -48,7 +48,7 @@ namespace grbda
     {
 
         template <typename Scalar = double>
-        class TelloDifferential : public Base<Scalar>
+        class TelloDifferential : public Implicit<Scalar>
         {
         public:
             TelloDifferential(TelloDifferentialModule<Scalar> &module);
@@ -62,7 +62,7 @@ namespace grbda
             std::vector<std::tuple<Body<Scalar>, JointPtr<Scalar>, DMat<Scalar>>>
             bodiesJointsAndReflectedInertias() const override;
 
-            JointState<double> randomJointState() const override;
+            JointState<Scalar> randomJointState() override;
 
         protected:
             std::shared_ptr<LoopConstraint::TelloDifferential<Scalar>> tello_constraint_;

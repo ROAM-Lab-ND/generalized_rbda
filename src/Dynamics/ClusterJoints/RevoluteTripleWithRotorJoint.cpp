@@ -11,7 +11,7 @@ namespace grbda
             const ProximalTransmission &module_1,
             const IntermediateTransmission &module_2,
             const DistalTransmission &module_3)
-            : Base<Scalar>(6, 3, 3), link_1_(module_1.body_), link_2_(module_2.body_),
+            : Explicit<Scalar>(6, 3, 3), link_1_(module_1.body_), link_2_(module_2.body_),
               link_3_(module_3.body_), rotor_1_(module_1.rotor_), rotor_2_(module_2.rotor_),
               rotor_3_(module_3.rotor_)
         {

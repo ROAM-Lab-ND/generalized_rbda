@@ -9,7 +9,7 @@ namespace grbda
         template <typename Scalar>
         RevolutePairWithRotor<Scalar>::RevolutePairWithRotor(
             ProximalTransmission &module_1, DistalTransmission &module_2)
-            : Base<Scalar>(4, 2, 2), link1_(module_1.body_), link2_(module_2.body_),
+            : Explicit<Scalar>(4, 2, 2), link1_(module_1.body_), link2_(module_2.body_),
               rotor1_(module_1.rotor_), rotor2_(module_2.rotor_)
         {
             using Rev = Joints::Revolute<Scalar>;

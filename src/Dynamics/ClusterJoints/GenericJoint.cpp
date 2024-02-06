@@ -174,9 +174,9 @@ namespace grbda
         Generic<Scalar>::Generic(const std::vector<Body<Scalar>> &bodies,
                                  const std::vector<JointPtr<Scalar>> &joints,
                                  std::shared_ptr<LoopConstraint::Base<Scalar>> loop_constraint)
-            : Base<Scalar>((int)bodies.size(),
-                           loop_constraint->numIndependentPos(),
-                           loop_constraint->numIndependentVel()),
+            : Implicit<Scalar>((int)bodies.size(),
+                               loop_constraint->numIndependentPos(),
+                               loop_constraint->numIndependentVel()),
               bodies_(bodies)
         {
             this->loop_constraint_ = loop_constraint;

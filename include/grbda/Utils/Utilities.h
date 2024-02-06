@@ -118,8 +118,8 @@ namespace grbda
   }
 
   /*!
-   * Check if an Eigen vector is approximately zero
-   * NOTE: Operates on the entire vector, not element-wise
+   * Check if an Eigen matrix is approximately zero
+   * NOTE: Operates on the entire matrix, not element-wise
    */
   template <typename T>
   bool nearZero(const Eigen::MatrixBase<T> &vec, const typename T::Scalar &tol = 1e-8)
@@ -155,6 +155,45 @@ namespace grbda
   template <>
   inline bool nearZeroDefaultFalse<DVec<casadi::SX>>(const Eigen::MatrixBase<DVec<casadi::SX>> &vec,
                                                      const casadi::SX &tol)
+  {
+    return false;
+  }
+
+  /*!
+   * Check if an Eigen matrix contains NaNs
+   */
+  template <typename T>
+  bool containsNaN(const Eigen::MatrixBase<T> &vec)
+  {
+    return vec.hasNaN();
+  }
+
+  /*!
+   * These variants of containsNaN are used to handle the casadi::SX type because casadi::SX type
+   * objects cannot be converted to bool
+   */
+  template <typename T>
+  bool containsNaNDefaultTrue(const Eigen::MatrixBase<T> &vec)
+  {
+    return containsNaN(vec);
+  }
+
+  template <>
+  inline bool
+  containsNaNDefaultTrue<DVec<casadi::SX>>(const Eigen::MatrixBase<DVec<casadi::SX>> &vec)
+  {
+    return true;
+  }
+
+  template <typename T>
+  bool containsNaNDefaultFalse(const Eigen::MatrixBase<T> &vec)
+  {
+    return containsNaN(vec);
+  }
+
+  template <>
+  inline bool
+  containsNaNDefaultFalse<DVec<casadi::SX>>(const Eigen::MatrixBase<DVec<casadi::SX>> &vec)
   {
     return false;
   }

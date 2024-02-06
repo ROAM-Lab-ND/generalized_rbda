@@ -30,8 +30,6 @@ namespace grbda
             static DMat<Scalar> runCasadiFcn(const casadi::Function &fcn,
                                              const std::vector<DVec<Scalar>> &args);
 
-            // TODO(@MatthewChignoli): So we want a function that when given the independent coords return the spanning coords. This is what gamma does, right? So I think that actually is possible. But it is numerical, but that is fine with us I think. So then the next step is to make gamma a lambda function
-
             casadi::Function K_fcn_;
             casadi::Function G_fcn_;
             casadi::Function k_fcn_;
@@ -43,7 +41,7 @@ namespace grbda
     {
 
         template <typename Scalar = double>
-        class Generic : public Base<Scalar>
+        class Generic : public Implicit<Scalar>
         {
         public:
             // TODO(@MatthewChignoli): Maybe use pairs of bodies and joints instead of vectors? To make sure that the vectors are in the same order

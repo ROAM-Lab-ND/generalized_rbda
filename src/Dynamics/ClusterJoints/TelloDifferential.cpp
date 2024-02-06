@@ -23,10 +23,10 @@ namespace grbda
 
 			// TODO(@MatthewChignoli): root finder?
 			this->gamma_ = [](const JointCoordinate<Scalar> &joint_pos)
-            {
-                throw std::runtime_error("TelloDifferential: Explicit constraint does not exist");
+			{
+				throw std::runtime_error("TelloDifferential: Explicit constraint does not exist");
 				return DVec<Scalar>::Zero(2);
-            };
+			};
 
 			this->G_.setZero(4, 2);
 			this->K_.setZero(2, 4);
@@ -80,7 +80,7 @@ namespace grbda
 
 		template <typename Scalar>
 		TelloDifferential<Scalar>::TelloDifferential(TelloDifferentialModule<Scalar> &module)
-			: Base<Scalar>(4, 4, 2), rotor1_(module.rotor1_), rotor2_(module.rotor2_),
+			: Implicit<Scalar>(4, 4, 2), rotor1_(module.rotor1_), rotor2_(module.rotor2_),
 			  link1_(module.link1_), link2_(module.link2_), gear_ratio_(module.gear_ratio_)
 		{
 			using Rev = Joints::Revolute<Scalar>;
@@ -154,11 +154,11 @@ namespace grbda
 		}
 
 		template <typename Scalar>
-		JointState<double> TelloDifferential<Scalar>::randomJointState() const
+		JointState<Scalar> TelloDifferential<Scalar>::randomJointState()
 		{
-			JointCoordinate<double> joint_pos(DVec<double>::Zero(this->num_positions_), true);
-			JointCoordinate<double> joint_vel(DVec<double>::Zero(this->num_velocities_), false);
-			JointState<double> joint_state(joint_pos, joint_vel);
+			JointCoordinate<Scalar> joint_pos(DVec<Scalar>::Zero(this->num_positions_), true);
+			JointCoordinate<Scalar> joint_vel(DVec<Scalar>::Zero(this->num_velocities_), false);
+			JointState<Scalar> joint_state(joint_pos, joint_vel);
 
 			int nan_counter = 0;
 			bool nan_detected = true;
@@ -169,13 +169,13 @@ namespace grbda
 				Vec2<Scalar> minimal_pos = Vec2<Scalar>::Zero(2);
 				casadi_interface(dependent_state, minimal_pos, tello_constraint_->IK_pos_helpers_);
 				Vec2<Scalar> independent_pos = gear_ratio_ * minimal_pos;
-				joint_state.position << (double)independent_pos[0], (double)independent_pos[1],
-					(double)dependent_state[0][0], (double)dependent_state[0][1];
+				joint_state.position << independent_pos[0], independent_pos[1],
+					dependent_state[0][0], dependent_state[0][1];
 
 				if (nan_counter++ > 10)
 					throw std::runtime_error("[TelloDifferential] Too many attempts to compute a random state resulted in NaNs");
 
-				if (joint_state.position.hasNaN())
+				if (containsNaNDefaultFalse(joint_state.position))
 					continue;
 
 				nan_detected = false;
@@ -184,7 +184,7 @@ namespace grbda
 				dependent_state.push_back(DVec<Scalar>::Random(2));
 				Vec2<Scalar> minimal_vel = Vec2<Scalar>::Zero(2);
 				casadi_interface(dependent_state, minimal_vel, tello_constraint_->IK_vel_helpers_);
-				joint_state.velocity << (double)minimal_vel[0], (double)minimal_vel[1];
+				joint_state.velocity << minimal_vel[0], minimal_vel[1];
 			}
 
 			return joint_state;

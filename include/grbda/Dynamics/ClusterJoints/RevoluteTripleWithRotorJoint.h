@@ -10,7 +10,7 @@ namespace grbda
     {
 
         template <typename Scalar = double>
-        class RevoluteTripleWithRotor : public Base<Scalar>
+        class RevoluteTripleWithRotor : public Explicit<Scalar>
         {
         public:
             typedef ParallelBeltTransmissionModule<1, Scalar> ProximalTransmission;

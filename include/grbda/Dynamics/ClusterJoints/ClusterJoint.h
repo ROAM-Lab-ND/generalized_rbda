@@ -68,8 +68,6 @@ namespace grbda
                 return loop_constraint_->clone();
             }
 
-            virtual JointState<double> randomJointState() const;
-
             const DMat<Scalar> &G() const { return loop_constraint_->G(); }
             const DVec<Scalar> &g() const { return loop_constraint_->g(); }
 
@@ -82,6 +80,8 @@ namespace grbda
             }
 
             JointState<Scalar> toSpanningTreeState(const JointState<Scalar> &joint_state);
+            virtual bool isValidSpanningState(const JointState<Scalar> &joint_state) const = 0;
+            virtual JointState<Scalar> randomJointState() = 0;
 
         protected:
             const int num_bodies_;
@@ -93,12 +93,38 @@ namespace grbda
             DVec<Scalar> vJ_;
             DVec<Scalar> cJ_;
 
+            // TODO(@MatthewChignoli): Maybe we can make pointers to implicit and explicit constraints as protected members of the implicit and explicit cluster classes
             std::shared_ptr<LoopConstraint::Base<Scalar>> loop_constraint_;
             std::vector<JointPtr<Scalar>> single_joints_;
 
             DMat<int> spanning_tree_to_independent_coords_conversion_;
         };
 
+        // TODO(@MatthewChignoli): Move functions to .cpp
+        template <typename Scalar>
+        class Explicit : public Base<Scalar>
+        {
+        public:
+            Explicit(int num_bodies, int num_independent_positions, int num_independent_velocities);
+            virtual ~Explicit() {}
+
+            // TODO(@MatthewChignoli): How to check for valid spanning position? It's easy when G is static...
+            bool isValidSpanningState(const JointState<Scalar> &joint_state) const override;
+            JointState<Scalar> randomJointState() override;
+        };
+
+        template <typename Scalar>
+        class Implicit : public Base<Scalar>
+        {
+        public:
+            Implicit(int num_bodies, int num_independent_positions, int num_independent_velocities);
+            virtual ~Implicit() {}
+
+            bool isValidSpanningState(const JointState<Scalar> &joint_state) const override;
+            JointState<Scalar> randomJointState() override;
+
+            // TODO(@MatthewChignoli): All implicit constraints should have a rootfinder method for gamma
+        };
     }
 
 } // namespace grbda

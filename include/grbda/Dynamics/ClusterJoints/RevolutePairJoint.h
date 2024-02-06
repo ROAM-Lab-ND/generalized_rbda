@@ -10,7 +10,7 @@ namespace grbda
     {
 
         template <typename Scalar = double>
-        class RevolutePair : public Base<Scalar>
+        class RevolutePair : public Explicit<Scalar>
         {
         public:
             RevolutePair(Body<Scalar> &link_1, Body<Scalar> &link_2,

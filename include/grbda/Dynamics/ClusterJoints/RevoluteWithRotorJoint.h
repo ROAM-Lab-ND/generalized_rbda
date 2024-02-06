@@ -10,7 +10,7 @@ namespace grbda
     {
 
         template <typename Scalar = double>
-        class RevoluteWithRotor : public Base<Scalar>
+        class RevoluteWithRotor : public Explicit<Scalar>
         {
         public:
             RevoluteWithRotor(GearedTransmissionModule<Scalar> &module);

@@ -10,7 +10,7 @@ namespace grbda
     {
 
         template <typename Scalar = double>
-        class Revolute : public Base<Scalar>
+        class Revolute : public Explicit<Scalar>
         {
         public:
             Revolute(const Body<Scalar> &body, ori::CoordinateAxis joint_axis);

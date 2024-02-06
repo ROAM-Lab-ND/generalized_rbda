@@ -74,7 +74,7 @@ namespace grbda
 
             ClusterJointTypes type() const override { return ClusterJointTypes::FourBar; }
 
-            JointState<double> randomJointState() const override;
+            JointState<Scalar> randomJointState() override;
 
         private:
             std::shared_ptr<LoopConstraint::FourBar<Scalar>> four_bar_constraint_;
