@@ -36,7 +36,7 @@ namespace grbda
     const std::string name_;
     const int parent_index_;
     const spatial::Transform<Scalar> Xtree_;
-    SpatialInertia<Scalar> inertia_;
+    const SpatialInertia<Scalar> inertia_;
     const int sub_index_within_cluster_;
     const int cluster_ancestor_index_;
     const int cluster_ancestor_sub_index_within_cluster_;

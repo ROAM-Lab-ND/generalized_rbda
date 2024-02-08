@@ -17,6 +17,15 @@
 namespace grbda
 {
 
+  // TODO(@MatthewChignoli): Are the names InertialParams and LinearInertialParams clear?
+  template <typename Scalar = double>
+  struct InertialParams
+  {
+    Scalar m = 0;                           // mass
+    Vec3<Scalar> c = Vec3<Scalar>::Zero();  // vector from body frame to COM
+    Mat3<Scalar> Ic = Mat3<Scalar>::Zero(); // rotational inertia about COM
+  };
+
   template <typename Scalar = double>
   struct LinearInertialParams
   {
@@ -24,13 +33,13 @@ namespace grbda
     Vec3<Scalar> h = Vec3<Scalar>::Zero(); // first mass moment
     Mat3<Scalar> I = Mat3<Scalar>::Zero(); // rotational inertia about coordinate frame origin
 
-    // LinearInertialParams &operator=(const InertialParams<Scalar> &ip)
-    // {
-    //   m = ip.m;
-    //   h = ip.m * ip.c;
-    //   I = ip.Ic + ip.m * ori::vectorToSkewMat(ip.c) * ori::vectorToSkewMat(ip.c).transpose();
-    //   return *this;
-    // }
+    LinearInertialParams &operator=(const InertialParams<Scalar> &ip)
+    {
+      m = ip.m;
+      h = ip.m * ip.c;
+      I = ip.Ic + ip.m * ori::vectorToSkewMat(ip.c) * ori::vectorToSkewMat(ip.c).transpose();
+      return *this;
+    }
   };
 
   /*!
@@ -154,6 +163,30 @@ namespace grbda
       Mat3<T> I_rot = _inertia.template topLeftCorner<3, 3>() -
                       mcSkew * mcSkew.transpose() / m;
       return I_rot;
+    }
+
+    /*!
+     * Get inertial parameters
+     */
+    InertialParams<T> getInertialParams()
+    {
+      InertialParams<T> ip;
+      ip.m = getMass();
+      ip.c = getCOM();
+      ip.Ic = getInertiaTensor();
+      return ip;
+    }
+
+    /*!
+     * Get linear inertial parameters
+     */
+    LinearInertialParams<T> getLinearInertialParams()
+    {
+      LinearInertialParams<T> ip;
+      ip.m = getMass();
+      ip.h = ori::matToSkewVec(_inertia.template topRightCorner<3, 3>());
+      ip.I = _inertia.template topLeftCorner<3, 3>();
+      return ip;
     }
 
     /*!
