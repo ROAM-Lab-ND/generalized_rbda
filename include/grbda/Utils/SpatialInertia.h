@@ -16,6 +16,23 @@
 
 namespace grbda
 {
+
+  template <typename Scalar = double>
+  struct LinearInertialParams
+  {
+    Scalar m = 0;                          // mass
+    Vec3<Scalar> h = Vec3<Scalar>::Zero(); // first mass moment
+    Mat3<Scalar> I = Mat3<Scalar>::Zero(); // rotational inertia about coordinate frame origin
+
+    // LinearInertialParams &operator=(const InertialParams<Scalar> &ip)
+    // {
+    //   m = ip.m;
+    //   h = ip.m * ip.c;
+    //   I = ip.Ic + ip.m * ori::vectorToSkewMat(ip.c) * ori::vectorToSkewMat(ip.c).transpose();
+    //   return *this;
+    // }
+  };
+
   /*!
    * Representation of Rigid Body Inertia as a 6x6 Spatial Inertia Tensor
    */
@@ -41,6 +58,19 @@ namespace grbda
      * Construct spatial inertia from 6x6 matrix
      */
     explicit SpatialInertia(const Mat6<T> &inertia) { _inertia = inertia; }
+
+    /*!
+     * Construct spatial inertia from struct containting mass, first mass moment, and 3x3 rotational
+     * inertia about the coordinate frame origin
+     */
+    SpatialInertia(const LinearInertialParams<T> &ip)
+    {
+      Mat3<T> hSkew = ori::vectorToSkewMat(ip.h);
+      _inertia.template topLeftCorner<3, 3>() = ip.I;
+      _inertia.template topRightCorner<3, 3>() = hSkew;
+      _inertia.template bottomLeftCorner<3, 3>() = hSkew.transpose();
+      _inertia.template bottomRightCorner<3, 3>() = ip.m * Mat3<T>::Identity();
+    }
 
     /*!
      * Construct urdf Inertial
