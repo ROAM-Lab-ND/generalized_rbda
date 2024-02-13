@@ -140,12 +140,12 @@ namespace grbda
     /*!
      * Get mass
      */
-    T getMass() { return _inertia(5, 5); }
+    T getMass() const { return _inertia(5, 5); }
 
     /*!
      * Get center of mass location
      */
-    Vec3<T> getCOM()
+    Vec3<T> getCOM() const
     {
       T m = getMass();
       Mat3<T> mcSkew = _inertia.template topRightCorner<3, 3>();
@@ -156,7 +156,7 @@ namespace grbda
     /*!
      * Get 3x3 rotational inertia
      */
-    Mat3<T> getInertiaTensor()
+    Mat3<T> getInertiaTensor() const
     {
       T m = getMass();
       Mat3<T> mcSkew = _inertia.template topRightCorner<3, 3>();
@@ -168,7 +168,7 @@ namespace grbda
     /*!
      * Get inertial parameters
      */
-    InertialParams<T> getInertialParams()
+    InertialParams<T> getInertialParams() const
     {
       InertialParams<T> ip;
       ip.m = getMass();
@@ -180,7 +180,7 @@ namespace grbda
     /*!
      * Get linear inertial parameters
      */
-    LinearInertialParams<T> getLinearInertialParams()
+    LinearInertialParams<T> getLinearInertialParams() const
     {
       LinearInertialParams<T> ip;
       ip.m = getMass();
