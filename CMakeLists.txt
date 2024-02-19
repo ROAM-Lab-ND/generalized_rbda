@@ -26,19 +26,11 @@ else()
   message(FATAL_ERROR "Eigen3 not found. Please install it or specify its location.")
 endif()
 
-find_package(casadi REQUIRED)
-if(casadi_FOUND)
-  message(STATUS "CasADi found")
-  set(CASADI_INCLUDE_DIR "/usr/local/include/casadi" CACHE PATH "Path to Casadi include directory")
-  include_directories(${CASADI_INCLUDE_DIR}/..)
-  find_library(CASADI_LIBRARY
-    NAMES casadi
-    HINTS ${CASADI_INCLUDE_DIR}/../lib $ENV{CASADI_PREFIX}/lib)
-  if(CASADI_LIBRARY)
-    set(CASADI_LIBRARIES ${CASADI_LIBRARIES} ${CASADI_LIBRARY})
-  endif()
+find_package(CASADI REQUIRED)
+if (CASADI_FOUND)
+  message("CasADi found")
 else()
-  message(FATAL_ERROR "CasADi not found. Please install it or specify its location.")
+  message(FATAL_ERROR "Fatal error : CasADi not found. Please install it or specify its location.\n")
 endif()
 
 # TODO(@MatthewChignoli): Once repo is stable, install the binaries rather than compile them from submodule
