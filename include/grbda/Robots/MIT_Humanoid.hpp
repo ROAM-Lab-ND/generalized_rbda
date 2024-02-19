@@ -124,7 +124,7 @@ namespace grbda
         Scalar _kneeGearRatio = 6.0;
         Vec1<Scalar> _kneeBeltRatios{2.0}; // {Thigh belt}
         Scalar _ankleGearRatio = 6.0;
-        Vec2<Scalar> _ankleBeltRatios{2.0, 2.0}; // {Thigh belt, Thigh belt * Shank belt}
+        Vec2<Scalar> _ankleBeltRatios{2.0, 1.0}; // {Thigh belt, Shank belt}
 
         Scalar _shoulderRxGearRatio = 6.0;
         Scalar _shoulderRzGearRatio = 6.0;
