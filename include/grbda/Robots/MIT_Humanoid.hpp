@@ -83,6 +83,10 @@ namespace grbda
         Scalar _shoulderRzMass = 0.905588;
         Scalar _elbowMass = 0.34839;
 
+        // 
+        Scalar _smallRotorMass = 0.001;
+        Scalar _largeRotorMass = 0.0025;
+
         //
         Scalar _hipRzPitch = -0.174533;
         Scalar _hipRxPitch = 0.436332;
