@@ -1,4 +1,4 @@
-# DynamicsEngine
+# Generalized Rigid Body Dynamics Algorithms
 
 This repository contains a C++ library of generalized rigid-body dynamics algorithms.
 The algorithms are based on the recursive algorithms of [Featherstone](http://royfeatherstone.org/), but modified such that they can efficiently compute the constrained dynamics of robotic systems with kinematic loops between small groups of bodies, also known as "local loop constraints."
