@@ -41,9 +41,20 @@ else()
   message(FATAL_ERROR "CasADi not found. Please install it or specify its location.")
 endif()
 
-# TODO(@MatthewChignoli): Once repo is stable, install the binaries rather than compile them from submodule
-add_subdirectory(third-parties/URDF-Parser)
-include_directories(${PROJECT_SOURCE_DIR}/third-parties/URDF-Parser/include)
+find_package(brl_urdf REQUIRED)
+if(brl_urdf_FOUND)
+  message(STATUS "URDF-Parser found")
+  set(URDF_PARSER_INCLUDE_DIR "/usr/local/include/brl_urdf" CACHE PATH "Path to URDF-Parser include directory")
+  include_directories(${URDF_PARSER_INCLUDE_DIR}/..)
+  find_library(URDF_PARSER_LIBRARY
+    NAMES brl_urdf
+    HINTS ${URDF_PARSER_INCLUDE_DIR}/../lib $ENV{URDF_PARSER_PREFIX}/lib)
+  if(URDF_PARSER_LIBRARY)
+    set(URDF_PARSER_LIBRARIES ${URDF_PARSER_LIBRARIES} ${URDF_PARSER_LIBRARY})
+  endif()
+else()
+  message(FATAL_ERROR "URDF-Parser not found. Please install it or specify its location.")
+endif()
 
 ################################################################################
 # Setup Compilation
@@ -108,7 +119,7 @@ if(NOT GRBDA_SRCS)
 	set(LIBRARY_NAME)
 else()
   add_library(${PROJECT_NAME} ${GRBDA_SRCS})
-  target_link_libraries(${PROJECT_NAME} PRIVATE ${CASADI_LIBRARIES} custom_urdf)
+  target_link_libraries(${PROJECT_NAME} PRIVATE ${CASADI_LIBRARIES} brl_urdf)
 
   set(LIBRARY_NAME ${PROJECT_NAME})
   set_target_properties(${PROJECT_NAME} PROPERTIES POSITION_INDEPENDENT_CODE TRUE) 
@@ -149,11 +160,11 @@ else()
 endif()
 
 # TODO(@MatthewChignoli): Should be able to disable these from upstream CMakeLists
-# if(BUILD_TESTS)
-#   message(STATUS "======>  Setup Tests  ")
-#   enable_testing()
-#   add_subdirectory(UnitTests)
-# endif()
+if(BUILD_TESTS)
+  message(STATUS "======>  Setup Tests  ")
+  enable_testing()
+  add_subdirectory(UnitTests)
+endif()
 
 # if(BUILD_BENCHMARKS)
 #   message(STATUS "======>  Setup Benchmarks  ")

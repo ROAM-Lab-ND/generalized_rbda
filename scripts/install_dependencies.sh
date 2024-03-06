@@ -30,11 +30,21 @@ tar xf cmake-3.15.0.tar.gz
 rm cmake-3.15.0.tar.gz
 cd cmake-3.15.0
 ./configure
-make
+make -j8
 sudo make install 
 hash -r
 cmake --version 
 echo "[CMAKE] CMAKE installed"
+
+# URDF-Parser Installation
+cd $DEP_PATH
+echo "[URDF-PARSER] BUILDING URDF-PARSER 0.1.0..."
+wget https://github.com/mit-biomimetics/URDF-Parser/archive/v0.1.0.zip
+unzip v0.1.0.zip
+rm v0.1.0.zip
+cd URDF-Parser-0.1.0
+mkdir build && cd build && cmake .. && sudo make -j8 && sudo make install
+echo "[URDF-PARSER] URDF-PARSER 0.1.0 INSTALLED"
 
 # Eigen 3.4.0 Installation
 cd $DEP_PATH 

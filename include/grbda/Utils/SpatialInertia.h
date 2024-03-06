@@ -12,7 +12,7 @@
 
 #include "OrientationTools.h"
 #include "Spatial.h"
-#include "custom_urdf/link.h"
+#include "brl_urdf/link.h"
 
 namespace grbda
 {

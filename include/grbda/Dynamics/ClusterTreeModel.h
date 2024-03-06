@@ -9,7 +9,7 @@
 
 #include "grbda/Dynamics/TreeModel.h"
 #include "grbda/Dynamics/Nodes/ClusterTreeNode.h"
-#include "custom_urdf/urdf_parser.h"
+#include "brl_urdf/urdf_parser.h"
 
 
 namespace grbda
