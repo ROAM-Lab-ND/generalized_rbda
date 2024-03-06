@@ -72,9 +72,9 @@ namespace grbda
         Scalar _torsoMass = 8.52; // from measuring the total weight of the humanoid
 
         Scalar _hipRzMass = 0.84563;
-        Scalar _hipRxMass = 1.208683;
+        Scalar _hipRxMass = 1.20868;
         Scalar _hipRyMass = 2.64093;
-        Scalar _kneeMass = 0.3543355;
+        Scalar _kneeMass = 0.35434;
         Scalar _ankleMass = 0.280951;
 
         //
