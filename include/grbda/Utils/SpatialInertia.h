@@ -40,6 +40,15 @@ namespace grbda
       I = ip.Ic + ip.m * ori::vectorToSkewMat(ip.c) * ori::vectorToSkewMat(ip.c).transpose();
       return *this;
     }
+
+    LinearInertialParams &operator=(const Vec10<Scalar> &other)
+    {
+      m = other(0);
+      h = other.template segment<3>(1);
+      I << other(4), other(5), other(6), other(5), other(7), other(8), other(6), other(8), other(9);
+      return *this;
+    }
+
   };
 
   /*!
