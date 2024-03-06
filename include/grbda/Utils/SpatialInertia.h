@@ -41,7 +41,7 @@ namespace grbda
       return *this;
     }
 
-    LinearInertialParams &operator=(const Vec10<Scalar> &other)
+    LinearInertialParams &operator=(const Eigen::Vector<Scalar, 10> &other)
     {
       m = other(0);
       h = other.template segment<3>(1);
