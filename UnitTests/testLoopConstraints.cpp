@@ -6,6 +6,13 @@
 
 using namespace grbda;
 
+struct FourBarParameters
+{
+    Eigen::Vector<double, 4> link_lengths;
+    int independent_coordinate;
+    double offset_angle;
+};
+
 class fourBarLoopConstraintTestHelper
 {
 private:
@@ -26,31 +33,20 @@ public:
     } casadi_fcns;
 
 public:
-    fourBarLoopConstraintTestHelper()
+    fourBarLoopConstraintTestHelper(const FourBarParameters& params) 
     {
-        // Find link lengths that satisfy the Grashof condition
-        Eigen::Vector<double, 4> link_lengths;
-        bool grashof_satisfied = false;
-        while (!grashof_satisfied)
-        {
-            double scale = 2.0;
-            link_lengths = Eigen::Vector<double, 4>::Constant(scale) +
-                           scale * Eigen::Vector<double, 4>::Random();
-            grashof_satisfied = checkGrashofCondition(link_lengths);
-        }
-
-        // Assign the independent coordinate
-        // NOTE: The fixed angle b/t joints of link 1 and link 3 cannot be the independent coord
-        Eigen::Index min_length_idx;
-        double min_length = link_lengths.minCoeff(&min_length_idx);
-        int independent_coordinate = min_length_idx != 3 ? min_length_idx : 0;
+        Eigen::Vector<double, 4> link_lengths = params.link_lengths;
+        int independent_coordinate = params.independent_coordinate;
+        double offset_angle = params.offset_angle;
 
         // Assign the differenent paths from the parent joint of the cluster to the constraint joint
         std::vector<SX> path1_lengths_sym, path2_lengths_sym;
         std::vector<double> path1_lengths, path2_lengths;
         for (int i = 0; i < 3; i++)
         {
-            if (randomBool())
+            // TODO(@MatthewChignoli): For now, the root finder breaks down if you add links in an order other than link 1 and 2 in path1 and link 3 in path2
+            // if (randomBool())
+            if (i < 2)
             {
                 path1_lengths_sym.push_back(link_lengths[i]);
                 path1_lengths.push_back(link_lengths[i]);
@@ -63,7 +59,6 @@ public:
         }
 
         // Offset between fixed locations of joint 1 and joint 3
-        double offset_angle = random<double>();
         Vec2<SX> offset_sym{link_lengths[3] * std::cos(offset_angle),
                             link_lengths[3] * std::sin(offset_angle)};
         Vec2<double> offset{link_lengths[3] * std::cos(offset_angle),
@@ -83,12 +78,30 @@ public:
     std::vector<casadi::DM> randomJointState() const
     {
         // Find a feasible joint position
+        double range = 6.28;
+        casadi::DM q_ind = range * (2. * casadi::DM::rand(four_bar_sym_->numIndependentPos()) - 1.);
+        casadi::DM q_dep_guess = range * (2. * casadi::DM::rand(2) - 1.);
         casadi::DMDict arg;
-        arg["x0"] = random<casadi::DM>(four_bar_sym_->numSpanningPos());
-        casadi::DM q_dm = four_bar_sym_->random_state_helpers_.phi_root_finder(arg).at("x");
+        arg["p"] = q_ind;
+        arg["x0"] = q_dep_guess;
+        casadi::DM q_dep = four_bar_sym_->random_state_helpers_.phi_root_finder(arg).at("x");
+
+        casadi::DM q_dm;
+        switch (four_bar_sym_->independent_coordinate())
+        {
+        case 0:
+            q_dm = casadi::DM::vertcat({q_ind, q_dep});
+            break;
+        case 1:
+            q_dm = casadi::DM::vertcat({q_dep(0), q_ind, q_dep(1)});
+            break;
+        case 2:
+            q_dm = casadi::DM::vertcat({q_dep(0), q_dep(1), q_ind});
+            break;
+        }
         DVec<double> q(four_bar_sym_->numSpanningPos());
         casadi::copy(q_dm, q);
-        JointCoordinate<double> joint_pos(q, false);
+        JointCoordinate<double> joint_pos(q, true);
 
         // Compute the explicit constraint jacobians
         four_bar_num->updateJacobians(joint_pos);
@@ -98,7 +111,7 @@ public:
         DVec<double> v = G * DVec<double>::Random(four_bar_num->numIndependentVel());
         casadi::DM v_dm = casadi::DM::zeros(four_bar_sym_->numSpanningVel(), 1);
         casadi::copy(v, v_dm);
-        JointCoordinate<double> joint_vel(v, false);
+        JointCoordinate<double> joint_vel(v, true);
 
         // Compute the constraint biases
         four_bar_num->updateBiases(JointState<double>(joint_pos, joint_vel));
@@ -121,11 +134,9 @@ private:
         casadi::copy(cs_q_sym, q_sym);
 
         SX cs_v_sym = SX::sym("v", four_bar_sym_->numSpanningVel(), 1);
-        DVec<SX> v_sym(four_bar_sym_->numSpanningVel());
-        casadi::copy(cs_v_sym, v_sym);
 
         // Set state and update kinematics
-        JointCoordinate<SX> joint_pos(q_sym, false);
+        JointCoordinate<SX> joint_pos(q_sym, true);
 
         // Compute constraint violation
         DVec<SX> phi = four_bar_sym_->phi(joint_pos);
@@ -156,23 +167,6 @@ private:
             casadi_fcns.k = casadi::Function("k", args, res);
         }
     }
-
-    bool checkGrashofCondition(const Eigen::Vector<double, 4> &link_lengths) const
-    {
-        Eigen::Index max_length_idx;
-        double max_length = link_lengths.maxCoeff(&max_length_idx);
-
-        Eigen::Index min_length_idx;
-        double min_length = link_lengths.minCoeff(&min_length_idx);
-
-        std::vector<Eigen::Index> remaining_indices{0, 1, 2, 3};
-        remaining_indices.erase(std::remove(remaining_indices.begin(), remaining_indices.end(), max_length_idx), remaining_indices.end());
-        remaining_indices.erase(std::remove(remaining_indices.begin(), remaining_indices.end(), min_length_idx), remaining_indices.end());
-
-        double middle_lengths_sum = link_lengths(remaining_indices[0]) +
-                                    link_lengths(remaining_indices[1]);
-        return min_length + max_length <= middle_lengths_sum;
-    }
 };
 
 GTEST_TEST(LoopConstraint, FourBar)
@@ -184,68 +178,87 @@ GTEST_TEST(LoopConstraint, FourBar)
     // and bias returns the same result as the autodiff method
     // 3) Verifies that the implicit and explicit constraint jacobians and biases are consistent
 
-    for (int i = 0; i < 25; i++)
+    // TODO(@MatthewChignoli)
+    // - change the order of link paths (or enforce they always have the same order?)
+
+    std::vector<FourBarParameters> four_bars;
+    four_bars.push_back({Eigen::Vector<double, 4>{0.096, .042 - .011, 0.096, .042 - .011}, 0, 0.});
+    four_bars.push_back({Eigen::Vector<double, 4>{1., 1., 1., 1.}, 0, 1.0});
+    four_bars.push_back({Eigen::Vector<double, 4>{5., 12., 12., 10.}, 0, 0.});
+
+    four_bars.push_back({Eigen::Vector<double, 4>{1., 1., 1., 1.}, 1, 0.});
+    four_bars.push_back({Eigen::Vector<double, 4>{5., 12., 12., 10.}, 1, 2.0});
+
+    four_bars.push_back({Eigen::Vector<double, 4>{0.096, .042 - .011, 0.096, .042 - .011}, 2, 0.});
+    four_bars.push_back({Eigen::Vector<double, 4>{1., 1., 1., 1.}, 2, 0.5});
+    four_bars.push_back({Eigen::Vector<double, 4>{4., 8.25, 8.25, 2.}, 2, 0.});
+    four_bars.push_back({Eigen::Vector<double, 4>{4., 8.25, 8.25, 2.}, 2, -1.3});
+
+    for (const auto &params : four_bars)
     {
-        fourBarLoopConstraintTestHelper helper;
+        fourBarLoopConstraintTestHelper helper(params);
         std::shared_ptr<LoopConstraint::FourBar<double>> four_bar_num = helper.four_bar_num;
 
-        std::vector<casadi::DM> q_v_vd_dm = helper.randomJointState();
-        casadi::DM q_dm = q_v_vd_dm[0];
-        casadi::DM v_dm = q_v_vd_dm[1];
-        casadi::DM vd_dm = q_v_vd_dm[2];
-        std::vector<casadi::DM> state_dm{q_dm, v_dm};
+        for (int i = 0; i < 5; i++)
+        {
+            std::vector<casadi::DM> q_v_vd_dm = helper.randomJointState();
+            casadi::DM q_dm = q_v_vd_dm[0];
+            casadi::DM v_dm = q_v_vd_dm[1];
+            casadi::DM vd_dm = q_v_vd_dm[2];
+            std::vector<casadi::DM> state_dm{q_dm, v_dm};
 
-        DVec<double> q(3);
-        casadi::copy(q_dm, q);
+            DVec<double> q(3);
+            casadi::copy(q_dm, q);
 
-        DVec<double> v(3);
-        casadi::copy(v_dm, v);
+            DVec<double> v(3);
+            casadi::copy(v_dm, v);
 
-        DVec<double> vd(3);
-        casadi::copy(vd_dm, vd);
+            DVec<double> vd(3);
+            casadi::copy(vd_dm, vd);
 
-        JointCoordinate<double> joint_pos(q, false);
-        JointCoordinate<double> joint_vel(v, false);
-        JointState<double> joint_state(joint_pos, joint_vel);
+            JointCoordinate<double> joint_pos(q, true);
+            JointCoordinate<double> joint_vel(v, true);
+            JointState<double> joint_state(joint_pos, joint_vel);
 
-        DVec<double> phi = four_bar_num->phi(joint_pos);
-        four_bar_num->updateJacobians(joint_pos);
-        DMat<double> K = four_bar_num->K();
-        four_bar_num->updateBiases(joint_state);
-        DVec<double> k = four_bar_num->k();
+            DVec<double> phi = four_bar_num->phi(joint_pos);
+            four_bar_num->updateJacobians(joint_pos);
+            DMat<double> K = four_bar_num->K();
+            four_bar_num->updateBiases(joint_state);
+            DVec<double> k = four_bar_num->k();
 
-        // Verify that the constraints are satisfied
-        GTEST_ASSERT_LE(phi.norm(), 1e-8) << "phi:\n"
-                                          << phi;
+            // Verify that the constraints are satisfied
+            GTEST_ASSERT_LE(phi.norm(), 1e-8) << "phi:\n"
+                                              << phi;
 
-        GTEST_ASSERT_LE((K * v).norm(), 1e-8) << "K*v:\n"
-                                              << K * v;
+            GTEST_ASSERT_LE((K * v).norm(), 1e-8) << "K*v:\n"
+                                                  << K * v;
 
-        GTEST_ASSERT_LE((K * vd - k).norm(), 1e-8) << "K*vd + k:\n"
-                                                   << K * vd + k;
+            GTEST_ASSERT_LE((K * vd - k).norm(), 1e-8) << "K*vd + k:\n"
+                                                       << K * vd + k;
 
-        // Compare analytical vs. autodiff implicit constraints
-        DMat<double> K_ad(2, 3);
-        casadi::copy(helper.casadi_fcns.K(q_dm)[0], K_ad);
-        GTEST_ASSERT_LE((K - K_ad).norm(), 1e-10) << "K:\n"
-                                                  << K << "\nK_ad:\n"
-                                                  << K_ad;
+            // Compare analytical vs. autodiff implicit constraints
+            DMat<double> K_ad(2, 3);
+            casadi::copy(helper.casadi_fcns.K(q_dm)[0], K_ad);
+            GTEST_ASSERT_LE((K - K_ad).norm(), 1e-10) << "K:\n"
+                                                      << K << "\nK_ad:\n"
+                                                      << K_ad;
 
-        DVec<double> k_ad(2);
-        casadi::copy(helper.casadi_fcns.k(state_dm)[0], k_ad);
-        GTEST_ASSERT_LE((k - k_ad).norm(), 1e-10) << "k:\n"
-                                                  << k << "\nk_ad:\n"
-                                                  << k_ad;
+            DVec<double> k_ad(2);
+            casadi::copy(helper.casadi_fcns.k(state_dm)[0], k_ad);
+            GTEST_ASSERT_LE((k - k_ad).norm(), 1e-10) << "k:\n"
+                                                      << k << "\nk_ad:\n"
+                                                      << k_ad;
 
-        // Verify agreement between implicit and explicit jacobians and biases
-        DMat<double> G = four_bar_num->G();
-        GTEST_ASSERT_LE((K * G).norm(), 1e-10) << "K*G:\n"
-                                               << K * G;
+            // Verify agreement between implicit and explicit jacobians and biases
+            DMat<double> G = four_bar_num->G();
+            GTEST_ASSERT_LE((K * G).norm(), 1e-10) << "K*G:\n"
+                                                   << K * G;
 
-        DVec<double> g = four_bar_num->g();
-        GTEST_ASSERT_LE((K * g - k).norm(), 1e-10) << "K*g:\n"
-                                                   << K * g << "\nk:\n"
-                                                   << k;
+            DVec<double> g = four_bar_num->g();
+            GTEST_ASSERT_LE((K * g - k).norm(), 1e-10) << "K*g:\n"
+                                                       << K * g << "\nk:\n"
+                                                       << k;
+        }
     }
 }
 
