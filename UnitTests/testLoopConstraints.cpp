@@ -178,9 +178,6 @@ GTEST_TEST(LoopConstraint, FourBar)
     // and bias returns the same result as the autodiff method
     // 3) Verifies that the implicit and explicit constraint jacobians and biases are consistent
 
-    // TODO(@MatthewChignoli)
-    // - change the order of link paths (or enforce they always have the same order?)
-
     std::vector<FourBarParameters> four_bars;
     four_bars.push_back({Eigen::Vector<double, 4>{0.096, .042 - .011, 0.096, .042 - .011}, 0, 0.});
     four_bars.push_back({Eigen::Vector<double, 4>{1., 1., 1., 1.}, 0, 1.0});
