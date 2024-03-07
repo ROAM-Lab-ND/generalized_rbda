@@ -108,7 +108,7 @@ if(NOT GRBDA_SRCS)
 	set(LIBRARY_NAME)
 else()
   add_library(${PROJECT_NAME} ${GRBDA_SRCS})
-  target_link_libraries(${PROJECT_NAME} PRIVATE ${CASADI_LIBRARIES} custom_urdf)
+  target_link_libraries(${PROJECT_NAME} PRIVATE ${CASADI_LIBRARIES} brl_urdf)
 
   set(LIBRARY_NAME ${PROJECT_NAME})
   set_target_properties(${PROJECT_NAME} PROPERTIES POSITION_INDEPENDENT_CODE TRUE) 

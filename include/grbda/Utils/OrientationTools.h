@@ -21,7 +21,7 @@
 #include <type_traits>
 #include "cppTypes.h"
 #include "Utilities.h"
-#include "custom_urdf/pose.h"
+#include "brl_urdf/pose.h"
 
 namespace grbda
 {

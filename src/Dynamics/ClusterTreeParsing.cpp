@@ -3,12 +3,27 @@
 namespace grbda
 {
     template <typename Scalar>
-    void ClusterTreeModel<Scalar>::buildModelFromURDF(const std::string &urdf_filename,
-                                                      bool floating_base)
+    void ClusterTreeModel<Scalar>::buildModelFromURDF(
+        const std::string &urdf_filename, bool floating_base)
     {
         std::shared_ptr<urdf::ModelInterface> model;
         model = urdf::parseURDFFile(urdf_filename, false);
+        buildFromUrdfModelInterface(model, floating_base);
+    }
 
+    template <typename Scalar>
+    void ClusterTreeModel<Scalar>::buildModelFromURDF(
+        const std::vector<std::string> &urdf_filenames, bool floating_base)
+    {
+        std::shared_ptr<urdf::ModelInterface> model;
+        model = urdf::parseURDFFiles(urdf_filenames, false);
+        buildFromUrdfModelInterface(model, floating_base);
+    }
+
+    template <typename Scalar>
+    void ClusterTreeModel<Scalar>::buildFromUrdfModelInterface(
+        const UrdfModelPtr model, bool floating_base)
+    {
         if (model == nullptr)
             throw std::runtime_error("Could not parse URDF file");
 
