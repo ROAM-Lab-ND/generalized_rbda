@@ -222,33 +222,63 @@ namespace grbda
                                                path2_link_lengths_sym,
                                                offset_sym, independent_coordinate_);
 
-            // Define symbolic variables
-            SX cs_q_sym = SX::sym("q", this->numSpanningPos(), 1);
-            DVec<SX> q_sym(this->numSpanningPos());
-            casadi::copy(cs_q_sym, q_sym);
+            // Root finding
+            {
+                SX cs_q_sym = SX::sym("q", this->numSpanningPos());
+                DVec<SX> q_sym(this->numSpanningPos());
+                casadi::copy(cs_q_sym, q_sym);
 
-            // Compute constraint violation
-            JointCoordinate<SX> joint_pos(q_sym, false);
-            DVec<SX> phi_sx = symbolic.phi(joint_pos);
-            SX f_sym = phi_sx.transpose() * phi_sx;
+                // Compute constraint violation
+                JointCoordinate<SX> joint_pos(q_sym, true);
+                DVec<SX> phi_sx = symbolic.phi(joint_pos);
+                SX cs_phi_sym = casadi::SX(casadi::Sparsity::dense(phi_sx.rows(), 1));
+                casadi::copy(phi_sx, cs_phi_sym);
 
-            // Create root finder nlp
-            casadi::SXDict nlp = {{"x", cs_q_sym}, {"f", f_sym}};
-            casadi::Dict opts = {};
-            opts.insert(std::make_pair("print_time", false));
-            opts.insert(std::make_pair("ipopt.tol", 1e-12));
-            opts.insert(std::make_pair("ipopt.linear_solver", "ma27"));
-            opts.insert(std::make_pair("ipopt.print_level", 0));
-            random_state_helpers_.phi_root_finder = casadi::nlpsol("solver", "ipopt", nlp, opts);
+                // Slice depending on independent coordinate
+                casadi::Slice ind_slice, dep_slice;
+                switch (independent_coordinate_)
+                {
+                case 0:
+                    ind_slice = casadi::Slice(0);
+                    dep_slice = casadi::Slice(1, 3);
+                    break;
+                case 1:
+                    ind_slice = casadi::Slice(1);
+                    dep_slice = casadi::Slice(0, 3, 2);
+                    break;
+                case 2:
+                    ind_slice = casadi::Slice(2);
+                    dep_slice = casadi::Slice(0, 2);
+                    break;
+                default:
+                    throw std::runtime_error("FourBar: Invalid independent coordinate");
+                }
 
-            // Compute explicit constraint jacobian
-            symbolic.updateJacobians(joint_pos);
-            DMat<SX> G = symbolic.G();
-            SX G_sym = casadi::SX(casadi::Sparsity::dense(G.rows(), G.cols()));
-            casadi::copy(G, G_sym);
+                // Create rootfinder problem
+                casadi::SXDict rootfinder_problem;
+                rootfinder_problem["x"] = cs_q_sym(dep_slice);
+                rootfinder_problem["p"] = cs_q_sym(ind_slice);
+                rootfinder_problem["g"] = cs_phi_sym;
+                casadi::Dict options;
+                options["expand"] = true;
+                options["error_on_fail"] = true;
+                random_state_helpers_.phi_root_finder = casadi::rootfinder("solver", "newton",
+                                                                           rootfinder_problem,
+                                                                           options);
+            }
 
-            // Create G function
-            random_state_helpers_.G = casadi::Function("G", {cs_q_sym}, {G_sym}, {"q"}, {"G"});
+            // Explicit constraint jacobian
+            {
+                SX cs_q_sym = SX::sym("q", this->numSpanningPos());
+                DVec<SX> q_sym(this->numSpanningPos());
+                casadi::copy(cs_q_sym, q_sym);
+                JointCoordinate<SX> joint_pos(q_sym, false);
+                symbolic.updateJacobians(joint_pos);
+                DMat<SX> G = symbolic.G();
+                SX G_sym = casadi::SX(casadi::Sparsity::dense(G.rows(), G.cols()));
+                casadi::copy(G, G_sym);
+                random_state_helpers_.G = casadi::Function("G", {cs_q_sym}, {G_sym}, {"q"}, {"G"});
+            }
         }
 
         template struct FourBar<double>;
@@ -266,10 +296,30 @@ namespace grbda
             // Create Helper functions
             four_bar_constraint_->createRandomStateHelpers();
 
-            // Find a feasible joint position
+            // Random independent position coordinate
+            double range = 6.28;
+            DM q_ind = range * (2. * DM::rand(four_bar_constraint_->numIndependentPos()) - 1.);
+            DM q_dep_guess = range * (2. * DM::rand(four_bar_constraint_->numIndependentPos() - 1) - 1.);
+
+            // Call the rootfinder to get dependent position coordinates
             casadi::DMDict arg;
-            arg["x0"] = random<DM>(four_bar_constraint_->numSpanningPos());
-            DM q_dm = four_bar_constraint_->random_state_helpers_.phi_root_finder(arg).at("x");
+            arg["p"] = q_ind;
+            arg["x0"] = q_dep_guess;
+            DM q_dep = four_bar_constraint_->random_state_helpers_.phi_root_finder(arg).at("x");
+
+            DM q_dm;
+            switch (four_bar_constraint_->independent_coordinate())
+            {
+            case 0:
+                q_dm = DM::vertcat({q_ind, q_dep});
+                break;
+            case 1:
+                q_dm = DM::vertcat({q_dep(0), q_ind, q_dep(1)});
+                break;
+            case 2:
+                q_dm = DM::vertcat({q_dep(0), q_dep(1), q_ind});
+                break;
+            }
             DVec<double> q(four_bar_constraint_->numSpanningPos());
             casadi::copy(q_dm, q);
             JointCoordinate<double> joint_pos(q, true);

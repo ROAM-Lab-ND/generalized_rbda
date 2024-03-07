@@ -42,6 +42,8 @@ namespace grbda
                 casadi::Function G;
             } random_state_helpers_;
 
+            const int& independent_coordinate() const { return independent_coordinate_; }
+
         private:
             void updateImplicitJacobian(const JointCoordinate<Scalar> &joint_pos);
             void updateExplicitJacobian(const DMat<Scalar> &K);
