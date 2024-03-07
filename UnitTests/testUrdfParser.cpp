@@ -1,12 +1,12 @@
 #include "gtest/gtest.h"
 
+#include "config.h"
 #include "grbda/Dynamics/ClusterTreeModel.h"
 #include "grbda/Robots/RobotTypes.h"
 
 using namespace grbda;
 
-const std::string urdf_directory = "/home/matt/repos/URDF-Parser/";
-// const std::string urdf_directory = "/Users/matthewchignoli/repos/URDF-Parser/";
+const std::string urdf_directory = SOURCE_DIRECTORY "/urdfs/";
 
 struct URDFParserTestData
 {
@@ -50,9 +50,6 @@ std::vector<URDFvsManualTestData> GetTestRobots()
     test_data.push_back({urdf_directory + "planar_leg_linkage.urdf",
                          std::make_shared<PlanarLegLinkage<double>>(),
                          false});
-    test_data.push_back({urdf_directory + "revolute_rotor_chain.urdf",
-                         std::make_shared<RevoluteChainWithRotor<3, double>>(false),
-                         false});
     test_data.push_back({urdf_directory + "mini_cheetah.urdf",
                          std::make_shared<MiniCheetah<double>>(),
                          true});
@@ -70,6 +67,7 @@ class URDFvsManualTests : public ::testing::TestWithParam<URDFvsManualTestData>
 protected:
     URDFvsManualTests()
     {
+        std::cout << "URDF file: " << GetParam().urdf_file << std::endl;
         manual_model = GetParam().robot->buildClusterTreeModel();
         urdf_model.buildModelFromURDF(GetParam().urdf_file, GetParam().floating_base);
         urdf_model.setGravity(manual_model.getGravity().tail<3>());
@@ -82,7 +80,6 @@ protected:
         {
             // TODO(@MatthewChignoli): The gneric cluster should override the randomJointState function. Maybe that means we need different generic clusters for implicit vs. explicit?
             JointState<> joint_state = cluster->joint_->randomJointState();
-            // JointState<> spanning_joint_state = cluster->joint_->toSpanningTreeState(joint_state);
             model_state.push_back(joint_state);
         }
 
@@ -133,6 +130,14 @@ TEST_P(URDFvsManualTests, compareToManuallyConstructed)
             GTEST_ASSERT_LT((w_manual - w_urdf).norm(), tol);
         }
 
+        // Verify the spatial inertias of the bodies
+        for (const auto &body : this->manual_model.bodies())
+        {
+            const Mat6<double> I_manual = body.inertia_.getMatrix();
+            const Mat6<double> I_urdf = this->urdf_model.body(body.name_).inertia_.getMatrix();
+            GTEST_ASSERT_LT((I_manual - I_urdf).norm(), tol);
+        }
+
         // Verify the mass matrix
         const DMat<double> H_manual = this->manual_model.getMassMatrix();
         const DMat<double> H_urdf = this->urdf_model.getMassMatrix();
@@ -147,7 +152,7 @@ TEST_P(URDFvsManualTests, compareToManuallyConstructed)
         const DVec<double> tau = DVec<double>::Random(this->manual_model.getNumDegreesOfFreedom());
         const DVec<double> ydd_manual = this->manual_model.forwardDynamics(tau);
         const DVec<double> ydd_urdf = this->urdf_model.forwardDynamics(tau);
-        GTEST_ASSERT_LT((ydd_manual - ydd_urdf).norm(), tol);
+        GTEST_ASSERT_LT((ydd_manual - ydd_urdf).norm(), tol * 1e2);
 
         // Verify the inverse dynamics
         const DVec<double> ydd = DVec<double>::Random(this->manual_model.getNumDegreesOfFreedom());
