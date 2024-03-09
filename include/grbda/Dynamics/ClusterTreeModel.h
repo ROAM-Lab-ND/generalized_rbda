@@ -55,8 +55,24 @@ namespace grbda
         }
         ~ClusterTreeModel() {}
 
-        void buildModelFromURDF(const std::string &urdf_filename, bool floating_base);
-        void buildModelFromURDF(const std::vector<std::string> &urdf_filenames, bool floating_base);
+        
+        template <typename OrientationRepresentation = ori_representation::Quaternion>
+        void buildModelFromURDF(
+            const std::string &urdf_filename, bool floating_base)
+        {
+            std::shared_ptr<urdf::ModelInterface> model;
+            model = urdf::parseURDFFile(urdf_filename, false);
+            buildFromUrdfModelInterface<OrientationRepresentation>(model, floating_base);
+        }
+        
+        template <typename OrientationRepresentation = ori_representation::Quaternion>
+        void buildModelFromURDF(
+            const std::vector<std::string> &urdf_filenames, bool floating_base)
+        {
+            std::shared_ptr<urdf::ModelInterface> model;
+            model = urdf::parseURDFFiles(urdf_filenames, false);
+            buildFromUrdfModelInterface<OrientationRepresentation>(model, floating_base);
+        }
 
         // The standard process for appending a cluster to the tree is to register all the bodies
         // in  given cluster and then append them as a cluster by specifying the type of cluster
@@ -171,7 +187,9 @@ namespace grbda
         // TODO(@MatthewChignoli): Is this bad? Maybe
         using SX = casadi::SX;
 
+        template <typename OrientationRepresentation = ori_representation::Quaternion>
         void buildFromUrdfModelInterface(const UrdfModelPtr model, bool floating_base);
+        
         void appendClustersViaDFS(std::map<UrdfClusterPtr, bool> &visited, UrdfClusterPtr cluster);
         void appendClusterFromUrdfCluster(UrdfClusterPtr cluster);
         void appendSimpleRevoluteJointFromUrdfCluster(UrdfLinkPtr link);
