@@ -5,9 +5,10 @@
 
 using namespace grbda;
 
-const std::string urdf_directory = "/home/matt/repos/URDF-Parser/";
+// const std::string urdf_directory = "/home/matt/repos/URDF-Parser/";
 // const std::string urdf_directory = "/Users/matthewchignoli/repos/URDF-Parser/";
-
+// const std::string urdf_directory = "/home/user/git/Robot-Software.worktrees/454-automate-system-id/third-parties/generalized_rbda/third-parties/URDF-Parser/examples/";
+const std::string urdf_directory = "/home/user/git/Robot-Software.worktrees/454-automate-system-id/config/robot_models/";
 struct URDFParserTestData
 {
     std::string urdf_file;
@@ -155,4 +156,22 @@ TEST_P(URDFvsManualTests, compareToManuallyConstructed)
         const DVec<double> tau_urdf = this->urdf_model.inverseDynamics(ydd);
         GTEST_ASSERT_LT((tau_manual - tau_urdf).norm(), tol);
     }
+}
+
+TEST(CasadiURDF, load){
+    ClusterTreeModel<casadi::SX> model_quat = ClusterTreeModel<casadi::SX>();
+    model_quat.buildModelFromURDF(urdf_directory + "mit_humanoid.urdf", true);
+    
+    ClusterTreeModel<casadi::SX> model_rpy = ClusterTreeModel<casadi::SX>();
+    model_rpy.buildModelFromURDF<ori_representation::RollPitchYaw>({urdf_directory + "mit_humanoid.urdf"}, true);
+
+    const std::vector<std::string> urdf_paths =
+        {urdf_directory +  "mit_humanoid_torso.urdf",
+         urdf_directory +  "mit_humanoid_right_leg_sys_id.urdf",
+         urdf_directory +  "mit_humanoid_left_leg_sys_id.urdf",
+         urdf_directory +  "mit_humanoid_right_arm.urdf",
+         urdf_directory +  "mit_humanoid_left_arm.urdf"};
+
+    ClusterTreeModel<casadi::SX> model_rpy_combined = ClusterTreeModel<casadi::SX>();
+    model_rpy_combined.buildModelFromURDF<ori_representation::RollPitchYaw>(urdf_paths, true);
 }
