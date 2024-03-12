@@ -7,7 +7,7 @@ using namespace grbda;
 
 const std::string urdf_directory = "/home/matt/repos/URDF-Parser/";
 // const std::string urdf_directory = "/Users/matthewchignoli/repos/URDF-Parser/";
-const std::string urdf_directory = "/home/user/git/Robot-Software.worktrees/454-automate-system-id/config/robot_models/";
+
 struct URDFParserTestData
 {
     std::string urdf_file;
