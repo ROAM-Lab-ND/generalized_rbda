@@ -49,6 +49,13 @@ namespace grbda
       return *this;
     }
 
+    Vec10<Scalar> toVector() const
+    {
+      Vec10<Scalar> v;
+      v << m, h, I(0, 0), I(0, 1), I(0, 2), I(1, 1), I(1, 2), I(2, 2);
+      return v;
+    }
+
   };
 
   /*!
