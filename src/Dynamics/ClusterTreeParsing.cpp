@@ -2,13 +2,13 @@
 
 namespace grbda
 {
-    template <typename Scalar>
-    void ClusterTreeModel<Scalar>::buildModelFromURDF(const std::string &urdf_filename,
-                                                      bool floating_base)
-    {
-        std::shared_ptr<urdf::ModelInterface> model;
-        model = urdf::parseURDFFile(urdf_filename, false);
 
+
+    template <typename Scalar>
+    template <typename OrientationRepresentation>
+    void ClusterTreeModel<Scalar>::buildFromUrdfModelInterface(
+        const UrdfModelPtr model, bool floating_base)
+    {
         if (model == nullptr)
             throw std::runtime_error("Could not parse URDF file");
 
@@ -25,7 +25,7 @@ namespace grbda
             std::string parent_name = "ground";
             SpatialInertia<Scalar> inertia(root->inertial);
             spatial::Transform<Scalar> xtree = spatial::Transform<Scalar>{};
-            using Free = ClusterJoints::Free<Scalar, ori_representation::Quaternion>;
+            using Free = ClusterJoints::Free<Scalar, OrientationRepresentation>;
             appendBody<Free>(name, inertia, parent_name, xtree);
         }
         else
@@ -359,5 +359,19 @@ namespace grbda
     template class ClusterTreeModel<double>;
     template class ClusterTreeModel<float>;
     template class ClusterTreeModel<casadi::SX>;
+
+    template void ClusterTreeModel<double>::buildFromUrdfModelInterface<ori_representation::Quaternion>(
+        const UrdfModelPtr model, bool floating_base);
+    template void ClusterTreeModel<float>::buildFromUrdfModelInterface<ori_representation::Quaternion>(
+        const UrdfModelPtr model, bool floating_base);
+    template void ClusterTreeModel<casadi::SX>::buildFromUrdfModelInterface<ori_representation::Quaternion>(
+        const UrdfModelPtr model, bool floating_base);
+    template void ClusterTreeModel<double>::buildFromUrdfModelInterface<ori_representation::RollPitchYaw>(
+        const UrdfModelPtr model, bool floating_base);
+    template void ClusterTreeModel<float>::buildFromUrdfModelInterface<ori_representation::RollPitchYaw>(
+        const UrdfModelPtr model, bool floating_base);
+    template void ClusterTreeModel<casadi::SX>::buildFromUrdfModelInterface<ori_representation::RollPitchYaw>(
+        const UrdfModelPtr model, bool floating_base);
+
 
 } // namespace grbda

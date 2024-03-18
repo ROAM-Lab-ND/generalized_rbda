@@ -17,6 +17,7 @@ namespace grbda
     template <typename Scalar>
     using ClusterTreeNodePtr = std::shared_ptr<ClusterTreeNode<Scalar>>;
 
+    using UrdfModelPtr = std::shared_ptr<urdf::ModelInterface>;
     using UrdfClusterPtr = std::shared_ptr<urdf::Cluster>;
     using UrdfLinkPtr = std::shared_ptr<urdf::Link>;
     using UrdfConstraintPtr = std::shared_ptr<urdf::Constraint>;
@@ -54,8 +55,24 @@ namespace grbda
         }
         ~ClusterTreeModel() {}
 
-        // TODO(@MatthewChignoli): Should argument be default? Or should there be two functions with different names?
-        void buildModelFromURDF(const std::string &urdf_filename, bool floating_base);
+        
+        template <typename OrientationRepresentation = ori_representation::Quaternion>
+        void buildModelFromURDF(
+            const std::string &urdf_filename, bool floating_base)
+        {
+            std::shared_ptr<urdf::ModelInterface> model;
+            model = urdf::parseURDFFile(urdf_filename, false);
+            buildFromUrdfModelInterface<OrientationRepresentation>(model, floating_base);
+        }
+        
+        template <typename OrientationRepresentation = ori_representation::Quaternion>
+        void buildModelFromURDF(
+            const std::vector<std::string> &urdf_filenames, bool floating_base)
+        {
+            std::shared_ptr<urdf::ModelInterface> model;
+            model = urdf::parseURDFFiles(urdf_filenames, false);
+            buildFromUrdfModelInterface<OrientationRepresentation>(model, floating_base);
+        }
 
         // The standard process for appending a cluster to the tree is to register all the bodies
         // in  given cluster and then append them as a cluster by specifying the type of cluster
@@ -170,6 +187,9 @@ namespace grbda
         // TODO(@MatthewChignoli): Is this bad? Maybe
         using SX = casadi::SX;
 
+        template <typename OrientationRepresentation = ori_representation::Quaternion>
+        void buildFromUrdfModelInterface(const UrdfModelPtr model, bool floating_base);
+        
         void appendClustersViaDFS(std::map<UrdfClusterPtr, bool> &visited, UrdfClusterPtr cluster);
         void appendClusterFromUrdfCluster(UrdfClusterPtr cluster);
         void appendSimpleRevoluteJointFromUrdfCluster(UrdfLinkPtr link);
