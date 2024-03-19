@@ -3,7 +3,6 @@
 
 #include <memory>
 #include "grbda/Utils/StateRepresentation.h"
-#include "grbda/Utils/Utilities.h"
 
 namespace grbda
 {
