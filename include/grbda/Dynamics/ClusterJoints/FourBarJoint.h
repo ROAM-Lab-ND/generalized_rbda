@@ -2,7 +2,6 @@
 #define GRBDA_FOUR_BAR_JOINT_H
 
 #include "grbda/Utils/Utilities.h"
-// #include "grbda/Dynamics/ClusterJoints/ClusterJoint.h"
 #include "grbda/Dynamics/ClusterJoints/GenericJoint.h"
 
 namespace grbda
@@ -10,8 +9,6 @@ namespace grbda
 
     namespace LoopConstraint
     {
-        // TODO(@MatthewChignoli): Later we can worry about how we handle the fixed offset with this loop constraint compared to the generic one
-        // TODO(@MatthewChignoli): Missing the fixed offset between the joints of link 1 and link 3
         template <typename Scalar = double>
         struct FourBar : Base<Scalar>
         {
@@ -25,14 +22,13 @@ namespace grbda
                 return std::make_shared<FourBar<Scalar>>(*this);
             }
 
-            void updateJacobians(const JointCoordinate<Scalar> &joint_pos) override;
-
-            void updateBiases(const JointState<Scalar> &joint_state) override;
-
             DVec<Scalar> gamma(const JointCoordinate<Scalar> &joint_pos) const override
             {
                 throw std::runtime_error("FourBar: Explicit constraint does not exist");
             }
+
+            void updateJacobians(const JointCoordinate<Scalar> &joint_pos) override;
+            void updateBiases(const JointState<Scalar> &joint_state) override;
 
             void createRandomStateHelpers();
             struct
@@ -66,7 +62,6 @@ namespace grbda
     namespace ClusterJoints
     {
 
-        // TODO(@MatthewChignoli): Before specializing, use the generic joint first
         template <typename Scalar = double>
         class FourBar : public Generic<Scalar>
         {

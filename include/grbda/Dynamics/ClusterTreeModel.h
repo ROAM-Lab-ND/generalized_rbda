@@ -8,9 +8,9 @@
 #include <optional>
 
 #include "grbda/Dynamics/TreeModel.h"
+#include "grbda/Dynamics/ClusterJoints/LoopConstraintCaptures.h"
 #include "grbda/Dynamics/Nodes/ClusterTreeNode.h"
 #include "grbda/Urdf/urdf_parser.h"
-
 
 namespace grbda
 {
@@ -21,24 +21,6 @@ namespace grbda
     using UrdfClusterPtr = std::shared_ptr<urdf::Cluster>;
     using UrdfLinkPtr = std::shared_ptr<urdf::Link>;
     using UrdfConstraintPtr = std::shared_ptr<urdf::Constraint>;
-
-    // TODO(@MatthewChignoli): Where to put this struct
-    struct ConstraintCapture
-    {
-        std::vector<Body<casadi::SX>> nca_to_predecessor_subtree;
-        std::vector<Body<casadi::SX>> nca_to_successor_subtree;
-    };
-
-    struct PositionConstraintCapture : public ConstraintCapture
-    {
-        urdf::Pose predecessor_to_constraint_origin_transform;
-        urdf::Pose successor_to_constraint_origin_transform;
-    };
-
-    struct RollingConstraintCapture : public ConstraintCapture
-    {
-        double ratio;
-    };
 
     /*!
      * Class to represent a floating base rigid body model with rotors and ground contacts.
