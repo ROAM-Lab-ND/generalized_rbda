@@ -41,10 +41,6 @@ else()
   message(FATAL_ERROR "CasADi not found. Please install it or specify its location.")
 endif()
 
-# TODO(@MatthewChignoli): Once repo is stable, install the binaries rather than compile them from submodule
-add_subdirectory(third-parties/URDF-Parser)
-include_directories(${PROJECT_SOURCE_DIR}/third-parties/URDF-Parser/include)
-
 ################################################################################
 # Setup Compilation
 ################################################################################
@@ -91,12 +87,15 @@ if(ASAN)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address")
 endif()
 
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/config.h.in ${CMAKE_CURRENT_BINARY_DIR}/config.h)
+
 ################################################################################
 # Specify Build Resources
 ################################################################################
 message(STATUS "======>  Setup Build  ")
 
 include_directories(include)
+include_directories(${CMAKE_CURRENT_BINARY_DIR})
 file(GLOB_RECURSE GRBDA_SRCS "src/*.cpp")
 
 ################################################################################
@@ -108,7 +107,7 @@ if(NOT GRBDA_SRCS)
 	set(LIBRARY_NAME)
 else()
   add_library(${PROJECT_NAME} ${GRBDA_SRCS})
-  target_link_libraries(${PROJECT_NAME} PRIVATE ${CASADI_LIBRARIES} brl_urdf)
+  target_link_libraries(${PROJECT_NAME} PRIVATE ${CASADI_LIBRARIES})
 
   set(LIBRARY_NAME ${PROJECT_NAME})
   set_target_properties(${PROJECT_NAME} PROPERTIES POSITION_INDEPENDENT_CODE TRUE) 
@@ -149,11 +148,11 @@ else()
 endif()
 
 # TODO(@MatthewChignoli): Should be able to disable these from upstream CMakeLists
-# if(BUILD_TESTS)
-#   message(STATUS "======>  Setup Tests  ")
-#   enable_testing()
-#   add_subdirectory(UnitTests)
-# endif()
+if(BUILD_TESTS)
+  message(STATUS "======>  Setup Tests  ")
+  enable_testing()
+  add_subdirectory(UnitTests)
+endif()
 
 # if(BUILD_BENCHMARKS)
 #   message(STATUS "======>  Setup Benchmarks  ")
