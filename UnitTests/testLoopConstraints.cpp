@@ -15,13 +15,10 @@ struct FourBarParameters
 
 class fourBarLoopConstraintTestHelper
 {
-private:
     using SX = casadi::SX;
     using FourBar = LoopConstraint::FourBar<double>;
     using CasFcn = casadi::Function;
     using FourBarSX = LoopConstraint::FourBar<SX>;
-
-    std::shared_ptr<FourBarSX> four_bar_sym_;
 
 public:
     std::shared_ptr<FourBar> four_bar_num;
@@ -32,8 +29,11 @@ public:
         CasFcn k;
     } casadi_fcns;
 
+private:
+    std::shared_ptr<FourBarSX> four_bar_sym_;
+
 public:
-    fourBarLoopConstraintTestHelper(const FourBarParameters& params) 
+    fourBarLoopConstraintTestHelper(const FourBarParameters &params)
     {
         Eigen::Vector<double, 4> link_lengths = params.link_lengths;
         int independent_coordinate = params.independent_coordinate;
@@ -44,9 +44,9 @@ public:
         std::vector<double> path1_lengths, path2_lengths;
         for (int i = 0; i < 3; i++)
         {
-            // TODO(@MatthewChignoli): For now, the root finder breaks down if you add links in an order other than link 1 and 2 in path1 and link 3 in path2
-            // if (randomBool())
-            if (i < 2)
+            // TODO(@MatthewChignoli): For now, the root finder breaks down if you add links in an 
+            // order other than link 1 and 2 in path1 and link 3 in path2
+            if (i < 2) // (randomBool())
             {
                 path1_lengths_sym.push_back(link_lengths[i]);
                 path1_lengths.push_back(link_lengths[i]);
@@ -262,7 +262,6 @@ GTEST_TEST(LoopConstraint, FourBar)
     }
 }
 
-// TODO(@MatthewChignoli): How to test this?
 GTEST_TEST(LoopConstraint, GenericImplicit)
 {
     // This test creates an abritrary generic implicit loop constraint and then verifies that
@@ -319,5 +318,4 @@ GTEST_TEST(LoopConstraint, GenericImplicit)
         }
     }
 
-    // TODO(@MatthewChignoli): Unit test specialized loop constraints against generic loop constraints
 }

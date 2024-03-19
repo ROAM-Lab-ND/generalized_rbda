@@ -297,9 +297,10 @@ namespace grbda
             four_bar_constraint_->createRandomStateHelpers();
 
             // Random independent position coordinate
+            const int n_ind = four_bar_constraint_->numIndependentPos();
             double range = 6.28;
-            DM q_ind = range * (2. * DM::rand(four_bar_constraint_->numIndependentPos()) - 1.);
-            DM q_dep_guess = range * (2. * DM::rand(four_bar_constraint_->numIndependentPos() - 1) - 1.);
+            DM q_ind = range * (2. * DM::rand(n_ind) - 1.);
+            DM q_dep_guess = range * (2. * DM::rand(n_ind - 1) - 1.);
 
             // Call the rootfinder to get dependent position coordinates
             casadi::DMDict arg;
