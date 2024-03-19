@@ -285,7 +285,7 @@ TYPED_TEST(DynamicsAlgosDerivativesTest, rnea)
             }
             GTEST_ASSERT_LE((dqdd_ddq_ad - dqdd_ddq_fd).norm(), 2e-5);
 
-            // Partial with respect to dq
+            // Partial with respect to qd
             DMat<double> dqdd_dqd_fd(this->nv_, this->nv_);
             for (int j = 0; j < this->nv_; j++)
             {

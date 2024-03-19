@@ -112,49 +112,47 @@ else()
   set(LIBRARY_NAME ${PROJECT_NAME})
   set_target_properties(${PROJECT_NAME} PROPERTIES POSITION_INDEPENDENT_CODE TRUE) 
 
-  # TODO(@MatthewChignoli): Add back in once parser dependency is stable
-  # install(TARGETS ${PROJECT_NAME}
-  #         EXPORT ${PROJECT_NAME}Targets
-  #         LIBRARY DESTINATION lib
-  #         ARCHIVE DESTINATION lib
-  #         RUNTIME DESTINATION bin
-  #         INCLUDES DESTINATION include)
+  install(TARGETS ${PROJECT_NAME}
+          EXPORT ${PROJECT_NAME}Targets
+          LIBRARY DESTINATION lib
+          ARCHIVE DESTINATION lib
+          RUNTIME DESTINATION bin
+          INCLUDES DESTINATION include)
 
-  # install(DIRECTORY include/ DESTINATION include)
+  install(DIRECTORY include/ DESTINATION include)
 
-  # include(CMakePackageConfigHelpers)
-  # write_basic_package_version_file(
-  #   ${PROJECT_NAME}ConfigVersion.cmake
-  #   VERSION ${PACKAGE_VERSION}
-  #   COMPATIBILITY AnyNewerVersion
-  # )
+  include(CMakePackageConfigHelpers)
+  write_basic_package_version_file(
+    ${PROJECT_NAME}ConfigVersion.cmake
+    VERSION ${PACKAGE_VERSION}
+    COMPATIBILITY AnyNewerVersion
+  )
 
-  # configure_package_config_file(
-  #   ${PROJECT_SOURCE_DIR}/cmake/${PROJECT_NAME}Config.cmake.in
-  #   ${PROJECT_BINARY_DIR}/${PROJECT_NAME}Config.cmake
-  #   INSTALL_DESTINATION lib/cmake/${PROJECT_NAME}
-  # )
+  configure_package_config_file(
+    ${PROJECT_SOURCE_DIR}/cmake/${PROJECT_NAME}Config.cmake.in
+    ${PROJECT_BINARY_DIR}/${PROJECT_NAME}Config.cmake
+    INSTALL_DESTINATION lib/cmake/${PROJECT_NAME}
+  )
 
-  # install(EXPORT ${PROJECT_NAME}Targets
-  #   FILE ${PROJECT_NAME}Targets.cmake
-  #   NAMESPACE ${PROJECT_NAME}::
-  #   DESTINATION lib/cmake/${PROJECT_NAME})
+  install(EXPORT ${PROJECT_NAME}Targets
+    FILE ${PROJECT_NAME}Targets.cmake
+    NAMESPACE ${PROJECT_NAME}::
+    DESTINATION lib/cmake/${PROJECT_NAME})
 
-  # install(FILES
-  #   ${PROJECT_BINARY_DIR}/${PROJECT_NAME}Config.cmake
-  #   ${PROJECT_BINARY_DIR}/${PROJECT_NAME}ConfigVersion.cmake
-  #   DESTINATION lib/cmake/${PROJECT_NAME}
-  # )
+  install(FILES
+    ${PROJECT_BINARY_DIR}/${PROJECT_NAME}Config.cmake
+    ${PROJECT_BINARY_DIR}/${PROJECT_NAME}ConfigVersion.cmake
+    DESTINATION lib/cmake/${PROJECT_NAME}
+  )
 endif()
 
-# TODO(@MatthewChignoli): Should be able to disable these from upstream CMakeLists
 if(BUILD_TESTS)
   message(STATUS "======>  Setup Tests  ")
   enable_testing()
   add_subdirectory(UnitTests)
 endif()
 
-# if(BUILD_BENCHMARKS)
-#   message(STATUS "======>  Setup Benchmarks  ")
-#   add_subdirectory(Benchmarking)
-# endif()
+if(BUILD_BENCHMARKS)
+  message(STATUS "======>  Setup Benchmarks  ")
+  add_subdirectory(Benchmarking)
+endif()

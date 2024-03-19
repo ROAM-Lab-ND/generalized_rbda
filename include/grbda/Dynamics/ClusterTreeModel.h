@@ -160,11 +160,6 @@ namespace grbda
         {
             return cluster_nodes_[cluster_index];
         }
-        // TODO(@MatthewChignoli): Need to figure out if we want to name the clusters. I actually think that we do not need to.
-        // const ClusterTreeNodePtr<Scalar> cluster(const std::string &cluster_name) const
-        // {
-        //     return cluster_nodes_[cluster_name_to_cluster_index_.at(cluster_name)];
-        // }
 
         Vec3<Scalar> getPosition(const std::string &body_name) override;
         Mat3<Scalar> getOrientation(const std::string &body_name) override;
