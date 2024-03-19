@@ -25,18 +25,8 @@ namespace grbda
             int numConstraints() const { return K_.rows(); }
 
             bool isExplicit() const { return phi_ == nullptr; }
-
-            bool isValidSpanningPosition(const JointCoordinate<Scalar> &joint_pos) const
-            {
-                DVec<Scalar> violation = phi_(joint_pos);
-                return nearZeroDefaultTrue(violation) && joint_pos.isSpanning();
-            }
-
-            bool isValidSpanningVelocity(const JointCoordinate<Scalar> &joint_vel) const
-            {
-                DVec<Scalar> violation = K_ * joint_vel;
-                return nearZeroDefaultTrue(violation) && joint_vel.isSpanning();
-            }
+            bool isValidSpanningPosition(const JointCoordinate<Scalar> &joint_pos) const;
+            bool isValidSpanningVelocity(const JointCoordinate<Scalar> &joint_vel) const;
 
             virtual void updateJacobians(const JointCoordinate<Scalar> &joint_pos) = 0;
             virtual void updateBiases(const JointState<Scalar> &joint_state) = 0;
@@ -58,8 +48,6 @@ namespace grbda
             DMat<Scalar> K_;
             DVec<Scalar> k_;
         };
-
-        // TODO(@MatthewChignoli): Should we have a middle layer of abstraction for implicit vs explicit constraints? The independent coordinate mapping is one example of something that could be abstracted for all implicit constraints.
 
         template <typename Scalar = double>
         struct Static : Base<Scalar>
