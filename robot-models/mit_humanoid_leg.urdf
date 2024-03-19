@@ -106,7 +106,7 @@
   </joint>
   <link name="knee_link">
     <inertial>
-      <mass value="0.35434"/>
+      <mass value="0.35435"/>
       <origin xyz="0.00528 0.0014762 -0.13201"/>
       <inertia ixx="0.003051" ixy="0.0" ixz="0.0000873" iyy="0.003033" iyz="3.93e-05" izz="0.0002529"/>
     </inertial>
