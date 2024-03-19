@@ -17,7 +17,7 @@
 namespace grbda
 {
 
-  // TODO(@MatthewChignoli): Are the names InertialParams and LinearInertialParams clear?
+  // Conventional inertial parameters: mass, center of mass, and 3x3 rotational inertia about COM
   template <typename Scalar = double>
   struct InertialParams
   {
@@ -26,6 +26,8 @@ namespace grbda
     Mat3<Scalar> Ic = Mat3<Scalar>::Zero(); // rotational inertia about COM
   };
 
+  // Inertial parameters that the dynamics are linear with respect to:
+  // mass, first mass moment, and 3x3 rotational inertia about the coordinate frame origin
   template <typename Scalar = double>
   struct LinearInertialParams
   {
