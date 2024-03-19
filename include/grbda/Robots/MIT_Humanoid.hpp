@@ -74,7 +74,7 @@ namespace grbda
         Scalar _hipRzMass = 0.84563;
         Scalar _hipRxMass = 1.20868;
         Scalar _hipRyMass = 2.64093;
-        Scalar _kneeMass = 0.35434;
+        Scalar _kneeMass = 0.35435;
         Scalar _ankleMass = 0.280951;
 
         //
