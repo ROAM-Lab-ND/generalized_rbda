@@ -23,10 +23,9 @@ namespace grbda
             int ind_dim = ind_coords.size();
             int dep_dim = dep_coords.size();
 
-            // TODO(@MatthewChignoli): Should there be rules about the relationship between the number of independent and dependent coordinates and the dimension of the constraint?
-
             // The coordinate map is a matrix that maps the stacked indepedent
-            // coordinates [y;q_dep] to the spanning coordinate vector q
+            // coordinates [y;q_dep] to the spanning coordinate vector q such that
+            // q = coord_map * [y;q_dep]
             SX coord_map = SX::zeros(state_dim, state_dim);
             for (int i = 0; i < ind_dim; i++)
             {
@@ -95,7 +94,6 @@ namespace grbda
                 return runCasadiFcn(cs_phi_fcn, joint_pos);
             };
 
-            // TODO(@MatthewChignoli): Is there overhead in calling these? Should they be combined? K and G, and k and g?
             this->K_ = DMat<Scalar>::Zero(constraint_dim, state_dim);
             K_fcn_ = casadi::Function("K", {cs_q_sym}, {cs_K_sym});
 
