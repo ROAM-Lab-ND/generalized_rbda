@@ -52,6 +52,10 @@ namespace grbda
 
         checkValidParentClusterForBodiesInCluster(cluster_nodes_.back());
 
+        // TODO(@MatthewChignoli): Much of the code is built to support spanning or independent 
+        // representations of the joint state. However, this method of assigning the position and 
+        // velocity indices determine whether the cluster tree model is compatible with spanning or 
+        // non spanning joints states. Needs to be changed if we want to support both options
         this->position_index_ += joint->numPositions();
         this->velocity_index_ += joint->numVelocities();
         this->motion_subspace_index_ += node->motion_subspace_dimension_;

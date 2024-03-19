@@ -34,9 +34,8 @@ namespace grbda
         class Base
         {
         public:
-            // TODO(@MatthewChignoli): I think that we can get rid of the num_independent_positions since we only need independent velocities
-            // I actually think the problem is deeper than this. Right now the cluster tree model uses theses nums to determine how to split up the provided joint state into q's and qd's for each cluster. So basically, these nums determine whether the cluster tree model is compatible with spanning or non spanning joints states. We might want it to be the case that the cluster tree model is compatible with both
-            Base(int num_bodies, int num_independent_positions, int num_independent_velocities);
+            
+            Base(int num_bodies, int num_positions, int num_velocities);
             virtual ~Base() {}
 
             virtual ClusterJointTypes type() const = 0;
