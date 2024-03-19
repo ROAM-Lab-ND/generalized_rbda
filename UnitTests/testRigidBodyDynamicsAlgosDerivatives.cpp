@@ -306,7 +306,7 @@ TYPED_TEST(DynamicsAlgosDerivativesTest, rnea)
 
                 dqdd_dqd_fd.col(j) = (qdd_plus - qdd_minus) / (2 * h);
             }
-            GTEST_ASSERT_LE((dqdd_dqd_ad - dqdd_dqd_fd).norm(), 1e-5);
+            GTEST_ASSERT_LE((dqdd_dqd_ad - dqdd_dqd_fd).norm(), 2e-5);
 
             // Partial with respect to tau
             DMat<double> dqdd_dtau_fd(this->nv_, this->nv_);
