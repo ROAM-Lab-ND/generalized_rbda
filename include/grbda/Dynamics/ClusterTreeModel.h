@@ -31,7 +31,6 @@ namespace grbda
     public:
         ClusterTreeModel()
         {
-            // TODO(@MatthewChignoli): Kind of confusing that this is always done, but we undo it in the URDF import
             body_name_to_body_index_["ground"] = -1;
             body_index_to_cluster_index_[-1] = -1;
         }
@@ -161,7 +160,6 @@ namespace grbda
         DVec<Scalar> getBiasForceVector() override;
 
     protected:
-        // TODO(@MatthewChignoli): Is this bad? Maybe
         using SX = casadi::SX;
 
         template <typename OrientationRepresentation = ori_representation::Quaternion>
@@ -176,7 +174,6 @@ namespace grbda
                                          std::vector<Body<SX>>& bodies_sx,
                                          std::map<std::string, JointPtr<SX>>& joints_sx);
 
-        // TODO(@MatthewChignoli): Should these actually be static functions in the ClusterJoint folder?
         std::function<DVec<SX>(const JointCoordinate<SX> &)> implicitPositionConstraint(
             std::vector<PositionConstraintCapture> &captures,
             std::map<std::string, JointPtr<SX>> joints_sx);
