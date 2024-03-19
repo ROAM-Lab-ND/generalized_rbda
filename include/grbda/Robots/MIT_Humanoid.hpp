@@ -72,9 +72,9 @@ namespace grbda
         Scalar _torsoMass = 8.52; // from measuring the total weight of the humanoid
 
         Scalar _hipRzMass = 0.84563;
-        Scalar _hipRxMass = 1.208683;
+        Scalar _hipRxMass = 1.20868;
         Scalar _hipRyMass = 2.64093;
-        Scalar _kneeMass = 0.3543355;
+        Scalar _kneeMass = 0.35435;
         Scalar _ankleMass = 0.280951;
 
         //
@@ -82,6 +82,10 @@ namespace grbda
         Scalar _shoulderRxMass = 0.80125;
         Scalar _shoulderRzMass = 0.905588;
         Scalar _elbowMass = 0.34839;
+
+        // 
+        Scalar _smallRotorMass = 0.001;
+        Scalar _largeRotorMass = 0.0025;
 
         //
         Scalar _hipRzPitch = -0.174533;
@@ -211,7 +215,6 @@ namespace grbda
         {
             switch (side)
             {
-            case -1: // right
             case 0:  // right
                 return I.flipAlongAxis(ori::CoordinateAxis::Y);
             case 1: // left

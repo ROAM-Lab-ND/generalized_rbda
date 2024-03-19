@@ -6,6 +6,39 @@
 namespace grbda
 {
 
+    namespace LoopConstraint
+    {
+        template <typename Scalar = double>
+        struct GenericImplicit : Base<Scalar>
+        {
+            using SX = casadi::SX;
+            using SymPhiFcn = std::function<DVec<SX>(const JointCoordinate<SX> &)>;
+
+            GenericImplicit(std::vector<bool> is_coordinate_independent, SymPhiFcn phi_fcn);
+
+            std::shared_ptr<Base<Scalar>> clone() const override
+            {
+                return std::make_shared<GenericImplicit<Scalar>>(*this);
+            }
+
+            void updateJacobians(const JointCoordinate<Scalar> &joint_pos) override;
+            void updateBiases(const JointState<Scalar> &joint_state) override;
+
+            DVec<Scalar> gamma(const JointCoordinate<Scalar> &joint_pos) const override;
+
+        private:
+            static DMat<Scalar> runCasadiFcn(const casadi::Function &fcn,
+                                             const JointCoordinate<Scalar> &arg);
+            static DMat<Scalar> runCasadiFcn(const casadi::Function &fcn,
+                                             const JointState<Scalar> &args);
+
+            casadi::Function K_fcn_;
+            casadi::Function G_fcn_;
+            casadi::Function k_fcn_;
+            casadi::Function g_fcn_;
+        };
+    }
+
     namespace ClusterJoints
     {
 

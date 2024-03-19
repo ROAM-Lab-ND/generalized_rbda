@@ -3,9 +3,25 @@
 
 namespace grbda
 {
-
     namespace LoopConstraint
     {
+        template <typename Scalar>
+        bool Base<Scalar>::isValidSpanningPosition(const JointCoordinate<Scalar> &joint_pos) const
+        {
+            DVec<Scalar> violation = phi_(joint_pos);
+            return nearZeroDefaultTrue(violation) && joint_pos.isSpanning();
+        }
+
+        template <typename Scalar>
+        bool Base<Scalar>::isValidSpanningVelocity(const JointCoordinate<Scalar> &joint_vel) const
+        {
+            DVec<Scalar> violation = K_ * joint_vel;
+            return nearZeroDefaultTrue(violation) && joint_vel.isSpanning();
+        }
+
+        template class Base<double>;
+        template class Base<float>;
+        template class Base<casadi::SX>;
 
         template <typename Scalar>
         Static<Scalar>::Static(DMat<Scalar> G, DMat<Scalar> K)

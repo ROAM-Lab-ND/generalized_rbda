@@ -24,22 +24,45 @@ namespace grbda
         {
             JointState<Scalar> spanning_joint_state(true, true);
 
-            if (!joint_state.position.isSpanning())
+            // Spanning positions
+            if (!joint_state.position.isSpanning() && loop_constraint_->isExplicit())
             {
                 spanning_joint_state.position = loop_constraint_->gamma(joint_state.position);
             }
-            else
+            else if (!joint_state.position.isSpanning() && !loop_constraint_->isExplicit())
             {
+                throw std::runtime_error("Independent positions cannot be converted to spanning positions when the constraint is implicit.");
+            }
+            else if (joint_state.position.isSpanning() && loop_constraint_->isExplicit())
+            {
+                // TODO(@MatthewChignoli): We should check to make sure that the spanning position is valid. Will require turning gamma into phi
                 spanning_joint_state.position = joint_state.position;
             }
-            loop_constraint_->updateJacobians(spanning_joint_state.position);
+            else if (joint_state.position.isSpanning() && !loop_constraint_->isExplicit())
+            {
+                if (!loop_constraint_->isValidSpanningPosition(joint_state.position))
+                {
+                    throw std::runtime_error("Spanning position is not valid");
+                }
+                spanning_joint_state.position = joint_state.position;
+            }
+            else
+            {
+                throw std::runtime_error("Unhandled case");
+            }
 
+            // Spanning velocities
+            loop_constraint_->updateJacobians(spanning_joint_state.position);
             if (!joint_state.velocity.isSpanning())
             {
                 spanning_joint_state.velocity = G() * joint_state.velocity;
             }
             else
             {
+                if (!loop_constraint_->isValidSpanningVelocity(joint_state.velocity))
+                {
+                    throw std::runtime_error("Spanning velocity is not valid");
+                }
                 spanning_joint_state.velocity = joint_state.velocity;
             }
             loop_constraint_->updateBiases(spanning_joint_state);
