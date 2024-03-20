@@ -12,9 +12,54 @@
 
 #include "OrientationTools.h"
 #include "Spatial.h"
+#include "grbda/Urdf/link.h"
 
 namespace grbda
 {
+
+  // Conventional inertial parameters: mass, center of mass, and 3x3 rotational inertia about COM
+  template <typename Scalar = double>
+  struct InertialParams
+  {
+    Scalar m = 0;                           // mass
+    Vec3<Scalar> c = Vec3<Scalar>::Zero();  // vector from body frame to COM
+    Mat3<Scalar> Ic = Mat3<Scalar>::Zero(); // rotational inertia about COM
+  };
+
+  // Inertial parameters that the dynamics are linear with respect to:
+  // mass, first mass moment, and 3x3 rotational inertia about the coordinate frame origin
+  template <typename Scalar = double>
+  struct LinearInertialParams
+  {
+    Scalar m = 0;                          // mass
+    Vec3<Scalar> h = Vec3<Scalar>::Zero(); // first mass moment
+    Mat3<Scalar> I = Mat3<Scalar>::Zero(); // rotational inertia about coordinate frame origin
+
+    LinearInertialParams &operator=(const InertialParams<Scalar> &ip)
+    {
+      m = ip.m;
+      h = ip.m * ip.c;
+      I = ip.Ic + ip.m * ori::vectorToSkewMat(ip.c) * ori::vectorToSkewMat(ip.c).transpose();
+      return *this;
+    }
+
+    LinearInertialParams &operator=(const Eigen::Vector<Scalar, 10> &other)
+    {
+      m = other(0);
+      h = other.template segment<3>(1);
+      I << other(4), other(5), other(6), other(5), other(7), other(8), other(6), other(8), other(9);
+      return *this;
+    }
+
+    Vec10<Scalar> toVector() const
+    {
+      Vec10<Scalar> v;
+      v << m, h, I(0, 0), I(0, 1), I(0, 2), I(1, 1), I(1, 2), I(2, 2);
+      return v;
+    }
+
+  };
+
   /*!
    * Representation of Rigid Body Inertia as a 6x6 Spatial Inertia Tensor
    */
@@ -40,6 +85,35 @@ namespace grbda
      * Construct spatial inertia from 6x6 matrix
      */
     explicit SpatialInertia(const Mat6<T> &inertia) { _inertia = inertia; }
+
+    /*!
+     * Construct spatial inertia from struct containting mass, first mass moment, and 3x3 rotational
+     * inertia about the coordinate frame origin
+     */
+    SpatialInertia(const LinearInertialParams<T> &ip)
+    {
+      Mat3<T> hSkew = ori::vectorToSkewMat(ip.h);
+      _inertia.template topLeftCorner<3, 3>() = ip.I;
+      _inertia.template topRightCorner<3, 3>() = hSkew;
+      _inertia.template bottomLeftCorner<3, 3>() = hSkew.transpose();
+      _inertia.template bottomRightCorner<3, 3>() = ip.m * Mat3<T>::Identity();
+    }
+
+    /*!
+     * Construct urdf Inertial
+     */
+    explicit SpatialInertia(const std::shared_ptr<const urdf::Inertial> &inertial)
+    {
+      T mass = inertial->mass;
+      Vec3<T> COM = Vec3<T>(inertial->origin.position.x,
+                            inertial->origin.position.y,
+                            inertial->origin.position.z);
+      Mat3<T> inertia;
+      inertia.row(0) << inertial->ixx, inertial->ixy, inertial->ixz;
+      inertia.row(1) << inertial->ixy, inertial->iyy, inertial->iyz;
+      inertia.row(2) << inertial->ixz, inertial->iyz, inertial->izz;
+      *this = SpatialInertia(mass, COM, inertia);
+    }
 
     /*!
      * If no argument is given, zero.
@@ -84,12 +158,12 @@ namespace grbda
     /*!
      * Get mass
      */
-    T getMass() { return _inertia(5, 5); }
+    T getMass() const { return _inertia(5, 5); }
 
     /*!
      * Get center of mass location
      */
-    Vec3<T> getCOM()
+    Vec3<T> getCOM() const
     {
       T m = getMass();
       Mat3<T> mcSkew = _inertia.template topRightCorner<3, 3>();
@@ -100,13 +174,37 @@ namespace grbda
     /*!
      * Get 3x3 rotational inertia
      */
-    Mat3<T> getInertiaTensor()
+    Mat3<T> getInertiaTensor() const
     {
       T m = getMass();
       Mat3<T> mcSkew = _inertia.template topRightCorner<3, 3>();
       Mat3<T> I_rot = _inertia.template topLeftCorner<3, 3>() -
                       mcSkew * mcSkew.transpose() / m;
       return I_rot;
+    }
+
+    /*!
+     * Get inertial parameters
+     */
+    InertialParams<T> getInertialParams() const
+    {
+      InertialParams<T> ip;
+      ip.m = getMass();
+      ip.c = getCOM();
+      ip.Ic = getInertiaTensor();
+      return ip;
+    }
+
+    /*!
+     * Get linear inertial parameters
+     */
+    LinearInertialParams<T> getLinearInertialParams() const
+    {
+      LinearInertialParams<T> ip;
+      ip.m = getMass();
+      ip.h = ori::matToSkewVec(_inertia.template topRightCorner<3, 3>());
+      ip.I = _inertia.template topLeftCorner<3, 3>();
+      return ip;
     }
 
     /*!

@@ -8,12 +8,19 @@
 #include <optional>
 
 #include "grbda/Dynamics/TreeModel.h"
+#include "grbda/Dynamics/ClusterJoints/LoopConstraintCaptures.h"
 #include "grbda/Dynamics/Nodes/ClusterTreeNode.h"
+#include "grbda/Urdf/urdf_parser.h"
 
 namespace grbda
 {
     template <typename Scalar>
     using ClusterTreeNodePtr = std::shared_ptr<ClusterTreeNode<Scalar>>;
+
+    using UrdfModelPtr = std::shared_ptr<urdf::ModelInterface>;
+    using UrdfClusterPtr = std::shared_ptr<urdf::Cluster>;
+    using UrdfLinkPtr = std::shared_ptr<urdf::Link>;
+    using UrdfConstraintPtr = std::shared_ptr<urdf::Constraint>;
 
     /*!
      * Class to represent a floating base rigid body model with rotors and ground contacts.
@@ -28,6 +35,25 @@ namespace grbda
             body_index_to_cluster_index_[-1] = -1;
         }
         ~ClusterTreeModel() {}
+
+        
+        template <typename OrientationRepresentation = ori_representation::Quaternion>
+        void buildModelFromURDF(
+            const std::string &urdf_filename, bool floating_base)
+        {
+            std::shared_ptr<urdf::ModelInterface> model;
+            model = urdf::parseURDFFile(urdf_filename, false);
+            buildFromUrdfModelInterface<OrientationRepresentation>(model, floating_base);
+        }
+        
+        template <typename OrientationRepresentation = ori_representation::Quaternion>
+        void buildModelFromURDF(
+            const std::vector<std::string> &urdf_filenames, bool floating_base)
+        {
+            std::shared_ptr<urdf::ModelInterface> model;
+            model = urdf::parseURDFFiles(urdf_filenames, false);
+            buildFromUrdfModelInterface<OrientationRepresentation>(model, floating_base);
+        }
 
         // The standard process for appending a cluster to the tree is to register all the bodies
         // in  given cluster and then append them as a cluster by specifying the type of cluster
@@ -115,10 +141,6 @@ namespace grbda
         {
             return cluster_nodes_[cluster_index];
         }
-        const ClusterTreeNodePtr<Scalar> cluster(const std::string &cluster_name) const
-        {
-            return cluster_nodes_[cluster_name_to_cluster_index_.at(cluster_name)];
-        }
 
         Vec3<Scalar> getPosition(const std::string &body_name) override;
         Mat3<Scalar> getOrientation(const std::string &body_name) override;
@@ -138,6 +160,28 @@ namespace grbda
         DVec<Scalar> getBiasForceVector() override;
 
     protected:
+        using SX = casadi::SX;
+
+        template <typename OrientationRepresentation = ori_representation::Quaternion>
+        void buildFromUrdfModelInterface(const UrdfModelPtr model, bool floating_base);
+        
+        void appendClustersViaDFS(std::map<UrdfClusterPtr, bool> &visited, UrdfClusterPtr cluster);
+        void appendClusterFromUrdfCluster(UrdfClusterPtr cluster);
+        void appendSimpleRevoluteJointFromUrdfCluster(UrdfLinkPtr link);
+        void registerBodiesInUrdfCluster(UrdfClusterPtr cluster,
+                                         std::vector<JointPtr<Scalar>>& joints,
+                                         std::vector<bool>& independent_coordinates,
+                                         std::vector<Body<SX>>& bodies_sx,
+                                         std::map<std::string, JointPtr<SX>>& joints_sx);
+
+        std::function<DVec<SX>(const JointCoordinate<SX> &)> implicitPositionConstraint(
+            std::vector<PositionConstraintCapture> &captures,
+            std::map<std::string, JointPtr<SX>> joints_sx);
+
+        std::pair<DMat<Scalar>, DMat<Scalar>> explicitRollingConstraint(
+            std::vector<RollingConstraintCapture> &captures,
+            std::vector<bool> independent_coordinates);
+
         void appendRegisteredBodiesAsCluster(const std::string name,
                                              std::shared_ptr<ClusterJoints::Base<Scalar>> joint);
 
