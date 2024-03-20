@@ -72,8 +72,7 @@ namespace grbda
         DMat<Scalar> getMassMatrix() override;
         DVec<Scalar> getBiasForceVector() override;
 
-        // TODO(@MatthewChignoli): All TreeModels should have a map from body name to body index
-        const Body<Scalar> &body(const std::string body_name) const
+        const Body<Scalar> &body(const std::string& body_name) const override
         {
             return getBody(body_name_to_body_spanning_index_.at(body_name));
         }
@@ -112,7 +111,6 @@ namespace grbda
 
         DMat<int> spanning_tree_to_independent_coords_conversion_;
         DVec<int> independent_coord_indices_;
-        // TODO(@MatthewChignoli): All TreeModels should have a map from body name to body index
         std::unordered_map<std::string, int> body_name_to_body_spanning_index_;
 
         bool articulated_bodies_updated_ = false;
