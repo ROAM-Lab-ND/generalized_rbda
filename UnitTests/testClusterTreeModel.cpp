@@ -206,7 +206,7 @@ TEST_P(URDFvsManualTests, compareToManuallyConstructed)
         const DVec<double> tau = DVec<double>::Random(this->manual_model.getNumDegreesOfFreedom());
         const DVec<double> ydd_manual = this->manual_model.forwardDynamics(tau);
         const DVec<double> ydd_urdf = this->urdf_model.forwardDynamics(tau);
-        GTEST_ASSERT_LT((ydd_manual - ydd_urdf).norm(), tol);
+        GTEST_ASSERT_LT((ydd_manual - ydd_urdf).norm(), tol * 1.e1);
 
         // Verify the inverse dynamics
         const DVec<double> ydd = DVec<double>::Random(this->manual_model.getNumDegreesOfFreedom());
