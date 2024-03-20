@@ -1,0 +1,139 @@
+<?xml version="1.0" ?>
+
+<robot xmlns:xacro="http://ros.org/wiki/xacro">
+
+    <!-- Ab/Ad Macro -->
+    <xacro:macro name="abad" params="prefix x_sign y_sign">
+        <joint name="torso_to_${prefix}_abad_j" type="continuous">
+            <axis xyz="1 0 0"/>
+            <origin xyz="${x_sign * 0.19} ${y_sign * 0.05} 0.0"/>
+            <parent link="Floating Base"/>
+            <child link="${prefix}_abad_link"/>
+        </joint>
+
+        <link name="${prefix}_abad_link">
+            <inertial>
+                <mass value="0.54"/>
+                <origin xyz="0.0 ${y_sign * 0.036} 0."/>
+                <inertia ixx="${381 * 1e-6}" ixy="${y_sign * 58 * 1e-6}" 
+                         ixz="${0.45 * 1e-6}" iyy="${560 * 1e-6}" 
+                         iyz="${y_sign * .95 * 1e-6}" izz="${444 * 1e-6}"/>
+            </inertial>
+            <!-- TODO(@MatthewChignoli): Do collision and visual stuff later -->
+        </link>
+
+        <joint name="torso_to_${prefix}_abad_rotor_j" type="continuous" independent="false">
+            <axis xyz="1 0 0"/>
+            <origin xyz="${x_sign * 0.125} ${y_sign * 0.049} 0.0"/>
+            <parent link="Floating Base"/>
+            <child link="${prefix}_abad_rotor"/>
+        </joint>
+
+        <link name="${prefix}_abad_rotor">
+            <inertial>
+                <mass value="0."/>
+                <origin xyz="0. 0. 0."/>
+                <inertia ixx="${63 * 1e-6}" ixy="0.0" 
+                         ixz="0.0" iyy="${33 * 1e-6}" 
+                         iyz="0.0" izz="${33 * 1e-6}"/>
+            </inertial>
+        </link>
+
+        <constraint name="${prefix}_abad_tranmission" type="rolling">
+            <predecessor link="${prefix}_abad_link"/>
+            <successor link="${prefix}_abad_rotor"/>
+            <ratio value="6.0"/>
+        </constraint>
+
+    </xacro:macro>
+
+    <!-- Hip Macro -->
+    <xacro:macro name="hip" params="prefix x_sign y_sign">
+        <joint name="${prefix}_abad_to_hip_j" type="continuous">
+            <axis xyz="0 1 0"/>
+            <origin xyz="0 ${y_sign * 0.062} 0.0"/>
+            <parent link="${prefix}_abad_link"/>
+            <child link="${prefix}_hip_link"/>
+        </joint>
+
+        <link name="${prefix}_hip_link">
+            <inertial>
+                <mass value="0.634"/>
+                <origin xyz="0.0 ${y_sign * 0.016} -0.02"/>
+                <inertia ixx="${1983 * 1e-6}" ixy="${y_sign * 245 * 1e-6}" 
+                         ixz="${13 * 1e-6}" iyy="${2103 * 1e-6}" 
+                         iyz="${y_sign * 1.5 * 1e-6}" izz="${408 * 1e-6}"/>
+            </inertial>
+            <!-- TODO(@MatthewChignoli): Do collision and visual stuff later -->
+        </link>
+
+        <joint name="${prefix}_abad_to_hip_rotor_j" type="continuous" independent="false">
+            <axis xyz="0 1 0"/>
+            <origin rpy="0 0 0" xyz="0.0 ${y_sign * 0.04} 0.0"/>
+            <parent link="${prefix}_abad_link"/>
+            <child link="${prefix}_hip_rotor"/>
+        </joint>
+
+        <link name="${prefix}_hip_rotor">
+            <inertial>
+                <mass value="0."/>
+                <origin xyz="0. 0. 0."/>
+                <inertia ixx="${33 * 1e-6}" ixy="0.0" 
+                         ixz="0.0" iyy="${63 * 1e-6}" 
+                         iyz="0.0" izz="${33 * 1e-6}"/>
+            </inertial>
+        </link>
+
+        <constraint name="${prefix}_hip_tranmission" type="rolling">
+            <predecessor link="${prefix}_hip_link"/>
+            <successor link="${prefix}_hip_rotor"/>
+            <ratio value="6.0"/>
+        </constraint>
+
+    </xacro:macro>
+
+    <!-- Knee Macro -->
+    <xacro:macro name="knee" params="prefix x_sign y_sign">
+        <joint name="${prefix}_hip_to_knee_j" type="continuous">
+            <axis xyz="0 1 0"/>
+            <origin xyz="0.0 0.0 -0.209"/>
+            <parent link="${prefix}_hip_link"/>
+            <child link="${prefix}_knee_link"/>
+        </joint>
+
+        <link name="${prefix}_knee_link">
+            <inertial>
+                <mass value="0.064"/>
+                <origin xyz="0.0 0.0 -0.061"/>
+                <inertia ixx="${6 * 1e-6}" ixy="0.0" 
+                         ixz="0.0" iyy="${248 * 1e-6}" 
+                         iyz="0.0" izz="${245 * 1e-6}"/>
+            </inertial>
+            <!-- TODO(@MatthewChignoli): Do collision and visual stuff later -->
+        </link>
+
+        <joint name="${prefix}_hip_to_knee_rotor_j" type="continuous" independent="false">
+            <axis xyz="0 1 0"/>
+            <parent link="${prefix}_hip_link"/>
+            <child link="${prefix}_knee_rotor"/>
+        </joint>
+
+        <link name="${prefix}_knee_rotor">
+            <inertial>
+                <mass value="0."/>
+                <origin xyz="0. 0. 0."/>
+                <inertia ixx="${33 * 1e-6}" ixy="0.0" 
+                         ixz="0.0" iyy="${63 * 1e-6}" 
+                         iyz="0.0" izz="${33 * 1e-6}"/>
+            </inertial>
+        </link>
+
+        <constraint name="${prefix}_knee_tranmission" type="rolling">
+            <predecessor link="${prefix}_knee_link"/>
+            <successor link="${prefix}_knee_rotor"/>
+            <ratio value="9.33"/>
+        </constraint>
+
+    </xacro:macro>
+    
+</robot>

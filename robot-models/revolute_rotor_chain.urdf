@@ -1,0 +1,107 @@
+<?xml version="1.0" ?>
+
+<robot name="revolute_rotor_chain" xmlns:xacro="http://ros.org/wiki/xacro">
+
+    <link name="ground"/>
+
+    <link name="link-0">
+        <inertial>
+            <mass value="1"/>
+            <origin rpy="0 0 0" xyz="0.5 0 0"/>
+            <inertia ixx="1" ixy="0" ixz="0" iyy="1" iyz="0" izz="1"/>    
+        </inertial>
+    </link>    
+    <link name="rotor-0">
+        <inertial>
+            <mass value="0"/>
+            <origin rpy="0 0 0" xyz="0 0 0"/>
+            <inertia ixx="1e-4" ixy="0" ixz="0" iyy="1e-4" iyz="0" izz="1e-4"/>    
+        </inertial>
+    </link>   
+
+    <link name="link-1">
+        <inertial>
+            <mass value="1"/>
+            <origin rpy="0 0 0" xyz="0.5 0 0"/>
+            <inertia ixx="1" ixy="0" ixz="0" iyy="1" iyz="0" izz="1"/>    
+        </inertial>
+    </link>   
+    <link name="rotor-1">
+        <inertial>
+            <mass value="0"/>
+            <origin rpy="0 0 0" xyz="0 0 0"/>
+            <inertia ixx="1e-4" ixy="0" ixz="0" iyy="1e-4" iyz="0" izz="1e-4"/>    
+        </inertial>
+    </link>   
+
+    <link name="link-2">
+        <inertial>
+            <mass value="1"/>
+            <origin rpy="0 0 0" xyz="0.5 0 0"/>
+            <inertia ixx="1" ixy="0" ixz="0" iyy="1" iyz="0" izz="1"/>    
+        </inertial>
+    </link>   
+    <link name="rotor-2">
+        <inertial>
+            <mass value="0"/>
+            <origin rpy="0 0 0" xyz="0 0 0"/>
+            <inertia ixx="1e-4" ixy="0" ixz="0" iyy="1e-4" iyz="0" izz="1e-4"/>    
+        </inertial>
+    </link>   
+
+    <joint name="joint1" type="continuous">
+        <parent link="ground"/>
+        <child link="link-0"/>
+        <axis xyz="0 0 1"/>
+    </joint>
+    <joint name="joint1r" type="continuous" independent="false">
+        <parent link="ground"/>
+        <child link="rotor-0"/>
+        <axis xyz="0 0 1"/>
+    </joint>
+
+    <joint name="joint2" type="continuous">
+        <parent link="link-0"/>
+        <child link="link-1"/>
+        <origin xyz="1.0 0.0 0.0"/>
+        <axis xyz="0 0 1"/>
+    </joint>
+    <joint name="joint2r" type="continuous" independent="false">
+        <parent link="link-0"/>
+        <child link="rotor-1"/>
+        <origin xyz="1.0 0.0 0.0"/>
+        <axis xyz="0 0 1"/>
+    </joint>
+
+    <joint name="joint3" type="continuous">
+        <parent link="link-1"/>
+        <child link="link-2"/>
+        <origin xyz="1.0 0.0 0.0"/>
+        <axis xyz="0 0 1"/>
+    </joint>
+    <joint name="joint3r" type="continuous" independent="false">
+        <parent link="link-1"/>
+        <child link="rotor-2"/>
+        <origin xyz="1.0 0.0 0.0"/>
+        <axis xyz="0 0 1"/>
+    </joint>
+
+    <constraint name="transmission1" type="rolling">
+        <predecessor link="link-0"/>
+        <successor link="rotor-0"/>
+        <ratio value="6.0"/>
+    </constraint>
+
+    <constraint name="transmission2" type="rolling">
+        <predecessor link="link-1"/>
+        <successor link="rotor-1"/>
+        <ratio value="6.0"/>
+    </constraint>
+
+    <constraint name="transmission3" type="rolling">
+        <predecessor link="link-2"/>
+        <successor link="rotor-2"/>
+        <ratio value="6.0"/>
+    </constraint>
+
+</robot>

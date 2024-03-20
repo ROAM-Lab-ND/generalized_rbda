@@ -1,0 +1,76 @@
+<?xml version="1.0" ?>
+
+<robot name="planar_leg_linkage" xmlns:xacro="http://ros.org/wiki/xacro">
+
+    <link name="base"/>
+
+    <link name="thigh">
+        <inertial>
+            <mass value="0.23"/>
+            <origin xyz="0.0364 0.0 0.0"/>
+            <inertia ixx="0" ixy="0" ixz="0" iyy="0" iyz="0" izz="0.000045389"/>
+        </inertial>
+    </link>
+
+    <link name="shank_driver">
+        <inertial>
+            <mass value="0.004"/>
+            <origin xyz="0.048 0.0 0.0"/>
+            <inertia ixx="0" ixy="0" ixz="0" iyy="0" iyz="0" izz="0.000003257"/>
+        </inertial>
+    </link>
+
+    <link name="shank_support">
+        <inertial>
+            <mass value="0.225"/>
+            <origin xyz="0.04 0.0 0.0"/>
+            <inertia ixx="0" ixy="0" ixz="0" iyy="0" iyz="0" izz="0.000022918"/>
+        </inertial>
+    </link>
+
+    <link name="foot">
+        <inertial>
+            <mass value="0.017"/>
+            <origin xyz="0.0635 0.0 0.0"/>
+            <inertia ixx="0" ixy="0" ixz="0" iyy="0" iyz="0" izz="0.000022176"/>
+        </inertial>
+    </link>
+
+    <joint name="base_to_thigh" type="continuous">
+        <parent link="base"/>
+        <child link="thigh"/>
+        <origin xyz="0.0 0.0 0.0"/>
+        <axis xyz="0 0 1"/>
+    </joint>
+
+    <joint name="thigh_to_driver" type="continuous" independent="true">
+        <parent link="thigh"/>
+        <child link="shank_driver"/>
+        <origin xyz="0.011 0.0 0.0"/>
+        <axis xyz="0 0 1"/>
+    </joint>
+
+    <joint name="thigh_to_support" type="continuous" independent="false">
+        <parent link="thigh"/>
+        <child link="shank_support"/>
+        <origin xyz="0.042 0.0 0.0"/>
+        <axis xyz="0 0 1"/>
+    </joint>
+
+    <joint name="driver_to_foot" type="continuous" independent="false">
+        <parent link="shank_driver"/>
+        <child link="foot"/>
+        <origin xyz="0.096 0.0 0.0"/>
+        <axis xyz="0 0 1"/>
+    </joint>
+
+    <constraint name="linkage" type="position">
+        <predecessor link="foot">
+            <origin xyz="0.031 0.0 0.0"/>
+        </predecessor>
+        <successor link="shank_support">
+            <origin xyz="0.096 0.0 0.0"/>
+        </successor>
+    </constraint>
+
+</robot>

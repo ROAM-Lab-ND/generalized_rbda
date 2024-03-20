@@ -7,9 +7,9 @@ namespace grbda
 
     template <typename T>
     void casadi_interface(std::vector<T *> ARG, std::vector<T *> RES, int max_sz_res,
-                          int f(const T **, T **, int_T *, T *, int),
-                          const int_T *f_sparse_out(int_T),
-                          int f_work(int_T *, int_T *, int_T *, int_T *))
+                          int f(const T **, T **, grbda_int_T *, T *, int),
+                          const grbda_int_T *f_sparse_out(grbda_int_T),
+                          int f_work(grbda_int_T *, grbda_int_T *, grbda_int_T *, grbda_int_T *))
     {
         T **arg = nullptr;
         T **res = nullptr;
@@ -17,7 +17,7 @@ namespace grbda
         res = new T *[RES.size()];
         // T *arg[ARG.size()];
         // T *res[RES.size()];
-        int_T sz_arg, sz_res, n_arg, n_res, sz_iw, sz_w, *iw = nullptr;
+        grbda_int_T sz_arg, sz_res, n_arg, n_res, sz_iw, sz_w, *iw = nullptr;
         T *w = nullptr;
 
         // get the size of each input and output variables
@@ -36,15 +36,15 @@ namespace grbda
             res[idx_res] = new T[max_sz_res];
         }
 
-        iw = new int_T[0];
+        iw = new grbda_int_T[0];
         w = new T[0];
 
         // get function output
         f((const T **)arg, res, iw, w, 1);
 
         // get sparsity pattern
-        const int_T *sppattern;
-        const int_T *rowinfo, *colinfo;
+        const grbda_int_T *sppattern;
+        const grbda_int_T *rowinfo, *colinfo;
 
         int nrow, ncol;
         for (size_t idx_res = 0; idx_res < sz_res; idx_res++)
@@ -84,15 +84,15 @@ namespace grbda
 
     template void casadi_interface<double>(std::vector<double *> ARG, std::vector<double *> RES,
                                            int max_sz_res,
-                                           int f(const double **, double **, int_T *, double *, int),
-                                           const int_T *f_sparse_out(int_T),
-                                           int f_work(int_T *, int_T *, int_T *, int_T *));
+                                           int f(const double **, double **, grbda_int_T *, double *, int),
+                                           const grbda_int_T *f_sparse_out(grbda_int_T),
+                                           int f_work(grbda_int_T *, grbda_int_T *, grbda_int_T *, grbda_int_T *));
 
     template void casadi_interface<casadi::SX>(std::vector<casadi::SX *> ARG,
                                                std::vector<casadi::SX *> RES,
                                                int max_sz_res,
-                                               int f(const casadi::SX **, casadi::SX **, int_T *, casadi::SX *, int),
-                                               const int_T *f_sparse_out(int_T),
-                                               int f_work(int_T *, int_T *, int_T *, int_T *));
+                                               int f(const casadi::SX **, casadi::SX **, grbda_int_T *, casadi::SX *, int),
+                                               const grbda_int_T *f_sparse_out(grbda_int_T),
+                                               int f_work(grbda_int_T *, grbda_int_T *, grbda_int_T *, grbda_int_T *));
 
 } // namespace grbda

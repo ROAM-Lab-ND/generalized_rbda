@@ -6,6 +6,7 @@
 #ifndef GRBDA_UTILITIES_H
 #define GRBDA_UTILITIES_H
 
+#include <random>
 #include "cppTypes.h"
 
 namespace grbda
@@ -53,6 +54,13 @@ namespace grbda
       v[i] = random<T>();
     }
     return v;
+  }
+
+  inline bool randomBool()
+  {
+    static auto gen = std::bind(std::uniform_int_distribution<>(0, 1),
+                                std::default_random_engine());
+    return gen();
   }
 
   /*!
@@ -107,6 +115,48 @@ namespace grbda
     }
 
     return true;
+  }
+
+  /*!
+   * Check if an Eigen vector is approximately zero
+   * NOTE: Operates on the entire vector, not element-wise
+   */
+  template <typename T>
+  bool nearZero(const Eigen::MatrixBase<T> &vec, const typename T::Scalar &tol = 1e-8)
+  {
+    if (vec.norm() < tol)
+      return true;
+    return false;
+  }
+
+  /*!
+   * These variants of nearZero are used to handle the casadi::SX type because casadi::SX type 
+   * objects cannot be converted to bool
+   */
+  template <typename T>
+  bool nearZeroDefaultTrue(const Eigen::MatrixBase<T> &vec, const typename T::Scalar &tol = 1e-8)
+  {
+    return nearZero(vec, tol);
+  }
+
+  template <>
+  inline bool nearZeroDefaultTrue<DVec<casadi::SX>>(const Eigen::MatrixBase<DVec<casadi::SX>> &vec,
+                                                    const casadi::SX &tol)
+  {
+    return true;
+  }
+
+  template <typename T>
+  bool nearZeroDefaultFalse(const Eigen::MatrixBase<T> &vec, const typename T::Scalar &tol = 1e-8)
+  {
+    return nearZero(vec, tol);
+  }
+
+  template <>
+  inline bool nearZeroDefaultFalse<DVec<casadi::SX>>(const Eigen::MatrixBase<DVec<casadi::SX>> &vec,
+                                                     const casadi::SX &tol)
+  {
+    return false;
   }
 
   /*!

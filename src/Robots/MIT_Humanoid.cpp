@@ -40,7 +40,8 @@ namespace grbda
             SpatialInertia<Scalar> hip_rz_link_inertia(_hipRzMass, _hipRzCOM, _hipRzRotInertia);
             hip_rz_link_inertia = withLeftRightSigns(hip_rz_link_inertia, legID);
 
-            SpatialInertia<Scalar> hip_rz_rotor_inertia(0., _smallRotorCOM, _smallRotorRotInertiaZ);
+            SpatialInertia<Scalar> hip_rz_rotor_inertia(_smallRotorMass, _smallRotorCOM,
+                                                        _smallRotorRotInertiaZ);
             hip_rz_rotor_inertia = withLeftRightSigns(hip_rz_rotor_inertia, legID);
 
             Mat3<Scalar> Xrot_HipZ = ori::coordinateRotation<Scalar>(ori::CoordinateAxis::Y,
@@ -69,7 +70,8 @@ namespace grbda
             SpatialInertia<Scalar> hip_rx_link_inertia(_hipRxMass, _hipRxCOM, _hipRxRotInertia);
             hip_rx_link_inertia = withLeftRightSigns(hip_rx_link_inertia, legID);
 
-            SpatialInertia<Scalar> hip_rx_rotor_inertia(0., _smallRotorCOM, _smallRotorRotInertiaX);
+            SpatialInertia<Scalar> hip_rx_rotor_inertia(_smallRotorMass, _smallRotorCOM,
+                                                        _smallRotorRotInertiaX);
             hip_rx_rotor_inertia = withLeftRightSigns(hip_rx_rotor_inertia, legID);
 
             Mat3<Scalar> Xrot_HipX = ori::coordinateRotation<Scalar>(ori::CoordinateAxis::Y,
@@ -99,7 +101,7 @@ namespace grbda
                                                        _hipRyRotInertia);
             hip_ry_link_inertia = withLeftRightSigns(hip_ry_link_inertia, legID);
 
-            SpatialInertia<Scalar> hip_ry_rotor_inertia(0., _largeRotorCOM,
+            SpatialInertia<Scalar> hip_ry_rotor_inertia(_largeRotorMass, _largeRotorCOM,
                                                         _largeRotorRotInertiaY);
             hip_ry_rotor_inertia = withLeftRightSigns(hip_ry_rotor_inertia, legID);
 
@@ -132,7 +134,8 @@ namespace grbda
             SpatialInertia<Scalar> knee_link_inertia(_kneeMass, _kneeCOM, _kneeRotInertia);
             knee_link_inertia = withLeftRightSigns(knee_link_inertia, legID);
 
-            SpatialInertia<Scalar> knee_rotor_inertia(0., _largeRotorCOM, _largeRotorRotInertiaY);
+            SpatialInertia<Scalar> knee_rotor_inertia(_largeRotorMass, _largeRotorCOM,
+                                                      _largeRotorRotInertiaY);
             knee_rotor_inertia = withLeftRightSigns(knee_rotor_inertia, legID);
 
             const Vec3<Scalar> kneeLocation = withLeftRightSigns(_kneeLocation, legID);
@@ -157,7 +160,8 @@ namespace grbda
             SpatialInertia<Scalar> ankle_link_inertia(_ankleMass, _ankleCOM, _ankleRotInertia);
             ankle_link_inertia = withLeftRightSigns(ankle_link_inertia, legID);
 
-            SpatialInertia<Scalar> ankle_rotor_inertia(0., _smallRotorCOM, _smallRotorRotInertiaY);
+            SpatialInertia<Scalar> ankle_rotor_inertia(_smallRotorMass, _smallRotorCOM,
+                                                       _smallRotorRotInertiaY);
             ankle_rotor_inertia = withLeftRightSigns(ankle_rotor_inertia, legID);
 
             const Vec3<Scalar> ankleLocation = withLeftRightSigns(_ankleLocation, legID);
@@ -207,7 +211,7 @@ namespace grbda
                                                             _shoulderRyRotInertia);
             shoulder_ry_link_inertia = withLeftRightSigns(shoulder_ry_link_inertia, armID);
 
-            SpatialInertia<Scalar> shoulder_ry_rotor_inertia(0., _smallRotorCOM,
+            SpatialInertia<Scalar> shoulder_ry_rotor_inertia(_smallRotorMass, _smallRotorCOM,
                                                              _smallRotorRotInertiaY);
             shoulder_ry_rotor_inertia = withLeftRightSigns(shoulder_ry_rotor_inertia, armID);
 
@@ -238,7 +242,7 @@ namespace grbda
                                                             _shoulderRxRotInertia);
             shoulder_rx_link_inertia = withLeftRightSigns(shoulder_rx_link_inertia, armID);
 
-            SpatialInertia<Scalar> shoulder_rx_rotor_inertia(0., _smallRotorCOM,
+            SpatialInertia<Scalar> shoulder_rx_rotor_inertia(_smallRotorMass, _smallRotorCOM,
                                                              _smallRotorRotInertiaX);
             shoulder_rx_rotor_inertia = withLeftRightSigns(shoulder_rx_rotor_inertia, armID);
 
@@ -269,7 +273,7 @@ namespace grbda
                                                             _shoulderRzRotInertia);
             shoulder_rz_link_inertia = withLeftRightSigns(shoulder_rz_link_inertia, armID);
 
-            SpatialInertia<Scalar> shoulder_rz_rotor_inertia(0., _smallRotorCOM,
+            SpatialInertia<Scalar> shoulder_rz_rotor_inertia(_smallRotorMass, _smallRotorCOM,
                                                              _smallRotorRotInertiaZ);
             shoulder_rz_rotor_inertia = withLeftRightSigns(shoulder_rz_rotor_inertia, armID);
 
@@ -299,7 +303,7 @@ namespace grbda
             SpatialInertia<Scalar> elbow_link_inertia(_elbowMass, _elbowCOM, _elbowRotInertia);
             elbow_link_inertia = withLeftRightSigns(elbow_link_inertia, armID);
 
-            SpatialInertia<Scalar> elbow_rotor_inertia(0., _smallRotorCOM,
+            SpatialInertia<Scalar> elbow_rotor_inertia(_smallRotorMass, _smallRotorCOM,
                                                        _smallRotorRotInertiaY);
             elbow_rotor_inertia = withLeftRightSigns(elbow_rotor_inertia, armID);
 

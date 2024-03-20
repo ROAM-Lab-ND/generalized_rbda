@@ -253,6 +253,7 @@ namespace grbda
     }
 
     template class RevoluteChainWithRotor<2ul>;
+    template class RevoluteChainWithRotor<3ul>;
     template class RevoluteChainWithRotor<4ul>;
     template class RevoluteChainWithRotor<6ul>;
     template class RevoluteChainWithRotor<8ul>;

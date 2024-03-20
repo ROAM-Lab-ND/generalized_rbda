@@ -5,7 +5,7 @@
 #include <eigen3/Eigen/StdVector>
 #include "grbda/Utils/cppTypes.h"
 
-#define int_T long long int
+#define grbda_int_T long long int
 
 #include "rev_w_rotor_2dof_FD.h"
 #include "rev_w_rotor_2dof_FD_ref_inertia.h"
@@ -71,16 +71,16 @@ namespace grbda
   */
   template <typename T>
   void casadi_interface(std::vector<T *> ARG, std::vector<T *> RES, int max_sz_res,
-                        int f(const T **, T **, int_T *, T *, int),
-                        const int_T *f_sparse_out(int_T),
-                        int f_work(int_T *, int_T *, int_T *, int_T *));
+                        int f(const T **, T **, grbda_int_T *, T *, int),
+                        const grbda_int_T *f_sparse_out(grbda_int_T),
+                        int f_work(grbda_int_T *, grbda_int_T *, grbda_int_T *, grbda_int_T *));
 
   template <typename T>
   void casadi_interface(
       std::vector<DVec<typename T::Scalar>> &arg, std::vector<Eigen::MatrixBase<T> *> &res,
-      int f(const typename T::Scalar **, typename T::Scalar **, int_T *, typename T::Scalar *, int),
-      const int_T *f_sparse_out(int_T),
-      int f_work(int_T *, int_T *, int_T *, int_T *))
+      int f(const typename T::Scalar **, typename T::Scalar **, grbda_int_T *, typename T::Scalar *, int),
+      const grbda_int_T *f_sparse_out(grbda_int_T),
+      int f_work(grbda_int_T *, grbda_int_T *, grbda_int_T *, grbda_int_T *))
   {
     std::vector<typename T::Scalar *> ARG;
     for (size_t idx_arg = 0; idx_arg < arg.size(); idx_arg++)
@@ -117,9 +117,9 @@ namespace grbda
   template <typename T>
   void casadi_interface(
       std::vector<DVec<typename T::Scalar>> &arg, Eigen::MatrixBase<T> &res,
-      int f(const typename T::Scalar **, typename T::Scalar **, int_T *, typename T::Scalar *, int),
-      const int_T *f_sparse_out(int_T),
-      int f_work(int_T *, int_T *, int_T *, int_T *))
+      int f(const typename T::Scalar **, typename T::Scalar **, grbda_int_T *, typename T::Scalar *, int),
+      const grbda_int_T *f_sparse_out(grbda_int_T),
+      int f_work(grbda_int_T *, grbda_int_T *, grbda_int_T *, grbda_int_T *))
   {
     std::vector<Eigen::MatrixBase<T> *> res_vec = {&res};
     casadi_interface(arg, res_vec, f, f_sparse_out, f_work);

@@ -77,6 +77,11 @@ namespace grbda
             return loop_constraints_.G() * ydd + loop_constraints_.g();
         }
 
+        const Body<Scalar> &body(const std::string& body_name) const override
+        {
+            return getBody(body_name_to_body_index_.at(body_name));
+        }
+
     private:
         void extractRigidBodiesAndJointsFromClusterModel(
             const ClusterTreeModel<Scalar> &cluster_tree_model);

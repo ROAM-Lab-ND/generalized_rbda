@@ -20,6 +20,8 @@
 #include <iostream>
 #include <type_traits>
 #include "cppTypes.h"
+#include "Utilities.h"
+#include "grbda/Urdf/pose.h"
 
 namespace grbda
 {
@@ -63,6 +65,31 @@ namespace grbda
       }
 
       return R;
+    }
+
+    inline CoordinateAxis urdfAxisToCoordinateAxis(const urdf::Vector3 &axis)
+    {
+      if (axis.norm() != 1)
+      {
+        throw std::runtime_error("Error: Joint axis must be a unit vector");
+      }
+
+      if (axis.x == 1 || axis.x == -1)
+      {
+        return CoordinateAxis::X;
+      }
+      else if (axis.y == 1 || axis.y == -1)
+      {
+        return CoordinateAxis::Y;
+      }
+      else if (axis.z == 1 || axis.z == -1)
+      {
+        return CoordinateAxis::Z;
+      }
+      else
+      {
+        throw std::runtime_error("Error: Joint axis not defined");
+      }
     }
 
     inline CoordinateAxis randomCoordinateAxis()
@@ -183,10 +210,15 @@ namespace grbda
       casadi::SX cond2 = (r(0, 0) > r(1, 1)) && (r(0, 0) > r(2, 2));
       casadi::SX cond3 = r(1, 1) > r(2, 2);
 
-      casadi::SX S = casadi::SX::if_else(cond1, sqrt(tr + 1.0) * 2.0,
-                     casadi::SX::if_else(cond2, sqrt(1.0 + r(0, 0) - r(1, 1) - r(2, 2)) * 2.0,
-                     casadi::SX::if_else(cond3, sqrt(1.0 + r(1, 1) - r(0, 0) - r(2, 2)) * 2.0,
-                                                sqrt(1.0 + r(2, 2) - r(0, 0) - r(1, 1)) * 2.0)));
+      casadi::SX radicand1 = tr + 1.0;
+      casadi::SX radicand2 = 1.0 + r(0, 0) - r(1, 1) - r(2, 2);
+      casadi::SX radicand3 = 1.0 + r(1, 1) - r(0, 0) - r(2, 2);
+      casadi::SX radicand4 = 1.0 + r(2, 2) - r(0, 0) - r(1, 1);
+
+      casadi::SX S = casadi::SX::if_else(cond1, grbda::sqrt(radicand1) * 2.0,
+                     casadi::SX::if_else(cond2, grbda::sqrt(radicand2) * 2.0,
+                     casadi::SX::if_else(cond3, grbda::sqrt(radicand3) * 2.0,
+                                                grbda::sqrt(radicand4) * 2.0)));
 
       q(0) = casadi::SX::if_else(cond1, 0.25 * S,
              casadi::SX::if_else(cond2, (r(2, 1) - r(1, 2)) / S,

@@ -1,0 +1,12 @@
+<?xml version="1.0" ?>
+
+<robot name="mini_cheetah_fr_leg" xmlns:xacro="http://ros.org/wiki/xacro">
+
+    <xacro:include filename="mini_cheetah_properties.xacro"/>
+
+    <link name="Floating Base"/>
+    <xacro:abad prefix="FR" x_sign="1" y_sign="-1"/>
+    <xacro:hip prefix="FR" x_sign="1" y_sign="-1"/>
+    <xacro:knee prefix="FR" x_sign="1" y_sign="-1"/>
+
+</robot>

@@ -1,0 +1,61 @@
+<?xml version="1.0" ?>
+
+<robot name="four_bar" xmlns:xacro="http://ros.org/wiki/xacro">
+
+    <link name="base_link"/>
+
+    <link name="link1">
+        <inertial>
+            <mass value="3.3"/>
+            <origin xyz="0.0 0.0 0.0"/>
+            <inertia ixx="0.011253" ixy="0" ixz="0" iyy="0.036203" iyz="0" izz="0.042673"/>
+        </inertial>
+    </link>
+
+    <link name="link2">
+        <inertial>
+            <mass value="3.3"/>
+            <origin xyz="0.0 0.0 0.0"/>
+            <inertia ixx="0.011253" ixy="0" ixz="0" iyy="0.036203" iyz="0" izz="0.042673"/>
+        </inertial>
+    </link>
+
+    <link name="link3">
+        <inertial>
+            <mass value="3.3"/>
+            <origin xyz="0.0 0.0 0.0"/>
+            <inertia ixx="0.011253" ixy="0" ixz="0" iyy="0.036203" iyz="0" izz="0.042673"/>
+        </inertial>
+    </link>
+
+    <joint name="joint1" type="continuous" independent="true">
+        <parent link="base_link"/>
+        <child link="link1"/>
+        <origin xyz="0.0 0.0 0.0"/>
+        <axis xyz="0 0 1"/>
+    </joint>
+
+    <joint name="joint2" type="continuous" independent="false">
+        <parent link="link1"/>
+        <child link="link2"/>
+        <origin xyz="0.1 0.0 0.0"/>
+        <axis xyz="0 0 1"/>
+    </joint>
+
+    <joint name="joint3" type="continuous" independent="fasle">
+        <parent link="base_link"/>
+        <child link="link3"/>
+        <origin xyz="0.0 0.0 0.0"/>
+        <axis xyz="0 0 1"/>
+    </joint>
+
+    <constraint name="constraint1" type="position">
+        <predecessor link="link3">
+            <origin xyz="0.3 0.0 0.0"/>
+        </predecessor>
+        <successor link="link2">
+            <origin xyz="0.2 0.0 0.0"/>
+        </successor>
+    </constraint>
+
+</robot>

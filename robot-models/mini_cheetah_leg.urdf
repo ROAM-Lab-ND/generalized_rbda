@@ -1,0 +1,110 @@
+<?xml version="1.0" ?>
+
+<robot name="mini_cheetah_leg" xmlns:xacro="http://ros.org/wiki/xacro">
+
+    <link name="base"/>
+
+    <joint name="base_to_abduct" type="continuous">
+        <parent link="base"/>
+        <child link="abduct"/>
+    </joint>
+    <link name="abduct">
+        <inertial>
+            <mass value="0.54"/>
+            <origin xyz="0.0 -0.036 0."/>
+            <inertia ixx="0.000312" ixy="0.000058" ixz="-0.00000045" 
+                iyy="0.000832" iyz="0.00000095" izz="0.000249"/>
+        </inertial>
+    </link>
+
+    <joint name="base_to_abduct_rotor" type="continuous">
+        <parent link="base"/>
+        <child link="abduct_rotor"/>
+    </joint>
+    <link name="abduct_rotor">
+        <inertial>
+            <mass value="0.054"/>
+            <origin xyz="0.0 -0.036 0."/>
+            <inertia ixx="0.000312" ixy="0.000058" ixz="-0.00000045" 
+                iyy="0.000832" iyz="0.00000095" izz="0.000249"/>
+        </inertial>
+    </link>
+
+    <constraint name="abduct_transmission" type="rolling">
+        <predecessor link="abduct"/>
+        <successor link="abduct_rotor"/>
+        <ratio value="6.0"/>
+    </constraint>
+
+    <joint name="abduct_to_thigh_j" type="continuous">
+        <axis xyz="0 -1 0"/>
+        <origin rpy="0.0 0.0 0.0" xyz="0.0 -0.062 0.00"/>
+        <parent link="abduct"/>
+        <child link="thigh"/>
+    </joint>
+    <link name="thigh">
+        <inertial>
+            <mass value="0.634"/>
+            <origin xyz="0.0 -0.016 -0.02"/>
+            <inertia ixx="0.000264" ixy="0.000245" ixz="-0.000013" 
+                iyy="0.000306" iyz="0.000204" izz="0.002093"/>
+        </inertial>
+    </link>
+
+
+    <joint name="abduct_to_hip_rotor_j" type="continuous">
+        <axis xyz="0 -1 0"/>
+        <origin rpy="0.0 0.0 0.0" xyz="0.0 -0.062 0.00"/>
+        <parent link="abduct"/>
+        <child link="hip_rotor"/>
+    </joint>
+    <link name="hip_rotor">
+        <inertial>
+            <mass value="0.054"/>
+            <origin xyz="0.0 -0.036 0."/>
+            <inertia ixx="0.000312" ixy="0.000058" ixz="-0.00000045" 
+                iyy="0.000832" iyz="0.00000095" izz="0.000249"/>
+        </inertial>
+    </link>
+
+    <constraint name="hip_transmission" type="rolling">
+        <predecessor link="thigh"/>
+        <successor link="hip_rotor"/>
+        <ratio value="6.0"/>
+    </constraint>
+
+    <joint name="thigh_to_knee_j" type="continuous">
+        <axis xyz="0 -1 0"/>
+        <origin rpy="0.0 0 0.0" xyz="0.0 0.0 -0.209"/>
+        <parent link="thigh"/>
+        <child link="shank"/>
+    </joint>
+    <link name="shank">
+        <inertial>
+            <mass value="0.064"/>
+            <origin xyz="0.0 0.0 -0.209"/>
+            <inertia ixx="0.000245" ixy="0" ixz="0.0" iyy="0.000248" iyz="0" izz="0.000006"/>
+        </inertial>
+    </link>
+
+    <joint name="thigh_to_knee_rotor_j" type="continuous">
+        <axis xyz="0 -1 0"/>
+        <origin rpy="0.0 0 0.0" xyz="0.0 0.0 -0.209"/>
+        <parent link="thigh"/>
+        <child link="knee_rotor"/>
+    </joint>
+    <link name="knee_rotor">
+        <inertial>
+            <mass value="0.054"/>
+            <origin xyz="0.0 0.0 -0.209"/>
+            <inertia ixx="0.000245" ixy="0" ixz="0.0" iyy="0.000248" iyz="0" izz="0.000006"/>
+        </inertial>
+    </link>
+
+    <constraint name="knee_transmission" type="rolling">
+        <predecessor link="shank"/>
+        <successor link="knee_rotor"/>
+        <ratio value="9.0"/>
+    </constraint>
+
+</robot>

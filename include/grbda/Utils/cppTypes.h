@@ -34,6 +34,10 @@ namespace grbda
     template <typename T>
     using Vec7 = typename Eigen::Matrix<T, 7, 1>;
 
+    // 10x1 Vector
+    template <typename T>
+    using Vec10 = typename Eigen::Matrix<T, 10, 1>;
+
     // 2x2 Matrix
     template <typename T>
     using Mat2 = typename Eigen::Matrix<T, 2, 2>;

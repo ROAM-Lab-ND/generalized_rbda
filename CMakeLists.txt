@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.13)
 
-project(grbda VERSION 0.1.0)
+project(grbda VERSION 1.1.0)
 
 message(STATUS "=============  !Generalized Rigid-Body Dynamics Algorithms!  =============")
 
@@ -87,12 +87,15 @@ if(ASAN)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address")
 endif()
 
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/config.h.in ${CMAKE_CURRENT_BINARY_DIR}/config.h)
+
 ################################################################################
 # Specify Build Resources
 ################################################################################
 message(STATUS "======>  Setup Build  ")
 
 include_directories(include)
+include_directories(${CMAKE_CURRENT_BINARY_DIR})
 file(GLOB_RECURSE GRBDA_SRCS "src/*.cpp")
 
 ################################################################################
