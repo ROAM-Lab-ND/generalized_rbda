@@ -27,9 +27,9 @@ namespace grbda
             for (const auto &link_joint_and_reflected_inertia :
                  cluster->bodiesJointsAndReflectedInertias())
             {
-                const auto &link = std::get<0>(link_joint_and_reflected_inertia);
-                const auto link_joint = std::get<1>(link_joint_and_reflected_inertia);
-                const auto &reflected_inertia = std::get<2>(link_joint_and_reflected_inertia);
+                const Body<Scalar> &link = std::get<0>(link_joint_and_reflected_inertia);
+                const JointPtr<Scalar> link_joint = std::get<1>(link_joint_and_reflected_inertia);
+                const DMat<Scalar> &ref_inertia = std::get<2>(link_joint_and_reflected_inertia);
 
                 const int node_index = (int)reflected_inertia_nodes_.size();
                 const int parent_node_index = getIndexOfParentNodeForBody(link.parent_index_);
@@ -39,7 +39,7 @@ namespace grbda
                 reflected_inertia_nodes_.push_back(node);
                 this->nodes_.push_back(node);
 
-                cluster_reflected_inertia += reflected_inertia;
+                cluster_reflected_inertia += ref_inertia;
 
                 this->position_index_ += link_joint->numPositions();
                 this->velocity_index_ += link_joint->numVelocities();
@@ -47,6 +47,7 @@ namespace grbda
             }
             reflected_inertia_ = appendEigenMatrix(reflected_inertia_, cluster_reflected_inertia);
         }
+        diag_reflected_inertia_ = reflected_inertia_.diagonal().asDiagonal();
 
         this->H_ = DMat<Scalar>::Zero(this->velocity_index_, this->velocity_index_);
         this->C_ = DVec<Scalar>::Zero(this->velocity_index_);
@@ -80,6 +81,8 @@ namespace grbda
         independent_coord_indices_ =
             spanning_tree_to_independent_coords_conversion_ *
             DVec<int>::LinSpaced(num_bodies, 0, num_bodies - 1);
+
+        body_name_to_body_spanning_index_ = cluster_tree_model.body_name_to_body_index_;
     }
 
     template <typename Scalar>
@@ -163,7 +166,7 @@ namespace grbda
         case RotorInertiaApproximation::NONE:
             return this->H_;
         case RotorInertiaApproximation::DIAGONAL:
-            return this->H_ + DMat<Scalar>(reflected_inertia_.diagonal().asDiagonal());
+            return this->H_ + diag_reflected_inertia_;
         case RotorInertiaApproximation::BLOCK_DIAGONAL:
             return this->H_ + reflected_inertia_;
         default:
@@ -297,8 +300,7 @@ namespace grbda
         case RotorInertiaApproximation::NONE:
             return this->recursiveNewtonEulerAlgorithm(ydd);
         case RotorInertiaApproximation::DIAGONAL:
-            return this->recursiveNewtonEulerAlgorithm(ydd) +
-                   reflected_inertia_.diagonal().asDiagonal() * ydd;
+            return this->recursiveNewtonEulerAlgorithm(ydd) + diag_reflected_inertia_ * ydd;
         case RotorInertiaApproximation::BLOCK_DIAGONAL:
             return this->recursiveNewtonEulerAlgorithm(ydd) + reflected_inertia_ * ydd;
         default:

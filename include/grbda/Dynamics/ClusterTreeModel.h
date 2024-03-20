@@ -132,7 +132,7 @@ namespace grbda
         const std::vector<ClusterTreeNodePtr<Scalar>> &clusters() const { return cluster_nodes_; }
 
         const Body<Scalar> &body(const int body_index) const { return bodies_[body_index]; }
-        const Body<Scalar> &body(const std::string body_name) const
+        const Body<Scalar> &body(const std::string& body_name) const override
         {
             return bodies_[body_name_to_body_index_.at(body_name)];
         }
