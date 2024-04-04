@@ -262,7 +262,7 @@
   </constraint>
   <joint independent="false" name="right_hipy_to_ankle_rotor" type="continuous">
     <axis xyz="0 1 0"/>
-    <origin xyz="0. 0. 0."/>
+    <origin xyz=".01563 -0.0454 -.13354"/>
     <parent link="right_hip_ry_link"/>
     <child link="right_ankle_rotor"/>
   </joint>
@@ -293,7 +293,7 @@
   </constraint>
   <joint independent="false" name="left_hipy_to_ankle_rotor" type="continuous">
     <axis xyz="0 1 0"/>
-    <origin xyz="0. 0. 0."/>
+    <origin xyz=".01563 0.0454 -.13354"/>
     <parent link="left_hip_ry_link"/>
     <child link="left_ankle_rotor"/>
   </joint>

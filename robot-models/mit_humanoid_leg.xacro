@@ -165,7 +165,7 @@
     <xacro:macro name="ankle" params="prefix y_sign">
         <joint name="${prefix}hipy_to_ankle_rotor" type="continuous" independent="false">
             <axis xyz="0 1 0"/>
-            <origin xyz="0. 0. 0."/>
+            <origin xyz=".01563 ${y_sign * -.0454} -.13354"/>
             <parent link="${prefix}hip_ry_link"/>
             <child link="${prefix}ankle_rotor"/>
         </joint>
