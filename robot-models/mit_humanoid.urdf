@@ -33,7 +33,7 @@
   </joint>
   <link name="right_hip_rz_rotor">
     <inertial>
-      <mass value="0.001"/>
+      <mass value="0.05"/>
       <origin xyz="0. 0. 0."/>
       <inertia ixx="1.084e-4" ixy="0.0" ixz="0.0" iyy="1.084e-4" iyz="0.0" izz="1.6841e-4"/>
     </inertial>
@@ -64,7 +64,7 @@
   </joint>
   <link name="left_hip_rz_rotor">
     <inertial>
-      <mass value="0.001"/>
+      <mass value="0.05"/>
       <origin xyz="0. 0. 0."/>
       <inertia ixx="1.084e-4" ixy="0.0" ixz="0.0" iyy="1.084e-4" iyz="0.0" izz="1.6841e-4"/>
     </inertial>
@@ -95,7 +95,7 @@
   </joint>
   <link name="right_hip_rx_rotor">
     <inertial>
-      <mass value="0.001"/>
+      <mass value="0.05"/>
       <origin xyz="0. 0. 0."/>
       <inertia ixx="1.6841e-4" ixy="0.0" ixz="0.0" iyy="1.084e-4" iyz="0.0" izz="1.084e-4"/>
     </inertial>
@@ -126,7 +126,7 @@
   </joint>
   <link name="left_hip_rx_rotor">
     <inertial>
-      <mass value="0.001"/>
+      <mass value="0.05"/>
       <origin xyz="0. 0. 0."/>
       <inertia ixx="1.6841e-4" ixy="0.0" ixz="0.0" iyy="1.084e-4" iyz="0.0" izz="1.084e-4"/>
     </inertial>
@@ -157,7 +157,7 @@
   </joint>
   <link name="right_hip_ry_rotor">
     <inertial>
-      <mass value="0.0025"/>
+      <mass value="0.1"/>
       <origin xyz="0. 0. 0."/>
       <inertia ixx="3.443e-4" ixy="0.0" ixz="0.0" iyy="5.548e-4" iyz="0.0" izz="3.443e-4"/>
     </inertial>
@@ -188,7 +188,7 @@
   </joint>
   <link name="left_hip_ry_rotor">
     <inertial>
-      <mass value="0.0025"/>
+      <mass value="0.1"/>
       <origin xyz="0. 0. 0."/>
       <inertia ixx="3.443e-4" ixy="0.0" ixz="0.0" iyy="5.548e-4" iyz="0.0" izz="3.443e-4"/>
     </inertial>
@@ -219,7 +219,7 @@
   </joint>
   <link name="right_knee_rotor">
     <inertial>
-      <mass value="0.0025"/>
+      <mass value="0.1"/>
       <origin xyz="0. 0. 0."/>
       <inertia ixx="3.443e-4" ixy="0.0" ixz="0.0" iyy="5.548e-4" iyz="0.0" izz="3.443e-4"/>
     </inertial>
@@ -250,7 +250,7 @@
   </joint>
   <link name="left_knee_rotor">
     <inertial>
-      <mass value="0.0025"/>
+      <mass value="0.1"/>
       <origin xyz="0. 0. 0."/>
       <inertia ixx="3.443e-4" ixy="0.0" ixz="0.0" iyy="5.548e-4" iyz="0.0" izz="3.443e-4"/>
     </inertial>
@@ -268,7 +268,7 @@
   </joint>
   <link name="right_ankle_rotor">
     <inertial>
-      <mass value="0.001"/>
+      <mass value="0.05"/>
       <origin xyz="0. 0. 0."/>
       <inertia ixx="1.084e-4" ixy="0.0" ixz="0.0" iyy="1.6841e-4" iyz="0.0" izz="1.084e-4"/>
     </inertial>
@@ -299,7 +299,7 @@
   </joint>
   <link name="left_ankle_rotor">
     <inertial>
-      <mass value="0.001"/>
+      <mass value="0.05"/>
       <origin xyz="0. 0. 0."/>
       <inertia ixx="1.084e-4" ixy="0.0" ixz="0.0" iyy="1.6841e-4" iyz="0.0" izz="1.084e-4"/>
     </inertial>
@@ -343,7 +343,7 @@
   </joint>
   <link name="right_shoulder_ry_rotor">
     <inertial>
-      <mass value="0.001"/>
+      <mass value="0.05"/>
       <origin xyz="0. 0. 0."/>
       <inertia ixx="1.084e-4" ixy="0.0" ixz="0.0" iyy="1.6841e-4" iyz="0.0" izz="1.084e-4"/>
     </inertial>
@@ -374,7 +374,7 @@
   </joint>
   <link name="left_shoulder_ry_rotor">
     <inertial>
-      <mass value="0.001"/>
+      <mass value="0.05"/>
       <origin xyz="0. 0. 0."/>
       <inertia ixx="1.084e-4" ixy="0.0" ixz="0.0" iyy="1.6841e-4" iyz="0.0" izz="1.084e-4"/>
     </inertial>
@@ -405,7 +405,7 @@
   </joint>
   <link name="right_shoulder_rx_rotor">
     <inertial>
-      <mass value="0.001"/>
+      <mass value="0.05"/>
       <origin xyz="0. 0. 0."/>
       <inertia ixx="1.6841e-4" ixy="0.0" ixz="0.0" iyy="1.084e-4" iyz="0.0" izz="1.084e-4"/>
     </inertial>
@@ -436,7 +436,7 @@
   </joint>
   <link name="left_shoulder_rx_rotor">
     <inertial>
-      <mass value="0.001"/>
+      <mass value="0.05"/>
       <origin xyz="0. 0. 0."/>
       <inertia ixx="1.6841e-4" ixy="0.0" ixz="0.0" iyy="1.084e-4" iyz="0.0" izz="1.084e-4"/>
     </inertial>
@@ -467,7 +467,7 @@
   </joint>
   <link name="right_shoulder_rz_rotor">
     <inertial>
-      <mass value="0.001"/>
+      <mass value="0.05"/>
       <origin xyz="0. 0. 0."/>
       <inertia ixx="1.084e-4" ixy="0.0" ixz="0.0" iyy="1.084e-4" iyz="0.0" izz="1.6841e-4"/>
     </inertial>
@@ -498,7 +498,7 @@
   </joint>
   <link name="left_shoulder_rz_rotor">
     <inertial>
-      <mass value="0.001"/>
+      <mass value="0.05"/>
       <origin xyz="0. 0. 0."/>
       <inertia ixx="1.084e-4" ixy="0.0" ixz="0.0" iyy="1.084e-4" iyz="0.0" izz="1.6841e-4"/>
     </inertial>
@@ -529,7 +529,7 @@
   </joint>
   <link name="right_elbow_rotor">
     <inertial>
-      <mass value="0.001"/>
+      <mass value="0.05"/>
       <origin xyz="0. 0. 0."/>
       <inertia ixx="1.084e-4" ixy="0.0" ixz="0.0" iyy="1.6841e-4" iyz="0.0" izz="1.084e-4"/>
     </inertial>
@@ -560,7 +560,7 @@
   </joint>
   <link name="left_elbow_rotor">
     <inertial>
-      <mass value="0.001"/>
+      <mass value="0.05"/>
       <origin xyz="0. 0. 0."/>
       <inertia ixx="1.084e-4" ixy="0.0" ixz="0.0" iyy="1.6841e-4" iyz="0.0" izz="1.084e-4"/>
     </inertial>
