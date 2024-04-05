@@ -84,8 +84,8 @@ namespace grbda
         Scalar _elbowMass = 0.34839;
 
         // 
-        Scalar _smallRotorMass = 0.001;
-        Scalar _largeRotorMass = 0.0025;
+        Scalar _smallRotorMass = 0.05;
+        Scalar _largeRotorMass = 0.1;
 
         //
         Scalar _hipRzPitch = -0.174533;
@@ -140,7 +140,7 @@ namespace grbda
         Vec3<Scalar> _hipRxRotorLocation = Vec3<Scalar>(-0.0827, 0.0, -0.066436);
         Vec3<Scalar> _hipRyRotorLocation = Vec3<Scalar>(0.071, 0.024, 0.0);
         Vec3<Scalar> _kneeRotorLocation = Vec3<Scalar>(0.013, -0.0497, -0.0178);
-        Vec3<Scalar> _ankleRotorLocation = Vec3<Scalar>(0., 0., 0.);
+        Vec3<Scalar> _ankleRotorLocation = Vec3<Scalar>(.01563, -.0454, -.13354);
 
         Vec3<Scalar> _shoulderRyRotorLocation = Vec3<Scalar>(0.01346, -0.16, 0.24657);
         Vec3<Scalar> _shoulderRxRotorLocation = Vec3<Scalar>(0, -0.0575, 0);
