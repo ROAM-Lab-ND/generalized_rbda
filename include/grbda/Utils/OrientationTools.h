@@ -504,20 +504,37 @@ namespace grbda
       return quat;
     }
 
-    /*!
-     * Go from rotation matrix to rpy. CHARLES
-     */
+    // Convert Euler angle rates to angular velocity in a body fixed frame (rpy dot to omega body)
+    // omega = [roll_rate;0;0] + Ry(pitch) * [0;pitch_rate;0] + Ry(pitch) * Rz(yaw) * [0;0;yaw_rate]
+    // For more info, see http://www.stengel.mycpanel.princeton.edu/Quaternions.pdf
     template <typename T>
-    Vec3<typename T::Scalar> RotMatToRPY(const Eigen::MatrixBase<T> &r1)
+    Mat3<T> eulerAngleRatesToAngularVelocityJacobian(const Vec3<T> &rpy)
     {
-      static_assert(T::ColsAtCompileTime == 3 && T::RowsAtCompileTime == 3,
-                    "Must have 3x3 matrix");
+      Mat3<T> J;
 
-      Quat<typename T::Scalar> q = rotationMatrixToQuaternion(r1);
-      Vec3<typename T::Scalar> rpy;
+      // roll frame is body frame, so roll rate is in body frame
+      J.col(0) = Vec3<T>(1, 0, 0);
 
-      rpy = quatToRPY(q);
-      return rpy;
+      // Transform pitch rate from pitch frame to body frame
+      J.col(1) = coordinateRotation(CoordinateAxis::X, rpy[0]).col(1);
+
+      // Transform yaw rate from yaw frame to body frame
+      J.col(2) = coordinateRotation(CoordinateAxis::X, rpy[0]) *
+                 coordinateRotation(CoordinateAxis::Y, rpy[1]).col(2);
+
+      return J;
+    }
+
+    template <typename T>
+    Vec3<T> eulerAngleRatesToAngularVelocity(const Vec3<T> &rpy, const Vec3<T> &rpy_dot)
+    {
+      return eulerAngleRatesToAngularVelocityJacobian(rpy) * rpy_dot;
+    }
+
+    template <typename T>
+    Vec3<T> angularVelocityToEulerAngleRates(const Vec3<T> &rpy, const Vec3<T> &omega)
+    {
+      return eulerAngleRatesToAngularVelocityJacobian(rpy).inverse() * omega;
     }
 
   } // namespace ori
