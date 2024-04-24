@@ -22,6 +22,7 @@ namespace grbda
 
         const spatial::Transform<Scalar> &getAbsoluteTransformForBody(const Body<Scalar> &body) override;
         DVec<Scalar> getVelocityForBody(const Body<Scalar> &body) override;
+        DVec<Scalar> getAccelerationForBody(const Body<Scalar> &body) override;
         void applyForceToBody(const SVec<Scalar> &force, const Body<Scalar> &body) override;
 
         const Body<Scalar> body_;

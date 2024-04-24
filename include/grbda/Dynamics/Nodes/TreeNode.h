@@ -42,6 +42,7 @@ namespace grbda
 
         virtual const spatial::Transform<Scalar> &getAbsoluteTransformForBody(const Body<Scalar> &body) = 0;
         virtual DVec<Scalar> getVelocityForBody(const Body<Scalar> &body) = 0;
+        virtual DVec<Scalar> getAccelerationForBody(const Body<Scalar> &body) = 0;
         virtual void applyForceToBody(const SVec<Scalar> &force, const Body<Scalar> &body) = 0;
 
         const int position_index_;

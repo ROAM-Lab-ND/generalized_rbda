@@ -68,29 +68,54 @@ protected:
 
         SX cs_q_sym = SX::sym("q", model.getNumPositions(), 1);
         SX cs_dq_sym = SX::sym("dq", model.getNumDegreesOfFreedom(), 1);
-        SX cs_qd_sym = SX::zeros(model.getNumDegreesOfFreedom(), 1);
+        SX cs_qd_sym = SX::sym("qd", model.getNumDegreesOfFreedom(), 1);
+        SX cs_qdd_sym = SX::sym("qdd", model.getNumDegreesOfFreedom(), 1);
         ModelState<SX> state = createSymbolicModelState(model, cs_q_sym, cs_dq_sym, cs_qd_sym);
 
         model.setState(state);
-        model.forwardKinematicsIncludingContactPoints();
+        DVec<SX> qdd_sym(model.getNumDegreesOfFreedom());
+        casadi::copy(cs_qdd_sym, qdd_sym);
+        model.forwardAccelerationKinematicsIncludingContactPoints(qdd_sym);
         model.updateContactPointJacobians();
 
         std::unordered_map<std::string, casadi::Function> contact_jacobian_fcns;
         for (const ContactPoint<SX> &contact_point : model.contactPoints())
         {
-            Vec3<SX> contact_point_pos = contact_point.position_;
-            D3Mat<SX> contact_point_jac = contact_point.jacobian_.bottomRows<3>();
+            // Analytical
+            Vec3<SX> analytical_cp_pos = contact_point.position_;
+            Vec3<SX> analytical_cp_vel = contact_point.velocity_;
+            Vec3<SX> analytical_cp_acc = contact_point.acceleration_;
+            D3Mat<SX> analytical_cp_jac = contact_point.jacobian_.bottomRows<3>();
 
-            SX cs_contact_point_pos = SX(Sparsity::dense(3, 1));
-            casadi::copy(contact_point_pos, cs_contact_point_pos);
+            SX cs_analytical_cp_pos = SX(Sparsity::dense(3, 1));
+            casadi::copy(analytical_cp_pos, cs_analytical_cp_pos);
 
-            SX cs_contact_point_jac = SX(Sparsity::dense(3, model.getNumDegreesOfFreedom()));
-            casadi::copy(contact_point_jac, cs_contact_point_jac);
+            SX cs_analytical_cp_vel = SX(Sparsity::dense(3, 1));
+            casadi::copy(analytical_cp_vel, cs_analytical_cp_vel);
 
-            SX dpos_ddq = jacobian(cs_contact_point_pos, cs_dq_sym);
+            SX cs_analytical_cp_acc = SX(Sparsity::dense(3, 1));
+            casadi::copy(analytical_cp_acc, cs_analytical_cp_acc);
 
-            std::vector<SX> args{cs_q_sym, cs_dq_sym};
-            std::vector<SX> res{dpos_ddq, cs_contact_point_jac, cs_contact_point_pos};
+            SX cs_analytical_cp_jac = SX(Sparsity::dense(3, model.getNumDegreesOfFreedom()));
+            casadi::copy(analytical_cp_jac, cs_analytical_cp_jac);
+
+            // // Autodiff
+            SX autodiff_cp_jac = jacobian(cs_analytical_cp_pos, cs_dq_sym);
+            SX autodiff_cp_vel = mtimes(autodiff_cp_jac, cs_qd_sym);
+            SX autodiff_cp_jac_dot = SX::sym("jac_dot", 3, model.getNumDegreesOfFreedom());
+            for (int i = 0; i < model.getNumDegreesOfFreedom(); i++)
+            {
+                SX col = jacobian(cs_analytical_cp_jac(casadi::Slice(0, 3), i), cs_dq_sym);
+                autodiff_cp_jac_dot(casadi::Slice(0, 3), i) = mtimes(col, cs_qd_sym);
+            }
+            SX autodiff_cp_acc = mtimes(autodiff_cp_jac_dot, cs_qd_sym) +
+                                 mtimes(autodiff_cp_jac, cs_qdd_sym);
+
+            std::vector<SX> args{cs_q_sym, cs_dq_sym, cs_qd_sym, cs_qdd_sym};
+            std::vector<SX> res{cs_analytical_cp_pos, cs_analytical_cp_vel,
+                                cs_analytical_cp_acc, cs_analytical_cp_jac,
+                                autodiff_cp_jac, autodiff_cp_vel,
+                                autodiff_cp_acc, autodiff_cp_jac_dot};
             casadi::Function contactPointFunction("contactPointPositionJacobian", args, res);
 
             contact_jacobian_fcns[contact_point.name_] = contactPointFunction;
@@ -166,6 +191,8 @@ TYPED_TEST(DynamicsAlgosDerivativesTest, contactJacobians)
                 // Random state
                 std::vector<DM> q = random<DM>(this->nq_);
                 std::vector<DM> dq = zeros<DM>(this->nv_);
+                std::vector<DM> qd = random<DM>(this->nv_);
+                std::vector<DM> qdd = random<DM>(this->nv_);
 
                 // TODO(@MatthewChignoli): Fix this current method for dealing with floating base robots
                 if (this->nq_ != this->nv_)
@@ -178,18 +205,39 @@ TYPED_TEST(DynamicsAlgosDerivativesTest, contactJacobians)
                 }
 
                 // Compare autodiff against analytical
-                std::vector<DM> res = fcn(std::vector<DM>{q, dq});
+                std::vector<DM> res = fcn(std::vector<DM>{q, dq, qd, qdd});
 
-                DMat<double> dpos_ddq_full(3, this->nv_);
-                casadi::copy(res[0], dpos_ddq_full);
+                Vec3<double> analytical_cp_pos;
+                casadi::copy(res[0], analytical_cp_pos);
 
-                DMat<double> contact_point_jac_full(3, this->nv_);
-                casadi::copy(res[1], contact_point_jac_full);
+                Vec3<double> analytical_cp_vel;
+                casadi::copy(res[1], analytical_cp_vel);
 
-                GTEST_ASSERT_LE((contact_point_jac_full - dpos_ddq_full).norm(), 1e-12);
+                Vec3<double> analytical_cp_acc;
+                casadi::copy(res[2], analytical_cp_acc);
+
+                DMat<double> analytical_cp_jac(3, this->nv_);
+                casadi::copy(res[3], analytical_cp_jac);
+
+                DMat<double> autodiff_cp_jac(3, this->nv_);
+                casadi::copy(res[4], autodiff_cp_jac);
+
+                Vec3<double> autodiff_cp_vel;
+                casadi::copy(res[5], autodiff_cp_vel);
+
+                Vec3<double> autodiff_cp_acc;
+                casadi::copy(res[6], autodiff_cp_acc);
+
+                DMat<double> autodiff_cp_jac_dot(3, this->nv_);
+                casadi::copy(res[7], autodiff_cp_jac_dot);
+
+                // Print the accelerations
+                GTEST_ASSERT_LE((analytical_cp_vel - autodiff_cp_vel).norm(), 1e-12);
+                GTEST_ASSERT_LE((analytical_cp_acc - autodiff_cp_acc).norm(), 1e-12);
+                GTEST_ASSERT_LE((analytical_cp_jac - autodiff_cp_jac).norm(), 1e-12);
 
                 // Compare autodiff against numerical
-                DMat<double> contact_point_jac_fd(3, this->nv_);
+                DMat<double> finte_diff_cp_jac(3, this->nv_);
 
                 double h = 1e-8;
                 for (int j = 0; j < this->nv_; j++)
@@ -198,23 +246,23 @@ TYPED_TEST(DynamicsAlgosDerivativesTest, contactJacobians)
                     dq_plus[j] += h;
                     std::vector<DM> q_plus = TestHelpers::plus(q, dq_plus);
 
-                    std::vector<DM> res_plus = fcn(std::vector<DM>{q_plus, dq});
+                    std::vector<DM> res_plus = fcn(std::vector<DM>{q_plus, dq, qd, qdd});
                     DVec<double> contact_point_pos_plus(3);
-                    casadi::copy(res_plus[2], contact_point_pos_plus);
+                    casadi::copy(res_plus[0], contact_point_pos_plus);
 
                     std::vector<DM> dq_minus = dq;
                     dq_minus[j] -= h;
                     std::vector<DM> q_minus = TestHelpers::plus(q, dq_minus);
 
-                    std::vector<DM> res_minus = fcn(std::vector<DM>{q_minus, dq});
+                    std::vector<DM> res_minus = fcn(std::vector<DM>{q_minus, dq, qd, qdd});
                     DVec<double> contact_point_pos_minus(3);
-                    casadi::copy(res_minus[2], contact_point_pos_minus);
+                    casadi::copy(res_minus[0], contact_point_pos_minus);
 
-                    contact_point_jac_fd.col(j) =
+                    finte_diff_cp_jac.col(j) =
                         (contact_point_pos_plus - contact_point_pos_minus) / (2 * h);
                 }
 
-                GTEST_ASSERT_LE((contact_point_jac_fd - contact_point_jac_full).norm(), 1e-6);
+                GTEST_ASSERT_LE((finte_diff_cp_jac - analytical_cp_jac).norm(), 1e-6);
             }
         }
     }

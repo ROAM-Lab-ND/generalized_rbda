@@ -111,6 +111,7 @@ namespace grbda
 
         Vec3<Scalar> position_;
         Vec3<Scalar> velocity_;
+        Vec3<Scalar> acceleration_;
         D6Mat<Scalar> jacobian_;
 
         std::vector<int> supporting_nodes_;

@@ -53,6 +53,13 @@ namespace grbda
             contactPointForwardKinematics();
         }
 
+        void forwardAccelerationKinematics(const DVec<Scalar> &qdd);
+        void forwardAccelerationKinematicsIncludingContactPoints(const DVec<Scalar> &qdd)
+        {
+            forwardAccelerationKinematics(qdd);
+            contactPointForwardAccelerationKinematics(qdd);
+        }
+
         void updateContactPointJacobians();
         virtual D6Mat<Scalar> contactJacobianBodyFrame(const std::string &cp_name) = 0;
         virtual const D6Mat<Scalar>& contactJacobianWorldFrame(const std::string &cp_name) = 0;
@@ -86,6 +93,7 @@ namespace grbda
 
     protected:
         void contactPointForwardKinematics();
+        void contactPointForwardAccelerationKinematics(const DVec<Scalar> &qdd);
         void compositeRigidBodyAlgorithm();
         void updateBiasForceVector();
 

@@ -50,6 +50,12 @@ namespace grbda
     }
 
     template <typename Scalar>
+    DVec<Scalar> ClusterTreeNode<Scalar>::getAccelerationForBody(const Body<Scalar> &body)
+    {
+        return this->a_.template segment<6>(6 * body.sub_index_within_cluster_);
+    }
+
+    template <typename Scalar>
     void ClusterTreeNode<Scalar>::applyForceToBody(const SVec<Scalar> &force,
                                                    const Body<Scalar> &body)
     {

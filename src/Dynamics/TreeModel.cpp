@@ -32,6 +32,31 @@ namespace grbda
     }
 
     template <typename Scalar>
+    void TreeModel<Scalar>::forwardAccelerationKinematics(const DVec<Scalar> &qdd)
+    {
+        forwardKinematics();
+        for (auto &node : nodes_)
+        {
+            const int vel_idx = node->velocity_index_;
+            const int num_vel = node->num_velocities_;
+
+            if (node->parent_index_ >= 0)
+            {
+                auto parent_node = nodes_[node->parent_index_];
+                node->a_ = node->Xup_.transformMotionVector(parent_node->a_) +
+                           node->S() * qdd.segment(vel_idx, num_vel) +
+                           node->cJ() + node->avp_;
+            }
+            else
+            {
+                node->a_ = node->Xup_.transformMotionVector(-gravity_) +
+                           node->S() * qdd.segment(vel_idx, num_vel) +
+                           node->cJ() + node->avp_;
+            }
+        }
+    }
+
+    template <typename Scalar>
     void TreeModel<Scalar>::contactPointForwardKinematics()
     {
         if (contact_point_kinematics_updated_)
@@ -51,6 +76,27 @@ namespace grbda
         }
 
         contact_point_kinematics_updated_ = true;
+    }
+
+    template <typename Scalar>
+    void TreeModel<Scalar>::contactPointForwardAccelerationKinematics(const DVec<Scalar> &qdd)
+    {
+        contactPointForwardKinematics();
+
+        for (auto &cp : contact_points_)
+        {
+            const auto &body = getBody(cp.body_index_);
+            const auto node = this->getNodeContainingBody(cp.body_index_);
+
+            const auto &Xa = node->getAbsoluteTransformForBody(body);
+            const SVec<Scalar> v_body = node->getVelocityForBody(body);
+            const SVec<Scalar> v_body_in_world = Xa.inverseTransformMotionVector(v_body);
+            const SVec<Scalar> a_body = node->getAccelerationForBody(body);
+            const SVec<Scalar> a_body_in_world = Xa.inverseTransformMotionVector(a_body) + gravity_;
+            cp.acceleration_ = spatial::spatialToLinearAcceleration(a_body_in_world,
+                                                                    v_body_in_world,
+                                                                    cp.position_);
+        }
     }
 
     template <typename Scalar>
@@ -127,30 +173,13 @@ namespace grbda
     template <typename Scalar>
     DVec<Scalar> TreeModel<Scalar>::recursiveNewtonEulerAlgorithm(const DVec<Scalar> &qdd)
     {
-        forwardKinematics();
+        forwardAccelerationKinematics(qdd);
 
         DVec<Scalar> tau = DVec<Scalar>::Zero(qdd.rows());
 
         // Forward Pass
         for (auto &node : nodes_)
         {
-            const int vel_idx = node->velocity_index_;
-            const int num_vel = node->num_velocities_;
-
-            if (node->parent_index_ >= 0)
-            {
-                auto parent_node = nodes_[node->parent_index_];
-                node->a_ = node->Xup_.transformMotionVector(parent_node->a_) +
-                           node->S() * qdd.segment(vel_idx, num_vel) +
-                           node->cJ() + node->avp_;
-            }
-            else
-            {
-                node->a_ = node->Xup_.transformMotionVector(-gravity_) +
-                           node->S() * qdd.segment(vel_idx, num_vel) +
-                           node->cJ() + node->avp_;
-            }
-
             node->f_ = node->I_ * node->a_ +
                        spatial::generalForceCrossProduct(node->v_,
                                                          DVec<Scalar>(node->I_ * node->v_));
