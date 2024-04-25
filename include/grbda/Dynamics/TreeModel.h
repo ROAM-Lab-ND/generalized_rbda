@@ -31,6 +31,16 @@ namespace grbda
         virtual Mat3<Scalar> getOrientation(const std::string &body_name) = 0;
         virtual Vec3<Scalar> getLinearVelocity(const std::string &body_name) = 0;
         virtual Vec3<Scalar> getAngularVelocity(const std::string &body_name) = 0;
+        virtual Vec3<Scalar> getLinearAcceleration(const DVec<Scalar> &qdd,
+                                                   const std::string &body_name)
+        {
+            throw std::runtime_error("Not implemented");
+        }
+        virtual Vec3<Scalar> getAngularAcceleration(const DVec<Scalar> &qdd,
+                                                    const std::string &body_name)
+        {
+            throw std::runtime_error("Not implemented");
+        }
 
         virtual DMat<Scalar> getMassMatrix() = 0;
         virtual DVec<Scalar> getBiasForceVector() = 0;
