@@ -85,7 +85,7 @@
     <inertial>
       <mass value="0.064"/>
       <origin xyz="0.0 0.0 -0.061"/>
-      <inertia ixx="0.000245" ixy="0.0" ixz="0.0" iyy="0.000248" iyz="0.0" izz="6e-06"/>
+      <inertia ixx="6e-06" ixy="0.0" ixz="0.0" iyy="0.000248" iyz="0.0" izz="0.000245"/>
     </inertial>
     <!-- TODO(@MatthewChignoli): Do collision and visual stuff later -->
   </link>
@@ -180,7 +180,7 @@
     <inertial>
       <mass value="0.064"/>
       <origin xyz="0.0 0.0 -0.061"/>
-      <inertia ixx="0.000245" ixy="0.0" ixz="0.0" iyy="0.000248" iyz="0.0" izz="6e-06"/>
+      <inertia ixx="6e-06" ixy="0.0" ixz="0.0" iyy="0.000248" iyz="0.0" izz="0.000245"/>
     </inertial>
     <!-- TODO(@MatthewChignoli): Do collision and visual stuff later -->
   </link>
@@ -275,7 +275,7 @@
     <inertial>
       <mass value="0.064"/>
       <origin xyz="0.0 0.0 -0.061"/>
-      <inertia ixx="0.000245" ixy="0.0" ixz="0.0" iyy="0.000248" iyz="0.0" izz="6e-06"/>
+      <inertia ixx="6e-06" ixy="0.0" ixz="0.0" iyy="0.000248" iyz="0.0" izz="0.000245"/>
     </inertial>
     <!-- TODO(@MatthewChignoli): Do collision and visual stuff later -->
   </link>
@@ -370,7 +370,7 @@
     <inertial>
       <mass value="0.064"/>
       <origin xyz="0.0 0.0 -0.061"/>
-      <inertia ixx="0.000245" ixy="0.0" ixz="0.0" iyy="0.000248" iyz="0.0" izz="6e-06"/>
+      <inertia ixx="6e-06" ixy="0.0" ixz="0.0" iyy="0.000248" iyz="0.0" izz="0.000245"/>
     </inertial>
     <!-- TODO(@MatthewChignoli): Do collision and visual stuff later -->
   </link>

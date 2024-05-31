@@ -107,9 +107,9 @@
             <inertial>
                 <mass value="0.064"/>
                 <origin xyz="0.0 0.0 -0.061"/>
-                <inertia ixx="${245 * 1e-6}" ixy="0.0" 
+                <inertia ixx="${6 * 1e-6}" ixy="0.0" 
                          ixz="0.0" iyy="${248 * 1e-6}" 
-                         iyz="0.0" izz="${6 * 1e-6}"/>
+                         iyz="0.0" izz="${245 * 1e-6}"/>
             </inertial>
             <!-- TODO(@MatthewChignoli): Do collision and visual stuff later -->
         </link>
