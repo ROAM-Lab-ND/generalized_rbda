@@ -2,11 +2,13 @@
 
 <robot xmlns:xacro="http://ros.org/wiki/xacro">
 
+    <xacro:property name="u8_mass" value="0.055"/>
+
     <!-- Ab/Ad Macro -->
     <xacro:macro name="abad" params="prefix x_sign y_sign">
         <joint name="torso_to_${prefix}_abad_j" type="continuous">
             <axis xyz="1 0 0"/>
-            <origin xyz="${x_sign * 0.19} ${y_sign * 0.05} 0.0"/>
+            <origin xyz="${x_sign * 0.19} ${y_sign * 0.049} 0.0"/>
             <parent link="Floating Base"/>
             <child link="${prefix}_abad_link"/>
         </joint>
@@ -31,7 +33,7 @@
 
         <link name="${prefix}_abad_rotor">
             <inertial>
-                <mass value="0."/>
+                <mass value="${u8_mass}"/>
                 <origin xyz="0. 0. 0."/>
                 <inertia ixx="${63 * 1e-6}" ixy="0.0" 
                          ixz="0.0" iyy="${33 * 1e-6}" 
@@ -51,7 +53,7 @@
     <xacro:macro name="hip" params="prefix x_sign y_sign">
         <joint name="${prefix}_abad_to_hip_j" type="continuous">
             <axis xyz="0 1 0"/>
-            <origin xyz="0 ${y_sign * 0.062} 0.0"/>
+            <origin xyz="0 ${y_sign * 0.062} 0.0" rpy="0 0 ${pi}"/>
             <parent link="${prefix}_abad_link"/>
             <child link="${prefix}_hip_link"/>
         </joint>
@@ -69,14 +71,14 @@
 
         <joint name="${prefix}_abad_to_hip_rotor_j" type="continuous" independent="false">
             <axis xyz="0 1 0"/>
-            <origin rpy="0 0 0" xyz="0.0 ${y_sign * 0.04} 0.0"/>
+            <origin xyz="0.0 ${y_sign * 0.04} 0.0" rpy="0 0 ${pi}"/>
             <parent link="${prefix}_abad_link"/>
             <child link="${prefix}_hip_rotor"/>
         </joint>
 
         <link name="${prefix}_hip_rotor">
             <inertial>
-                <mass value="0."/>
+                <mass value="${u8_mass}"/>
                 <origin xyz="0. 0. 0."/>
                 <inertia ixx="${33 * 1e-6}" ixy="0.0" 
                          ixz="0.0" iyy="${63 * 1e-6}" 
@@ -105,9 +107,9 @@
             <inertial>
                 <mass value="0.064"/>
                 <origin xyz="0.0 0.0 -0.061"/>
-                <inertia ixx="${6 * 1e-6}" ixy="0.0" 
+                <inertia ixx="${245 * 1e-6}" ixy="0.0" 
                          ixz="0.0" iyy="${248 * 1e-6}" 
-                         iyz="0.0" izz="${245 * 1e-6}"/>
+                         iyz="0.0" izz="${6 * 1e-6}"/>
             </inertial>
             <!-- TODO(@MatthewChignoli): Do collision and visual stuff later -->
         </link>
@@ -120,7 +122,7 @@
 
         <link name="${prefix}_knee_rotor">
             <inertial>
-                <mass value="0."/>
+                <mass value="${u8_mass}"/>
                 <origin xyz="0. 0. 0."/>
                 <inertia ixx="${33 * 1e-6}" ixy="0.0" 
                          ixz="0.0" iyy="${63 * 1e-6}" 
