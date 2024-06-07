@@ -10,7 +10,7 @@
 #include "grbda/Dynamics/TreeModel.h"
 #include "grbda/Dynamics/ClusterJoints/LoopConstraintCaptures.h"
 #include "grbda/Dynamics/Nodes/ClusterTreeNode.h"
-#include "grbda/Urdf/urdf_parser.h"
+#include "urdf_parser/urdf_parser.h"
 
 namespace grbda
 {

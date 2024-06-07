@@ -2,7 +2,7 @@
 #define GRBDA_SPATIAL_TRANSFORMS_H
 
 #include "OrientationTools.h"
-#include "grbda/Urdf/pose.h"
+#include "urdf_model/pose.h"
 
 namespace grbda
 {

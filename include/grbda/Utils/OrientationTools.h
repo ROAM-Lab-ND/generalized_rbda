@@ -21,7 +21,7 @@
 #include <type_traits>
 #include "cppTypes.h"
 #include "Utilities.h"
-#include "grbda/Urdf/pose.h"
+#include "urdf_model/pose.h"
 
 namespace grbda
 {
@@ -69,27 +69,28 @@ namespace grbda
 
     inline CoordinateAxis urdfAxisToCoordinateAxis(const urdf::Vector3 &axis)
     {
-      if (axis.norm() != 1)
-      {
-        throw std::runtime_error("Error: Joint axis must be a unit vector");
-      }
+      throw std::runtime_error("Not implemented");
+      // if (axis.norm() != 1)
+      // {
+      //   throw std::runtime_error("Error: Joint axis must be a unit vector");
+      // }
 
-      if (axis.x == 1 || axis.x == -1)
-      {
-        return CoordinateAxis::X;
-      }
-      else if (axis.y == 1 || axis.y == -1)
-      {
-        return CoordinateAxis::Y;
-      }
-      else if (axis.z == 1 || axis.z == -1)
-      {
-        return CoordinateAxis::Z;
-      }
-      else
-      {
-        throw std::runtime_error("Error: Joint axis not defined");
-      }
+      // if (axis.x == 1 || axis.x == -1)
+      // {
+      //   return CoordinateAxis::X;
+      // }
+      // else if (axis.y == 1 || axis.y == -1)
+      // {
+      //   return CoordinateAxis::Y;
+      // }
+      // else if (axis.z == 1 || axis.z == -1)
+      // {
+      //   return CoordinateAxis::Z;
+      // }
+      // else
+      // {
+      //   throw std::runtime_error("Error: Joint axis not defined");
+      // }
     }
 
     inline CoordinateAxis randomCoordinateAxis()
