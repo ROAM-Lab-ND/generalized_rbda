@@ -86,22 +86,22 @@
         <axis xyz="0 0 1"/>
     </joint>
 
-    <constraint name="transmission1" type="rolling">
-        <predecessor link="link-0"/>
-        <successor link="rotor-0"/>
-        <ratio value="6.0"/>
-    </constraint>
+    <joint_constraint name="transmission1">
+        <parent link="link-0"/>
+        <child link="rotor-0"/>
+        <gear_ratio value="6.0"/>
+    </joint_constraint>
 
-    <constraint name="transmission2" type="rolling">
-        <predecessor link="link-1"/>
-        <successor link="rotor-1"/>
-        <ratio value="6.0"/>
-    </constraint>
+    <joint_constraint name="transmission2">
+        <parent link="link-1"/>
+        <child link="rotor-1"/>
+        <gear_ratio value="6.0"/>
+    </joint_constraint>
 
-    <constraint name="transmission3" type="rolling">
-        <predecessor link="link-2"/>
-        <successor link="rotor-2"/>
-        <ratio value="6.0"/>
-    </constraint>
+    <joint_constraint name="transmission3">
+        <parent link="link-2"/>
+        <child link="rotor-2"/>
+        <gear_ratio value="6.0"/>
+    </joint_constraint>
 
 </robot>

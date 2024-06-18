@@ -9,17 +9,17 @@ namespace grbda
 
     struct ConstraintCapture
     {
-        std::vector<Body<casadi::SX>> nca_to_predecessor_subtree;
-        std::vector<Body<casadi::SX>> nca_to_successor_subtree;
+        std::vector<Body<casadi::SX>> nca_to_parent_subtree;
+        std::vector<Body<casadi::SX>> nca_to_child_subtree;
     };
 
-    struct PositionConstraintCapture : public ConstraintCapture
+    struct LoopConstraintCapture : public ConstraintCapture
     {
-        urdf::Pose predecessor_to_constraint_origin_transform;
-        urdf::Pose successor_to_constraint_origin_transform;
+        urdf::Pose parent_to_constraint_origin_transform;
+        urdf::Pose child_to_constraint_origin_transform;
     };
 
-    struct RollingConstraintCapture : public ConstraintCapture
+    struct JointConstraintCapture : public ConstraintCapture
     {
         double ratio;
     };

@@ -49,13 +49,11 @@
         <axis xyz="0 0 1"/>
     </joint>
 
-    <constraint name="constraint1" type="position">
-        <predecessor link="link3">
-            <origin xyz="0.3 0.0 0.0"/>
-        </predecessor>
-        <successor link="link2">
-            <origin xyz="0.2 0.0 0.0"/>
-        </successor>
-    </constraint>
+    <loop_constraint name="constraint1">
+        <parent link="link3"/>
+        <parent_origin xyz="0.3 0.0 0.0"/>
+        <child link="link2"/>
+        <child_origin xyz="0.2 0.0 0.0"/>
+    </loop_constraint>
 
 </robot>

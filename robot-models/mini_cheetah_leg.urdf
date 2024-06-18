@@ -17,7 +17,7 @@
         </inertial>
     </link>
 
-    <joint name="base_to_abduct_rotor" type="continuous">
+    <joint name="base_to_abduct_rotor" type="continuous" independent="false">
         <parent link="base"/>
         <child link="abduct_rotor"/>
     </joint>
@@ -30,11 +30,11 @@
         </inertial>
     </link>
 
-    <constraint name="abduct_transmission" type="rolling">
-        <predecessor link="abduct"/>
-        <successor link="abduct_rotor"/>
-        <ratio value="6.0"/>
-    </constraint>
+    <joint_constraint name="abduct_transmission">
+        <parent link="abduct"/>
+        <child link="abduct_rotor"/>
+        <gear_ratio value="6.0"/>
+    </joint_constraint>
 
     <joint name="abduct_to_thigh_j" type="continuous">
         <axis xyz="0 -1 0"/>
@@ -52,7 +52,7 @@
     </link>
 
 
-    <joint name="abduct_to_hip_rotor_j" type="continuous">
+    <joint name="abduct_to_hip_rotor_j" type="continuous" independent="false">
         <axis xyz="0 -1 0"/>
         <origin rpy="0.0 0.0 0.0" xyz="0.0 -0.062 0.00"/>
         <parent link="abduct"/>
@@ -67,11 +67,11 @@
         </inertial>
     </link>
 
-    <constraint name="hip_transmission" type="rolling">
-        <predecessor link="thigh"/>
-        <successor link="hip_rotor"/>
-        <ratio value="6.0"/>
-    </constraint>
+    <joint_constraint name="hip_transmission">
+        <parent link="thigh"/>
+        <child link="hip_rotor"/>
+        <gear_ratio value="6.0"/>
+    </joint_constraint>
 
     <joint name="thigh_to_knee_j" type="continuous">
         <axis xyz="0 -1 0"/>
@@ -87,7 +87,7 @@
         </inertial>
     </link>
 
-    <joint name="thigh_to_knee_rotor_j" type="continuous">
+    <joint name="thigh_to_knee_rotor_j" type="continuous" independent="false">
         <axis xyz="0 -1 0"/>
         <origin rpy="0.0 0 0.0" xyz="0.0 0.0 -0.209"/>
         <parent link="thigh"/>
@@ -101,10 +101,10 @@
         </inertial>
     </link>
 
-    <constraint name="knee_transmission" type="rolling">
-        <predecessor link="shank"/>
-        <successor link="knee_rotor"/>
-        <ratio value="9.0"/>
-    </constraint>
+    <joint_constraint name="knee_transmission">
+        <parent link="shank"/>
+        <child link="knee_rotor"/>
+        <gear_ratio value="9.0"/>
+    </joint_constraint>
 
 </robot>

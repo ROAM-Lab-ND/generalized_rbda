@@ -39,9 +39,9 @@
     </inertial>
   </link>
   <constraint name="right_hipz_transmission" type="rolling">
-    <predecessor link="right_hip_rz_link"/>
-    <successor link="right_hip_rz_rotor"/>
-    <ratio value="6.0"/>
+    <parent link="right_hip_rz_link"/>
+    <child link="right_hip_rz_rotor"/>
+    <gear_ratio value="6.0"/>
   </constraint>
   <joint name="base_to_left_hipz_link" type="continuous">
     <axis xyz="0 0 1"/>
@@ -70,9 +70,9 @@
     </inertial>
   </link>
   <constraint name="left_hipz_transmission" type="rolling">
-    <predecessor link="left_hip_rz_link"/>
-    <successor link="left_hip_rz_rotor"/>
-    <ratio value="6.0"/>
+    <parent link="left_hip_rz_link"/>
+    <child link="left_hip_rz_rotor"/>
+    <gear_ratio value="6.0"/>
   </constraint>
   <joint name="right_hipz_to_hipx_link" type="continuous">
     <axis xyz="1 0 0"/>
@@ -100,11 +100,11 @@
       <inertia ixx="1.6841e-4" ixy="0.0" ixz="0.0" iyy="1.084e-4" iyz="0.0" izz="1.084e-4"/>
     </inertial>
   </link>
-  <constraint name="right_hipx_transmission" type="rolling">
-    <predecessor link="right_hip_rx_link"/>
-    <successor link="right_hip_rx_rotor"/>
-    <ratio value="6.0"/>
-  </constraint>
+  <joint_constraint name="right_hipx_transmission">
+    <parent link="right_hip_rx_link"/>
+    <child link="right_hip_rx_rotor"/>
+    <gear_ratio value="6.0"/>
+  </joint_constraint>
   <joint name="left_hipz_to_hipx_link" type="continuous">
     <axis xyz="1 0 0"/>
     <origin rpy="0 0.436332 0" xyz="-0.06435 0.0 -.07499"/>
@@ -131,11 +131,11 @@
       <inertia ixx="1.6841e-4" ixy="0.0" ixz="0.0" iyy="1.084e-4" iyz="0.0" izz="1.084e-4"/>
     </inertial>
   </link>
-  <constraint name="left_hipx_transmission" type="rolling">
-    <predecessor link="left_hip_rx_link"/>
-    <successor link="left_hip_rx_rotor"/>
-    <ratio value="6.0"/>
-  </constraint>
+  <joint_constraint name="left_hipx_transmission">
+    <parent link="left_hip_rx_link"/>
+    <child link="left_hip_rx_rotor"/>
+    <gear_ratio value="6.0"/>
+  </joint_constraint>
   <joint name="right_hipx_to_hipy_link" type="continuous">
     <axis xyz="0 1 0"/>
     <origin rpy="0 -0.261799 0" xyz="0.071 0.0018375 0.0"/>
@@ -162,11 +162,11 @@
       <inertia ixx="3.443e-4" ixy="0.0" ixz="0.0" iyy="5.548e-4" iyz="0.0" izz="3.443e-4"/>
     </inertial>
   </link>
-  <constraint name="right_hipy_transmission" type="rolling">
-    <predecessor link="right_hip_ry_link"/>
-    <successor link="right_hip_ry_rotor"/>
-    <ratio value="6.0"/>
-  </constraint>
+  <joint_constraint name="right_hipy_transmission">
+    <parent link="right_hip_ry_link"/>
+    <child link="right_hip_ry_rotor"/>
+    <gear_ratio value="6.0"/>
+  </joint_constraint>
   <joint name="left_hipx_to_hipy_link" type="continuous">
     <axis xyz="0 1 0"/>
     <origin rpy="0 -0.261799 0" xyz="0.071 -0.0018375 0.0"/>
@@ -193,11 +193,11 @@
       <inertia ixx="3.443e-4" ixy="0.0" ixz="0.0" iyy="5.548e-4" iyz="0.0" izz="3.443e-4"/>
     </inertial>
   </link>
-  <constraint name="left_hipy_transmission" type="rolling">
-    <predecessor link="left_hip_ry_link"/>
-    <successor link="left_hip_ry_rotor"/>
-    <ratio value="6.0"/>
-  </constraint>
+  <joint_constraint name="left_hipy_transmission">
+    <parent link="left_hip_ry_link"/>
+    <child link="left_hip_ry_rotor"/>
+    <gear_ratio value="6.0"/>
+  </joint_constraint>
   <joint name="right_hipy_to_knee_link" type="continuous">
     <axis xyz="0 1 0"/>
     <origin xyz="0.0 0.0 -0.267"/>
@@ -224,11 +224,11 @@
       <inertia ixx="3.443e-4" ixy="0.0" ixz="0.0" iyy="5.548e-4" iyz="0.0" izz="3.443e-4"/>
     </inertial>
   </link>
-  <constraint name="right_knee_transmission" type="rolling">
-    <predecessor link="right_knee_link"/>
-    <successor link="right_knee_rotor"/>
-    <ratio value="12.0"/>
-  </constraint>
+  <joint_constraint name="right_knee_transmission">
+    <parent link="right_knee_link"/>
+    <child link="right_knee_rotor"/>
+    <gear_ratio value="12.0"/>
+  </joint_constraint>
   <joint name="left_hipy_to_knee_link" type="continuous">
     <axis xyz="0 1 0"/>
     <origin xyz="0.0 0.0 -0.267"/>
@@ -255,11 +255,11 @@
       <inertia ixx="3.443e-4" ixy="0.0" ixz="0.0" iyy="5.548e-4" iyz="0.0" izz="3.443e-4"/>
     </inertial>
   </link>
-  <constraint name="left_knee_transmission" type="rolling">
-    <predecessor link="left_knee_link"/>
-    <successor link="left_knee_rotor"/>
-    <ratio value="12.0"/>
-  </constraint>
+  <joint_constraint name="left_knee_transmission">
+    <parent link="left_knee_link"/>
+    <child link="left_knee_rotor"/>
+    <gear_ratio value="12.0"/>
+  </joint_constraint>
   <joint independent="false" name="right_hipy_to_ankle_rotor" type="continuous">
     <axis xyz="0 1 0"/>
     <origin xyz=".01563 -0.0454 -.13354"/>
@@ -286,11 +286,11 @@
       <inertia ixx="0.0000842" ixy="0.0" ixz="-0.0000488" iyy="0.0007959" iyz="0.0" izz="0.0007681"/>
     </inertial>
   </link>
-  <constraint name="right_ankle_transmission" type="rolling">
-    <predecessor link="right_ankle_link"/>
-    <successor link="right_ankle_rotor"/>
-    <ratio value="12.0"/>
-  </constraint>
+  <joint_constraint name="right_ankle_transmission">
+    <parent link="right_ankle_link"/>
+    <child link="right_ankle_rotor"/>
+    <gear_ratio value="12.0"/>
+  </joint_constraint>
   <joint independent="false" name="left_hipy_to_ankle_rotor" type="continuous">
     <axis xyz="0 1 0"/>
     <origin xyz=".01563 0.0454 -.13354"/>
@@ -317,11 +317,11 @@
       <inertia ixx="0.0000842" ixy="0.0" ixz="-0.0000488" iyy="0.0007959" iyz="0.0" izz="0.0007681"/>
     </inertial>
   </link>
-  <constraint name="left_ankle_transmission" type="rolling">
-    <predecessor link="left_ankle_link"/>
-    <successor link="left_ankle_rotor"/>
-    <ratio value="12.0"/>
-  </constraint>
+  <joint_constraint name="left_ankle_transmission">
+    <parent link="left_ankle_link"/>
+    <child link="left_ankle_rotor"/>
+    <gear_ratio value="12.0"/>
+  </joint_constraint>
   <joint name="base_to_right_shouldery_link" type="continuous">
     <axis xyz="0 1 0"/>
     <origin xyz="0.01346 -0.17608 0.24657"/>
@@ -348,11 +348,11 @@
       <inertia ixx="1.084e-4" ixy="0.0" ixz="0.0" iyy="1.6841e-4" iyz="0.0" izz="1.084e-4"/>
     </inertial>
   </link>
-  <constraint name="right_shouldery_transmission" type="rolling">
-    <predecessor link="right_shoulder_ry_link"/>
-    <successor link="right_shoulder_ry_rotor"/>
-    <ratio value="6.0"/>
-  </constraint>
+  <joint_constraint name="right_shouldery_transmission">
+    <parent link="right_shoulder_ry_link"/>
+    <child link="right_shoulder_ry_rotor"/>
+    <gear_ratio value="6.0"/>
+  </joint_constraint>
   <joint name="base_to_left_shouldery_link" type="continuous">
     <axis xyz="0 1 0"/>
     <origin xyz="0.01346 0.17608 0.24657"/>
@@ -379,11 +379,11 @@
       <inertia ixx="1.084e-4" ixy="0.0" ixz="0.0" iyy="1.6841e-4" iyz="0.0" izz="1.084e-4"/>
     </inertial>
   </link>
-  <constraint name="left_shouldery_transmission" type="rolling">
-    <predecessor link="left_shoulder_ry_link"/>
-    <successor link="left_shoulder_ry_rotor"/>
-    <ratio value="6.0"/>
-  </constraint>
+  <joint_constraint name="left_shouldery_transmission">
+    <parent link="left_shoulder_ry_link"/>
+    <child link="left_shoulder_ry_rotor"/>
+    <gear_ratio value="6.0"/>
+  </joint_constraint>
   <joint name="right_shouldery_shoulderx_link" type="continuous">
     <axis xyz="1 0 0"/>
     <origin xyz="0. -0.0575 0."/>
@@ -410,11 +410,11 @@
       <inertia ixx="1.6841e-4" ixy="0.0" ixz="0.0" iyy="1.084e-4" iyz="0.0" izz="1.084e-4"/>
     </inertial>
   </link>
-  <constraint name="right_shoulderx_transmission" type="rolling">
-    <predecessor link="right_shoulder_rx_link"/>
-    <successor link="right_shoulder_rx_rotor"/>
-    <ratio value="6.0"/>
-  </constraint>
+  <joint_constraint name="right_shoulderx_transmission">
+    <parent link="right_shoulder_rx_link"/>
+    <child link="right_shoulder_rx_rotor"/>
+    <gear_ratio value="6.0"/>
+  </joint_constraint>
   <joint name="left_shouldery_shoulderx_link" type="continuous">
     <axis xyz="1 0 0"/>
     <origin xyz="0. 0.0575 0."/>
@@ -441,11 +441,11 @@
       <inertia ixx="1.6841e-4" ixy="0.0" ixz="0.0" iyy="1.084e-4" iyz="0.0" izz="1.084e-4"/>
     </inertial>
   </link>
-  <constraint name="left_shoulderx_transmission" type="rolling">
-    <predecessor link="left_shoulder_rx_link"/>
-    <successor link="left_shoulder_rx_rotor"/>
-    <ratio value="6.0"/>
-  </constraint>
+  <joint_constraint name="left_shoulderx_transmission">
+    <parent link="left_shoulder_rx_link"/>
+    <child link="left_shoulder_rx_rotor"/>
+    <gear_ratio value="6.0"/>
+  </joint_constraint>
   <joint name="right_shoulderx_shoulderz_link" type="continuous">
     <axis xyz="0 0 1"/>
     <origin xyz="0. 0.0 -0.10250"/>
@@ -472,11 +472,11 @@
       <inertia ixx="1.084e-4" ixy="0.0" ixz="0.0" iyy="1.084e-4" iyz="0.0" izz="1.6841e-4"/>
     </inertial>
   </link>
-  <constraint name="right_shoulderz_transmission" type="rolling">
-    <predecessor link="right_shoulder_rz_link"/>
-    <successor link="right_shoulder_rz_rotor"/>
-    <ratio value="6.0"/>
-  </constraint>
+  <joint_constraint name="right_shoulderz_transmission">
+    <parent link="right_shoulder_rz_link"/>
+    <child link="right_shoulder_rz_rotor"/>
+    <gear_ratio value="6.0"/>
+  </joint_constraint>
   <joint name="left_shoulderx_shoulderz_link" type="continuous">
     <axis xyz="0 0 1"/>
     <origin xyz="0. -0.0 -0.10250"/>
@@ -503,11 +503,11 @@
       <inertia ixx="1.084e-4" ixy="0.0" ixz="0.0" iyy="1.084e-4" iyz="0.0" izz="1.6841e-4"/>
     </inertial>
   </link>
-  <constraint name="left_shoulderz_transmission" type="rolling">
-    <predecessor link="left_shoulder_rz_link"/>
-    <successor link="left_shoulder_rz_rotor"/>
-    <ratio value="6.0"/>
-  </constraint>
+  <joint_constraint name="left_shoulderz_transmission">
+    <parent link="left_shoulder_rz_link"/>
+    <child link="left_shoulder_rz_rotor"/>
+    <gear_ratio value="6.0"/>
+  </joint_constraint>
   <joint name="right_shoulderz_elbow_link" type="continuous">
     <axis xyz="0 1 0"/>
     <origin xyz="0. 0.0 -0.1455"/>
@@ -534,11 +534,11 @@
       <inertia ixx="1.084e-4" ixy="0.0" ixz="0.0" iyy="1.6841e-4" iyz="0.0" izz="1.084e-4"/>
     </inertial>
   </link>
-  <constraint name="right_elbow_transmission" type="rolling">
-    <predecessor link="right_elbow_link"/>
-    <successor link="right_elbow_rotor"/>
-    <ratio value="9.0"/>
-  </constraint>
+  <joint_constraint name="right_elbow_transmission">
+    <parent link="right_elbow_link"/>
+    <child link="right_elbow_rotor"/>
+    <gear_ratio value="9.0"/>
+  </joint_constraint>
   <joint name="left_shoulderz_elbow_link" type="continuous">
     <axis xyz="0 1 0"/>
     <origin xyz="0. -0.0 -0.1455"/>
@@ -565,10 +565,10 @@
       <inertia ixx="1.084e-4" ixy="0.0" ixz="0.0" iyy="1.6841e-4" iyz="0.0" izz="1.084e-4"/>
     </inertial>
   </link>
-  <constraint name="left_elbow_transmission" type="rolling">
-    <predecessor link="left_elbow_link"/>
-    <successor link="left_elbow_rotor"/>
-    <ratio value="9.0"/>
-  </constraint>
+  <joint_constraint name="left_elbow_transmission">
+    <parent link="left_elbow_link"/>
+    <child link="left_elbow_rotor"/>
+    <gear_ratio value="9.0"/>
+  </joint_constraint>
 </robot>
 

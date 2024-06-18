@@ -31,11 +31,11 @@
       <inertia ixx="1.084e-4" ixy="0.0" ixz="0.0" iyy="1.084e-4" iyz="0.0" izz="1.6841e-4"/>
     </inertial>
   </link>
-  <constraint name="hipz_transmission" type="rolling">
-    <predecessor link="hip_rz_link"/>
-    <successor link="hip_rz_rotor"/>
-    <ratio value="6.0"/>
-  </constraint>
+  <joint_constraint name="hipz_transmission">
+    <parent link="hip_rz_link"/>
+    <child link="hip_rz_rotor"/>
+    <gear_ratio value="6.0"/>
+  </joint_constraint>
   <joint name="hipz_to_hipx_link" type="continuous">
     <axis xyz="1 0 0"/>
     <origin rpy="0 0.436332 0" xyz="-0.06435 0.0 -.07499"/>
@@ -62,11 +62,11 @@
       <inertia ixx="1.6841e-4" ixy="0.0" ixz="0.0" iyy="1.084e-4" iyz="0.0" izz="1.084e-4"/>
     </inertial>
   </link>
-  <constraint name="hipx_transmission" type="rolling">
-    <predecessor link="hip_rx_link"/>
-    <successor link="hip_rx_rotor"/>
-    <ratio value="6.0"/>
-  </constraint>
+  <joint_constraint name="hipx_transmission">
+    <parent link="hip_rx_link"/>
+    <child link="hip_rx_rotor"/>
+    <gear_ratio value="6.0"/>
+  </joint_constraint>
   <joint name="hipx_to_hipy_link" type="continuous">
     <axis xyz="0 1 0"/>
     <origin rpy="0 -0.261799 0" xyz="0.071 0.0018375 0.0"/>
@@ -93,11 +93,11 @@
       <inertia ixx="3.443e-4" ixy="0.0" ixz="0.0" iyy="5.548e-4" iyz="0.0" izz="3.443e-4"/>
     </inertial>
   </link>
-  <constraint name="hipy_transmission" type="rolling">
-    <predecessor link="hip_ry_link"/>
-    <successor link="hip_ry_rotor"/>
-    <ratio value="6.0"/>
-  </constraint>
+  <joint_constraint name="hipy_transmission">
+    <parent link="hip_ry_link"/>
+    <child link="hip_ry_rotor"/>
+    <gear_ratio value="6.0"/>
+  </joint_constraint>
   <joint name="hipy_to_knee_link" type="continuous">
     <axis xyz="0 1 0"/>
     <origin xyz="0.0 0.0 -0.267"/>
@@ -124,11 +124,11 @@
       <inertia ixx="3.443e-4" ixy="0.0" ixz="0.0" iyy="5.548e-4" iyz="0.0" izz="3.443e-4"/>
     </inertial>
   </link>
-  <constraint name="knee_transmission" type="rolling">
-    <predecessor link="knee_link"/>
-    <successor link="knee_rotor"/>
-    <ratio value="12.0"/>
-  </constraint>
+  <joint_constraint name="knee_transmission">
+    <parent link="knee_link"/>
+    <child link="knee_rotor"/>
+    <gear_ratio value="12.0"/>
+  </joint_constraint>
   <joint independent="false" name="hipy_to_ankle_rotor" type="continuous">
     <axis xyz="0 1 0"/>
     <origin xyz=".01563 -0.0454 -.13354"/>
@@ -155,10 +155,10 @@
       <inertia ixx="0.0000842" ixy="0.0" ixz="-0.0000488" iyy="0.0007959" iyz="0.0" izz="0.0007681"/>
     </inertial>
   </link>
-  <constraint name="ankle_transmission" type="rolling">
-    <predecessor link="ankle_link"/>
-    <successor link="ankle_rotor"/>
-    <ratio value="12.0"/>
-  </constraint>
+  <joint_constraint name="ankle_transmission">
+    <parent link="ankle_link"/>
+    <child link="ankle_rotor"/>
+    <gear_ratio value="12.0"/>
+  </joint_constraint>
 </robot>
 

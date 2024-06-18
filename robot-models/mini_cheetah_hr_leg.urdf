@@ -32,11 +32,11 @@
       <inertia ixx="6.3e-05" ixy="0.0" ixz="0.0" iyy="3.3e-05" iyz="0.0" izz="3.3e-05"/>
     </inertial>
   </link>
-  <constraint name="HR_abad_tranmission" type="rolling">
-    <predecessor link="HR_abad_link"/>
-    <successor link="HR_abad_rotor"/>
-    <ratio value="6.0"/>
-  </constraint>
+  <joint_constraint name="HR_abad_tranmission">
+    <parent link="HR_abad_link"/>
+    <child link="HR_abad_rotor"/>
+    <gear_ratio value="6.0"/>
+  </joint_constraint>
   <joint name="HR_abad_to_hip_j" type="continuous">
     <axis xyz="0 1 0"/>
     <origin rpy="0 0 3.14159265359" xyz="0 -0.062 0.0"/>
@@ -64,11 +64,11 @@
       <inertia ixx="3.3e-05" ixy="0.0" ixz="0.0" iyy="6.3e-05" iyz="0.0" izz="3.3e-05"/>
     </inertial>
   </link>
-  <constraint name="HR_hip_tranmission" type="rolling">
-    <predecessor link="HR_hip_link"/>
-    <successor link="HR_hip_rotor"/>
-    <ratio value="6.0"/>
-  </constraint>
+  <joint_constraint name="HR_hip_tranmission">
+    <parent link="HR_hip_link"/>
+    <child link="HR_hip_rotor"/>
+    <gear_ratio value="6.0"/>
+  </joint_constraint>
   <joint name="HR_hip_to_knee_j" type="continuous">
     <axis xyz="0 1 0"/>
     <origin xyz="0.0 0.0 -0.209"/>
@@ -95,10 +95,10 @@
       <inertia ixx="3.3e-05" ixy="0.0" ixz="0.0" iyy="6.3e-05" iyz="0.0" izz="3.3e-05"/>
     </inertial>
   </link>
-  <constraint name="HR_knee_tranmission" type="rolling">
-    <predecessor link="HR_knee_link"/>
-    <successor link="HR_knee_rotor"/>
-    <ratio value="9.33"/>
-  </constraint>
+  <joint_constraint name="HR_knee_tranmission">
+    <parent link="HR_knee_link"/>
+    <child link="HR_knee_rotor"/>
+    <gear_ratio value="9.33"/>
+  </joint_constraint>
 </robot>
 

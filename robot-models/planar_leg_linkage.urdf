@@ -64,13 +64,11 @@
         <axis xyz="0 0 1"/>
     </joint>
 
-    <constraint name="linkage" type="position">
-        <predecessor link="foot">
-            <origin xyz="0.031 0.0 0.0"/>
-        </predecessor>
-        <successor link="shank_support">
-            <origin xyz="0.096 0.0 0.0"/>
-        </successor>
-    </constraint>
+    <loop_constraint name="linkage">
+        <parent link="foot"/>
+        <parent_origin xyz="0.031 0.0 0.0"/>
+        <child link="shank_support"/>
+        <child_origin xyz="0.096 0.0 0.0"/>
+    </loop_constraint>
 
 </robot>

@@ -36,9 +36,9 @@
         </link>
 
         <constraint name="${prefix}hipz_transmission" type="rolling">
-            <predecessor link="${prefix}hip_rz_link"/>
-            <successor link="${prefix}hip_rz_rotor"/>
-            <ratio value="6.0"/>
+            <parent link="${prefix}hip_rz_link"/>
+            <child link="${prefix}hip_rz_rotor"/>
+            <gear_ratio value="6.0"/>
         </constraint>
     </xacro:macro>
 
@@ -75,11 +75,11 @@
             </inertial>
         </link>
 
-        <constraint name="${prefix}hipx_transmission" type="rolling">
-            <predecessor link="${prefix}hip_rx_link"/>
-            <successor link="${prefix}hip_rx_rotor"/>
-            <ratio value="6.0"/>
-        </constraint>
+        <joint_constraint name="${prefix}hipx_transmission">
+            <parent link="${prefix}hip_rx_link"/>
+            <child link="${prefix}hip_rx_rotor"/>
+            <gear_ratio value="6.0"/>
+        </joint_constraint>
     </xacro:macro>
 
     <!-- Hip Flexion/Extension -->
@@ -114,11 +114,11 @@
             </inertial>
         </link>
 
-        <constraint name="${prefix}hipy_transmission" type="rolling">
-            <predecessor link="${prefix}hip_ry_link"/>
-            <successor link="${prefix}hip_ry_rotor"/>
-            <ratio value="6.0"/>
-        </constraint>
+        <joint_constraint name="${prefix}hipy_transmission">
+            <parent link="${prefix}hip_ry_link"/>
+            <child link="${prefix}hip_ry_rotor"/>
+            <gear_ratio value="6.0"/>
+        </joint_constraint>
     </xacro:macro>
 
     <!-- Knee Flexion/Extension -->
@@ -153,11 +153,11 @@
             </inertial>
         </link>
 
-        <constraint name="${prefix}knee_transmission" type="rolling">
-            <predecessor link="${prefix}knee_link"/>
-            <successor link="${prefix}knee_rotor"/>
-            <ratio value="12.0"/>
-        </constraint>
+        <joint_constraint name="${prefix}knee_transmission">
+            <parent link="${prefix}knee_link"/>
+            <child link="${prefix}knee_rotor"/>
+            <gear_ratio value="12.0"/>
+        </joint_constraint>
     </xacro:macro>
 
     <!-- Ankle Flexion/Extension -->
@@ -192,11 +192,11 @@
             </inertial>
         </link>
 
-        <constraint name="${prefix}ankle_transmission" type="rolling">
-            <predecessor link="${prefix}ankle_link"/>
-            <successor link="${prefix}ankle_rotor"/>
-            <ratio value="12.0"/>
-        </constraint>
+        <joint_constraint name="${prefix}ankle_transmission">
+            <parent link="${prefix}ankle_link"/>
+            <child link="${prefix}ankle_rotor"/>
+            <gear_ratio value="12.0"/>
+        </joint_constraint>
     </xacro:macro>
 
     <!-- Shoulder Y-axis -->
@@ -231,11 +231,11 @@
             </inertial>
         </link>
 
-        <constraint name="${prefix}shouldery_transmission" type="rolling">
-            <predecessor link="${prefix}shoulder_ry_link"/>
-            <successor link="${prefix}shoulder_ry_rotor"/>
-            <ratio value="6.0"/>
-        </constraint>
+        <joint_constraint name="${prefix}shouldery_transmission">
+            <parent link="${prefix}shoulder_ry_link"/>
+            <child link="${prefix}shoulder_ry_rotor"/>
+            <gear_ratio value="6.0"/>
+        </joint_constraint>
     </xacro:macro>
 
     <!-- Shoulder X-axis -->
@@ -270,11 +270,11 @@
             </inertial>
         </link>
 
-        <constraint name="${prefix}shoulderx_transmission" type="rolling">
-            <predecessor link="${prefix}shoulder_rx_link"/>
-            <successor link="${prefix}shoulder_rx_rotor"/>
-            <ratio value="6.0"/>
-        </constraint>
+        <joint_constraint name="${prefix}shoulderx_transmission">
+            <parent link="${prefix}shoulder_rx_link"/>
+            <child link="${prefix}shoulder_rx_rotor"/>
+            <gear_ratio value="6.0"/>
+        </joint_constraint>
     </xacro:macro>
 
     <!-- Shoulder Z-axis -->
@@ -309,11 +309,11 @@
             </inertial>
         </link>
 
-        <constraint name="${prefix}shoulderz_transmission" type="rolling">
-            <predecessor link="${prefix}shoulder_rz_link"/>
-            <successor link="${prefix}shoulder_rz_rotor"/>
-            <ratio value="6.0"/>
-        </constraint>
+        <joint_constraint name="${prefix}shoulderz_transmission">
+            <parent link="${prefix}shoulder_rz_link"/>
+            <child link="${prefix}shoulder_rz_rotor"/>
+            <gear_ratio value="6.0"/>
+        </joint_constraint>
     </xacro:macro>
 
     <!-- Elbow Flexion/Extension -->
@@ -348,11 +348,11 @@
             </inertial>
         </link>
 
-        <constraint name="${prefix}elbow_transmission" type="rolling">
-            <predecessor link="${prefix}elbow_link"/>
-            <successor link="${prefix}elbow_rotor"/>
-            <ratio value="9.0"/>
-        </constraint>
+        <joint_constraint name="${prefix}elbow_transmission">
+            <parent link="${prefix}elbow_link"/>
+            <child link="${prefix}elbow_rotor"/>
+            <gear_ratio value="9.0"/>
+        </joint_constraint>
     </xacro:macro>    
     <!-- End of macro definitions -->
 

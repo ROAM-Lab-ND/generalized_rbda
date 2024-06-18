@@ -2,8 +2,6 @@
 
 namespace grbda
 {
-
-
     template <typename Scalar>
     template <typename OrientationRepresentation>
     void ClusterTreeModel<Scalar>::buildFromUrdfModelInterface(
@@ -12,9 +10,12 @@ namespace grbda
         if (model == nullptr)
             throw std::runtime_error("Could not parse URDF file");
 
-        std::shared_ptr<const urdf::Link> root = model->getRoot();
-        UrdfClusterPtr root_cluster = model->getClusterContaining(root->name);
-        if (root_cluster->links.size() != 1)
+        std::cout << "Building cluster tree model from URDF model" << std::endl;
+        UrdfClusterModelPtr cluster_model = std::make_shared<UrdfClusterModel>(*model);
+        urdf::LinkConstSharedPtr root = cluster_model->getRoot();
+        std::cout << "Root link: " << root->name << std::endl;
+        const UrdfCluster& root_cluster = cluster_model->getClusterContaining(root);
+        if (root_cluster.size() != 1)
         {
             throw std::runtime_error("The root cluster may only contain one body");
         }
@@ -35,38 +36,58 @@ namespace grbda
         }
 
         // Add remaining bodies
-        std::map<UrdfClusterPtr, bool> visited;
-        for (UrdfClusterPtr child : root_cluster->child_clusters)
+        std::map<UrdfCluster, bool> visited;
+        std::vector<UrdfCluster> child_clusters = cluster_model->getChildClusters(root_cluster);
+        for (const UrdfCluster& child : cluster_model->getChildClusters(root_cluster))
         {
-            appendClustersViaDFS(visited, child);
+            appendClustersViaDFS(visited, child, cluster_model);
         }
     }
 
     template <typename Scalar>
-    void ClusterTreeModel<Scalar>::appendClustersViaDFS(std::map<UrdfClusterPtr, bool> &visited,
-                                                        UrdfClusterPtr cluster)
+    void ClusterTreeModel<Scalar>::appendClustersViaDFS(std::map<UrdfCluster, bool> &visited,
+                                                        const UrdfCluster &cluster,
+                                                        const UrdfClusterModelPtr &cluster_model)
     {
         visited[cluster] = true;
         appendClusterFromUrdfCluster(cluster);
 
-        for (const UrdfClusterPtr &child : cluster->child_clusters)
+        for (const UrdfCluster &child : cluster_model->getChildClusters(cluster))
         {
             if (!visited[child])
             {
-                appendClustersViaDFS(visited, child);
+                appendClustersViaDFS(visited, child, cluster_model);
             }
         }
     }
 
     // TODO(@MatthewChignoli): Eventually add some specialization and detection for common clusters so that we can use sparsity exploiting classes
     template <typename Scalar>
-    void ClusterTreeModel<Scalar>::appendClusterFromUrdfCluster(UrdfClusterPtr cluster)
+    void ClusterTreeModel<Scalar>::appendClusterFromUrdfCluster(const UrdfCluster& cluster)
     {
-        // TODO(@MatthewChignoli): This is kind of a hack, but I think we should have a special exception for when the cluster has one link, a revolute joint, and not constraint joints
-        if (cluster->links.size() == 1 && cluster->constraints.size() == 0)
+        // Collect all constraints in the cluster
+        std::vector<urdf::ConstraintSharedPtr> constraints;
+        for (const urdf::LinkSharedPtr &link : cluster)
         {
-            UrdfLinkPtr link = cluster->links.begin()->second;
-            appendSimpleRevoluteJointFromUrdfCluster(link);
+            for (const urdf::ConstraintSharedPtr &constraint : link->constraints)
+            {
+                constraints.push_back(constraint);
+            }
+        }
+
+        // TODO(@MatthewChignoli): Remove this assumption?
+        for (const urdf::ConstraintSharedPtr &constraint : constraints)
+        {
+            if (constraint->type != constraints.front()->type)
+            {
+                throw std::runtime_error("All constraints in a cluster must be of the same type");
+            }
+        }
+
+        // TODO(@MatthewChignoli): This is kind of a hack, but I think we should have a special exception for when the cluster has one link, a revolute joint, and not constraint joints
+        if (cluster.size() == 1 && constraints.size() == 0)
+        {
+            appendSimpleRevoluteJointFromUrdfCluster(cluster.front());
             return;
         }
 
@@ -78,48 +99,40 @@ namespace grbda
         registerBodiesInUrdfCluster(cluster, joints_in_current_cluster, independent_coordinates,
                                     bodies_sx, joints_sx);
 
-        // Verify that all constraints in the cluster are of the same type
-        auto constraint_type = cluster->constraints.front()->type;
-        for (UrdfConstraintPtr constraint : cluster->constraints)
-        {
-            if (constraint->type != constraint_type)
-                throw std::runtime_error("All constraints in a cluster must be of the same type");
-        }
-
         // For each constraint, collect the captures that will be supplied to the lambda function
         // encoding the constraint
-        std::vector<PositionConstraintCapture> position_constraint_captures;
-        std::vector<RollingConstraintCapture> rolling_constraint_captures;
-        for (UrdfConstraintPtr constraint : cluster->constraints)
+        std::vector<LoopConstraintCapture> loop_constraint_captures;
+        std::vector<JointConstraintCapture> joint_constraint_captures;
+        for (urdf::ConstraintSharedPtr constraint : constraints)
         {
-            std::vector<Body<SX>> nca_to_predecessor_subtree, nca_to_successor_subtree;
-            for (UrdfLinkPtr link : constraint->nca_to_predecessor_subtree)
-            {
-                const auto &body_i = body(link->name);
-                nca_to_predecessor_subtree.push_back(bodies_sx[body_i.sub_index_within_cluster_]);
-            }
-            for (UrdfLinkPtr link : constraint->nca_to_successor_subtree)
-            {
-                const auto &body_i = body(link->name);
-                nca_to_successor_subtree.push_back(bodies_sx[body_i.sub_index_within_cluster_]);
-            }
+            const Body<Scalar>& parent = body(constraint->parent_link_name);
+            std::vector<Body<SX>> nca_to_parent_subtree =
+                getSubtreeFromNearestAncestor(parent, bodies_sx, constraint);
 
-            if (constraint_type == urdf::Constraint::POSITION)
+            const Body<Scalar>& child = body(constraint->child_link_name);
+            std::vector<Body<SX>> nca_to_child_subtree =
+                getSubtreeFromNearestAncestor(child, bodies_sx, constraint);               
+
+            if (constraint->type == urdf::Constraint::LOOP)
             {
-                PositionConstraintCapture capture;
-                capture.nca_to_predecessor_subtree = nca_to_predecessor_subtree;
-                capture.nca_to_successor_subtree = nca_to_successor_subtree;
-                capture.predecessor_to_constraint_origin_transform = *constraint->predecessor_to_constraint_origin_transform;
-                capture.successor_to_constraint_origin_transform = *constraint->successor_to_constraint_origin_transform;
-                position_constraint_captures.push_back(capture);
+                urdf::LoopConstraintSharedPtr loop_constraint =
+                    std::dynamic_pointer_cast<urdf::LoopConstraint>(constraint);
+                LoopConstraintCapture capture;
+                capture.nca_to_parent_subtree = nca_to_parent_subtree;
+                capture.nca_to_child_subtree = nca_to_child_subtree;
+                capture.parent_to_constraint_origin_transform = loop_constraint->parent_to_constraint_origin_transform;
+                capture.child_to_constraint_origin_transform = loop_constraint->child_to_constraint_origin_transform;
+                loop_constraint_captures.push_back(capture);
             }
-            else if (constraint_type == urdf::Constraint::ROLLING)
+            else if (constraint->type == urdf::Constraint::JOINT)
             {
-                RollingConstraintCapture capture;
-                capture.nca_to_predecessor_subtree = nca_to_predecessor_subtree;
-                capture.nca_to_successor_subtree = nca_to_successor_subtree;
-                capture.ratio = *constraint->ratio;
-                rolling_constraint_captures.push_back(capture);
+                urdf::JointConstraintSharedPtr joint_constraint =
+                    std::dynamic_pointer_cast<urdf::JointConstraint>(constraint);
+                JointConstraintCapture capture;
+                capture.nca_to_parent_subtree = nca_to_parent_subtree;
+                capture.nca_to_child_subtree = nca_to_child_subtree;
+                capture.ratio = joint_constraint->gear_ratio;
+                joint_constraint_captures.push_back(capture);
             }
             else
             {
@@ -127,23 +140,25 @@ namespace grbda
             }
         }
 
+        // TODO(@MatthewChignoli): The naming here is tough... we have a grbda::LoopConstraint and a urdf::LoopConstraint, and they mean different things
+
         // TODO(@MatthewChignoli): Would like to do some more sophisticated detection and specialization here. For example, if the jacobian of phi is constant, then we can use an explicit constraint. The best solution might just be codegen
         // Create constraints and add clusters
-        std::shared_ptr<LoopConstraint::Base<Scalar>> loop_constraint;
-        if (constraint_type == urdf::Constraint::POSITION)
+        std::shared_ptr<LoopConstraint::Base<Scalar>> cluster_constraint;
+        if (constraints.front()->type == urdf::Constraint::LOOP)
         {
             std::function<DVec<SX>(const JointCoordinate<SX> &)> phi;
-            phi = implicitPositionConstraint(position_constraint_captures, joints_sx);
+            phi = implicitPositionConstraint(loop_constraint_captures, joints_sx);
 
             using LoopConstraintType = LoopConstraint::GenericImplicit<Scalar>;
-            loop_constraint = std::make_shared<LoopConstraintType>(independent_coordinates, phi);
+            cluster_constraint = std::make_shared<LoopConstraintType>(independent_coordinates, phi);
         }
-        else if (constraint_type == urdf::Constraint::ROLLING)
+        else if (constraints.front()->type == urdf::Constraint::JOINT)
         {
             using KGPair = std::pair<DMat<Scalar>, DMat<Scalar>>;
-            KGPair K_G = explicitRollingConstraint(rolling_constraint_captures,
+            KGPair K_G = explicitRollingConstraint(joint_constraint_captures,
                                                    independent_coordinates);
-            loop_constraint = std::make_shared<LoopConstraint::Static<Scalar>>(K_G.second,
+            cluster_constraint = std::make_shared<LoopConstraint::Static<Scalar>>(K_G.second,
                                                                                K_G.first);
         }
         else
@@ -153,11 +168,34 @@ namespace grbda
 
         std::string cluster_name = "cluster-" + std::to_string(cluster_nodes_.size());
         appendRegisteredBodiesAsCluster<ClusterJoints::Generic<Scalar>>(
-            cluster_name, bodies_in_current_cluster_, joints_in_current_cluster, loop_constraint);
+            cluster_name, bodies_in_current_cluster_, joints_in_current_cluster, cluster_constraint);
     }
 
     template <typename Scalar>
-    void ClusterTreeModel<Scalar>::appendSimpleRevoluteJointFromUrdfCluster(UrdfLinkPtr link)
+    std::vector<Body<casadi::SX>> ClusterTreeModel<Scalar>::getSubtreeFromNearestAncestor(
+        const Body<Scalar> &leaf, const std::vector<Body<SX>> &bodies_sx,
+        const urdf::ConstraintSharedPtr &constraint) const
+    {
+        std::vector<Body<SX>> subtree;
+
+        // TODO(@MatthewChignoli): I think we can do this without needing the NCA?
+        subtree.push_back(bodies_sx[leaf.sub_index_within_cluster_]);
+        while (subtree.back().parent_index_ != -1)
+        {
+            if (body(subtree.back().parent_index_).name_ ==
+                constraint->nearest_common_ancestor_name)
+            {
+                break;
+            }
+            const Body<Scalar> &body_i = body(subtree.back().parent_index_);
+            subtree.push_back(bodies_sx[body_i.sub_index_within_cluster_]);
+        }
+        return subtree;
+    }
+
+    template <typename Scalar>
+    void
+    ClusterTreeModel<Scalar>::appendSimpleRevoluteJointFromUrdfCluster(urdf::LinkSharedPtr link)
     {
         if (link->parent_joint->type != urdf::Joint::CONTINUOUS)
         {
@@ -174,26 +212,30 @@ namespace grbda
 
     template <typename Scalar>
     void ClusterTreeModel<Scalar>::registerBodiesInUrdfCluster(
-        UrdfClusterPtr cluster,
+        const UrdfCluster& cluster,
         std::vector<JointPtr<Scalar>> &joints,
         std::vector<bool> &independent_coordinates,
         std::vector<Body<SX>> &bodies_sx,
         std::map<std::string, JointPtr<SX>> &joints_sx)
     {
-        std::map<int, UrdfLinkPtr> unregistered_links = cluster->links;
+        std::map<int, urdf::LinkSharedPtr> unregistered_links;
+        int i = 0;
+        for (const urdf::LinkSharedPtr link : cluster)
+        {
+            unregistered_links.insert({i++, link});
+        }
+
         while (unregistered_links.size() > 0)
         {
-            std::map<int, UrdfLinkPtr> unregistered_links_next;
-            for (const auto &pair : unregistered_links)
+            std::map<int, urdf::LinkSharedPtr> unregistered_links_next;
+            for (const auto &[link_idx, link] : unregistered_links)
             {
-                UrdfLinkPtr link = pair.second;
-
                 // If the parent of this link is not registered, then we will try again
                 // next iteration
                 const std::string parent_name = link->getParent()->name;
                 if (body_name_to_body_index_.find(parent_name) == body_name_to_body_index_.end())
                 {
-                    unregistered_links_next.insert({pair.first, link});
+                    unregistered_links_next.insert({link_idx, link});
                     continue;
                 }
 
@@ -225,7 +267,7 @@ namespace grbda
     template <typename Scalar>
     std::function<DVec<casadi::SX>(const JointCoordinate<casadi::SX> &)>
     ClusterTreeModel<Scalar>::implicitPositionConstraint(
-        std::vector<PositionConstraintCapture> &captures,
+        std::vector<LoopConstraintCapture> &captures,
         std::map<std::string, JointPtr<SX>> joints_sx)
     {
         return [captures, joints_sx](const JointCoordinate<SX> &q)
@@ -236,39 +278,39 @@ namespace grbda
             DVec<SX> phi_out = DVec<SX>(0);
             for (size_t i = 0; i < captures.size(); i++)
             {
-                const PositionConstraintCapture &capture = captures[i];
+                const LoopConstraintCapture &capture = captures[i];
 
-                // Through predecessor
-                Xform X_via_predecessor;
-                for (const Body<SX> &body : capture.nca_to_predecessor_subtree)
+                // Through parent
+                Xform X_via_parent;
+                for (const Body<SX> &body : capture.nca_to_parent_subtree)
                 {
                     JointPtr<SX> joint = joints_sx.at(body.name_);
                     joint->updateKinematics(q.segment(jidx, joint->numPositions()),
                                             DVec<SX>::Zero(joint->numVelocities()));
                     jidx += joint->numPositions();
-                    X_via_predecessor = joint->XJ() * body.Xtree_ * X_via_predecessor;
+                    X_via_parent = joint->XJ() * body.Xtree_ * X_via_parent;
                 }
-                X_via_predecessor = Xform(capture.predecessor_to_constraint_origin_transform) *
-                                    X_via_predecessor;
-                Vec3<SX> r_nca_to_constraint_via_predecessor = X_via_predecessor.getTranslation();
+                X_via_parent = Xform(capture.parent_to_constraint_origin_transform) *
+                                    X_via_parent;
+                Vec3<SX> r_nca_to_constraint_via_parent = X_via_parent.getTranslation();
 
-                // Through successor
-                Xform X_via_successor;
-                for (const Body<SX> &body : capture.nca_to_successor_subtree)
+                // Through child
+                Xform X_via_child;
+                for (const Body<SX> &body : capture.nca_to_child_subtree)
                 {
                     JointPtr<SX> joint = joints_sx.at(body.name_);
                     joint->updateKinematics(q.segment(jidx, joint->numPositions()),
                                             DVec<SX>::Zero(joint->numVelocities()));
                     jidx += joint->numPositions();
-                    X_via_successor = joint->XJ() * body.Xtree_ * X_via_successor;
+                    X_via_child = joint->XJ() * body.Xtree_ * X_via_child;
                 }
-                X_via_successor = Xform(capture.successor_to_constraint_origin_transform) *
-                                  X_via_successor;
-                Vec3<SX> r_nca_to_constraint_via_successor = X_via_successor.getTranslation();
+                X_via_child = Xform(capture.child_to_constraint_origin_transform) *
+                                  X_via_child;
+                Vec3<SX> r_nca_to_constraint_via_child = X_via_child.getTranslation();
 
                 // Compute constraint
-                Vec3<SX> r_constraint = r_nca_to_constraint_via_predecessor -
-                                        r_nca_to_constraint_via_successor;
+                Vec3<SX> r_constraint = r_nca_to_constraint_via_parent -
+                                        r_nca_to_constraint_via_child;
 
                 // TODO(@MatthewChignoli): The lambda function will do this check every time, which is wasted effort...
                 // Only enforce the constraint along axes that depend on joint coordinates
@@ -295,23 +337,23 @@ namespace grbda
     template <typename Scalar>
     std::pair<DMat<Scalar>, DMat<Scalar>>
     ClusterTreeModel<Scalar>::explicitRollingConstraint(
-        std::vector<RollingConstraintCapture> &captures,
+        std::vector<JointConstraintCapture> &captures,
         std::vector<bool> independent_coordinates)
     {
         // TODO(@MatthewChignoli): Assumes all joints are 1 DOF?
         DMat<Scalar> K = DMat<Scalar>::Zero(captures.size(), independent_coordinates.size());
         for (size_t i = 0; i < captures.size(); i++)
         {
-            const RollingConstraintCapture &capture = captures[i];
+            const JointConstraintCapture &capture = captures[i];
 
-            // Through predecessor
-            for (const Body<SX> &body : capture.nca_to_predecessor_subtree)
+            // Through parent
+            for (const Body<SX> &body : capture.nca_to_parent_subtree)
             {
                 K(i, body.sub_index_within_cluster_) = capture.ratio;
             }
 
-            // Through successor
-            for (const Body<SX> &body : capture.nca_to_successor_subtree)
+            // Through child
+            for (const Body<SX> &body : capture.nca_to_child_subtree)
             {
                 K(i, body.sub_index_within_cluster_) = -1;
             }

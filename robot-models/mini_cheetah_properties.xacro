@@ -41,11 +41,11 @@
             </inertial>
         </link>
 
-        <constraint name="${prefix}_abad_tranmission" type="rolling">
-            <predecessor link="${prefix}_abad_link"/>
-            <successor link="${prefix}_abad_rotor"/>
-            <ratio value="6.0"/>
-        </constraint>
+        <joint_constraint name="${prefix}_abad_tranmission">
+            <parent link="${prefix}_abad_link"/>
+            <child link="${prefix}_abad_rotor"/>
+            <gear_ratio value="6.0"/>
+        </joint_constraint>
 
     </xacro:macro>
 
@@ -86,11 +86,11 @@
             </inertial>
         </link>
 
-        <constraint name="${prefix}_hip_tranmission" type="rolling">
-            <predecessor link="${prefix}_hip_link"/>
-            <successor link="${prefix}_hip_rotor"/>
-            <ratio value="6.0"/>
-        </constraint>
+        <joint_constraint name="${prefix}_hip_tranmission">
+            <parent link="${prefix}_hip_link"/>
+            <child link="${prefix}_hip_rotor"/>
+            <gear_ratio value="6.0"/>
+        </joint_constraint>
 
     </xacro:macro>
 
@@ -130,11 +130,11 @@
             </inertial>
         </link>
 
-        <constraint name="${prefix}_knee_tranmission" type="rolling">
-            <predecessor link="${prefix}_knee_link"/>
-            <successor link="${prefix}_knee_rotor"/>
-            <ratio value="9.33"/>
-        </constraint>
+        <joint_constraint name="${prefix}_knee_tranmission">
+            <parent link="${prefix}_knee_link"/>
+            <child link="${prefix}_knee_rotor"/>
+            <gear_ratio value="9.33"/>
+        </joint_constraint>
 
     </xacro:macro>
     

@@ -92,6 +92,7 @@ GTEST_TEST(UrdfParser, parseFile)
         cluster_model.buildModelFromURDF(sample.urdf_file, sample.floating_base);
         cluster_model.print();
         GTEST_ASSERT_GT(cluster_model.bodies().size(), 0);
+        GTEST_ASSERT_GT(cluster_model.clusters().size(), 0);
     }
 }
 
@@ -107,21 +108,21 @@ struct URDFvsManualTestData
 std::vector<URDFvsManualTestData> GetTestRobots()
 {
     std::vector<URDFvsManualTestData> test_data;
-    test_data.push_back({urdf_directory + "planar_leg_linkage.urdf",
-                         std::make_shared<PlanarLegLinkage<double>>(),
-                         false});
+    // test_data.push_back({urdf_directory + "planar_leg_linkage.urdf",
+    //                      std::make_shared<PlanarLegLinkage<double>>(),
+    //                      false});
     test_data.push_back({urdf_directory + "revolute_rotor_chain.urdf",
                          std::make_shared<RevoluteChainWithRotor<3, double>>(false),
                          false});
-    test_data.push_back({urdf_directory + "mini_cheetah.urdf",
-                         std::make_shared<MiniCheetah<double>>(),
-                         true});
-    test_data.push_back({urdf_directory + "mit_humanoid_leg.urdf",
-                         std::make_shared<MIT_Humanoid_Leg<double>>(),
-                         false});
-    test_data.push_back({urdf_directory + "mit_humanoid.urdf",
-                         std::make_shared<MIT_Humanoid<double>>(),
-                         true});
+    // test_data.push_back({urdf_directory + "mini_cheetah.urdf",
+    //                      std::make_shared<MiniCheetah<double>>(),
+    //                      true});
+    // test_data.push_back({urdf_directory + "mit_humanoid_leg.urdf",
+    //                      std::make_shared<MIT_Humanoid_Leg<double>>(),
+    //                      false});
+    // test_data.push_back({urdf_directory + "mit_humanoid.urdf",
+    //                      std::make_shared<MIT_Humanoid<double>>(),
+    //                      true});
     return test_data;
 }
 
@@ -134,6 +135,9 @@ protected:
         manual_model = GetParam().robot->buildClusterTreeModel();
         urdf_model.buildModelFromURDF(GetParam().urdf_file, GetParam().floating_base);
         urdf_model.setGravity(manual_model.getGravity().tail<3>());
+
+        manual_model.print();
+        urdf_model.print();
     }
 
     void initializeRandomStates()

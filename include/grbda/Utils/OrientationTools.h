@@ -69,28 +69,27 @@ namespace grbda
 
     inline CoordinateAxis urdfAxisToCoordinateAxis(const urdf::Vector3 &axis)
     {
-      throw std::runtime_error("Not implemented");
-      // if (axis.norm() != 1)
-      // {
-      //   throw std::runtime_error("Error: Joint axis must be a unit vector");
-      // }
+      if (sqrt(axis.x * axis.x + axis.y * axis.y + axis.z * axis.z) != 1)
+      {
+        throw std::runtime_error("Error: Joint axis must be a unit vector");
+      }
 
-      // if (axis.x == 1 || axis.x == -1)
-      // {
-      //   return CoordinateAxis::X;
-      // }
-      // else if (axis.y == 1 || axis.y == -1)
-      // {
-      //   return CoordinateAxis::Y;
-      // }
-      // else if (axis.z == 1 || axis.z == -1)
-      // {
-      //   return CoordinateAxis::Z;
-      // }
-      // else
-      // {
-      //   throw std::runtime_error("Error: Joint axis not defined");
-      // }
+      if (axis.x == 1 || axis.x == -1)
+      {
+        return CoordinateAxis::X;
+      }
+      else if (axis.y == 1 || axis.y == -1)
+      {
+        return CoordinateAxis::Y;
+      }
+      else if (axis.z == 1 || axis.z == -1)
+      {
+        return CoordinateAxis::Z;
+      }
+      else
+      {
+        throw std::runtime_error("Error: Joint axis not defined");
+      }
     }
 
     inline CoordinateAxis randomCoordinateAxis()
