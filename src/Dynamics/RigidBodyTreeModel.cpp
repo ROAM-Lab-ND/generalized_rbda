@@ -166,7 +166,8 @@ namespace grbda
     }
 
     template <typename Scalar>
-    Vec3<Scalar> RigidBodyTreeModel<Scalar>::getPosition(const std::string &body_name)
+    Vec3<Scalar> RigidBodyTreeModel<Scalar>::getPosition(const std::string &body_name,
+                                                         const Vec3<Scalar> &offset)
     {
         const int &body_idx = body_name_to_body_index_.at(body_name);
         const TreeNodePtr<Scalar> rigid_body_node = this->getNodeContainingBody(body_idx);
@@ -174,7 +175,7 @@ namespace grbda
         this->forwardKinematics();
         const spatial::Transform<Scalar> &Xa = rigid_body_node->Xa_[0];
         const Mat6<Scalar> Xai = spatial::invertSXform(Xa.toMatrix().template cast<Scalar>());
-        Vec3<Scalar> link_pos = spatial::sXFormPoint(Xai, Vec3<Scalar>::Zero());
+        Vec3<Scalar> link_pos = spatial::sXFormPoint(Xai, offset);
         return link_pos;
     }
 
@@ -192,7 +193,8 @@ namespace grbda
     }
 
     template <typename Scalar>
-    Vec3<Scalar> RigidBodyTreeModel<Scalar>::getLinearVelocity(const std::string &body_name)
+    Vec3<Scalar> RigidBodyTreeModel<Scalar>::getLinearVelocity(const std::string &body_name,
+                                                               const Vec3<Scalar> &offset)
     {
         const int &body_idx = body_name_to_body_index_.at(body_name);
         const TreeNodePtr<Scalar> rigid_body_node = this->getNodeContainingBody(body_idx);
@@ -200,7 +202,7 @@ namespace grbda
         this->forwardKinematics();
         const Mat3<Scalar> Rai = getOrientation(body_name);
         const SVec<Scalar> v = rigid_body_node->v_.template head<6>();
-        return Rai * spatial::spatialToLinearVelocity(v, Vec3<Scalar>::Zero());
+        return Rai * spatial::spatialToLinearVelocity(v, offset);
     }
 
     template <typename Scalar>

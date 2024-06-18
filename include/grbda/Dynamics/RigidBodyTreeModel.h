@@ -49,9 +49,11 @@ namespace grbda
 
         void updateLoopConstraints();
 
-        Vec3<Scalar> getPosition(const std::string &body_name) override;
+        Vec3<Scalar> getPosition(const std::string &body_name,
+                                 const Vec3<Scalar> &offset = Vec3<Scalar>::Zero()) override;
         Mat3<Scalar> getOrientation(const std::string &body_name) override;
-        Vec3<Scalar> getLinearVelocity(const std::string &body_name) override;
+        Vec3<Scalar> getLinearVelocity(const std::string &body_name,
+                                       const Vec3<Scalar> &offset = Vec3<Scalar>::Zero()) override;
         Vec3<Scalar> getAngularVelocity(const std::string &body_name) override;
 
         D6Mat<Scalar> contactJacobianBodyFrame(const std::string &cp_name) override;

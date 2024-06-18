@@ -42,7 +42,8 @@ namespace grbda
 
         void setIndependentStates(const DVec<Scalar> &y, const DVec<Scalar> &yd);
 
-        Vec3<Scalar> getPosition(const std::string &body_name) override
+        Vec3<Scalar> getPosition(const std::string &body_name,
+                                 const Vec3<Scalar> &offset) override
         {
             throw std::runtime_error("Not implemented");
         }
@@ -50,7 +51,8 @@ namespace grbda
         {
             throw std::runtime_error("Not implemented");
         }
-        Vec3<Scalar> getLinearVelocity(const std::string &body_name) override
+        Vec3<Scalar> getLinearVelocity(const std::string &body_name,
+                                       const Vec3<Scalar> &offset) override
         {
             throw std::runtime_error("Not implemented");
         }

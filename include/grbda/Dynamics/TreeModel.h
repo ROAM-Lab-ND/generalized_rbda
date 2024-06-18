@@ -27,12 +27,15 @@ namespace grbda
         int getNumActuatedDegreesOfFreedom() const { return velocity_index_ - unactuated_dofs_; }
         const int& getNumEndEffectors() const { return num_end_effectors_; }
 
-        virtual Vec3<Scalar> getPosition(const std::string &body_name) = 0;
+        virtual Vec3<Scalar> getPosition(const std::string &body_name,
+                                         const Vec3<Scalar> &offset) = 0;
         virtual Mat3<Scalar> getOrientation(const std::string &body_name) = 0;
-        virtual Vec3<Scalar> getLinearVelocity(const std::string &body_name) = 0;
+        virtual Vec3<Scalar> getLinearVelocity(const std::string &body_name,
+                                               const Vec3<Scalar> &offset) = 0;
         virtual Vec3<Scalar> getAngularVelocity(const std::string &body_name) = 0;
         virtual Vec3<Scalar> getLinearAcceleration(const DVec<Scalar> &qdd,
-                                                   const std::string &body_name)
+                                                   const std::string &body_name,
+                                                   const Vec3<Scalar> &offset)
         {
             throw std::runtime_error("Not implemented");
         }

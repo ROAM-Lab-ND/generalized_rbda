@@ -295,7 +295,8 @@ namespace grbda
     }
 
     template <typename Scalar>
-    Vec3<Scalar> ClusterTreeModel<Scalar>::getPosition(const std::string &body_name)
+    Vec3<Scalar> ClusterTreeModel<Scalar>::getPosition(const std::string &body_name,
+                                                       const Vec3<Scalar> &offset)
     {
         const int cluster_idx = getIndexOfClusterContainingBody(body_name);
         const int subindex_within_cluster = body(body_name).sub_index_within_cluster_;
@@ -304,7 +305,7 @@ namespace grbda
         const spatial::Transform<Scalar> &Xa =
             cluster_nodes_[cluster_idx]->Xa_[subindex_within_cluster];
         const Mat6<Scalar> Xai = spatial::invertSXform(Xa.toMatrix().template cast<Scalar>());
-        Vec3<Scalar> link_pos = spatial::sXFormPoint(Xai, Vec3<Scalar>::Zero());
+        Vec3<Scalar> link_pos = spatial::sXFormPoint(Xai, offset);
         return link_pos;
     }
 
@@ -323,7 +324,8 @@ namespace grbda
     }
 
     template <typename Scalar>
-    Vec3<Scalar> ClusterTreeModel<Scalar>::getLinearVelocity(const std::string &body_name)
+    Vec3<Scalar> ClusterTreeModel<Scalar>::getLinearVelocity(const std::string &body_name,
+                                                             const Vec3<Scalar> &offset)
     {
         const int cluster_idx = getIndexOfClusterContainingBody(body_name);
         const int subindex_within_cluster = body(body_name).sub_index_within_cluster_;
@@ -332,7 +334,7 @@ namespace grbda
         const Mat3<Scalar> Rai = getOrientation(body_name);
         const DVec<Scalar> &v_cluster = cluster_nodes_[cluster_idx]->v_;
         const SVec<Scalar> v = v_cluster.template segment<6>(6 * subindex_within_cluster);
-        return Rai * spatial::spatialToLinearVelocity(v, Vec3<Scalar>::Zero());
+        return Rai * spatial::spatialToLinearVelocity(v, offset);
     }
 
     template <typename Scalar>
@@ -350,7 +352,8 @@ namespace grbda
 
     template <typename Scalar>
     Vec3<Scalar> ClusterTreeModel<Scalar>::getLinearAcceleration(const DVec<Scalar> &qdd,
-                                                                 const std::string &body_name)
+                                                                 const std::string &body_name,
+                                                                 const Vec3<Scalar> &offset)
     {
         const int cluster_idx = getIndexOfClusterContainingBody(body_name);
         const int subindex_within_cluster = body(body_name).sub_index_within_cluster_;
@@ -361,7 +364,7 @@ namespace grbda
         const SVec<Scalar> v = v_cluster.template segment<6>(6 * subindex_within_cluster);
         const DVec<Scalar> &a_cluster = cluster_nodes_[cluster_idx]->a_;
         const SVec<Scalar> a = a_cluster.template segment<6>(6 * subindex_within_cluster);
-        return Rai * spatial::spatialToLinearAcceleration(a, v, Vec3<Scalar>::Zero());
+        return Rai * spatial::spatialToLinearAcceleration(a, v, offset);
     }
 
     template <typename Scalar>

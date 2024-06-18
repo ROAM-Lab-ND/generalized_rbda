@@ -142,13 +142,15 @@ namespace grbda
             return cluster_nodes_[cluster_index];
         }
 
-        Vec3<Scalar> getPosition(const std::string &body_name) override;
+        Vec3<Scalar> getPosition(const std::string &body_name,
+                                 const Vec3<Scalar> &offset = Vec3<Scalar>::Zero()) override;
         Mat3<Scalar> getOrientation(const std::string &body_name) override;
-        Vec3<Scalar> getLinearVelocity(const std::string &body_name) override;
+        Vec3<Scalar> getLinearVelocity(const std::string &body_name,
+                                       const Vec3<Scalar> &offset = Vec3<Scalar>::Zero()) override;
         Vec3<Scalar> getAngularVelocity(const std::string &body_name) override;
-        // TODO(@MatthewChignoli): Unit test these
         Vec3<Scalar> getLinearAcceleration(const DVec<Scalar> &qdd,
-                                           const std::string &body_name) override;
+                                           const std::string &body_name,
+                                           const Vec3<Scalar> &offset = Vec3<Scalar>::Zero())override;
         Vec3<Scalar> getAngularAcceleration(const DVec<Scalar> &qdd,
                                             const std::string &body_name) override;
 
