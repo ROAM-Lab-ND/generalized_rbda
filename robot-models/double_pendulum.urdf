@@ -20,18 +20,20 @@
         </inertial>
     </link>
 
-    <joint name="joint1" type="continuous">
+    <joint name="joint1" type="revolute">
         <parent link="base_link"/>
         <child link="link1"/>
         <origin xyz="0.0 0.0 0.0"/>
         <axis xyz="0 0 1"/>
+		<limit effort="30" velocity="1.0" lower="-3.14" upper="3.14" />
     </joint>
 
-    <joint name="joint2" type="continuous">
+    <joint name="joint2" type="revolute">
         <parent link="link1"/>
         <child link="link2"/>
         <origin xyz="0.1 0.0 0.0"/>
         <axis xyz="0 0 1"/>
+		<limit effort="30" velocity="1.0" lower="-3.14" upper="3.14" />
     </joint>
 
 </robot>

@@ -19,6 +19,18 @@ int main()
     grbda::ClusterTreeModel<double> cluster_tree;
     cluster_tree.buildModelFromURDF(urdf_filename, false);
 
+    if (model.nq != cluster_tree.getNumPositions())
+    {
+        std::cerr << "Error: The number of generalized coordinates is not the same" << std::endl;
+        return 1;
+    }
+
+    if (model.nv != cluster_tree.getNumDegreesOfFreedom())
+    {
+        std::cerr << "Error: The number of generalized velocities is not the same" << std::endl;
+        return 1;
+    }
+
     for (int i = 0; i < 10; i++)
     {
 

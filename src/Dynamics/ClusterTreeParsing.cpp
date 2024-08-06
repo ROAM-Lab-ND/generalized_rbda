@@ -159,7 +159,8 @@ namespace grbda
     template <typename Scalar>
     void ClusterTreeModel<Scalar>::appendSimpleRevoluteJointFromUrdfCluster(UrdfLinkPtr link)
     {
-        if (link->parent_joint->type != urdf::Joint::CONTINUOUS)
+        if (link->parent_joint->type != urdf::Joint::CONTINUOUS &&
+            link->parent_joint->type != urdf::Joint::REVOLUTE)
         {
             throw std::runtime_error("The only joint in a cluster with one link must be revolute");
         }
