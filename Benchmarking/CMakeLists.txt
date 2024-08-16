@@ -39,3 +39,9 @@ target_link_libraries(accuracy_benchmark_ee_tracking ${PROJECT_NAME})
 
 add_executable(pinocchio_benchmark src/pinocchioBenchmark.cpp)
 target_link_libraries(pinocchio_benchmark ${PROJECT_NAME} ${PINOCCHIO_LIBRARIES} pinocchio_parsers)
+
+add_executable(forward_dynamics_explicit_benchmark src/forwardDynamicsBenchmarkExplicit.cpp)
+target_link_libraries(forward_dynamics_explicit_benchmark ${PROJECT_NAME} ${PINOCCHIO_LIBRARIES} pinocchio_parsers)
+
+add_executable(forward_dynamics_implicit_benchmark src/forwardDynamicsBenchmarkImplicit.cpp)
+target_link_libraries(forward_dynamics_implicit_benchmark ${PROJECT_NAME} ${PINOCCHIO_LIBRARIES} pinocchio_parsers)

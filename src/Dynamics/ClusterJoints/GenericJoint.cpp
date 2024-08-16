@@ -195,6 +195,12 @@ namespace grbda
             X_intra_ring_ = DMat<Scalar>::Zero(6 * this->num_bodies_, 6 * this->num_bodies_);
         }
 
+        /*template <typename Scalar>
+        std::shared_ptr<LoopConstraint::Base<Scalar>> Generic<Scalar>::cloneLoopConstraint() const
+        {
+            return this->loop_constraint_->clone();
+        }*/
+
         template <typename Scalar>
         void Generic<Scalar>::updateKinematics(const JointState<Scalar> &joint_state)
         {
