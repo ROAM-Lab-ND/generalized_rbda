@@ -9,6 +9,12 @@ if(pinocchio_FOUND)
   if(PINOCCHIO_LIBRARY)
     set(PINOCCHIO_LIBRARIES ${PINOCCHIO_LIBRARIES} ${PINOCCHIO_LIBRARY})
   endif()
+  find_library(PINOCCHIO_PARSERS_LIBRARY
+    NAMES pinocchio_parsers
+    HINTS ${PINOCCHIO_INCLUDE_DIR}/../lib $ENV{PINOCCHIO_PREFIX}/lib)
+  if(PINOCCHIO_PARSERS_LIBRARY)
+    set(PINOCCHIO_LIBRARIES ${PINOCCHIO_LIBRARIES} ${PINOCCHIO_PARSERS_LIBRARY})
+  endif()
 else()
   message(FATAL_ERROR "Pinocchio not found. Please install it or specify its location.")
 endif()
@@ -38,10 +44,10 @@ add_executable(accuracy_benchmark_ee_tracking src/accuracyBenchmarkEndEffectorTr
 target_link_libraries(accuracy_benchmark_ee_tracking ${PROJECT_NAME})
 
 add_executable(pinocchio_benchmark src/pinocchioBenchmark.cpp)
-target_link_libraries(pinocchio_benchmark ${PROJECT_NAME} ${PINOCCHIO_LIBRARIES} pinocchio_parsers)
+target_link_libraries(pinocchio_benchmark ${PROJECT_NAME} ${PINOCCHIO_LIBRARIES})
 
 add_executable(forward_dynamics_explicit_benchmark src/forwardDynamicsBenchmarkExplicit.cpp)
-target_link_libraries(forward_dynamics_explicit_benchmark ${PROJECT_NAME} ${PINOCCHIO_LIBRARIES} pinocchio_parsers)
+target_link_libraries(forward_dynamics_explicit_benchmark ${PROJECT_NAME} ${PINOCCHIO_LIBRARIES})
 
 add_executable(forward_dynamics_implicit_benchmark src/forwardDynamicsBenchmarkImplicit.cpp)
-target_link_libraries(forward_dynamics_implicit_benchmark ${PROJECT_NAME} ${PINOCCHIO_LIBRARIES} pinocchio_parsers)
+target_link_libraries(forward_dynamics_implicit_benchmark ${PROJECT_NAME} ${PINOCCHIO_LIBRARIES})
