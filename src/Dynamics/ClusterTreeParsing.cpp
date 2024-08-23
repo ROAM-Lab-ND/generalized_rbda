@@ -231,6 +231,7 @@ namespace grbda
     {
         return [captures, joints_sx](const JointCoordinate<SX> &q)
         {
+            // TODO(@MatthewChignoli): There is a bug with the joint idx. It assumes that joints are ordered so that pred sub tree comes first, in order
             int jidx = 0;
             using Xform = spatial::Transform<SX>;
 
