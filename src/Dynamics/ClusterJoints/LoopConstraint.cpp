@@ -9,6 +9,7 @@ namespace grbda
         bool Base<Scalar>::isValidSpanningPosition(const JointCoordinate<Scalar> &joint_pos) const
         {
             DVec<Scalar> violation = phi_(joint_pos);
+            std::cout <<"phi violation from phi() in isValidSpanningPosition: " << violation << std::endl;
             return nearZeroDefaultTrue(violation) && joint_pos.isSpanning();
         }
 

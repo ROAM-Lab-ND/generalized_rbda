@@ -166,12 +166,16 @@ namespace grbda
         DMat<Scalar> getMassMatrix() override;
         DVec<Scalar> getBiasForceVector() override;
 
+        DMat<double> getPinocchioJointMap() { return pinocchio_joint_map_; }
+
     protected:
         using SX = casadi::SX;
 
         template <typename OrientationRepresentation = ori_representation::Quaternion>
         void buildFromUrdfModelInterface(const UrdfModelPtr model, bool floating_base);
         
+        void appendClusterIntoTree(UrdfClusterPtr cluster, std::vector<int> &dependent_idx);
+
         void appendClustersViaDFS(std::map<UrdfClusterPtr, bool> &visited, UrdfClusterPtr cluster);
         void appendClusterFromUrdfCluster(UrdfClusterPtr cluster);
         void appendSimpleRevoluteJointFromUrdfCluster(UrdfLinkPtr link);
@@ -215,6 +219,8 @@ namespace grbda
         std::unordered_map<std::string, int> body_name_to_body_index_;
         std::unordered_map<std::string, int> cluster_name_to_cluster_index_;
         std::unordered_map<int, int> body_index_to_cluster_index_;
+
+        DMat<double> pinocchio_joint_map_;
 
         bool articulated_bodies_updated_ = false;
         bool force_propagators_updated_ = false;

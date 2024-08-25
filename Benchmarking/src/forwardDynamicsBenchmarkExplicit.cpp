@@ -70,13 +70,11 @@ int main()
     Eigen::VectorXd spanning_joint_vel = spanning_q_and_v.second;
 
     // Start with the forward kinematics
+    grbda::DMat<double> joint_map = cluster_tree.getPinocchioJointMap();
     Eigen::VectorXd pin_q(6), pin_v(6), pin_tau(6);
-    pin_q << spanning_joint_pos[0], spanning_joint_pos[2], spanning_joint_pos[4],
-        spanning_joint_pos[5], spanning_joint_pos[3], spanning_joint_pos[1];
-    pin_v << spanning_joint_vel[0], spanning_joint_vel[2], spanning_joint_vel[4],
-        spanning_joint_vel[5], spanning_joint_vel[3], spanning_joint_vel[1];
-    pin_tau << spanning_joint_tau[0], spanning_joint_tau[2], spanning_joint_tau[4],
-        spanning_joint_tau[5], spanning_joint_tau[3], spanning_joint_tau[1];
+    pin_q = joint_map * spanning_joint_pos;
+    pin_v = joint_map * spanning_joint_vel;
+    pin_tau = joint_map * spanning_joint_tau;
 
     pinocchio::forwardKinematics(model, data, pin_q, pin_v);
     cluster_tree.forwardKinematics();
