@@ -39,6 +39,6 @@ cd $DEP_PATH
 git clone https://github.com/stack-of-tasks/pinocchio.git
 cd pinocchio
 mkdir build && cd build
-cmake -DBUILD_PYTHON_INTERFACE=OFF -DBUILD_WITH_URDF_SUPPORT=ON ..
+cmake -DBUILD_PYTHON_INTERFACE=OFF -DBUILD_WITH_URDF_SUPPORT=ON -DBUILD_WITH_CASADI_SUPPORT=ON ..
 make
 sudo make install
