@@ -43,7 +43,6 @@ namespace grbda
             appendClustersViaDFS(visited, child);
             appendClusterIntoTree(child, dependent_idx);
         }
-        std::cout << "Pinocchio joint map: \n" << getPinocchioJointMap() << std::endl;
     }
 
     template <typename Scalar>
