@@ -15,6 +15,12 @@ if(pinocchio_FOUND)
   if(PINOCCHIO_PARSERS_LIBRARY)
     set(PINOCCHIO_LIBRARIES ${PINOCCHIO_LIBRARIES} ${PINOCCHIO_PARSERS_LIBRARY})
   endif()
+  find_library(PINOCCHIO_CASADI_LIBRARY
+    NAMES pinocchio_casadi
+    HINTS ${PINOCCHIO_INCLUDE_DIR}/../lib $ENV{PINOCCHIO_PREFIX}/lib)
+  if(PINOCCHIO_CASADI_LIBRARY)
+    set(PINOCCHIO_LIBRARIES ${PINOCCHIO_LIBRARIES} ${PINOCCHIO_CASADI_LIBRARY})
+  endif()
 else()
   message(FATAL_ERROR "Pinocchio not found. Please install it or specify its location.")
 endif()

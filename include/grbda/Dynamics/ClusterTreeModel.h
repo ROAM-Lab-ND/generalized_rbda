@@ -166,7 +166,8 @@ namespace grbda
         DMat<Scalar> getMassMatrix() override;
         DVec<Scalar> getBiasForceVector() override;
 
-        DMat<double> getPinocchioJointMap() { return pinocchio_joint_map_; }
+        // TODO(@MatthewChignoli): Should not have to cast every time
+        DMat<Scalar> getPinocchioJointMap() { return pinocchio_joint_map_.cast<Scalar>(); }
 
     protected:
         using SX = casadi::SX;
