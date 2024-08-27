@@ -1,5 +1,6 @@
 #include "gtest/gtest.h"
 
+#include "config.h"
 #include "grbda/Dynamics/ClusterTreeModel.h"
 #include "grbda/Dynamics/RigidBodyTreeModel.h"
 #include "grbda/Utils/Utilities.h"
@@ -114,7 +115,30 @@ GTEST_TEST(pinocchio, explicit_constraints)
         << "K*qdd_pinocchio + k: " << cnstr_violation_pinocchio.transpose();
 }
 
-GTEST_TEST(pinocchio, explicit_constraints_casadi)
+const std::string urdf_directory = SOURCE_DIRECTORY "/robot-models/";
+
+struct RobotSpecification
+{
+    std::string urdf_filename;
+    bool floating_base;
+};
+
+std::vector<RobotSpecification> GetBenchmarkUrdfFiles()
+{
+    std::vector<RobotSpecification> test_urdf_files;
+    test_urdf_files.push_back({urdf_directory + "revolute_rotor_chain.urdf", false});
+    test_urdf_files.push_back({urdf_directory + "mit_humanoid_leg.urdf", false});
+    return test_urdf_files;
+}
+
+class PinocchioExplicitBenchmark : public ::testing::TestWithParam<RobotSpecification>
+{
+};
+
+INSTANTIATE_TEST_SUITE_P(PinocchioExplicitBenchmark, PinocchioExplicitBenchmark,
+                         ::testing::ValuesIn(GetBenchmarkUrdfFiles()));
+
+TEST_P(PinocchioExplicitBenchmark, compareInstructionCount)
 {
     // TODO(@MatthewChignoli): Cleanup these typedefs
     typedef double Scalar;
@@ -134,15 +158,14 @@ GTEST_TEST(pinocchio, explicit_constraints_casadi)
     using StatePair = std::pair<DynamicADVector, DynamicADVector>;
 
     // Build models
-    const std::string urdf_filename = "../robot-models/revolute_rotor_chain.urdf";
 
     PinocchioModel model;
-    pinocchio::urdf::buildModel(urdf_filename, model);
+    pinocchio::urdf::buildModel(GetParam().urdf_filename, model);
     PinocchioADModel ad_model = model.cast<ADScalar>();
     PinocchioADData ad_data(ad_model);
 
     grbda::ClusterTreeModel<ADScalar> cluster_tree;
-    cluster_tree.buildModelFromURDF(urdf_filename, false);
+    cluster_tree.buildModelFromURDF(GetParam().urdf_filename, GetParam().floating_base);
     DynamicADMatrix joint_map = cluster_tree.getPinocchioJointMap();
 
     using RigidBodyTreeModel = grbda::RigidBodyTreeModel<ADScalar>;
