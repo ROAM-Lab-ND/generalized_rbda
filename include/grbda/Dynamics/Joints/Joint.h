@@ -14,8 +14,8 @@ namespace grbda
         class Base
         {
         public:
-            Base(int num_positions, int num_velocities)
-                : num_positions_(num_positions), num_velocities_(num_velocities) {}
+            Base(int num_positions, int num_velocities, std::string name)
+                : num_positions_(num_positions), num_velocities_(num_velocities), name_(name) {}
             virtual ~Base() {}
 
             virtual std::shared_ptr<Base<Scalar>> clone() const = 0;
@@ -28,6 +28,9 @@ namespace grbda
             const DMat<Scalar> &S() const { return S_; }
             const DMat<Scalar> &Psi() const { return Psi_; }
             const spatial::Transform<Scalar> &XJ() const { return XJ_; }
+
+            // TODO(@MatthewChignoli): Maybe should be protected
+            const std::string name_;             
 
         protected:
             const int num_positions_;
@@ -43,7 +46,8 @@ namespace grbda
         class Free : public Base<Scalar>
         {
         public:
-            Free() : Base<Scalar>(OrientationRepresentation::num_ori_parameter + 3, 6)
+            Free(std::string name = "unnamed_free_joint")
+                : Base<Scalar>(OrientationRepresentation::num_ori_parameter + 3, 6, name)
             {
                 this->S_ = D6Mat<Scalar>::Identity(6, 6);
                 this->Psi_ = D6Mat<Scalar>::Identity(6, 6);
@@ -71,7 +75,8 @@ namespace grbda
         class Revolute : public Base<Scalar>
         {
         public:
-            Revolute(ori::CoordinateAxis axis) : Base<Scalar>(1, 1), axis_(axis)
+            Revolute(ori::CoordinateAxis axis, std::string name = "unnamed_revolute_joint")
+                : Base<Scalar>(1, 1, name), axis_(axis)
             {
                 spatial::JointType Rev = spatial::JointType::Revolute;
 

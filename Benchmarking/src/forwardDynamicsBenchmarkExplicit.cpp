@@ -14,25 +14,70 @@
 #include "pinocchio/algorithm/rnea.hpp"
 #include "pinocchio/algorithm/contact-dynamics.hpp"
 
-GTEST_TEST(pinocchio, explicit_constraints)
+template <typename Scalar>
+Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> jointMap(
+    const grbda::RigidBodyTreeModel<Scalar> &grbda_model,
+    const pinocchio::Model &pin_model)
+{
+    // TODO(@MatthewChignoli): Assumes nq = nv, and nv_i = 1 for all joints
+    using EigMat = Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic>;
+    EigMat joint_map = EigMat::Zero(grbda_model.getNumDegreesOfFreedom(),
+                                    grbda_model.getNumDegreesOfFreedom());
+    int i = 0;
+    for (const auto &name : pin_model.names)
+    {
+        for (const auto &node : grbda_model.rigidBodyNodes())
+        {
+            if (node->joint_->name_ == name)
+            {
+                joint_map(i, node->velocity_index_) = 1;
+                i++;
+            }
+        }
+    }
+    return joint_map;
+}
+
+const std::string urdf_directory = SOURCE_DIRECTORY "/robot-models/";
+
+struct RobotSpecification
+{
+    std::string urdf_filename;
+    bool floating_base;
+};
+
+std::vector<RobotSpecification> GetBenchmarkUrdfFiles()
+{
+    std::vector<RobotSpecification> test_urdf_files;
+    test_urdf_files.push_back({urdf_directory + "revolute_rotor_chain.urdf", false});
+    test_urdf_files.push_back({urdf_directory + "mit_humanoid_leg.urdf", false});
+    return test_urdf_files;
+}
+
+class PinocchioExplicitNumericalValidation : public ::testing::TestWithParam<RobotSpecification>
+{
+};
+
+INSTANTIATE_TEST_SUITE_P(PinocchioExplicitNumericalValidation, PinocchioExplicitNumericalValidation,
+                         ::testing::ValuesIn(GetBenchmarkUrdfFiles()));
+
+TEST_P(PinocchioExplicitNumericalValidation, explicit_constraints)
 {
     using ModelState = grbda::ModelState<double>;
     using JointState = grbda::JointState<double>;
     using StatePair = std::pair<Eigen::VectorXd, Eigen::VectorXd>;
 
     // Build models
-    const std::string urdf_filename = "../robot-models/revolute_rotor_chain.urdf";
-
     pinocchio::Model model;
-    pinocchio::urdf::buildModel(urdf_filename, model);
+    pinocchio::urdf::buildModel(GetParam().urdf_filename, model);
     pinocchio::Model::Data data(model);
 
     grbda::ClusterTreeModel<double> cluster_tree;
-    cluster_tree.buildModelFromURDF(urdf_filename, false);
-    Eigen::MatrixXd joint_map = cluster_tree.getPinocchioJointMap();
+    cluster_tree.buildModelFromURDF(GetParam().urdf_filename, GetParam().floating_base);
 
     using RigidBodyTreeModel = grbda::RigidBodyTreeModel<double>;
     RigidBodyTreeModel lgm_model(cluster_tree, grbda::FwdDynMethod::LagrangeMultiplierEigen);
+    Eigen::MatrixXd joint_map = jointMap(lgm_model, model);
 
     const int nv = cluster_tree.getNumDegreesOfFreedom();
     const int nv_span = lgm_model.getNumDegreesOfFreedom();
@@ -77,6 +122,7 @@ GTEST_TEST(pinocchio, explicit_constraints)
     const Eigen::VectorXd k_pinocchio = k_cluster;
 
     // Forward kinematics
+    // TODO(@MatthewChignoli): Add this test back in?
     // pinocchio::forwardKinematics(model, data, pin_q, pin_v);
     // cluster_tree.forwardKinematics();
 
@@ -115,22 +161,6 @@ GTEST_TEST(pinocchio, explicit_constraints)
         << "K*qdd_pinocchio + k: " << cnstr_violation_pinocchio.transpose();
 }
 
-const std::string urdf_directory = SOURCE_DIRECTORY "/robot-models/";
-
-struct RobotSpecification
-{
-    std::string urdf_filename;
-    bool floating_base;
-};
-
-std::vector<RobotSpecification> GetBenchmarkUrdfFiles()
-{
-    std::vector<RobotSpecification> test_urdf_files;
-    test_urdf_files.push_back({urdf_directory + "revolute_rotor_chain.urdf", false});
-    test_urdf_files.push_back({urdf_directory + "mit_humanoid_leg.urdf", false});
-    return test_urdf_files;
-}
-
 class PinocchioExplicitBenchmark : public ::testing::TestWithParam<RobotSpecification>
 {
 };
@@ -158,7 +188,6 @@ TEST_P(PinocchioExplicitBenchmark, compareInstructionCount)
     using StatePair = std::pair<DynamicADVector, DynamicADVector>;
 
     // Build models
-
     PinocchioModel model;
     pinocchio::urdf::buildModel(GetParam().urdf_filename, model);
     PinocchioADModel ad_model = model.cast<ADScalar>();
@@ -166,10 +195,10 @@ TEST_P(PinocchioExplicitBenchmark, compareInstructionCount)
 
     grbda::ClusterTreeModel<ADScalar> cluster_tree;
     cluster_tree.buildModelFromURDF(GetParam().urdf_filename, GetParam().floating_base);
-    DynamicADMatrix joint_map = cluster_tree.getPinocchioJointMap();
 
     using RigidBodyTreeModel = grbda::RigidBodyTreeModel<ADScalar>;
     RigidBodyTreeModel lgm_model(cluster_tree, grbda::FwdDynMethod::LagrangeMultiplierEigen);
+    DynamicADMatrix joint_map = jointMap(lgm_model, model);
 
     const int nq = cluster_tree.getNumPositions();
     const int nv = cluster_tree.getNumDegreesOfFreedom();

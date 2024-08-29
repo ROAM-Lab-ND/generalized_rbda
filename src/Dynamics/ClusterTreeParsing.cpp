@@ -36,46 +36,9 @@ namespace grbda
 
         // Add remaining bodies
         std::map<UrdfClusterPtr, bool> visited;
-        pinocchio_joint_map_ = DMat<double>::Zero(0,0);
-        std::vector<int> dependent_idx;
         for (UrdfClusterPtr child : root_cluster->child_clusters)
         {
             appendClustersViaDFS(visited, child);
-            appendClusterIntoTree(child, dependent_idx);
-        }
-    }
-
-    template <typename Scalar>
-    void ClusterTreeModel<Scalar>::appendClusterIntoTree(UrdfClusterPtr cluster, std::vector<int> &dependent_idx)
-    {
-        // TODO(@nicholasadr): assumes 1 joint 1 link
-        for (const auto &link_map : cluster->links)
-        {
-            int joint_idx = link_map.first;
-            UrdfLinkPtr link = link_map.second;
-            if (link->parent_joint->independent)
-            {
-                int col_addition = (joint_idx > pinocchio_joint_map_.cols()) ? joint_idx - pinocchio_joint_map_.cols() : 0;
-                pinocchio_joint_map_.conservativeResizeLike(DMat<double>::Zero(pinocchio_joint_map_.rows() + 1, pinocchio_joint_map_.cols() + col_addition));
-                pinocchio_joint_map_(pinocchio_joint_map_.rows()-1, joint_idx-1) = 1;
-            }
-            else
-            {
-                dependent_idx.push_back(joint_idx);
-            }
-        }
-
-        for (UrdfClusterPtr &child : cluster->child_clusters)
-        {
-            appendClusterIntoTree(child, dependent_idx);
-        }
-
-        for (auto dep_joint_idx = dependent_idx.rbegin(); dep_joint_idx != dependent_idx.rend(); ++dep_joint_idx)
-        {
-            int col_addition = (*dep_joint_idx > pinocchio_joint_map_.cols()) ? *dep_joint_idx - pinocchio_joint_map_.cols() : 0;
-            pinocchio_joint_map_.conservativeResizeLike(DMat<double>::Zero(pinocchio_joint_map_.rows()+1, pinocchio_joint_map_.cols() + col_addition));
-            pinocchio_joint_map_(pinocchio_joint_map_.rows()-1, *dep_joint_idx-1) = 1;
-            dependent_idx.pop_back();
         }
     }
 
@@ -249,8 +212,9 @@ namespace grbda
 
                 // Create joint for registered body
                 ori::CoordinateAxis axis = ori::urdfAxisToCoordinateAxis(link->parent_joint->axis);
-                joints.push_back(std::make_shared<Joints::Revolute<Scalar>>(axis));
-                joints_sx.insert({name, std::make_shared<Joints::Revolute<SX>>(axis)});
+                std::string joint_name = link->parent_joint->name;
+                joints.push_back(std::make_shared<Joints::Revolute<Scalar>>(axis, joint_name));
+                joints_sx.insert({name, std::make_shared<Joints::Revolute<SX>>(axis, joint_name)});
 
                 // Extract independent coordinates from joint
                 independent_coordinates.push_back(link->parent_joint->independent);
