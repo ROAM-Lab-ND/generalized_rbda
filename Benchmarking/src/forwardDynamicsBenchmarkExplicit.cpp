@@ -49,8 +49,10 @@ struct RobotSpecification
 std::vector<RobotSpecification> GetBenchmarkUrdfFiles()
 {
     std::vector<RobotSpecification> test_urdf_files;
+    test_urdf_files.push_back({urdf_directory + "double_pendulum.urdf", false});
     test_urdf_files.push_back({urdf_directory + "revolute_rotor_chain.urdf", false});
-    test_urdf_files.push_back({urdf_directory + "mit_humanoid_leg.urdf", false});
+    test_urdf_files.push_back({urdf_directory + "mit_humanoid.urdf", false});
+    test_urdf_files.push_back({urdf_directory + "mini_cheetah.urdf", false});
     return test_urdf_files;
 }
 

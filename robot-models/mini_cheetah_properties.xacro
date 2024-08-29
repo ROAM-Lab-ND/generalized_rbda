@@ -3,14 +3,20 @@
 <robot xmlns:xacro="http://ros.org/wiki/xacro">
 
     <xacro:property name="u8_mass" value="0.055"/>
+    <xacro:property name="effort_limit" value="150"/>
+    <xacro:property name="velocity_limit" value="100"/>
+    <xacro:property name="joint_lower_limit" value="-10"/>
+    <xacro:property name="joint_upper_limit" value="10"/>
 
     <!-- Ab/Ad Macro -->
     <xacro:macro name="abad" params="prefix x_sign y_sign">
-        <joint name="torso_to_${prefix}_abad_j" type="continuous">
+        <joint name="torso_to_${prefix}_abad_j" type="revolute">
             <axis xyz="1 0 0"/>
             <origin xyz="${x_sign * 0.19} ${y_sign * 0.049} 0.0"/>
             <parent link="Floating Base"/>
             <child link="${prefix}_abad_link"/>
+            <limit effort="${effort_limit}" velocity="${velocity_limit}"
+                   lower="${joint_lower_limit}" upper="${joint_upper_limit}"/>
         </joint>
 
         <link name="${prefix}_abad_link">
@@ -24,11 +30,13 @@
             <!-- TODO(@MatthewChignoli): Do collision and visual stuff later -->
         </link>
 
-        <joint name="torso_to_${prefix}_abad_rotor_j" type="continuous" independent="false">
+        <joint name="torso_to_${prefix}_abad_rotor_j" type="revolute" independent="false">
             <axis xyz="1 0 0"/>
             <origin xyz="${x_sign * 0.125} ${y_sign * 0.049} 0.0"/>
             <parent link="Floating Base"/>
             <child link="${prefix}_abad_rotor"/>
+            <limit effort="${effort_limit}" velocity="${velocity_limit}"
+                   lower="${joint_lower_limit}" upper="${joint_upper_limit}"/>
         </joint>
 
         <link name="${prefix}_abad_rotor">
@@ -51,11 +59,13 @@
 
     <!-- Hip Macro -->
     <xacro:macro name="hip" params="prefix x_sign y_sign">
-        <joint name="${prefix}_abad_to_hip_j" type="continuous">
+        <joint name="${prefix}_abad_to_hip_j" type="revolute">
             <axis xyz="0 1 0"/>
             <origin xyz="0 ${y_sign * 0.062} 0.0" rpy="0 0 ${pi}"/>
             <parent link="${prefix}_abad_link"/>
             <child link="${prefix}_hip_link"/>
+            <limit effort="${effort_limit}" velocity="${velocity_limit}"
+                   lower="${joint_lower_limit}" upper="${joint_upper_limit}"/>
         </joint>
 
         <link name="${prefix}_hip_link">
@@ -69,11 +79,13 @@
             <!-- TODO(@MatthewChignoli): Do collision and visual stuff later -->
         </link>
 
-        <joint name="${prefix}_abad_to_hip_rotor_j" type="continuous" independent="false">
+        <joint name="${prefix}_abad_to_hip_rotor_j" type="revolute" independent="false">
             <axis xyz="0 1 0"/>
             <origin xyz="0.0 ${y_sign * 0.04} 0.0" rpy="0 0 ${pi}"/>
             <parent link="${prefix}_abad_link"/>
             <child link="${prefix}_hip_rotor"/>
+            <limit effort="${effort_limit}" velocity="${velocity_limit}"
+                   lower="${joint_lower_limit}" upper="${joint_upper_limit}"/>
         </joint>
 
         <link name="${prefix}_hip_rotor">
@@ -96,11 +108,13 @@
 
     <!-- Knee Macro -->
     <xacro:macro name="knee" params="prefix x_sign y_sign">
-        <joint name="${prefix}_hip_to_knee_j" type="continuous">
+        <joint name="${prefix}_hip_to_knee_j" type="revolute">
             <axis xyz="0 1 0"/>
             <origin xyz="0.0 0.0 -0.209"/>
             <parent link="${prefix}_hip_link"/>
             <child link="${prefix}_knee_link"/>
+            <limit effort="${effort_limit}" velocity="${velocity_limit}"
+                   lower="${joint_lower_limit}" upper="${joint_upper_limit}"/>
         </joint>
 
         <link name="${prefix}_knee_link">
@@ -114,10 +128,12 @@
             <!-- TODO(@MatthewChignoli): Do collision and visual stuff later -->
         </link>
 
-        <joint name="${prefix}_hip_to_knee_rotor_j" type="continuous" independent="false">
+        <joint name="${prefix}_hip_to_knee_rotor_j" type="revolute" independent="false">
             <axis xyz="0 1 0"/>
             <parent link="${prefix}_hip_link"/>
             <child link="${prefix}_knee_rotor"/>
+            <limit effort="${effort_limit}" velocity="${velocity_limit}"
+                   lower="${joint_lower_limit}" upper="${joint_upper_limit}"/>
         </joint>
 
         <link name="${prefix}_knee_rotor">
