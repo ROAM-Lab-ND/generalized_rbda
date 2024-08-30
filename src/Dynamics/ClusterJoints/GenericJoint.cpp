@@ -203,8 +203,6 @@ namespace grbda
 
                 // Create rootfinder problem
                 casadi::SXDict rootfinder_problem;
-                std::cout << "indepedent: " << ind_coords.size() << std::endl;
-                std::cout << "dependent: " << dep_coords.size() << std::endl;
                 rootfinder_problem["x"] = cs_q_sym(dep_coords);
                 rootfinder_problem["p"] = cs_q_sym(ind_coords);
                 rootfinder_problem["g"] = cs_phi_sym;
@@ -214,7 +212,6 @@ namespace grbda
                 this->random_state_helpers_.phi_root_finder = casadi::rootfinder("solver", "newton",
                                                                            rootfinder_problem,
                                                                            options);
-                std::cout << "Created rootfinder" << std::endl;
             }
 
             // Explicit constraint Jacobian
@@ -282,27 +279,19 @@ namespace grbda
             casadi::DMDict arg;
             arg["p"] = q_ind;
             arg["x0"] = q_dep_guess;
-            std::cout << "arg[p]: " << arg["p"] << std::endl;
-            std::cout << "arg[x0]: " << arg["x0"] << std::endl;
             DM q_dep = this->loop_constraint_->random_state_helpers_.phi_root_finder(arg).at("x");
-            std::cout << "dep: " << q_dep << std::endl;
 
             DM q_dm(n_span, 1);
-            std::cout << "n_span: " << n_span << std::endl;
-            std::cout << "q_dm: " << q_dm << std::endl;
             int ind_cnt = 0, dep_cnt = 0;
             for (int i = 0; i < n_span; i++)
             {
-                std::cout << "i: " << i << std::endl;
                 if (this->loop_constraint_->is_coordinate_independent_[i])
                 {
                     q_dm(i) = q_ind(ind_cnt++);
-                    std::cout << "independent: " << q_dm(i) << std::endl;
                 }
                 else
                 {
                     q_dm(i) = q_dep(dep_cnt++);
-                    std::cout << "dependent: " << q_dm(i) << std::endl;
                 }
             }
             DVec<double> q(n_span);

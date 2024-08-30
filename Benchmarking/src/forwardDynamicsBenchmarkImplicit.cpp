@@ -67,11 +67,9 @@ TEST_P(PinocchioImplicitNumericalValidation, implicit_constraints)
     grbda::JointCoordinate<double> joint_pos(spanning_joint_pos, true);
     std::cout << "urdf phi(" << spanning_joint_pos.transpose() << "): "
               << constraint->phi(joint_pos).transpose() << std::endl;
-    return;
     
-    // TODO(@MatthewChignoli): Left off here
-
     // Extract loop constraints from the cluster tree
+    cluster_tree.forwardKinematics();
     Eigen::MatrixXd K_cluster = Eigen::MatrixXd::Zero(0, 0);
     Eigen::VectorXd k_cluster = Eigen::VectorXd::Zero(0);
     Eigen::MatrixXd G_cluster = Eigen::MatrixXd::Zero(0, 0);
@@ -84,19 +82,9 @@ TEST_P(PinocchioImplicitNumericalValidation, implicit_constraints)
         g_cluster = grbda::appendEigenVector(g_cluster, cluster->joint_->g());
     }
 
-    std::cout << "K_: \n" << K_cluster << std::endl;
-    std::cout << "G_: \n" << G_cluster << std::endl;
-    std::cout << "k_: \n" << k_cluster << std::endl;
-    std::cout << "g_: \n" << g_cluster << std::endl;
-
     // Convert implicit loop constraint to Pinocchio joint order
     const Eigen::MatrixXd K_pinocchio = K_cluster * joint_map.transpose();
     const Eigen::VectorXd k_pinocchio = k_cluster;
-
-    // Forward kinematics
-    // TODO(@MatthewChignoli): Add this test back in?
-    // pinocchio::forwardKinematics(model, data, pin_q, pin_v);
-    // cluster_tree.forwardKinematics();
 
     // Compute the forward dynamics
     Eigen::VectorXd spanning_joint_tau = Eigen::VectorXd::Random(nv_span);
