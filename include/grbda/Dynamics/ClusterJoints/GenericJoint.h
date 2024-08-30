@@ -26,6 +26,11 @@ namespace grbda
 
             DVec<Scalar> gamma(const JointCoordinate<Scalar> &joint_pos) const override;
 
+            void createRandomStateHelpers() override;
+
+            // TODO(@MatthewChignoli): A hack for now
+            SymPhiFcn phi_sym_;
+
         private:
             static DMat<Scalar> runCasadiFcn(const casadi::Function &fcn,
                                              const JointCoordinate<Scalar> &arg);
@@ -51,6 +56,8 @@ namespace grbda
                     std::shared_ptr<LoopConstraint::Base<Scalar>> loop_constraint);
 
             ClusterJointTypes type() const override { return ClusterJointTypes::Generic; }
+
+            JointState<double> randomJointState() const override;
 
             void updateKinematics(const JointState<Scalar> &joint_state) override;
 

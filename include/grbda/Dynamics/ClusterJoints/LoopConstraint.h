@@ -38,6 +38,21 @@ namespace grbda
             const DMat<Scalar> &K() const { return K_; }
             const DVec<Scalar> &k() const { return k_; }
 
+            // TODO(@MatthewChignoli): I actually think we want to keep this, but as a private member
+            std::vector<bool> is_coordinate_independent_;
+
+            // TODO(@MatthewChignoli): This is a mess
+            virtual void createRandomStateHelpers()
+            {
+                throw std::runtime_error("Random state helpers not setup for this loop constraint type");
+            }
+            struct
+            {
+                bool created = false;
+                casadi::Function phi_root_finder;
+                casadi::Function G;
+            } random_state_helpers_;
+
         protected:
             std::function<DVec<Scalar>(const JointCoordinate<Scalar> &)> phi_;
 

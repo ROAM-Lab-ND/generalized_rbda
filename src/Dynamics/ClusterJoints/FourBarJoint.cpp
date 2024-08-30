@@ -199,11 +199,11 @@ namespace grbda
         template <typename Scalar>
         void FourBar<Scalar>::createRandomStateHelpers()
         {
-            if (random_state_helpers_.created)
+            if (this->random_state_helpers_.created)
             {
                 return;
             }
-            random_state_helpers_.created = true;
+            this->random_state_helpers_.created = true;
 
             using SX = casadi::SX;
 
@@ -262,7 +262,7 @@ namespace grbda
                 casadi::Dict options;
                 options["expand"] = true;
                 options["error_on_fail"] = true;
-                random_state_helpers_.phi_root_finder = casadi::rootfinder("solver", "newton",
+                this->random_state_helpers_.phi_root_finder = casadi::rootfinder("solver", "newton",
                                                                            rootfinder_problem,
                                                                            options);
             }
@@ -277,7 +277,7 @@ namespace grbda
                 DMat<SX> G = symbolic.G();
                 SX G_sym = casadi::SX(casadi::Sparsity::dense(G.rows(), G.cols()));
                 casadi::copy(G, G_sym);
-                random_state_helpers_.G = casadi::Function("G", {cs_q_sym}, {G_sym}, {"q"}, {"G"});
+                this->random_state_helpers_.G = casadi::Function("G", {cs_q_sym}, {G_sym}, {"q"}, {"G"});
             }
         }
 
