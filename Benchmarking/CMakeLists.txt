@@ -58,3 +58,4 @@ target_link_libraries(forward_dynamics_explicit_benchmark gtest gmock_main)
 
 add_executable(forward_dynamics_implicit_benchmark src/forwardDynamicsBenchmarkImplicit.cpp)
 target_link_libraries(forward_dynamics_implicit_benchmark ${PROJECT_NAME} ${PINOCCHIO_LIBRARIES})
+target_link_libraries(forward_dynamics_implicit_benchmark gtest gmock_main)
