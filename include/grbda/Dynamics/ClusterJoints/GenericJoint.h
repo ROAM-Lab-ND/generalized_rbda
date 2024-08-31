@@ -55,6 +55,10 @@ namespace grbda
                     const std::vector<JointPtr<Scalar>> &joints,
                     std::shared_ptr<LoopConstraint::Base<Scalar>> loop_constraint);
 
+            Generic(const std::vector<Body<Scalar>> &bodies,
+                    const std::vector<JointPtr<Scalar>> &joints,
+                    std::shared_ptr<LoopConstraint::GenericImplicit<Scalar>> loop_constraint);
+
             ClusterJointTypes type() const override { return ClusterJointTypes::Generic; }
 
             JointState<double> randomJointState() const override;
@@ -64,7 +68,12 @@ namespace grbda
             void computeSpatialTransformFromParentToCurrentCluster(
                 spatial::GeneralizedTransform<Scalar> &Xup) const override;
 
+            // TODO(@MatthewChignoli): This is a hacky mess
+            std::shared_ptr<LoopConstraint::GenericImplicit<Scalar>> generic_constraint_;
+
         private:
+            JointCoordinate<double> findRootsForPhi() const;
+        
             void extractConnectivity();
 
             bool bodyInCurrentCluster(const int body_index) const;

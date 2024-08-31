@@ -235,7 +235,7 @@ namespace grbda
 
     namespace ClusterJoints
     {
-
+        // TODO(@MatthewChignoli): Eventually remove support for this?
         template <typename Scalar>
         Generic<Scalar>::Generic(const std::vector<Body<Scalar>> &bodies,
                                  const std::vector<JointPtr<Scalar>> &joints,
@@ -261,25 +261,71 @@ namespace grbda
         }
 
         template <typename Scalar>
-        JointState<double> Generic<Scalar>::randomJointState() const
+        Generic<Scalar>::Generic(const std::vector<Body<Scalar>> &bodies,
+                                 const std::vector<JointPtr<Scalar>> &joints,
+                                 std::shared_ptr<LoopConstraint::GenericImplicit<Scalar>> loop_constraint)
+            : Base<Scalar>((int)bodies.size(),
+                           loop_constraint->numIndependentPos(),
+                           loop_constraint->numIndependentVel()),
+              bodies_(bodies)
+        {
+            this->loop_constraint_ = loop_constraint;
+            generic_constraint_ = loop_constraint;
+
+            for (auto &joint : joints)
+                this->single_joints_.push_back(joint);
+
+            extractConnectivity();
+
+            S_spanning_ = DMat<Scalar>::Zero(0, 0);
+            for (auto &joint : joints)
+                S_spanning_ = appendEigenMatrix(S_spanning_, joint->S());
+
+            X_intra_ = DMat<Scalar>::Identity(6 * this->num_bodies_, 6 * this->num_bodies_);
+            X_intra_ring_ = DMat<Scalar>::Zero(6 * this->num_bodies_, 6 * this->num_bodies_);
+        }
+
+
+        // TODO(@MatthewChignoli): Move this to a more appropriate location
+        template <typename Scalar>
+        JointCoordinate<double> Generic<Scalar>::findRootsForPhi() const
         {
             using DM = casadi::DM;
 
-            // Create Helper functions
-            this->loop_constraint_->createRandomStateHelpers();
+            using LoopConstraintPtr = const std::shared_ptr<LoopConstraint::Base<Scalar>>;
+            LoopConstraintPtr &loop_constraint = this->loop_constraint_;
 
-            // Random independent position coordinate
-            const int n_ind = this->loop_constraint_->numIndependentPos();
-            const int n_span = this->loop_constraint_->numSpanningPos();
+            const int n_ind = loop_constraint->numIndependentPos();
+            const int n_span = loop_constraint->numSpanningPos();
             double range = 6.28;
-            DM q_ind = range * (2. * DM::rand(n_ind) - 1.);
-            DM q_dep_guess = range * (2. * DM::rand(n_span - n_ind) - 1.);
 
-            // Call the rootfinder to get dependent position coordinates
-            casadi::DMDict arg;
-            arg["p"] = q_ind;
-            arg["x0"] = q_dep_guess;
-            DM q_dep = this->loop_constraint_->random_state_helpers_.phi_root_finder(arg).at("x");
+            DM q_ind, q_dep;
+            bool solve_success = false;
+            int num_attempts = 0;
+            while (!solve_success && num_attempts++ < 100)
+            {
+                q_ind = range * (2. * DM::rand(n_ind) - 1.);
+                DM q_dep_guess = range * (2. * DM::rand(n_span - n_ind) - 1.);
+
+                casadi::DMDict arg;
+                arg["p"] = q_ind;
+                arg["x0"] = q_dep_guess;
+
+                try
+                {
+                    q_dep = loop_constraint->random_state_helpers_.phi_root_finder(arg).at("x");
+                    solve_success = true;
+                }
+                catch (const std::exception &e)
+                {
+                    solve_success = false;
+                }
+            }
+
+            if (!solve_success)
+            {
+                throw std::runtime_error("Failed to find valid roots for implicit loop constraint");
+            }
 
             DM q_dm(n_span, 1);
             int ind_cnt = 0, dep_cnt = 0;
@@ -296,7 +342,34 @@ namespace grbda
             }
             DVec<double> q(n_span);
             casadi::copy(q_dm, q);
-            JointCoordinate<double> joint_pos(q, true);
+
+            return JointCoordinate<double>(q, true);
+        }
+
+        template <typename Scalar>
+        JointState<double> Generic<Scalar>::randomJointState() const
+        {
+            // Create Helper functions
+            this->loop_constraint_->createRandomStateHelpers();
+
+            // TOOD(@MatthewChignoli): This is a hacky way to find valid roots because we make another GenericImplicit object
+            LoopConstraint::GenericImplicit<double> numerical_loop_constraint =
+                LoopConstraint::GenericImplicit<double>(generic_constraint_->is_coordinate_independent_,
+                                                        generic_constraint_->phi_sym_);
+
+            int attempts = 0;
+            JointCoordinate<double> joint_pos(findRootsForPhi());
+            bool is_valid = numerical_loop_constraint.isValidSpanningPosition(joint_pos);
+            while (!is_valid && attempts++ < 100)
+            {
+                joint_pos = findRootsForPhi();
+                is_valid = numerical_loop_constraint.isValidSpanningPosition(joint_pos);
+            }
+
+            if (!is_valid)
+            {
+                throw std::runtime_error("Failed to find valid roots for implicit loop constraint");
+            }
 
             // Random independent joint velocity
             DVec<double> v = DVec<double>::Random(this->loop_constraint_->numIndependentVel());

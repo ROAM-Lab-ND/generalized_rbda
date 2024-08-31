@@ -60,7 +60,7 @@
         <child link="link1"/>
         <origin xyz="0.0 0.0 0.0"/>
         <axis xyz="0 0 1"/>
-        <limit effort="30" velocity="1.0" lower="-3.14" upper="3.14"/>
+        <limit effort="30" velocity="1.0" lower="-13.14" upper="13.14"/>
     </joint>
 
     <joint name="joint2" type="revolute" independent="false">
@@ -68,7 +68,7 @@
         <child link="link2"/>
         <origin xyz="0.5 0.0 0.0"/>
         <axis xyz="0 0 1"/>
-        <limit effort="30" velocity="1.0" lower="-3.14" upper="3.14"/>
+        <limit effort="30" velocity="1.0" lower="-13.14" upper="13.14"/>
     </joint>
 
     <joint name="joint3" type="revolute" independent="false">
@@ -76,7 +76,7 @@
         <child link="link3"/>
         <origin xyz="1.0 0.0 0.0"/>
         <axis xyz="0 0 1"/>
-        <limit effort="30" velocity="1.0" lower="-3.14" upper="3.14"/>
+        <limit effort="30" velocity="1.0" lower="-13.14" upper="13.14"/>
     </joint>
 
     <constraint name="constraint1" type="position">

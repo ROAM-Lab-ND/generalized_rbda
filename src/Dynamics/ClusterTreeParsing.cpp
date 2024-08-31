@@ -129,31 +129,34 @@ namespace grbda
 
         // TODO(@MatthewChignoli): Would like to do some more sophisticated detection and specialization here. For example, if the jacobian of phi is constant, then we can use an explicit constraint. The best solution might just be codegen
         // Create constraints and add clusters
-        std::shared_ptr<LoopConstraint::Base<Scalar>> loop_constraint;
         if (constraint_type == urdf::Constraint::POSITION)
         {
             std::function<DVec<SX>(const JointCoordinate<SX> &)> phi;
             phi = implicitPositionConstraint(position_constraint_captures, joints_sx);
 
             using LoopConstraintType = LoopConstraint::GenericImplicit<Scalar>;
+            std::shared_ptr<LoopConstraintType> loop_constraint;
             loop_constraint = std::make_shared<LoopConstraintType>(independent_coordinates, phi);
+            std::string cluster_name = "cluster-" + std::to_string(cluster_nodes_.size());
+            appendRegisteredBodiesAsCluster<ClusterJoints::Generic<Scalar>>(
+                cluster_name, bodies_in_current_cluster_, joints_in_current_cluster, loop_constraint);
         }
         else if (constraint_type == urdf::Constraint::ROLLING)
         {
             using KGPair = std::pair<DMat<Scalar>, DMat<Scalar>>;
             KGPair K_G = explicitRollingConstraint(rolling_constraint_captures,
                                                    independent_coordinates);
+            std::shared_ptr<LoopConstraint::Static<Scalar>> loop_constraint;
             loop_constraint = std::make_shared<LoopConstraint::Static<Scalar>>(K_G.second,
                                                                                K_G.first);
+            std::string cluster_name = "cluster-" + std::to_string(cluster_nodes_.size());
+            appendRegisteredBodiesAsCluster<ClusterJoints::Generic<Scalar>>(
+                cluster_name, bodies_in_current_cluster_, joints_in_current_cluster, loop_constraint);
         }
         else
         {
             throw std::runtime_error("Constraint type not supported");
         }
-
-        std::string cluster_name = "cluster-" + std::to_string(cluster_nodes_.size());
-        appendRegisteredBodiesAsCluster<ClusterJoints::Generic<Scalar>>(
-            cluster_name, bodies_in_current_cluster_, joints_in_current_cluster, loop_constraint);
     }
 
     template <typename Scalar>
