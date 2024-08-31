@@ -1,23 +1,65 @@
 #include "gtest/gtest.h"
-#include "pinocchioHelpers.hpp"
+
+#include "config.h"
+#include "grbda/Dynamics/ClusterTreeModel.h"
+#include "grbda/Dynamics/RigidBodyTreeModel.h"
+#include "grbda/Utils/Utilities.h"
+
+#include "pinocchio/autodiff/casadi.hpp"
+#include "pinocchio/autodiff/casadi-algo.hpp"
+#include "pinocchio/parsers/urdf.hpp"
+#include "pinocchio/algorithm/contact-dynamics.hpp"
+
+template <typename Scalar>
+Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> jointMap(
+    const grbda::RigidBodyTreeModel<Scalar> &grbda_model,
+    const pinocchio::Model &pin_model)
+{
+    // TODO(@MatthewChignoli): Assumes nq = nv, and nv_i = 1 for all joints
+    using EigMat = Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic>;
+    EigMat joint_map = EigMat::Zero(grbda_model.getNumDegreesOfFreedom(),
+                                    grbda_model.getNumDegreesOfFreedom());
+    int i = 0;
+    for (const auto &name : pin_model.names)
+    {
+        for (const auto &node : grbda_model.rigidBodyNodes())
+        {
+            if (node->joint_->name_ == name)
+            {
+                joint_map(i, node->velocity_index_) = 1;
+                i++;
+            }
+        }
+    }
+    return joint_map;
+}
+
+const std::string urdf_directory = SOURCE_DIRECTORY "/robot-models/";
+
+struct RobotSpecification
+{
+    std::string urdf_filename;
+    bool floating_base;
+};
 
 std::vector<RobotSpecification> GetBenchmarkUrdfFiles()
 {
     std::vector<RobotSpecification> test_urdf_files;
     test_urdf_files.push_back({urdf_directory + "four_bar.urdf", false});
-    // test_urdf_files.push_back({urdf_direectory + "six_bar.urdf", false});
+    test_urdf_files.push_back({urdf_directory + "revolute_rotor_chain.urdf", false});
+    test_urdf_files.push_back({urdf_directory + "mit_humanoid.urdf", false});
+    test_urdf_files.push_back({urdf_directory + "mini_cheetah.urdf", false});
     return test_urdf_files;
 }
 
-class PinocchioImplicitNumericalValidation : public ::testing::TestWithParam<RobotSpecification>
+class PinocchioNumericalValidation : public ::testing::TestWithParam<RobotSpecification>
 {
 };
 
-INSTANTIATE_TEST_SUITE_P(PinocchioImplicitNumericalValidation, PinocchioImplicitNumericalValidation,
+INSTANTIATE_TEST_SUITE_P(PinocchioNumericalValidation, PinocchioNumericalValidation,
                          ::testing::ValuesIn(GetBenchmarkUrdfFiles()));
 
-// TODO(@MatthewChignoli): Do we really need separate tests for implicit and explicit?
-TEST_P(PinocchioImplicitNumericalValidation, implicit_constraints)
+TEST_P(PinocchioNumericalValidation, forward_dynamics)
 {
     using ModelState = grbda::ModelState<double>;
     using JointState = grbda::JointState<double>;
@@ -40,7 +82,6 @@ TEST_P(PinocchioImplicitNumericalValidation, implicit_constraints)
 
     for (int i = 0; i < 25; i++)
     {
-
         // Create a random state
         ModelState model_state;
         ModelState spanning_model_state;
@@ -51,9 +92,10 @@ TEST_P(PinocchioImplicitNumericalValidation, implicit_constraints)
             JointState spanning_joint_state = cluster->joint_->toSpanningTreeState(joint_state);
 
             std::shared_ptr<LoopConstraint> constraint = cluster->joint_->cloneLoopConstraint();
-            constraint->isValidSpanningPosition(spanning_joint_state.position);
+            if (!constraint->isExplicit())
+                ASSERT_TRUE(constraint->isValidSpanningPosition(spanning_joint_state.position));
             constraint->updateJacobians(spanning_joint_state.position);
-            constraint->isValidSpanningVelocity(spanning_joint_state.velocity);
+            ASSERT_TRUE(constraint->isValidSpanningVelocity(spanning_joint_state.velocity));
 
             // Check that the loop constraints are properly formed
             const Eigen::VectorXd KG = constraint->K() * constraint->G();

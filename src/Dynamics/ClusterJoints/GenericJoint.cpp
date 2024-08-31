@@ -349,6 +349,9 @@ namespace grbda
         template <typename Scalar>
         JointState<double> Generic<Scalar>::randomJointState() const
         {
+            if (this->loop_constraint_->isExplicit())
+               return Base<Scalar>::randomJointState(); 
+
             // Create Helper functions
             this->loop_constraint_->createRandomStateHelpers();
 
