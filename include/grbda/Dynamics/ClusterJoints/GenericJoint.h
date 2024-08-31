@@ -50,8 +50,6 @@ namespace grbda
         template <typename Scalar = double>
         class Generic : public Base<Scalar>
         {
-            using GenImpConstraintPtr = std::shared_ptr<LoopConstraint::GenericImplicit<Scalar>>;
-        
         public:
             Generic(const std::vector<Body<Scalar>> &bodies,
                     const std::vector<JointPtr<Scalar>> &joints,
@@ -59,7 +57,7 @@ namespace grbda
 
             Generic(const std::vector<Body<Scalar>> &bodies,
                     const std::vector<JointPtr<Scalar>> &joints,
-                    GenImpConstraintPtr loop_constraint);
+                    std::shared_ptr<LoopConstraint::GenericImplicit<Scalar>> loop_constraint);
 
             ClusterJointTypes type() const override { return ClusterJointTypes::Generic; }
 
@@ -71,7 +69,7 @@ namespace grbda
                 spatial::GeneralizedTransform<Scalar> &Xup) const override;
 
             // TODO(@MatthewChignoli): This is a hacky mess
-            GenImpConstraintPtr generic_constraint_;
+            std::shared_ptr<LoopConstraint::GenericImplicit<Scalar>> generic_constraint_;
 
         private:
             void initialize(const std::vector<JointPtr<Scalar>> &joints,

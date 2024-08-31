@@ -42,11 +42,7 @@ namespace grbda
             // TODO(@MatthewChignoli): I actually think we want to keep this, but as a private member
             std::vector<bool> is_coordinate_independent_;
 
-            // TODO(@MatthewChignoli): This is a mess
-            virtual void createRandomStateHelpers()
-            {
-                throw std::runtime_error("Random state helpers not setup for this loop constraint type");
-            }
+            virtual void createRandomStateHelpers();
             struct
             {
                 bool created = false;

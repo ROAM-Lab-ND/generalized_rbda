@@ -19,6 +19,12 @@ namespace grbda
             return nearZeroDefaultTrue(violation) && joint_vel.isSpanning();
         }
 
+        template <typename Scalar>
+        void Base<Scalar>::createRandomStateHelpers()
+        {
+            throw std::runtime_error("Random state helpers not setup for this loop constraint");
+        }
+
         template class Base<double>;
         template class Base<float>;
         template class Base<casadi::SX>;

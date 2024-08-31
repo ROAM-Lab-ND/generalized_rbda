@@ -24,7 +24,7 @@ Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> jointMap(
     {
         for (const auto &node : grbda_model.rigidBodyNodes())
         {
-            if (node->joint_->name_ == name)
+            if (node->joint_->name() == name)
             {
                 joint_map(i, node->velocity_index_) = 1;
                 i++;

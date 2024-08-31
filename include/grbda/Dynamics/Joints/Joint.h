@@ -15,13 +15,14 @@ namespace grbda
         {
         public:
             Base(int num_positions, int num_velocities, std::string name)
-                : num_positions_(num_positions), num_velocities_(num_velocities), name_(name) {}
+                : name_(name), num_positions_(num_positions), num_velocities_(num_velocities)  {}
             virtual ~Base() {}
 
             virtual std::shared_ptr<Base<Scalar>> clone() const = 0;
 
             virtual void updateKinematics(const DVec<Scalar> &q, const DVec<Scalar> &qd) = 0;
 
+            const std::string& name() const { return name_; }
             int numPositions() const { return num_positions_; }
             int numVelocities() const { return num_velocities_; }
 
@@ -29,10 +30,8 @@ namespace grbda
             const DMat<Scalar> &Psi() const { return Psi_; }
             const spatial::Transform<Scalar> &XJ() const { return XJ_; }
 
-            // TODO(@MatthewChignoli): Maybe should be protected
-            const std::string name_;             
-
         protected:
+            const std::string name_;             
             const int num_positions_;
             const int num_velocities_;
 
