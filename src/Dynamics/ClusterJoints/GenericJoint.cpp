@@ -8,10 +8,9 @@ namespace grbda
     {
         template <typename Scalar>
         GenericImplicit<Scalar>::GenericImplicit(std::vector<bool> is_coordinate_independent,
-                                                 SymPhiFcn phi_fcn) : phi_sym_(phi_fcn)
+                                                 SymPhiFcn phi_fcn)
+            : is_coordinate_independent_(is_coordinate_independent), phi_sym_(phi_fcn)
         {
-            this->is_coordinate_independent_ = is_coordinate_independent;
-
             // Separate coordinates into independent and dependent
             int state_dim = is_coordinate_independent.size();
             std::vector<int> ind_coords, dep_coords;
@@ -324,7 +323,7 @@ namespace grbda
             int ind_cnt = 0, dep_cnt = 0;
             for (int i = 0; i < n_span; i++)
             {
-                if (this->loop_constraint_->is_coordinate_independent_[i])
+                if (generic_constraint_->isCoordinateIndependent()[i])
                 {
                     q_dm(i) = q_ind(ind_cnt++);
                 }

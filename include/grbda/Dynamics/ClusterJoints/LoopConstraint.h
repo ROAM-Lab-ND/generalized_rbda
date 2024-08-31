@@ -39,9 +39,6 @@ namespace grbda
             const DMat<Scalar> &K() const { return K_; }
             const DVec<Scalar> &k() const { return k_; }
 
-            // TODO(@MatthewChignoli): I actually think we want to keep this, but as a private member
-            std::vector<bool> is_coordinate_independent_;
-
             virtual void createRandomStateHelpers();
             struct
             {

@@ -196,7 +196,7 @@ namespace grbda
             this->g_ = indepenent_coordinate_map_ * this->g_;
         }
 
-        // TODO(@MatthewChignoli): This is the same as generic joint, so do we need it?
+        // TODO(@MatthewChignoli): This is the same as generic joint, so do we need it? Probably not. In fact, we can probably deprecate this entire class.
         template <typename Scalar>
         void FourBar<Scalar>::createRandomStateHelpers()
         {
@@ -264,8 +264,8 @@ namespace grbda
                 options["expand"] = true;
                 options["error_on_fail"] = true;
                 this->random_state_helpers_.phi_root_finder = casadi::rootfinder("solver", "newton",
-                                                                           rootfinder_problem,
-                                                                           options);
+                                                                                 rootfinder_problem,
+                                                                                 options);
             }
 
             // Explicit constraint jacobian

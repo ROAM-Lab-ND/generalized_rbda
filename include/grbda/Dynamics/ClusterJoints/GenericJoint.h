@@ -35,6 +35,7 @@ namespace grbda
             void updateBiases(const JointState<Scalar> &joint_state) override;
 
             DVec<Scalar> gamma(const JointCoordinate<Scalar> &joint_pos) const override;
+            const std::vector<bool>& isCoordinateIndependent() const { return is_coordinate_independent_; }
 
             void createRandomStateHelpers() override;
 
@@ -44,6 +45,7 @@ namespace grbda
             static DMat<Scalar> runCasadiFcn(const casadi::Function &fcn,
                                              const JointState<Scalar> &args);
 
+            const std::vector<bool> is_coordinate_independent_;
             SymPhiFcn phi_sym_;
 
             casadi::Function K_fcn_;
@@ -77,9 +79,6 @@ namespace grbda
             void computeSpatialTransformFromParentToCurrentCluster(
                 spatial::GeneralizedTransform<Scalar> &Xup) const override;
 
-            // TODO(@MatthewChignoli): This is a hacky mess
-            std::shared_ptr<LoopConstraint::GenericImplicit<Scalar>> generic_constraint_;
-
         private:
             void initialize(const std::vector<JointPtr<Scalar>> &joints,
                             std::shared_ptr<LoopConstraint::Base<Scalar>> loop_constraint);
@@ -92,6 +91,7 @@ namespace grbda
             const Body<Scalar> &getBody(const int body_index) const;
 
             const std::vector<Body<Scalar>> bodies_;
+            std::shared_ptr<LoopConstraint::GenericImplicit<Scalar>> generic_constraint_;
 
             DMat<Scalar> S_spanning_;
             DMat<Scalar> X_intra_;
