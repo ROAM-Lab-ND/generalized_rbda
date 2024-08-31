@@ -289,12 +289,12 @@ namespace grbda
 
             const int n_ind = loop_constraint->numIndependentPos();
             const int n_span = loop_constraint->numSpanningPos();
-            double range = 6.28;
+            double range = 3.14;
 
             DM q_ind, q_dep;
             bool solve_success = false;
             int num_attempts = 0;
-            while (!solve_success && num_attempts++ < 100)
+            while (!solve_success && num_attempts++ < 20)
             {
                 q_ind = range * (2. * DM::rand(n_ind) - 1.);
                 DM q_dep_guess = range * (2. * DM::rand(n_span - n_ind) - 1.);
@@ -357,7 +357,7 @@ namespace grbda
             JointCoordinate<double> joint_pos(findRootsForPhi());
             auto numerical_loop_constraint = generic_constraint_->copyAsDouble();
             bool is_valid = numerical_loop_constraint.isValidSpanningPosition(joint_pos);
-            while (!is_valid && attempts++ < 100)
+            while (!is_valid && attempts++ < 20)
             {
                 joint_pos = findRootsForPhi();
                 is_valid = numerical_loop_constraint.isValidSpanningPosition(joint_pos);
