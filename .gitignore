@@ -46,3 +46,4 @@ build*/
 Benchmarking/data/*
 Benchmarking/figures/*
 grbda-dependencies/*
+robot-models/variable_revolute_urdf
