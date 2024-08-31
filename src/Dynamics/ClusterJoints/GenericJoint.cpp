@@ -235,7 +235,7 @@ namespace grbda
 
     namespace ClusterJoints
     {
-        // TODO(@MatthewChignoli): Eventually remove support for this?
+
         template <typename Scalar>
         Generic<Scalar>::Generic(const std::vector<Body<Scalar>> &bodies,
                                  const std::vector<JointPtr<Scalar>> &joints,
@@ -245,32 +245,28 @@ namespace grbda
                            loop_constraint->numIndependentVel()),
               bodies_(bodies)
         {
-            this->loop_constraint_ = loop_constraint;
-
-            for (auto &joint : joints)
-                this->single_joints_.push_back(joint);
-
-            extractConnectivity();
-
-            S_spanning_ = DMat<Scalar>::Zero(0, 0);
-            for (auto &joint : joints)
-                S_spanning_ = appendEigenMatrix(S_spanning_, joint->S());
-
-            X_intra_ = DMat<Scalar>::Identity(6 * this->num_bodies_, 6 * this->num_bodies_);
-            X_intra_ring_ = DMat<Scalar>::Zero(6 * this->num_bodies_, 6 * this->num_bodies_);
+            initialize(joints, loop_constraint);
         }
 
         template <typename Scalar>
         Generic<Scalar>::Generic(const std::vector<Body<Scalar>> &bodies,
                                  const std::vector<JointPtr<Scalar>> &joints,
-                                 std::shared_ptr<LoopConstraint::GenericImplicit<Scalar>> loop_constraint)
+                                 GenImpConstraintPtr loop_constraint)
             : Base<Scalar>((int)bodies.size(),
                            loop_constraint->numIndependentPos(),
                            loop_constraint->numIndependentVel()),
               bodies_(bodies)
         {
-            this->loop_constraint_ = loop_constraint;
             generic_constraint_ = loop_constraint;
+            initialize(joints, loop_constraint);
+        }
+
+        template <typename Scalar>
+        void
+        Generic<Scalar>::initialize(const std::vector<JointPtr<Scalar>> &joints,
+                                    std::shared_ptr<LoopConstraint::Base<Scalar>> loop_constraint)
+        {
+            this->loop_constraint_ = loop_constraint;
 
             for (auto &joint : joints)
                 this->single_joints_.push_back(joint);
@@ -285,8 +281,6 @@ namespace grbda
             X_intra_ring_ = DMat<Scalar>::Zero(6 * this->num_bodies_, 6 * this->num_bodies_);
         }
 
-
-        // TODO(@MatthewChignoli): Move this to a more appropriate location
         template <typename Scalar>
         JointCoordinate<double> Generic<Scalar>::findRootsForPhi() const
         {
@@ -351,6 +345,11 @@ namespace grbda
         {
             if (this->loop_constraint_->isExplicit())
                return Base<Scalar>::randomJointState(); 
+
+            if (!generic_constraint_)
+            {
+                throw std::runtime_error("GenericImplicit loop constraint not set");
+            }
 
             // Create Helper functions
             this->loop_constraint_->createRandomStateHelpers();

@@ -196,6 +196,7 @@ namespace grbda
             this->g_ = indepenent_coordinate_map_ * this->g_;
         }
 
+        // TODO(@MatthewChignoli): This is the same as generic joint, so do we need it?
         template <typename Scalar>
         void FourBar<Scalar>::createRandomStateHelpers()
         {
