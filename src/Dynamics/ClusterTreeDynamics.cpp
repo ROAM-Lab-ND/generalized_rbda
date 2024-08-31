@@ -381,7 +381,7 @@ namespace grbda
                 }
                 else
                 {
-                    lambda_inv_prev = DMat<Scalar>::Zero(mss_dim, ee_output_dim);
+                    lambda_inv_prev = DMat<Scalar>::Zero(6, ee_output_dim);
                 }
 
                 lambda_inv_tmp.block(mss_index, 6 * k, mss_dim, ee_output_dim) =

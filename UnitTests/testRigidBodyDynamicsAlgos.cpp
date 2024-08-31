@@ -262,11 +262,15 @@ TYPED_TEST(RigidBodyDynamicsAlgosTest, LambdaInv)
                 return;
             }
 
+            // TODO(@MatthewChignoli): Add end effectors to the generic model
+            // GTEST_ASSERT_EQ(cluster_model.getNumEndEffectors(), gen_model.getNumEndEffectors());
+            GTEST_ASSERT_EQ(cluster_model.getNumEndEffectors(), proj_model.getNumEndEffectors());
+
             const DMat<double> lambda_inv = cluster_model.inverseOperationalSpaceInertiaMatrix();
-            const DMat<double> lambda_inv_gen = gen_model.inverseOperationalSpaceInertiaMatrix();
+            // const DMat<double> lambda_inv_gen = gen_model.inverseOperationalSpaceInertiaMatrix();
             const DMat<double> lambda_inv_proj = proj_model.inverseOperationalSpaceInertiaMatrix();
 
-            GTEST_ASSERT_LT((lambda_inv - lambda_inv_gen).norm(), tol);
+            // GTEST_ASSERT_LT((lambda_inv - lambda_inv_gen).norm(), tol);
             GTEST_ASSERT_LT((lambda_inv - lambda_inv_proj).norm(), tol);
         }
     }

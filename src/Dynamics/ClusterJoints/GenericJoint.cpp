@@ -239,7 +239,8 @@ namespace grbda
                                  const std::vector<JointPtr<Scalar>> &joints,
                                  std::shared_ptr<LoopConstraint::Base<Scalar>> loop_constraint)
             : Base<Scalar>((int)bodies.size(),
-                           loop_constraint->numIndependentPos(),
+                           loop_constraint->isExplicit() ? loop_constraint->numIndependentPos()
+                                                         : loop_constraint->numSpanningPos(),
                            loop_constraint->numIndependentVel()),
               bodies_(bodies)
         {
@@ -251,7 +252,8 @@ namespace grbda
                                  const std::vector<JointPtr<Scalar>> &joints,
                                  std::shared_ptr<LoopConstraint::GenericImplicit<Scalar>> loop_constraint)
             : Base<Scalar>((int)bodies.size(),
-                           loop_constraint->numIndependentPos(),
+                           loop_constraint->isExplicit() ? loop_constraint->numIndependentPos()
+                                                         : loop_constraint->numSpanningPos(),
                            loop_constraint->numIndependentVel()),
               bodies_(bodies)
         {
