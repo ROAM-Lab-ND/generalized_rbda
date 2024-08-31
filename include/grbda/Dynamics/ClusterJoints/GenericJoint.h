@@ -21,6 +21,16 @@ namespace grbda
                 return std::make_shared<GenericImplicit<Scalar>>(*this);
             }
 
+            GenericImplicit<double> copyAsDouble() const
+            {
+                return GenericImplicit<double>(this->is_coordinate_independent_, phi_sym_);
+            }
+
+            GenericImplicit<SX> copyAsSymbolic() const
+            {
+                return GenericImplicit<SX>(this->is_coordinate_independent_, phi_sym_);
+            }
+
             void updateJacobians(const JointCoordinate<Scalar> &joint_pos) override;
             void updateBiases(const JointState<Scalar> &joint_state) override;
 
@@ -28,14 +38,13 @@ namespace grbda
 
             void createRandomStateHelpers() override;
 
-            // TODO(@MatthewChignoli): A hack for now
-            SymPhiFcn phi_sym_;
-
         private:
             static DMat<Scalar> runCasadiFcn(const casadi::Function &fcn,
                                              const JointCoordinate<Scalar> &arg);
             static DMat<Scalar> runCasadiFcn(const casadi::Function &fcn,
                                              const JointState<Scalar> &args);
+
+            SymPhiFcn phi_sym_;
 
             casadi::Function K_fcn_;
             casadi::Function G_fcn_;

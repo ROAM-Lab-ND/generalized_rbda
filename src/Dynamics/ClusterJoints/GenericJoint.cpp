@@ -174,10 +174,9 @@ namespace grbda
             }
             this->random_state_helpers_.created = true;
 
-            using SX = casadi::SX;
-
             // Create symbolic generic implicit loop constraint
-            GenericImplicit<SX> symbolic = GenericImplicit<SX>(this->is_coordinate_independent_, phi_sym_);
+            using SX = casadi::SX;
+            GenericImplicit<SX> symbolic = copyAsSymbolic();
 
             // Root finding
             {
@@ -354,13 +353,10 @@ namespace grbda
             // Create Helper functions
             this->loop_constraint_->createRandomStateHelpers();
 
-            // TOOD(@MatthewChignoli): This is a hacky way to find valid roots because we make another GenericImplicit object
-            LoopConstraint::GenericImplicit<double> numerical_loop_constraint =
-                LoopConstraint::GenericImplicit<double>(generic_constraint_->is_coordinate_independent_,
-                                                        generic_constraint_->phi_sym_);
-
+            // Attempt to find valid spanning position
             int attempts = 0;
             JointCoordinate<double> joint_pos(findRootsForPhi());
+            auto numerical_loop_constraint = generic_constraint_->copyAsDouble();
             bool is_valid = numerical_loop_constraint.isValidSpanningPosition(joint_pos);
             while (!is_valid && attempts++ < 100)
             {
