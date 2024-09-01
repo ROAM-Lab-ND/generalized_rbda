@@ -1,6 +1,6 @@
 #!/bin/bash
 
-link_count=${1:-3}
+link_count=${1:-5}
 
 # get the current directory
 CURRENTDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
