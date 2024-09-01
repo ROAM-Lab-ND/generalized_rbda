@@ -77,7 +77,7 @@
         <xacro:if value="${idx - 1}">
             <xacro:independent_joint name="link_${idx - 1}_to_link_${idx}" parent="link_${idx - 1}" child="link_${idx}"/>
             <xacro:link name="link_${idx}"/>
-            <xacro:dependent_joint name="link_${idx - 1}_to_rotor_${idx}" parent="base" child="rotor_${idx}"/>
+            <xacro:dependent_joint name="link_${idx - 1}_to_rotor_${idx}" parent="link_${idx - 1}" child="rotor_${idx}"/>
             <xacro:rotor name="rotor_${idx}"/>
             <xacro:transmission name="transmission_${idx}" predecessor="link_${idx}" successor="rotor_${idx}"/>
 
