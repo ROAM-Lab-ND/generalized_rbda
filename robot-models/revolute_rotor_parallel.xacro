@@ -11,8 +11,23 @@
     <xacro:property name="link_mass" value="0.1"/>
     <xacro:property name="rotor_mass" value="0.05"/>
 
-    <xacro:macro name="joint" params="name parent child independent=true">
-        <joint name="${name}" type="revolute" independent="${independent}">
+    <!-- NOTE(@nicholasadr): Had to separate independent and dependent joint macro
+                             because urdf will capitalize the first letter of boolean 
+                             parameter "true/false" to "True/False", leading to
+                             incorrect joint registration -->
+    <xacro:macro name="independent_joint" params="name parent child">
+        <joint name="${name}" type="revolute" independent="true">
+            <parent link="${parent}"/>
+            <child link="${child}"/>
+            <axis xyz="0 0 1"/>
+            <origin xyz="1.0 0.0 0.0"/>
+            <limit effort="${effort_limit}" velocity="${velocity_limit}"
+                   lower="${joint_lower_limit}" upper="${joint_upper_limit}"/>
+        </joint>
+    </xacro:macro>
+
+    <xacro:macro name="dependent_joint" params="name parent child">
+        <joint name="${name}" type="revolute" independent="false">
             <parent link="${parent}"/>
             <child link="${child}"/>
             <axis xyz="0 0 1"/>
@@ -51,18 +66,18 @@
     </xacro:macro>
 
     <xacro:macro name="base_chain">
-        <xacro:joint name="base_to_link_1" parent="base" child="link_1"/> 
+        <xacro:independent_joint name="base_to_link_1" parent="base" child="link_1"/> 
         <xacro:link name="link_1"/>
-        <xacro:joint name="base_to_rotor_1" parent="base" child="rotor_1" independent="false"/> 
+        <xacro:dependent_joint name="base_to_rotor_1" parent="base" child="rotor_1"/> 
         <xacro:rotor name="rotor_1"/>
         <xacro:transmission name="transmission_1" predecessor="link_1" successor="rotor_1"/>
     </xacro:macro>
 
     <xacro:macro name="revolute_rotor_loop" params="idx">
         <xacro:if value="${idx - 1}">
-            <xacro:joint name="link_${idx - 1}_to_link_${idx}" parent="link_${idx - 1}" child="link_${idx}"/>
+            <xacro:independent_joint name="link_${idx - 1}_to_link_${idx}" parent="link_${idx - 1}" child="link_${idx}"/>
             <xacro:link name="link_${idx}"/>
-            <xacro:joint name="base_to_rotor_${idx}" parent="base" child="rotor_${idx}" independent="false"/>
+            <xacro:dependent_joint name="base_to_rotor_${idx}" parent="base" child="rotor_${idx}"/>
             <xacro:rotor name="rotor_${idx}"/>
             <xacro:transmission name="transmission_${idx}" predecessor="link_${idx}" successor="rotor_${idx}"/>
 
