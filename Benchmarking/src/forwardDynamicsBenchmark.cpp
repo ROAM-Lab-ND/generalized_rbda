@@ -1,14 +1,20 @@
+#include <iostream>
+#include <fstream>
+
 #include "gtest/gtest.h"
 
 #include "config.h"
 #include "grbda/Dynamics/ClusterTreeModel.h"
 #include "grbda/Dynamics/RigidBodyTreeModel.h"
 #include "grbda/Utils/Utilities.h"
+#include "grbda/Utils/Timer.h"
 
 #include "pinocchio/autodiff/casadi.hpp"
 #include "pinocchio/autodiff/casadi-algo.hpp"
 #include "pinocchio/parsers/urdf.hpp"
 #include "pinocchio/algorithm/contact-dynamics.hpp"
+
+const std::string path_to_data = SOURCE_DIRECTORY "/Benchmarking/data/TimingPinocchioFD_";
 
 template <typename Scalar>
 Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> jointMap(
@@ -54,6 +60,24 @@ std::vector<RobotSpecification> GetBenchmarkUrdfFiles()
 
 class PinocchioNumericalValidation : public ::testing::TestWithParam<RobotSpecification>
 {
+public:
+    std::ofstream outfile;
+    grbda::Timer timer;
+    const int num_samples = 25;
+
+private:
+    void SetUp() override {
+        outfile.open(path_to_data + "NumericalValidation.csv", std::ios::app);
+        if (!outfile.is_open()) {
+            std::cerr << "Failed to open file." << std::endl;
+        }
+    }
+
+    void TearDown() override {
+        if (outfile.is_open()) {
+            outfile.close();
+        }
+    }
 };
 
 INSTANTIATE_TEST_SUITE_P(PinocchioNumericalValidation, PinocchioNumericalValidation,
@@ -65,6 +89,10 @@ TEST_P(PinocchioNumericalValidation, forward_dynamics)
     using JointState = grbda::JointState<double>;
     using StatePair = std::pair<Eigen::VectorXd, Eigen::VectorXd>;
 
+    double t_cluster = 0.;
+    double t_pinocchio = 0.;
+    double t_lg = 0.;
+    
     // Build models
     pinocchio::Model model;
     pinocchio::urdf::buildModel(GetParam().urdf_filename, model);
@@ -80,7 +108,7 @@ TEST_P(PinocchioNumericalValidation, forward_dynamics)
     const int nv = cluster_tree.getNumDegreesOfFreedom();
     const int nv_span = lgm_model.getNumDegreesOfFreedom();
 
-    for (int i = 0; i < 25; i++)
+    for (int i = 0; i < num_samples; i++)
     {
         // Create a random state
         ModelState model_state;
@@ -148,10 +176,18 @@ TEST_P(PinocchioNumericalValidation, forward_dynamics)
         Eigen::VectorXd pin_tau(nv_span);
         pin_tau = joint_map * spanning_joint_tau;
 
+        timer.start();
         const Eigen::VectorXd ydd_cluster = cluster_tree.forwardDynamics(tau);
+        t_cluster += timer.getMs();
+
+        timer.start();
         pinocchio::forwardDynamics(model, data, pin_q, pin_v, pin_tau,
                                    K_pinocchio, k_pinocchio, mu0);
+        t_pinocchio += timer.getMs();
+
+        timer.start();
         const Eigen::VectorXd qdd_grbda = lgm_model.forwardDynamics(tau);
+        t_lg += timer.getMs();
 
         // Check grbda cluster tree solution against lagrange multiplier solution
         const Eigen::VectorXd ydd_error = qdd_grbda - (G_cluster * ydd_cluster + g_cluster);
@@ -175,10 +211,17 @@ TEST_P(PinocchioNumericalValidation, forward_dynamics)
         GTEST_ASSERT_LT(cnstr_violation_pinocchio.norm(), 1e-10)
             << "K*qdd_pinocchio + k: " << cnstr_violation_pinocchio.transpose();
     }
+
+    outfile << GetParam().urdf_filename << ","
+            << t_cluster / num_samples << ","
+            << t_pinocchio / num_samples << ","
+            << t_lg / num_samples << std::endl;
 }
 
 class PinocchioBenchmark : public ::testing::TestWithParam<RobotSpecification>
 {
+public:
+    const int num_samples = 25;
 };
 
 INSTANTIATE_TEST_SUITE_P(PinocchioBenchmark, PinocchioBenchmark,
@@ -331,7 +374,7 @@ TEST_P(PinocchioBenchmark, compareInstructionCount)
     using ScalarModelState = grbda::ModelState<Scalar>;
     using ScalarJointState = grbda::JointState<Scalar>;
     using ScalarStatePair = std::pair<Eigen::VectorXd, Eigen::VectorXd>;
-    for (int i = 0; i < 25; ++i)
+    for (int i = 0; i < num_samples; ++i)
     {
         ScalarModel numerical_cluster_tree;
         numerical_cluster_tree.buildModelFromURDF(GetParam().urdf_filename,
