@@ -20,15 +20,27 @@ Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> jointMap(
     EigMat joint_map = EigMat::Zero(grbda_model.getNumDegreesOfFreedom(),
                                     grbda_model.getNumDegreesOfFreedom());
     int i = 0;
+    bool name_found = false;
     for (const auto &name : pin_model.names)
     {
+        if (name == "universe")
+            continue;
+
+        name_found = false;
         for (const auto &node : grbda_model.rigidBodyNodes())
         {
             if (node->joint_->name() == name)
             {
                 joint_map(i, node->velocity_index_) = 1;
                 i++;
+                name_found = true;
+                break;
             }
+        }
+        if (!name_found)
+        {
+            std::cout << "Joint name not found: " << name << std::endl;
+            throw std::runtime_error("Joint name not found in grbda model");
         }
     }
     return joint_map;
@@ -49,6 +61,7 @@ std::vector<RobotSpecification> GetBenchmarkUrdfFiles()
     test_urdf_files.push_back({urdf_directory + "revolute_rotor_chain.urdf", false});
     test_urdf_files.push_back({urdf_directory + "mit_humanoid.urdf", false});
     test_urdf_files.push_back({urdf_directory + "mini_cheetah.urdf", false});
+    // test_urdf_files.push_back({urdf_directory + "cassie_v4.urdf", false});
     return test_urdf_files;
 }
 
@@ -74,7 +87,7 @@ TEST_P(PinocchioNumericalValidation, forward_dynamics)
     cluster_tree.buildModelFromURDF(GetParam().urdf_filename, GetParam().floating_base);
 
     using RigidBodyTreeModel = grbda::RigidBodyTreeModel<double>;
-    RigidBodyTreeModel lgm_model(cluster_tree, grbda::FwdDynMethod::Projection);
+    RigidBodyTreeModel lgm_model(cluster_tree, grbda::FwdDynMethod::LagrangeMultiplierEigen);
     Eigen::MatrixXd joint_map = jointMap(lgm_model, model);
 
     const int nv = cluster_tree.getNumDegreesOfFreedom();
@@ -123,8 +136,6 @@ TEST_P(PinocchioNumericalValidation, forward_dynamics)
             std::shared_ptr<LoopConstraint> constraint = cluster->joint_->cloneLoopConstraint();
             const Eigen::VectorXd KG = constraint->K() * constraint->G();
             const Eigen::VectorXd Kg_k = constraint->K() * constraint->g() - constraint->k();
-            GTEST_ASSERT_GT(constraint->K().norm(), 1e-10);
-            GTEST_ASSERT_GT(constraint->G().norm(), 1e-10);
             GTEST_ASSERT_LT(KG.norm(), 1e-10)
                 << "K*G: " << KG.transpose();
             GTEST_ASSERT_LT(Kg_k.norm(), 1e-10)
@@ -135,6 +146,8 @@ TEST_P(PinocchioNumericalValidation, forward_dynamics)
             G_cluster = grbda::appendEigenMatrix(G_cluster, cluster->joint_->G());
             g_cluster = grbda::appendEigenVector(g_cluster, cluster->joint_->g());
         }
+        GTEST_ASSERT_GT(K_cluster.norm(), 1e-10);
+        GTEST_ASSERT_GT(G_cluster.norm(), 1e-10);
 
         // Convert implicit loop constraint to Pinocchio joint order
         const Eigen::MatrixXd K_pinocchio = K_cluster * joint_map.transpose();
@@ -156,8 +169,8 @@ TEST_P(PinocchioNumericalValidation, forward_dynamics)
         // Check grbda cluster tree solution against lagrange multiplier solution
         const Eigen::VectorXd ydd_error = qdd_grbda - (G_cluster * ydd_cluster + g_cluster);
         GTEST_ASSERT_LT(ydd_error.norm(), 1e-8)
-            << "ydd_cluster: " << ydd_cluster.transpose() << "\n"
-            << "G*qdd_grbda + g: " << (G_cluster * qdd_grbda + g_cluster).transpose();
+            << "qdd_grbda: " << qdd_grbda.transpose() << "\n"
+            << "G*ydd_cluster + g: " << (G_cluster * ydd_cluster + g_cluster).transpose();
 
         // Check grbda lagrange multiplier solution against pinocchio
         const Eigen::VectorXd qdd_error = data.ddq - joint_map * qdd_grbda;

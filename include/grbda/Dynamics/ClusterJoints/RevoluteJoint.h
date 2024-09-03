@@ -13,7 +13,8 @@ namespace grbda
         class Revolute : public Base<Scalar>
         {
         public:
-            Revolute(const Body<Scalar> &body, ori::CoordinateAxis joint_axis);
+            Revolute(const Body<Scalar> &body, ori::CoordinateAxis joint_axis,
+                     std::string name = "unnamed_revolute_joint");
             virtual ~Revolute() {}
 
             ClusterJointTypes type() const override { return ClusterJointTypes::Revolute; }

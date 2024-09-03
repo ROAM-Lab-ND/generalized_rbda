@@ -291,7 +291,8 @@ namespace grbda
 
             const int n_ind = loop_constraint->numIndependentPos();
             const int n_span = loop_constraint->numSpanningPos();
-            double range = 3.14;
+            // TODO(@MatthewChignoli): Make this an input parameter
+            double range = 1.57;
 
             DM q_ind, q_dep;
             bool solve_success = false;

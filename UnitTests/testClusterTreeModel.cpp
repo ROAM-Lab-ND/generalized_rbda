@@ -84,6 +84,7 @@ GTEST_TEST(UrdfParser, parseFile)
     test_data.push_back({urdf_directory + "mini_cheetah.urdf", true});
     test_data.push_back({urdf_directory + "mit_humanoid_leg.urdf", false});
     test_data.push_back({urdf_directory + "mit_humanoid.urdf", true});
+    test_data.push_back({urdf_directory + "cassie_v4.urdf", true});
 
     for (const URDFParserTestData &sample : test_data)
     {
