@@ -221,7 +221,23 @@ TEST_P(PinocchioNumericalValidation, forward_dynamics)
 class PinocchioBenchmark : public ::testing::TestWithParam<RobotSpecification>
 {
 public:
+    std::ofstream outfile;
+    grbda::Timer timer;
     const int num_samples = 25;
+
+private:
+    void SetUp() override {
+        outfile.open(path_to_data + "InstructionCount.csv", std::ios::app);
+        if (!outfile.is_open()) {
+            std::cerr << "Failed to open file." << std::endl;
+        }
+    }
+
+    void TearDown() override {
+        if (outfile.is_open()) {
+            outfile.close();
+        }
+    }
 };
 
 INSTANTIATE_TEST_SUITE_P(PinocchioBenchmark, PinocchioBenchmark,
@@ -245,6 +261,10 @@ TEST_P(PinocchioBenchmark, compareInstructionCount)
     using JointState = grbda::JointState<ADScalar>;
     using StatePair = std::pair<DynamicADVector, DynamicADVector>;
     using LoopConstraintPtr = std::shared_ptr<grbda::LoopConstraint::Base<ADScalar>>;
+
+    double t_cluster = 0.;
+    double t_pinocchio = 0.;
+    double t_lg = 0.;
 
     // Build models
     PinocchioModel model;
@@ -400,9 +420,18 @@ TEST_P(PinocchioBenchmark, compareInstructionCount)
         casadi::DMVector dm_v = grbda::random<casadi::DM>(nv);
         casadi::DMVector dm_tau = grbda::random<casadi::DM>(nv_span);
 
+        timer.start();
         casadi::DMVector dm_cABA_res = csClusterABA(casadi::DMVector{dm_q, dm_v, dm_tau});
+        t_cluster += timer.getMs();
+
+        timer.start();
         casadi::DMVector dm_pin_res = csPinocchioFD(casadi::DMVector{dm_q, dm_v, dm_tau});
+        t_pinocchio += timer.getMs();
+
+        timer.start();
         casadi::DMVector dm_lgm_res = csGrbdaFD(casadi::DMVector{dm_q, dm_v, dm_tau});
+        t_lg += timer.getMs();
+
         casadi::DMVector dm_explicit = csExplicitJacobian(casadi::DMVector{dm_q, dm_v});
 
         DynamicVector cABA_res(nv), pin_res(nv_span), lgm_res(nv_span);
@@ -429,4 +458,9 @@ TEST_P(PinocchioBenchmark, compareInstructionCount)
             << "qdd_pinocchio   : " << pin_res.transpose() << "\n"
             << "jmap * qdd_grbda: " << (joint_map.cast<Scalar>() * lgm_res).transpose();
     }
+
+    outfile << GetParam().urdf_filename << ","
+            << t_cluster / num_samples << ","
+            << t_pinocchio / num_samples << ","
+            << t_lg / num_samples << std::endl;
 }
