@@ -4,74 +4,7 @@
 
     <xacro:arg name="loop_count" default="3"/>
     <xacro:property name="loop_count" value="$(arg loop_count)"/>
-    <xacro:property name="effort_limit" value="30"/>
-    <xacro:property name="velocity_limit" value="1."/>
-    <xacro:property name="joint_lower_limit" value="-10"/>
-    <xacro:property name="joint_upper_limit" value="10"/>
-    <xacro:property name="link_mass" value="0.1"/>
-    <xacro:property name="rotor_mass" value="0.05"/>
-
-    <!-- NOTE(@nicholasadr): Had to separate independent and dependent joint macro
-                             because urdf will capitalize the first letter of boolean 
-                             parameter "true/false" to "True/False", leading to
-                             incorrect joint registration -->
-    <xacro:macro name="independent_joint" params="name parent child">
-        <joint name="${name}" type="revolute" independent="true">
-            <parent link="${parent}"/>
-            <child link="${child}"/>
-            <axis xyz="0 0 1"/>
-            <origin xyz="1.0 0.0 0.0"/>
-            <limit effort="${effort_limit}" velocity="${velocity_limit}"
-                   lower="${joint_lower_limit}" upper="${joint_upper_limit}"/>
-        </joint>
-    </xacro:macro>
-
-    <xacro:macro name="dependent_joint" params="name parent child">
-        <joint name="${name}" type="revolute" independent="false">
-            <parent link="${parent}"/>
-            <child link="${child}"/>
-            <axis xyz="0 0 1"/>
-            <origin xyz="1.0 0.0 0.0"/>
-            <limit effort="${effort_limit}" velocity="${velocity_limit}"
-                   lower="${joint_lower_limit}" upper="${joint_upper_limit}"/>
-        </joint>
-    </xacro:macro>
-
-    <xacro:macro name="link" params="name">
-        <link name="${name}">
-            <inertial>
-                <mass value="${link_mass}"/>
-                <origin rpy="0 0 0" xyz="0.5 0 0"/>
-                <inertia ixx="1" ixy="0" ixz="0" iyy="1" iyz="0" izz="1"/>
-            </inertial>
-        </link>
-    </xacro:macro>
-        
-    <xacro:macro name="rotor" params="name">
-        <link name="${name}">
-            <inertial>
-                <mass value="${rotor_mass}"/>
-                <origin rpy="0 0 0" xyz="0 0 0"/>
-                <inertia ixx="1e-4" ixy="0" ixz="0" iyy="1e-4" iyz="0" izz="1e-4"/>
-            </inertial>
-        </link>
-    </xacro:macro>
-
-    <xacro:macro name="transmission" params="name predecessor successor">
-        <constraint name="${name}" type="rolling">
-            <predecessor link="${predecessor}"/>
-            <successor link="${successor}"/>
-            <ratio value="6.0"/>
-        </constraint>
-    </xacro:macro>
-
-    <xacro:macro name="base_chain">
-        <xacro:independent_joint name="base_to_link_1" parent="base" child="link_1"/> 
-        <xacro:link name="link_1"/>
-        <xacro:dependent_joint name="base_to_rotor_1" parent="base" child="rotor_1"/> 
-        <xacro:rotor name="rotor_1"/>
-        <xacro:transmission name="transmission_1" predecessor="link_1" successor="rotor_1"/>
-    </xacro:macro>
+    <xacro:include filename="revolute_rotor_properties.xacro"/>
 
     <xacro:macro name="revolute_rotor_loop" params="idx">
         <xacro:if value="${idx - 1}">
@@ -86,6 +19,6 @@
     </xacro:macro>
 
     <link name="base"/>
-    <xacro:base_chain/>
+    <xacro:root_branch branch_count="1"/>
     <xacro:revolute_rotor_loop idx="${loop_count}"/>
 </robot>
