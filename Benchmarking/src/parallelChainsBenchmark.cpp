@@ -16,7 +16,7 @@
 
 // TODO(@MatthewChignoli): Merge as much of this cose as possible with forwardDynamicsBenchmark.cpp
 
-const std::string path_to_data = SOURCE_DIRECTORY "/Benchmarking/data/TimingPinocchioParallelChainFD_";
+const std::string path_to_data = SOURCE_DIRECTORY "/Benchmarking/data/PinocchioParallelChainFD_";
 
 template <typename Scalar>
 Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> jointMap(
@@ -48,22 +48,38 @@ struct ParallelChainSpecification
 {
     int depth;
     int loop_size;
+    double tol;
 };
 
 std::vector<ParallelChainSpecification> GetBenchmarkUrdfFiles()
 {
+    std::ofstream outfile;
+    outfile.open(path_to_data + "InstructionCount.csv", std::ios::trunc);
+    if (!outfile.is_open())
+    {
+        std::cerr << "Failed to open file." << std::endl;
+    }
+    if (outfile.is_open())
+    {
+        outfile.close();
+    }
+
     std::vector<ParallelChainSpecification> parallel_chains;
     for (int i : {2, 4, 6, 8, 10})
     {
-        parallel_chains.push_back({5, i});
+        parallel_chains.push_back({5, i, 1e-8});
     }
     for (int i : {2, 4, 8, 16, 20})
     {
-        parallel_chains.push_back({10, i});
+        parallel_chains.push_back({10, i, 1e-6});
     }
     for (int i : {2, 4, 10, 20, 40})
     {
-        parallel_chains.push_back({20, i});
+        parallel_chains.push_back({20, i, 1e-2});
+    }
+    for (int i : {2, 4, 20, 40, 80})
+    {
+        parallel_chains.push_back({40, i, 5.0});
     }
 
     return parallel_chains;
@@ -71,29 +87,8 @@ std::vector<ParallelChainSpecification> GetBenchmarkUrdfFiles()
 
 class PinocchioParallelChainsNumericalValidation : public ::testing::TestWithParam<ParallelChainSpecification>
 {
-public:
-    std::ofstream outfile;
-    grbda::Timer timer;
+protected:
     const int num_samples = 25;
-
-private:
-    void SetUp() override
-    {
-        // overwrite the file
-        outfile.open(path_to_data + "NumericalValidation.csv", std::ios::out | std::ios::trunc);
-        if (!outfile.is_open())
-        {
-            std::cerr << "Failed to open file." << std::endl;
-        }
-    }
-
-    void TearDown() override
-    {
-        if (outfile.is_open())
-        {
-            outfile.close();
-        }
-    }
 };
 
 INSTANTIATE_TEST_SUITE_P(PinocchioParallelChainsNumericalValidation,
@@ -133,7 +128,6 @@ TEST_P(PinocchioParallelChainsNumericalValidation, forward_dynamics)
             largest_loop_size = loop_size;
     }
     GTEST_ASSERT_EQ(largest_loop_size, GetParam().loop_size);
-    cluster_tree.print();
 
     using RigidBodyTreeModel = grbda::RigidBodyTreeModel<double>;
     RigidBodyTreeModel lgm_model(cluster_tree, grbda::FwdDynMethod::LagrangeMultiplierEigen);
@@ -210,29 +204,22 @@ TEST_P(PinocchioParallelChainsNumericalValidation, forward_dynamics)
         Eigen::VectorXd pin_tau(nv_span);
         pin_tau = joint_map * spanning_joint_tau;
 
-        // TODO(@MatthewChignoli): Do we need to include the conversion to qdd?
-        timer.start();
         const Eigen::VectorXd ydd_cluster = cluster_tree.forwardDynamics(tau);
-        t_cluster += timer.getMs();
 
-        timer.start();
         pinocchio::forwardDynamics(model, data, pin_q, pin_v, pin_tau,
                                    K_pinocchio, k_pinocchio, mu0);
-        t_pinocchio += timer.getMs();
 
-        timer.start();
         const Eigen::VectorXd qdd_grbda = lgm_model.forwardDynamics(tau);
-        t_lg += timer.getMs();
 
         // Check grbda cluster tree solution against lagrange multiplier solution
         const Eigen::VectorXd ydd_error = qdd_grbda - (G_cluster * ydd_cluster + g_cluster);
-        GTEST_ASSERT_LT(ydd_error.norm(), 1e-8)
+        GTEST_ASSERT_LT(ydd_error.norm(), GetParam().tol)
             << "ydd_cluster: " << ydd_cluster.transpose() << "\n"
             << "G*qdd_grbda + g: " << (G_cluster * qdd_grbda + g_cluster).transpose();
 
         // Check grbda lagrange multiplier solution against pinocchio
         const Eigen::VectorXd qdd_error = data.ddq - joint_map * qdd_grbda;
-        GTEST_ASSERT_LT(qdd_error.norm(), 1e-8)
+        GTEST_ASSERT_LT(qdd_error.norm(), GetParam().tol)
             << "qdd_pinocchio   : " << data.ddq.transpose() << "\n"
             << "jmap * qdd_grbda: " << (joint_map * qdd_grbda).transpose();
 
@@ -240,18 +227,13 @@ TEST_P(PinocchioParallelChainsNumericalValidation, forward_dynamics)
         Eigen::VectorXd cnstr_violation_pinocchio = K_pinocchio * data.ddq + k_pinocchio;
         Eigen::VectorXd cnstr_violation_grbda = K_cluster * qdd_grbda - k_cluster;
 
-        GTEST_ASSERT_LT(cnstr_violation_grbda.norm(), 1e-10)
+        GTEST_ASSERT_LT(cnstr_violation_grbda.norm(), GetParam().tol)
             << "K*qdd_grbda + k    : " << cnstr_violation_grbda.transpose();
 
-        GTEST_ASSERT_LT(cnstr_violation_pinocchio.norm(), 1e-10)
+        GTEST_ASSERT_LT(cnstr_violation_pinocchio.norm(), GetParam().tol)
             << "K*qdd_pinocchio + k: " << cnstr_violation_pinocchio.transpose();
     }
 
-    // csv format: depth, loop size , t_cluster, t_pinocchio, t_lg
-    outfile << GetParam().depth << "," << GetParam().loop_size << ","
-            << t_cluster / num_samples << ","
-            << t_pinocchio / num_samples << ","
-            << t_lg / num_samples << std::endl;
 }
 
 class PinocchioParallelChainsBenchmark : public ::testing::TestWithParam<ParallelChainSpecification>
@@ -330,7 +312,6 @@ TEST_P(PinocchioParallelChainsBenchmark, compareInstructionCount)
             largest_loop_size = loop_size;
     }
     GTEST_ASSERT_EQ(largest_loop_size, GetParam().loop_size);
-    cluster_tree.print();
 
     using RigidBodyTreeModel = grbda::RigidBodyTreeModel<ADScalar>;
     RigidBodyTreeModel lgm_model(cluster_tree, grbda::FwdDynMethod::LagrangeMultiplierEigen);
@@ -404,6 +385,7 @@ TEST_P(PinocchioParallelChainsBenchmark, compareInstructionCount)
     DynamicADVector pin_tau(nv_span);
     pin_tau = joint_map * spanning_joint_tau;
 
+    // TODO(@MatthewChignoli): Do we need to include the conversion to qdd for cABA?
     const DynamicADVector ydd_cluster = cluster_tree.forwardDynamics(tau);
     pinocchio::forwardDynamics(ad_model, ad_data, pin_q, pin_v, pin_tau, K_pinocchio, k_pinocchio, mu0);
     const DynamicADVector qdd_grbda = lgm_model.forwardDynamics(tau);
@@ -498,14 +480,14 @@ TEST_P(PinocchioParallelChainsBenchmark, compareInstructionCount)
         // Check the cluster ABA solution against the Lagrange multiplier solution
         DynamicVector qdd_cABA = G_res * cABA_res + g_res;
         const DynamicVector grbda_error = lgm_res - qdd_cABA;
-        GTEST_ASSERT_LT(grbda_error.norm(), 1e-2)
+        GTEST_ASSERT_LT(grbda_error.norm(), GetParam().tol)
             << "qdd_lgm: " << lgm_res.transpose() << "\n"
             << "qdd_cABA: " << qdd_cABA.transpose() << "\n"
             << "cABA_res: " << cABA_res.transpose();
 
         // Check grbda lagrange multiplier solution against pinocchio
         const DynamicVector qdd_error = pin_res - joint_map.cast<Scalar>() * lgm_res;
-        GTEST_ASSERT_LT(qdd_error.norm(), 1e-2)
+        GTEST_ASSERT_LT(qdd_error.norm(), GetParam().tol)
             << "qdd_pinocchio   : " << pin_res.transpose() << "\n"
             << "jmap * qdd_grbda: " << (joint_map.cast<Scalar>() * lgm_res).transpose();
     }

@@ -1,35 +1,30 @@
 #!/bin/bash
 
-link_count=${1:-5}
-branch_count=${2:-4}
-depth_count=${3:-2}
-
-# get the current directory
+# Get the current directory
 CURRENTDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 
-# xacros all robots
-cd $CURRENTDIR/parallel_chains/explicit
+# Define arrays for depths and corresponding loop sizes
+depths=("depth5" "depth10" "depth20" "depth40")
+loop_sizes=(
+  "2 4 6 8 10"      # For depth5
+  "2 4 8 16 20"     # For depth10
+  "2 4 10 20 40"    # For depth20
+  "2 4 20 40 80"    # For depth40
+)
 
-# TODO(@MatthewChignoli): room for automation here
-cd depth5
-xacro loop_size2.xacro > loop_size2.urdf
-xacro loop_size4.xacro > loop_size4.urdf
-xacro loop_size6.xacro > loop_size6.urdf
-xacro loop_size8.xacro > loop_size8.urdf
-xacro loop_size10.xacro > loop_size10.urdf
+# Change to the appropriate directory
+cd "$CURRENTDIR/parallel_chains/explicit" || { echo "Directory not found: $CURRENTDIR/parallel_chains/explicit"; exit 1; }
 
-cd ../depth10
-xacro loop_size2.xacro > loop_size2.urdf
-xacro loop_size4.xacro > loop_size4.urdf
-xacro loop_size8.xacro > loop_size8.urdf
-xacro loop_size16.xacro > loop_size16.urdf
-xacro loop_size20.xacro > loop_size20.urdf
-
-cd ../depth20
-xacro loop_size2.xacro > loop_size2.urdf
-xacro loop_size4.xacro > loop_size4.urdf
-xacro loop_size10.xacro > loop_size10.urdf
-xacro loop_size20.xacro > loop_size20.urdf
-xacro loop_size40.xacro > loop_size40.urdf
-
+# Loop through each depth
+for i in "${!depths[@]}"; do
+  depth="${depths[$i]}"
+  cd "$depth" || { echo "Directory not found: $depth"; exit 1; }
+  
+  # Loop through the loop sizes associated with this depth
+  for size in ${loop_sizes[$i]}; do
+    xacro "loop_size${size}.xacro" > "loop_size${size}.urdf"
+  done
+  
+  cd ..
+done
 
