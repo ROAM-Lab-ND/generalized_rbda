@@ -1,6 +1,8 @@
 #!/bin/bash
 
 link_count=${1:-5}
+branch_count=${2:-4}
+depth_count=${3:-2}
 
 # get the current directory
 CURRENTDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
@@ -16,6 +18,9 @@ do
     xacro revolute_rotor_parallel.xacro loop_count:=$i > "$VAR_REVOLUTE_DIR/revolute_rotor_parallel_${i}.urdf"
     xacro revolute_rotor_chain.xacro loop_count:=$i > "$VAR_REVOLUTE_DIR/revolute_rotor_chain_${i}.urdf"
 done
+
+xacro revolute_rotor_branch.xacro branch_count:=${branch_count} depth_count:=${depth_count} > \
+      "$VAR_REVOLUTE_DIR/revolute_rotor_branch_${branch_count}_${depth_count}.urdf"
 
 xacro mini_cheetah.xacro > mini_cheetah.urdf
 xacro mini_cheetah_fr_leg.xacro > mini_cheetah_fr_leg.urdf
