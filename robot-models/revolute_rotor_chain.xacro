@@ -8,5 +8,5 @@
 
     <link name="base"/>
     <xacro:root_branch branch_count="1"/>
-    <xacro:serial_chain start_link_idx="1" count="${loop_count - 1}"/>
+    <xacro:sequential_serial_chain parent_link_idx="1" count="${loop_count}"/>
 </robot>
