@@ -175,7 +175,7 @@ namespace grbda
         spatial::Transform<Scalar> xtree(link->parent_joint->parent_to_joint_origin_transform);
         ori::CoordinateAxis axis = ori::urdfAxisToCoordinateAxis(link->parent_joint->axis);
         using Revolute = ClusterJoints::Revolute<Scalar>;
-        appendBody<Revolute>(name, inertia, parent_name, xtree, axis);
+        appendBody<Revolute>(name, inertia, parent_name, xtree, axis, link->parent_joint->name);
     }
 
     template <typename Scalar>
