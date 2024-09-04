@@ -1,0 +1,68 @@
+<?xml version="1.0"?>
+
+<robot name="parallel_chain" xmlns:xacro="http://ros.org/wiki/xacro">
+
+    <xacro:property name="link_length" value="1.0"/>
+    <xacro:property name="distance_btw_chains" value="0.25"/>
+    <!-- <xacro:include filename="revolute_rotor_properties.xacro"/> -->
+
+    <xacro:macro name="add_link" params="chain_idx link_idx">
+        <link name="link_${chain_idx}_${link_idx}">
+            <inertial>
+                <mass value="0.25"/>
+                <origin rpy="0 0 0" xyz="0 0.5 0"/>
+                <inertia ixx="0.01" ixy="0" ixz="0" iyy="0.1" iyz="0" izz="0.01"/>
+            </inertial>
+        </link>
+    </xacro:macro>
+
+    <xacro:macro name="add_joint" params="chain_idx link_idx">
+        <joint name="joint_${chain_idx}_${link_idx}" type="revolute">
+            <parent link="link_${chain_idx}_${link_idx - 1}"/>
+            <child link="link_${chain_idx}_${link_idx}"/>
+            <origin xyz="0 ${link_length} 0"/>
+            <axis xyz="0 0 1"/>
+            <limit effort="30" velocity="1.0" lower="-10" upper="10"/>
+        </joint>
+    </xacro:macro>
+
+    <xacro:macro name="add_rolling_constraint" params="link_idx">
+        <constraint name="rolling_${link_idx}" type="rolling">
+            <predecessor link="link_1_${link_idx}"/>
+            <successor link="link_2_${link_idx}"/>
+            <ratio value="1"/>
+        </constraint>
+    </xacro:macro>
+
+
+    <link name="base"/>
+    <xacro:add_link chain_idx="1" link_idx="1"/>
+    <joint name="joint_1_1" type="revolute">
+        <parent link="base"/>
+        <child link="link_1_1"/>
+        <origin xyz="0 0 0"/>
+        <axis xyz="0 0 1"/>
+        <limit effort="30" velocity="1.0" lower="-10" upper="10"/>
+    </joint>
+
+    <xacro:add_link chain_idx="2" link_idx="1"/>
+    <joint name="joint_2_1" type="revolute">
+        <parent link="base"/>
+        <child link="link_2_1"/>
+        <origin xyz="${distance_btw_chains} 0 0"/>
+        <axis xyz="0 0 1"/>
+        <limit effort="30" velocity="1.0" lower="-10" upper="10"/>
+    </joint>
+
+    <xacro:add_link chain_idx="1" link_idx="2"/>
+    <xacro:add_link chain_idx="2" link_idx="2"/>
+    <xacro:add_link chain_idx="1" link_idx="3"/>
+    <xacro:add_link chain_idx="2" link_idx="3"/>
+    <xacro:add_link chain_idx="1" link_idx="4"/>
+    <xacro:add_link chain_idx="2" link_idx="4"/>
+    <xacro:add_link chain_idx="1" link_idx="5"/>
+    <xacro:add_link chain_idx="2" link_idx="5"/>
+
+    <xacro:add_rolling_constraint link_idx="1"/>
+
+</robot>
