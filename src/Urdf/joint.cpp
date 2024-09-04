@@ -62,7 +62,7 @@ namespace urdf
     if (independent)
     {
       std::string independent_str = independent;
-      if (independent_str != "true")
+      if (independent_str != "true" && independent_str != "True")
         joint.independent = false;
     }
 

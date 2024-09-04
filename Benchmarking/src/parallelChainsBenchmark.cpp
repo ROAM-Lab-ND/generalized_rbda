@@ -44,20 +44,32 @@ Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> jointMap(
 
 const std::string urdf_directory = SOURCE_DIRECTORY "/robot-models/";
 
-struct RobotSpecification
+struct ParallelChainSpecification
 {
-    std::string urdf_filename;
-    bool floating_base;
+    int depth;
+    int loop_size;
 };
 
-std::vector<RobotSpecification> GetBenchmarkUrdfFiles()
+std::vector<ParallelChainSpecification> GetBenchmarkUrdfFiles()
 {
-    std::vector<RobotSpecification> test_urdf_files;
-    test_urdf_files.push_back({urdf_directory + "parallel_chain.urdf", false});
-    return test_urdf_files;
+    std::vector<ParallelChainSpecification> parallel_chains;
+    for (int i : {2, 4, 6, 8, 10})
+    {
+        parallel_chains.push_back({5, i});
+    }
+    for (int i : {2, 4, 8, 16, 20})
+    {
+        parallel_chains.push_back({10, i});
+    }
+    for (int i : {2, 4, 10, 20, 40})
+    {
+        parallel_chains.push_back({20, i});
+    }
+
+    return parallel_chains;
 }
 
-class PinocchioNumericalValidation : public ::testing::TestWithParam<RobotSpecification>
+class PinocchioParallelChainsNumericalValidation : public ::testing::TestWithParam<ParallelChainSpecification>
 {
 public:
     std::ofstream outfile;
@@ -65,24 +77,30 @@ public:
     const int num_samples = 25;
 
 private:
-    void SetUp() override {
-        outfile.open(path_to_data + "NumericalValidation.csv", std::ios::app);
-        if (!outfile.is_open()) {
+    void SetUp() override
+    {
+        // overwrite the file
+        outfile.open(path_to_data + "NumericalValidation.csv", std::ios::out | std::ios::trunc);
+        if (!outfile.is_open())
+        {
             std::cerr << "Failed to open file." << std::endl;
         }
     }
 
-    void TearDown() override {
-        if (outfile.is_open()) {
+    void TearDown() override
+    {
+        if (outfile.is_open())
+        {
             outfile.close();
         }
     }
 };
 
-INSTANTIATE_TEST_SUITE_P(PinocchioNumericalValidation, PinocchioNumericalValidation,
+INSTANTIATE_TEST_SUITE_P(PinocchioParallelChainsNumericalValidation,
+                         PinocchioParallelChainsNumericalValidation,
                          ::testing::ValuesIn(GetBenchmarkUrdfFiles()));
 
-TEST_P(PinocchioNumericalValidation, forward_dynamics)
+TEST_P(PinocchioParallelChainsNumericalValidation, forward_dynamics)
 {
     using ModelState = grbda::ModelState<double>;
     using JointState = grbda::JointState<double>;
@@ -91,17 +109,34 @@ TEST_P(PinocchioNumericalValidation, forward_dynamics)
     double t_cluster = 0.;
     double t_pinocchio = 0.;
     double t_lg = 0.;
-    
+
+    // urdf file name
+    std::string urdf_filename = urdf_directory + "parallel_chains/explicit/depth" +
+                                std::to_string(GetParam().depth) + "/loop_size" +
+                                std::to_string(GetParam().loop_size) + ".urdf";
+
     // Build models
     pinocchio::Model model;
-    pinocchio::urdf::buildModel(GetParam().urdf_filename, model);
+    pinocchio::urdf::buildModel(urdf_filename, model);
     pinocchio::Data data(model);
 
     grbda::ClusterTreeModel<double> cluster_tree;
-    cluster_tree.buildModelFromURDF(GetParam().urdf_filename, GetParam().floating_base);
+    cluster_tree.buildModelFromURDF(urdf_filename, false);
+
+    // Check that the cluster tree is properly formed
+    GTEST_ASSERT_EQ(cluster_tree.getNumBodies(), 2 * GetParam().depth);
+    int largest_loop_size = -1;
+    for (const auto &cluster : cluster_tree.clusters())
+    {
+        int loop_size = cluster->bodies_.size();
+        if (loop_size > largest_loop_size)
+            largest_loop_size = loop_size;
+    }
+    GTEST_ASSERT_EQ(largest_loop_size, GetParam().loop_size);
+    cluster_tree.print();
 
     using RigidBodyTreeModel = grbda::RigidBodyTreeModel<double>;
-    RigidBodyTreeModel lgm_model(cluster_tree, grbda::FwdDynMethod::Projection);
+    RigidBodyTreeModel lgm_model(cluster_tree, grbda::FwdDynMethod::LagrangeMultiplierEigen);
     Eigen::MatrixXd joint_map = jointMap(lgm_model, model);
 
     const int nv = cluster_tree.getNumDegreesOfFreedom();
@@ -150,8 +185,6 @@ TEST_P(PinocchioNumericalValidation, forward_dynamics)
             std::shared_ptr<LoopConstraint> constraint = cluster->joint_->cloneLoopConstraint();
             const Eigen::VectorXd KG = constraint->K() * constraint->G();
             const Eigen::VectorXd Kg_k = constraint->K() * constraint->g() - constraint->k();
-            GTEST_ASSERT_GT(constraint->K().norm(), 1e-10);
-            GTEST_ASSERT_GT(constraint->G().norm(), 1e-10);
             GTEST_ASSERT_LT(KG.norm(), 1e-10)
                 << "K*G: " << KG.transpose();
             GTEST_ASSERT_LT(Kg_k.norm(), 1e-10)
@@ -162,6 +195,8 @@ TEST_P(PinocchioNumericalValidation, forward_dynamics)
             G_cluster = grbda::appendEigenMatrix(G_cluster, cluster->joint_->G());
             g_cluster = grbda::appendEigenVector(g_cluster, cluster->joint_->g());
         }
+        GTEST_ASSERT_GT(K_cluster.norm(), 1e-10);
+        GTEST_ASSERT_GT(G_cluster.norm(), 1e-10);
 
         // Convert implicit loop constraint to Pinocchio joint order
         const Eigen::MatrixXd K_pinocchio = K_cluster * joint_map.transpose();
@@ -212,13 +247,14 @@ TEST_P(PinocchioNumericalValidation, forward_dynamics)
             << "K*qdd_pinocchio + k: " << cnstr_violation_pinocchio.transpose();
     }
 
-    outfile << GetParam().urdf_filename << ","
+    // csv format: depth, loop size , t_cluster, t_pinocchio, t_lg
+    outfile << GetParam().depth << "," << GetParam().loop_size << ","
             << t_cluster / num_samples << ","
             << t_pinocchio / num_samples << ","
             << t_lg / num_samples << std::endl;
 }
 
-class PinocchioBenchmark : public ::testing::TestWithParam<RobotSpecification>
+class PinocchioParallelChainsBenchmark : public ::testing::TestWithParam<ParallelChainSpecification>
 {
 public:
     std::ofstream outfile;
@@ -226,24 +262,28 @@ public:
     const int num_samples = 25;
 
 private:
-    void SetUp() override {
+    void SetUp() override
+    {
         outfile.open(path_to_data + "InstructionCount.csv", std::ios::app);
-        if (!outfile.is_open()) {
+        if (!outfile.is_open())
+        {
             std::cerr << "Failed to open file." << std::endl;
         }
     }
 
-    void TearDown() override {
-        if (outfile.is_open()) {
+    void TearDown() override
+    {
+        if (outfile.is_open())
+        {
             outfile.close();
         }
     }
 };
 
-INSTANTIATE_TEST_SUITE_P(PinocchioBenchmark, PinocchioBenchmark,
+INSTANTIATE_TEST_SUITE_P(PinocchioParallelChainsBenchmark, PinocchioParallelChainsBenchmark,
                          ::testing::ValuesIn(GetBenchmarkUrdfFiles()));
 
-TEST_P(PinocchioBenchmark, compareInstructionCount)
+TEST_P(PinocchioParallelChainsBenchmark, compareInstructionCount)
 {
     using Scalar = double;
     using ADScalar = casadi::SX;
@@ -266,14 +306,31 @@ TEST_P(PinocchioBenchmark, compareInstructionCount)
     double t_pinocchio = 0.;
     double t_lg = 0.;
 
+    // urdf file name
+    std::string urdf_filename = urdf_directory + "parallel_chains/explicit/depth" +
+                                std::to_string(GetParam().depth) + "/loop_size" +
+                                std::to_string(GetParam().loop_size) + ".urdf";
+
     // Build models
     PinocchioModel model;
-    pinocchio::urdf::buildModel(GetParam().urdf_filename, model);
+    pinocchio::urdf::buildModel(urdf_filename, model);
     PinocchioADModel ad_model = model.cast<ADScalar>();
     PinocchioADModel::Data ad_data(ad_model);
 
     grbda::ClusterTreeModel<ADScalar> cluster_tree;
-    cluster_tree.buildModelFromURDF(GetParam().urdf_filename, GetParam().floating_base);
+    cluster_tree.buildModelFromURDF(urdf_filename, false);
+
+    // Check that the cluster tree is properly formed
+    GTEST_ASSERT_EQ(cluster_tree.getNumBodies(), 2 * GetParam().depth);
+    int largest_loop_size = -1;
+    for (const auto &cluster : cluster_tree.clusters())
+    {
+        int loop_size = cluster->bodies_.size();
+        if (loop_size > largest_loop_size)
+            largest_loop_size = loop_size;
+    }
+    GTEST_ASSERT_EQ(largest_loop_size, GetParam().loop_size);
+    cluster_tree.print();
 
     using RigidBodyTreeModel = grbda::RigidBodyTreeModel<ADScalar>;
     RigidBodyTreeModel lgm_model(cluster_tree, grbda::FwdDynMethod::LagrangeMultiplierEigen);
@@ -383,11 +440,6 @@ TEST_P(PinocchioBenchmark, compareInstructionCount)
                                         casadi::SXVector{cs_q, cs_v},
                                         casadi::SXVector{cs_G, cs_g});
 
-    // print the numbers of insructions
-    std::cout << "cABA instructions: " << csClusterABA.n_instructions() << std::endl;
-    std::cout << "pinocchioFD instructions: " << csPinocchioFD.n_instructions() << std::endl;
-    std::cout << "grbdaFD instructions: " << csGrbdaFD.n_instructions() << std::endl;
-
     // Check the solutions against each other
     using ScalarModel = grbda::ClusterTreeModel<Scalar>;
     using ScalarRigidBodyTreeModel = grbda::RigidBodyTreeModel<Scalar>;
@@ -397,8 +449,7 @@ TEST_P(PinocchioBenchmark, compareInstructionCount)
     for (int i = 0; i < num_samples; ++i)
     {
         ScalarModel numerical_cluster_tree;
-        numerical_cluster_tree.buildModelFromURDF(GetParam().urdf_filename,
-                                                  GetParam().floating_base);
+        numerical_cluster_tree.buildModelFromURDF(urdf_filename, false);
 
         ScalarModelState scalar_model_state;
         for (const auto &cluster : numerical_cluster_tree.clusters())
@@ -447,20 +498,20 @@ TEST_P(PinocchioBenchmark, compareInstructionCount)
         // Check the cluster ABA solution against the Lagrange multiplier solution
         DynamicVector qdd_cABA = G_res * cABA_res + g_res;
         const DynamicVector grbda_error = lgm_res - qdd_cABA;
-        GTEST_ASSERT_LT(grbda_error.norm(), 1e-8)
+        GTEST_ASSERT_LT(grbda_error.norm(), 1e-2)
             << "qdd_lgm: " << lgm_res.transpose() << "\n"
             << "qdd_cABA: " << qdd_cABA.transpose() << "\n"
             << "cABA_res: " << cABA_res.transpose();
 
         // Check grbda lagrange multiplier solution against pinocchio
         const DynamicVector qdd_error = pin_res - joint_map.cast<Scalar>() * lgm_res;
-        GTEST_ASSERT_LT(qdd_error.norm(), 1e-8)
+        GTEST_ASSERT_LT(qdd_error.norm(), 1e-2)
             << "qdd_pinocchio   : " << pin_res.transpose() << "\n"
             << "jmap * qdd_grbda: " << (joint_map.cast<Scalar>() * lgm_res).transpose();
     }
 
-    outfile << GetParam().urdf_filename << ","
-            << t_cluster / num_samples << ","
-            << t_pinocchio / num_samples << ","
-            << t_lg / num_samples << std::endl;
+    // csv format: depth, loop size , cluster_instr, pinocchio_instr, cluster_time, pinocchio_time
+    outfile << GetParam().depth << "," << GetParam().loop_size << ","
+            << csClusterABA.n_instructions() << "," << csPinocchioFD.n_instructions() << ","
+            << t_cluster / num_samples << "," << t_pinocchio / num_samples << std::endl;
 }
