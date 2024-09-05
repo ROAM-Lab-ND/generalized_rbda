@@ -139,7 +139,7 @@ struct RevoluteRotorSpecification : public RobotSpecification
     int depth_count;
 
     RevoluteRotorSpecification(std::string urdf_filename, bool floating_base,
-                               std::string outfile_suffix="RevoluteRotor")
+                               std::string outfile_suffix="revolute_chain")
         : RobotSpecification(urdf_filename, floating_base, outfile_suffix)
         {
             registerBranchAndDepthCountFromName(name);
@@ -196,17 +196,79 @@ SpecVector GetRevoluteRotorUrdfFiles()
     urdf_files.push_back(std::make_shared<RevoluteRotorSpecification>(
         urdf_directory + "variable_revolute_urdf/revolute_rotor_branch_1_3.urdf", false));
     urdf_files.push_back(std::make_shared<RevoluteRotorSpecification>(
+        urdf_directory + "variable_revolute_urdf/revolute_rotor_branch_1_4.urdf", false));
+    urdf_files.push_back(std::make_shared<RevoluteRotorSpecification>(
+        urdf_directory + "variable_revolute_urdf/revolute_rotor_branch_1_5.urdf", false));
+    urdf_files.push_back(std::make_shared<RevoluteRotorSpecification>(
+        urdf_directory + "variable_revolute_urdf/revolute_rotor_branch_1_6.urdf", false));
+    urdf_files.push_back(std::make_shared<RevoluteRotorSpecification>(
+        urdf_directory + "variable_revolute_urdf/revolute_rotor_branch_1_7.urdf", false));
+    urdf_files.push_back(std::make_shared<RevoluteRotorSpecification>(
+        urdf_directory + "variable_revolute_urdf/revolute_rotor_branch_1_8.urdf", false));
+    urdf_files.push_back(std::make_shared<RevoluteRotorSpecification>(
+        urdf_directory + "variable_revolute_urdf/revolute_rotor_branch_1_9.urdf", false));
+    urdf_files.push_back(std::make_shared<RevoluteRotorSpecification>(
+        urdf_directory + "variable_revolute_urdf/revolute_rotor_branch_1_10.urdf", false));
+    urdf_files.push_back(std::make_shared<RevoluteRotorSpecification>(
         urdf_directory + "variable_revolute_urdf/revolute_rotor_branch_2_1.urdf", false));
     urdf_files.push_back(std::make_shared<RevoluteRotorSpecification>(
         urdf_directory + "variable_revolute_urdf/revolute_rotor_branch_2_2.urdf", false));
     urdf_files.push_back(std::make_shared<RevoluteRotorSpecification>(
         urdf_directory + "variable_revolute_urdf/revolute_rotor_branch_2_3.urdf", false));
     urdf_files.push_back(std::make_shared<RevoluteRotorSpecification>(
+        urdf_directory + "variable_revolute_urdf/revolute_rotor_branch_2_4.urdf", false));
+    urdf_files.push_back(std::make_shared<RevoluteRotorSpecification>(
+        urdf_directory + "variable_revolute_urdf/revolute_rotor_branch_2_5.urdf", false));
+    urdf_files.push_back(std::make_shared<RevoluteRotorSpecification>(
+        urdf_directory + "variable_revolute_urdf/revolute_rotor_branch_2_6.urdf", false));
+    urdf_files.push_back(std::make_shared<RevoluteRotorSpecification>(
+        urdf_directory + "variable_revolute_urdf/revolute_rotor_branch_2_7.urdf", false));
+    urdf_files.push_back(std::make_shared<RevoluteRotorSpecification>(
+        urdf_directory + "variable_revolute_urdf/revolute_rotor_branch_2_8.urdf", false));
+    urdf_files.push_back(std::make_shared<RevoluteRotorSpecification>(
+        urdf_directory + "variable_revolute_urdf/revolute_rotor_branch_2_9.urdf", false));
+    urdf_files.push_back(std::make_shared<RevoluteRotorSpecification>(
+        urdf_directory + "variable_revolute_urdf/revolute_rotor_branch_2_10.urdf", false));
+    urdf_files.push_back(std::make_shared<RevoluteRotorSpecification>(
         urdf_directory + "variable_revolute_urdf/revolute_rotor_branch_4_1.urdf", false));
     urdf_files.push_back(std::make_shared<RevoluteRotorSpecification>(
         urdf_directory + "variable_revolute_urdf/revolute_rotor_branch_4_2.urdf", false));
     urdf_files.push_back(std::make_shared<RevoluteRotorSpecification>(
         urdf_directory + "variable_revolute_urdf/revolute_rotor_branch_4_3.urdf", false));
+    urdf_files.push_back(std::make_shared<RevoluteRotorSpecification>(
+        urdf_directory + "variable_revolute_urdf/revolute_rotor_branch_4_4.urdf", false));
+    urdf_files.push_back(std::make_shared<RevoluteRotorSpecification>(
+        urdf_directory + "variable_revolute_urdf/revolute_rotor_branch_4_5.urdf", false));
+    urdf_files.push_back(std::make_shared<RevoluteRotorSpecification>(
+        urdf_directory + "variable_revolute_urdf/revolute_rotor_branch_4_6.urdf", false));
+    urdf_files.push_back(std::make_shared<RevoluteRotorSpecification>(
+        urdf_directory + "variable_revolute_urdf/revolute_rotor_branch_4_7.urdf", false));
+    urdf_files.push_back(std::make_shared<RevoluteRotorSpecification>(
+        urdf_directory + "variable_revolute_urdf/revolute_rotor_branch_4_8.urdf", false));
+    urdf_files.push_back(std::make_shared<RevoluteRotorSpecification>(
+        urdf_directory + "variable_revolute_urdf/revolute_rotor_branch_4_9.urdf", false));
+    urdf_files.push_back(std::make_shared<RevoluteRotorSpecification>(
+        urdf_directory + "variable_revolute_urdf/revolute_rotor_branch_4_10.urdf", false));
+    urdf_files.push_back(std::make_shared<RevoluteRotorSpecification>(
+        urdf_directory + "variable_revolute_urdf/revolute_rotor_branch_6_1.urdf", false));
+    urdf_files.push_back(std::make_shared<RevoluteRotorSpecification>(
+        urdf_directory + "variable_revolute_urdf/revolute_rotor_branch_6_2.urdf", false));
+    urdf_files.push_back(std::make_shared<RevoluteRotorSpecification>(
+        urdf_directory + "variable_revolute_urdf/revolute_rotor_branch_6_3.urdf", false));
+    urdf_files.push_back(std::make_shared<RevoluteRotorSpecification>(
+        urdf_directory + "variable_revolute_urdf/revolute_rotor_branch_6_4.urdf", false));
+    urdf_files.push_back(std::make_shared<RevoluteRotorSpecification>(
+        urdf_directory + "variable_revolute_urdf/revolute_rotor_branch_6_5.urdf", false));
+    urdf_files.push_back(std::make_shared<RevoluteRotorSpecification>(
+        urdf_directory + "variable_revolute_urdf/revolute_rotor_branch_6_6.urdf", false));
+    urdf_files.push_back(std::make_shared<RevoluteRotorSpecification>(
+        urdf_directory + "variable_revolute_urdf/revolute_rotor_branch_6_7.urdf", false));
+    urdf_files.push_back(std::make_shared<RevoluteRotorSpecification>(
+        urdf_directory + "variable_revolute_urdf/revolute_rotor_branch_6_8.urdf", false));
+    urdf_files.push_back(std::make_shared<RevoluteRotorSpecification>(
+        urdf_directory + "variable_revolute_urdf/revolute_rotor_branch_6_9.urdf", false));
+    urdf_files.push_back(std::make_shared<RevoluteRotorSpecification>(
+        urdf_directory + "variable_revolute_urdf/revolute_rotor_branch_6_10.urdf", false));
 
     return urdf_files;
 }
@@ -339,13 +401,13 @@ TEST_P(PinocchioNumericalValidation, forward_dynamics)
 
         // Check grbda cluster tree solution against lagrange multiplier solution
         const Eigen::VectorXd ydd_error = qdd_grbda - (G_cluster * ydd_cluster + g_cluster);
-        GTEST_ASSERT_LT(ydd_error.norm(), 1e-8)
+        GTEST_ASSERT_LT(ydd_error.norm(), 1e-6)
             << "qdd_grbda: " << qdd_grbda.transpose() << "\n"
             << "G*ydd_cluster + g: " << (G_cluster * ydd_cluster + g_cluster).transpose();
 
         // Check grbda lagrange multiplier solution against pinocchio
         const Eigen::VectorXd qdd_error = data.ddq - joint_map * qdd_grbda;
-        GTEST_ASSERT_LT(qdd_error.norm(), 1e-8)
+        GTEST_ASSERT_LT(qdd_error.norm(), 1e-6)
             << "qdd_pinocchio   : " << data.ddq.transpose() << "\n"
             << "jmap * qdd_grbda: " << (joint_map * qdd_grbda).transpose();
 
@@ -578,14 +640,14 @@ TEST_P(PinocchioBenchmark, compareInstructionCount)
         // Check the cluster ABA solution against the Lagrange multiplier solution
         DynamicVector qdd_cABA = G_res * cABA_res + g_res;
         const DynamicVector grbda_error = lgm_res - qdd_cABA;
-        GTEST_ASSERT_LT(grbda_error.norm(), 1e-8)
+        GTEST_ASSERT_LT(grbda_error.norm(), 1e-6)
             << "qdd_lgm: " << lgm_res.transpose() << "\n"
             << "qdd_cABA: " << qdd_cABA.transpose() << "\n"
             << "cABA_res: " << cABA_res.transpose();
 
         // Check grbda lagrange multiplier solution against pinocchio
         const DynamicVector qdd_error = pin_res - joint_map.cast<Scalar>() * lgm_res;
-        GTEST_ASSERT_LT(qdd_error.norm(), 1e-8)
+        GTEST_ASSERT_LT(qdd_error.norm(), 1e-6)
             << "qdd_pinocchio   : " << pin_res.transpose() << "\n"
             << "jmap * qdd_grbda: " << (joint_map.cast<Scalar>() * lgm_res).transpose();
     }

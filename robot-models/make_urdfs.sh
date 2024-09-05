@@ -2,8 +2,8 @@
 
 # Initialize variables
 arg1="4" # revolute rotor serial/parallel loop count
-arg2=("1" "2" "4") # revolute rotor branch: branch count
-arg3=("1" "2" "3") # revolute rotor branch: depth count
+arg2=("1" "2" "4" "6") # revolute rotor branch: branch count
+arg3=("1" "2" "3" "4" "5" "6" "7" "8" "9" "10") # revolute rotor branch: depth count
 
 # Loop through arguments
 for arg in "$@"
