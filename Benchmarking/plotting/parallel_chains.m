@@ -3,12 +3,12 @@ close all; clear; clc;
 path_to_data = '../data/PinocchioParallelChainFD_';
 
 % csv format: # depth, loop size, c-aba instr count, pinochhio instr count
-data = readmatrix([path_to_data, 'InstructionCount.csv']);
-depths = unique(data(:, 1))';
+exp_data = readmatrix([path_to_data, 'ExplicitInstructionCount.csv']);
+depths = unique(exp_data(:, 1))';
 
 for i = depths
-    caba.depths{i} = data(data(:, 1) == i, [2 3]);
-    pin.depths{i} = data(data(:, 1) == i, [2 4]);
+    caba.depths{i} = exp_data(exp_data(:, 1) == i, [2 3]);
+    pin.depths{i} = exp_data(exp_data(:, 1) == i, [2 4]);
 end
 
 % TODO(@MatthewChignoli): for now we assume there are 4 depths

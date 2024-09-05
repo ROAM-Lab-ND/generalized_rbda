@@ -49,37 +49,45 @@ struct ParallelChainSpecification
     int depth;
     int loop_size;
     double tol;
+    std::string constraint_type;
 };
 
 std::vector<ParallelChainSpecification> GetBenchmarkUrdfFiles()
 {
-    std::ofstream outfile;
-    outfile.open(path_to_data + "InstructionCount.csv", std::ios::trunc);
-    if (!outfile.is_open())
+    for (std::string ctype : {"Explicit", "Implicit"})
     {
-        std::cerr << "Failed to open file." << std::endl;
-    }
-    if (outfile.is_open())
-    {
-        outfile.close();
+        std::ofstream outfile;
+        outfile.open(path_to_data + ctype + "InstructionCount.csv", std::ios::trunc);
+        if (!outfile.is_open())
+        {
+            std::cerr << "Failed to open file." << std::endl;
+        }
+        if (outfile.is_open())
+        {
+            outfile.close();
+        }
     }
 
     std::vector<ParallelChainSpecification> parallel_chains;
     for (int i : {2, 4, 6, 8, 10})
     {
-        parallel_chains.push_back({5, i, 1e-8});
+        parallel_chains.push_back({5, i, 1e-8, "Explicit"});
     }
     for (int i : {2, 4, 8, 16, 20})
     {
-        parallel_chains.push_back({10, i, 1e-6});
+        parallel_chains.push_back({10, i, 1e-6, "Explicit"});
     }
     for (int i : {2, 4, 10, 20, 40})
     {
-        parallel_chains.push_back({20, i, 1e-2});
+        parallel_chains.push_back({20, i, 1e-2, "Explicit"});
     }
     for (int i : {2, 4, 20, 40, 80})
     {
-        parallel_chains.push_back({40, i, 5.0});
+        parallel_chains.push_back({40, i, 5.0, "Explicit"});
+    }
+    for (int i : {3, 5, 7, 9, 11})
+    {
+        parallel_chains.push_back({5, i, 1e-4, "Implicit"});
     }
 
     return parallel_chains;
@@ -106,7 +114,8 @@ TEST_P(PinocchioParallelChainsNumericalValidation, forward_dynamics)
     double t_lg = 0.;
 
     // urdf file name
-    std::string urdf_filename = urdf_directory + "parallel_chains/explicit/depth" +
+    std::string urdf_filename = urdf_directory + "parallel_chains/" +
+                                GetParam().constraint_type + "/depth" +
                                 std::to_string(GetParam().depth) + "/loop_size" +
                                 std::to_string(GetParam().loop_size) + ".urdf";
 
@@ -119,7 +128,9 @@ TEST_P(PinocchioParallelChainsNumericalValidation, forward_dynamics)
     cluster_tree.buildModelFromURDF(urdf_filename, false);
 
     // Check that the cluster tree is properly formed
-    GTEST_ASSERT_EQ(cluster_tree.getNumBodies(), 2 * GetParam().depth);
+    int expected_bodies = GetParam().constraint_type == "Explicit" ? 2 * GetParam().depth
+                                                                   : 2 * GetParam().depth + 1;
+    GTEST_ASSERT_EQ(cluster_tree.getNumBodies(), expected_bodies);
     int largest_loop_size = -1;
     for (const auto &cluster : cluster_tree.clusters())
     {
@@ -246,7 +257,8 @@ public:
 private:
     void SetUp() override
     {
-        outfile.open(path_to_data + "InstructionCount.csv", std::ios::app);
+        std::string csv_filename = GetParam().constraint_type + "InstructionCount.csv";
+        outfile.open(path_to_data + csv_filename, std::ios::app);
         if (!outfile.is_open())
         {
             std::cerr << "Failed to open file." << std::endl;
@@ -289,7 +301,8 @@ TEST_P(PinocchioParallelChainsBenchmark, compareInstructionCount)
     double t_lg = 0.;
 
     // urdf file name
-    std::string urdf_filename = urdf_directory + "parallel_chains/explicit/depth" +
+    std::string urdf_filename = urdf_directory + "parallel_chains/" +
+                                GetParam().constraint_type + "/depth" +
                                 std::to_string(GetParam().depth) + "/loop_size" +
                                 std::to_string(GetParam().loop_size) + ".urdf";
 
@@ -303,7 +316,9 @@ TEST_P(PinocchioParallelChainsBenchmark, compareInstructionCount)
     cluster_tree.buildModelFromURDF(urdf_filename, false);
 
     // Check that the cluster tree is properly formed
-    GTEST_ASSERT_EQ(cluster_tree.getNumBodies(), 2 * GetParam().depth);
+    int expected_bodies = GetParam().constraint_type == "Explicit" ? 2 * GetParam().depth
+                                                                   : 2 * GetParam().depth + 1;
+    GTEST_ASSERT_EQ(cluster_tree.getNumBodies(), expected_bodies);
     int largest_loop_size = -1;
     for (const auto &cluster : cluster_tree.clusters())
     {
