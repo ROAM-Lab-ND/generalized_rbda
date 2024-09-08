@@ -273,12 +273,86 @@ SpecVector GetRevoluteRotorUrdfFiles()
     return urdf_files;
 }
 
+SpecVector GetRevoluteRotorPairUrdfFiles()
+{
+    // TODO(@nicholasadr): automatically search for urdf files from variable_revolute_pair_urdf dir
+    SpecVector urdf_files;
+    std::string outfile_suffix = "revolute_pair_chain";
+    urdf_files.push_back(std::make_shared<RevoluteRotorSpecification>(
+        urdf_directory + "variable_revolute_pair_urdf/revolute_rotor_pair_branch_1_1.urdf", false, outfile_suffix));
+    urdf_files.push_back(std::make_shared<RevoluteRotorSpecification>(
+        urdf_directory + "variable_revolute_pair_urdf/revolute_rotor_pair_branch_1_2.urdf", false, outfile_suffix));
+    urdf_files.push_back(std::make_shared<RevoluteRotorSpecification>(
+        urdf_directory + "variable_revolute_pair_urdf/revolute_rotor_pair_branch_1_3.urdf", false, outfile_suffix));
+    urdf_files.push_back(std::make_shared<RevoluteRotorSpecification>(
+        urdf_directory + "variable_revolute_pair_urdf/revolute_rotor_pair_branch_1_4.urdf", false, outfile_suffix));
+    urdf_files.push_back(std::make_shared<RevoluteRotorSpecification>(
+        urdf_directory + "variable_revolute_pair_urdf/revolute_rotor_pair_branch_1_5.urdf", false, outfile_suffix));
+    urdf_files.push_back(std::make_shared<RevoluteRotorSpecification>(
+        urdf_directory + "variable_revolute_pair_urdf/revolute_rotor_pair_branch_1_6.urdf", false, outfile_suffix));
+    urdf_files.push_back(std::make_shared<RevoluteRotorSpecification>(
+        urdf_directory + "variable_revolute_pair_urdf/revolute_rotor_pair_branch_1_7.urdf", false, outfile_suffix));
+    //urdf_files.push_back(std::make_shared<RevoluteRotorSpecification>(
+    //    urdf_directory + "variable_revolute_pair_urdf/revolute_rotor_pair_branch_1_8.urdf", false, outfile_suffix));
+    //urdf_files.push_back(std::make_shared<RevoluteRotorSpecification>(
+    //    urdf_directory + "variable_revolute_pair_urdf/revolute_rotor_pair_branch_1_9.urdf", false, outfile_suffix));
+    //urdf_files.push_back(std::make_shared<RevoluteRotorSpecification>(
+    //    urdf_directory + "variable_revolute_pair_urdf/revolute_rotor_pair_branch_1_10.urdf", false, outfile_suffix));
+    urdf_files.push_back(std::make_shared<RevoluteRotorSpecification>(
+        urdf_directory + "variable_revolute_pair_urdf/revolute_rotor_pair_branch_2_1.urdf", false, outfile_suffix));
+    urdf_files.push_back(std::make_shared<RevoluteRotorSpecification>(
+        urdf_directory + "variable_revolute_pair_urdf/revolute_rotor_pair_branch_2_2.urdf", false, outfile_suffix));
+    urdf_files.push_back(std::make_shared<RevoluteRotorSpecification>(
+        urdf_directory + "variable_revolute_pair_urdf/revolute_rotor_pair_branch_2_3.urdf", false, outfile_suffix));
+    urdf_files.push_back(std::make_shared<RevoluteRotorSpecification>(
+        urdf_directory + "variable_revolute_pair_urdf/revolute_rotor_pair_branch_2_4.urdf", false, outfile_suffix));
+    urdf_files.push_back(std::make_shared<RevoluteRotorSpecification>(
+        urdf_directory + "variable_revolute_pair_urdf/revolute_rotor_pair_branch_2_5.urdf", false, outfile_suffix));
+    urdf_files.push_back(std::make_shared<RevoluteRotorSpecification>(
+        urdf_directory + "variable_revolute_pair_urdf/revolute_rotor_pair_branch_2_6.urdf", false, outfile_suffix));
+    urdf_files.push_back(std::make_shared<RevoluteRotorSpecification>(
+        urdf_directory + "variable_revolute_pair_urdf/revolute_rotor_pair_branch_2_7.urdf", false, outfile_suffix));
+    urdf_files.push_back(std::make_shared<RevoluteRotorSpecification>(
+        urdf_directory + "variable_revolute_pair_urdf/revolute_rotor_pair_branch_4_1.urdf", false, outfile_suffix));
+    urdf_files.push_back(std::make_shared<RevoluteRotorSpecification>(
+        urdf_directory + "variable_revolute_pair_urdf/revolute_rotor_pair_branch_4_2.urdf", false, outfile_suffix));
+    urdf_files.push_back(std::make_shared<RevoluteRotorSpecification>(
+        urdf_directory + "variable_revolute_pair_urdf/revolute_rotor_pair_branch_4_3.urdf", false, outfile_suffix));
+    urdf_files.push_back(std::make_shared<RevoluteRotorSpecification>(
+        urdf_directory + "variable_revolute_pair_urdf/revolute_rotor_pair_branch_4_4.urdf", false, outfile_suffix));
+    urdf_files.push_back(std::make_shared<RevoluteRotorSpecification>(
+        urdf_directory + "variable_revolute_pair_urdf/revolute_rotor_pair_branch_4_5.urdf", false, outfile_suffix));
+    urdf_files.push_back(std::make_shared<RevoluteRotorSpecification>(
+        urdf_directory + "variable_revolute_pair_urdf/revolute_rotor_pair_branch_4_6.urdf", false, outfile_suffix));
+    urdf_files.push_back(std::make_shared<RevoluteRotorSpecification>(
+        urdf_directory + "variable_revolute_pair_urdf/revolute_rotor_pair_branch_4_7.urdf", false, outfile_suffix));
+    urdf_files.push_back(std::make_shared<RevoluteRotorSpecification>(
+        urdf_directory + "variable_revolute_pair_urdf/revolute_rotor_pair_branch_6_1.urdf", false, outfile_suffix));
+    urdf_files.push_back(std::make_shared<RevoluteRotorSpecification>(
+        urdf_directory + "variable_revolute_pair_urdf/revolute_rotor_pair_branch_6_2.urdf", false, outfile_suffix));
+    urdf_files.push_back(std::make_shared<RevoluteRotorSpecification>(
+        urdf_directory + "variable_revolute_pair_urdf/revolute_rotor_pair_branch_6_3.urdf", false, outfile_suffix));
+    urdf_files.push_back(std::make_shared<RevoluteRotorSpecification>(
+        urdf_directory + "variable_revolute_pair_urdf/revolute_rotor_pair_branch_6_4.urdf", false, outfile_suffix));
+    urdf_files.push_back(std::make_shared<RevoluteRotorSpecification>(
+        urdf_directory + "variable_revolute_pair_urdf/revolute_rotor_pair_branch_6_5.urdf", false, outfile_suffix));
+    urdf_files.push_back(std::make_shared<RevoluteRotorSpecification>(
+        urdf_directory + "variable_revolute_pair_urdf/revolute_rotor_pair_branch_6_6.urdf", false, outfile_suffix));
+    urdf_files.push_back(std::make_shared<RevoluteRotorSpecification>(
+        urdf_directory + "variable_revolute_pair_urdf/revolute_rotor_pair_branch_6_7.urdf", false, outfile_suffix));
+
+    return urdf_files;
+}
+
 SpecVector GetBenchmarkUrdfFiles()
 {
     SpecVector test_urdf_files = GetIndividualUrdfFiles();
     SpecVector revrotor_urdf_files = GetRevoluteRotorUrdfFiles();
     test_urdf_files.insert(test_urdf_files.end(), revrotor_urdf_files.begin(),
                                                   revrotor_urdf_files.end());
+    SpecVector revrotor_pair_urdf_files = GetRevoluteRotorPairUrdfFiles();
+    test_urdf_files.insert(test_urdf_files.end(), revrotor_pair_urdf_files.begin(),
+                                                  revrotor_pair_urdf_files.end());
 
     return test_urdf_files;
 }
