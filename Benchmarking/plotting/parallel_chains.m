@@ -22,25 +22,53 @@ end
 if length(expl_depths) ~= 4
     error('Expected 4 depths, got %d', length(expl_depths))
 end
+
 if length(impl_depths) ~= 4
     error('Expected 4 depths, got %d', length(impl_depths))
 end
 
 %% Plotting options
+ceaba_color = 'r';
+caba_name = 'Constraint Embedding ABA, ';
+pin_color = 'b';
+pin_name = 'Proximal Forward Dynamics, ';
+expl_cnstr_name = '$\ddot{\mathbf{q}}=\mathbf{G}\ddot{\mathbf{y}}$';
+impl_cnstr_name = '$\mathbf{K}(\mathbf{q})\ddot{\mathbf{q}}=\mathbf{k}(\mathbf{q},\dot{\mathbf{q}})$';
 marker_size = 10;
 line_width = 2.0;
-font_size = 16;
+font_size = 18;
 figure
 sp_cnt = 1;
+
+axes = [[2 11 8e2 1e5];
+         [2 17 2e3 1e5];
+         [2 31 3e3 1e6];
+         [2 41 1e4 1e6]];
+
+plot_opts.MarkerSize = marker_size;
+plot_opts.LineWidth = line_width;
 
 for i = expl_depths
     subplot(2, 2, sp_cnt)
     hold on
-    plot(caba.expl.depths{i}(:, 1), caba.expl.depths{i}(:, 2), 'o-', 'Color', 'r', 'MarkerSize', marker_size, 'MarkerFaceColor', 'r', 'Linewidth', line_width, 'DisplayName', 'Cluster-Based ABA')
-    plot(pin.expl.depths{i}(:, 1), pin.expl.depths{i}(:, 2), 'o-', 'Color', 'b', 'MarkerSize', marker_size, 'MarkerFaceColor', 'b', 'Linewidth', line_width, 'DisplayName', 'Pinocchio ABA')
-    plot(caba.impl.depths{i}(:, 1), caba.impl.depths{i}(:, 2), 's--', 'Color', 'r', 'MarkerSize', marker_size, 'MarkerFaceColor', 'r', 'Linewidth', line_width, 'DisplayName', 'Cluster-Based ABA')
-    plot(pin.impl.depths{i}(:, 1), pin.impl.depths{i}(:, 2), 's--', 'Color', 'b', 'MarkerSize', marker_size, 'MarkerFaceColor', 'b', 'Linewidth', line_width, 'DisplayName', 'Pinocchio ABA')
-    sp_cnt = sp_cnt + 1;
+
+    plot_opts.Color = ceaba_color;
+    plot_opts.MarkerFaceColor = ceaba_color;
+    plot_opts.DisplayName = [caba_name, expl_cnstr_name];
+    plot(caba.expl.depths{i}(:, 1), caba.expl.depths{i}(:, 2), 'o-', plot_opts)
+
+    plot_opts.DisplayName = [caba_name, impl_cnstr_name];
+    plot(caba.impl.depths{i}(:, 1), caba.impl.depths{i}(:, 2), 's--', plot_opts)
+
+    base_cnt = pin.expl.depths{i}(1, 2);
+    plot_opts.Color = pin_color;
+    plot_opts.MarkerFaceColor = pin_color;
+    plot_opts.DisplayName = [pin_name, expl_cnstr_name];
+    plot(pin.expl.depths{i}(:, 1), pin.expl.depths{i}(:, 2), 'o-', plot_opts)
+
+    base_cnt = pin.impl.depths{i}(1, 2);
+    plot_opts.DisplayName = [pin_name, impl_cnstr_name];
+    plot(pin.impl.depths{i}(:, 1), pin.impl.depths{i}(:, 2), 's--', plot_opts)
 
     % Label
     xlabel('Loop Size', 'Interpreter', 'latex')
@@ -50,7 +78,12 @@ for i = expl_depths
 
     % Format
     grid on
+    axis(axes(sp_cnt, :))
     set(gca, 'YScale', 'log')
     set(gca, 'Fontsize', font_size)
     set(gca, 'TickLabelInterpreter', 'latex')
+
+    sp_cnt = sp_cnt + 1;
 end
+
+saveas(gcf, '../figures/ParallelChains.png')
