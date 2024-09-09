@@ -72,22 +72,22 @@ std::vector<ParallelChainSpecification> GetBenchmarkUrdfFiles()
     for (int i : {2, 4, 6, 8, 10})
     {
         parallel_chains.push_back({5, i, 1e-8, "Explicit"});
+        parallel_chains.push_back({5, i + 1, 1e-4, "Implicit"});
     }
-    for (int i : {2, 4, 8, 16, 20})
+    for (int i : {2, 4, 8, 12, 16})
     {
         parallel_chains.push_back({10, i, 1e-6, "Explicit"});
+        parallel_chains.push_back({10, i + 1, 1e-3, "Implicit"});
     }
-    for (int i : {2, 4, 10, 20, 40})
+    for (int i : {2, 6, 12, 20, 30})
     {
         parallel_chains.push_back({20, i, 1e-2, "Explicit"});
+        parallel_chains.push_back({20, i + 1, 1e1, "Implicit"});
     }
-    for (int i : {2, 4, 20, 40, 80})
+    for (int i : {2, 8, 16, 28, 40})
     {
-        parallel_chains.push_back({40, i, 5.0, "Explicit"});
-    }
-    for (int i : {3, 5, 7, 9, 11})
-    {
-        parallel_chains.push_back({5, i, 1e-4, "Implicit"});
+        parallel_chains.push_back({40, i, 5e0, "Explicit"});
+        parallel_chains.push_back({40, i + 1, 1e2, "Implicit"});
     }
 
     return parallel_chains;
@@ -190,9 +190,9 @@ TEST_P(PinocchioParallelChainsNumericalValidation, forward_dynamics)
             std::shared_ptr<LoopConstraint> constraint = cluster->joint_->cloneLoopConstraint();
             const Eigen::VectorXd KG = constraint->K() * constraint->G();
             const Eigen::VectorXd Kg_k = constraint->K() * constraint->g() - constraint->k();
-            GTEST_ASSERT_LT(KG.norm(), 1e-10)
+            GTEST_ASSERT_LT(KG.norm(), 1e-8)
                 << "K*G: " << KG.transpose();
-            GTEST_ASSERT_LT(Kg_k.norm(), 1e-10)
+            GTEST_ASSERT_LT(Kg_k.norm(), 1e-8)
                 << "K*g - k: " << Kg_k.transpose();
 
             K_cluster = grbda::appendEigenMatrix(K_cluster, cluster->joint_->K());

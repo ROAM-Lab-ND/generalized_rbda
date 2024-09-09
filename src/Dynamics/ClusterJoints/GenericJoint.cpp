@@ -292,15 +292,16 @@ namespace grbda
             const int n_ind = loop_constraint->numIndependentPos();
             const int n_span = loop_constraint->numSpanningPos();
             // TODO(@MatthewChignoli): Make this an input parameter
-            double range = 1.57;
+            double ind_range = 1.0;
+            double dep_range = 0.1;
 
             DM q_ind, q_dep;
             bool solve_success = false;
             int num_attempts = 0;
-            while (!solve_success && num_attempts++ < 20)
+            while (!solve_success && num_attempts++ < 45)
             {
-                q_ind = range * (2. * DM::rand(n_ind) - 1.);
-                DM q_dep_guess = range * (2. * DM::rand(n_span - n_ind) - 1.);
+                q_ind = ind_range * (2. * DM::rand(n_ind) - 1.);
+                DM q_dep_guess = dep_range * (2. * DM::rand(n_span - n_ind) - 1.);
 
                 casadi::DMDict arg;
                 arg["p"] = q_ind;
@@ -360,7 +361,7 @@ namespace grbda
             JointCoordinate<double> joint_pos(findRootsForPhi());
             auto numerical_loop_constraint = generic_constraint_->copyAsDouble();
             bool is_valid = numerical_loop_constraint.isValidSpanningPosition(joint_pos);
-            while (!is_valid && attempts++ < 20)
+            while (!is_valid && attempts++ < 10)
             {
                 joint_pos = findRootsForPhi();
                 is_valid = numerical_loop_constraint.isValidSpanningPosition(joint_pos);
@@ -368,7 +369,7 @@ namespace grbda
 
             if (!is_valid)
             {
-                throw std::runtime_error("Failed to find valid roots for implicit loop constraint");
+                throw std::runtime_error("Invalid random state for implicit loop constraint");
             }
 
             // Random independent joint velocity
