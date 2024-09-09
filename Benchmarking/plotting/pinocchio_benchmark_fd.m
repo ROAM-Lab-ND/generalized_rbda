@@ -1,7 +1,7 @@
 close all; clear; clc;
 
-path_to_data = '../data/PinocchioFD_';
-urdf_list = {'revolute_chain'};
+path_to_data = '../data/InstructionPinocchioFD_';
+urdf_list = {'revolute_chain','revolute_pair_chain'};
 
 % csv format: # branches, cluster tree depth, c-aba instr count, pinochhio instr count
 for j = 1:length(urdf_list)
@@ -17,7 +17,7 @@ for j = 1:length(urdf_list)
     end
 
     %% Plotting options
-    symbols = {'o-', 's--', 'd--', '^--', '*--', 'p--', 'h--', 'x--', '+--'};
+    symbols = {'o--', 's--', 'd--', '^--', '*--', 'p--', 'h--', 'x--', '+--'};
     marker_size = 10;
     line_width = 2.0;
     font_size = 16;
@@ -28,12 +28,12 @@ for j = 1:length(urdf_list)
     legend_entries = {};
 
     for i = branches
-        plot(0, 0, symbols{i}, 'Color', 'k', 'MarkerSize', marker_size, 'MarkerFaceColor', 'k')
+        plot(NaN, NaN, symbols{i}, 'Color', 'k', 'MarkerSize', marker_size, 'MarkerFaceColor', 'k')
         legend_entries{end + 1} = [num2str(i), ' branches'];
     end
 
-    plot(0, 0, '-', 'Color', 'r', 'LineWidth', line_width)
-    plot(0, 0, '-', 'Color', 'b', 'LineWidth', line_width)
+    plot(NaN, NaN, '-', 'Color', 'r', 'LineWidth', line_width)
+    plot(NaN, NaN, '-', 'Color', 'b', 'LineWidth', line_width)
     legend_entries{end + 1} = 'Cluster-Based ABA';
     legend_entries{end + 1} = 'Pinocchio ABA';
 

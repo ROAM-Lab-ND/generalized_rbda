@@ -10,14 +10,16 @@
 
     <xacro:macro name="build_series_chain_at_each_branch" params="branch_count depth_count i">
         <xacro:if value="${branch_count - i}">
-            <xacro:nonsequential_serial_chain parent_link_idx="${branch_count - i}"
-                first_child_link_idx="${branch_count + (branch_count - 1) * (depth_count - 1) + 1
-                                      - i * (depth_count - 1)}"
-                count="${depth_count}"/>
+            <xacro:if value="${depth_count - 1}">
+                <xacro:nonsequential_serial_chain parent_link_idx="${branch_count - i}"
+                    first_child_link_idx="${branch_count + (branch_count - 1) * (depth_count - 1) + 1
+                                        - i * (depth_count - 1)}"
+                    count="${depth_count}"/>
 
-            <xacro:build_series_chain_at_each_branch branch_count="${branch_count}"
-                                                     depth_count="${depth_count}"
-                                                     i="${i + 1}"/>
+                <xacro:build_series_chain_at_each_branch branch_count="${branch_count}"
+                                                        depth_count="${depth_count}"
+                                                        i="${i + 1}"/>
+            </xacro:if>
         </xacro:if>
     </xacro:macro>
 

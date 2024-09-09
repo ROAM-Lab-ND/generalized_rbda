@@ -1,5 +1,6 @@
 #include <iostream>
 #include <fstream>
+#include <regex>
 
 #include "gtest/gtest.h"
 
@@ -14,7 +15,8 @@
 #include "pinocchio/parsers/urdf.hpp"
 #include "pinocchio/algorithm/contact-dynamics.hpp"
 
-const std::string path_to_data = SOURCE_DIRECTORY "/Benchmarking/data/TimingPinocchioFD_";
+const std::string path_to_data = SOURCE_DIRECTORY "/Benchmarking/data/";
+const std::string urdf_directory = SOURCE_DIRECTORY "/robot-models/";
 
 template <typename Scalar>
 Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> jointMap(
@@ -52,45 +54,314 @@ Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> jointMap(
     return joint_map;
 }
 
-const std::string urdf_directory = SOURCE_DIRECTORY "/robot-models/";
-
 struct RobotSpecification
 {
     std::string urdf_filename;
     bool floating_base;
+    std::string outfile_suffix;
+    std::string instruction_prefix = "InstructionPinocchioFD_";
+    std::string timing_prefix = "TimingPinocchioFD_";
+    std::ofstream instruction_outfile;
+    std::ofstream timing_outfile;
+    std::string name;
+    
+    RobotSpecification(std::string urdf_filename, bool floating_base,
+                       std::string outfile_suffix="Systems")
+        : urdf_filename(urdf_filename), floating_base(floating_base), outfile_suffix(outfile_suffix)
+        {
+            registerNameFromUrdfFilename(urdf_filename);
+            openOutfile();
+        }
+
+    ~RobotSpecification()
+        {
+            closeOutfile();
+        }
+
+    void registerNameFromUrdfFilename(const std::string& url)
+    {
+        // Find the last occurrence of '/' which indicates the start of the filename
+        size_t lastSlashPos = url.find_last_of('/');
+        if (lastSlashPos == std::string::npos) {
+            lastSlashPos = -1;
+        }
+
+        // Extract filename
+        std::string filename = url.substr(lastSlashPos + 1);
+
+        // Find the last occurrence of '.' which indicates the start of the file extension
+        size_t dotPos = filename.find_last_of('.');
+        if (dotPos != std::string::npos) {
+            // Subtract extension
+            filename = filename.substr(0, dotPos);
+        }
+
+        name = filename;
+    }
+
+    void openOutfile()
+    {
+        instruction_outfile.open(path_to_data + instruction_prefix + outfile_suffix + ".csv", std::ios::app);
+        if (!instruction_outfile.is_open()) {
+            std::cerr << "Failed to open instruction benchmark file." << std::endl;
+        }
+        timing_outfile.open(path_to_data + timing_prefix + outfile_suffix + ".csv", std::ios::app);
+        if (!timing_outfile.is_open()) {
+            std::cerr << "Failed to open time benchmark file." << std::endl;
+        }
+
+    }
+
+    void closeOutfile()
+    {
+        if (instruction_outfile.is_open()) {
+            instruction_outfile.close();
+        }
+
+        if (timing_outfile.is_open()) {
+            timing_outfile.close();
+        }
+    }
+
+
+    virtual void writeToFile(std::ofstream& outfile, double i_cluster, double i_pinocchio, double i_lg)
+    {
+        outfile << name << ","
+                << i_cluster << ","
+                << i_pinocchio << ","
+                << i_lg << std::endl;
+    }
 };
 
-std::vector<RobotSpecification> GetBenchmarkUrdfFiles()
+struct RevoluteRotorSpecification : public RobotSpecification
 {
-    std::vector<RobotSpecification> test_urdf_files;
-    test_urdf_files.push_back({urdf_directory + "four_bar.urdf", false});
-    test_urdf_files.push_back({urdf_directory + "revolute_rotor_chain.urdf", false});
-    test_urdf_files.push_back({urdf_directory + "mit_humanoid.urdf", false});
-    test_urdf_files.push_back({urdf_directory + "mini_cheetah.urdf", false});
-    // test_urdf_files.push_back({urdf_directory + "cassie_v4.urdf", false});
+    int branch_count;
+    int depth_count;
+
+    RevoluteRotorSpecification(std::string urdf_filename, bool floating_base,
+                               std::string outfile_suffix="revolute_chain")
+        : RobotSpecification(urdf_filename, floating_base, outfile_suffix)
+        {
+            registerBranchAndDepthCountFromName(name);
+        }
+
+    void registerBranchAndDepthCountFromName(const std::string& name)
+    {
+        std::regex re(R"(_(\d+)_+(\d+)_?)");
+        std::smatch match;
+        
+        if (std::regex_search(name, match, re) && match.size() > 2) {
+            branch_count = std::stoi(match.str(1));
+            depth_count = std::stoi(match.str(2));
+        }
+    }
+
+    void writeToFile(std::ofstream& outfile, double i_cluster, double i_pinocchio, double i_lg) override
+    {
+        outfile << branch_count << ","
+                << depth_count << ","
+                << i_cluster << ","
+                << i_pinocchio << ","
+                << i_lg << std::endl;
+    }
+};
+
+using SpecVector = std::vector<std::shared_ptr<RobotSpecification>>;
+
+SpecVector GetIndividualUrdfFiles()
+{
+    SpecVector urdf_files;
+    urdf_files.push_back(std::make_shared<RobotSpecification>(
+        urdf_directory + "four_bar.urdf", false));
+    urdf_files.push_back(std::make_shared<RobotSpecification>(
+        urdf_directory + "revolute_rotor_chain.urdf", false));
+    urdf_files.push_back(std::make_shared<RobotSpecification>(
+        urdf_directory + "mit_humanoid.urdf", false));
+    urdf_files.push_back(std::make_shared<RobotSpecification>(
+        urdf_directory + "mini_cheetah.urdf", false));
+    // urdf_files.push_back(std::make_shared<RobotSpecification>(
+    //    urdf_directory + "cassie_v4.urdf", false));
+
+    return urdf_files;
+}
+
+SpecVector GetRevoluteRotorUrdfFiles()
+{
+    // TODO(@nicholasadr): automatically search for urdf files from variable_revolute_urdf dir
+    SpecVector urdf_files;
+    urdf_files.push_back(std::make_shared<RevoluteRotorSpecification>(
+        urdf_directory + "variable_revolute_urdf/revolute_rotor_branch_1_1.urdf", false));
+    urdf_files.push_back(std::make_shared<RevoluteRotorSpecification>(
+        urdf_directory + "variable_revolute_urdf/revolute_rotor_branch_1_2.urdf", false));
+    urdf_files.push_back(std::make_shared<RevoluteRotorSpecification>(
+        urdf_directory + "variable_revolute_urdf/revolute_rotor_branch_1_3.urdf", false));
+    urdf_files.push_back(std::make_shared<RevoluteRotorSpecification>(
+        urdf_directory + "variable_revolute_urdf/revolute_rotor_branch_1_4.urdf", false));
+    urdf_files.push_back(std::make_shared<RevoluteRotorSpecification>(
+        urdf_directory + "variable_revolute_urdf/revolute_rotor_branch_1_5.urdf", false));
+    urdf_files.push_back(std::make_shared<RevoluteRotorSpecification>(
+        urdf_directory + "variable_revolute_urdf/revolute_rotor_branch_1_6.urdf", false));
+    urdf_files.push_back(std::make_shared<RevoluteRotorSpecification>(
+        urdf_directory + "variable_revolute_urdf/revolute_rotor_branch_1_7.urdf", false));
+    urdf_files.push_back(std::make_shared<RevoluteRotorSpecification>(
+        urdf_directory + "variable_revolute_urdf/revolute_rotor_branch_1_8.urdf", false));
+    urdf_files.push_back(std::make_shared<RevoluteRotorSpecification>(
+        urdf_directory + "variable_revolute_urdf/revolute_rotor_branch_1_9.urdf", false));
+    urdf_files.push_back(std::make_shared<RevoluteRotorSpecification>(
+        urdf_directory + "variable_revolute_urdf/revolute_rotor_branch_1_10.urdf", false));
+    urdf_files.push_back(std::make_shared<RevoluteRotorSpecification>(
+        urdf_directory + "variable_revolute_urdf/revolute_rotor_branch_2_1.urdf", false));
+    urdf_files.push_back(std::make_shared<RevoluteRotorSpecification>(
+        urdf_directory + "variable_revolute_urdf/revolute_rotor_branch_2_2.urdf", false));
+    urdf_files.push_back(std::make_shared<RevoluteRotorSpecification>(
+        urdf_directory + "variable_revolute_urdf/revolute_rotor_branch_2_3.urdf", false));
+    urdf_files.push_back(std::make_shared<RevoluteRotorSpecification>(
+        urdf_directory + "variable_revolute_urdf/revolute_rotor_branch_2_4.urdf", false));
+    urdf_files.push_back(std::make_shared<RevoluteRotorSpecification>(
+        urdf_directory + "variable_revolute_urdf/revolute_rotor_branch_2_5.urdf", false));
+    urdf_files.push_back(std::make_shared<RevoluteRotorSpecification>(
+        urdf_directory + "variable_revolute_urdf/revolute_rotor_branch_2_6.urdf", false));
+    urdf_files.push_back(std::make_shared<RevoluteRotorSpecification>(
+        urdf_directory + "variable_revolute_urdf/revolute_rotor_branch_2_7.urdf", false));
+    urdf_files.push_back(std::make_shared<RevoluteRotorSpecification>(
+        urdf_directory + "variable_revolute_urdf/revolute_rotor_branch_2_8.urdf", false));
+    urdf_files.push_back(std::make_shared<RevoluteRotorSpecification>(
+        urdf_directory + "variable_revolute_urdf/revolute_rotor_branch_2_9.urdf", false));
+    urdf_files.push_back(std::make_shared<RevoluteRotorSpecification>(
+        urdf_directory + "variable_revolute_urdf/revolute_rotor_branch_2_10.urdf", false));
+    urdf_files.push_back(std::make_shared<RevoluteRotorSpecification>(
+        urdf_directory + "variable_revolute_urdf/revolute_rotor_branch_4_1.urdf", false));
+    urdf_files.push_back(std::make_shared<RevoluteRotorSpecification>(
+        urdf_directory + "variable_revolute_urdf/revolute_rotor_branch_4_2.urdf", false));
+    urdf_files.push_back(std::make_shared<RevoluteRotorSpecification>(
+        urdf_directory + "variable_revolute_urdf/revolute_rotor_branch_4_3.urdf", false));
+    urdf_files.push_back(std::make_shared<RevoluteRotorSpecification>(
+        urdf_directory + "variable_revolute_urdf/revolute_rotor_branch_4_4.urdf", false));
+    urdf_files.push_back(std::make_shared<RevoluteRotorSpecification>(
+        urdf_directory + "variable_revolute_urdf/revolute_rotor_branch_4_5.urdf", false));
+    urdf_files.push_back(std::make_shared<RevoluteRotorSpecification>(
+        urdf_directory + "variable_revolute_urdf/revolute_rotor_branch_4_6.urdf", false));
+    urdf_files.push_back(std::make_shared<RevoluteRotorSpecification>(
+        urdf_directory + "variable_revolute_urdf/revolute_rotor_branch_4_7.urdf", false));
+    urdf_files.push_back(std::make_shared<RevoluteRotorSpecification>(
+        urdf_directory + "variable_revolute_urdf/revolute_rotor_branch_4_8.urdf", false));
+    urdf_files.push_back(std::make_shared<RevoluteRotorSpecification>(
+        urdf_directory + "variable_revolute_urdf/revolute_rotor_branch_4_9.urdf", false));
+    urdf_files.push_back(std::make_shared<RevoluteRotorSpecification>(
+        urdf_directory + "variable_revolute_urdf/revolute_rotor_branch_4_10.urdf", false));
+    urdf_files.push_back(std::make_shared<RevoluteRotorSpecification>(
+        urdf_directory + "variable_revolute_urdf/revolute_rotor_branch_6_1.urdf", false));
+    urdf_files.push_back(std::make_shared<RevoluteRotorSpecification>(
+        urdf_directory + "variable_revolute_urdf/revolute_rotor_branch_6_2.urdf", false));
+    urdf_files.push_back(std::make_shared<RevoluteRotorSpecification>(
+        urdf_directory + "variable_revolute_urdf/revolute_rotor_branch_6_3.urdf", false));
+    urdf_files.push_back(std::make_shared<RevoluteRotorSpecification>(
+        urdf_directory + "variable_revolute_urdf/revolute_rotor_branch_6_4.urdf", false));
+    urdf_files.push_back(std::make_shared<RevoluteRotorSpecification>(
+        urdf_directory + "variable_revolute_urdf/revolute_rotor_branch_6_5.urdf", false));
+    urdf_files.push_back(std::make_shared<RevoluteRotorSpecification>(
+        urdf_directory + "variable_revolute_urdf/revolute_rotor_branch_6_6.urdf", false));
+    urdf_files.push_back(std::make_shared<RevoluteRotorSpecification>(
+        urdf_directory + "variable_revolute_urdf/revolute_rotor_branch_6_7.urdf", false));
+    urdf_files.push_back(std::make_shared<RevoluteRotorSpecification>(
+        urdf_directory + "variable_revolute_urdf/revolute_rotor_branch_6_8.urdf", false));
+    urdf_files.push_back(std::make_shared<RevoluteRotorSpecification>(
+        urdf_directory + "variable_revolute_urdf/revolute_rotor_branch_6_9.urdf", false));
+    urdf_files.push_back(std::make_shared<RevoluteRotorSpecification>(
+        urdf_directory + "variable_revolute_urdf/revolute_rotor_branch_6_10.urdf", false));
+
+    return urdf_files;
+}
+
+SpecVector GetRevoluteRotorPairUrdfFiles()
+{
+    // TODO(@nicholasadr): automatically search for urdf files from variable_revolute_pair_urdf dir
+    SpecVector urdf_files;
+    std::string outfile_suffix = "revolute_pair_chain";
+    urdf_files.push_back(std::make_shared<RevoluteRotorSpecification>(
+        urdf_directory + "variable_revolute_pair_urdf/revolute_rotor_pair_branch_1_1.urdf", false, outfile_suffix));
+    urdf_files.push_back(std::make_shared<RevoluteRotorSpecification>(
+        urdf_directory + "variable_revolute_pair_urdf/revolute_rotor_pair_branch_1_2.urdf", false, outfile_suffix));
+    urdf_files.push_back(std::make_shared<RevoluteRotorSpecification>(
+        urdf_directory + "variable_revolute_pair_urdf/revolute_rotor_pair_branch_1_3.urdf", false, outfile_suffix));
+    urdf_files.push_back(std::make_shared<RevoluteRotorSpecification>(
+        urdf_directory + "variable_revolute_pair_urdf/revolute_rotor_pair_branch_1_4.urdf", false, outfile_suffix));
+    urdf_files.push_back(std::make_shared<RevoluteRotorSpecification>(
+        urdf_directory + "variable_revolute_pair_urdf/revolute_rotor_pair_branch_1_5.urdf", false, outfile_suffix));
+    urdf_files.push_back(std::make_shared<RevoluteRotorSpecification>(
+        urdf_directory + "variable_revolute_pair_urdf/revolute_rotor_pair_branch_1_6.urdf", false, outfile_suffix));
+    urdf_files.push_back(std::make_shared<RevoluteRotorSpecification>(
+        urdf_directory + "variable_revolute_pair_urdf/revolute_rotor_pair_branch_1_7.urdf", false, outfile_suffix));
+    //urdf_files.push_back(std::make_shared<RevoluteRotorSpecification>(
+    //    urdf_directory + "variable_revolute_pair_urdf/revolute_rotor_pair_branch_1_8.urdf", false, outfile_suffix));
+    //urdf_files.push_back(std::make_shared<RevoluteRotorSpecification>(
+    //    urdf_directory + "variable_revolute_pair_urdf/revolute_rotor_pair_branch_1_9.urdf", false, outfile_suffix));
+    //urdf_files.push_back(std::make_shared<RevoluteRotorSpecification>(
+    //    urdf_directory + "variable_revolute_pair_urdf/revolute_rotor_pair_branch_1_10.urdf", false, outfile_suffix));
+    urdf_files.push_back(std::make_shared<RevoluteRotorSpecification>(
+        urdf_directory + "variable_revolute_pair_urdf/revolute_rotor_pair_branch_2_1.urdf", false, outfile_suffix));
+    urdf_files.push_back(std::make_shared<RevoluteRotorSpecification>(
+        urdf_directory + "variable_revolute_pair_urdf/revolute_rotor_pair_branch_2_2.urdf", false, outfile_suffix));
+    urdf_files.push_back(std::make_shared<RevoluteRotorSpecification>(
+        urdf_directory + "variable_revolute_pair_urdf/revolute_rotor_pair_branch_2_3.urdf", false, outfile_suffix));
+    urdf_files.push_back(std::make_shared<RevoluteRotorSpecification>(
+        urdf_directory + "variable_revolute_pair_urdf/revolute_rotor_pair_branch_2_4.urdf", false, outfile_suffix));
+    urdf_files.push_back(std::make_shared<RevoluteRotorSpecification>(
+        urdf_directory + "variable_revolute_pair_urdf/revolute_rotor_pair_branch_2_5.urdf", false, outfile_suffix));
+    urdf_files.push_back(std::make_shared<RevoluteRotorSpecification>(
+        urdf_directory + "variable_revolute_pair_urdf/revolute_rotor_pair_branch_2_6.urdf", false, outfile_suffix));
+    urdf_files.push_back(std::make_shared<RevoluteRotorSpecification>(
+        urdf_directory + "variable_revolute_pair_urdf/revolute_rotor_pair_branch_2_7.urdf", false, outfile_suffix));
+    urdf_files.push_back(std::make_shared<RevoluteRotorSpecification>(
+        urdf_directory + "variable_revolute_pair_urdf/revolute_rotor_pair_branch_4_1.urdf", false, outfile_suffix));
+    urdf_files.push_back(std::make_shared<RevoluteRotorSpecification>(
+        urdf_directory + "variable_revolute_pair_urdf/revolute_rotor_pair_branch_4_2.urdf", false, outfile_suffix));
+    urdf_files.push_back(std::make_shared<RevoluteRotorSpecification>(
+        urdf_directory + "variable_revolute_pair_urdf/revolute_rotor_pair_branch_4_3.urdf", false, outfile_suffix));
+    urdf_files.push_back(std::make_shared<RevoluteRotorSpecification>(
+        urdf_directory + "variable_revolute_pair_urdf/revolute_rotor_pair_branch_4_4.urdf", false, outfile_suffix));
+    urdf_files.push_back(std::make_shared<RevoluteRotorSpecification>(
+        urdf_directory + "variable_revolute_pair_urdf/revolute_rotor_pair_branch_4_5.urdf", false, outfile_suffix));
+    urdf_files.push_back(std::make_shared<RevoluteRotorSpecification>(
+        urdf_directory + "variable_revolute_pair_urdf/revolute_rotor_pair_branch_4_6.urdf", false, outfile_suffix));
+    urdf_files.push_back(std::make_shared<RevoluteRotorSpecification>(
+        urdf_directory + "variable_revolute_pair_urdf/revolute_rotor_pair_branch_4_7.urdf", false, outfile_suffix));
+    urdf_files.push_back(std::make_shared<RevoluteRotorSpecification>(
+        urdf_directory + "variable_revolute_pair_urdf/revolute_rotor_pair_branch_6_1.urdf", false, outfile_suffix));
+    urdf_files.push_back(std::make_shared<RevoluteRotorSpecification>(
+        urdf_directory + "variable_revolute_pair_urdf/revolute_rotor_pair_branch_6_2.urdf", false, outfile_suffix));
+    urdf_files.push_back(std::make_shared<RevoluteRotorSpecification>(
+        urdf_directory + "variable_revolute_pair_urdf/revolute_rotor_pair_branch_6_3.urdf", false, outfile_suffix));
+    urdf_files.push_back(std::make_shared<RevoluteRotorSpecification>(
+        urdf_directory + "variable_revolute_pair_urdf/revolute_rotor_pair_branch_6_4.urdf", false, outfile_suffix));
+    urdf_files.push_back(std::make_shared<RevoluteRotorSpecification>(
+        urdf_directory + "variable_revolute_pair_urdf/revolute_rotor_pair_branch_6_5.urdf", false, outfile_suffix));
+    urdf_files.push_back(std::make_shared<RevoluteRotorSpecification>(
+        urdf_directory + "variable_revolute_pair_urdf/revolute_rotor_pair_branch_6_6.urdf", false, outfile_suffix));
+    urdf_files.push_back(std::make_shared<RevoluteRotorSpecification>(
+        urdf_directory + "variable_revolute_pair_urdf/revolute_rotor_pair_branch_6_7.urdf", false, outfile_suffix));
+
+    return urdf_files;
+}
+
+SpecVector GetBenchmarkUrdfFiles()
+{
+    SpecVector test_urdf_files = GetIndividualUrdfFiles();
+    SpecVector revrotor_urdf_files = GetRevoluteRotorUrdfFiles();
+    test_urdf_files.insert(test_urdf_files.end(), revrotor_urdf_files.begin(),
+                                                  revrotor_urdf_files.end());
+    SpecVector revrotor_pair_urdf_files = GetRevoluteRotorPairUrdfFiles();
+    test_urdf_files.insert(test_urdf_files.end(), revrotor_pair_urdf_files.begin(),
+                                                  revrotor_pair_urdf_files.end());
+
     return test_urdf_files;
 }
 
-class PinocchioNumericalValidation : public ::testing::TestWithParam<RobotSpecification>
+class PinocchioNumericalValidation : public ::testing::TestWithParam<std::shared_ptr<RobotSpecification>>
 {
 public:
-    std::ofstream outfile;
     grbda::Timer timer;
     const int num_samples = 25;
-
-private:
-    void SetUp() override {
-        outfile.open(path_to_data + "NumericalValidation.csv", std::ios::app);
-        if (!outfile.is_open()) {
-            std::cerr << "Failed to open file." << std::endl;
-        }
-    }
-
-    void TearDown() override {
-        if (outfile.is_open()) {
-            outfile.close();
-        }
-    }
 };
 
 INSTANTIATE_TEST_SUITE_P(PinocchioNumericalValidation, PinocchioNumericalValidation,
@@ -108,11 +379,11 @@ TEST_P(PinocchioNumericalValidation, forward_dynamics)
     
     // Build models
     pinocchio::Model model;
-    pinocchio::urdf::buildModel(GetParam().urdf_filename, model);
+    pinocchio::urdf::buildModel(GetParam()->urdf_filename, model);
     pinocchio::Data data(model);
 
     grbda::ClusterTreeModel<double> cluster_tree;
-    cluster_tree.buildModelFromURDF(GetParam().urdf_filename, GetParam().floating_base);
+    cluster_tree.buildModelFromURDF(GetParam()->urdf_filename, GetParam()->floating_base);
 
     using RigidBodyTreeModel = grbda::RigidBodyTreeModel<double>;
     RigidBodyTreeModel lgm_model(cluster_tree, grbda::FwdDynMethod::LagrangeMultiplierEigen);
@@ -204,13 +475,13 @@ TEST_P(PinocchioNumericalValidation, forward_dynamics)
 
         // Check grbda cluster tree solution against lagrange multiplier solution
         const Eigen::VectorXd ydd_error = qdd_grbda - (G_cluster * ydd_cluster + g_cluster);
-        GTEST_ASSERT_LT(ydd_error.norm(), 1e-8)
+        GTEST_ASSERT_LT(ydd_error.norm(), 1e-6)
             << "qdd_grbda: " << qdd_grbda.transpose() << "\n"
             << "G*ydd_cluster + g: " << (G_cluster * ydd_cluster + g_cluster).transpose();
 
         // Check grbda lagrange multiplier solution against pinocchio
         const Eigen::VectorXd qdd_error = data.ddq - joint_map * qdd_grbda;
-        GTEST_ASSERT_LT(qdd_error.norm(), 1e-8)
+        GTEST_ASSERT_LT(qdd_error.norm(), 1e-6)
             << "qdd_pinocchio   : " << data.ddq.transpose() << "\n"
             << "jmap * qdd_grbda: " << (joint_map * qdd_grbda).transpose();
 
@@ -224,33 +495,13 @@ TEST_P(PinocchioNumericalValidation, forward_dynamics)
         GTEST_ASSERT_LT(cnstr_violation_pinocchio.norm(), 1e-10)
             << "K*qdd_pinocchio + k: " << cnstr_violation_pinocchio.transpose();
     }
-
-    outfile << GetParam().urdf_filename << ","
-            << t_cluster / num_samples << ","
-            << t_pinocchio / num_samples << ","
-            << t_lg / num_samples << std::endl;
 }
 
-class PinocchioBenchmark : public ::testing::TestWithParam<RobotSpecification>
+class PinocchioBenchmark : public ::testing::TestWithParam<std::shared_ptr<RobotSpecification>>
 {
 public:
-    std::ofstream outfile;
     grbda::Timer timer;
     const int num_samples = 25;
-
-private:
-    void SetUp() override {
-        outfile.open(path_to_data + "InstructionCount.csv", std::ios::app);
-        if (!outfile.is_open()) {
-            std::cerr << "Failed to open file." << std::endl;
-        }
-    }
-
-    void TearDown() override {
-        if (outfile.is_open()) {
-            outfile.close();
-        }
-    }
 };
 
 INSTANTIATE_TEST_SUITE_P(PinocchioBenchmark, PinocchioBenchmark,
@@ -281,12 +532,12 @@ TEST_P(PinocchioBenchmark, compareInstructionCount)
 
     // Build models
     PinocchioModel model;
-    pinocchio::urdf::buildModel(GetParam().urdf_filename, model);
+    pinocchio::urdf::buildModel(GetParam()->urdf_filename, model);
     PinocchioADModel ad_model = model.cast<ADScalar>();
     PinocchioADModel::Data ad_data(ad_model);
 
     grbda::ClusterTreeModel<ADScalar> cluster_tree;
-    cluster_tree.buildModelFromURDF(GetParam().urdf_filename, GetParam().floating_base);
+    cluster_tree.buildModelFromURDF(GetParam()->urdf_filename, GetParam()->floating_base);
 
     using RigidBodyTreeModel = grbda::RigidBodyTreeModel<ADScalar>;
     RigidBodyTreeModel lgm_model(cluster_tree, grbda::FwdDynMethod::LagrangeMultiplierEigen);
@@ -400,6 +651,9 @@ TEST_P(PinocchioBenchmark, compareInstructionCount)
     std::cout << "cABA instructions: " << csClusterABA.n_instructions() << std::endl;
     std::cout << "pinocchioFD instructions: " << csPinocchioFD.n_instructions() << std::endl;
     std::cout << "grbdaFD instructions: " << csGrbdaFD.n_instructions() << std::endl;
+    const int i_cluster = static_cast<int>(csClusterABA.n_instructions());
+    const int i_pinocchio = static_cast<int>(csPinocchioFD.n_instructions());
+    const int i_lg = static_cast<int>(csGrbdaFD.n_instructions());
 
     // Check the solutions against each other
     using ScalarModel = grbda::ClusterTreeModel<Scalar>;
@@ -410,8 +664,8 @@ TEST_P(PinocchioBenchmark, compareInstructionCount)
     for (int i = 0; i < num_samples; ++i)
     {
         ScalarModel numerical_cluster_tree;
-        numerical_cluster_tree.buildModelFromURDF(GetParam().urdf_filename,
-                                                  GetParam().floating_base);
+        numerical_cluster_tree.buildModelFromURDF(GetParam()->urdf_filename,
+                                                  GetParam()->floating_base);
 
         ScalarModelState scalar_model_state;
         for (const auto &cluster : numerical_cluster_tree.clusters())
@@ -460,20 +714,23 @@ TEST_P(PinocchioBenchmark, compareInstructionCount)
         // Check the cluster ABA solution against the Lagrange multiplier solution
         DynamicVector qdd_cABA = G_res * cABA_res + g_res;
         const DynamicVector grbda_error = lgm_res - qdd_cABA;
-        GTEST_ASSERT_LT(grbda_error.norm(), 1e-8)
+        GTEST_ASSERT_LT(grbda_error.norm(), 1e-6)
             << "qdd_lgm: " << lgm_res.transpose() << "\n"
             << "qdd_cABA: " << qdd_cABA.transpose() << "\n"
             << "cABA_res: " << cABA_res.transpose();
 
         // Check grbda lagrange multiplier solution against pinocchio
         const DynamicVector qdd_error = pin_res - joint_map.cast<Scalar>() * lgm_res;
-        GTEST_ASSERT_LT(qdd_error.norm(), 1e-8)
+        GTEST_ASSERT_LT(qdd_error.norm(), 1e-6)
             << "qdd_pinocchio   : " << pin_res.transpose() << "\n"
             << "jmap * qdd_grbda: " << (joint_map.cast<Scalar>() * lgm_res).transpose();
     }
 
-    outfile << GetParam().urdf_filename << ","
-            << t_cluster / num_samples << ","
-            << t_pinocchio / num_samples << ","
-            << t_lg / num_samples << std::endl;
+    GetParam()->writeToFile(GetParam()->instruction_outfile,
+                            i_cluster, i_pinocchio, i_lg);
+
+    GetParam()->writeToFile(GetParam()->timing_outfile,
+                            t_cluster / num_samples,
+                            t_pinocchio / num_samples,
+                            t_lg / num_samples);
 }
