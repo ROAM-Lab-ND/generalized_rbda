@@ -19,7 +19,7 @@ do
         IFS=',' read -r -a arg2 <<< "${arg#*=}"
         shift
         ;;
-        -d1=*|--revolute-rotor-depth_list=*)
+        -d1=*|--revolute-rotor-depth-list=*)
         IFS=',' read -r -a arg3 <<< "${arg#*=}"
         shift
         ;;
@@ -27,7 +27,7 @@ do
         IFS=',' read -r -a arg4 <<< "${arg#*=}"
         shift
         ;;
-        -d2=*|--revolute-rotor-pair-depth_list=*)
+        -d2=*|--revolute-rotor-pair-depth-list=*)
         IFS=',' read -r -a arg5 <<< "${arg#*=}"
         shift
         ;;
