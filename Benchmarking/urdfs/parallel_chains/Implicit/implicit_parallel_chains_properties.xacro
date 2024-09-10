@@ -1,0 +1,63 @@
+<?xml version="1.0"?>
+
+<robot xmlns:xacro="http://ros.org/wiki/xacro">
+
+    <xacro:include filename="../parallel_chains_properties.xacro"/>
+    <xacro:property name="distance_between_chains" value="1.0"/>
+
+    <xacro:macro name="add_parallel_links_and_joints_from_base">
+        <xacro:add_link chain_idx="1" link_idx="1"/>
+        <joint name="joint_1_1" type="revolute" independent="true">
+            <parent link="base"/>
+            <child link="link_1_1"/>
+            <origin xyz="0 0 0"/>
+            <axis xyz="0 0 1"/>
+            <limit effort="30" velocity="1.0" lower="-10" upper="10"/>
+        </joint>
+        
+        <xacro:add_link chain_idx="2" link_idx="1"/>
+        <joint name="joint_2_1" type="revolute" independent="false">
+            <parent link="base"/>
+            <child link="link_2_1"/>
+            <origin xyz="${distance_between_chains} 0 0"/>
+            <axis xyz="0 0 1"/>
+            <limit effort="30" velocity="1.0" lower="-10" upper="10"/>
+        </joint>
+    </xacro:macro>
+
+    <xacro:macro name="connecting_rod" params="idx">
+        <link name="connecting_rod">
+            <inertial>
+                <mass value="0.25"/>
+                <origin rpy="0 0 0" xyz="0 0.5 0"/>
+                <inertia ixx="0.01" ixy="0" ixz="0" iyy="0.1" iyz="0" izz="0.01"/>
+            </inertial>
+        </link>
+        <joint name="connecting_rod_joint" type="revolute" independent="false">
+            <parent link="link_1_${idx}"/>
+            <child link="connecting_rod"/>
+            <origin xyz="0 ${link_length} 0"/>
+            <axis xyz="0 0 1"/>
+            <limit effort="30" velocity="1.0" lower="-10" upper="10"/>
+        </joint>
+        <constraint name="position_${idx}" type="position">
+            <predecessor link="connecting_rod">
+                <origin xyz="${distance_between_chains} 0.0 0.0"/>
+            </predecessor>
+            <successor link="link_2_${idx}">
+                <origin xyz="0.0 ${link_length} 0.0"/>
+            </successor>
+        </constraint>
+    </xacro:macro>
+
+    <xacro:macro name="add_constrained_parallel_links_and_joints" params="idx">
+        <xacro:add_parallel_links_and_joints idx="${idx}"/>
+        <xacro:connecting_rod idx="${idx}"/>
+    </xacro:macro>
+
+    <xacro:macro name="add_constrained_parallel_links_and_joints_from_base">
+        <xacro:add_parallel_links_and_joints_from_base/>        
+        <xacro:connecting_rod idx="1"/>
+    </xacro:macro>
+
+</robot>

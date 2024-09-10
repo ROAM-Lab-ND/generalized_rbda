@@ -1,0 +1,47 @@
+<?xml version="1.0"?>
+
+<robot name="parallel_chain_imp_d40_l41" xmlns:xacro="http://ros.org/wiki/xacro">
+    <xacro:include filename="../implicit_parallel_chains_properties.xacro"/>
+
+    <xacro:add_parallel_links_and_joints_from_base/>
+    <xacro:add_parallel_links_and_joints idx="2"/>
+    <xacro:add_parallel_links_and_joints idx="3"/>
+    <xacro:add_parallel_links_and_joints idx="4"/>
+    <xacro:add_parallel_links_and_joints idx="5"/>
+    <xacro:add_parallel_links_and_joints idx="6"/>
+    <xacro:add_parallel_links_and_joints idx="7"/>
+    <xacro:add_parallel_links_and_joints idx="8"/>
+    <xacro:add_parallel_links_and_joints idx="9"/>
+    <xacro:add_parallel_links_and_joints idx="10"/>
+    <xacro:add_parallel_links_and_joints idx="11"/>
+    <xacro:add_parallel_links_and_joints idx="12"/>
+    <xacro:add_parallel_links_and_joints idx="13"/>
+    <xacro:add_parallel_links_and_joints idx="14"/>
+    <xacro:add_parallel_links_and_joints idx="15"/>
+    <xacro:add_parallel_links_and_joints idx="16"/>
+    <xacro:add_parallel_links_and_joints idx="17"/>
+    <xacro:add_parallel_links_and_joints idx="18"/>
+    <xacro:add_parallel_links_and_joints idx="19"/>
+    <xacro:add_constrained_parallel_links_and_joints idx="20"/>
+    <xacro:add_parallel_links_and_joints idx="21"/>
+    <xacro:add_parallel_links_and_joints idx="22"/>
+    <xacro:add_parallel_links_and_joints idx="23"/>
+    <xacro:add_parallel_links_and_joints idx="24"/>
+    <xacro:add_parallel_links_and_joints idx="25"/>
+    <xacro:add_parallel_links_and_joints idx="26"/>
+    <xacro:add_parallel_links_and_joints idx="27"/>
+    <xacro:add_parallel_links_and_joints idx="28"/>
+    <xacro:add_parallel_links_and_joints idx="29"/>
+    <xacro:add_parallel_links_and_joints idx="30"/>
+    <xacro:add_parallel_links_and_joints idx="31"/>
+    <xacro:add_parallel_links_and_joints idx="32"/>
+    <xacro:add_parallel_links_and_joints idx="33"/>
+    <xacro:add_parallel_links_and_joints idx="34"/>
+    <xacro:add_parallel_links_and_joints idx="35"/>
+    <xacro:add_parallel_links_and_joints idx="36"/>
+    <xacro:add_parallel_links_and_joints idx="37"/>
+    <xacro:add_parallel_links_and_joints idx="38"/>
+    <xacro:add_parallel_links_and_joints idx="39"/>
+    <xacro:add_parallel_links_and_joints idx="40"/>
+
+</robot>

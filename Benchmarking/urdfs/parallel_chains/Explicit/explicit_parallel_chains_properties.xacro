@@ -1,0 +1,48 @@
+<?xml version="1.0"?>
+
+<robot xmlns:xacro="http://ros.org/wiki/xacro">
+
+    <xacro:include filename="../parallel_chains_properties.xacro"/>
+
+    <xacro:macro name="add_joint_from_base" params="chain_idx independent">
+        <joint name="joint_${chain_idx}_1" type="revolute" independent="${independent}">
+            <parent link="base"/>
+            <child link="link_${chain_idx}_1"/>
+            <origin xyz="0 0 0"/>
+            <axis xyz="0 0 1"/>
+            <limit effort="30" velocity="1.0" lower="-10" upper="10"/>
+        </joint>
+    </xacro:macro>
+
+    <xacro:macro name="add_parallel_links_and_joints_from_base">
+        <xacro:add_link chain_idx="1" link_idx="1"/>
+        <xacro:add_joint_from_base chain_idx="1" independent="true"/>
+        <xacro:add_link chain_idx="2" link_idx="1"/>
+        <xacro:add_joint_from_base chain_idx="2" independent="true"/>
+    </xacro:macro>
+
+    <xacro:macro name="add_constrained_parallel_links_and_joints" params="idx">
+        <xacro:add_link chain_idx="1" link_idx="${idx}"/>
+        <xacro:add_joint chain_idx="1" link_idx="${idx}" independent="true"/>
+        <xacro:add_link chain_idx="2" link_idx="${idx}"/>
+        <xacro:add_joint chain_idx="2" link_idx="${idx}" independent="false"/>
+        <constraint name="rolling_${idx}" type="rolling">
+            <predecessor link="link_1_${idx}"/>
+            <successor link="link_2_${idx}"/>
+            <ratio value="1"/>
+        </constraint>
+    </xacro:macro>
+
+    <xacro:macro name="add_constrained_parallel_links_and_joints_from_base">
+        <xacro:add_link chain_idx="1" link_idx="1"/>
+        <xacro:add_joint_from_base chain_idx="1" independent="true"/>
+        <xacro:add_link chain_idx="2" link_idx="1"/>
+        <xacro:add_joint_from_base chain_idx="2" independent="false"/>
+        <constraint name="rolling_1" type="rolling">
+            <predecessor link="link_1_1"/>
+            <successor link="link_2_1"/>
+            <ratio value="1"/>
+        </constraint>
+    </xacro:macro>
+    
+</robot>
