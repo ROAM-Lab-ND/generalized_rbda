@@ -1,7 +1,7 @@
 close all; clear; clc;
 
 path_to_data = '../data/InstructionPinocchioFD_';
-urdf_list = {'revolute_chain','revolute_pair_chain'};
+urdf_list = {'revolute_chain','revolute_pair_chain','four_bar_chain'};
 
 % csv format: # branches, cluster tree depth, c-aba instr count, pinochhio instr count
 for j = 1:length(urdf_list)

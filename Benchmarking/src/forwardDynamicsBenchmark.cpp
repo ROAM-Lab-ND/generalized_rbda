@@ -133,12 +133,12 @@ struct RobotSpecification
     }
 };
 
-struct RevoluteRotorSpecification : public RobotSpecification
+struct BranchAndDepthSpecification : public RobotSpecification
 {
     int branch_count;
     int depth_count;
 
-    RevoluteRotorSpecification(std::string urdf_filename, bool floating_base,
+    BranchAndDepthSpecification(std::string urdf_filename, bool floating_base,
                                std::string outfile_suffix="revolute_chain")
         : RobotSpecification(urdf_filename, floating_base, outfile_suffix)
         {
@@ -189,85 +189,85 @@ SpecVector GetRevoluteRotorUrdfFiles()
 {
     // TODO(@nicholasadr): automatically search for urdf files from variable_revolute_urdf dir
     SpecVector urdf_files;
-    urdf_files.push_back(std::make_shared<RevoluteRotorSpecification>(
+    urdf_files.push_back(std::make_shared<BranchAndDepthSpecification>(
         urdf_directory + "variable_revolute_urdf/revolute_rotor_branch_1_1.urdf", false));
-    urdf_files.push_back(std::make_shared<RevoluteRotorSpecification>(
+    urdf_files.push_back(std::make_shared<BranchAndDepthSpecification>(
         urdf_directory + "variable_revolute_urdf/revolute_rotor_branch_1_2.urdf", false));
-    urdf_files.push_back(std::make_shared<RevoluteRotorSpecification>(
+    urdf_files.push_back(std::make_shared<BranchAndDepthSpecification>(
         urdf_directory + "variable_revolute_urdf/revolute_rotor_branch_1_3.urdf", false));
-    urdf_files.push_back(std::make_shared<RevoluteRotorSpecification>(
+    urdf_files.push_back(std::make_shared<BranchAndDepthSpecification>(
         urdf_directory + "variable_revolute_urdf/revolute_rotor_branch_1_4.urdf", false));
-    urdf_files.push_back(std::make_shared<RevoluteRotorSpecification>(
+    urdf_files.push_back(std::make_shared<BranchAndDepthSpecification>(
         urdf_directory + "variable_revolute_urdf/revolute_rotor_branch_1_5.urdf", false));
-    urdf_files.push_back(std::make_shared<RevoluteRotorSpecification>(
+    urdf_files.push_back(std::make_shared<BranchAndDepthSpecification>(
         urdf_directory + "variable_revolute_urdf/revolute_rotor_branch_1_6.urdf", false));
-    urdf_files.push_back(std::make_shared<RevoluteRotorSpecification>(
+    urdf_files.push_back(std::make_shared<BranchAndDepthSpecification>(
         urdf_directory + "variable_revolute_urdf/revolute_rotor_branch_1_7.urdf", false));
-    urdf_files.push_back(std::make_shared<RevoluteRotorSpecification>(
+    urdf_files.push_back(std::make_shared<BranchAndDepthSpecification>(
         urdf_directory + "variable_revolute_urdf/revolute_rotor_branch_1_8.urdf", false));
-    urdf_files.push_back(std::make_shared<RevoluteRotorSpecification>(
+    urdf_files.push_back(std::make_shared<BranchAndDepthSpecification>(
         urdf_directory + "variable_revolute_urdf/revolute_rotor_branch_1_9.urdf", false));
-    urdf_files.push_back(std::make_shared<RevoluteRotorSpecification>(
+    urdf_files.push_back(std::make_shared<BranchAndDepthSpecification>(
         urdf_directory + "variable_revolute_urdf/revolute_rotor_branch_1_10.urdf", false));
-    urdf_files.push_back(std::make_shared<RevoluteRotorSpecification>(
+    urdf_files.push_back(std::make_shared<BranchAndDepthSpecification>(
         urdf_directory + "variable_revolute_urdf/revolute_rotor_branch_2_1.urdf", false));
-    urdf_files.push_back(std::make_shared<RevoluteRotorSpecification>(
+    urdf_files.push_back(std::make_shared<BranchAndDepthSpecification>(
         urdf_directory + "variable_revolute_urdf/revolute_rotor_branch_2_2.urdf", false));
-    urdf_files.push_back(std::make_shared<RevoluteRotorSpecification>(
+    urdf_files.push_back(std::make_shared<BranchAndDepthSpecification>(
         urdf_directory + "variable_revolute_urdf/revolute_rotor_branch_2_3.urdf", false));
-    urdf_files.push_back(std::make_shared<RevoluteRotorSpecification>(
+    urdf_files.push_back(std::make_shared<BranchAndDepthSpecification>(
         urdf_directory + "variable_revolute_urdf/revolute_rotor_branch_2_4.urdf", false));
-    urdf_files.push_back(std::make_shared<RevoluteRotorSpecification>(
+    urdf_files.push_back(std::make_shared<BranchAndDepthSpecification>(
         urdf_directory + "variable_revolute_urdf/revolute_rotor_branch_2_5.urdf", false));
-    urdf_files.push_back(std::make_shared<RevoluteRotorSpecification>(
+    urdf_files.push_back(std::make_shared<BranchAndDepthSpecification>(
         urdf_directory + "variable_revolute_urdf/revolute_rotor_branch_2_6.urdf", false));
-    urdf_files.push_back(std::make_shared<RevoluteRotorSpecification>(
+    urdf_files.push_back(std::make_shared<BranchAndDepthSpecification>(
         urdf_directory + "variable_revolute_urdf/revolute_rotor_branch_2_7.urdf", false));
-    urdf_files.push_back(std::make_shared<RevoluteRotorSpecification>(
+    urdf_files.push_back(std::make_shared<BranchAndDepthSpecification>(
         urdf_directory + "variable_revolute_urdf/revolute_rotor_branch_2_8.urdf", false));
-    urdf_files.push_back(std::make_shared<RevoluteRotorSpecification>(
+    urdf_files.push_back(std::make_shared<BranchAndDepthSpecification>(
         urdf_directory + "variable_revolute_urdf/revolute_rotor_branch_2_9.urdf", false));
-    urdf_files.push_back(std::make_shared<RevoluteRotorSpecification>(
+    urdf_files.push_back(std::make_shared<BranchAndDepthSpecification>(
         urdf_directory + "variable_revolute_urdf/revolute_rotor_branch_2_10.urdf", false));
-    urdf_files.push_back(std::make_shared<RevoluteRotorSpecification>(
+    urdf_files.push_back(std::make_shared<BranchAndDepthSpecification>(
         urdf_directory + "variable_revolute_urdf/revolute_rotor_branch_4_1.urdf", false));
-    urdf_files.push_back(std::make_shared<RevoluteRotorSpecification>(
+    urdf_files.push_back(std::make_shared<BranchAndDepthSpecification>(
         urdf_directory + "variable_revolute_urdf/revolute_rotor_branch_4_2.urdf", false));
-    urdf_files.push_back(std::make_shared<RevoluteRotorSpecification>(
+    urdf_files.push_back(std::make_shared<BranchAndDepthSpecification>(
         urdf_directory + "variable_revolute_urdf/revolute_rotor_branch_4_3.urdf", false));
-    urdf_files.push_back(std::make_shared<RevoluteRotorSpecification>(
+    urdf_files.push_back(std::make_shared<BranchAndDepthSpecification>(
         urdf_directory + "variable_revolute_urdf/revolute_rotor_branch_4_4.urdf", false));
-    urdf_files.push_back(std::make_shared<RevoluteRotorSpecification>(
+    urdf_files.push_back(std::make_shared<BranchAndDepthSpecification>(
         urdf_directory + "variable_revolute_urdf/revolute_rotor_branch_4_5.urdf", false));
-    urdf_files.push_back(std::make_shared<RevoluteRotorSpecification>(
+    urdf_files.push_back(std::make_shared<BranchAndDepthSpecification>(
         urdf_directory + "variable_revolute_urdf/revolute_rotor_branch_4_6.urdf", false));
-    urdf_files.push_back(std::make_shared<RevoluteRotorSpecification>(
+    urdf_files.push_back(std::make_shared<BranchAndDepthSpecification>(
         urdf_directory + "variable_revolute_urdf/revolute_rotor_branch_4_7.urdf", false));
-    urdf_files.push_back(std::make_shared<RevoluteRotorSpecification>(
+    urdf_files.push_back(std::make_shared<BranchAndDepthSpecification>(
         urdf_directory + "variable_revolute_urdf/revolute_rotor_branch_4_8.urdf", false));
-    urdf_files.push_back(std::make_shared<RevoluteRotorSpecification>(
+    urdf_files.push_back(std::make_shared<BranchAndDepthSpecification>(
         urdf_directory + "variable_revolute_urdf/revolute_rotor_branch_4_9.urdf", false));
-    urdf_files.push_back(std::make_shared<RevoluteRotorSpecification>(
+    urdf_files.push_back(std::make_shared<BranchAndDepthSpecification>(
         urdf_directory + "variable_revolute_urdf/revolute_rotor_branch_4_10.urdf", false));
-    urdf_files.push_back(std::make_shared<RevoluteRotorSpecification>(
+    urdf_files.push_back(std::make_shared<BranchAndDepthSpecification>(
         urdf_directory + "variable_revolute_urdf/revolute_rotor_branch_6_1.urdf", false));
-    urdf_files.push_back(std::make_shared<RevoluteRotorSpecification>(
+    urdf_files.push_back(std::make_shared<BranchAndDepthSpecification>(
         urdf_directory + "variable_revolute_urdf/revolute_rotor_branch_6_2.urdf", false));
-    urdf_files.push_back(std::make_shared<RevoluteRotorSpecification>(
+    urdf_files.push_back(std::make_shared<BranchAndDepthSpecification>(
         urdf_directory + "variable_revolute_urdf/revolute_rotor_branch_6_3.urdf", false));
-    urdf_files.push_back(std::make_shared<RevoluteRotorSpecification>(
+    urdf_files.push_back(std::make_shared<BranchAndDepthSpecification>(
         urdf_directory + "variable_revolute_urdf/revolute_rotor_branch_6_4.urdf", false));
-    urdf_files.push_back(std::make_shared<RevoluteRotorSpecification>(
+    urdf_files.push_back(std::make_shared<BranchAndDepthSpecification>(
         urdf_directory + "variable_revolute_urdf/revolute_rotor_branch_6_5.urdf", false));
-    urdf_files.push_back(std::make_shared<RevoluteRotorSpecification>(
+    urdf_files.push_back(std::make_shared<BranchAndDepthSpecification>(
         urdf_directory + "variable_revolute_urdf/revolute_rotor_branch_6_6.urdf", false));
-    urdf_files.push_back(std::make_shared<RevoluteRotorSpecification>(
+    urdf_files.push_back(std::make_shared<BranchAndDepthSpecification>(
         urdf_directory + "variable_revolute_urdf/revolute_rotor_branch_6_7.urdf", false));
-    urdf_files.push_back(std::make_shared<RevoluteRotorSpecification>(
+    urdf_files.push_back(std::make_shared<BranchAndDepthSpecification>(
         urdf_directory + "variable_revolute_urdf/revolute_rotor_branch_6_8.urdf", false));
-    urdf_files.push_back(std::make_shared<RevoluteRotorSpecification>(
+    urdf_files.push_back(std::make_shared<BranchAndDepthSpecification>(
         urdf_directory + "variable_revolute_urdf/revolute_rotor_branch_6_9.urdf", false));
-    urdf_files.push_back(std::make_shared<RevoluteRotorSpecification>(
+    urdf_files.push_back(std::make_shared<BranchAndDepthSpecification>(
         urdf_directory + "variable_revolute_urdf/revolute_rotor_branch_6_10.urdf", false));
 
     return urdf_files;
@@ -278,68 +278,127 @@ SpecVector GetRevoluteRotorPairUrdfFiles()
     // TODO(@nicholasadr): automatically search for urdf files from variable_revolute_pair_urdf dir
     SpecVector urdf_files;
     std::string outfile_suffix = "revolute_pair_chain";
-    urdf_files.push_back(std::make_shared<RevoluteRotorSpecification>(
+    urdf_files.push_back(std::make_shared<BranchAndDepthSpecification>(
         urdf_directory + "variable_revolute_pair_urdf/revolute_rotor_pair_branch_1_1.urdf", false, outfile_suffix));
-    urdf_files.push_back(std::make_shared<RevoluteRotorSpecification>(
+    urdf_files.push_back(std::make_shared<BranchAndDepthSpecification>(
         urdf_directory + "variable_revolute_pair_urdf/revolute_rotor_pair_branch_1_2.urdf", false, outfile_suffix));
-    urdf_files.push_back(std::make_shared<RevoluteRotorSpecification>(
+    urdf_files.push_back(std::make_shared<BranchAndDepthSpecification>(
         urdf_directory + "variable_revolute_pair_urdf/revolute_rotor_pair_branch_1_3.urdf", false, outfile_suffix));
-    urdf_files.push_back(std::make_shared<RevoluteRotorSpecification>(
+    urdf_files.push_back(std::make_shared<BranchAndDepthSpecification>(
         urdf_directory + "variable_revolute_pair_urdf/revolute_rotor_pair_branch_1_4.urdf", false, outfile_suffix));
-    urdf_files.push_back(std::make_shared<RevoluteRotorSpecification>(
+    urdf_files.push_back(std::make_shared<BranchAndDepthSpecification>(
         urdf_directory + "variable_revolute_pair_urdf/revolute_rotor_pair_branch_1_5.urdf", false, outfile_suffix));
-    urdf_files.push_back(std::make_shared<RevoluteRotorSpecification>(
+    urdf_files.push_back(std::make_shared<BranchAndDepthSpecification>(
         urdf_directory + "variable_revolute_pair_urdf/revolute_rotor_pair_branch_1_6.urdf", false, outfile_suffix));
-    urdf_files.push_back(std::make_shared<RevoluteRotorSpecification>(
+    urdf_files.push_back(std::make_shared<BranchAndDepthSpecification>(
         urdf_directory + "variable_revolute_pair_urdf/revolute_rotor_pair_branch_1_7.urdf", false, outfile_suffix));
-    //urdf_files.push_back(std::make_shared<RevoluteRotorSpecification>(
-    //    urdf_directory + "variable_revolute_pair_urdf/revolute_rotor_pair_branch_1_8.urdf", false, outfile_suffix));
-    //urdf_files.push_back(std::make_shared<RevoluteRotorSpecification>(
-    //    urdf_directory + "variable_revolute_pair_urdf/revolute_rotor_pair_branch_1_9.urdf", false, outfile_suffix));
-    //urdf_files.push_back(std::make_shared<RevoluteRotorSpecification>(
-    //    urdf_directory + "variable_revolute_pair_urdf/revolute_rotor_pair_branch_1_10.urdf", false, outfile_suffix));
-    urdf_files.push_back(std::make_shared<RevoluteRotorSpecification>(
+    urdf_files.push_back(std::make_shared<BranchAndDepthSpecification>(
         urdf_directory + "variable_revolute_pair_urdf/revolute_rotor_pair_branch_2_1.urdf", false, outfile_suffix));
-    urdf_files.push_back(std::make_shared<RevoluteRotorSpecification>(
+    urdf_files.push_back(std::make_shared<BranchAndDepthSpecification>(
         urdf_directory + "variable_revolute_pair_urdf/revolute_rotor_pair_branch_2_2.urdf", false, outfile_suffix));
-    urdf_files.push_back(std::make_shared<RevoluteRotorSpecification>(
+    urdf_files.push_back(std::make_shared<BranchAndDepthSpecification>(
         urdf_directory + "variable_revolute_pair_urdf/revolute_rotor_pair_branch_2_3.urdf", false, outfile_suffix));
-    urdf_files.push_back(std::make_shared<RevoluteRotorSpecification>(
+    urdf_files.push_back(std::make_shared<BranchAndDepthSpecification>(
         urdf_directory + "variable_revolute_pair_urdf/revolute_rotor_pair_branch_2_4.urdf", false, outfile_suffix));
-    urdf_files.push_back(std::make_shared<RevoluteRotorSpecification>(
+    urdf_files.push_back(std::make_shared<BranchAndDepthSpecification>(
         urdf_directory + "variable_revolute_pair_urdf/revolute_rotor_pair_branch_2_5.urdf", false, outfile_suffix));
-    urdf_files.push_back(std::make_shared<RevoluteRotorSpecification>(
+    urdf_files.push_back(std::make_shared<BranchAndDepthSpecification>(
         urdf_directory + "variable_revolute_pair_urdf/revolute_rotor_pair_branch_2_6.urdf", false, outfile_suffix));
-    urdf_files.push_back(std::make_shared<RevoluteRotorSpecification>(
+    urdf_files.push_back(std::make_shared<BranchAndDepthSpecification>(
         urdf_directory + "variable_revolute_pair_urdf/revolute_rotor_pair_branch_2_7.urdf", false, outfile_suffix));
-    urdf_files.push_back(std::make_shared<RevoluteRotorSpecification>(
+    urdf_files.push_back(std::make_shared<BranchAndDepthSpecification>(
         urdf_directory + "variable_revolute_pair_urdf/revolute_rotor_pair_branch_4_1.urdf", false, outfile_suffix));
-    urdf_files.push_back(std::make_shared<RevoluteRotorSpecification>(
+    urdf_files.push_back(std::make_shared<BranchAndDepthSpecification>(
         urdf_directory + "variable_revolute_pair_urdf/revolute_rotor_pair_branch_4_2.urdf", false, outfile_suffix));
-    urdf_files.push_back(std::make_shared<RevoluteRotorSpecification>(
+    urdf_files.push_back(std::make_shared<BranchAndDepthSpecification>(
         urdf_directory + "variable_revolute_pair_urdf/revolute_rotor_pair_branch_4_3.urdf", false, outfile_suffix));
-    urdf_files.push_back(std::make_shared<RevoluteRotorSpecification>(
+    urdf_files.push_back(std::make_shared<BranchAndDepthSpecification>(
         urdf_directory + "variable_revolute_pair_urdf/revolute_rotor_pair_branch_4_4.urdf", false, outfile_suffix));
-    urdf_files.push_back(std::make_shared<RevoluteRotorSpecification>(
+    urdf_files.push_back(std::make_shared<BranchAndDepthSpecification>(
         urdf_directory + "variable_revolute_pair_urdf/revolute_rotor_pair_branch_4_5.urdf", false, outfile_suffix));
-    urdf_files.push_back(std::make_shared<RevoluteRotorSpecification>(
+    urdf_files.push_back(std::make_shared<BranchAndDepthSpecification>(
         urdf_directory + "variable_revolute_pair_urdf/revolute_rotor_pair_branch_4_6.urdf", false, outfile_suffix));
-    urdf_files.push_back(std::make_shared<RevoluteRotorSpecification>(
+    urdf_files.push_back(std::make_shared<BranchAndDepthSpecification>(
         urdf_directory + "variable_revolute_pair_urdf/revolute_rotor_pair_branch_4_7.urdf", false, outfile_suffix));
-    urdf_files.push_back(std::make_shared<RevoluteRotorSpecification>(
+    urdf_files.push_back(std::make_shared<BranchAndDepthSpecification>(
         urdf_directory + "variable_revolute_pair_urdf/revolute_rotor_pair_branch_6_1.urdf", false, outfile_suffix));
-    urdf_files.push_back(std::make_shared<RevoluteRotorSpecification>(
+    urdf_files.push_back(std::make_shared<BranchAndDepthSpecification>(
         urdf_directory + "variable_revolute_pair_urdf/revolute_rotor_pair_branch_6_2.urdf", false, outfile_suffix));
-    urdf_files.push_back(std::make_shared<RevoluteRotorSpecification>(
+    urdf_files.push_back(std::make_shared<BranchAndDepthSpecification>(
         urdf_directory + "variable_revolute_pair_urdf/revolute_rotor_pair_branch_6_3.urdf", false, outfile_suffix));
-    urdf_files.push_back(std::make_shared<RevoluteRotorSpecification>(
+    urdf_files.push_back(std::make_shared<BranchAndDepthSpecification>(
         urdf_directory + "variable_revolute_pair_urdf/revolute_rotor_pair_branch_6_4.urdf", false, outfile_suffix));
-    urdf_files.push_back(std::make_shared<RevoluteRotorSpecification>(
+    urdf_files.push_back(std::make_shared<BranchAndDepthSpecification>(
         urdf_directory + "variable_revolute_pair_urdf/revolute_rotor_pair_branch_6_5.urdf", false, outfile_suffix));
-    urdf_files.push_back(std::make_shared<RevoluteRotorSpecification>(
+    urdf_files.push_back(std::make_shared<BranchAndDepthSpecification>(
         urdf_directory + "variable_revolute_pair_urdf/revolute_rotor_pair_branch_6_6.urdf", false, outfile_suffix));
-    urdf_files.push_back(std::make_shared<RevoluteRotorSpecification>(
+    urdf_files.push_back(std::make_shared<BranchAndDepthSpecification>(
         urdf_directory + "variable_revolute_pair_urdf/revolute_rotor_pair_branch_6_7.urdf", false, outfile_suffix));
+
+    return urdf_files;
+}
+
+SpecVector GetFourBarUrdfFiles()
+{
+    // TODO(@nicholasadr): automatically search for urdf files from variable_four_bar_urdf dir
+    SpecVector urdf_files;
+    std::string outfile_suffix = "four_bar_chain";
+    urdf_files.push_back(std::make_shared<BranchAndDepthSpecification>(
+        urdf_directory + "variable_four_bar_urdf/four_bar_branch_1_1.urdf", false, outfile_suffix));
+    urdf_files.push_back(std::make_shared<BranchAndDepthSpecification>(
+        urdf_directory + "variable_four_bar_urdf/four_bar_branch_1_2.urdf", false, outfile_suffix));
+    urdf_files.push_back(std::make_shared<BranchAndDepthSpecification>(
+        urdf_directory + "variable_four_bar_urdf/four_bar_branch_1_3.urdf", false, outfile_suffix));
+    urdf_files.push_back(std::make_shared<BranchAndDepthSpecification>(
+        urdf_directory + "variable_four_bar_urdf/four_bar_branch_1_4.urdf", false, outfile_suffix));
+    urdf_files.push_back(std::make_shared<BranchAndDepthSpecification>(
+        urdf_directory + "variable_four_bar_urdf/four_bar_branch_1_5.urdf", false, outfile_suffix));
+    urdf_files.push_back(std::make_shared<BranchAndDepthSpecification>(
+        urdf_directory + "variable_four_bar_urdf/four_bar_branch_1_6.urdf", false, outfile_suffix));
+    urdf_files.push_back(std::make_shared<BranchAndDepthSpecification>(
+        urdf_directory + "variable_four_bar_urdf/four_bar_branch_1_7.urdf", false, outfile_suffix));
+    urdf_files.push_back(std::make_shared<BranchAndDepthSpecification>(
+        urdf_directory + "variable_four_bar_urdf/four_bar_branch_2_1.urdf", false, outfile_suffix));
+    urdf_files.push_back(std::make_shared<BranchAndDepthSpecification>(
+        urdf_directory + "variable_four_bar_urdf/four_bar_branch_2_2.urdf", false, outfile_suffix));
+    urdf_files.push_back(std::make_shared<BranchAndDepthSpecification>(
+        urdf_directory + "variable_four_bar_urdf/four_bar_branch_2_3.urdf", false, outfile_suffix));
+    urdf_files.push_back(std::make_shared<BranchAndDepthSpecification>(
+        urdf_directory + "variable_four_bar_urdf/four_bar_branch_2_4.urdf", false, outfile_suffix));
+    urdf_files.push_back(std::make_shared<BranchAndDepthSpecification>(
+        urdf_directory + "variable_four_bar_urdf/four_bar_branch_2_5.urdf", false, outfile_suffix));
+    urdf_files.push_back(std::make_shared<BranchAndDepthSpecification>(
+        urdf_directory + "variable_four_bar_urdf/four_bar_branch_2_6.urdf", false, outfile_suffix));
+    urdf_files.push_back(std::make_shared<BranchAndDepthSpecification>(
+        urdf_directory + "variable_four_bar_urdf/four_bar_branch_2_7.urdf", false, outfile_suffix));
+    urdf_files.push_back(std::make_shared<BranchAndDepthSpecification>(
+        urdf_directory + "variable_four_bar_urdf/four_bar_branch_4_1.urdf", false, outfile_suffix));
+    urdf_files.push_back(std::make_shared<BranchAndDepthSpecification>(
+        urdf_directory + "variable_four_bar_urdf/four_bar_branch_4_2.urdf", false, outfile_suffix));
+    urdf_files.push_back(std::make_shared<BranchAndDepthSpecification>(
+        urdf_directory + "variable_four_bar_urdf/four_bar_branch_4_3.urdf", false, outfile_suffix));
+    urdf_files.push_back(std::make_shared<BranchAndDepthSpecification>(
+        urdf_directory + "variable_four_bar_urdf/four_bar_branch_4_4.urdf", false, outfile_suffix));
+    urdf_files.push_back(std::make_shared<BranchAndDepthSpecification>(
+        urdf_directory + "variable_four_bar_urdf/four_bar_branch_4_5.urdf", false, outfile_suffix));
+    urdf_files.push_back(std::make_shared<BranchAndDepthSpecification>(
+        urdf_directory + "variable_four_bar_urdf/four_bar_branch_4_6.urdf", false, outfile_suffix));
+    urdf_files.push_back(std::make_shared<BranchAndDepthSpecification>(
+        urdf_directory + "variable_four_bar_urdf/four_bar_branch_4_7.urdf", false, outfile_suffix));
+    urdf_files.push_back(std::make_shared<BranchAndDepthSpecification>(
+        urdf_directory + "variable_four_bar_urdf/four_bar_branch_6_1.urdf", false, outfile_suffix));
+    urdf_files.push_back(std::make_shared<BranchAndDepthSpecification>(
+        urdf_directory + "variable_four_bar_urdf/four_bar_branch_6_2.urdf", false, outfile_suffix));
+    urdf_files.push_back(std::make_shared<BranchAndDepthSpecification>(
+        urdf_directory + "variable_four_bar_urdf/four_bar_branch_6_3.urdf", false, outfile_suffix));
+    urdf_files.push_back(std::make_shared<BranchAndDepthSpecification>(
+        urdf_directory + "variable_four_bar_urdf/four_bar_branch_6_4.urdf", false, outfile_suffix));
+    urdf_files.push_back(std::make_shared<BranchAndDepthSpecification>(
+        urdf_directory + "variable_four_bar_urdf/four_bar_branch_6_5.urdf", false, outfile_suffix));
+    urdf_files.push_back(std::make_shared<BranchAndDepthSpecification>(
+        urdf_directory + "variable_four_bar_urdf/four_bar_branch_6_6.urdf", false, outfile_suffix));
+    urdf_files.push_back(std::make_shared<BranchAndDepthSpecification>(
+        urdf_directory + "variable_four_bar_urdf/four_bar_branch_6_7.urdf", false, outfile_suffix));
 
     return urdf_files;
 }
@@ -353,6 +412,9 @@ SpecVector GetBenchmarkUrdfFiles()
     SpecVector revrotor_pair_urdf_files = GetRevoluteRotorPairUrdfFiles();
     test_urdf_files.insert(test_urdf_files.end(), revrotor_pair_urdf_files.begin(),
                                                   revrotor_pair_urdf_files.end());
+    SpecVector four_bar_urdf_files = GetFourBarUrdfFiles();
+    test_urdf_files.insert(test_urdf_files.end(), four_bar_urdf_files.begin(),
+                                                  four_bar_urdf_files.end());
 
     return test_urdf_files;
 }
