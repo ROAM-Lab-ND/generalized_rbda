@@ -56,3 +56,7 @@ target_link_libraries(parallel_chains_benchmark gtest gmock_main)
 add_executable(rotors_benchmark src/rotorsBenchmark.cpp)
 target_link_libraries(rotors_benchmark ${PROJECT_NAME} ${PINOCCHIO_LIBRARIES})
 target_link_libraries(rotors_benchmark gtest gmock_main)
+
+add_executable(approx_benchmark src/approximateBenchmark.cpp)
+target_link_libraries(approx_benchmark ${PROJECT_NAME} ${PINOCCHIO_LIBRARIES})
+target_link_libraries(approx_benchmark gtest gmock_main)
