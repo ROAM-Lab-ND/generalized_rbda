@@ -83,10 +83,14 @@ namespace grbda
 			  link1_(module.link1_), link2_(module.link2_), gear_ratio_(module.gear_ratio_)
 		{
 			using Rev = Joints::Revolute<Scalar>;
-			rotor1_joint_ = this->single_joints_.emplace_back(new Rev(module.rotor1_axis_));
-			rotor2_joint_ = this->single_joints_.emplace_back(new Rev(module.rotor2_axis_));
-			link1_joint_ = this->single_joints_.emplace_back(new Rev(module.link1_axis_));
-			link2_joint_ = this->single_joints_.emplace_back(new Rev(module.link2_axis_));
+			rotor1_joint_ = this->single_joints_.emplace_back(new Rev(module.rotor1_axis_,
+																	  module.rotor1_joint_name_));
+			rotor2_joint_ = this->single_joints_.emplace_back(new Rev(module.rotor2_axis_,
+																	  module.rotor2_joint_name_));
+			link1_joint_ = this->single_joints_.emplace_back(new Rev(module.link1_axis_,
+																	 module.link1_joint_name_));
+			link2_joint_ = this->single_joints_.emplace_back(new Rev(module.link2_axis_,
+																	 module.link2_joint_name_));
 
 			this->spanning_tree_to_independent_coords_conversion_ = DMat<int>::Identity(2, 4);
 			this->spanning_tree_to_independent_coords_conversion_ << 1, 0, 0, 0, 0, 1, 0, 0;

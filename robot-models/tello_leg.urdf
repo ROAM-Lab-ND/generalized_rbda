@@ -1,0 +1,90 @@
+<?xml version="1.0" ?>
+
+<robot name="tello_leg" xmlns:xacro="http://ros.org/wiki/xacro">
+  <link name="ground"/>
+  <joint name="ground-to-right-hip-clamp" type="revolute" independent="false">
+    <axis xyz="0 0 1"/>
+    <origin xyz="0.0 -126e-03 -87e-03" rpy="0.0 0.0 0.0"/>
+    <parent link="ground"/>
+    <child link="right-hip-clamp"/>
+    <limit effort="150" lower="-10" upper="10" velocity="100"/>
+  </joint>
+  <link name="right-hip-clamp">
+    <inertial>
+      <mass value="1.3289"/>
+      <origin xyz="-0.001 0.0 -0.0069"/>
+      <inertia ixx="0.0032" ixy="0." ixz="0.0001" iyy="0.0033" iyz="0." izz="0.0027"/>
+    </inertial>
+  </link>
+  <joint name="ground-to-right-hip-clamp-rotor" type="revolute">
+    <axis xyz="0 0 1"/>
+    <origin xyz="0.0 -126e-3 -26e-3" rpy="-3.14 0.0 0.0"/>
+    <parent link="ground"/>
+    <child link="right-hip-clamp-rotor"/>
+    <limit effort="150" lower="-10" upper="10" velocity="100"/>
+  </joint>
+  <link name="right-hip-clamp-rotor">
+    <inertial>
+      <mass value="0.07"/>
+      <origin xyz="0.0 0.0 0.0"/>
+      <inertia ixx="2.598e-05" ixy="0.0" ixz="0.0" iyy="2.5984e-05" iyz="0.0" izz="5.1512e-05"/>
+    </inertial>
+  </link>
+  <joint name="right-hip-clamp-to-gimbal" type="revolute" independent="false">
+    <axis xyz="1 0 0"/>
+    <origin xyz="0.0 0.0 -142.5e-03" rpy="0.0 0.0 0.0"/>
+    <parent link="right-hip-clamp"/>
+    <child link="right-gimbal"/>
+    <limit effort="150" lower="-10" upper="10" velocity="100"/>
+  </joint>
+  <link name="right-gimbal">
+    <inertial>
+      <mass value="0.4433"/>
+      <origin xyz="-0.0027 0.0 0.0258"/>
+      <inertia ixx="0.0018" ixy="0.0" ixz="0.0" iyy="0.0017" iyz="0.0015"/>
+    </inertial>
+  </link>
+  <joint name="right-gimbal-to-thigh" type="revolute" independent="false">
+    <axis xyz="0 1 0"/>
+    <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+    <parent link="right-gimbal"/>
+    <child link="right-thigh"/>
+    <limit effort="150" lower="-10" upper="10" velocity="100"/>
+  </joint>
+  <link name="right-thigh">
+    <inertial>
+      <mass value="1.5424"/>
+      <origin xyz="0.003 -0.0001 -0.0323"/>
+      <inertia ixx="0.0103" ixy="0.0" ixz="-0.0005" iyy="0.0097" iyz="0.0027"/>
+    </inertial>
+  </link>
+  <joint name="right-hip-clamp-to-hip-rotor-1" type="revolute" independent="true">
+    <axis xyz="0 0 1"/>
+    <origin xyz="0.0 0.04 0.0" rpy="-1.5707963 0.0 -3.1415927"/>
+    <parent link="right-hip-clamp"/>
+    <child link="right-hip-rotor-1"/>
+    <limit effort="150" lower="-10" upper="10" velocity="100"/>
+  </joint>
+  <link name="right-hip-rotor-1">
+    <inertial>
+      <mass value="0.07"/>
+      <origin xyz="0.0 0.0 0.0"/>
+      <inertia ixx="2.5984e-05" ixy="0.0" ixz="0.0" iyy="2.5984e-05" iyz="5.1512e-05"/>
+    </inertial>
+  </link>
+  <joint name="right-hip-clamp-to-hip-rotor-2" type="revolute" independent="true">
+    <axis xyz="0 0 1"/>
+    <origin xyz="0.0 -0.04 0.0" rpy="-1.5707963 0.0 0.0"/>
+    <parent link="right-hip-clamp"/>
+    <child link="right-hip-rotor-2"/>
+    <limit effort="150" lower="-10" upper="10" velocity="100"/>
+  </joint>
+  <link name="right-hip-rotor-2">
+    <inertial>
+      <mass value="0.07"/>
+      <origin xyz="0.0 0.0 0.0"/>
+      <inertia ixx="2.5984e-05" ixy="0.0" ixz="0.0" iyy="2.5984e-05" iyz="5.1512e-05"/>
+    </inertial>
+  </link>
+
+</robot>

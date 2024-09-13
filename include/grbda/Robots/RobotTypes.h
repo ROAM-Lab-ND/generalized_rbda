@@ -2,6 +2,7 @@
 #include "grbda/Robots/Tello.hpp"
 #include "grbda/Robots/TelloWithArms.hpp"
 #include "grbda/Robots/TelloLeg.hpp"
+#include "grbda/Robots/TelloLeg_test.hpp"
 #include "grbda/Robots/MIT_Humanoid.hpp"
 #include "grbda/Robots/MIT_Humanoid_no_rotors.hpp"
 #include "grbda/Robots/MIT_Humanoid_Leg.hpp"

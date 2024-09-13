@@ -36,6 +36,7 @@ namespace grbda
         Body<Scalar> hip_rz_rotor = model.registerBody(hip_rz_rotor_name, hip_rz_rotor_inertia,
                                                        hip_rz_parent_name, xtreeHipRzRotor);
         GearedTransModule hip_rz_module{hip_rz_link, hip_rz_rotor,
+                                        "ground_to_hip_rz_link", "ground_to_hip_rz_rotor",
                                         ori::CoordinateAxis::Z, ori::CoordinateAxis::Z,
                                         this->_hipRzGearRatio};
         model.template appendRegisteredBodiesAsCluster<RevoluteWithRotor>(hip_rz_name,
@@ -62,6 +63,7 @@ namespace grbda
         Body<Scalar> hip_rx_rotor = model.registerBody(hip_rx_rotor_name, hip_rx_rotor_inertia,
                                                        hip_rx_parent_name, xtreeHipRxRotor);
         GearedTransModule hip_rx_module{hip_rx_link, hip_rx_rotor,
+                                        "hip_rz_to_hip_rx", "hip_rz_to_hip_rx_rotor",
                                         ori::CoordinateAxis::X, ori::CoordinateAxis::X,
                                         this->_hipRxGearRatio};
         model.template appendRegisteredBodiesAsCluster<RevoluteWithRotor>(hip_rx_name,
@@ -90,6 +92,7 @@ namespace grbda
         Body<Scalar> hip_ry_rotor = model.registerBody(hip_ry_rotor_name, hip_ry_rotor_inertia,
                                                        hip_ry_parent_name, xtreeHipRyRotor);
         GearedTransModule hip_ry_module{hip_ry_link, hip_ry_rotor,
+                                        "hip_rx_to_hip_ry", "hip_rx_to_hip_ry_rotor",
                                         ori::CoordinateAxis::Y, ori::CoordinateAxis::Y,
                                         this->_hipRyGearRatio};
         model.template appendRegisteredBodiesAsCluster<RevoluteWithRotor>(hip_ry_name,
