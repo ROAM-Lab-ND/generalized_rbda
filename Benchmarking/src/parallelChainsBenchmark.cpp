@@ -174,30 +174,38 @@ TEST_P(PinocchioParallelChainsNumericalValidation, forward_dynamics)
         pin_tau = joint_map * spanning_joint_tau;
 
         const Eigen::VectorXd ydd_cluster = cluster_tree.forwardDynamics(tau);
+        Eigen::VectorXd qdd_cluster = Eigen::VectorXd::Zero(0);
+        for (const auto &cluster : cluster_tree.clusters())
+        {
+            Eigen::VectorXd ydd_k = ydd_cluster.segment(cluster->velocity_index_,
+                                                        cluster->num_velocities_);
+            Eigen::VectorXd qdd_k = cluster->joint_->G() * ydd_k + cluster->joint_->g();
+            qdd_cluster = grbda::appendEigenVector(qdd_cluster, qdd_k);
+        }
 
         pinocchio::forwardDynamics(model, data, pin_q, pin_v, pin_tau,
                                    K_pinocchio, k_pinocchio, mu0);
 
-        const Eigen::VectorXd qdd_grbda = lgm_model.forwardDynamics(tau);
+        const Eigen::VectorXd qdd_lgm = lgm_model.forwardDynamics(tau);
 
         // Check grbda cluster tree solution against lagrange multiplier solution
-        const Eigen::VectorXd ydd_error = qdd_grbda - (G_cluster * ydd_cluster + g_cluster);
-        GTEST_ASSERT_LT(ydd_error.norm(), GetParam().tol)
-            << "ydd_cluster: " << ydd_cluster.transpose() << "\n"
-            << "G*qdd_grbda + g: " << (G_cluster * qdd_grbda + g_cluster).transpose();
+        const Eigen::VectorXd grbda_error = qdd_lgm - qdd_cluster;
+        GTEST_ASSERT_LT(grbda_error.norm(), GetParam().tol)
+            << "qdd_lgm: " << qdd_lgm.transpose() << "\n"
+            << "qdd_cluster: " << qdd_cluster.transpose();
 
         // Check grbda lagrange multiplier solution against pinocchio
-        const Eigen::VectorXd qdd_error = data.ddq - joint_map * qdd_grbda;
-        GTEST_ASSERT_LT(qdd_error.norm(), GetParam().tol)
+        const Eigen::VectorXd pin_error = data.ddq - joint_map * qdd_lgm;
+        GTEST_ASSERT_LT(pin_error.norm(), GetParam().tol)
             << "qdd_pinocchio   : " << data.ddq.transpose() << "\n"
-            << "jmap * qdd_grbda: " << (joint_map * qdd_grbda).transpose();
+            << "jmap * qdd_lgm: " << (joint_map * qdd_lgm).transpose();
 
         // Check that solutions satisfy the loop constraints
         Eigen::VectorXd cnstr_violation_pinocchio = K_pinocchio * data.ddq + k_pinocchio;
-        Eigen::VectorXd cnstr_violation_grbda = K_cluster * qdd_grbda - k_cluster;
+        Eigen::VectorXd cnstr_violation_grbda = K_cluster * qdd_lgm - k_cluster;
 
         GTEST_ASSERT_LT(cnstr_violation_grbda.norm(), GetParam().tol)
-            << "K*qdd_grbda + k    : " << cnstr_violation_grbda.transpose();
+            << "K*qdd_lgm + k    : " << cnstr_violation_grbda.transpose();
 
         GTEST_ASSERT_LT(cnstr_violation_pinocchio.norm(), GetParam().tol)
             << "K*qdd_pinocchio + k: " << cnstr_violation_pinocchio.transpose();
@@ -360,15 +368,25 @@ TEST_P(PinocchioParallelChainsBenchmark, compareInstructionCount)
 
     // TODO(@MatthewChignoli): Do we need to include the conversion to qdd for cABA?
     const DynamicADVector ydd_cluster = cluster_tree.forwardDynamics(tau);
+    DynamicADVector qdd_cluster = DynamicADVector::Zero(0);
+    for (const auto &cluster : cluster_tree.clusters())
+    {
+        DynamicADVector ydd_k = ydd_cluster.segment(cluster->velocity_index_,
+                                                    cluster->num_velocities_);
+        DynamicADVector qdd_k = cluster->joint_->G() * ydd_k + cluster->joint_->g();  
+        qdd_cluster = grbda::appendEigenVector(qdd_cluster, qdd_k);
+    }
+
     pinocchio::forwardDynamics(ad_model, ad_data, pin_q, pin_v, pin_tau, K_pinocchio, k_pinocchio, mu0);
-    const DynamicADVector qdd_grbda = lgm_model.forwardDynamics(tau);
+
+    const DynamicADVector qdd_lgm = lgm_model.forwardDynamics(tau);
 
     // Create casadi function to compute forward dynamics
     ADScalar cs_ydd_cluster = ADScalar(casadi::Sparsity::dense(nv, 1));
     casadi::copy(ydd_cluster, cs_ydd_cluster);
 
-    ADScalar cs_qdd_grbda = ADScalar(casadi::Sparsity::dense(nv_span, 1));
-    casadi::copy(qdd_grbda, cs_qdd_grbda);
+    ADScalar cs_qdd_lgm = ADScalar(casadi::Sparsity::dense(nv_span, 1));
+    casadi::copy(qdd_lgm, cs_qdd_lgm);
 
     ADScalar cs_qdd_pinocchio = ADScalar(casadi::Sparsity::dense(nv_span, 1));
     casadi::copy(ad_data.ddq, cs_qdd_pinocchio);
@@ -387,9 +405,9 @@ TEST_P(PinocchioParallelChainsBenchmark, compareInstructionCount)
                                    casadi::SXVector{cs_q, cs_v, cs_tau},
                                    casadi::SXVector{cs_qdd_pinocchio});
 
-    casadi::Function csGrbdaFD("grbdaFD",
+    casadi::Function csGrbdaLgm("grbdaLgm",
                                casadi::SXVector{cs_q, cs_v, cs_tau},
-                               casadi::SXVector{cs_qdd_grbda});
+                               casadi::SXVector{cs_qdd_lgm});
 
     casadi::Function csExplicitJacobian("explicitJacobian",
                                         casadi::SXVector{cs_q, cs_v},
@@ -435,7 +453,7 @@ TEST_P(PinocchioParallelChainsBenchmark, compareInstructionCount)
         t_pinocchio += timer.getMs();
 
         timer.start();
-        casadi::DMVector dm_lgm_res = csGrbdaFD(casadi::DMVector{dm_q, dm_v, dm_tau});
+        casadi::DMVector dm_lgm_res = csGrbdaLgm(casadi::DMVector{dm_q, dm_v, dm_tau});
         t_lg += timer.getMs();
 
         casadi::DMVector dm_explicit = csExplicitJacobian(casadi::DMVector{dm_q, dm_v});
@@ -462,7 +480,7 @@ TEST_P(PinocchioParallelChainsBenchmark, compareInstructionCount)
         const DynamicVector qdd_error = pin_res - joint_map.cast<Scalar>() * lgm_res;
         GTEST_ASSERT_LT(qdd_error.norm(), GetParam().tol)
             << "qdd_pinocchio   : " << pin_res.transpose() << "\n"
-            << "jmap * qdd_grbda: " << (joint_map.cast<Scalar>() * lgm_res).transpose();
+            << "jmap * qdd_lgm: " << (joint_map.cast<Scalar>() * lgm_res).transpose();
     }
 
     // csv format: depth, loop size , cluster_instr, pinocchio_instr, cluster_time, pinocchio_time
