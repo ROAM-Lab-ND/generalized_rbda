@@ -1,4 +1,5 @@
 close all; clear; clc;
+load('custom_colors.mat')
 
 path_to_data = '../data/InstructionPinocchioFD_';
 
@@ -28,15 +29,15 @@ if length(impl_depths) ~= 4
 end
 
 %% Plotting options
-ceaba_color = 'r';
-caba_name = 'Constraint-Embedding ABA, ';
-pin_color = 'b';
-pin_name = 'Proximal and Sparse, ';
+ceaba_color = subdued_red;
+caba_name = 'Constraint-Embedding ABA (Ours), ';
+pin_color = subdued_blue;
+pin_name = 'Proximal and Sparse (Pinocchio), ';
 expl_cnstr_name = 'Transmission';
 impl_cnstr_name = 'Connecting Rod';
 marker_size = 10;
 line_width = 2.0;
-font_size = 20;
+font_size = 22;
 figure
 sp_cnt = 1;
 
@@ -79,7 +80,12 @@ for i = expl_depths
     xlabel('$d_l$', 'Interpreter', 'latex')
     ylabel('Instruction Count', 'Interpreter', 'latex')
     title(['$d_t$ = ', num2str(i)], 'Interpreter', 'latex')
-    legend('Location', 'Northwest', 'Interpreter', 'latex')
+    
+    l = legend();
+    l.Location = 'Northwest';
+    l.Interpreter = 'latex';
+    l.NumColumns = 2;
+
 
     % Format
     grid on

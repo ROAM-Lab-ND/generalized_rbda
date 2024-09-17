@@ -51,9 +51,9 @@ plot(tau_trajectories.t, tau_trajectories.none(joint_idx,:), '-', 'Linewidth', 2
 
 xlabel('Time (s)', 'Interpreter', 'latex')
 ylabel('Joint Torque (Nm)', 'Interpreter', 'latex')
-legend({'C-RNEA', 'Approximate RNEA', 'Unconstrained RNEA'}, 'Location', 'northwest', 'Interpreter', 'latex')
+legend({'Constraint-Embedding RNEA on Original System', 'Standard RNEA on Approximate System', 'Standard RNEA on Unconstrained System'}, 'Location', 'northwest', 'Interpreter', 'latex')
 grid on
-set(gca, 'FontSize', 14,'TickLabelInterpreter','latex')
+set(gca, 'FontSize', 22,'TickLabelInterpreter','latex')
 axis([-inf inf -12 20])
 
 saveas(gcf, [path_to_figures, 'HumanoidLeg_torque.png'])
