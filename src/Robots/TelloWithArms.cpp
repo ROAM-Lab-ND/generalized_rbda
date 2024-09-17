@@ -18,6 +18,8 @@ namespace grbda
             const std::string shoulder_ry_name = withLeftRightSigns("shoulder_ry", armID);
             const std::string shoulder_ry_link_name = withLeftRightSigns("shoulder_ry_link", armID);
             const std::string shoulder_ry_rotor_name = withLeftRightSigns("shoulder_ry_rotor", armID);
+            const std::string shoulder_ry_link_joint_name = withLeftRightSigns("torso_to_shoulder_ry_link", armID);
+            const std::string shoulder_ry_rotor_joint_name = withLeftRightSigns("torso_to_shoulder_ry_rotor", armID);
 
             SpatialInertia<double> shoulder_ry_link_inertia(_shoulderRyMass, _shoulderRyCOM,
                                                             _shoulderRyRotInertia);
@@ -39,6 +41,7 @@ namespace grbda
                                                         shoulder_ry_parent_name,
                                                         xtreeShoulderRyRotor);
             GearedTransmissionModule<> shoulder_ry_module{shoulder_ry_link, shoulder_ry_rotor,
+                                                          shoulder_ry_link_joint_name, shoulder_ry_rotor_joint_name,
                                                           ori::CoordinateAxis::Y,
                                                           ori::CoordinateAxis::Y,
                                                           _shoulderRyGearRatio};
@@ -50,6 +53,8 @@ namespace grbda
             const std::string shoulder_rx_name = withLeftRightSigns("shoulder_rx", armID);
             const std::string shoulder_rx_link_name = withLeftRightSigns("shoulder_rx_link", armID);
             const std::string shoulder_rx_rotor_name = withLeftRightSigns("shoulder_rx_rotor", armID);
+            const std::string shoulder_rx_link_joint_name = withLeftRightSigns("shoulder_ry_to_shoulder_rx_link", armID);
+            const std::string shoulder_rx_rotor_joint_name = withLeftRightSigns("shoulder_ry_to_shoulder_rx_rotor", armID);
 
             SpatialInertia<double> shoulder_rx_link_inertia(_shoulderRxMass, _shoulderRxCOM,
                                                             _shoulderRxRotInertia);
@@ -71,6 +76,7 @@ namespace grbda
                                                         shoulder_rx_parent_name,
                                                         xtreeShoulderRxRotor);
             GearedTransmissionModule<> shoulder_rx_module{shoulder_rx_link, shoulder_rx_rotor,
+                                                          shoulder_rx_link_joint_name, shoulder_rx_rotor_joint_name,
                                                           ori::CoordinateAxis::X,
                                                           ori::CoordinateAxis::X,
                                                           _shoulderRxGearRatio};
@@ -82,6 +88,8 @@ namespace grbda
             const std::string shoulder_rz_name = withLeftRightSigns("shoulder_rz", armID);
             const std::string shoulder_rz_link_name = withLeftRightSigns("shoulder_rz_link", armID);
             const std::string shoulder_rz_rotor_name = withLeftRightSigns("shoulder_rz_rotor", armID);
+            const std::string shoulder_rz_link_joint_name = withLeftRightSigns("shoulder_rx_to_shoulder_rz_link", armID);
+            const std::string shoulder_rz_rotor_joint_name = withLeftRightSigns("shoulder_rx_to_shoulder_rz_rotor", armID);
 
             SpatialInertia<double> shoulder_rz_link_inertia(_shoulderRzMass, _shoulderRzCOM,
                                                             _shoulderRzRotInertia);
@@ -103,6 +111,7 @@ namespace grbda
                                                         shoulder_rz_parent_name,
                                                         xtreeShoulderRzRotor);
             GearedTransmissionModule<> shoulder_rz_module{shoulder_rz_link, shoulder_rz_rotor,
+                                                          shoulder_rz_link_joint_name, shoulder_rz_rotor_joint_name,
                                                           ori::CoordinateAxis::Z,
                                                           ori::CoordinateAxis::Z,
                                                           _shoulderRzGearRatio};
@@ -114,6 +123,8 @@ namespace grbda
             const std::string elbow_name = withLeftRightSigns("elbow", armID);
             const std::string elbow_link_name = withLeftRightSigns("elbow_link", armID);
             const std::string elbow_rotor_name = withLeftRightSigns("elbow_rotor", armID);
+            const std::string elbow_link_joint_name = withLeftRightSigns("shoulder_rz_to_elbow_link", armID);
+            const std::string elbow_rotor_joint_name = withLeftRightSigns("shoulder_rz_to_elbow_rotor", armID);
 
             SpatialInertia<double> elbow_link_inertia(_elbowMass, _elbowCOM, _elbowRotInertia);
             elbow_link_inertia = withLeftRightSigns(elbow_link_inertia, armID);
@@ -129,8 +140,10 @@ namespace grbda
                                                  elbow_parent_name, xtreeElbow);
             Body<> elbow_rotor = model.registerBody(elbow_rotor_name, elbow_rotor_inertia,
                                                   elbow_parent_name, xtreeElbowRotor);
-            GearedTransmissionModule<> elbow_module{elbow_link, elbow_rotor, ori::CoordinateAxis::Y,
-                                                    ori::CoordinateAxis::Y, _elbowGearRatio};
+            GearedTransmissionModule<> elbow_module{elbow_link, elbow_rotor,
+                                                    elbow_link_joint_name, elbow_rotor_joint_name,
+                                                    ori::CoordinateAxis::Y, ori::CoordinateAxis::Y,
+                                                    _elbowGearRatio};
             model.appendRegisteredBodiesAsCluster<RevoluteWithRotor<>>(elbow_name, elbow_module);
 
             const std::string elbow_contact_name = withLeftRightSigns("elbow_contact", armID);
