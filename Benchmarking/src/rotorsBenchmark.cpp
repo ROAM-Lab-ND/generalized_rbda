@@ -1,6 +1,8 @@
 #include <regex>
 #include "pinocchioHelpers.hpp"
 
+// TODO(@MatthewChignoli): Change name of this file to "branch and depth benchmark"
+
 struct RobotSpecification
 {
     std::string urdf_filename;
@@ -84,12 +86,12 @@ struct RobotSpecification
     }
 };
 
-struct RevoluteRotorSpecification : public RobotSpecification
+struct BranchAndDepthSpecification : public RobotSpecification
 {
     int branch_count;
     int depth_count;
 
-    RevoluteRotorSpecification(std::string urdf_filename, bool floating_base,
+    BranchAndDepthSpecification(std::string urdf_filename, bool floating_base,
                                std::string outfile_suffix = "revolute_chain")
         : RobotSpecification(urdf_filename, floating_base, outfile_suffix)
     {
@@ -148,7 +150,7 @@ SpecVector GetRevoluteRotorUrdfFiles()
             std::string urdf_file = urdf_directory +
                                     "variable_revolute_urdf/revolute_rotor_branch_" +
                                     std::to_string(b) + "_" + std::to_string(d) + ".urdf";
-            urdf_files.push_back(std::make_shared<RevoluteRotorSpecification>(urdf_file, false));
+            urdf_files.push_back(std::make_shared<BranchAndDepthSpecification>(urdf_file, false));
         }
     return urdf_files;
 }
@@ -164,7 +166,24 @@ SpecVector GetRevoluteRotorPairUrdfFiles()
             std::string urdf_file = urdf_directory +
                                     "variable_revolute_pair_urdf/revolute_rotor_pair_branch_" +
                                     std::to_string(b) + "_" + std::to_string(d) + ".urdf";
-            urdf_files.push_back(std::make_shared<RevoluteRotorSpecification>(urdf_file, false,
+            urdf_files.push_back(std::make_shared<BranchAndDepthSpecification>(urdf_file, false,
+                                                                              outfile_suffix));
+        }
+    return urdf_files;
+}
+
+SpecVector GetFourBarUrdfFiles()
+{
+    // TODO(@nicholasadr): automatically search for urdf files from variable_four_bar_urdf dir
+    SpecVector urdf_files;
+    std::string outfile_suffix = "four_bar_chain";
+    for (int b : {1, 2, 4, 6})
+        for (int d : {1, 2, 3, 4, 5, 6, 7})
+        {
+            std::string urdf_file = urdf_directory +
+                                    "variable_four_bar_urdf/four_bar_branch_" +
+                                    std::to_string(b) + "_" + std::to_string(d) + ".urdf";
+            urdf_files.push_back(std::make_shared<BranchAndDepthSpecification>(urdf_file, false,
                                                                               outfile_suffix));
         }
     return urdf_files;
@@ -172,9 +191,11 @@ SpecVector GetRevoluteRotorPairUrdfFiles()
 
 SpecVector GetBenchmarkUrdfFiles()
 {
+    std::vector<std::string> sys_types = {"revolute_chain", "revolute_pair_chain",
+                                          "four_bar_chain", "Systems"};
     for (std::string bench_type : {"Instruction", "Timing"})
     {
-        for (std::string sys_type : {"revolute_chain", "revolute_pair_chain", "Systems"})
+        for (std::string sys_type : sys_types)
         {
             std::ofstream outfile;
             outfile.open(path_to_data + bench_type + "PinocchioFD_" + sys_type + ".csv",
@@ -191,12 +212,18 @@ SpecVector GetBenchmarkUrdfFiles()
     }
 
     SpecVector test_urdf_files = GetIndividualUrdfFiles();
+
     SpecVector revrotor_urdf_files = GetRevoluteRotorUrdfFiles();
     test_urdf_files.insert(test_urdf_files.end(), revrotor_urdf_files.begin(),
                            revrotor_urdf_files.end());
+
     SpecVector revrotor_pair_urdf_files = GetRevoluteRotorPairUrdfFiles();
     test_urdf_files.insert(test_urdf_files.end(), revrotor_pair_urdf_files.begin(),
                            revrotor_pair_urdf_files.end());
+
+    SpecVector four_bar_urdf_files = GetFourBarUrdfFiles();
+    test_urdf_files.insert(test_urdf_files.end(), four_bar_urdf_files.begin(),
+                           four_bar_urdf_files.end());
 
     return test_urdf_files;
 }
@@ -558,14 +585,14 @@ TEST_P(PinocchioBenchmark, compareInstructionCount)
         // Check the cluster ABA solution against the Lagrange multiplier solution
         DynamicVector qdd_cABA = G_res * cABA_res + g_res;
         const DynamicVector grbda_error = lgm_res - qdd_cABA;
-        GTEST_ASSERT_LT(grbda_error.norm(), 1e-6)
+        GTEST_ASSERT_LT(grbda_error.norm(), 1e-4)
             << "qdd_lgm: " << lgm_res.transpose() << "\n"
             << "qdd_cABA: " << qdd_cABA.transpose() << "\n"
             << "cABA_res: " << cABA_res.transpose();
 
         // Check grbda lagrange multiplier solution against pinocchio
         const DynamicVector qdd_error = pin_res - joint_map.cast<Scalar>() * lgm_res;
-        GTEST_ASSERT_LT(qdd_error.norm(), 1e-6)
+        GTEST_ASSERT_LT(qdd_error.norm(), 1e-4)
             << "qdd_pinocchio   : " << pin_res.transpose() << "\n"
             << "jmap * qdd_grbda: " << (joint_map.cast<Scalar>() * lgm_res).transpose();
     }

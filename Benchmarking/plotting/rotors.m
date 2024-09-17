@@ -1,4 +1,5 @@
 close all; clear; clc;
+load('custom_colors.mat')
 
 % csv format: # branches, cluster tree depth, c-aba instr count, pinochhio instr count
 
@@ -15,14 +16,16 @@ rev_pair_chain.title = 'Parallel Belt Transmission';
 rev_pair_chain.axis = [1 7 0 10e4];
 rev_pair_chain.yscale = 'linear';
 
-four_bar = rev_pair_chain;
-four_bar.title = 'Four Bar (WIP)';
+four_bar.urdf_name = 'four_bar_chain';
+four_bar.title = 'Four Bar Mechanism';
+four_bar.axis = [1 7 0 10e4];
+four_bar.yscale = 'linear';
 
 %% Plotting options
 symbols = {'o--', 's--', 'd--', '^--', '*--', 'p--', 'h--', 'x--', '+--'};
 plot_opts.MarkerSize = 10;
 plot_opts.LineWidth = 2.0;
-font_size = 16;
+font_size = 22;
 
 %% Plot
 system_list{1} = rev_chain;
@@ -50,27 +53,27 @@ for j = 1:length(system_list)
     for i = branches
         plot_opts.Color = 'k';
         plot_opts.MarkerFaceColor = 'k';
-        plot_opts.DisplayName = ['$b_a$ =', num2str(i)];
-        plot(NaN, NaN, symbols{i}, plot_opts)
+        plot_opts.DisplayName = ['$b_a$ = ', num2str(i),'   '];
+        plot(NaN, NaN, symbols{i}(1), plot_opts)
     end
 
-    plot_opts.Color = 'r';
-    plot_opts.DisplayName = 'Constraint-Embedding ABA (ours)';
-    plot(NaN, NaN, '-', plot_opts)
+    plot_opts.Color = subdued_red;
+    plot_opts.DisplayName = 'Constraint-Embedding ABA (Ours)';
+    plot(NaN, NaN, '--', plot_opts)
 
-    plot_opts.Color = 'b';
+    plot_opts.Color = subdued_blue;
     plot_opts.DisplayName = 'Proximal and Sparse (Pinocchio)';
-    plot(NaN, NaN, '-', plot_opts)
+    plot(NaN, NaN, '--', plot_opts)
 
     % Plot Data
     for i = branches
-        plot_opts.Color = 'r';
-        plot_opts.MarkerFaceColor = 'r';
+        plot_opts.Color = subdued_red;
+        plot_opts.MarkerFaceColor = subdued_red;
         plot_opts.HandleVisibility = 'off';
         plot(caba.branches{i}(:, 1), caba.branches{i}(:, 2), symbols{i}, plot_opts)
 
-        plot_opts.Color = 'b';
-        plot_opts.MarkerFaceColor = 'b';
+        plot_opts.Color = subdued_blue;
+        plot_opts.MarkerFaceColor = subdued_blue;
         plot(pin.branches{i}(:, 1), pin.branches{i}(:, 2), symbols{i}, plot_opts)
     end
 
@@ -81,7 +84,12 @@ for j = 1:length(system_list)
     xlabel('$d_a$', 'Interpreter', 'latex')
     ylabel('Instruction Count', 'Interpreter', 'latex')
     title(sys.title, 'Interpreter', 'latex')
-    legend('Location', 'Best', 'Interpreter', 'latex')
+    
+    l = legend();
+    l.Location = 'Best';
+    l.Interpreter = 'latex';
+    l.Orientation = 'vertical';
+    l.NumColumns = 3;
 
     set(gca, 'YScale', sys.yscale)
     set(gca, 'Fontsize', font_size)
