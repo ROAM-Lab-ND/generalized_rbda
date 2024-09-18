@@ -222,16 +222,6 @@
         <inertia ixx="2.5984e-05" ixy="0.0" ixz="0.0" iyy="2.5984e-05" iyz="0.0" izz="5.1512e-05"/>
     </xacro:macro>
 
-    <xacro:macro name="rotor" params="name">
-        <link name="${name}">
-            <inertial>
-                <mass value="${rotor_mass}"/>
-                <origin xyz="${rotor_origin}"/>
-                <xacro:rotor_inertia/>
-            </inertial>
-        </link>
-    </xacro:macro>
-
     <xacro:macro name="torso" params="name">
         <link name="${name}">
             <inertial>
