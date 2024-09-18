@@ -19,6 +19,16 @@
         <inertia ixx="2e-05" ixy="0.0" ixz="0.0" iyy="2e-05" iyz="0.0" izz="5e-05"/>
     </xacro:macro>
 
+    <xacro:property name="gear_ratio" value="6.0"/>
+
+    <xacro:macro name="constraint" params="name predecessor successor">
+        <constraint name="${name}" type="rolling">
+            <predecessor link="${predecessor}"/>
+            <successor link="${successor}"/>
+            <ratio value="${gear_ratio}"/>
+        </constraint>
+    </xacro:macro>
+
     <xacro:property name="pelvis_mass" value="10"/>
     <xacro:property name="pelvis_origin_xyz" value="-0.01 0.0 0.034"/>
     <xacro:macro name="pelvis_inertia">

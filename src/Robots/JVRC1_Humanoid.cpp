@@ -450,7 +450,7 @@ namespace grbda
         for (size_t i(0); i < 2; i++)
         {
             const std::string side = sides[i];
-
+            
             // Shoulder pitch
             const Mat3<double> R_shoulder_p = i == 0 ? R_left_shoulder_p : R_right_shoulder_p;
             const Vec3<double> p_shoulder_p = i == 0 ? p_left_shoulder_p : p_right_shoulder_p;
@@ -480,8 +480,8 @@ namespace grbda
             // Shoulder pitch cluster
             const std::string shoulder_p_cluster_name = side + "_shoulder_p";
             GearedTransmissionModule<> shoulder_p_module{shoulder_p, shoulder_p_rotor,
-                                                       "base-to-" + side + "-shoulder-pitch",
-                                                       "base-to-" + side + "-shoulder-pitch-rotor",
+                                                       "waist-roll-to-" + side + "-shoulder-pitch",
+                                                       "waist-roll-to-" + side + "-shoulder-pitch-rotor",
                                                        ori::CoordinateAxis::Y,
                                                        ori::CoordinateAxis::Y,
                                                        gear_ratio};

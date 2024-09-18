@@ -39,6 +39,11 @@
       <inertia ixx="2e-05" ixy="0.0" ixz="0.0" iyy="2e-05" iyz="0.0" izz="5e-05"/>
     </inertial>
   </link>
+  <constraint name="waist-yaw-transmission" type="rolling">
+    <predecessor link="waist-yaw"/>
+    <successor link="waist-yaw-rotor"/>
+    <ratio value="6.0"/>
+  </constraint>
   <joint independent="true" name="waist-yaw-to-waist-pitch" type="revolute">
     <axis xyz="0 1 0"/>
     <origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 -1.11e-16"/>
@@ -67,6 +72,11 @@
       <inertia ixx="2e-05" ixy="0.0" ixz="0.0" iyy="2e-05" iyz="0.0" izz="5e-05"/>
     </inertial>
   </link>
+  <constraint name="waist-pitch-transmission" type="rolling">
+    <predecessor link="waist-pitch"/>
+    <successor link="waist-pitch-rotor"/>
+    <ratio value="6.0"/>
+  </constraint>
   <joint independent="true" name="waist-pitch-to-waist-roll" type="revolute">
     <axis xyz="1 0 0"/>
     <origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 -1.11e-16"/>
@@ -95,6 +105,11 @@
       <inertia ixx="2e-05" ixy="0.0" ixz="0.0" iyy="2e-05" iyz="0.0" izz="5e-05"/>
     </inertial>
   </link>
+  <constraint name="waist-roll-transmission" type="rolling">
+    <predecessor link="waist-roll"/>
+    <successor link="waist-roll-rotor"/>
+    <ratio value="6.0"/>
+  </constraint>
   <joint independent="true" name="waist-roll-to-neck-yaw" type="revolute">
     <axis xyz="0 0 1"/>
     <origin rpy="0.0 0.0 0.0" xyz="-0.003 0.0 0.453"/>
@@ -123,6 +138,11 @@
       <inertia ixx="2e-05" ixy="0.0" ixz="0.0" iyy="2e-05" iyz="0.0" izz="5e-05"/>
     </inertial>
   </link>
+  <constraint name="neck-yaw-transmission" type="rolling">
+    <predecessor link="neck-yaw"/>
+    <successor link="neck-yaw-rotor"/>
+    <ratio value="6.0"/>
+  </constraint>
   <joint independent="true" name="neck-yaw-to-neck-roll" type="revolute">
     <axis xyz="1 0 0"/>
     <origin rpy="0.0 0.0 0.0" xyz="8.24e-18 0.0 2.22e-16"/>
@@ -151,6 +171,11 @@
       <inertia ixx="2e-05" ixy="0.0" ixz="0.0" iyy="2e-05" iyz="0.0" izz="5e-05"/>
     </inertial>
   </link>
+  <constraint name="neck-roll-transmission" type="rolling">
+    <predecessor link="neck-roll"/>
+    <successor link="neck-roll-rotor"/>
+    <ratio value="6.0"/>
+  </constraint>
   <joint independent="true" name="neck-roll-to-neck-pitch" type="revolute">
     <axis xyz="0 1 0"/>
     <origin rpy="0.0 0.0 0.0" xyz="8.24e-18 0.0 2.22e-16"/>
@@ -179,6 +204,11 @@
       <inertia ixx="2e-05" ixy="0.0" ixz="0.0" iyy="2e-05" iyz="0.0" izz="5e-05"/>
     </inertial>
   </link>
+  <constraint name="neck-pitch-transmission" type="rolling">
+    <predecessor link="neck-pitch"/>
+    <successor link="neck-pitch-rotor"/>
+    <ratio value="6.0"/>
+  </constraint>
   <!-- Left Leg -->
   <joint independent="true" name="base-to-left-hip-pitch" type="revolute">
     <axis xyz="0 1 0"/>
@@ -208,6 +238,11 @@
       <inertia ixx="2e-05" ixy="0.0" ixz="0.0" iyy="2e-05" iyz="0.0" izz="5e-05"/>
     </inertial>
   </link>
+  <constraint name="left-hip-pitch-transmission" type="rolling">
+    <predecessor link="left-hip-pitch"/>
+    <successor link="left-hip-pitch-rotor"/>
+    <ratio value="6.0"/>
+  </constraint>
   <joint independent="true" name="left-hip-pitch-to-hip-roll" type="revolute">
     <axis xyz="1 0 0"/>
     <origin rpy="0.0 0.0 0.0" xyz="0.0 -2.77e-17 0.0"/>
@@ -236,6 +271,11 @@
       <inertia ixx="2e-05" ixy="0.0" ixz="0.0" iyy="2e-05" iyz="0.0" izz="5e-05"/>
     </inertial>
   </link>
+  <constraint name="left-hip-roll-transmission" type="rolling">
+    <predecessor link="left-hip-roll"/>
+    <successor link="left-hip-roll-rotor"/>
+    <ratio value="6.0"/>
+  </constraint>
   <joint independent="true" name="left-hip-roll-to-hip-yaw" type="revolute">
     <axis xyz="0 0 1"/>
     <origin rpy="0.0 0.0 0.0" xyz="0.0 -2.77e-17 0.0"/>
@@ -264,6 +304,11 @@
       <inertia ixx="2e-05" ixy="0.0" ixz="0.0" iyy="2e-05" iyz="0.0" izz="5e-05"/>
     </inertial>
   </link>
+  <constraint name="left-hip-yaw-transmission" type="rolling">
+    <predecessor link="left-hip-yaw"/>
+    <successor link="left-hip-yaw-rotor"/>
+    <ratio value="6.0"/>
+  </constraint>
   <joint independent="true" name="left-hip-yaw-to-knee" type="revolute">
     <axis xyz="0 1 0"/>
     <origin rpy="0.0 0.0 0.0" xyz="-0.02 -2.77e-17 -0.389"/>
@@ -292,6 +337,11 @@
       <inertia ixx="2e-05" ixy="0.0" ixz="0.0" iyy="2e-05" iyz="0.0" izz="5e-05"/>
     </inertial>
   </link>
+  <constraint name="left-knee-transmission" type="rolling">
+    <predecessor link="left-knee"/>
+    <successor link="left-knee-rotor"/>
+    <ratio value="6.0"/>
+  </constraint>
   <joint independent="true" name="left-knee-to-ankle-roll" type="revolute">
     <axis xyz="1 0 0"/>
     <origin rpy="0.0 0.0 0.0" xyz="0.04 1.52e-16 -0.357"/>
@@ -320,6 +370,11 @@
       <inertia ixx="2e-05" ixy="0.0" ixz="0.0" iyy="2e-05" iyz="0.0" izz="5e-05"/>
     </inertial>
   </link>
+  <constraint name="left-ankle-roll-transmission" type="rolling">
+    <predecessor link="left-ankle-roll"/>
+    <successor link="left-ankle-roll-rotor"/>
+    <ratio value="6.0"/>
+  </constraint>
   <joint independent="true" name="left-ankle-roll-to-ankle-pitch" type="revolute">
     <axis xyz="0 1 0"/>
     <origin rpy="0.0 0.0 0.0" xyz="-4.86e-17 3.61e-16 -2.22e-16"/>
@@ -348,6 +403,11 @@
       <inertia ixx="2e-05" ixy="0.0" ixz="0.0" iyy="2e-05" iyz="0.0" izz="5e-05"/>
     </inertial>
   </link>
+  <constraint name="left-ankle-pitch-transmission" type="rolling">
+    <predecessor link="left-ankle-pitch"/>
+    <successor link="left-ankle-pitch-rotor"/>
+    <ratio value="6.0"/>
+  </constraint>
   <!-- Right Leg -->
   <joint independent="true" name="base-to-right-hip-pitch" type="revolute">
     <axis xyz="0 1 0"/>
@@ -377,6 +437,11 @@
       <inertia ixx="2e-05" ixy="0.0" ixz="0.0" iyy="2e-05" iyz="0.0" izz="5e-05"/>
     </inertial>
   </link>
+  <constraint name="right-hip-pitch-transmission" type="rolling">
+    <predecessor link="right-hip-pitch"/>
+    <successor link="right-hip-pitch-rotor"/>
+    <ratio value="6.0"/>
+  </constraint>
   <joint independent="true" name="right-hip-pitch-to-hip-roll" type="revolute">
     <axis xyz="1 0 0"/>
     <origin rpy="0.0 0.0 0.0" xyz="0.0 2.77e-17 0.0"/>
@@ -405,6 +470,11 @@
       <inertia ixx="2e-05" ixy="0.0" ixz="0.0" iyy="2e-05" iyz="0.0" izz="5e-05"/>
     </inertial>
   </link>
+  <constraint name="right-hip-roll-transmission" type="rolling">
+    <predecessor link="right-hip-roll"/>
+    <successor link="right-hip-roll-rotor"/>
+    <ratio value="6.0"/>
+  </constraint>
   <joint independent="true" name="right-hip-roll-to-hip-yaw" type="revolute">
     <axis xyz="0 0 1"/>
     <origin rpy="0.0 0.0 0.0" xyz="0.0 2.77e-17 0.0"/>
@@ -433,6 +503,11 @@
       <inertia ixx="2e-05" ixy="0.0" ixz="0.0" iyy="2e-05" iyz="0.0" izz="5e-05"/>
     </inertial>
   </link>
+  <constraint name="right-hip-yaw-transmission" type="rolling">
+    <predecessor link="right-hip-yaw"/>
+    <successor link="right-hip-yaw-rotor"/>
+    <ratio value="6.0"/>
+  </constraint>
   <joint independent="true" name="right-hip-yaw-to-knee" type="revolute">
     <axis xyz="0 1 0"/>
     <origin rpy="0.0 0.0 0.0" xyz="-0.02 2.77e-17 -0.389"/>
@@ -461,6 +536,11 @@
       <inertia ixx="2e-05" ixy="0.0" ixz="0.0" iyy="2e-05" iyz="0.0" izz="5e-05"/>
     </inertial>
   </link>
+  <constraint name="right-knee-transmission" type="rolling">
+    <predecessor link="right-knee"/>
+    <successor link="right-knee-rotor"/>
+    <ratio value="6.0"/>
+  </constraint>
   <joint independent="true" name="right-knee-to-ankle-roll" type="revolute">
     <axis xyz="1 0 0"/>
     <origin rpy="0.0 0.0 0.0" xyz="0.04 1.11e-16 -0.357"/>
@@ -489,6 +569,11 @@
       <inertia ixx="2e-05" ixy="0.0" ixz="0.0" iyy="2e-05" iyz="0.0" izz="5e-05"/>
     </inertial>
   </link>
+  <constraint name="right-ankle-roll-transmission" type="rolling">
+    <predecessor link="right-ankle-roll"/>
+    <successor link="right-ankle-roll-rotor"/>
+    <ratio value="6.0"/>
+  </constraint>
   <joint independent="true" name="right-ankle-roll-to-ankle-pitch" type="revolute">
     <axis xyz="0 1 0"/>
     <origin rpy="0.0 0.0 0.0" xyz="-1.734e-17 -4.44e-16 -1.11e-16"/>
@@ -517,11 +602,16 @@
       <inertia ixx="2e-05" ixy="0.0" ixz="0.0" iyy="2e-05" iyz="0.0" izz="5e-05"/>
     </inertial>
   </link>
+  <constraint name="right-ankle-pitch-transmission" type="rolling">
+    <predecessor link="right-ankle-pitch"/>
+    <successor link="right-ankle-pitch-rotor"/>
+    <ratio value="6.0"/>
+  </constraint>
   <!-- Left Arm -->
-  <joint independent="true" name="base-to-left-shoulder-pitch" type="revolute">
+  <joint independent="true" name="waist-roll-to-left-shoulder-pitch" type="revolute">
     <axis xyz="0 1 0"/>
     <origin rpy="0.0 0.0 0.0" xyz="0.0 0.24 0.33"/>
-    <parent link="base"/>
+    <parent link="waist-roll"/>
     <child link="left-shoulder-pitch"/>
     <limit effort="150" lower="-10" upper="10" velocity="100"/>
   </joint>
@@ -532,10 +622,10 @@
       <inertia ixx="0.00196" ixy="0.0" ixz="0.0" iyy="0.00196" iyz="0.0" izz="0.00196"/>
     </inertial>
   </link>
-  <joint independent="false" name="base-to-left-shoulder-pitch-rotor" type="revolute">
+  <joint independent="false" name="waist-roll-to-left-shoulder-pitch-rotor" type="revolute">
     <axis xyz="0 1 0"/>
     <origin rpy="0.0 0.0 0.0" xyz="0.0 0.24 0.33"/>
-    <parent link="base"/>
+    <parent link="waist-roll"/>
     <child link="left-shoulder-pitch-rotor"/>
     <limit effort="150" lower="-10" upper="10" velocity="100"/>
   </joint>
@@ -546,6 +636,11 @@
       <inertia ixx="2e-05" ixy="0.0" ixz="0.0" iyy="2e-05" iyz="0.0" izz="5e-05"/>
     </inertial>
   </link>
+  <constraint name="left-shoulder-pitch-transmission" type="rolling">
+    <predecessor link="left-shoulder-pitch"/>
+    <successor link="left-shoulder-pitch-rotor"/>
+    <ratio value="6.0"/>
+  </constraint>
   <joint independent="true" name="left-shoulder-pitch-to-shoulder-roll" type="revolute">
     <axis xyz="1 0 0"/>
     <origin rpy="0.0 0.0 0.0" xyz="0.0 2.78e-17 -5.55e-16"/>
@@ -574,6 +669,11 @@
       <inertia ixx="2e-05" ixy="0.0" ixz="0.0" iyy="2e-05" iyz="0.0" izz="5e-05"/>
     </inertial>
   </link>
+  <constraint name="left-shoulder-roll-transmission" type="rolling">
+    <predecessor link="left-shoulder-roll"/>
+    <successor link="left-shoulder-roll-rotor"/>
+    <ratio value="6.0"/>
+  </constraint>
   <joint independent="true" name="left-shoulder-roll-to-shoulder-yaw" type="revolute">
     <axis xyz="0 0 1"/>
     <origin rpy="0.0 0.0 0.0" xyz="0.0 2.78e-17 -5.55e-16"/>
@@ -602,6 +702,11 @@
       <inertia ixx="2e-05" ixy="0.0" ixz="0.0" iyy="2e-05" iyz="0.0" izz="5e-05"/>
     </inertial>
   </link>
+  <constraint name="left-shoulder-yaw-transmission" type="rolling">
+    <predecessor link="left-shoulder-yaw"/>
+    <successor link="left-shoulder-yaw-rotor"/>
+    <ratio value="6.0"/>
+  </constraint>
   <joint independent="true" name="left-shoulder-yaw-to-elbow-pitch" type="revolute">
     <axis xyz="0 1 0"/>
     <origin rpy="0.0 0.0 0.0" xyz="0.004 -2.78e-17 -0.305"/>
@@ -630,6 +735,11 @@
       <inertia ixx="2e-05" ixy="0.0" ixz="0.0" iyy="2e-05" iyz="0.0" izz="5e-05"/>
     </inertial>
   </link>
+  <constraint name="left-elbow-pitch-transmission" type="rolling">
+    <predecessor link="left-elbow-pitch"/>
+    <successor link="left-elbow-pitch-rotor"/>
+    <ratio value="6.0"/>
+  </constraint>
   <joint independent="true" name="left-elbow-pitch-to-elbow-yaw" type="revolute">
     <axis xyz="0 0 1"/>
     <origin rpy="0.0 0.0 0.0" xyz="-0.004 3.89e-16 -0.239"/>
@@ -658,6 +768,11 @@
       <inertia ixx="2e-05" ixy="0.0" ixz="0.0" iyy="2e-05" iyz="0.0" izz="5e-05"/>
     </inertial>
   </link>
+  <constraint name="left-elbow-yaw-transmission" type="rolling">
+    <predecessor link="left-elbow-yaw"/>
+    <successor link="left-elbow-yaw-rotor"/>
+    <ratio value="6.0"/>
+  </constraint>
   <joint independent="true" name="left-elbow-yaw-to-wrist-roll" type="revolute">
     <axis xyz="1 0 0"/>
     <origin rpy="0.0 0.0 0.0" xyz="0.0 -2.78e-16 -1.80e-16"/>
@@ -686,6 +801,11 @@
       <inertia ixx="2e-05" ixy="0.0" ixz="0.0" iyy="2e-05" iyz="0.0" izz="5e-05"/>
     </inertial>
   </link>
+  <constraint name="left-wrist-roll-transmission" type="rolling">
+    <predecessor link="left-wrist-roll"/>
+    <successor link="left-wrist-roll-rotor"/>
+    <ratio value="6.0"/>
+  </constraint>
   <joint independent="true" name="left-wrist-roll-to-wrist-yaw" type="revolute">
     <axis xyz="0 0 1"/>
     <origin rpy="0.0 0.0 0.0" xyz="0.0 -2.78e-16 -1.80e-16"/>
@@ -714,11 +834,16 @@
       <inertia ixx="2e-05" ixy="0.0" ixz="0.0" iyy="2e-05" iyz="0.0" izz="5e-05"/>
     </inertial>
   </link>
+  <constraint name="left-wrist-yaw-transmission" type="rolling">
+    <predecessor link="left-wrist-yaw"/>
+    <successor link="left-wrist-yaw-rotor"/>
+    <ratio value="6.0"/>
+  </constraint>
   <!-- Right Arm -->
-  <joint independent="true" name="base-to-right-shoulder-pitch" type="revolute">
+  <joint independent="true" name="waist-roll-to-right-shoulder-pitch" type="revolute">
     <axis xyz="0 1 0"/>
     <origin rpy="0.0 0.0 0.0" xyz="0.0 -0.24 0.33"/>
-    <parent link="base"/>
+    <parent link="waist-roll"/>
     <child link="right-shoulder-pitch"/>
     <limit effort="150" lower="-10" upper="10" velocity="100"/>
   </joint>
@@ -729,10 +854,10 @@
       <inertia ixx="0.00196" ixy="0.0" ixz="0.0" iyy="0.00196" iyz="0.0" izz="0.00196"/>
     </inertial>
   </link>
-  <joint independent="false" name="base-to-right-shoulder-pitch-rotor" type="revolute">
+  <joint independent="false" name="waist-roll-to-right-shoulder-pitch-rotor" type="revolute">
     <axis xyz="0 1 0"/>
     <origin rpy="0.0 0.0 0.0" xyz="0.0 -0.24 0.33"/>
-    <parent link="base"/>
+    <parent link="waist-roll"/>
     <child link="right-shoulder-pitch-rotor"/>
     <limit effort="150" lower="-10" upper="10" velocity="100"/>
   </joint>
@@ -743,6 +868,11 @@
       <inertia ixx="2e-05" ixy="0.0" ixz="0.0" iyy="2e-05" iyz="0.0" izz="5e-05"/>
     </inertial>
   </link>
+  <constraint name="right-shoulder-pitch-transmission" type="rolling">
+    <predecessor link="right-shoulder-pitch"/>
+    <successor link="right-shoulder-pitch-rotor"/>
+    <ratio value="6.0"/>
+  </constraint>
   <joint independent="true" name="right-shoulder-pitch-to-shoulder-roll" type="revolute">
     <axis xyz="1 0 0"/>
     <origin rpy="0.0 0.0 0.0" xyz="0.0 -2.78e-17 -7.77e-16"/>
@@ -771,6 +901,11 @@
       <inertia ixx="2e-05" ixy="0.0" ixz="0.0" iyy="2e-05" iyz="0.0" izz="5e-05"/>
     </inertial>
   </link>
+  <constraint name="right-shoulder-roll-transmission" type="rolling">
+    <predecessor link="right-shoulder-roll"/>
+    <successor link="right-shoulder-roll-rotor"/>
+    <ratio value="6.0"/>
+  </constraint>
   <joint independent="true" name="right-shoulder-roll-to-shoulder-yaw" type="revolute">
     <axis xyz="0 0 1"/>
     <origin rpy="0.0 0.0 0.0" xyz="0.0 -2.78e-17 -7.77e-16"/>
@@ -799,6 +934,11 @@
       <inertia ixx="2e-05" ixy="0.0" ixz="0.0" iyy="2e-05" iyz="0.0" izz="5e-05"/>
     </inertial>
   </link>
+  <constraint name="right-shoulder-yaw-transmission" type="rolling">
+    <predecessor link="right-shoulder-yaw"/>
+    <successor link="right-shoulder-yaw-rotor"/>
+    <ratio value="6.0"/>
+  </constraint>
   <joint independent="true" name="right-shoulder-yaw-to-elbow-pitch" type="revolute">
     <axis xyz="0 1 0"/>
     <origin rpy="0.0 0.0 0.0" xyz="0.004 2.78e-17 -0.305"/>
@@ -827,6 +967,11 @@
       <inertia ixx="2e-05" ixy="0.0" ixz="0.0" iyy="2e-05" iyz="0.0" izz="5e-05"/>
     </inertial>
   </link>
+  <constraint name="right-elbow-pitch-transmission" type="rolling">
+    <predecessor link="right-elbow-pitch"/>
+    <successor link="right-elbow-pitch-rotor"/>
+    <ratio value="6.0"/>
+  </constraint>
   <joint independent="true" name="right-elbow-pitch-to-elbow-yaw" type="revolute">
     <axis xyz="0 0 1"/>
     <origin rpy="0.0 0.0 0.0" xyz="-0.004 -5e-16 -0.239"/>
@@ -855,6 +1000,11 @@
       <inertia ixx="2e-05" ixy="0.0" ixz="0.0" iyy="2e-05" iyz="0.0" izz="5e-05"/>
     </inertial>
   </link>
+  <constraint name="right-elbow-yaw-transmission" type="rolling">
+    <predecessor link="right-elbow-yaw"/>
+    <successor link="right-elbow-yaw-rotor"/>
+    <ratio value="6.0"/>
+  </constraint>
   <joint independent="true" name="right-elbow-yaw-to-wrist-roll" type="revolute">
     <axis xyz="1 0 0"/>
     <origin rpy="0.0 0.0 0.0" xyz="0.0 2.78e-16 -1.80e-16"/>
@@ -883,6 +1033,11 @@
       <inertia ixx="2e-05" ixy="0.0" ixz="0.0" iyy="2e-05" iyz="0.0" izz="5e-05"/>
     </inertial>
   </link>
+  <constraint name="right-wrist-roll-transmission" type="rolling">
+    <predecessor link="right-wrist-roll"/>
+    <successor link="right-wrist-roll-rotor"/>
+    <ratio value="6.0"/>
+  </constraint>
   <joint independent="true" name="right-wrist-roll-to-wrist-yaw" type="revolute">
     <axis xyz="0 0 1"/>
     <origin rpy="0.0 0.0 0.0" xyz="0.0 2.78e-16 -1.80e-16"/>
@@ -911,5 +1066,10 @@
       <inertia ixx="2e-05" ixy="0.0" ixz="0.0" iyy="2e-05" iyz="0.0" izz="5e-05"/>
     </inertial>
   </link>
+  <constraint name="right-wrist-yaw-transmission" type="rolling">
+    <predecessor link="right-wrist-yaw"/>
+    <successor link="right-wrist-yaw-rotor"/>
+    <ratio value="6.0"/>
+  </constraint>
 </robot>
 

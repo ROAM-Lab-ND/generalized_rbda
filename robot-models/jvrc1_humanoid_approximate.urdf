@@ -266,10 +266,10 @@
     </inertial>
   </link>
   <!-- Left Arm -->
-  <joint independent="true" name="base-to-left-shoulder-pitch" type="revolute">
+  <joint independent="true" name="waist-roll-to-left-shoulder-pitch" type="revolute">
     <axis xyz="0 1 0"/>
     <origin rpy="0.0 0.0 0.0" xyz="0.0 0.24 0.33"/>
-    <parent link="base"/>
+    <parent link="waist-roll"/>
     <child link="left-shoulder-pitch"/>
     <limit effort="150" lower="-10" upper="10" velocity="100"/>
   </joint>
@@ -365,10 +365,10 @@
     </inertial>
   </link>
   <!-- Right Arm -->
-  <joint independent="true" name="base-to-right-shoulder-pitch" type="revolute">
+  <joint independent="true" name="waist-roll-to-right-shoulder-pitch" type="revolute">
     <axis xyz="0 1 0"/>
     <origin rpy="0.0 0.0 0.0" xyz="0.0 -0.24 0.33"/>
-    <parent link="base"/>
+    <parent link="waist-roll"/>
     <child link="right-shoulder-pitch"/>
     <limit effort="150" lower="-10" upper="10" velocity="100"/>
   </joint>

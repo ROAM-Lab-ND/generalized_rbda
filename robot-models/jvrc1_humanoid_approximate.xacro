@@ -67,7 +67,7 @@
 
     <!-- Left Arm -->
     
-    <xacro:L_independent_shoulder_pitch_joint parent="${base}"/>
+    <xacro:L_independent_shoulder_pitch_joint parent="waist-roll"/>
     <xacro:shoulder_pitch prefix="left-"/>
 
     <xacro:L_independent_shoulder_roll_joint parent="left-shoulder-pitch"/>
@@ -90,7 +90,7 @@
 
     <!-- Right Arm -->
     
-    <xacro:R_independent_shoulder_pitch_joint parent="${base}"/>
+    <xacro:R_independent_shoulder_pitch_joint parent="waist-roll"/>
     <xacro:shoulder_pitch prefix="right-"/>
 
     <xacro:R_independent_shoulder_roll_joint parent="right-shoulder-pitch"/>
