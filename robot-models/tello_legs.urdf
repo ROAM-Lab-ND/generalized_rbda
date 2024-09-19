@@ -8,7 +8,7 @@
   <!-- Left Hip Cluster -->
   <joint independent="true" name="ground-to-left-hip-clamp-rotor" type="revolute">
     <axis xyz="0 0 1"/>
-    <origin rpy="-3.1415927 0.0 0.0" xyz="0.0 126e-03 -26e-03"/>
+    <origin rpy="3.1415927 0.0 0.0" xyz="0.0 126e-03 -26e-03"/>
     <parent link="ground"/>
     <child link="left-hip-clamp-rotor"/>
     <limit effort="150" lower="-10" upper="10" velocity="100"/>
@@ -37,7 +37,7 @@
   <!-- Left Hip Differentials -->
   <joint independent="true" name="left-hip-clamp-to-hip-rotor-1" type="revolute">
     <axis xyz="0 0 1"/>
-    <origin rpy="-1.5707963 0.0 -3.1415927" xyz="0.0 0.04 0.0"/>
+    <origin rpy="-1.5707963 3.1415927 0.0" xyz="0.0 0.04 0.0"/>
     <parent link="left-hip-clamp"/>
     <child link="left-hip-rotor-1"/>
     <limit effort="150" lower="-10" upper="10" velocity="100"/>
@@ -51,7 +51,7 @@
   </link>
   <joint independent="true" name="left-hip-clamp-to-hip-rotor-2" type="revolute">
     <axis xyz="0 0 1"/>
-    <origin rpy="-1.5707963 0.0 0.0" xyz="0.0 -0.04 0.0"/>
+    <origin rpy="1.5707963 0.0 0.0" xyz="0.0 -0.04 0.0"/>
     <parent link="left-hip-clamp"/>
     <child link="left-hip-rotor-2"/>
     <limit effort="150" lower="-10" upper="10" velocity="100"/>
@@ -94,7 +94,7 @@
   <!-- Left Knee-Ankle Differentials -->
   <joint independent="true" name="left-thigh-to-knee-ankle-rotor-1" type="revolute">
     <axis xyz="0 0 1"/>
-    <origin rpy="-1.5707963 0.0 0.0" xyz="0.0 26.55e-03 0.0"/>
+    <origin rpy="1.5707963 0.0 0.0" xyz="0.0 26.55e-03 0.0"/>
     <parent link="left-thigh"/>
     <child link="left-knee-ankle-rotor-1"/>
     <limit effort="150" lower="-10" upper="10" velocity="100"/>
@@ -108,7 +108,7 @@
   </link>
   <joint independent="true" name="left-thigh-to-knee-ankle-rotor-2" type="revolute">
     <axis xyz="0 0 1"/>
-    <origin rpy="-1.5707963 0.0 -3.1415927" xyz="0.0 -26.55e-03 0.0"/>
+    <origin rpy="-1.5707963 3.1415927 0.0" xyz="0.0 -26.55e-03 0.0"/>
     <parent link="left-thigh"/>
     <child link="left-knee-ankle-rotor-2"/>
     <limit effort="150" lower="-10" upper="10" velocity="100"/>
@@ -180,7 +180,7 @@
   <!-- Right Hip Differentials -->
   <joint independent="true" name="right-hip-clamp-to-hip-rotor-1" type="revolute">
     <axis xyz="0 0 1"/>
-    <origin rpy="-1.5707963 0.0 -3.1415927" xyz="0.0 0.04 0.0"/>
+    <origin rpy="-1.5707963 3.1415927 0.0" xyz="0.0 0.04 0.0"/>
     <parent link="right-hip-clamp"/>
     <child link="right-hip-rotor-1"/>
     <limit effort="150" lower="-10" upper="10" velocity="100"/>
@@ -194,7 +194,7 @@
   </link>
   <joint independent="true" name="right-hip-clamp-to-hip-rotor-2" type="revolute">
     <axis xyz="0 0 1"/>
-    <origin rpy="-1.5707963 0.0 0.0" xyz="0.0 -0.04 0.0"/>
+    <origin rpy="1.5707963 0.0 0.0" xyz="0.0 -0.04 0.0"/>
     <parent link="right-hip-clamp"/>
     <child link="right-hip-rotor-2"/>
     <limit effort="150" lower="-10" upper="10" velocity="100"/>
@@ -237,7 +237,7 @@
   <!-- Right Knee-Ankle Differentials -->
   <joint independent="true" name="right-thigh-to-knee-ankle-rotor-1" type="revolute">
     <axis xyz="0 0 1"/>
-    <origin rpy="-1.5707963 0.0 0.0" xyz="0.0 26.55e-03 0.0"/>
+    <origin rpy="1.5707963 0.0 0.0" xyz="0.0 26.55e-03 0.0"/>
     <parent link="right-thigh"/>
     <child link="right-knee-ankle-rotor-1"/>
     <limit effort="150" lower="-10" upper="10" velocity="100"/>
@@ -251,7 +251,7 @@
   </link>
   <joint independent="true" name="right-thigh-to-knee-ankle-rotor-2" type="revolute">
     <axis xyz="0 0 1"/>
-    <origin rpy="-1.5707963 0.0 -3.1415927" xyz="0.0 -26.55e-03 0.0"/>
+    <origin rpy="-1.5707963 3.1415927 0.0" xyz="0.0 -26.55e-03 0.0"/>
     <parent link="right-thigh"/>
     <child link="right-knee-ankle-rotor-2"/>
     <limit effort="150" lower="-10" upper="10" velocity="100"/>

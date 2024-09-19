@@ -6,9 +6,9 @@
     <xacro:property name="Y_AXIS" value="0 1 0"/>
     <xacro:property name="Z_AXIS" value="0 0 1"/>
     <xacro:property name="RPY_up" value="0.0 0.0 0.0"/>
-    <xacro:property name="RPY_down" value="-3.1415927 0.0 0.0"/>
-    <xacro:property name="RPY_left" value="-1.5707963 0.0 -3.1415927"/>
-    <xacro:property name="RPY_right" value="-1.5707963 0.0 0.0"/>
+    <xacro:property name="RPY_down" value="3.1415927 0.0 0.0"/>
+    <xacro:property name="RPY_left" value="-1.5707963 3.1415927 0.0"/>
+    <xacro:property name="RPY_right" value="1.5707963 0.0 0.0"/>
 
     <xacro:property name="effort_limit" value="150"/>
     <xacro:property name="velocity_limit" value="100"/>
@@ -114,42 +114,59 @@
 
     <xacro:property name="shoulder_ry_mass" value="0.788506"/>
     <xacro:property name="shoulder_ry_axis" value="${Y_AXIS}"/>
-    <xacro:property name="L_shoulder_ry_joint_xyz" value="0.01346 -0.17608 0.24657"/>
-    <xacro:property name="R_shoulder_ry_joint_xyz" value="0.01346 0.17608 0.24657"/>
+    <xacro:property name="R_shoulder_ry_joint_xyz" value="0.01346 -0.17608 0.24657"/>
+    <xacro:property name="L_shoulder_ry_joint_xyz" value="0.01346 0.17608 0.24657"/>
     <xacro:property name="shoulder_ry_joint_rpy" value="${RPY_up}"/>
-    <xacro:property name="shoulder_ry_origin_xyz" value="0.009265, 0.052623, -0.0001249"/>
-    <xacro:macro name="shoulder_ry_inertia">
+    <xacro:property name="L_shoulder_ry_origin_xyz" value="0.009265 0.052623 -0.0001249"/>
+    <xacro:property name="R_shoulder_ry_origin_xyz" value="0.009265 -0.052623 -0.0001249"/>
+    <xacro:macro name="L_shoulder_ry_inertia">
         <inertia ixx="0.0013678" ixy="0.0000266" ixz="0.0000021" iyy="0.0007392" iyz="-0.0000012" izz="0.000884"/>
     </xacro:macro>
+    <xacro:macro name="R_shoulder_ry_inertia">
+        <inertia ixx="0.0013678" ixy="-0.0000266" ixz="0.0000021" iyy="0.0007392" iyz="0.0000012" izz="0.000884"/>
+    </xacro:macro>
+
 
     <xacro:property name="shoulder_rx_mass" value="0.80125"/>
     <xacro:property name="shoulder_rx_axis" value="${X_AXIS}"/>
-    <xacro:property name="L_shoulder_rx_joint_xyz" value="0.0 -0.0575 0.0"/>
-    <xacro:property name="R_shoulder_rx_joint_xyz" value="0.0 0.0575 0.0"/>
+    <xacro:property name="R_shoulder_rx_joint_xyz" value="0.0 -0.0575 0.0"/>
+    <xacro:property name="L_shoulder_rx_joint_xyz" value="0.0 0.0575 0.0"/>
     <xacro:property name="shoulder_rx_joint_rpy" value="${RPY_up}"/>
-    <xacro:property name="shoulder_rx_origin_xyz" value="0.0006041 0.0001221 -0.082361"/>
-    <xacro:macro name="shoulder_rx_inertia">
+    <xacro:property name="L_shoulder_rx_origin_xyz" value="0.0006041 0.0001221 -0.082361"/>
+    <xacro:property name="R_shoulder_rx_origin_xyz" value="0.0006041 -0.0001221 -0.082361"/>
+    <xacro:macro name="L_shoulder_rx_inertia">
         <inertia ixx="0.0011524" ixy="0.0000007" ixz="0.0000396" iyy="0.0011921" iyz="0.0000014" izz="0.0012386"/>
+    </xacro:macro>
+    <xacro:macro name="R_shoulder_rx_inertia">
+        <inertia ixx="0.0011524" ixy="-0.0000007" ixz="0.0000396" iyy="0.0011921" iyz="-0.0000014" izz="0.0012386"/>
     </xacro:macro>
 
     <xacro:property name="shoulder_rz_mass" value="0.905588"/>
     <xacro:property name="shoulder_rz_axis" value="${Z_AXIS}"/>
-    <xacro:property name="L_shoulder_rz_joint_xyz" value="0.0 0.0 -0.1025"/>
     <xacro:property name="R_shoulder_rz_joint_xyz" value="0.0 0.0 -0.1025"/>
+    <xacro:property name="L_shoulder_rz_joint_xyz" value="0.0 0.0 -0.1025"/>
     <xacro:property name="shoulder_rz_joint_rpy" value="${RPY_up}"/>
-    <xacro:property name="shoulder_rz_origin_xyz" value="0.0001703 -0.016797 -0.060"/>
-    <xacro:macro name="shoulder_rz_inertia">
+    <xacro:property name="L_shoulder_rz_origin_xyz" value="0.0001703 -0.016797 -0.060"/>
+    <xacro:property name="R_shoulder_rz_origin_xyz" value="0.0001703 0.016797 -0.060"/>
+    <xacro:macro name="L_shoulder_rz_inertia">
         <inertia ixx="0.0012713" ixy="0.000001" ixz="-0.000008" iyy="0.0017477" iyz="-0.0000225" izz="0.0008191"/>
+    </xacro:macro>
+    <xacro:macro name="R_shoulder_rz_inertia">
+        <inertia ixx="0.0012713" ixy="-0.000001" ixz="-0.000008" iyy="0.0017477" iyz="0.0000225" izz="0.0008191"/>
     </xacro:macro>
 
     <xacro:property name="elbow_mass" value="0.34839"/>
     <xacro:property name="elbow_axis" value="${Y_AXIS}"/>
-    <xacro:property name="L_elbow_joint_xyz" value="0.0 0.0 -0.1455"/>
     <xacro:property name="R_elbow_joint_xyz" value="0.0 0.0 -0.1455"/>
+    <xacro:property name="L_elbow_joint_xyz" value="0.0 0.0 -0.1455"/>
     <xacro:property name="elbow_joint_rpy" value="${RPY_up}"/>
-    <xacro:property name="elbow_origin_xyz" value="-0.0059578 0.000111 -0.0426735"/>
-    <xacro:macro name="elbow_inertia">
+    <xacro:property name="L_elbow_origin_xyz" value="-0.0059578 0.000111 -0.0426735"/>
+    <xacro:property name="R_elbow_origin_xyz" value="-0.0059578 -0.000111 -0.0426735"/>
+    <xacro:macro name="L_elbow_inertia">
         <inertia ixx="0.001570" ixy="0.0000002" ixz="0.0000335" iyy="0.0016167" iyz="0.000003" izz="0.0000619"/>
+    </xacro:macro>
+    <xacro:macro name="R_elbow_inertia">
+        <inertia ixx="0.001570" ixy="-0.0000002" ixz="0.0000335" iyy="0.0016167" iyz="-0.000003" izz="0.0000619"/>
     </xacro:macro>
 
     <xacro:property name="arm_rotor_mass" value="0.0"/>
@@ -166,29 +183,29 @@
 
     <xacro:property name="shoulder_ry_rotor_mass" value="${arm_rotor_mass}"/>
     <xacro:property name="shoulder_ry_rotor_axis" value="${Y_AXIS}"/>
-    <xacro:property name="L_shoulder_ry_rotor_joint_xyz" value="0.01346 -0.16 0.24657"/>
-    <xacro:property name="R_shoulder_ry_rotor_joint_xyz" value="0.01346 0.16 0.24657"/>
+    <xacro:property name="R_shoulder_ry_rotor_joint_xyz" value="0.01346 -0.16 0.24657"/>
+    <xacro:property name="L_shoulder_ry_rotor_joint_xyz" value="0.01346 0.16 0.24657"/>
     <xacro:property name="shoulder_ry_rotor_joint_rpy" value="${RPY_up}"/>
     <xacro:property name="shoulder_ry_rotor_origin_xyz" value="${arm_rotor_origin}"/>
 
     <xacro:property name="shoulder_rx_rotor_mass" value="${arm_rotor_mass}"/>
     <xacro:property name="shoulder_rx_rotor_axis" value="${X_AXIS}"/>
-    <xacro:property name="L_shoulder_rx_rotor_joint_xyz" value="0.0 -0.0575 0.0"/>
-    <xacro:property name="R_shoulder_rx_rotor_joint_xyz" value="0.0 0.0575 0.0"/>
+    <xacro:property name="R_shoulder_rx_rotor_joint_xyz" value="0.0 -0.0575 0.0"/>
+    <xacro:property name="L_shoulder_rx_rotor_joint_xyz" value="0.0 0.0575 0.0"/>
     <xacro:property name="shoulder_rx_rotor_joint_rpy" value="${RPY_up}"/>
     <xacro:property name="shoulder_rx_rotor_origin_xyz" value="${arm_rotor_origin}"/>
 
     <xacro:property name="shoulder_rz_rotor_mass" value="${arm_rotor_mass}"/>
     <xacro:property name="shoulder_rz_rotor_axis" value="${Z_AXIS}"/>
-    <xacro:property name="L_shoulder_rz_rotor_joint_xyz" value="0.0 0.0 -0.1025"/>
     <xacro:property name="R_shoulder_rz_rotor_joint_xyz" value="0.0 0.0 -0.1025"/>
+    <xacro:property name="L_shoulder_rz_rotor_joint_xyz" value="0.0 0.0 -0.1025"/>
     <xacro:property name="shoulder_rz_rotor_joint_rpy" value="${RPY_up}"/>
     <xacro:property name="shoulder_rz_rotor_origin_xyz" value="${arm_rotor_origin}"/>
 
     <xacro:property name="elbow_rotor_mass" value="${arm_rotor_mass}"/>
     <xacro:property name="elbow_rotor_axis" value="${Y_AXIS}"/>
-    <xacro:property name="L_elbow_rotor_joint_xyz" value="0.0 0.0325 -0.06"/>
-    <xacro:property name="R_elbow_rotor_joint_xyz" value="0.0 -0.0325 -0.06"/>
+    <xacro:property name="R_elbow_rotor_joint_xyz" value="0.0 0.0325 -0.06"/>
+    <xacro:property name="L_elbow_rotor_joint_xyz" value="0.0 -0.0325 -0.06"/>
     <xacro:property name="elbow_rotor_joint_rpy" value="${RPY_up}"/>
     <xacro:property name="elbow_rotor_origin_xyz" value="${arm_rotor_origin}"/>
 
@@ -220,16 +237,6 @@
 
     <xacro:macro name="rotor_inertia">
         <inertia ixx="2.5984e-05" ixy="0.0" ixz="0.0" iyy="2.5984e-05" iyz="0.0" izz="5.1512e-05"/>
-    </xacro:macro>
-
-    <xacro:macro name="rotor" params="name">
-        <link name="${name}">
-            <inertial>
-                <mass value="${rotor_mass}"/>
-                <origin xyz="${rotor_origin}"/>
-                <xacro:rotor_inertia/>
-            </inertial>
-        </link>
     </xacro:macro>
 
     <xacro:macro name="torso" params="name">
@@ -694,12 +701,22 @@
                                origin_rpy="${shoulder_ry_joint_rpy}"/>
     </xacro:macro>
 
-    <xacro:macro name="shoulder_ry" params="prefix">
-        <link name="${prefix}shoulder-ry">
+    <xacro:macro name="left_shoulder_ry">
+        <link name="left-shoulder-ry">
             <inertial>
                 <mass value="${shoulder_ry_mass}"/>
-                <origin xyz="${shoulder_ry_origin_xyz}"/>
-                <xacro:shoulder_ry_inertia/>
+                <origin xyz="${L_shoulder_ry_origin_xyz}"/>
+                <xacro:L_shoulder_ry_inertia/>
+            </inertial>
+        </link>
+    </xacro:macro>
+
+    <xacro:macro name="right_shoulder_ry">
+        <link name="right-shoulder-ry">
+            <inertial>
+                <mass value="${shoulder_ry_mass}"/>
+                <origin xyz="${R_shoulder_ry_origin_xyz}"/>
+                <xacro:R_shoulder_ry_inertia/>
             </inertial>
         </link>
     </xacro:macro>
@@ -747,7 +764,7 @@
     </xacro:macro>
 
     <xacro:macro name="L_independent_shoulder_rx_joint" params="parent">
-        <xacro:independent_joint name="${parent}-to-left-shoulder-rx"
+        <xacro:independent_joint name="${parent}-to-shoulder-rx"
                                parent="${parent}" child="left-shoulder-rx"
                                axis="${shoulder_rx_axis}"
                                origin_xyz="${L_shoulder_rx_joint_xyz}"
@@ -755,7 +772,7 @@
     </xacro:macro>
 
     <xacro:macro name="L_dependent_shoulder_rx_joint" params="parent">
-        <xacro:dependent_joint name="${parent}-to-left-shoulder-rx"
+        <xacro:dependent_joint name="${parent}-to-shoulder-rx"
                                parent="${parent}" child="left-shoulder-rx"
                                axis="${shoulder_rx_axis}"
                                origin_xyz="${L_shoulder_rx_joint_xyz}"
@@ -763,7 +780,7 @@
     </xacro:macro>
 
    <xacro:macro name="R_independent_shoulder_rx_joint" params="parent">
-        <xacro:independent_joint name="${parent}-to-right-shoulder-rx"
+        <xacro:independent_joint name="${parent}-to-shoulder-rx"
                                parent="${parent}" child="right-shoulder-rx"
                                axis="${shoulder_rx_axis}"
                                origin_xyz="${R_shoulder_rx_joint_xyz}"
@@ -771,25 +788,35 @@
     </xacro:macro>
 
     <xacro:macro name="R_dependent_shoulder_rx_joint" params="parent">
-        <xacro:dependent_joint name="${parent}-to-right-shoulder-rx"
+        <xacro:dependent_joint name="${parent}-to-shoulder-rx"
                                parent="${parent}" child="right-shoulder-rx"
                                axis="${shoulder_rx_axis}"
                                origin_xyz="${R_shoulder_rx_joint_xyz}"
                                origin_rpy="${shoulder_rx_joint_rpy}"/>
     </xacro:macro>
 
-    <xacro:macro name="shoulder_rx" params="prefix">
-        <link name="${prefix}shoulder-rx">
+    <xacro:macro name="left_shoulder_rx">
+        <link name="left-shoulder-rx">
             <inertial>
                 <mass value="${shoulder_rx_mass}"/>
-                <origin xyz="${shoulder_rx_origin_xyz}"/>
-                <xacro:shoulder_rx_inertia/>
+                <origin xyz="${L_shoulder_rx_origin_xyz}"/>
+                <xacro:L_shoulder_rx_inertia/>
+            </inertial>
+        </link>
+    </xacro:macro>
+
+    <xacro:macro name="right_shoulder_rx">
+        <link name="right-shoulder-rx">
+            <inertial>
+                <mass value="${shoulder_rx_mass}"/>
+                <origin xyz="${R_shoulder_rx_origin_xyz}"/>
+                <xacro:R_shoulder_rx_inertia/>
             </inertial>
         </link>
     </xacro:macro>
 
     <xacro:macro name="L_independent_shoulder_rx_rotor_joint" params="parent">
-        <xacro:independent_joint name="${parent}-to-left-shoulder-rx-rotor"
+        <xacro:independent_joint name="${parent}-to-shoulder-rx-rotor"
                                parent="${parent}" child="left-shoulder-rx-rotor"
                                axis="${shoulder_rx_rotor_axis}"
                                origin_xyz="${L_shoulder_rx_rotor_joint_xyz}"
@@ -797,7 +824,7 @@
     </xacro:macro>
 
     <xacro:macro name="L_dependent_shoulder_rx_rotor_joint" params="parent">
-        <xacro:dependent_joint name="${parent}-to-left-shoulder-rx-rotor"
+        <xacro:dependent_joint name="${parent}-to-shoulder-rx-rotor"
                                parent="${parent}" child="left-shoulder-rx-rotor"
                                axis="${shoulder_rx_rotor_axis}"
                                origin_xyz="${L_shoulder_rx_rotor_joint_xyz}"
@@ -805,7 +832,7 @@
     </xacro:macro>
 
    <xacro:macro name="R_independent_shoulder_rx_rotor_joint" params="parent">
-        <xacro:independent_joint name="${parent}-to-right-shoulder-rx-rotor"
+        <xacro:independent_joint name="${parent}-to-shoulder-rx-rotor"
                                parent="${parent}" child="right-shoulder-rx-rotor"
                                axis="${shoulder_rx_rotor_axis}"
                                origin_xyz="${R_shoulder_rx_rotor_joint_xyz}"
@@ -813,7 +840,7 @@
     </xacro:macro>
 
     <xacro:macro name="R_dependent_shoulder_rx_rotor_joint" params="parent">
-        <xacro:dependent_joint name="${parent}-to-right-shoulder-rx-rotor"
+        <xacro:dependent_joint name="${parent}-to-shoulder-rx-rotor"
                                parent="${parent}" child="right-shoulder-rx-rotor"
                                axis="${shoulder_rx_rotor_axis}"
                                origin_xyz="${R_shoulder_rx_rotor_joint_xyz}"
@@ -831,7 +858,7 @@
     </xacro:macro>
 
     <xacro:macro name="L_independent_shoulder_rz_joint" params="parent">
-        <xacro:independent_joint name="${parent}-to-left-shoulder-rz"
+        <xacro:independent_joint name="${parent}-to-shoulder-rz"
                                parent="${parent}" child="left-shoulder-rz"
                                axis="${shoulder_rz_axis}"
                                origin_xyz="${L_shoulder_rz_joint_xyz}"
@@ -839,7 +866,7 @@
     </xacro:macro>
 
     <xacro:macro name="L_dependent_shoulder_rz_joint" params="parent">
-        <xacro:dependent_joint name="${parent}-to-left-shoulder-rz"
+        <xacro:dependent_joint name="${parent}-to-shoulder-rz"
                                parent="${parent}" child="left-shoulder-rz"
                                axis="${shoulder_rz_axis}"
                                origin_xyz="${L_shoulder_rz_joint_xyz}"
@@ -847,7 +874,7 @@
     </xacro:macro>
 
    <xacro:macro name="R_independent_shoulder_rz_joint" params="parent">
-        <xacro:independent_joint name="${parent}-to-right-shoulder-rz"
+        <xacro:independent_joint name="${parent}-to-shoulder-rz"
                                parent="${parent}" child="right-shoulder-rz"
                                axis="${shoulder_rz_axis}"
                                origin_xyz="${R_shoulder_rz_joint_xyz}"
@@ -855,25 +882,35 @@
     </xacro:macro>
 
     <xacro:macro name="R_dependent_shoulder_rz_joint" params="parent">
-        <xacro:dependent_joint name="${parent}-to-right-shoulder-rz"
+        <xacro:dependent_joint name="${parent}-to-shoulder-rz"
                                parent="${parent}" child="right-shoulder-rz"
                                axis="${shoulder_rz_axis}"
                                origin_xyz="${R_shoulder_rz_joint_xyz}"
                                origin_rpy="${shoulder_rz_joint_rpy}"/>
     </xacro:macro>
 
-    <xacro:macro name="shoulder_rz" params="prefix">
-        <link name="${prefix}shoulder-rz">
+    <xacro:macro name="left_shoulder_rz">
+        <link name="left-shoulder-rz">
             <inertial>
                 <mass value="${shoulder_rz_mass}"/>
-                <origin xyz="${shoulder_rz_origin_xyz}"/>
-                <xacro:shoulder_rz_inertia/>
+                <origin xyz="${L_shoulder_rz_origin_xyz}"/>
+                <xacro:L_shoulder_rz_inertia/>
+            </inertial>
+        </link>
+    </xacro:macro>
+
+    <xacro:macro name="right_shoulder_rz">
+        <link name="right-shoulder-rz">
+            <inertial>
+                <mass value="${shoulder_rz_mass}"/>
+                <origin xyz="${R_shoulder_rz_origin_xyz}"/>
+                <xacro:R_shoulder_rz_inertia/>
             </inertial>
         </link>
     </xacro:macro>
 
     <xacro:macro name="L_independent_shoulder_rz_rotor_joint" params="parent">
-        <xacro:independent_joint name="${parent}-to-left-shoulder-rz-rotor"
+        <xacro:independent_joint name="${parent}-to-shoulder-rz-rotor"
                                parent="${parent}" child="left-shoulder-rz-rotor"
                                axis="${shoulder_rz_rotor_axis}"
                                origin_xyz="${L_shoulder_rz_rotor_joint_xyz}"
@@ -881,7 +918,7 @@
     </xacro:macro>
 
     <xacro:macro name="L_dependent_shoulder_rz_rotor_joint" params="parent">
-        <xacro:dependent_joint name="${parent}-to-left-shoulder-rz-rotor"
+        <xacro:dependent_joint name="${parent}-to-shoulder-rz-rotor"
                                parent="${parent}" child="left-shoulder-rz-rotor"
                                axis="${shoulder_rz_rotor_axis}"
                                origin_xyz="${L_shoulder_rz_rotor_joint_xyz}"
@@ -889,7 +926,7 @@
     </xacro:macro>
 
    <xacro:macro name="R_independent_shoulder_rz_rotor_joint" params="parent">
-        <xacro:independent_joint name="${parent}-to-right-shoulder-rz-rotor"
+        <xacro:independent_joint name="${parent}-to-shoulder-rz-rotor"
                                parent="${parent}" child="right-shoulder-rz-rotor"
                                axis="${shoulder_rz_rotor_axis}"
                                origin_xyz="${R_shoulder_rz_rotor_joint_xyz}"
@@ -897,7 +934,7 @@
     </xacro:macro>
 
     <xacro:macro name="R_dependent_shoulder_rz_rotor_joint" params="parent">
-        <xacro:dependent_joint name="${parent}-to-right-shoulder-rz-rotor"
+        <xacro:dependent_joint name="${parent}-to-shoulder-rz-rotor"
                                parent="${parent}" child="right-shoulder-rz-rotor"
                                axis="${shoulder_rz_rotor_axis}"
                                origin_xyz="${R_shoulder_rz_rotor_joint_xyz}"
@@ -915,7 +952,7 @@
     </xacro:macro>
 
     <xacro:macro name="L_independent_elbow_joint" params="parent">
-        <xacro:independent_joint name="${parent}-to-left-elbow"
+        <xacro:independent_joint name="${parent}-to-elbow"
                                parent="${parent}" child="left-elbow"
                                axis="${elbow_axis}"
                                origin_xyz="${L_elbow_joint_xyz}"
@@ -923,7 +960,7 @@
     </xacro:macro>
 
     <xacro:macro name="L_dependent_elbow_joint" params="parent">
-        <xacro:dependent_joint name="${parent}-to-left-elbow"
+        <xacro:dependent_joint name="${parent}-to-elbow"
                                parent="${parent}" child="left-elbow"
                                axis="${elbow_axis}"
                                origin_xyz="${L_elbow_joint_xyz}"
@@ -931,7 +968,7 @@
     </xacro:macro>
 
    <xacro:macro name="R_independent_elbow_joint" params="parent">
-        <xacro:independent_joint name="${parent}-to-right-elbow"
+        <xacro:independent_joint name="${parent}-to-elbow"
                                parent="${parent}" child="right-elbow"
                                axis="${elbow_axis}"
                                origin_xyz="${R_elbow_joint_xyz}"
@@ -939,25 +976,35 @@
     </xacro:macro>
 
     <xacro:macro name="R_dependent_elbow_joint" params="parent">
-        <xacro:dependent_joint name="${parent}-to-right-elbow"
+        <xacro:dependent_joint name="${parent}-to-elbow"
                                parent="${parent}" child="right-elbow"
                                axis="${elbow_axis}"
                                origin_xyz="${R_elbow_joint_xyz}"
                                origin_rpy="${elbow_joint_rpy}"/>
     </xacro:macro>
 
-    <xacro:macro name="elbow" params="prefix">
-        <link name="${prefix}elbow">
+    <xacro:macro name="left_elbow">
+        <link name="left-elbow">
             <inertial>
                 <mass value="${elbow_mass}"/>
-                <origin xyz="${elbow_origin_xyz}"/>
-                <xacro:elbow_inertia/>
+                <origin xyz="${L_elbow_origin_xyz}"/>
+                <xacro:L_elbow_inertia/>
+            </inertial>
+        </link>
+    </xacro:macro>
+
+    <xacro:macro name="right_elbow">
+        <link name="right-elbow">
+            <inertial>
+                <mass value="${elbow_mass}"/>
+                <origin xyz="${R_elbow_origin_xyz}"/>
+                <xacro:R_elbow_inertia/>
             </inertial>
         </link>
     </xacro:macro>
 
     <xacro:macro name="L_independent_elbow_rotor_joint" params="parent">
-        <xacro:independent_joint name="${parent}-to-left-elbow-rotor"
+        <xacro:independent_joint name="${parent}-to-elbow-rotor"
                                parent="${parent}" child="left-elbow-rotor"
                                axis="${elbow_rotor_axis}"
                                origin_xyz="${L_elbow_rotor_joint_xyz}"
@@ -965,7 +1012,7 @@
     </xacro:macro>
 
     <xacro:macro name="L_dependent_elbow_rotor_joint" params="parent">
-        <xacro:dependent_joint name="${parent}-to-left-elbow-rotor"
+        <xacro:dependent_joint name="${parent}-to-elbow-rotor"
                                parent="${parent}" child="left-elbow-rotor"
                                axis="${elbow_rotor_axis}"
                                origin_xyz="${L_elbow_rotor_joint_xyz}"
@@ -973,7 +1020,7 @@
     </xacro:macro>
 
    <xacro:macro name="R_independent_elbow_rotor_joint" params="parent">
-        <xacro:independent_joint name="${parent}-to-right-elbow-rotor"
+        <xacro:independent_joint name="${parent}-to-elbow-rotor"
                                parent="${parent}" child="right-elbow-rotor"
                                axis="${elbow_rotor_axis}"
                                origin_xyz="${R_elbow_rotor_joint_xyz}"
@@ -981,7 +1028,7 @@
     </xacro:macro>
 
     <xacro:macro name="R_dependent_elbow_rotor_joint" params="parent">
-        <xacro:dependent_joint name="${parent}-to-right-elbow-rotor"
+        <xacro:dependent_joint name="${parent}-to-elbow-rotor"
                                parent="${parent}" child="right-elbow-rotor"
                                axis="${elbow_rotor_axis}"
                                origin_xyz="${R_elbow_rotor_joint_xyz}"

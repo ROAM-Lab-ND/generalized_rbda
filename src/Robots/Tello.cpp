@@ -13,16 +13,16 @@ namespace grbda
         model.setGravity(Vec3<double>{0., 0., grav});
 
         // Torso
-        const std::string torso_name = "torso";
+        /*const std::string torso_name = base;
         const std::string torso_parent_name = "ground";
         const SpatialInertia<double> torso_spatial_inertia =
             SpatialInertia<double>{torso_mass, torso_CoM, torso_inertia};
         model.appendBody<Free<>>(torso_name, torso_spatial_inertia,
-                                 torso_parent_name, spatial::Transform{});
+                                 torso_parent_name, spatial::Transform{});*/
 
         std::vector<std::string> sides = {"left", "right"};
-        const std::string hip_clamp_parent_name = "torso";
-        const std::string hip_clamp_rotor_parent_name = "torso";
+        const std::string hip_clamp_parent_name = base;
+        const std::string hip_clamp_rotor_parent_name = base;
 
         for (size_t i(0); i < 2; i++)
         {
@@ -57,8 +57,8 @@ namespace grbda
 
             // Hip clamp cluster
             const std::string hip_clamp_cluster_name = side + "-hip-clamp";
-            const std::string hip_clamp_joint_name = "torso-to-" + side + "-hip-clamp";
-            const std::string hip_clamp_rotor_joint_name = "torso-to-" + side + "-hip-clamp-rotor";
+            const std::string hip_clamp_joint_name = base + "-to-" + side + "-hip-clamp";
+            const std::string hip_clamp_rotor_joint_name = base + "-to-" + side + "-hip-clamp-rotor";
             GearedTransmissionModule<> hip_clamp_module{hip_clamp, hip_clamp_rotor,
                                                         hip_clamp_joint_name, hip_clamp_rotor_joint_name,
                                                         ori::CoordinateAxis::Z,

@@ -14,11 +14,14 @@ namespace grbda
         ClusterTreeModel<> buildClusterTreeModel() const override;
 
     protected:
+        const std::string base = "ground";
+
         const double grav = -9.81;
     
         const Mat3<double> R_down = (Mat3<double>() << 1., 0., 0., 0., -1., 0., 0., 0., -1.).finished();
         const Mat3<double> R_left = (Mat3<double>() << -1., 0., 0., 0., 0., 1., 0., 1., 0.).finished();
         const Mat3<double> R_right = (Mat3<double>() << 1., 0., 0., 0., 0., 1., 0., -1., 0.).finished();
+
         // Left leg
         const Mat3<double> R_left_hip_clamp = Mat3<double>::Identity();
         const Vec3<double> p_left_hip_clamp = Vec3<double>{0., 126e-3, -87e-3};

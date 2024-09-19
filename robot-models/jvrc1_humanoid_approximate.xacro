@@ -1,0 +1,114 @@
+<?xml version="1.0" ?>
+
+<robot name="jvrc1_humanoid" xmlns:xacro="http://ros.org/wiki/xacro">
+
+    <xacro:include filename="jvrc1_properties.xacro"/>
+    <xacro:property name="base" value="base"/>
+
+    <xacro:pelvis name="${base}"/>
+
+    <xacro:independent_waist_yaw_joint parent="${base}"/>
+    <xacro:waist_yaw/>
+
+    <xacro:independent_waist_pitch_joint parent="waist-yaw"/>
+    <xacro:waist_pitch/>
+
+    <xacro:independent_waist_roll_joint parent="waist-pitch"/>
+    <xacro:waist_roll/>
+
+    <xacro:independent_neck_yaw_joint parent="waist-roll"/>
+    <xacro:neck_yaw/>
+
+    <xacro:independent_neck_roll_joint parent="neck-yaw"/>
+    <xacro:neck_roll/>
+
+    <xacro:independent_neck_pitch_joint parent="neck-roll"/>
+    <xacro:neck_pitch/>
+
+    <!-- Left Leg -->
+
+    <xacro:L_independent_hip_pitch_joint parent="${base}"/>
+    <xacro:hip_pitch prefix="left-"/>
+
+    <xacro:L_independent_hip_roll_joint parent="left-hip-pitch"/>
+    <xacro:hip_roll prefix="left-"/>
+
+    <xacro:L_independent_hip_yaw_joint parent="left-hip-roll"/>
+    <xacro:hip_yaw prefix="left-"/>
+
+    <xacro:L_independent_knee_joint parent="left-hip-yaw"/>
+    <xacro:knee prefix="left-"/>
+
+    <xacro:L_independent_ankle_roll_joint parent="left-knee"/>
+    <xacro:ankle_roll prefix="left-"/>
+
+    <xacro:L_independent_ankle_pitch_joint parent="left-ankle-roll"/>
+    <xacro:ankle_pitch prefix="left-"/>
+
+    <!-- Right Leg -->
+
+    <xacro:R_independent_hip_pitch_joint parent="${base}"/>
+    <xacro:hip_pitch prefix="right-"/>
+
+    <xacro:R_independent_hip_roll_joint parent="right-hip-pitch"/>
+    <xacro:hip_roll prefix="right-"/>
+
+    <xacro:R_independent_hip_yaw_joint parent="right-hip-roll"/>
+    <xacro:hip_yaw prefix="right-"/>
+
+    <xacro:R_independent_knee_joint parent="right-hip-yaw"/>
+    <xacro:knee prefix="right-"/>
+
+    <xacro:R_independent_ankle_roll_joint parent="right-knee"/>
+    <xacro:ankle_roll prefix="right-"/>
+
+    <xacro:R_independent_ankle_pitch_joint parent="right-ankle-roll"/>
+    <xacro:ankle_pitch prefix="right-"/>
+
+    <!-- Left Arm -->
+    
+    <xacro:L_independent_shoulder_pitch_joint parent="waist-roll"/>
+    <xacro:shoulder_pitch prefix="left-"/>
+
+    <xacro:L_independent_shoulder_roll_joint parent="left-shoulder-pitch"/>
+    <xacro:shoulder_roll prefix="left-"/>
+
+    <xacro:L_independent_shoulder_yaw_joint parent="left-shoulder-roll"/>
+    <xacro:shoulder_yaw prefix="left-"/>
+
+    <xacro:L_independent_elbow_pitch_joint parent="left-shoulder-yaw"/>
+    <xacro:elbow_pitch prefix="left-"/>
+
+    <xacro:L_independent_elbow_yaw_joint parent="left-elbow-pitch"/>
+    <xacro:elbow_yaw prefix="left-"/>
+
+    <xacro:L_independent_wrist_roll_joint parent="left-elbow-yaw"/>
+    <xacro:wrist_roll prefix="left-"/>
+
+    <xacro:L_independent_wrist_yaw_joint parent="left-wrist-roll"/>
+    <xacro:left_wrist_yaw/>
+
+    <!-- Right Arm -->
+    
+    <xacro:R_independent_shoulder_pitch_joint parent="waist-roll"/>
+    <xacro:shoulder_pitch prefix="right-"/>
+
+    <xacro:R_independent_shoulder_roll_joint parent="right-shoulder-pitch"/>
+    <xacro:shoulder_roll prefix="right-"/>
+
+    <xacro:R_independent_shoulder_yaw_joint parent="right-shoulder-roll"/>
+    <xacro:shoulder_yaw prefix="right-"/>
+
+    <xacro:R_independent_elbow_pitch_joint parent="right-shoulder-yaw"/>
+    <xacro:elbow_pitch prefix="right-"/>
+
+    <xacro:R_independent_elbow_yaw_joint parent="right-elbow-pitch"/>
+    <xacro:elbow_yaw prefix="right-"/>
+
+    <xacro:R_independent_wrist_roll_joint parent="right-elbow-yaw"/>
+    <xacro:wrist_roll prefix="right-"/>
+
+    <xacro:R_independent_wrist_yaw_joint parent="right-wrist-roll"/>
+    <xacro:right_wrist_yaw/>
+
+</robot>

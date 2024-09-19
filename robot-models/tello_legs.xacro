@@ -3,14 +3,15 @@
 <robot name="tello_legs" xmlns:xacro="http://ros.org/wiki/xacro">
     
     <xacro:include filename="tello_properties.xacro"/>
+    <xacro:property name="base" value="ground"/>
 
-    <link name="ground"/>
+    <link name="${base}"/>
 
     <!-- Left Hip Cluster -->
     
-    <xacro:L_independent_hip_clamp_rotor_joint parent="ground"/>
+    <xacro:L_independent_hip_clamp_rotor_joint parent="${base}"/>
     <xacro:hip_clamp_rotor prefix="left-"/>
-    <xacro:L_dependent_hip_clamp_joint parent="ground"/>
+    <xacro:L_dependent_hip_clamp_joint parent="${base}"/>
     <xacro:hip_clamp prefix="left-"/>
     
     <!-- Left Hip Differentials -->
@@ -37,9 +38,9 @@
 
     <!-- Right Hip Cluster -->
 
-    <xacro:R_independent_hip_clamp_rotor_joint parent="ground"/>
+    <xacro:R_independent_hip_clamp_rotor_joint parent="${base}"/>
     <xacro:hip_clamp_rotor prefix="right-"/>
-    <xacro:R_dependent_hip_clamp_joint parent="ground"/>
+    <xacro:R_dependent_hip_clamp_joint parent="${base}"/>
     <xacro:hip_clamp prefix="right-"/>
     
     <!-- Right Hip Differentials -->
