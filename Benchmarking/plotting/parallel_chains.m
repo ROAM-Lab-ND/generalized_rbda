@@ -30,7 +30,7 @@ end
 
 %% Plotting options
 ceaba_color = subdued_red;
-caba_name = 'Constraint-Embedding ABA (Ours), ';
+caba_name = 'Constraint-Embedding ABA (Our Implementation), ';
 pin_color = subdued_blue;
 pin_name = 'Proximal and Sparse (Pinocchio), ';
 expl_cnstr_name = 'Transmission';
@@ -41,7 +41,7 @@ font_size = 22;
 figure
 sp_cnt = 1;
 
-axes = [[1 5 8e2 1e5];
+axes = [[1 5 8e2 2e4];
          [1 8 2e3 1e5];
          [1 15 3e3 1e6];
          [1 20 1e4 1e6]];
@@ -51,11 +51,11 @@ plot_opts.LineWidth = line_width;
 
 for i = expl_depths
     % subplot(2, 2, sp_cnt)
-    if (i == 5)
-        axes = axes(2:end, :);
-        continue;
-    end
-    subplot(1, 3, sp_cnt)
+    % if (i == 5)
+    %     axes = axes(2:end, :);
+    %     continue;
+    % end
+    subplot(1, 4, sp_cnt)
     hold on
 
     plot_opts.Color = ceaba_color;

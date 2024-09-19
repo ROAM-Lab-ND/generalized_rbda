@@ -58,7 +58,7 @@ for j = 1:length(system_list)
     end
 
     plot_opts.Color = subdued_red;
-    plot_opts.DisplayName = 'Constraint-Embedding ABA (Ours)';
+    plot_opts.DisplayName = 'Constraint-Embedding ABA (Our Implementation)';
     plot(NaN, NaN, '--', plot_opts)
 
     plot_opts.Color = subdued_blue;

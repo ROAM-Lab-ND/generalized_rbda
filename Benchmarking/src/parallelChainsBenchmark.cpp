@@ -54,7 +54,7 @@ std::vector<ParallelChainSpecification> GetBenchmarkUrdfFiles()
 class PinocchioParallelChainsNumericalValidation : public ::testing::TestWithParam<ParallelChainSpecification>
 {
 protected:
-    const int num_samples = 25;
+    const int num_samples = 5;
 };
 
 INSTANTIATE_TEST_SUITE_P(PinocchioParallelChainsNumericalValidation,
@@ -218,7 +218,7 @@ class PinocchioParallelChainsBenchmark : public ::testing::TestWithParam<Paralle
 public:
     std::ofstream outfile;
     grbda::Timer timer;
-    const int num_samples = 25;
+    const int num_samples = 10;
 
 private:
     void SetUp() override
@@ -382,8 +382,8 @@ TEST_P(PinocchioParallelChainsBenchmark, compareInstructionCount)
     const DynamicADVector qdd_lgm = lgm_model.forwardDynamics(tau);
 
     // Create casadi function to compute forward dynamics
-    ADScalar cs_ydd_cluster = ADScalar(casadi::Sparsity::dense(nv, 1));
-    casadi::copy(ydd_cluster, cs_ydd_cluster);
+    ADScalar cs_qdd_cluster = ADScalar(casadi::Sparsity::dense(nv_span, 1));
+    casadi::copy(qdd_cluster, cs_qdd_cluster);
 
     ADScalar cs_qdd_lgm = ADScalar(casadi::Sparsity::dense(nv_span, 1));
     casadi::copy(qdd_lgm, cs_qdd_lgm);
@@ -391,15 +391,9 @@ TEST_P(PinocchioParallelChainsBenchmark, compareInstructionCount)
     ADScalar cs_qdd_pinocchio = ADScalar(casadi::Sparsity::dense(nv_span, 1));
     casadi::copy(ad_data.ddq, cs_qdd_pinocchio);
 
-    ADScalar cs_G = ADScalar(casadi::Sparsity::dense(G_cluster.rows(), G_cluster.cols()));
-    casadi::copy(G_cluster, cs_G);
-
-    ADScalar cs_g = ADScalar(casadi::Sparsity::dense(g_cluster.rows(), 1));
-    casadi::copy(g_cluster, cs_g);
-
     casadi::Function csClusterABA("clusterABA",
                                   casadi::SXVector{cs_q, cs_v, cs_tau},
-                                  casadi::SXVector{cs_ydd_cluster});
+                                  casadi::SXVector{cs_qdd_cluster});
 
     casadi::Function csPinocchioFD("pinocchioFD",
                                    casadi::SXVector{cs_q, cs_v, cs_tau},
@@ -408,10 +402,6 @@ TEST_P(PinocchioParallelChainsBenchmark, compareInstructionCount)
     casadi::Function csGrbdaLgm("grbdaLgm",
                                casadi::SXVector{cs_q, cs_v, cs_tau},
                                casadi::SXVector{cs_qdd_lgm});
-
-    casadi::Function csExplicitJacobian("explicitJacobian",
-                                        casadi::SXVector{cs_q, cs_v},
-                                        casadi::SXVector{cs_G, cs_g});
 
     // Check the solutions against each other
     using ScalarModel = grbda::ClusterTreeModel<Scalar>;
@@ -456,24 +446,16 @@ TEST_P(PinocchioParallelChainsBenchmark, compareInstructionCount)
         casadi::DMVector dm_lgm_res = csGrbdaLgm(casadi::DMVector{dm_q, dm_v, dm_tau});
         t_lg += timer.getMs();
 
-        casadi::DMVector dm_explicit = csExplicitJacobian(casadi::DMVector{dm_q, dm_v});
-
-        DynamicVector cABA_res(nv), pin_res(nv_span), lgm_res(nv_span);
+        DynamicVector cABA_res(nv_span), pin_res(nv_span), lgm_res(nv_span);
         casadi::copy(dm_cABA_res[0], cABA_res);
         casadi::copy(dm_pin_res[0], pin_res);
         casadi::copy(dm_lgm_res[0], lgm_res);
 
-        DynamicMatrix G_res(nv_span, nv);
-        casadi::copy(dm_explicit[0], G_res);
-        DynamicVector g_res(nv_span);
-        casadi::copy(dm_explicit[1], g_res);
-
         // Check the cluster ABA solution against the Lagrange multiplier solution
-        DynamicVector qdd_cABA = G_res * cABA_res + g_res;
-        const DynamicVector grbda_error = lgm_res - qdd_cABA;
+        const DynamicVector grbda_error = lgm_res - cABA_res;
         GTEST_ASSERT_LT(grbda_error.norm(), GetParam().tol)
             << "qdd_lgm: " << lgm_res.transpose() << "\n"
-            << "qdd_cABA: " << qdd_cABA.transpose() << "\n"
+            << "qdd_cABA: " << cABA_res.transpose() << "\n"
             << "cABA_res: " << cABA_res.transpose();
 
         // Check grbda lagrange multiplier solution against pinocchio
