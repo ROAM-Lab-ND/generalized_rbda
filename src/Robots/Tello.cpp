@@ -13,12 +13,12 @@ namespace grbda
         model.setGravity(Vec3<double>{0., 0., grav});
 
         // Torso
-        const std::string torso_name = base;
+        /*const std::string torso_name = base;
         const std::string torso_parent_name = "ground";
         const SpatialInertia<double> torso_spatial_inertia =
             SpatialInertia<double>{torso_mass, torso_CoM, torso_inertia};
         model.appendBody<Free<>>(torso_name, torso_spatial_inertia,
-                                 torso_parent_name, spatial::Transform{});
+                                 torso_parent_name, spatial::Transform{});*/
 
         std::vector<std::string> sides = {"left", "right"};
         const std::string hip_clamp_parent_name = base;

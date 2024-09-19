@@ -14,7 +14,7 @@ namespace grbda
         ClusterTreeModel<> buildClusterTreeModel() const override;
 
     protected:
-        const std::string base = "torso";
+        const std::string base = "ground";
 
         const double grav = -9.81;
     

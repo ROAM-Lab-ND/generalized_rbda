@@ -180,6 +180,8 @@ SpecVector GetIndividualUrdfFiles()
         urdf_directory + "mit_humanoid.urdf", false));
     urdf_files.push_back(std::make_shared<RobotSpecification>(
         urdf_directory + "mini_cheetah.urdf", false));
+    urdf_files.push_back(std::make_shared<RobotSpecification>(
+        urdf_directory + "jvrc1_humanoid.urdf", false));
     // urdf_files.push_back(std::make_shared<RobotSpecification>(
     //    urdf_directory + "cassie_v4.urdf", false));
 
@@ -434,10 +436,12 @@ TEST(ClusterTreeModelNotFromUrdf, tello)
     
     // Build models
     pinocchio::Model model;
-    pinocchio::urdf::buildModel(urdf_directory + "tello_leg.urdf", model);
+    //pinocchio::urdf::buildModel(urdf_directory + "tello_legs.urdf", model);
+    pinocchio::urdf::buildModel(urdf_directory + "tello_humanoid.urdf", model);
     pinocchio::Data data(model);
 
-    grbda::TelloLegTest robot;
+    //grbda::Tello robot;
+    grbda::TelloWithArms robot;
     grbda::ClusterTreeModel<double> cluster_tree(robot.buildClusterTreeModel());
 
     using RigidBodyTreeModel = grbda::RigidBodyTreeModel<double>;
@@ -556,7 +560,8 @@ public:
 INSTANTIATE_TEST_SUITE_P(PinocchioNumericalValidation, PinocchioNumericalValidation,
                          ::testing::ValuesIn(GetBenchmarkUrdfFiles()));
 
-/*TEST_P(PinocchioNumericalValidation, forward_dynamics)
+/*
+TEST_P(PinocchioNumericalValidation, forward_dynamics)
 {
     using ModelState = grbda::ModelState<double>;
     using JointState = grbda::JointState<double>;
