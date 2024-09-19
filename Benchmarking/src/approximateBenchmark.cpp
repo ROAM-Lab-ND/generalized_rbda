@@ -145,6 +145,14 @@ SpecVector<double> RobotSpecificationAsDouble()
             tello_cluster_tree, urdf_file, false));
     }
 
+    {
+        std::string urdf_file = main_urdf_directory + "jvrc1_humanoid";
+        grbda::ClusterTreeModel<double> jvrc1_cluster_tree;
+        jvrc1_cluster_tree.buildModelFromURDF(urdf_file + ".urdf", false);
+        urdf_files.push_back(std::make_shared<RobotSpecification<double>>(
+            jvrc1_cluster_tree, urdf_file, false));
+    }
+
     return urdf_files;
 }
 
@@ -300,6 +308,14 @@ SpecVector<casadi::SX> RobotSpecificationAsSX()
     //     grbda::Tello robot;
     //     grbda::ClusterTreeModel<casadi::SX> tello_cluster_tree(robot.buildClusterTreeModel());
     // }
+
+    {
+        std::string urdf_file = main_urdf_directory + "jvrc1_humanoid";
+        grbda::ClusterTreeModel<casadi::SX> jvrc1_cluster_tree;
+        jvrc1_cluster_tree.buildModelFromURDF(urdf_file + ".urdf", false);
+        urdf_files.push_back(std::make_shared<RobotSpecification<casadi::SX>>(
+            jvrc1_cluster_tree, urdf_file, false));
+    }
 
     return urdf_files;
 }

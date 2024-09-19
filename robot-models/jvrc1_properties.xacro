@@ -21,7 +21,7 @@
 
     <xacro:property name="gear_ratio" value="6.0"/>
 
-    <xacro:macro name="constraint" params="name predecessor successor">
+    <xacro:macro name="trans_constraint" params="name predecessor successor">
         <constraint name="${name}" type="rolling">
             <predecessor link="${predecessor}"/>
             <successor link="${successor}"/>
