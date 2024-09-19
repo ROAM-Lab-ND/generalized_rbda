@@ -1,11 +1,15 @@
 #include <regex>
 #include "pinocchioHelpers.hpp"
+#include "grbda/Robots/RobotTypes.h"
 
+template <typename Scalar>
 struct RobotSpecification
 {
     std::string urdf_filename;
     std::string approx_urdf_filename;
-    bool floating_base;
+    grbda::ClusterTreeModel<Scalar> cluster_tree;
+    bool floating_base; // TODO(@MatthewChignoli): I think we are assuming no floating bases so can remove...
+    
     std::string outfile_suffix;
     std::string instruction_prefix = "InstructionPinocchioFD_";
     std::string timing_prefix = "TimingPinocchioFD_";
@@ -13,9 +17,11 @@ struct RobotSpecification
     std::ofstream timing_outfile;
     std::string name;
 
-    RobotSpecification(std::string urdf_filename_, bool floating_base_,
+    RobotSpecification(grbda::ClusterTreeModel<Scalar> cluster_tree_,
+                       std::string urdf_filename_, bool floating_base_,
                        std::string outfile_suffix_ = "Approx")
-        : urdf_filename(urdf_filename_ + ".urdf"),
+        : cluster_tree(cluster_tree_),
+          urdf_filename(urdf_filename_ + ".urdf"),
           approx_urdf_filename(urdf_filename_ + "_approximate.urdf"),
           floating_base(floating_base_), outfile_suffix(outfile_suffix_)
     {
@@ -88,12 +94,8 @@ struct RobotSpecification
     }
 };
 
-using SpecVector = std::vector<std::shared_ptr<RobotSpecification>>;
-
-SpecVector GetIndividualUrdfFiles()
+void clearOldDataFiles()
 {
-    // TODO(@MatthewChignoli): These should be floating base...
-
     for (std::string bench_type : {"Instruction", "Timing"})
     {
         std::ofstream outfile;
@@ -107,17 +109,46 @@ SpecVector GetIndividualUrdfFiles()
             outfile.close();
         }
     }
+}
 
-    SpecVector urdf_files;
-    urdf_files.push_back(std::make_shared<RobotSpecification>(
-        main_urdf_directory + "mini_cheetah", false));
-    urdf_files.push_back(std::make_shared<RobotSpecification>(
-        main_urdf_directory + "mit_humanoid", false));
+template <typename Scalar>
+using SpecVector = std::vector<std::shared_ptr<RobotSpecification<Scalar>>>;
+
+SpecVector<double> RobotSpecificationAsDouble()
+{
+    clearOldDataFiles();
+
+    // TODO(@MatthewChignoli): These should be floating base...
+    SpecVector<double> urdf_files;
+    
+    {
+        std::string urdf_file = main_urdf_directory + "mini_cheetah";
+        grbda::ClusterTreeModel<double> mini_cheetah_cluster_tree;
+        mini_cheetah_cluster_tree.buildModelFromURDF(urdf_file + ".urdf", false);
+        urdf_files.push_back(std::make_shared<RobotSpecification<double>>(
+            mini_cheetah_cluster_tree, urdf_file, false));
+    }
+
+    {
+        std::string urdf_file = main_urdf_directory + "mit_humanoid";
+        grbda::ClusterTreeModel<double> mit_humanoid_cluster_tree;
+        mit_humanoid_cluster_tree.buildModelFromURDF(urdf_file + ".urdf", false);
+        urdf_files.push_back(std::make_shared<RobotSpecification<double>>(
+            mit_humanoid_cluster_tree, urdf_file, false));
+    }
+    
+    {
+        std::string urdf_file = main_urdf_directory + "tello_humanoid";
+        grbda::TelloWithArms robot;
+        grbda::ClusterTreeModel<double> tello_cluster_tree(robot.buildClusterTreeModel());
+        urdf_files.push_back(std::make_shared<RobotSpecification<double>>(
+            tello_cluster_tree, urdf_file, false));
+    }
 
     return urdf_files;
 }
 
-class PinocchioNumericalValidation : public ::testing::TestWithParam<std::shared_ptr<RobotSpecification>>
+class PinocchioNumericalValidation : public ::testing::TestWithParam<std::shared_ptr<RobotSpecification<double>>>
 {
 public:
     grbda::Timer timer;
@@ -125,7 +156,7 @@ public:
 };
 
 INSTANTIATE_TEST_SUITE_P(PinocchioNumericalValidation, PinocchioNumericalValidation,
-                         ::testing::ValuesIn(GetIndividualUrdfFiles()));
+                         ::testing::ValuesIn(RobotSpecificationAsDouble()));
 
 TEST_P(PinocchioNumericalValidation, forward_dynamics)
 {
@@ -138,14 +169,15 @@ TEST_P(PinocchioNumericalValidation, forward_dynamics)
     double t_lg = 0.;
 
     // Build models
-    grbda::ClusterTreeModel<double> cluster_tree, approx_tree;
-    cluster_tree.buildModelFromURDF(GetParam()->urdf_filename, GetParam()->floating_base);
+    grbda::ClusterTreeModel<double>& cluster_tree = GetParam()->cluster_tree;
+    grbda::ClusterTreeModel<double> approx_tree;
     approx_tree.buildModelFromURDF(GetParam()->approx_urdf_filename, GetParam()->floating_base);
 
     using RigidBodyTreeModel = grbda::RigidBodyTreeModel<double>;
     RigidBodyTreeModel lgm_model(cluster_tree, grbda::FwdDynMethod::LagrangeMultiplierEigen);
 
-    GTEST_ASSERT_EQ(cluster_tree.getNumPositions(), approx_tree.getNumPositions());
+    // TODO(@MatthewChignoli): Commented this out for Tello because no independent position for cluster tree model
+    // GTEST_ASSERT_EQ(cluster_tree.getNumPositions(), approx_tree.getNumPositions());
     GTEST_ASSERT_EQ(cluster_tree.getNumDegreesOfFreedom(), approx_tree.getNumDegreesOfFreedom());
 
     const int nv = cluster_tree.getNumDegreesOfFreedom();
@@ -207,6 +239,14 @@ TEST_P(PinocchioNumericalValidation, forward_dynamics)
 
         timer.start();
         const Eigen::VectorXd ydd_cluster = cluster_tree.forwardDynamics(tau);
+        Eigen::VectorXd qdd_cluster = Eigen::VectorXd::Zero(0);
+        for (const auto &cluster : cluster_tree.clusters())
+        {
+            Eigen::VectorXd ydd_k = ydd_cluster.segment(cluster->velocity_index_,
+                                                        cluster->num_velocities_);
+            Eigen::VectorXd qdd_k = cluster->joint_->G() * ydd_k + cluster->joint_->g();
+            qdd_cluster = grbda::appendEigenVector(qdd_cluster, qdd_k);
+        }
         t_cluster += timer.getMs();
 
         timer.start();
@@ -214,25 +254,58 @@ TEST_P(PinocchioNumericalValidation, forward_dynamics)
         t_approx += timer.getMs();
 
         timer.start();
-        const Eigen::VectorXd qdd_grbda = lgm_model.forwardDynamics(tau);
+        const Eigen::VectorXd qdd_lgm = lgm_model.forwardDynamics(tau);
         t_lg += timer.getMs();
 
         // Check grbda cluster tree solution against lagrange multiplier solution
-        const Eigen::VectorXd ydd_error = qdd_grbda - (G_cluster * ydd_cluster + g_cluster);
-        GTEST_ASSERT_LT(ydd_error.norm(), 1e-6)
-            << "qdd_grbda: " << qdd_grbda.transpose() << "\n"
-            << "G*ydd_cluster + g: " << (G_cluster * ydd_cluster + g_cluster).transpose();
+        const Eigen::VectorXd grbda_error = qdd_lgm - qdd_cluster;
+        GTEST_ASSERT_LT(grbda_error.norm(), 1e-6)
+            << "qdd_lgm: " << qdd_lgm.transpose() << "\n"
+            << "qdd_cluster: " << qdd_cluster.transpose();
 
         // TODO(@MatthewChignoli): Is there any way to compare cluster tree against approx tree?
 
         // Check that solutions satisfy the loop constraints
-        Eigen::VectorXd cnstr_violation_grbda = K_cluster * qdd_grbda - k_cluster;
+        Eigen::VectorXd cnstr_violation_grbda = K_cluster * qdd_lgm - k_cluster;
         GTEST_ASSERT_LT(cnstr_violation_grbda.norm(), 1e-10)
             << "K*qdd_grbda + k    : " << cnstr_violation_grbda.transpose();
     }
 }
 
-class PinocchioBenchmark : public ::testing::TestWithParam<std::shared_ptr<RobotSpecification>>
+SpecVector<casadi::SX> RobotSpecificationAsSX()
+{
+    clearOldDataFiles();
+
+    // TODO(@MatthewChignoli): These should be floating base...
+    SpecVector<casadi::SX> urdf_files;
+    
+    {
+        std::string urdf_file = main_urdf_directory + "mini_cheetah";
+        grbda::ClusterTreeModel<casadi::SX> mini_cheetah_cluster_tree;
+        mini_cheetah_cluster_tree.buildModelFromURDF(urdf_file + ".urdf", false);
+        urdf_files.push_back(std::make_shared<RobotSpecification<casadi::SX>>(
+            mini_cheetah_cluster_tree, urdf_file, false));
+    }
+
+    {
+        std::string urdf_file = main_urdf_directory + "mit_humanoid";
+        grbda::ClusterTreeModel<casadi::SX> mit_humanoid_cluster_tree;
+        mit_humanoid_cluster_tree.buildModelFromURDF(urdf_file + ".urdf", false);
+        urdf_files.push_back(std::make_shared<RobotSpecification<casadi::SX>>(
+            mit_humanoid_cluster_tree, urdf_file, false));
+    }
+
+    // {
+    //     std::string urdf_file = main_urdf_directory + "tello";
+    //     grbda::Tello robot;
+    //     grbda::ClusterTreeModel<casadi::SX> tello_cluster_tree(robot.buildClusterTreeModel());
+    // }
+
+    return urdf_files;
+}
+
+class PinocchioBenchmark
+    : public ::testing::TestWithParam<std::shared_ptr<RobotSpecification<casadi::SX>>>
 {
 public:
     grbda::Timer timer;
@@ -240,7 +313,7 @@ public:
 };
 
 INSTANTIATE_TEST_SUITE_P(PinocchioBenchmark, PinocchioBenchmark,
-                         ::testing::ValuesIn(GetIndividualUrdfFiles()));
+                         ::testing::ValuesIn(RobotSpecificationAsSX()));
 
 TEST_P(PinocchioBenchmark, compareInstructionCount)
 {
@@ -272,8 +345,8 @@ TEST_P(PinocchioBenchmark, compareInstructionCount)
     PinocchioADModel ad_model = model.cast<ADScalar>();
     PinocchioADModel::Data ad_data(ad_model);
 
-    grbda::ClusterTreeModel<ADScalar> cluster_tree, approx_tree;
-    cluster_tree.buildModelFromURDF(GetParam()->urdf_filename, GetParam()->floating_base);
+    grbda::ClusterTreeModel<ADScalar>& cluster_tree = GetParam()->cluster_tree;
+    grbda::ClusterTreeModel<ADScalar> approx_tree;
     approx_tree.buildModelFromURDF(GetParam()->approx_urdf_filename, GetParam()->floating_base);
 
     using RigidBodyTreeModel = grbda::RigidBodyTreeModel<ADScalar>;
