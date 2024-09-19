@@ -161,7 +161,7 @@
   <!-- Left Shoulder RY -->
   <joint independent="true" name="base-to-left-shoulder-ry" type="revolute">
     <axis xyz="0 1 0"/>
-    <origin rpy="0.0 0.0 0.0" xyz="0.01346 -0.17608 0.24657"/>
+    <origin rpy="0.0 0.0 0.0" xyz="0.01346 0.17608 0.24657"/>
     <parent link="base"/>
     <child link="left-shoulder-ry"/>
     <limit effort="150" lower="-10" upper="10" velocity="100"/>
@@ -169,14 +169,14 @@
   <link name="left-shoulder-ry">
     <inertial>
       <mass value="0.788506"/>
-      <origin xyz="0.009265, 0.052623, -0.0001249"/>
+      <origin xyz="0.009265 0.052623 -0.0001249"/>
       <inertia ixx="0.0013678" ixy="0.0000266" ixz="0.0000021" iyy="0.0007392" iyz="-0.0000012" izz="0.000884"/>
     </inertial>
   </link>
   <!-- Left Shoulder RX -->
-  <joint independent="true" name="left-shoulder-ry-to-left-shoulder-rx" type="revolute">
+  <joint independent="true" name="left-shoulder-ry-to-shoulder-rx" type="revolute">
     <axis xyz="1 0 0"/>
-    <origin rpy="0.0 0.0 0.0" xyz="0.0 -0.0575 0.0"/>
+    <origin rpy="0.0 0.0 0.0" xyz="0.0 0.0575 0.0"/>
     <parent link="left-shoulder-ry"/>
     <child link="left-shoulder-rx"/>
     <limit effort="150" lower="-10" upper="10" velocity="100"/>
@@ -189,7 +189,7 @@
     </inertial>
   </link>
   <!-- Left Shoulder RZ -->
-  <joint independent="true" name="left-shoulder-rx-to-left-shoulder-rz" type="revolute">
+  <joint independent="true" name="left-shoulder-rx-to-shoulder-rz" type="revolute">
     <axis xyz="0 0 1"/>
     <origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 -0.1025"/>
     <parent link="left-shoulder-rx"/>
@@ -204,7 +204,7 @@
     </inertial>
   </link>
   <!-- Left Elbow -->
-  <joint independent="true" name="left-shoulder-rz-to-left-elbow" type="revolute">
+  <joint independent="true" name="left-shoulder-rz-to-elbow" type="revolute">
     <axis xyz="0 1 0"/>
     <origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 -0.1455"/>
     <parent link="left-shoulder-rz"/>
@@ -221,7 +221,7 @@
   <!-- Right Shoulder RY -->
   <joint independent="true" name="base-to-right-shoulder-ry" type="revolute">
     <axis xyz="0 1 0"/>
-    <origin rpy="0.0 0.0 0.0" xyz="0.01346 0.17608 0.24657"/>
+    <origin rpy="0.0 0.0 0.0" xyz="0.01346 -0.17608 0.24657"/>
     <parent link="base"/>
     <child link="right-shoulder-ry"/>
     <limit effort="150" lower="-10" upper="10" velocity="100"/>
@@ -229,14 +229,14 @@
   <link name="right-shoulder-ry">
     <inertial>
       <mass value="0.788506"/>
-      <origin xyz="0.009265, 0.052623, -0.0001249"/>
-      <inertia ixx="0.0013678" ixy="0.0000266" ixz="0.0000021" iyy="0.0007392" iyz="-0.0000012" izz="0.000884"/>
+      <origin xyz="0.009265 -0.052623 -0.0001249"/>
+      <inertia ixx="0.0013678" ixy="-0.0000266" ixz="0.0000021" iyy="0.0007392" iyz="0.0000012" izz="0.000884"/>
     </inertial>
   </link>
   <!-- Right Shoulder RX -->
-  <joint independent="true" name="right-shoulder-ry-to-right-shoulder-rx" type="revolute">
+  <joint independent="true" name="right-shoulder-ry-to-shoulder-rx" type="revolute">
     <axis xyz="1 0 0"/>
-    <origin rpy="0.0 0.0 0.0" xyz="0.0 0.0575 0.0"/>
+    <origin rpy="0.0 0.0 0.0" xyz="0.0 -0.0575 0.0"/>
     <parent link="right-shoulder-ry"/>
     <child link="right-shoulder-rx"/>
     <limit effort="150" lower="-10" upper="10" velocity="100"/>
@@ -244,12 +244,12 @@
   <link name="right-shoulder-rx">
     <inertial>
       <mass value="0.80125"/>
-      <origin xyz="0.0006041 0.0001221 -0.082361"/>
-      <inertia ixx="0.0011524" ixy="0.0000007" ixz="0.0000396" iyy="0.0011921" iyz="0.0000014" izz="0.0012386"/>
+      <origin xyz="0.0006041 -0.0001221 -0.082361"/>
+      <inertia ixx="0.0011524" ixy="-0.0000007" ixz="0.0000396" iyy="0.0011921" iyz="-0.0000014" izz="0.0012386"/>
     </inertial>
   </link>
   <!-- Right Shoulder RZ -->
-  <joint independent="true" name="right-shoulder-rx-to-right-shoulder-rz" type="revolute">
+  <joint independent="true" name="right-shoulder-rx-to-shoulder-rz" type="revolute">
     <axis xyz="0 0 1"/>
     <origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 -0.1025"/>
     <parent link="right-shoulder-rx"/>
@@ -259,12 +259,12 @@
   <link name="right-shoulder-rz">
     <inertial>
       <mass value="0.905588"/>
-      <origin xyz="0.0001703 -0.016797 -0.060"/>
-      <inertia ixx="0.0012713" ixy="0.000001" ixz="-0.000008" iyy="0.0017477" iyz="-0.0000225" izz="0.0008191"/>
+      <origin xyz="0.0001703 0.016797 -0.060"/>
+      <inertia ixx="0.0012713" ixy="-0.000001" ixz="-0.000008" iyy="0.0017477" iyz="0.0000225" izz="0.0008191"/>
     </inertial>
   </link>
   <!-- Right Elbow -->
-  <joint independent="true" name="right-shoulder-rz-to-right-elbow" type="revolute">
+  <joint independent="true" name="right-shoulder-rz-to-elbow" type="revolute">
     <axis xyz="0 1 0"/>
     <origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 -0.1455"/>
     <parent link="right-shoulder-rz"/>
@@ -274,8 +274,8 @@
   <link name="right-elbow">
     <inertial>
       <mass value="0.34839"/>
-      <origin xyz="-0.0059578 0.000111 -0.0426735"/>
-      <inertia ixx="0.001570" ixy="0.0000002" ixz="0.0000335" iyy="0.0016167" iyz="0.000003" izz="0.0000619"/>
+      <origin xyz="-0.0059578 -0.000111 -0.0426735"/>
+      <inertia ixx="0.001570" ixy="-0.0000002" ixz="0.0000335" iyy="0.0016167" iyz="-0.000003" izz="0.0000619"/>
     </inertial>
   </link>
 </robot>

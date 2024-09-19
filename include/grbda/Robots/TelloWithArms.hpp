@@ -47,8 +47,8 @@ namespace grbda
         double _shoulderRzMass = 0.905588;
         double _elbowMass = 0.34839;
 
-        Vec3<double> _shoulderRyLocation = Vec3<double>(0.01346, -0.17608, 0.24657);
-        Vec3<double> _shoulderRxLocation = Vec3<double>(0.0, -0.0575, 0.0);
+        Vec3<double> _shoulderRyLocation = Vec3<double>(0.01346, 0.17608, 0.24657);
+        Vec3<double> _shoulderRxLocation = Vec3<double>(0.0, 0.0575, 0.0);
         Vec3<double> _shoulderRzLocation = Vec3<double>(0.0, 0.0, -0.10250);
         Vec3<double> _elbowLocation = Vec3<double>(0.0, 0.0, -0.1455);
 
@@ -64,10 +64,10 @@ namespace grbda
         double _shoulderRyGearRatio = 6.0;
         double _elbowGearRatio = 9.0;
 
-        Vec3<double> _shoulderRyRotorLocation = Vec3<double>(0.01346, -0.16, 0.24657);
-        Vec3<double> _shoulderRxRotorLocation = Vec3<double>(0, -0.0575, 0);
+        Vec3<double> _shoulderRyRotorLocation = Vec3<double>(0.01346, 0.16, 0.24657);
+        Vec3<double> _shoulderRxRotorLocation = Vec3<double>(0, 0.0575, 0);
         Vec3<double> _shoulderRzRotorLocation = Vec3<double>(0., 0., -0.1025);
-        Vec3<double> _elbowRotorLocation = Vec3<double>(0., 0.0325, -0.06);
+        Vec3<double> _elbowRotorLocation = Vec3<double>(0., -0.0325, -0.06);
 
         Mat3<double> _shoulderRyRotInertia;
         Mat3<double> _shoulderRxRotInertia;
@@ -89,9 +89,9 @@ namespace grbda
                           "Must have 3x1 matrix");
             switch (side)
             {
-            case 0: // right
+            case 0: // left
                 return Vec3<double>(v[0], v[1], v[2]);
-            case 1: // left
+            case 1: // right
                 return Vec3<double>(v[0], -v[1], v[2]);
             default:
                 throw std::runtime_error("Invalid side id!");
@@ -102,10 +102,10 @@ namespace grbda
         {
             switch (side)
             {
-            case 0: // right
-                return "right_" + s;
+            case 0: // left 
+                return "left-" + s;
             case 1: // left
-                return "left_" + s;
+                return "right-" + s;
             default:
                 throw std::runtime_error("Invalid side id!");
             }
@@ -115,11 +115,11 @@ namespace grbda
         {
             switch (side)
             {
-            case -1: // right
-            case 0:  // right
-                return I.flipAlongAxis(ori::CoordinateAxis::Y);
-            case 1: // left
+            case -1: // left 
+            case 0:  // left 
                 return I;
+            case 1: // right
+                return I.flipAlongAxis(ori::CoordinateAxis::Y);
             default:
                 throw std::runtime_error("Invalid side id!");
             }

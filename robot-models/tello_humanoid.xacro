@@ -3,7 +3,7 @@
 <robot name="tello_humanoid" xmlns:xacro="http://ros.org/wiki/xacro">
     
     <xacro:include filename="tello_properties.xacro"/>
-    <xacro:property name="base" value="base"/>
+    <xacro:property name="base" value="ground"/>
 
     <!-- Torso -->
 
@@ -11,9 +11,9 @@
 
     <!-- Left Hip Cluster -->
     
-    <xacro:L_independent_hip_clamp_rotor_joint parent="${base}"/>
+    <xacro:L_dependent_hip_clamp_rotor_joint parent="${base}"/>
     <xacro:hip_clamp_rotor prefix="left-"/>
-    <xacro:L_dependent_hip_clamp_joint parent="${base}"/>
+    <xacro:L_independent_hip_clamp_joint parent="${base}"/>
     <xacro:hip_clamp prefix="left-"/>
     
     <!-- Left Hip Differentials -->
@@ -40,9 +40,9 @@
 
     <!-- Right Hip Cluster -->
 
-    <xacro:R_independent_hip_clamp_rotor_joint parent="${base}"/>
+    <xacro:R_dependent_hip_clamp_rotor_joint parent="${base}"/>
     <xacro:hip_clamp_rotor prefix="right-"/>
-    <xacro:R_dependent_hip_clamp_joint parent="${base}"/>
+    <xacro:R_independent_hip_clamp_joint parent="${base}"/>
     <xacro:hip_clamp prefix="right-"/>
     
     <!-- Right Hip Differentials -->
@@ -69,58 +69,58 @@
 
     <!-- Left Shoulder RY -->
 
-    <xacro:L_independent_shoulder_ry_rotor_joint parent="${base}"/>
+    <xacro:L_independent_shoulder_ry_joint parent="${base}"/>
+    <xacro:left_shoulder_ry/>
+    <xacro:L_dependent_shoulder_ry_rotor_joint parent="${base}"/>
     <xacro:shoulder_ry_rotor prefix="left-"/>
-    <xacro:L_dependent_shoulder_ry_joint parent="${base}"/>
-    <xacro:shoulder_ry prefix="left-"/>
 
     <!-- Left Shoulder RX -->
 
-    <xacro:L_independent_shoulder_rx_rotor_joint parent="left-shoulder-ry"/>
+    <xacro:L_independent_shoulder_rx_joint parent="left-shoulder-ry"/>
+    <xacro:left_shoulder_rx/>
+    <xacro:L_dependent_shoulder_rx_rotor_joint parent="left-shoulder-ry"/>
     <xacro:shoulder_rx_rotor prefix="left-"/>
-    <xacro:L_dependent_shoulder_rx_joint parent="left-shoulder-ry"/>
-    <xacro:shoulder_rx prefix="left-"/>
 
     <!-- Left Shoulder RZ -->
 
-    <xacro:L_independent_shoulder_rz_rotor_joint parent="left-shoulder-rx"/>
+    <xacro:L_independent_shoulder_rz_joint parent="left-shoulder-rx"/>
+    <xacro:left_shoulder_rz/>
+    <xacro:L_dependent_shoulder_rz_rotor_joint parent="left-shoulder-rx"/>
     <xacro:shoulder_rz_rotor prefix="left-"/>
-    <xacro:L_dependent_shoulder_rz_joint parent="left-shoulder-rx"/>
-    <xacro:shoulder_rz prefix="left-"/>
 
     <!-- Left Elbow -->
 
-    <xacro:L_independent_elbow_rotor_joint parent="left-shoulder-rz"/>
+    <xacro:L_independent_elbow_joint parent="left-shoulder-rz"/>
+    <xacro:left_elbow/>
+    <xacro:L_dependent_elbow_rotor_joint parent="left-shoulder-rz"/>
     <xacro:elbow_rotor prefix="left-"/>
-    <xacro:L_dependent_elbow_joint parent="left-shoulder-rz"/>
-    <xacro:elbow prefix="left-"/>
 
     <!-- Right Shoulder RY -->
 
-    <xacro:R_independent_shoulder_ry_rotor_joint parent="${base}"/>
+    <xacro:R_independent_shoulder_ry_joint parent="${base}"/>
+    <xacro:right_shoulder_ry/>
+    <xacro:R_dependent_shoulder_ry_rotor_joint parent="${base}"/>
     <xacro:shoulder_ry_rotor prefix="right-"/>
-    <xacro:R_dependent_shoulder_ry_joint parent="${base}"/>
-    <xacro:shoulder_ry prefix="right-"/>
 
     <!-- Right Shoulder RX -->
 
-    <xacro:R_independent_shoulder_rx_rotor_joint parent="right-shoulder-ry"/>
+    <xacro:R_independent_shoulder_rx_joint parent="right-shoulder-ry"/>
+    <xacro:right_shoulder_rx/>
+    <xacro:R_dependent_shoulder_rx_rotor_joint parent="right-shoulder-ry"/>
     <xacro:shoulder_rx_rotor prefix="right-"/>
-    <xacro:R_dependent_shoulder_rx_joint parent="right-shoulder-ry"/>
-    <xacro:shoulder_rx prefix="right-"/>
 
     <!-- Right Shoulder RZ -->
 
-    <xacro:R_independent_shoulder_rz_rotor_joint parent="right-shoulder-rx"/>
+    <xacro:R_independent_shoulder_rz_joint parent="right-shoulder-rx"/>
+    <xacro:right_shoulder_rz/>
+    <xacro:R_dependent_shoulder_rz_rotor_joint parent="right-shoulder-rx"/>
     <xacro:shoulder_rz_rotor prefix="right-"/>
-    <xacro:R_dependent_shoulder_rz_joint parent="right-shoulder-rx"/>
-    <xacro:shoulder_rz prefix="right-"/>
 
     <!-- Right Elbow -->
 
-    <xacro:R_independent_elbow_rotor_joint parent="right-shoulder-rz"/>
+    <xacro:R_independent_elbow_joint parent="right-shoulder-rz"/>
+    <xacro:right_elbow/>
+    <xacro:R_dependent_elbow_rotor_joint parent="right-shoulder-rz"/>
     <xacro:elbow_rotor prefix="right-"/>
-    <xacro:R_dependent_elbow_joint parent="right-shoulder-rz"/>
-    <xacro:elbow prefix="right-"/>
 
 </robot>

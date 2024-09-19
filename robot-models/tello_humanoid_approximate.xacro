@@ -50,41 +50,41 @@
     <!-- Left Shoulder RY -->
 
     <xacro:L_independent_shoulder_ry_joint parent="${base}"/>
-    <xacro:shoulder_ry prefix="left-"/>
+    <xacro:left_shoulder_ry/>
 
     <!-- Left Shoulder RX -->
 
     <xacro:L_independent_shoulder_rx_joint parent="left-shoulder-ry"/>
-    <xacro:shoulder_rx prefix="left-"/>
+    <xacro:left_shoulder_rx/>
 
     <!-- Left Shoulder RZ -->
 
     <xacro:L_independent_shoulder_rz_joint parent="left-shoulder-rx"/>
-    <xacro:shoulder_rz prefix="left-"/>
+    <xacro:left_shoulder_rz/>
 
     <!-- Left Elbow -->
 
     <xacro:L_independent_elbow_joint parent="left-shoulder-rz"/>
-    <xacro:elbow prefix="left-"/>
+    <xacro:left_elbow/>
 
     <!-- Right Shoulder RY -->
 
     <xacro:R_independent_shoulder_ry_joint parent="${base}"/>
-    <xacro:shoulder_ry prefix="right-"/>
+    <xacro:right_shoulder_ry/>
 
     <!-- Right Shoulder RX -->
 
     <xacro:R_independent_shoulder_rx_joint parent="right-shoulder-ry"/>
-    <xacro:shoulder_rx prefix="right-"/>
+    <xacro:right_shoulder_rx/>
 
     <!-- Right Shoulder RZ -->
 
     <xacro:R_independent_shoulder_rz_joint parent="right-shoulder-rx"/>
-    <xacro:shoulder_rz prefix="right-"/>
+    <xacro:right_shoulder_rz/>
 
     <!-- Right Elbow -->
 
     <xacro:R_independent_elbow_joint parent="right-shoulder-rz"/>
-    <xacro:elbow prefix="right-"/>
+    <xacro:right_elbow/>
 
 </robot>
