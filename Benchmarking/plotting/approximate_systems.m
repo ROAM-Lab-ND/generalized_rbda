@@ -1,10 +1,8 @@
 close all; clear; clc;
 load('custom_colors.mat')
 
+%% Load data
 % csv format: system name, c-aba instr count, a-aba instr count, pinochhio instr count
-
-% TODO(@MatthewChignoli): This needs some automation
-
 path_to_data = '../data/InstructionPinocchioFD_Approx.csv';
 data = readmatrix(path_to_data);
 data_as_text = readmatrix(path_to_data,'OutputType','string');
@@ -30,7 +28,8 @@ system_list{2} = mit_humanoid;
 system_list{3} = tello;
 system_list{4} = jvrc1;
 
-%% Plotting options
+%% Plot
+% Options
 font_size = 20;
 groupWidth = 0.5;
 barWidth = groupWidth / num_algos;

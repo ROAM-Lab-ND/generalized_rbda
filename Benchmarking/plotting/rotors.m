@@ -2,7 +2,6 @@ close all; clear; clc;
 load('custom_colors.mat')
 
 % csv format: # branches, cluster tree depth, c-aba instr count, pinochhio instr count
-
 path_to_data = '../data/InstructionPinocchioFD_';
 
 %% Systems
@@ -24,16 +23,16 @@ four_bar.axis = [1 7 0 10e4];
 four_bar.yscale = 'linear';
 four_bar.xscale = 'linear';
 
-%% Plotting options
+system_list{1} = rev_chain;
+system_list{2} = rev_pair_chain;
+system_list{3} = four_bar;
+
+%% Plot
+% Options
 symbols = {'o--', 's--', 'd--', '^--', '*--', 'p--', 'h--', 'x--', '+--'};
 plot_opts.MarkerSize = 10;
 plot_opts.LineWidth = 2.0;
 font_size = 22;
-
-%% Plot
-system_list{1} = rev_chain;
-system_list{2} = rev_pair_chain;
-system_list{3} = four_bar;
 
 figure
 for j = 1:length(system_list)
