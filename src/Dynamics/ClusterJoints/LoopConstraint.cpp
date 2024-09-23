@@ -25,9 +25,9 @@ namespace grbda
             return nearZeroDefaultTrue(violation) && joint_vel.isSpanning();
         }
 
-        template class Base<double>;
-        template class Base<float>;
-        template class Base<casadi::SX>;
+        template struct Base<double>;
+        template struct Base<float>;
+        template struct Base<casadi::SX>;
 
         template <typename Scalar>
         Static<Scalar>::Static(DMat<Scalar> G, DMat<Scalar> K)
