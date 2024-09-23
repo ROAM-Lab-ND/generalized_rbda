@@ -41,24 +41,7 @@ namespace grbda
             }
             return ratios.transpose();
         }
-
-        template <typename Scalar = double>
-        struct TelloDifferentialModule
-        {
-            Body<Scalar> rotor1_;
-            Body<Scalar> rotor2_;
-            Body<Scalar> link1_;
-            Body<Scalar> link2_;
-            std::string rotor1_joint_name_;
-            std::string rotor2_joint_name_;
-            std::string link1_joint_name_;
-            std::string link2_joint_name_;
-            ori::CoordinateAxis rotor1_axis_;
-            ori::CoordinateAxis rotor2_axis_;
-            ori::CoordinateAxis link1_axis_;
-            ori::CoordinateAxis link2_axis_;
-            Scalar gear_ratio_;
-        };
+        
     }
 }
 

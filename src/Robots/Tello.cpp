@@ -17,6 +17,7 @@ namespace grbda
         // Set gravity in z direction
         model.setGravity(Vec3<Scalar>{0., 0., grav});
 
+        // TODO(@MatthewChignoli): Add these back in
         // Torso
         /*const std::string torso_name = base;
         const std::string torso_parent_name = "ground";
@@ -128,11 +129,6 @@ namespace grbda
             const std::string hip_rotor2_joint_name = side + "-hip-clamp-to-hip-rotor-2";
             const std::string gimbal_joint_name = side + "-hip-clamp-to-gimbal";
             const std::string thigh_joint_name = side + "-gimbal-to-thigh";
-            TelloDifferentialModule<Scalar> hip_differential_module{
-                hip_rotor_1, hip_rotor_2, gimbal, thigh,
-                hip_rotor1_joint_name, hip_rotor2_joint_name, gimbal_joint_name, thigh_joint_name,
-                ori::CoordinateAxis::Z, ori::CoordinateAxis::Z,
-                ori::CoordinateAxis::X, ori::CoordinateAxis::Y, gear_ratio};
 
             std::vector<JointPtr<Scalar>> joints_in_hip_diff_cluster = {
                 std::make_shared<RevJoint>(CoordAxis::Z, hip_rotor1_joint_name),
@@ -231,12 +227,6 @@ namespace grbda
             const std::string knee_ankle_rotor2_joint_name = side + "-thigh-to-knee-ankle-rotor-2";
             const std::string shin_joint_name = side + "-thigh-to-shin";
             const std::string foot_joint_name = side + "-shin-to-foot";
-            TelloDifferentialModule<Scalar> knee_ankle_module{
-                knee_ankle_rotor_1, knee_ankle_rotor_2, shin, foot,
-                knee_ankle_rotor1_joint_name, knee_ankle_rotor2_joint_name,
-                shin_joint_name, foot_joint_name,
-                ori::CoordinateAxis::Z, ori::CoordinateAxis::Z,
-                ori::CoordinateAxis::Y, ori::CoordinateAxis::Y, gear_ratio};
 
             std::vector<JointPtr<Scalar>> joints_in_knee_ankle_diff_cluster = {
                 std::make_shared<RevJoint>(CoordAxis::Z, knee_ankle_rotor1_joint_name),
