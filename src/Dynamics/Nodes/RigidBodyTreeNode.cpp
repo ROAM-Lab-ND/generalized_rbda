@@ -41,6 +41,12 @@ namespace grbda
     };
 
     template <typename Scalar>
+    DVec<Scalar> RigidBodyTreeNode<Scalar>::getAccelerationForBody(const Body<Scalar> &body)
+    {
+        return this->a_;
+    };
+
+    template <typename Scalar>
     void RigidBodyTreeNode<Scalar>::applyForceToBody(const SVec<Scalar> &force,
                                                      const Body<Scalar> &body)
     {

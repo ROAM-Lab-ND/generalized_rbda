@@ -42,7 +42,8 @@ namespace grbda
 
         void setIndependentStates(const DVec<Scalar> &y, const DVec<Scalar> &yd);
 
-        Vec3<Scalar> getPosition(const std::string &body_name) override
+        Vec3<Scalar> getPosition(const std::string &body_name,
+                                 const Vec3<Scalar> &offset) override
         {
             throw std::runtime_error("Not implemented");
         }
@@ -50,7 +51,8 @@ namespace grbda
         {
             throw std::runtime_error("Not implemented");
         }
-        Vec3<Scalar> getLinearVelocity(const std::string &body_name) override
+        Vec3<Scalar> getLinearVelocity(const std::string &body_name,
+                                       const Vec3<Scalar> &offset) override
         {
             throw std::runtime_error("Not implemented");
         }
@@ -71,6 +73,11 @@ namespace grbda
 
         DMat<Scalar> getMassMatrix() override;
         DVec<Scalar> getBiasForceVector() override;
+
+        const Body<Scalar> &body(const std::string& body_name) const override
+        {
+            return getBody(body_name_to_body_spanning_index_.at(body_name));
+        }
 
     protected:
         void extractRigidBodiesAndJointsFromClusterModel(
@@ -102,9 +109,11 @@ namespace grbda
         std::vector<ReflectedInertiaTreeNodePtr<Scalar>> reflected_inertia_nodes_;
 
         DMat<Scalar> reflected_inertia_;
+        DMat<Scalar> diag_reflected_inertia_;
 
         DMat<int> spanning_tree_to_independent_coords_conversion_;
         DVec<int> independent_coord_indices_;
+        std::unordered_map<std::string, int> body_name_to_body_spanning_index_;
 
         bool articulated_bodies_updated_ = false;
         bool force_propagators_updated_ = false;

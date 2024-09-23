@@ -23,9 +23,15 @@ namespace grbda
             int numIndependentVel() const { return G_.cols(); }
             int numConstraints() const { return K_.rows(); }
 
+            bool isImplicit() const { return phi_ != nullptr; }
+            bool isExplicit() const { return phi_ == nullptr; }
+            bool isValidSpanningPosition(const JointCoordinate<Scalar> &joint_pos) const;
+            bool isValidSpanningVelocity(const JointCoordinate<Scalar> &joint_vel) const;
+
             virtual void updateJacobians(const JointCoordinate<Scalar> &joint_pos) = 0;
             virtual void updateBiases(const JointState<Scalar> &joint_state) = 0;
 
+            DVec<Scalar> phi(const JointCoordinate<Scalar> &joint_pos) const;
             virtual DVec<Scalar> gamma(const JointCoordinate<Scalar> &joint_pos) const = 0;
             const DMat<Scalar> &G() const { return G_; }
             const DVec<Scalar> &g() const { return g_; }
@@ -34,6 +40,8 @@ namespace grbda
             const DVec<Scalar> &k() const { return k_; }
 
         protected:
+            std::function<DVec<Scalar>(const JointCoordinate<Scalar> &)> phi_;
+
             DMat<Scalar> G_;
             DVec<Scalar> g_;
 

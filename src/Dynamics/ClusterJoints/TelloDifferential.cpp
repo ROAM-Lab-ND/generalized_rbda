@@ -15,6 +15,12 @@ namespace grbda
 			: jacobian_helpers_(jacobian_helpers), bias_helpers_(bias_helpers),
 			  IK_pos_helpers_(IK_pos_helpers), IK_vel_helpers_(IK_vel_helpers)
 		{
+			// NOTE(@MatthewChignoli): Will deprecate in v2
+			// TODO(@nicholasadr): Fix this
+			this->phi_ = [](const JointCoordinate<Scalar> &joint_pos) {
+				return DVec<Scalar>::Zero(2);
+			};
+
 			this->G_.setZero(4, 2);
 			this->K_.setZero(2, 4);
 			this->g_.setZero(4);

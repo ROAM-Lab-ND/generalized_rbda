@@ -27,10 +27,23 @@ namespace grbda
         int getNumActuatedDegreesOfFreedom() const { return velocity_index_ - unactuated_dofs_; }
         const int& getNumEndEffectors() const { return num_end_effectors_; }
 
-        virtual Vec3<Scalar> getPosition(const std::string &body_name) = 0;
+        virtual Vec3<Scalar> getPosition(const std::string &body_name,
+                                         const Vec3<Scalar> &offset) = 0;
         virtual Mat3<Scalar> getOrientation(const std::string &body_name) = 0;
-        virtual Vec3<Scalar> getLinearVelocity(const std::string &body_name) = 0;
+        virtual Vec3<Scalar> getLinearVelocity(const std::string &body_name,
+                                               const Vec3<Scalar> &offset) = 0;
         virtual Vec3<Scalar> getAngularVelocity(const std::string &body_name) = 0;
+        virtual Vec3<Scalar> getLinearAcceleration(const DVec<Scalar> &qdd,
+                                                   const std::string &body_name,
+                                                   const Vec3<Scalar> &offset)
+        {
+            throw std::runtime_error("Not implemented");
+        }
+        virtual Vec3<Scalar> getAngularAcceleration(const DVec<Scalar> &qdd,
+                                                    const std::string &body_name)
+        {
+            throw std::runtime_error("Not implemented");
+        }
 
         virtual DMat<Scalar> getMassMatrix() = 0;
         virtual DVec<Scalar> getBiasForceVector() = 0;
@@ -53,6 +66,13 @@ namespace grbda
             contactPointForwardKinematics();
         }
 
+        void forwardAccelerationKinematics(const DVec<Scalar> &qdd);
+        void forwardAccelerationKinematicsIncludingContactPoints(const DVec<Scalar> &qdd)
+        {
+            forwardAccelerationKinematics(qdd);
+            contactPointForwardAccelerationKinematics(qdd);
+        }
+
         void updateContactPointJacobians();
         virtual D6Mat<Scalar> contactJacobianBodyFrame(const std::string &cp_name) = 0;
         virtual const D6Mat<Scalar>& contactJacobianWorldFrame(const std::string &cp_name) = 0;
@@ -72,6 +92,8 @@ namespace grbda
         const TreeNodePtr<Scalar> node(const int index) const { return nodes_[index]; }
         const std::vector<TreeNodePtr<Scalar>> &nodes() const { return nodes_; }
 
+        virtual const Body<Scalar> &body(const std::string &name) const = 0;
+
         const std::vector<ContactPoint<Scalar>> &contactPoints() const { return contact_points_; }
         const ContactPoint<Scalar>  &contactPoint(const int index) const
         {
@@ -84,6 +106,7 @@ namespace grbda
 
     protected:
         void contactPointForwardKinematics();
+        void contactPointForwardAccelerationKinematics(const DVec<Scalar> &qdd);
         void compositeRigidBodyAlgorithm();
         void updateBiasForceVector();
 

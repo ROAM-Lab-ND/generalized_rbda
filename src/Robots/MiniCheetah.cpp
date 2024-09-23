@@ -37,16 +37,17 @@ namespace grbda
             SpatialInertia<Scalar> abad_link_inertia(_abadMass, _abadCOM, _abadRotationalInertia);
             abad_link_inertia = withLeftRightSigns(abad_link_inertia, sideSign);
 
-            SpatialInertia<Scalar> abad_rotor_inertia(0., _rotorCOM, _rotorRotationalInertiaX);
+            SpatialInertia<Scalar> abad_rotor_inertia(_rotorMass, _rotorCOM,
+                                                      _rotorRotationalInertiaX);
             abad_rotor_inertia = withLeftRightSigns(abad_rotor_inertia, sideSign);
 
             const Xform xtree_abad(I3, withLegSigns(_abadLocation, legID));
             const Xform xtree_abad_rotor(I3, withLegSigns(_abadRotorLocation, legID));
 
             Body<Scalar> abad_link = model.registerBody(abad_link_name, abad_link_inertia,
-                                                abad_parent_name, xtree_abad);
+                                                        abad_parent_name, xtree_abad);
             Body<Scalar> abad_rotor = model.registerBody(abad_rotor_name, abad_rotor_inertia,
-                                                 abad_parent_name, xtree_abad_rotor);
+                                                         abad_parent_name, xtree_abad_rotor);
             TransmissionModule abad_module{abad_link, abad_rotor, ori::CoordinateAxis::X,
                                            ori::CoordinateAxis::X, _abadGearRatio};
             model.template appendRegisteredBodiesAsCluster<RevoluteWithRotor>(abad_name,
@@ -61,18 +62,20 @@ namespace grbda
             SpatialInertia<Scalar> hip_link_inertia(_hipMass, _hipCOM, _hipRotationalInertia);
             hip_link_inertia = withLeftRightSigns(hip_link_inertia, sideSign);
 
-            SpatialInertia<Scalar> hip_rotor_inertia(0., _rotorCOM, _rotorRotationalInertiaY);
+            SpatialInertia<Scalar> hip_rotor_inertia(_rotorMass, _rotorCOM,
+                                                     _rotorRotationalInertiaY);
             hip_rotor_inertia = withLeftRightSigns(hip_rotor_inertia, sideSign);
 
-            const Xform xtree_hip(I3, withLegSigns(_hipLocation, legID));
-            const Xform xtree_hip_rotor(I3, withLegSigns(_hipRotorLocation, legID));
+            Mat3<Scalar> RZ = ori::coordinateRotation<Scalar>(ori::CoordinateAxis::Z, Scalar(M_PI));
+            const Xform xtree_hip(RZ, withLegSigns(_hipLocation, legID));
+            const Xform xtree_hip_rotor(RZ, withLegSigns(_hipRotorLocation, legID));
 
             Body<Scalar> hip_link = model.registerBody(hip_link_name, hip_link_inertia,
-                                               hip_parent_name, xtree_hip);
+                                                       hip_parent_name, xtree_hip);
             Body<Scalar> hip_rotor = model.registerBody(hip_rotor_name, hip_rotor_inertia,
-                                                hip_parent_name, xtree_hip_rotor);
+                                                        hip_parent_name, xtree_hip_rotor);
             TransmissionModule hip_module{hip_link, hip_rotor, ori::CoordinateAxis::Y,
-                                                  ori::CoordinateAxis::Y, _hipGearRatio};
+                                          ori::CoordinateAxis::Y, _hipGearRatio};
             model.template appendRegisteredBodiesAsCluster<RevoluteWithRotor>(hip_name, hip_module);
 
             const std::string hip_contact_name = withLegSigns("hip_contact", legID);
@@ -92,18 +95,19 @@ namespace grbda
                                                      _kneeRotationalInertiaRotated);
             knee_link_inertia = withLeftRightSigns(knee_link_inertia, sideSign);
 
-            SpatialInertia<Scalar> knee_rotor_inertia(0., _rotorCOM, _rotorRotationalInertiaZ);
+            SpatialInertia<Scalar> knee_rotor_inertia(_rotorMass, _rotorCOM,
+                                                      _rotorRotationalInertiaY);
             knee_rotor_inertia = withLeftRightSigns(knee_rotor_inertia, sideSign);
 
             const Xform xtree_knee(I3, withLegSigns(_kneeLocation, legID));
             const Xform xtree_knee_rotor(I3, withLegSigns(_kneeRotorLocation, legID));
 
             Body<Scalar> knee_link = model.registerBody(knee_link_name, knee_link_inertia,
-                                                knee_parent_name, xtree_knee);
+                                                        knee_parent_name, xtree_knee);
             Body<Scalar> knee_rotor = model.registerBody(knee_rotor_name, knee_rotor_inertia,
-                                                 knee_parent_name, xtree_knee_rotor);
-            TransmissionModule knee_module{knee_link, knee_rotor, ori::CoordinateAxis::Z,
-                                                   ori::CoordinateAxis::Z, _kneeGearRatio};
+                                                         knee_parent_name, xtree_knee_rotor);
+            TransmissionModule knee_module{knee_link, knee_rotor, ori::CoordinateAxis::Y,
+                                           ori::CoordinateAxis::Y, _kneeGearRatio};
             model.template appendRegisteredBodiesAsCluster<RevoluteWithRotor>(knee_name,
                                                                               knee_module);
 

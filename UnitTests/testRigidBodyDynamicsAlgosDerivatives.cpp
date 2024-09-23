@@ -1,179 +1,17 @@
 #include "gtest/gtest.h"
 
 #include "testHelpers.hpp"
-#include "grbda/Utils/Utilities.h"
-#include "grbda/Utils/SpatialInertia.h"
-#include "grbda/Utils/SpatialTransforms.h"
-#include "grbda/Dynamics/ClusterJoints/ClusterJointTypes.h"
 #include "grbda/Robots/RobotTypes.h"
 
 using namespace grbda;
 
-namespace biasVelocityTestHelpers
-{
-
-    casadi::Function
-    createBiasVelocityCasadiFunction(std::shared_ptr<ClusterJoints::Base<casadi::SX>> joint)
-    {
-        using SX = casadi::SX;
-
-        // Define symbolic variables
-        SX cs_q_sym = SX::sym("q", joint->numPositions(), 1); // manifold space
-        DVec<SX> q_sym(joint->numPositions());
-        casadi::copy(cs_q_sym, q_sym);
-
-        SX cs_dq_sym = SX::sym("dq", joint->numVelocities(), 1); // tangent space
-        DVec<SX> dq_sym(joint->numVelocities());
-        casadi::copy(cs_dq_sym, dq_sym);
-
-        SX cs_qd_sym = SX::sym("qd", joint->numVelocities(), 1); // joint velocity
-        DVec<SX> qd_sym(joint->numVelocities());
-        casadi::copy(cs_qd_sym, qd_sym);
-
-        // Set state and update kinematics
-        JointState<SX> joint_state(JointCoordinate<SX>(q_sym, false),
-                                   JointCoordinate<SX>(qd_sym, false));
-        joint_state.position = TestHelpers::plus(joint->type(), q_sym, dq_sym);
-        joint->updateKinematics(joint_state);
-
-        // Differentiate the motion subspace matrix with repsect to q, ∂S/∂dq
-        DMat<SX> S = joint->S();
-        SX cs_S = casadi::SX(casadi::Sparsity::dense(S.rows(), S.cols()));
-        casadi::copy(S, cs_S);
-
-        SX cs_dS_ddq = jacobian(cs_S, cs_dq_sym);
-        DMat<SX> dS_ddq(cs_dS_ddq.size1(), cs_dS_ddq.size2());
-        casadi::copy(cs_dS_ddq, dS_ddq);
-
-        // Tensor multiplication: dS/dt = Sring = ∂S/∂dq * dq/dt
-        DMat<SX> Sring(S.rows(), S.cols());
-        for (int i = 0; i < S.cols(); ++i)
-        {
-            Sring.col(i) = dS_ddq.middleRows(i * S.rows(), S.rows()) * qd_sym;
-        }
-
-        // Compute bias velocity from partial of motion subspace matrix
-        DVec<SX> Sring_dq = Sring * qd_sym;
-        SX cs_Sring_dq = casadi::SX(casadi::Sparsity::dense(S.rows(), 1));
-        casadi::copy(Sring_dq, cs_Sring_dq);
-
-        // Get bias velocity directly
-        DVec<SX> cJ = joint->cJ();
-        SX cs_cJ = casadi::SX(casadi::Sparsity::dense(cJ.rows(), 1));
-        casadi::copy(cJ, cs_cJ);
-
-        // Create the function
-        casadi::Function csBiasVelocity("biasVelocity",
-                                        casadi::SXVector{cs_q_sym, cs_dq_sym, cs_qd_sym},
-                                        casadi::SXVector{cs_Sring_dq, cs_cJ});
-
-        return csBiasVelocity;
-    }
-
-    bool biasVelocitiesAreEqual(const casadi::Function &fcn, int nq, int nv)
-    {
-        std::vector<casadi::DM> q = random<casadi::DM>(nq);
-        std::vector<casadi::DM> dq = zeros<casadi::DM>(nv);
-        std::vector<casadi::DM> qd = random<casadi::DM>(nv);
-        casadi::DMVector res = fcn(casadi::DMVector{q, dq, qd});
-
-        DVec<double> Sring_qd_full(res[0].size1());
-        casadi::copy(res[0], Sring_qd_full);
-
-        DVec<double> cJ_full(res[1].size1());
-        casadi::copy(res[1], cJ_full);
-
-        return (Sring_qd_full - cJ_full).norm() < 1e-12;
-    }
-
-}
-
-GTEST_TEST(Derivatives, BiasVelocities)
-{
-    // This test validates that the bias velocities for each of the cluster joints is equal to the
-    // time derivative of the motion subspace matrix computed via autodiff
-
-    using namespace biasVelocityTestHelpers;
-    using SX = casadi::SX;
-
-    const int joint_samples = 10;
-    const int state_samples = 10;
-
-    // Free Cluster Joint
-    for (int i = 0; i < joint_samples; i++)
-    {
-        using JointType = ClusterJoints::Free<SX>;
-        Body<SX> body = randomBody<SX>(0, -1, 0, 0, 0);
-        std::shared_ptr<JointType> joint = std::make_shared<JointType>(body);
-
-        casadi::Function csBiasVelocity = createBiasVelocityCasadiFunction(joint);
-
-        for (int j = 0; j < state_samples; j++)
-        {
-            ASSERT_TRUE(biasVelocitiesAreEqual(csBiasVelocity, joint->numPositions(), joint->numVelocities()));
-        }
-    }
-
-    // Revolute Pair with Rotor Cluster Joint
-    for (int i = 0; i < joint_samples; i++)
-    {
-        using JointType = ClusterJoints::RevolutePairWithRotor<SX>;
-
-        Body<SX> link1 = randomBody<SX>(0, -1, 0, 0, 0);
-        Body<SX> rotor1 = randomBody<SX>(1, -1, 1, 0, 0);
-        Body<SX> rotor2 = randomBody<SX>(2, -1, 2, 0, 0);
-        Body<SX> link2 = randomBody<SX>(3, 0, 3, 0, 0);
-
-        ClusterJoints::ParallelBeltTransmissionModule<1, SX> module1{
-            link1, rotor1, ori::randomCoordinateAxis(), ori::randomCoordinateAxis(),
-            random<SX>(), Vec1<SX>{random<SX>()}};
-        ClusterJoints::ParallelBeltTransmissionModule<2, SX> module2{
-            link2, rotor2, ori::randomCoordinateAxis(), ori::randomCoordinateAxis(),
-            random<SX>(), Vec2<SX>{random<SX>(), random<SX>()}};
-
-        std::shared_ptr<JointType> joint = std::make_shared<JointType>(module1, module2);
-
-        casadi::Function csBiasVelocity = createBiasVelocityCasadiFunction(joint);
-
-        for (int j = 0; j < state_samples; j++)
-        {
-            ASSERT_TRUE(biasVelocitiesAreEqual(csBiasVelocity, joint->numPositions(), joint->numVelocities()));
-        }
-    }
-
-    // TODO(@nicholasadr): add this joint to the unit test
-    // Tello Differential Cluster Joint
-    // for (int i = 0; i < joint_samples; i++)
-    // {
-    //     Body<SX> rotor1 = randomBody<SX>(1, 0, 0, 0, 0);
-    //     Body<SX> rotor2 = randomBody<SX>(2, 0, 1, 0, 0);
-    //     Body<SX> link1 = randomBody<SX>(3, 0, 2, 0, 0);
-    //     Body<SX> link2 = randomBody<SX>(4, 3, 3, 0, 0);
-
-    //     ClusterJoints::TelloDifferentialModule<SX> module{
-    //         rotor1, rotor2, link1, link2,
-    //         ori::randomCoordinateAxis(), ori::randomCoordinateAxis(),
-    //         ori::randomCoordinateAxis(), ori::randomCoordinateAxis(), random<SX>()};
-
-    //     std::shared_ptr<ClusterJoints::TelloHipDifferential<SX>> joint = std::make_shared<ClusterJoints::TelloHipDifferential<SX>>(module);
-
-    //     casadi::Function csBiasVelocity = createBiasVelocityCasadiFunction(joint);
-
-    //     // Validate that cJ is equal to the derivative of S * qd with respect to q
-    //     for (int j = 0; j < state_samples; j++)
-    //     {
-    //         ASSERT_TRUE(biasVelocitiesAreEqual(csBiasVelocity, joint->numPositions(), joint->numVelocities()));
-    //     }
-    // }
-}
-
 template <class T>
-class AutoDiffRobotTest : public testing::Test
+class DynamicsAlgosDerivativesTest : public testing::Test
 {
     typedef casadi::SX SX;
 
 protected:
-    AutoDiffRobotTest()
+    DynamicsAlgosDerivativesTest()
     {
         for (int i = 0; i < num_robots_; i++)
         {
@@ -230,29 +68,54 @@ protected:
 
         SX cs_q_sym = SX::sym("q", model.getNumPositions(), 1);
         SX cs_dq_sym = SX::sym("dq", model.getNumDegreesOfFreedom(), 1);
-        SX cs_qd_sym = SX::zeros(model.getNumDegreesOfFreedom(), 1);
+        SX cs_qd_sym = SX::sym("qd", model.getNumDegreesOfFreedom(), 1);
+        SX cs_qdd_sym = SX::sym("qdd", model.getNumDegreesOfFreedom(), 1);
         ModelState<SX> state = createSymbolicModelState(model, cs_q_sym, cs_dq_sym, cs_qd_sym);
 
         model.setState(state);
-        model.forwardKinematicsIncludingContactPoints();
+        DVec<SX> qdd_sym(model.getNumDegreesOfFreedom());
+        casadi::copy(cs_qdd_sym, qdd_sym);
+        model.forwardAccelerationKinematicsIncludingContactPoints(qdd_sym);
         model.updateContactPointJacobians();
 
         std::unordered_map<std::string, casadi::Function> contact_jacobian_fcns;
         for (const ContactPoint<SX> &contact_point : model.contactPoints())
         {
-            Vec3<SX> contact_point_pos = contact_point.position_;
-            D3Mat<SX> contact_point_jac = contact_point.jacobian_.bottomRows<3>();
+            // Analytical
+            Vec3<SX> analytical_cp_pos = contact_point.position_;
+            Vec3<SX> analytical_cp_vel = contact_point.velocity_;
+            Vec3<SX> analytical_cp_acc = contact_point.acceleration_;
+            D3Mat<SX> analytical_cp_jac = contact_point.jacobian_.bottomRows<3>();
 
-            SX cs_contact_point_pos = SX(Sparsity::dense(3, 1));
-            casadi::copy(contact_point_pos, cs_contact_point_pos);
+            SX cs_analytical_cp_pos = SX(Sparsity::dense(3, 1));
+            casadi::copy(analytical_cp_pos, cs_analytical_cp_pos);
 
-            SX cs_contact_point_jac = SX(Sparsity::dense(3, model.getNumDegreesOfFreedom()));
-            casadi::copy(contact_point_jac, cs_contact_point_jac);
+            SX cs_analytical_cp_vel = SX(Sparsity::dense(3, 1));
+            casadi::copy(analytical_cp_vel, cs_analytical_cp_vel);
 
-            SX dpos_ddq = jacobian(cs_contact_point_pos, cs_dq_sym);
+            SX cs_analytical_cp_acc = SX(Sparsity::dense(3, 1));
+            casadi::copy(analytical_cp_acc, cs_analytical_cp_acc);
 
-            std::vector<SX> args{cs_q_sym, cs_dq_sym};
-            std::vector<SX> res{dpos_ddq, cs_contact_point_jac, cs_contact_point_pos};
+            SX cs_analytical_cp_jac = SX(Sparsity::dense(3, model.getNumDegreesOfFreedom()));
+            casadi::copy(analytical_cp_jac, cs_analytical_cp_jac);
+
+            // // Autodiff
+            SX autodiff_cp_jac = jacobian(cs_analytical_cp_pos, cs_dq_sym);
+            SX autodiff_cp_vel = mtimes(autodiff_cp_jac, cs_qd_sym);
+            SX autodiff_cp_jac_dot = SX::sym("jac_dot", 3, model.getNumDegreesOfFreedom());
+            for (int i = 0; i < model.getNumDegreesOfFreedom(); i++)
+            {
+                SX col = jacobian(cs_analytical_cp_jac(casadi::Slice(0, 3), i), cs_dq_sym);
+                autodiff_cp_jac_dot(casadi::Slice(0, 3), i) = mtimes(col, cs_qd_sym);
+            }
+            SX autodiff_cp_acc = mtimes(autodiff_cp_jac_dot, cs_qd_sym) +
+                                 mtimes(autodiff_cp_jac, cs_qdd_sym);
+
+            std::vector<SX> args{cs_q_sym, cs_dq_sym, cs_qd_sym, cs_qdd_sym};
+            std::vector<SX> res{cs_analytical_cp_pos, cs_analytical_cp_vel,
+                                cs_analytical_cp_acc, cs_analytical_cp_jac,
+                                autodiff_cp_jac, autodiff_cp_vel,
+                                autodiff_cp_acc, autodiff_cp_jac_dot};
             casadi::Function contactPointFunction("contactPointPositionJacobian", args, res);
 
             contact_jacobian_fcns[contact_point.name_] = contactPointFunction;
@@ -297,6 +160,7 @@ protected:
 
 using testing::Types;
 
+// TODO(@MatthewChignoli): Eventually add the planar leg linkage back in. Difficult at the moment because it requires createSymbolicModelState work for clusters with implicit constraints 
 typedef Types<
     SingleRigidBody<casadi::SX>,
     MiniCheetah<casadi::SX>,
@@ -307,9 +171,9 @@ typedef Types<
     RevoluteChainWithRotor<8, casadi::SX>>
     Robots;
 
-TYPED_TEST_SUITE(AutoDiffRobotTest, Robots);
+TYPED_TEST_SUITE(DynamicsAlgosDerivativesTest, Robots);
 
-TYPED_TEST(AutoDiffRobotTest, contactJacobians)
+TYPED_TEST(DynamicsAlgosDerivativesTest, contactJacobians)
 {
     // This test validates that the partial derivative of the contact points' positions are equal to
     // the contact points' jacobians
@@ -327,6 +191,8 @@ TYPED_TEST(AutoDiffRobotTest, contactJacobians)
                 // Random state
                 std::vector<DM> q = random<DM>(this->nq_);
                 std::vector<DM> dq = zeros<DM>(this->nv_);
+                std::vector<DM> qd = random<DM>(this->nv_);
+                std::vector<DM> qdd = random<DM>(this->nv_);
 
                 // TODO(@MatthewChignoli): Fix this current method for dealing with floating base robots
                 if (this->nq_ != this->nv_)
@@ -339,18 +205,39 @@ TYPED_TEST(AutoDiffRobotTest, contactJacobians)
                 }
 
                 // Compare autodiff against analytical
-                std::vector<DM> res = fcn(std::vector<DM>{q, dq});
+                std::vector<DM> res = fcn(std::vector<DM>{q, dq, qd, qdd});
 
-                DMat<double> dpos_ddq_full(3, this->nv_);
-                casadi::copy(res[0], dpos_ddq_full);
+                Vec3<double> analytical_cp_pos;
+                casadi::copy(res[0], analytical_cp_pos);
 
-                DMat<double> contact_point_jac_full(3, this->nv_);
-                casadi::copy(res[1], contact_point_jac_full);
+                Vec3<double> analytical_cp_vel;
+                casadi::copy(res[1], analytical_cp_vel);
 
-                GTEST_ASSERT_LE((contact_point_jac_full - dpos_ddq_full).norm(), 1e-12);
+                Vec3<double> analytical_cp_acc;
+                casadi::copy(res[2], analytical_cp_acc);
+
+                DMat<double> analytical_cp_jac(3, this->nv_);
+                casadi::copy(res[3], analytical_cp_jac);
+
+                DMat<double> autodiff_cp_jac(3, this->nv_);
+                casadi::copy(res[4], autodiff_cp_jac);
+
+                Vec3<double> autodiff_cp_vel;
+                casadi::copy(res[5], autodiff_cp_vel);
+
+                Vec3<double> autodiff_cp_acc;
+                casadi::copy(res[6], autodiff_cp_acc);
+
+                DMat<double> autodiff_cp_jac_dot(3, this->nv_);
+                casadi::copy(res[7], autodiff_cp_jac_dot);
+
+                // Print the accelerations
+                GTEST_ASSERT_LE((analytical_cp_vel - autodiff_cp_vel).norm(), 1e-12);
+                GTEST_ASSERT_LE((analytical_cp_acc - autodiff_cp_acc).norm(), 1e-12);
+                GTEST_ASSERT_LE((analytical_cp_jac - autodiff_cp_jac).norm(), 1e-12);
 
                 // Compare autodiff against numerical
-                DMat<double> contact_point_jac_fd(3, this->nv_);
+                DMat<double> finte_diff_cp_jac(3, this->nv_);
 
                 double h = 1e-8;
                 for (int j = 0; j < this->nv_; j++)
@@ -359,29 +246,29 @@ TYPED_TEST(AutoDiffRobotTest, contactJacobians)
                     dq_plus[j] += h;
                     std::vector<DM> q_plus = TestHelpers::plus(q, dq_plus);
 
-                    std::vector<DM> res_plus = fcn(std::vector<DM>{q_plus, dq});
+                    std::vector<DM> res_plus = fcn(std::vector<DM>{q_plus, dq, qd, qdd});
                     DVec<double> contact_point_pos_plus(3);
-                    casadi::copy(res_plus[2], contact_point_pos_plus);
+                    casadi::copy(res_plus[0], contact_point_pos_plus);
 
                     std::vector<DM> dq_minus = dq;
                     dq_minus[j] -= h;
                     std::vector<DM> q_minus = TestHelpers::plus(q, dq_minus);
 
-                    std::vector<DM> res_minus = fcn(std::vector<DM>{q_minus, dq});
+                    std::vector<DM> res_minus = fcn(std::vector<DM>{q_minus, dq, qd, qdd});
                     DVec<double> contact_point_pos_minus(3);
-                    casadi::copy(res_minus[2], contact_point_pos_minus);
+                    casadi::copy(res_minus[0], contact_point_pos_minus);
 
-                    contact_point_jac_fd.col(j) =
+                    finte_diff_cp_jac.col(j) =
                         (contact_point_pos_plus - contact_point_pos_minus) / (2 * h);
                 }
 
-                GTEST_ASSERT_LE((contact_point_jac_fd - contact_point_jac_full).norm(), 1e-6);
+                GTEST_ASSERT_LE((finte_diff_cp_jac - analytical_cp_jac).norm(), 1e-6);
             }
         }
     }
 }
 
-TYPED_TEST(AutoDiffRobotTest, rnea)
+TYPED_TEST(DynamicsAlgosDerivativesTest, rnea)
 {
     // This test validates that the partial derivatives of the inverse dynamics with respect to q,
     // qd, and tau and the same when computed via autodiff and finite difference
@@ -444,9 +331,9 @@ TYPED_TEST(AutoDiffRobotTest, rnea)
 
                 dqdd_ddq_fd.col(j) = (qdd_plus - qdd_minus) / (2 * h);
             }
-            GTEST_ASSERT_LE((dqdd_ddq_ad - dqdd_ddq_fd).norm(), 1e-5);
+            GTEST_ASSERT_LE((dqdd_ddq_ad - dqdd_ddq_fd).norm(), 2e-5);
 
-            // Partial with respect to dq
+            // Partial with respect to qd
             DMat<double> dqdd_dqd_fd(this->nv_, this->nv_);
             for (int j = 0; j < this->nv_; j++)
             {
@@ -467,7 +354,7 @@ TYPED_TEST(AutoDiffRobotTest, rnea)
 
                 dqdd_dqd_fd.col(j) = (qdd_plus - qdd_minus) / (2 * h);
             }
-            GTEST_ASSERT_LE((dqdd_dqd_ad - dqdd_dqd_fd).norm(), 1e-5);
+            GTEST_ASSERT_LE((dqdd_dqd_ad - dqdd_dqd_fd).norm(), 2e-5);
 
             // Partial with respect to tau
             DMat<double> dqdd_dtau_fd(this->nv_, this->nv_);

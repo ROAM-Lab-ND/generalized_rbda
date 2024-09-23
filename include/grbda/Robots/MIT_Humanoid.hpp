@@ -72,9 +72,9 @@ namespace grbda
         Scalar _torsoMass = 8.52; // from measuring the total weight of the humanoid
 
         Scalar _hipRzMass = 0.84563;
-        Scalar _hipRxMass = 1.208683;
+        Scalar _hipRxMass = 1.20868;
         Scalar _hipRyMass = 2.64093;
-        Scalar _kneeMass = 0.3543355;
+        Scalar _kneeMass = 0.35435;
         Scalar _ankleMass = 0.280951;
 
         //
@@ -82,6 +82,10 @@ namespace grbda
         Scalar _shoulderRxMass = 0.80125;
         Scalar _shoulderRzMass = 0.905588;
         Scalar _elbowMass = 0.34839;
+
+        // 
+        Scalar _smallRotorMass = 0.05;
+        Scalar _largeRotorMass = 0.1;
 
         //
         Scalar _hipRzPitch = -0.174533;
@@ -136,7 +140,7 @@ namespace grbda
         Vec3<Scalar> _hipRxRotorLocation = Vec3<Scalar>(-0.0827, 0.0, -0.066436);
         Vec3<Scalar> _hipRyRotorLocation = Vec3<Scalar>(0.071, 0.024, 0.0);
         Vec3<Scalar> _kneeRotorLocation = Vec3<Scalar>(0.013, -0.0497, -0.0178);
-        Vec3<Scalar> _ankleRotorLocation = Vec3<Scalar>(0., 0., 0.);
+        Vec3<Scalar> _ankleRotorLocation = Vec3<Scalar>(.01563, -.0454, -.13354);
 
         Vec3<Scalar> _shoulderRyRotorLocation = Vec3<Scalar>(0.01346, -0.16, 0.24657);
         Vec3<Scalar> _shoulderRxRotorLocation = Vec3<Scalar>(0, -0.0575, 0);
@@ -211,7 +215,6 @@ namespace grbda
         {
             switch (side)
             {
-            case -1: // right
             case 0:  // right
                 return I.flipAlongAxis(ori::CoordinateAxis::Y);
             case 1: // left

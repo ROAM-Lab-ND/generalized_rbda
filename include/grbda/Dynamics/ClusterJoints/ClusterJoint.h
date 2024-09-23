@@ -15,13 +15,14 @@ namespace grbda
 
     enum class ClusterJointTypes
     {
+        FourBar,
         Free,
+        Generic,
         Revolute,
         RevolutePair,
         RevolutePairWithRotor,
         RevoluteTripleWithRotor,
         RevoluteWithRotor,
-        Generic,
         TelloHipDifferential,
         TelloKneeAnkleDifferential
     };
@@ -33,7 +34,7 @@ namespace grbda
         class Base
         {
         public:
-            Base(int num_bodies, int num_independent_positions, int num_independent_velocities);
+            Base(int num_bodies, int num_positions, int num_velocities);
             virtual ~Base() {}
 
             virtual ClusterJointTypes type() const = 0;

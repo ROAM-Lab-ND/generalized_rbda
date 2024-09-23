@@ -1,0 +1,33 @@
+<?xml version="1.0" ?>
+
+<robot name="mini_cheetah" xmlns:xacro="http://ros.org/wiki/xacro">
+
+    <xacro:include filename="mini_cheetah_properties.xacro"/>
+
+    <link name="Floating Base">
+        <inertial>
+            <mass value="3.3"/>
+            <origin xyz="0.0 0.0 0.0"/>
+            <inertia ixx="${11253 * 1e-6}" ixy="0" 
+                     ixz="0" iyy="${36203 * 1e-6}" 
+                     iyz="0" izz="${42673 * 1e-6}"/>
+        </inertial>
+    </link>
+
+    <xacro:abad prefix="FR" x_sign="1" y_sign="-1"/>
+    <xacro:hip prefix="FR" x_sign="1" y_sign="-1"/>
+    <xacro:knee prefix="FR" x_sign="1" y_sign="-1"/>
+
+    <xacro:abad prefix="FL" x_sign="1" y_sign="1"/>
+    <xacro:hip prefix="FL" x_sign="1" y_sign="1"/>
+    <xacro:knee prefix="FL" x_sign="1" y_sign="1"/>
+
+    <xacro:abad prefix="HR" x_sign="-1" y_sign="-1"/>
+    <xacro:hip prefix="HR" x_sign="-1" y_sign="-1"/>
+    <xacro:knee prefix="HR" x_sign="-1" y_sign="-1"/>
+
+    <xacro:abad prefix="HL" x_sign="-1" y_sign="1"/>
+    <xacro:hip prefix="HL" x_sign="-1" y_sign="1"/>
+    <xacro:knee prefix="HL" x_sign="-1" y_sign="1"/>
+
+</robot>

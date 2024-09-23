@@ -62,7 +62,7 @@ typedef Types<
     RevoluteChainWithAndWithoutRotor<0ul, 8ul>,
     RevoluteChainWithAndWithoutRotor<4ul, 4ul>,
     RevoluteChainWithAndWithoutRotor<8ul, 0ul>,
-    Tello, TeleopArm,
+    PlanarLegLinkage<>, Tello, TeleopArm,
     MIT_Humanoid<>, MIT_Humanoid<double, ori_representation::RollPitchYaw>,
     MIT_Humanoid_no_rotors<>,
     MiniCheetah<>, MiniCheetah<double, ori_representation::RollPitchYaw>>
@@ -148,6 +148,79 @@ TYPED_TEST(RigidBodyKinematicsTest, ForwardKinematics)
                 J_qdot += J_cp_cluster.middleCols(vel_idx, num_vel) * this->model_state[i].velocity;
             }
             GTEST_ASSERT_LT((J_qdot.tail<3>() - v_cp_cluster).norm(), tol);
+        }
+    }
+}
+
+TYPED_TEST(RigidBodyKinematicsTest, Offsets)
+{
+    // This test verifies the proper functioning of the getPosition, getLinearVelocity, and 
+    // getLinearAcceleration functions by comparing the results of calling them (1) with the body 
+    // name and (2) with the parent body name and a local offset.
+
+    for (int k = 0; k < 20; k++)
+    {
+        // Forward kinematics
+        this->initializeRandomStates();
+        DVec<double> qdd = DVec<double>::Random(this->cluster_model.getNumDegreesOfFreedom());
+        this->cluster_model.forwardAccelerationKinematicsIncludingContactPoints(qdd);
+
+        // Verify link kinematics
+        for (const auto &body : this->cluster_model.bodies())
+        {
+            if (body.parent_index_ == -1)
+            {
+                continue;
+            }
+
+            Vec3<double> offset = body.Xtree_.getTranslation();
+            const Body<double> &parent = this->cluster_model.body(body.parent_index_);
+
+            Vec3<double> p = this->cluster_model.getPosition(body.name_);
+            Vec3<double> p_offset = this->cluster_model.getPosition(parent.name_, offset);
+            GTEST_ASSERT_LT((p - p_offset).norm(), tol);
+
+            Vec3<double> v = this->cluster_model.getLinearVelocity(body.name_);
+            Vec3<double> v_offset = this->cluster_model.getLinearVelocity(parent.name_, offset);
+            GTEST_ASSERT_LT((v - v_offset).norm(), tol);
+
+            Vec3<double> a = this->cluster_model.getLinearAcceleration(qdd, body.name_);
+            Vec3<double> a_offset = this->cluster_model.getLinearAcceleration(qdd, parent.name_,
+                                                                              offset);
+            GTEST_ASSERT_LT((a - a_offset).norm(), tol);
+        }
+
+        // Verify cartesian quantities of contact points
+        this->cluster_model.updateContactPointJacobians();
+        for (int j = 0; j < (int)this->cluster_model.contactPoints().size(); j++)
+        {
+            const ContactPoint<double> &cp = this->cluster_model.contactPoint(j);
+            const Body<double> &body = this->cluster_model.body(cp.body_index_);
+
+            // Verify positions
+            Vec3<double> p = cp.position_;
+            Vec3<double> p_offset = this->cluster_model.getPosition(body.name_, cp.local_offset_);
+            GTEST_ASSERT_LT((p - p_offset).norm(), tol);
+
+            // Verify velocities
+            Vec3<double> v = cp.velocity_;
+            Vec3<double> v_offset = this->cluster_model.getLinearVelocity(body.name_,
+                                                                          cp.local_offset_);
+            GTEST_ASSERT_LT((v - v_offset).norm(), tol);
+
+            // Verify accelerations
+            Vec3<double> a = cp.acceleration_ - this->cluster_model.getGravity().template tail<3>();
+            Vec3<double> a_offset = this->cluster_model.getLinearAcceleration(qdd, body.name_,
+                                                                              cp.local_offset_);
+            GTEST_ASSERT_LT((a - a_offset).norm(), tol);
+
+            // Verify Jdot qdot
+            D3Mat<double> J = cp.jacobian_.bottomRows<3>();
+            Vec3<double> Jdqd = a - J * qdd;
+            DVec<double> zero = DVec<double>::Zero(this->cluster_model.getNumDegreesOfFreedom());
+            Vec3<double> Jdqd_offet = this->cluster_model.getLinearAcceleration(zero, body.name_,
+                                                                                cp.local_offset_);
+            GTEST_ASSERT_LT((Jdqd - Jdqd_offet).norm(), tol);
         }
     }
 }

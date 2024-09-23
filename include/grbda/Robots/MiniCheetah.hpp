@@ -44,6 +44,7 @@ namespace grbda
         Scalar _abadMass = 0.54;
         Scalar _hipMass = 0.634;
         Scalar _kneeMass = 0.064;
+        Scalar _rotorMass = 0.055;
 
         //
         Scalar _bodyLength = 0.19 * 2;
@@ -78,7 +79,7 @@ namespace grbda
 
         //
         Vec3<Scalar> _abadRotorLocation = Vec3<Scalar>(0.125, 0.049, 0);
-        Vec3<Scalar> _abadLocation = Vec3<Scalar>(0.38, 0.1, 0) * 0.5;
+        Vec3<Scalar> _abadLocation = Vec3<Scalar>(0.38, 0.098, 0) * 0.5;
         Vec3<Scalar> _hipLocation = Vec3<Scalar>(0, 0.062, 0);
         Vec3<Scalar> _hipRotorLocation = Vec3<Scalar>(0, 0.04, 0);
         Vec3<Scalar> _kneeLocation = Vec3<Scalar>(0, 0, -0.209);

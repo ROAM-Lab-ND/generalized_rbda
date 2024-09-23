@@ -2,6 +2,7 @@
 #define GRBDA_SPATIAL_TRANSFORMS_H
 
 #include "OrientationTools.h"
+#include "grbda/Urdf/pose.h"
 
 namespace grbda
 {
@@ -15,6 +16,8 @@ namespace grbda
         public:
             Transform(const Mat3<Scalar> &E = Mat3<Scalar>::Identity(),
                       const Vec3<Scalar> &r = Vec3<Scalar>::Zero());
+
+            Transform(const urdf::Pose &pose);
 
             void setIdentity();
             Mat6<Scalar> toMatrix() const;
