@@ -82,6 +82,7 @@ namespace grbda
 
         void appendContactPoint(const std::string body_name, const Vec3<Scalar> &local_offset,
                                 const std::string contact_name, const bool is_end_eff = false);
+        void appendContactPoint(const ContactPoint<Scalar> &contact_point);
         void appendContactBox(const std::string body_name, const Vec3<Scalar> &box_dimensions);
 
         // Current implementation every operational space has size 6x1
@@ -199,6 +200,7 @@ namespace grbda
 
         void resizeSystemMatrices();
         void resetCache() override;
+        void resizeEndEffectorMatrices();
 
         void updateArticulatedBodies();
         void updateForcePropagators();

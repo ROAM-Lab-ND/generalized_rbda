@@ -179,31 +179,18 @@ namespace grbda
         this->contact_points_.emplace_back(body_name_to_body_index_.at(body_name), local_offset,
                                            contact_point_name, this->getNumDegreesOfFreedom(),
                                            this->num_end_effectors_++);
-        ContactPoint<Scalar> &contact_point = this->contact_points_.back();
+        
+        resizeEndEffectorMatrices();
+    }
 
-        // Keep track of which nodes support this new end effector
-        int i = getIndexOfClusterContainingBody(body_name_to_body_index_.at(body_name));
-        while (i > -1)
+    template <typename Scalar>
+    void ClusterTreeModel<Scalar>::appendContactPoint(const ContactPoint<Scalar> &contact_point)
+    {
+        this->contact_points_.push_back(contact_point);
+        if (contact_point.is_end_effector_)
         {
-            cluster_nodes_[i]->supported_end_effectors_.push_back(contact_point_index);
-            contact_point.supporting_nodes_.push_back(i);
-            i = cluster_nodes_[i]->parent_index_;
-        }
-
-        // Initialize the force propagators for this end effector
-        for (int j = 0; j < (int)cluster_nodes_.size(); j++)
-        {
-            contact_point.ChiUp_.push_back(DMat<Scalar>::Zero(0, 0));
-        }
-
-        // Get the nearest shared supporting cluster for every existing end effector
-        for (int k = 0; k < (int)this->contact_points_.size() - 1; k++)
-        {
-            if (!this->contact_points_[k].is_end_effector_)
-                continue;
-            std::pair<int, int> cp_pair(k, contact_point_index);
-            const int nearest_shared_support = this->getNearestSharedSupportingNode(cp_pair);
-            cluster_nodes_[nearest_shared_support]->nearest_supported_ee_pairs_.push_back(cp_pair);
+            this->num_end_effectors_++;
+            resizeEndEffectorMatrices();
         }
     }
 
@@ -229,6 +216,39 @@ namespace grbda
                                                      const std::string end_effector_name)
     {
         appendContactPoint(body_name, local_offset, end_effector_name, true);
+    }
+
+    template <typename Scalar>
+    void ClusterTreeModel<Scalar>::resizeEndEffectorMatrices()
+    {
+        ContactPoint<Scalar> &contact_point = this->contact_points_.back();
+        const int contact_point_index = (int)this->contact_points_.size() - 1;
+        const std::string body_name = bodies_[contact_point.body_index_].name_;
+
+        // Keep track of which nodes support this new end effector
+        int i = getIndexOfClusterContainingBody(body_name_to_body_index_.at(body_name));
+        while (i > -1)
+        {
+            cluster_nodes_[i]->supported_end_effectors_.push_back(contact_point_index);
+            contact_point.supporting_nodes_.push_back(i);
+            i = cluster_nodes_[i]->parent_index_;
+        }
+
+        // Initialize the force propagators for this end effector
+        for (int j = 0; j < (int)cluster_nodes_.size(); j++)
+        {
+            contact_point.ChiUp_.push_back(DMat<Scalar>::Zero(0, 0));
+        }
+
+        // Get the nearest shared supporting cluster for every existing end effector
+        for (int k = 0; k < (int)this->contact_points_.size() - 1; k++)
+        {
+            if (!this->contact_points_[k].is_end_effector_)
+                continue;
+            std::pair<int, int> cp_pair(k, contact_point_index);
+            const int nearest_shared_support = this->getNearestSharedSupportingNode(cp_pair);
+            cluster_nodes_[nearest_shared_support]->nearest_supported_ee_pairs_.push_back(cp_pair);
+        }
     }
 
     template <typename Scalar>
