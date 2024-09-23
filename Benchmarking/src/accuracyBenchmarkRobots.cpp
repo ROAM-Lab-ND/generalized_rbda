@@ -198,7 +198,7 @@ int main()
     std::string path_to_data = "../Benchmarking/data/AccuracyID_";
     std::ofstream id_file;
     id_file.open(path_to_data + "Robots.csv");
-    runInverseDynamicsBenchmark<TelloWithArms>(id_file, 50.);
+    runInverseDynamicsBenchmark<TelloWithArms<double>>(id_file, 50.);
     runInverseDynamicsBenchmark<MIT_Humanoid<>>(id_file, 50.);
     runInverseDynamicsBenchmark<JVRC1_Humanoid>(id_file, 50.);
     runInverseDynamicsBenchmark<MiniCheetah<>>(id_file, 30.);
@@ -209,7 +209,7 @@ int main()
     path_to_data = "../Benchmarking/data/AccuracyFD_";
     std::ofstream fd_file;
     fd_file.open(path_to_data + "Robots.csv");
-    runForwardDynamicsBenchmark<TelloWithArms>(fd_file, 50.);
+    runForwardDynamicsBenchmark<TelloWithArms<double>>(fd_file, 50.);
     runForwardDynamicsBenchmark<MIT_Humanoid<>>(fd_file, 50.);
     runForwardDynamicsBenchmark<JVRC1_Humanoid>(fd_file, 50.);
     runForwardDynamicsBenchmark<MiniCheetah<>>(fd_file, 20.);
@@ -220,7 +220,7 @@ int main()
     path_to_data = "../Benchmarking/data/AccuracyIOSIM_";
     std::ofstream iosim_file;
     iosim_file.open(path_to_data + "Robots.csv");
-    runInverseOperationalSpaceInertiaBenchmark<TelloWithArms>(iosim_file);
+    runInverseOperationalSpaceInertiaBenchmark<TelloWithArms<double>>(iosim_file);
     runInverseOperationalSpaceInertiaBenchmark<MIT_Humanoid<>>(iosim_file);
     runInverseOperationalSpaceInertiaBenchmark<JVRC1_Humanoid>(iosim_file);
     runInverseOperationalSpaceInertiaBenchmark<MiniCheetah<>>(iosim_file);
@@ -231,7 +231,7 @@ int main()
     path_to_data = "../Benchmarking/data/AccuracyATF_";
     std::ofstream atf_file;
     atf_file.open(path_to_data + "Robots.csv");
-    runApplyTestForceBenchmark<TelloWithArms>(atf_file, "left-toe_contact", 500.);
+    runApplyTestForceBenchmark<TelloWithArms<double>>(atf_file, "left-toe_contact", 500.);
     runApplyTestForceBenchmark<MIT_Humanoid<>>(atf_file, "left_toe_contact", 500.);
     runApplyTestForceBenchmark<JVRC1_Humanoid>(atf_file, "left_toe_contact", 500.);
     runApplyTestForceBenchmark<MiniCheetah<>>(atf_file, "FL_foot_contact", 150.);

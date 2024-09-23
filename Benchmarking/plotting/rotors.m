@@ -10,16 +10,19 @@ rev_chain.urdf_name = 'revolute_chain';
 rev_chain.title = 'Link and Rotor';
 rev_chain.axis = [1 10 0 4e4];
 rev_chain.yscale = 'linear';
+rev_chain.xscale = 'linear';
 
 rev_pair_chain.urdf_name = 'revolute_pair_chain';
 rev_pair_chain.title = 'Parallel Belt Transmission';
 rev_pair_chain.axis = [1 7 0 10e4];
 rev_pair_chain.yscale = 'linear';
+rev_pair_chain.xscale = 'linear';
 
 four_bar.urdf_name = 'four_bar_chain';
 four_bar.title = 'Four Bar Mechanism';
 four_bar.axis = [1 7 0 10e4];
 four_bar.yscale = 'linear';
+four_bar.xscale = 'linear';
 
 %% Plotting options
 symbols = {'o--', 's--', 'd--', '^--', '*--', 'p--', 'h--', 'x--', '+--'};
@@ -92,6 +95,7 @@ for j = 1:length(system_list)
     l.NumColumns = 3;
 
     set(gca, 'YScale', sys.yscale)
+    set(gca, 'XScale', sys.xscale)
     set(gca, 'Fontsize', font_size)
     set(gca, 'TickLabelInterpreter', 'latex')
 

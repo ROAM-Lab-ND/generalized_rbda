@@ -63,7 +63,7 @@ typedef Types<
     RevoluteChainWithAndWithoutRotor<4ul, 4ul>,
     RevoluteChainWithAndWithoutRotor<8ul, 0ul>,
     PlanarLegLinkage<>,
-    Tello,
+    Tello<double>,
     TeleopArm,
     MIT_Humanoid<>, MIT_Humanoid<double, ori_representation::RollPitchYaw>,
     MIT_Humanoid_no_rotors<>,

@@ -249,7 +249,7 @@ int main()
     runForwardDynamicsBenchmark<RevolutePairChainWithRotor<N_CHAIN>>(fd_file);
     runForwardDynamicsBenchmark<MiniCheetah<>>(fd_file);
     runForwardDynamicsBenchmark<MIT_Humanoid<>>(fd_file);
-    runForwardDynamicsBenchmark<TelloWithArms>(fd_file);
+    runForwardDynamicsBenchmark<TelloWithArms<double>>(fd_file);
     runForwardDynamicsBenchmark<JVRC1_Humanoid>(fd_file);
     fd_file.close();
 
@@ -261,7 +261,7 @@ int main()
     runInverseDynamicsBenchmark<RevolutePairChainWithRotor<N_CHAIN>>(id_file);
     runInverseDynamicsBenchmark<MiniCheetah<>>(id_file);
     runInverseDynamicsBenchmark<MIT_Humanoid<>>(id_file);
-    runInverseDynamicsBenchmark<TelloWithArms>(id_file);
+    runInverseDynamicsBenchmark<TelloWithArms<double>>(id_file);
     runInverseDynamicsBenchmark<JVRC1_Humanoid>(id_file);
     id_file.close();
 
@@ -273,7 +273,7 @@ int main()
     runInverseOperationalSpaceInertiaBenchmark<RevolutePairChainWithRotor<N_CHAIN>>(iosim_file);
     runInverseOperationalSpaceInertiaBenchmark<MiniCheetah<>>(iosim_file);
     runInverseOperationalSpaceInertiaBenchmark<MIT_Humanoid<>>(iosim_file);
-    runInverseOperationalSpaceInertiaBenchmark<TelloWithArms>(iosim_file);
+    runInverseOperationalSpaceInertiaBenchmark<TelloWithArms<double>>(iosim_file);
     runInverseOperationalSpaceInertiaBenchmark<JVRC1_Humanoid>(iosim_file);
     iosim_file.close();
 
@@ -287,6 +287,6 @@ int main()
     runApplyTestForceBenchmark<RevolutePairChainWithRotor<N_CHAIN>>(atf_file, rev_pair_chain_cp);
     runApplyTestForceBenchmark<MiniCheetah<>>(atf_file, "FL_foot_contact");
     runApplyTestForceBenchmark<MIT_Humanoid<>>(atf_file, "left_toe_contact");
-    runApplyTestForceBenchmark<TelloWithArms>(atf_file, "left-toe_contact");
+    runApplyTestForceBenchmark<TelloWithArms<double>>(atf_file, "left-toe_contact");
     atf_file.close();
 }

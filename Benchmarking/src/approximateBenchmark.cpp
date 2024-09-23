@@ -8,22 +8,38 @@ struct RobotSpecification
     std::string urdf_filename;
     std::string approx_urdf_filename;
     grbda::ClusterTreeModel<Scalar> cluster_tree;
+    grbda::ClusterTreeModel<double> numerical_cluster_tree;
     bool floating_base; // TODO(@MatthewChignoli): I think we are assuming no floating bases so can remove...
     
-    std::string outfile_suffix;
+    std::string outfile_suffix = "Approx";
     std::string instruction_prefix = "InstructionPinocchioFD_";
     std::string timing_prefix = "TimingPinocchioFD_";
     std::ofstream instruction_outfile;
     std::ofstream timing_outfile;
     std::string name;
 
-    RobotSpecification(grbda::ClusterTreeModel<Scalar> cluster_tree_,
-                       std::string urdf_filename_, bool floating_base_,
-                       std::string outfile_suffix_ = "Approx")
-        : cluster_tree(cluster_tree_),
+    const double tol;
+
+    RobotSpecification(std::string urdf_filename_, bool floating_base_, double tol_ = 1e-6)
+        : urdf_filename(urdf_filename_ + ".urdf"),
+          approx_urdf_filename(urdf_filename_ + "_approximate.urdf"),
+          floating_base(floating_base_), tol(tol_)
+    {
+        cluster_tree.buildModelFromURDF(urdf_filename, floating_base);
+        numerical_cluster_tree.buildModelFromURDF(urdf_filename, floating_base);
+        registerNameFromUrdfFilename(urdf_filename);
+        openOutfile();
+    }
+
+    using RobotPtr = std::shared_ptr<grbda::Robot<Scalar>>;
+    using RobotPtrDouble = std::shared_ptr<grbda::Robot<double>>;
+    RobotSpecification(RobotPtr robot_, RobotPtrDouble numerical_robot_,
+                       std::string urdf_filename_, bool floating_base_, double tol_ = 1e-6)
+        : cluster_tree(robot_->buildClusterTreeModel()),
+          numerical_cluster_tree(numerical_robot_->buildClusterTreeModel()),
           urdf_filename(urdf_filename_ + ".urdf"),
           approx_urdf_filename(urdf_filename_ + "_approximate.urdf"),
-          floating_base(floating_base_), outfile_suffix(outfile_suffix_)
+          floating_base(floating_base_), tol(tol_)
     {
         registerNameFromUrdfFilename(urdf_filename);
         openOutfile();
@@ -123,34 +139,24 @@ SpecVector<double> RobotSpecificationAsDouble()
     
     {
         std::string urdf_file = main_urdf_directory + "mini_cheetah";
-        grbda::ClusterTreeModel<double> mini_cheetah_cluster_tree;
-        mini_cheetah_cluster_tree.buildModelFromURDF(urdf_file + ".urdf", false);
-        urdf_files.push_back(std::make_shared<RobotSpecification<double>>(
-            mini_cheetah_cluster_tree, urdf_file, false));
+        urdf_files.push_back(std::make_shared<RobotSpecification<double>>(urdf_file, false));
     }
 
     {
         std::string urdf_file = main_urdf_directory + "mit_humanoid";
-        grbda::ClusterTreeModel<double> mit_humanoid_cluster_tree;
-        mit_humanoid_cluster_tree.buildModelFromURDF(urdf_file + ".urdf", false);
-        urdf_files.push_back(std::make_shared<RobotSpecification<double>>(
-            mit_humanoid_cluster_tree, urdf_file, false));
+        urdf_files.push_back(std::make_shared<RobotSpecification<double>>(urdf_file, false));
     }
     
     {
         std::string urdf_file = main_urdf_directory + "tello_humanoid";
-        grbda::TelloWithArms robot;
-        grbda::ClusterTreeModel<double> tello_cluster_tree(robot.buildClusterTreeModel());
+        std::shared_ptr<grbda::TelloWithArms<double>> robot =  std::make_shared<grbda::TelloWithArms<double>>();
         urdf_files.push_back(std::make_shared<RobotSpecification<double>>(
-            tello_cluster_tree, urdf_file, false));
+            robot, robot, urdf_file, false, 1.0));
     }
 
     {
         std::string urdf_file = main_urdf_directory + "jvrc1_humanoid";
-        grbda::ClusterTreeModel<double> jvrc1_cluster_tree;
-        jvrc1_cluster_tree.buildModelFromURDF(urdf_file + ".urdf", false);
-        urdf_files.push_back(std::make_shared<RobotSpecification<double>>(
-            jvrc1_cluster_tree, urdf_file, false));
+        urdf_files.push_back(std::make_shared<RobotSpecification<double>>(urdf_file, false));
     }
 
     return urdf_files;
@@ -267,7 +273,7 @@ TEST_P(PinocchioNumericalValidation, forward_dynamics)
 
         // Check grbda cluster tree solution against lagrange multiplier solution
         const Eigen::VectorXd grbda_error = qdd_lgm - qdd_cluster;
-        GTEST_ASSERT_LT(grbda_error.norm(), 1e-6)
+        GTEST_ASSERT_LT(grbda_error.norm(), GetParam()->tol)
             << "qdd_lgm: " << qdd_lgm.transpose() << "\n"
             << "qdd_cluster: " << qdd_cluster.transpose();
 
@@ -275,7 +281,7 @@ TEST_P(PinocchioNumericalValidation, forward_dynamics)
 
         // Check that solutions satisfy the loop constraints
         Eigen::VectorXd cnstr_violation_grbda = K_cluster * qdd_lgm - k_cluster;
-        GTEST_ASSERT_LT(cnstr_violation_grbda.norm(), 1e-10)
+        GTEST_ASSERT_LT(cnstr_violation_grbda.norm(), GetParam()->tol)
             << "K*qdd_grbda + k    : " << cnstr_violation_grbda.transpose();
     }
 }
@@ -289,32 +295,25 @@ SpecVector<casadi::SX> RobotSpecificationAsSX()
     
     {
         std::string urdf_file = main_urdf_directory + "mini_cheetah";
-        grbda::ClusterTreeModel<casadi::SX> mini_cheetah_cluster_tree;
-        mini_cheetah_cluster_tree.buildModelFromURDF(urdf_file + ".urdf", false);
-        urdf_files.push_back(std::make_shared<RobotSpecification<casadi::SX>>(
-            mini_cheetah_cluster_tree, urdf_file, false));
+        urdf_files.push_back(std::make_shared<RobotSpecification<casadi::SX>>(urdf_file, false));
     }
 
     {
         std::string urdf_file = main_urdf_directory + "mit_humanoid";
-        grbda::ClusterTreeModel<casadi::SX> mit_humanoid_cluster_tree;
-        mit_humanoid_cluster_tree.buildModelFromURDF(urdf_file + ".urdf", false);
-        urdf_files.push_back(std::make_shared<RobotSpecification<casadi::SX>>(
-            mit_humanoid_cluster_tree, urdf_file, false));
+        urdf_files.push_back(std::make_shared<RobotSpecification<casadi::SX>>(urdf_file, false));
     }
 
-    // {
-    //     std::string urdf_file = main_urdf_directory + "tello";
-    //     grbda::Tello robot;
-    //     grbda::ClusterTreeModel<casadi::SX> tello_cluster_tree(robot.buildClusterTreeModel());
-    // }
+    {
+        std::string urdf_file = main_urdf_directory + "tello_humanoid";
+       std::shared_ptr<grbda::TelloWithArms<casadi::SX>> robot =  std::make_shared<grbda::TelloWithArms<casadi::SX>>();
+       std::shared_ptr<grbda::TelloWithArms<double>> numerical_robot =  std::make_shared<grbda::TelloWithArms<double>>();
+        urdf_files.push_back(std::make_shared<RobotSpecification<casadi::SX>>(
+            robot, numerical_robot, urdf_file, false, 1.0));
+    }
 
     {
         std::string urdf_file = main_urdf_directory + "jvrc1_humanoid";
-        grbda::ClusterTreeModel<casadi::SX> jvrc1_cluster_tree;
-        jvrc1_cluster_tree.buildModelFromURDF(urdf_file + ".urdf", false);
-        urdf_files.push_back(std::make_shared<RobotSpecification<casadi::SX>>(
-            jvrc1_cluster_tree, urdf_file, false));
+        urdf_files.push_back(std::make_shared<RobotSpecification<casadi::SX>>(urdf_file, false));
     }
 
     return urdf_files;
@@ -500,9 +499,7 @@ TEST_P(PinocchioBenchmark, compareInstructionCount)
     using ScalarStatePair = std::pair<Eigen::VectorXd, Eigen::VectorXd>;
     for (int i = 0; i < num_samples; ++i)
     {
-        ScalarModel numerical_cluster_tree;
-        numerical_cluster_tree.buildModelFromURDF(GetParam()->urdf_filename,
-                                                  GetParam()->floating_base);
+        ScalarModel& numerical_cluster_tree = GetParam()->numerical_cluster_tree;
 
         ScalarModelState scalar_model_state;
         for (const auto &cluster : numerical_cluster_tree.clusters())
@@ -556,20 +553,20 @@ TEST_P(PinocchioBenchmark, compareInstructionCount)
         // Check the cluster ABA solution against the Lagrange multiplier solution
         DynamicVector qdd_cABA = G_res * cABA_res + g_res;
         const DynamicVector grbda_error = lgm_res - qdd_cABA;
-        GTEST_ASSERT_LT(grbda_error.norm(), 1e-6)
+        GTEST_ASSERT_LT(grbda_error.norm(), GetParam()->tol)
             << "qdd_lgm: " << lgm_res.transpose() << "\n"
             << "qdd_cABA: " << qdd_cABA.transpose() << "\n"
             << "cABA_res: " << cABA_res.transpose();
 
         // Check grbda lagrange multiplier solution against pinocchio
         const DynamicVector qdd_error = pin_res - joint_map.cast<Scalar>() * lgm_res;
-        GTEST_ASSERT_LT(qdd_error.norm(), 1e-6)
+        GTEST_ASSERT_LT(qdd_error.norm(), GetParam()->tol)
             << "qdd_pinocchio   : " << pin_res.transpose() << "\n"
             << "jmap * qdd_grbda: " << (joint_map.cast<Scalar>() * lgm_res).transpose();
     }
 
     GetParam()->writeToFile(GetParam()->instruction_outfile,
-                            i_cluster,i_approx, i_pinocchio);
+                            i_cluster, i_approx, i_pinocchio);
 
     GetParam()->writeToFile(GetParam()->timing_outfile,
                             t_cluster / num_samples,

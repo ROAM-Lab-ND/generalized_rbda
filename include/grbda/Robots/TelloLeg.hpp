@@ -6,7 +6,7 @@
 namespace grbda
 {
 
-    class TelloLeg : public Tello
+    class TelloLeg : public Tello<double>
     {
     public:
         ClusterTreeModel<> buildClusterTreeModel() const override

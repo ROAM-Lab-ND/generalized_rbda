@@ -2,7 +2,6 @@
 #include "pinocchioHelpers.hpp"
 
 // TODO(@MatthewChignoli): Change name of this file to "branch and depth benchmark"
-
 struct RobotSpecification
 {
     std::string urdf_filename;
