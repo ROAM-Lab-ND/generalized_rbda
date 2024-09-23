@@ -1,6 +1,7 @@
 close all; clear; clc;
 load('custom_colors.mat')
 
+%% Load Data
 path_to_data = '../data/InstructionPinocchioFD_';
 
 % csv format: # depth, loop size, c-aba instr count, pinochhio instr count
@@ -27,6 +28,8 @@ if length(impl_depths) ~= 4
     error('Expected 4 depths, got %d', length(impl_depths))
 end
 
+%% Plot
+% Options
 ceaba_color = subdued_red;
 caba_name = 'Constraint-Embedding ABA (Our Implementation), ';
 pin_color = subdued_blue;
@@ -69,7 +72,6 @@ for i = expl_depths
     plot_opts.DisplayName = [pin_name, impl_cnstr_name];
     plot((pin.impl.depths{i}(:, 1) - 1) / 2, pin.impl.depths{i}(:, 2), 's--', plot_opts)
 
-    % Label
     xlabel('$d_l$', 'Interpreter', 'latex')
     ylabel('Instruction Count', 'Interpreter', 'latex')
     title(['$d_t$ = ', num2str(i)], 'Interpreter', 'latex')
