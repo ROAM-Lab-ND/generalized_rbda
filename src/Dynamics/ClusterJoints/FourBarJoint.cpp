@@ -332,7 +332,7 @@ namespace grbda
             return JointState<double>(joint_pos, joint_vel);
         }
 
-        template struct FourBar<double>;
-        template struct FourBar<casadi::SX>;
+        template class FourBar<double>;
+        template class FourBar<casadi::SX>;
     }
 }

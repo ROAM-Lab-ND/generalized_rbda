@@ -14,6 +14,15 @@ namespace grbda
         Transform<Scalar>::Transform(const Mat3<Scalar> &E, const Vec3<Scalar> &r) : E_(E), r_(r) {}
 
         template <typename Scalar>
+        Transform<Scalar>::Transform(const urdf::Pose &pose)
+        {
+            urdf::Rotation rotation = pose.rotation;
+            Quat<Scalar> quat = Quat<Scalar>(rotation.w, rotation.x, rotation.y, rotation.z);
+            E_ = ori::quaternionToRotationMatrix(quat);
+            r_ = Vec3<Scalar>(pose.position.x, pose.position.y, pose.position.z);
+        }
+
+        template <typename Scalar>
         void Transform<Scalar>::setIdentity()
         {
             E_.setIdentity();

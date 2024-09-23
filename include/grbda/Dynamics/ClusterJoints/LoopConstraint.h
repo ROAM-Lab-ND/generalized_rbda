@@ -23,6 +23,7 @@ namespace grbda
             int numIndependentVel() const { return G_.cols(); }
             int numConstraints() const { return K_.rows(); }
 
+            bool isImplicit() const { return phi_ != nullptr; }
             bool isExplicit() const { return phi_ == nullptr; }
             bool isValidSpanningPosition(const JointCoordinate<Scalar> &joint_pos) const;
             bool isValidSpanningVelocity(const JointCoordinate<Scalar> &joint_vel) const;

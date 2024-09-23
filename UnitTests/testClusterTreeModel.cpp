@@ -64,7 +64,7 @@ TYPED_TEST(ClusterTreeModelTest, EndEffectors)
     ASSERT_EQ(supported_end_effectors.size(), this->cluster_model.getNumEndEffectors());
 }
 
-// These tests verify how ClusterTreeModels are build from URDF files
+// These tests verify how ClusterTreeModels are built from URDF files
 
 const std::string urdf_directory = SOURCE_DIRECTORY "/robot-models/";
 
@@ -141,9 +141,7 @@ protected:
         ModelState<double> model_state;
         for (const auto &cluster : manual_model.clusters())
         {
-            // TODO(@MatthewChignoli): The gneric cluster should override the randomJointState function. Maybe that means we need different generic clusters for implicit vs. explicit?
             JointState<> joint_state = cluster->joint_->randomJointState();
-            // JointState<> spanning_joint_state = cluster->joint_->toSpanningTreeState(joint_state);
             model_state.push_back(joint_state);
         }
 
