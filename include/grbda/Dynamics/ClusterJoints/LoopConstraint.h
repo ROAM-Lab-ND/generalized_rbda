@@ -31,7 +31,7 @@ namespace grbda
             virtual void updateJacobians(const JointCoordinate<Scalar> &joint_pos) = 0;
             virtual void updateBiases(const JointState<Scalar> &joint_state) = 0;
 
-            DVec<Scalar> phi(const JointCoordinate<Scalar> &joint_pos) const { return phi_(joint_pos); }
+            DVec<Scalar> phi(const JointCoordinate<Scalar> &joint_pos) const;
             virtual DVec<Scalar> gamma(const JointCoordinate<Scalar> &joint_pos) const = 0;
             const DMat<Scalar> &G() const { return G_; }
             const DVec<Scalar> &g() const { return g_; }

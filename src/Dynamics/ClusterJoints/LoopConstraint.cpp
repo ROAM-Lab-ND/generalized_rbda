@@ -6,6 +6,12 @@ namespace grbda
     namespace LoopConstraint
     {
         template <typename Scalar>
+        DVec<Scalar> Base<Scalar>::phi(const JointCoordinate<Scalar> &joint_pos) const
+        {
+            return phi_(joint_pos);
+        }
+
+        template <typename Scalar>
         bool Base<Scalar>::isValidSpanningPosition(const JointCoordinate<Scalar> &joint_pos) const
         {
             DVec<Scalar> violation = phi_(joint_pos);
