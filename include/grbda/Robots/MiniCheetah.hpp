@@ -44,6 +44,7 @@ namespace grbda
         Scalar _abadMass = 0.54;
         Scalar _hipMass = 0.634;
         Scalar _kneeMass = 0.064;
+        Scalar _rotorMass = 0.055;
 
         //
         Scalar _bodyLength = 0.19 * 2;

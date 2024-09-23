@@ -67,10 +67,6 @@ TEST_P(PinocchioParallelChainsNumericalValidation, forward_dynamics)
     using JointState = grbda::JointState<double>;
     using StatePair = std::pair<Eigen::VectorXd, Eigen::VectorXd>;
 
-    double t_cluster = 0.;
-    double t_pinocchio = 0.;
-    double t_lg = 0.;
-
     // urdf file name
     std::string urdf_filename = urdf_directory + "parallel_chains/" +
                                 GetParam().constraint_type + "/depth" +
@@ -252,7 +248,6 @@ TEST_P(PinocchioParallelChainsBenchmark, compareInstructionCount)
     using PinocchioADModel = pinocchio::ModelTpl<ADScalar>;
 
     using DynamicVector = Eigen::VectorXd;
-    using DynamicMatrix = Eigen::MatrixXd;
     using DynamicADVector = Eigen::Vector<ADScalar, Eigen::Dynamic>;
     using DynamicADMatrix = Eigen::Matrix<ADScalar, Eigen::Dynamic, Eigen::Dynamic>;
 
@@ -264,7 +259,6 @@ TEST_P(PinocchioParallelChainsBenchmark, compareInstructionCount)
 
     double t_cluster = 0.;
     double t_pinocchio = 0.;
-    double t_lg = 0.;
 
     // urdf file name
     std::string urdf_filename = urdf_directory + "parallel_chains/" +
@@ -405,7 +399,6 @@ TEST_P(PinocchioParallelChainsBenchmark, compareInstructionCount)
 
     // Check the solutions against each other
     using ScalarModel = grbda::ClusterTreeModel<Scalar>;
-    using ScalarRigidBodyTreeModel = grbda::RigidBodyTreeModel<Scalar>;
     using ScalarModelState = grbda::ModelState<Scalar>;
     using ScalarJointState = grbda::JointState<Scalar>;
     using ScalarStatePair = std::pair<Eigen::VectorXd, Eigen::VectorXd>;
@@ -442,9 +435,7 @@ TEST_P(PinocchioParallelChainsBenchmark, compareInstructionCount)
         casadi::DMVector dm_pin_res = csPinocchioFD(casadi::DMVector{dm_q, dm_v, dm_tau});
         t_pinocchio += timer.getMs();
 
-        timer.start();
         casadi::DMVector dm_lgm_res = csGrbdaLgm(casadi::DMVector{dm_q, dm_v, dm_tau});
-        t_lg += timer.getMs();
 
         DynamicVector cABA_res(nv_span), pin_res(nv_span), lgm_res(nv_span);
         casadi::copy(dm_cABA_res[0], cABA_res);

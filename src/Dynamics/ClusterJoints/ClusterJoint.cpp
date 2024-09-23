@@ -29,7 +29,7 @@ namespace grbda
             {
                 spanning_joint_state.position = loop_constraint_->gamma(joint_state.position);
             }
-            else if (!joint_state.position.isSpanning() && !loop_constraint_->isExplicit())
+            else if (!joint_state.position.isSpanning() && loop_constraint_->isImplicit())
             {
                 throw std::runtime_error("Independent positions cannot be converted to spanning positions when the constraint is implicit.");
             }
@@ -38,7 +38,7 @@ namespace grbda
                 // TODO(@MatthewChignoli): We should check to make sure that the spanning position is valid. Will require turning gamma into phi
                 spanning_joint_state.position = joint_state.position;
             }
-            else if (joint_state.position.isSpanning() && !loop_constraint_->isExplicit())
+            else if (joint_state.position.isSpanning() && loop_constraint_->isImplicit())
             {
                 if (!loop_constraint_->isValidSpanningPosition(joint_state.position))
                 {

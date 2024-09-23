@@ -39,7 +39,8 @@ namespace grbda
             SpatialInertia<Scalar> abad_link_inertia(_abadMass, _abadCOM, _abadRotationalInertia);
             abad_link_inertia = withLeftRightSigns(abad_link_inertia, sideSign);
 
-            SpatialInertia<Scalar> abad_rotor_inertia(0.055, _rotorCOM, _rotorRotationalInertiaX);
+            SpatialInertia<Scalar> abad_rotor_inertia(_rotorMass, _rotorCOM,
+                                                      _rotorRotationalInertiaX);
             abad_rotor_inertia = withLeftRightSigns(abad_rotor_inertia, sideSign);
 
             const Xform xtree_abad(I3, withLegSigns(_abadLocation, legID));
@@ -67,7 +68,8 @@ namespace grbda
             SpatialInertia<Scalar> hip_link_inertia(_hipMass, _hipCOM, _hipRotationalInertia);
             hip_link_inertia = withLeftRightSigns(hip_link_inertia, sideSign);
 
-            SpatialInertia<Scalar> hip_rotor_inertia(0.055, _rotorCOM, _rotorRotationalInertiaY);
+            SpatialInertia<Scalar> hip_rotor_inertia(_rotorMass, _rotorCOM,
+                                                     _rotorRotationalInertiaY);
             hip_rotor_inertia = withLeftRightSigns(hip_rotor_inertia, sideSign);
 
             Mat3<Scalar> RZ = ori::coordinateRotation<Scalar>(ori::CoordinateAxis::Z, Scalar(M_PI));
@@ -103,7 +105,8 @@ namespace grbda
                                                      _kneeRotationalInertiaRotated);
             knee_link_inertia = withLeftRightSigns(knee_link_inertia, sideSign);
 
-            SpatialInertia<Scalar> knee_rotor_inertia(0.055, _rotorCOM, _rotorRotationalInertiaY);
+            SpatialInertia<Scalar> knee_rotor_inertia(_rotorMass, _rotorCOM,
+                                                      _rotorRotationalInertiaY);
             knee_rotor_inertia = withLeftRightSigns(knee_rotor_inertia, sideSign);
 
             const Xform xtree_knee(I3, withLegSigns(_kneeLocation, legID));

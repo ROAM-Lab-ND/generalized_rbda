@@ -21,7 +21,7 @@ struct RobotSpecification
         openOutfile();
     }
 
-    ~RobotSpecification()
+    virtual ~RobotSpecification()
     {
         closeOutfile();
     }
@@ -230,7 +230,6 @@ SpecVector GetBenchmarkUrdfFiles()
 class PinocchioNumericalValidation : public ::testing::TestWithParam<std::shared_ptr<RobotSpecification>>
 {
 public:
-    grbda::Timer timer;
     const int num_samples = 8;
 };
 
@@ -242,10 +241,6 @@ TEST_P(PinocchioNumericalValidation, forward_dynamics)
     using ModelState = grbda::ModelState<double>;
     using JointState = grbda::JointState<double>;
     using StatePair = std::pair<Eigen::VectorXd, Eigen::VectorXd>;
-
-    double t_cluster = 0.;
-    double t_pinocchio = 0.;
-    double t_lg = 0.;
 
     // Build models
     pinocchio::Model model;
@@ -330,7 +325,6 @@ TEST_P(PinocchioNumericalValidation, forward_dynamics)
         Eigen::VectorXd pin_tau(nv_span);
         pin_tau = joint_map * spanning_joint_tau;
 
-        timer.start();
         const Eigen::VectorXd ydd_cluster = cluster_tree.forwardDynamics(tau);
         Eigen::VectorXd qdd_cluster = Eigen::VectorXd::Zero(0);
         for (const auto &cluster : cluster_tree.clusters())
@@ -340,16 +334,11 @@ TEST_P(PinocchioNumericalValidation, forward_dynamics)
             Eigen::VectorXd qdd_k = cluster->joint_->G() * ydd_k + cluster->joint_->g();
             qdd_cluster = grbda::appendEigenVector(qdd_cluster, qdd_k);
         }
-        t_cluster += timer.getMs();
 
-        timer.start();
         pinocchio::forwardDynamics(model, data, pin_q, pin_v, pin_tau,
                                    K_pinocchio, k_pinocchio, mu0);
-        t_pinocchio += timer.getMs();
 
-        timer.start();
         const Eigen::VectorXd qdd_lgm = lgm_model.forwardDynamics(tau);
-        t_lg += timer.getMs();
 
         // Check grbda cluster tree solution against lagrange multiplier solution
         const Eigen::VectorXd grbda_error = qdd_lgm - qdd_cluster;
@@ -394,7 +383,6 @@ TEST_P(PinocchioBenchmark, compareInstructionCount)
     using PinocchioADModel = pinocchio::ModelTpl<ADScalar>;
 
     using DynamicVector = Eigen::VectorXd;
-    using DynamicMatrix = Eigen::MatrixXd;
     using DynamicADVector = Eigen::Vector<ADScalar, Eigen::Dynamic>;
     using DynamicADMatrix = Eigen::Matrix<ADScalar, Eigen::Dynamic, Eigen::Dynamic>;
 
@@ -535,7 +523,6 @@ TEST_P(PinocchioBenchmark, compareInstructionCount)
 
     // Check the solutions against each other
     using ScalarModel = grbda::ClusterTreeModel<Scalar>;
-    using ScalarRigidBodyTreeModel = grbda::RigidBodyTreeModel<Scalar>;
     using ScalarModelState = grbda::ModelState<Scalar>;
     using ScalarJointState = grbda::JointState<Scalar>;
     using ScalarStatePair = std::pair<Eigen::VectorXd, Eigen::VectorXd>;

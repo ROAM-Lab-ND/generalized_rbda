@@ -2,8 +2,6 @@
 
 namespace grbda
 {
-
-
     template <typename Scalar>
     template <typename OrientationRepresentation>
     void ClusterTreeModel<Scalar>::buildFromUrdfModelInterface(
@@ -62,7 +60,7 @@ namespace grbda
     template <typename Scalar>
     void ClusterTreeModel<Scalar>::appendClusterFromUrdfCluster(UrdfClusterPtr cluster)
     {
-        // TODO(@MatthewChignoli): This is kind of a hack, but I think we should have a special exception for when the cluster has one link, a revolute joint, and not constraint joints
+        // Special case for a cluster with one link and no constraints
         if (cluster->links.size() == 1 && cluster->constraints.size() == 0)
         {
             UrdfLinkPtr link = cluster->links.begin()->second;
@@ -70,7 +68,8 @@ namespace grbda
             return;
         }
 
-        // TODO(@MatthewChignoli): to avoid all of this confusion, maybe the body should just contain the parent joint?
+        // Register bodies in cluster. Symbolic bodies and joints are needed to define
+        // the constraint symbolically
         std::vector<JointPtr<Scalar>> joints_in_current_cluster;
         std::vector<bool> independent_coordinates;
         std::vector<Body<SX>> bodies_sx;

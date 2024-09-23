@@ -6,6 +6,12 @@ namespace grbda
     namespace LoopConstraint
     {
         template <typename Scalar>
+        DVec<Scalar> Base<Scalar>::phi(const JointCoordinate<Scalar> &joint_pos) const
+        {
+            return phi_(joint_pos);
+        }
+
+        template <typename Scalar>
         bool Base<Scalar>::isValidSpanningPosition(const JointCoordinate<Scalar> &joint_pos) const
         {
             DVec<Scalar> violation = phi_(joint_pos);
@@ -25,9 +31,9 @@ namespace grbda
             throw std::runtime_error("Random state helpers not setup for this loop constraint");
         }
 
-        template class Base<double>;
-        template class Base<float>;
-        template class Base<casadi::SX>;
+        template struct Base<double>;
+        template struct Base<float>;
+        template struct Base<casadi::SX>;
 
         template <typename Scalar>
         Static<Scalar>::Static(DMat<Scalar> G, DMat<Scalar> K)

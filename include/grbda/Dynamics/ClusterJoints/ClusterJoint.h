@@ -34,7 +34,6 @@ namespace grbda
         class Base
         {
         public:
-            
             Base(int num_bodies, int num_positions, int num_velocities);
             virtual ~Base() {}
 

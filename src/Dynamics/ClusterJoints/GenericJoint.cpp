@@ -174,7 +174,6 @@ namespace grbda
             this->random_state_helpers_.created = true;
 
             // Create symbolic generic implicit loop constraint
-            using SX = casadi::SX;
             GenericImplicit<SX> symbolic = copyAsSymbolic();
 
             // Root finding

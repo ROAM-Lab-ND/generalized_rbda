@@ -35,10 +35,10 @@ struct RobotSpecification
     using RobotPtrDouble = std::shared_ptr<grbda::Robot<double>>;
     RobotSpecification(RobotPtr robot_, RobotPtrDouble numerical_robot_,
                        std::string urdf_filename_, bool floating_base_, double tol_ = 1e-6)
-        : cluster_tree(robot_->buildClusterTreeModel()),
-          numerical_cluster_tree(numerical_robot_->buildClusterTreeModel()),
-          urdf_filename(urdf_filename_ + ".urdf"),
+        : urdf_filename(urdf_filename_ + ".urdf"),
           approx_urdf_filename(urdf_filename_ + "_approximate.urdf"),
+          cluster_tree(robot_->buildClusterTreeModel()),
+          numerical_cluster_tree(numerical_robot_->buildClusterTreeModel()),
           floating_base(floating_base_), tol(tol_)
     {
         registerNameFromUrdfFilename(urdf_filename);
@@ -100,8 +100,7 @@ struct RobotSpecification
         }
     }
 
-    virtual void writeToFile(std::ofstream &outfile,
-                             double i_cluster, double i_approx, double i_pinocchio)
+    void writeToFile(std::ofstream &outfile, double i_cluster, double i_approx, double i_pinocchio)
     {
         outfile << name << ","
                 << i_cluster << ","
@@ -165,7 +164,6 @@ SpecVector<double> RobotSpecificationAsDouble()
 class PinocchioNumericalValidation : public ::testing::TestWithParam<std::shared_ptr<RobotSpecification<double>>>
 {
 public:
-    grbda::Timer timer;
     const int num_samples = 25;
 };
 
@@ -177,10 +175,6 @@ TEST_P(PinocchioNumericalValidation, forward_dynamics)
     using ModelState = grbda::ModelState<double>;
     using JointState = grbda::JointState<double>;
     using StatePair = std::pair<Eigen::VectorXd, Eigen::VectorXd>;
-
-    double t_cluster = 0.;
-    double t_approx = 0.;
-    double t_lg = 0.;
 
     // Build models
     grbda::ClusterTreeModel<double>& cluster_tree = GetParam()->cluster_tree;
@@ -251,7 +245,6 @@ TEST_P(PinocchioNumericalValidation, forward_dynamics)
         // Compute the forward dynamics
         Eigen::VectorXd tau = Eigen::VectorXd::Random(nv);
 
-        timer.start();
         const Eigen::VectorXd ydd_cluster = cluster_tree.forwardDynamics(tau);
         Eigen::VectorXd qdd_cluster = Eigen::VectorXd::Zero(0);
         for (const auto &cluster : cluster_tree.clusters())
@@ -261,15 +254,10 @@ TEST_P(PinocchioNumericalValidation, forward_dynamics)
             Eigen::VectorXd qdd_k = cluster->joint_->G() * ydd_k + cluster->joint_->g();
             qdd_cluster = grbda::appendEigenVector(qdd_cluster, qdd_k);
         }
-        t_cluster += timer.getMs();
 
-        timer.start();
         const Eigen::VectorXd ydd_approx = approx_tree.forwardDynamics(tau);
-        t_approx += timer.getMs();
 
-        timer.start();
         const Eigen::VectorXd qdd_lgm = lgm_model.forwardDynamics(tau);
-        t_lg += timer.getMs();
 
         // Check grbda cluster tree solution against lagrange multiplier solution
         const Eigen::VectorXd grbda_error = qdd_lgm - qdd_cluster;
@@ -352,7 +340,6 @@ TEST_P(PinocchioBenchmark, compareInstructionCount)
     double t_cluster = 0.;
     double t_approx = 0.;
     double t_pinocchio = 0.;
-    double t_lg = 0.;
 
     // Build models
     PinocchioModel model;
@@ -493,7 +480,6 @@ TEST_P(PinocchioBenchmark, compareInstructionCount)
 
     // Check the solutions against each other
     using ScalarModel = grbda::ClusterTreeModel<Scalar>;
-    using ScalarRigidBodyTreeModel = grbda::RigidBodyTreeModel<Scalar>;
     using ScalarModelState = grbda::ModelState<Scalar>;
     using ScalarJointState = grbda::JointState<Scalar>;
     using ScalarStatePair = std::pair<Eigen::VectorXd, Eigen::VectorXd>;
@@ -533,9 +519,7 @@ TEST_P(PinocchioBenchmark, compareInstructionCount)
         casadi::DMVector dm_pin_res = csPinocchioFD(casadi::DMVector{dm_q, dm_v, dm_tau});
         t_pinocchio += timer.getMs();
 
-        timer.start();
         casadi::DMVector dm_lgm_res = csGrbdaFD(casadi::DMVector{dm_q, dm_v, dm_tau});
-        t_lg += timer.getMs();
 
         casadi::DMVector dm_explicit = csExplicitJacobian(casadi::DMVector{dm_q, dm_v});
 

@@ -38,17 +38,17 @@ createBiasVelocityCasadiFunction(std::shared_ptr<ClusterJoints::Base<casadi::SX>
     DMat<SX> dS_ddq(cs_dS_ddq.size1(), cs_dS_ddq.size2());
     casadi::copy(cs_dS_ddq, dS_ddq);
 
-    // Tensor multiplication: dS/dt = Sring = ∂S/∂dq * dq/dt
-    DMat<SX> Sring(S.rows(), S.cols());
+    // Tensor multiplication: dS/dt = Sdot = ∂S/∂dq * dq/dt
+    DMat<SX> Sdot(S.rows(), S.cols());
     for (int i = 0; i < S.cols(); ++i)
     {
-        Sring.col(i) = dS_ddq.middleRows(i * S.rows(), S.rows()) * qd_sym;
+        Sdot.col(i) = dS_ddq.middleRows(i * S.rows(), S.rows()) * qd_sym;
     }
 
     // Compute bias velocity from partial of motion subspace matrix
-    DVec<SX> Sring_dq = Sring * qd_sym;
-    SX cs_Sring_dq = casadi::SX(casadi::Sparsity::dense(S.rows(), 1));
-    casadi::copy(Sring_dq, cs_Sring_dq);
+    DVec<SX> Sdot_qd = Sdot * qd_sym;
+    SX cs_Sdot_qd = casadi::SX(casadi::Sparsity::dense(S.rows(), 1));
+    casadi::copy(Sdot_qd, cs_Sdot_qd);
 
     // Get bias velocity directly
     DVec<SX> cJ = joint->cJ();
@@ -58,7 +58,7 @@ createBiasVelocityCasadiFunction(std::shared_ptr<ClusterJoints::Base<casadi::SX>
     // Create the function
     casadi::Function csBiasVelocity("biasVelocity",
                                     casadi::SXVector{cs_q_sym, cs_dq_sym, cs_qd_sym},
-                                    casadi::SXVector{cs_Sring_dq, cs_cJ});
+                                    casadi::SXVector{cs_Sdot_qd, cs_cJ});
 
     return csBiasVelocity;
 }
@@ -70,13 +70,13 @@ bool biasVelocitiesAreEqual(const casadi::Function &fcn, int nq, int nv)
     std::vector<casadi::DM> qd = random<casadi::DM>(nv);
     casadi::DMVector res = fcn(casadi::DMVector{q, dq, qd});
 
-    DVec<double> Sring_qd_full(res[0].size1());
-    casadi::copy(res[0], Sring_qd_full);
+    DVec<double> Sdot_qd_full(res[0].size1());
+    casadi::copy(res[0], Sdot_qd_full);
 
     DVec<double> cJ_full(res[1].size1());
     casadi::copy(res[1], cJ_full);
 
-    return (Sring_qd_full - cJ_full).norm() < 1e-12;
+    return (Sdot_qd_full - cJ_full).norm() < 1e-12;
 }
 
 GTEST_TEST(ClusterJoints, BiasVelocities)
@@ -100,7 +100,9 @@ GTEST_TEST(ClusterJoints, BiasVelocities)
 
         for (int j = 0; j < state_samples; j++)
         {
-            ASSERT_TRUE(biasVelocitiesAreEqual(csBiasVelocity, joint->numPositions(), joint->numVelocities()));
+            ASSERT_TRUE(biasVelocitiesAreEqual(csBiasVelocity,
+                                               joint->numPositions(),
+                                               joint->numVelocities()));
         }
     }
 
@@ -131,30 +133,4 @@ GTEST_TEST(ClusterJoints, BiasVelocities)
         }
     }
 
-    // TODO(@MatthewChignoli): Add four bar joint
-
-    // TODO(@nicholasadr): add this joint to the unit test
-    // Tello Differential Cluster Joint
-    // for (int i = 0; i < joint_samples; i++)
-    // {
-    //     Body<SX> rotor1 = randomBody<SX>(1, 0, 0, 0, 0);
-    //     Body<SX> rotor2 = randomBody<SX>(2, 0, 1, 0, 0);
-    //     Body<SX> link1 = randomBody<SX>(3, 0, 2, 0, 0);
-    //     Body<SX> link2 = randomBody<SX>(4, 3, 3, 0, 0);
-
-    //     ClusterJoints::TelloDifferentialModule<SX> module{
-    //         rotor1, rotor2, link1, link2,
-    //         ori::randomCoordinateAxis(), ori::randomCoordinateAxis(),
-    //         ori::randomCoordinateAxis(), ori::randomCoordinateAxis(), random<SX>()};
-
-    //     std::shared_ptr<ClusterJoints::TelloHipDifferential<SX>> joint = std::make_shared<ClusterJoints::TelloHipDifferential<SX>>(module);
-
-    //     casadi::Function csBiasVelocity = createBiasVelocityCasadiFunction(joint);
-
-    //     // Validate that cJ is equal to the derivative of S * qd with respect to q
-    //     for (int j = 0; j < state_samples; j++)
-    //     {
-    //         ASSERT_TRUE(biasVelocitiesAreEqual(csBiasVelocity, joint->numPositions(), joint->numVelocities()));
-    //     }
-    // }
 }
