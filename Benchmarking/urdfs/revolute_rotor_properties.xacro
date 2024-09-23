@@ -9,10 +9,6 @@
     <xacro:property name="link_mass" value="1"/>
     <xacro:property name="rotor_mass" value="0"/>
 
-    <!-- NOTE(@nicholasadr): Had to separate independent and dependent joint macro
-                             because urdf will capitalize the first letter of boolean 
-                             parameter "true/false" to "True/False", leading to
-                             incorrect joint registration -->
     <xacro:macro name="independent_joint" params="name parent child">
         <joint name="${name}" type="revolute" independent="true">
             <parent link="${parent}"/>
