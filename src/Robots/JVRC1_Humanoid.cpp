@@ -69,10 +69,11 @@ namespace grbda
         // Waist pitch cluster
         const std::string waist_p_cluster_name = "waist_p";
         GearedTransmissionModule<> waist_p_module{waist_p, waist_p_rotor,
-                                                "waist-yaw-to-waist-pitch", "waist-yaw-to-waist-pitch-rotor",
-                                                ori::CoordinateAxis::Y,
-                                                ori::CoordinateAxis::Y,
-                                                gear_ratio};
+                                                  "waist-yaw-to-waist-pitch",
+                                                  "waist-yaw-to-waist-pitch-rotor",
+                                                  ori::CoordinateAxis::Y,
+                                                  ori::CoordinateAxis::Y,
+                                                  gear_ratio};
         model.appendRegisteredBodiesAsCluster<RevoluteWithRotor<>>(waist_p_cluster_name,
                                                                  waist_p_module);
 
@@ -97,7 +98,8 @@ namespace grbda
         // Waist roll cluster
         const std::string waist_r_cluster_name = "waist_r";
         GearedTransmissionModule<> waist_r_module{waist_r, waist_r_rotor,
-                                                "waist-pitch-to-waist-roll", "waist-pitch-to-waist-roll-rotor",
+                                                "waist-pitch-to-waist-roll", 
+                                                "waist-pitch-to-waist-roll-rotor",
                                                 ori::CoordinateAxis::X,
                                                 ori::CoordinateAxis::X,
                                                 gear_ratio};
@@ -125,10 +127,11 @@ namespace grbda
         // Neck yaw cluster
         const std::string neck_y_cluster_name = "neck_y";
         GearedTransmissionModule<> neck_y_module{neck_y, neck_y_rotor,
-                                               "waist-roll-to-neck-yaw", "waist-roll-to-neck-yaw-rotor",
-                                               ori::CoordinateAxis::Z,
-                                               ori::CoordinateAxis::Z,
-                                               gear_ratio};
+                                                 "waist-roll-to-neck-yaw",
+                                                 "waist-roll-to-neck-yaw-rotor",
+                                                 ori::CoordinateAxis::Z,
+                                                 ori::CoordinateAxis::Z,
+                                                 gear_ratio};
         model.appendRegisteredBodiesAsCluster<RevoluteWithRotor<>>(neck_y_cluster_name,
                                                                  neck_y_module);
 
@@ -153,10 +156,11 @@ namespace grbda
         // Neck roll cluster
         const std::string neck_r_cluster_name = "neck_r";
         GearedTransmissionModule<> neck_r_module{neck_r, neck_r_rotor,
-                                               "neck-yaw-to-neck-roll", "neck-yaw-to-neck-roll-rotor",
-                                               ori::CoordinateAxis::X,
-                                               ori::CoordinateAxis::X,
-                                               gear_ratio};
+                                                 "neck-yaw-to-neck-roll",
+                                                 "neck-yaw-to-neck-roll-rotor",
+                                                 ori::CoordinateAxis::X,
+                                                 ori::CoordinateAxis::X,
+                                                 gear_ratio};
         model.appendRegisteredBodiesAsCluster<RevoluteWithRotor<>>(neck_r_cluster_name,
                                                                  neck_r_module);
 
@@ -181,10 +185,11 @@ namespace grbda
         // Neck pitch cluster
         const std::string neck_p_cluster_name = "neck_p";
         GearedTransmissionModule<> neck_p_module{neck_p, neck_p_rotor,
-                                               "neck-roll-to-neck-pitch", "neck-roll-to-neck-pitch-rotor",
-                                               ori::CoordinateAxis::Y,
-                                               ori::CoordinateAxis::Y,
-                                               gear_ratio};
+                                                 "neck-roll-to-neck-pitch",
+                                                 "neck-roll-to-neck-pitch-rotor",
+                                                 ori::CoordinateAxis::Y,
+                                                 ori::CoordinateAxis::Y,
+                                                 gear_ratio};
         model.appendRegisteredBodiesAsCluster<RevoluteWithRotor<>>(neck_p_cluster_name,
                                                                  neck_p_module);
 
@@ -450,7 +455,7 @@ namespace grbda
         for (size_t i(0); i < 2; i++)
         {
             const std::string side = sides[i];
-            
+
             // Shoulder pitch
             const Mat3<double> R_shoulder_p = i == 0 ? R_left_shoulder_p : R_right_shoulder_p;
             const Vec3<double> p_shoulder_p = i == 0 ? p_left_shoulder_p : p_right_shoulder_p;

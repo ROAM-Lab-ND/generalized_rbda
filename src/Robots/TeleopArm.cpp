@@ -45,7 +45,8 @@ namespace grbda
                                                     shoulder_rx_rotor_Xtree);
 
         GearedTransmissionModule<> shoulder_rx_module{shoulder_rx_link, shoulder_rx_rotor,
-                                                      "shoulder_rx_link_joint", "shoulder_rx_rotor_joint",
+                                                      "shoulder_rx_link_joint",
+                                                      "shoulder_rx_rotor_joint",
                                                       ori::CoordinateAxis::X,
                                                       ori::CoordinateAxis::X,
                                                       shoulder_rx_rotor_gear_ratio_};
@@ -66,7 +67,8 @@ namespace grbda
                                                     shoulder_ry_rotor_Xtree);
 
         GearedTransmissionModule<> shoulder_ry_module{shoulder_ry_link, shoulder_ry_rotor,
-                                                     "shoulder_ry_link_joint", "shoulder_ry_rotor_joint",
+                                                      "shoulder_ry_link_joint",
+                                                      "shoulder_ry_rotor_joint",
                                                       ori::CoordinateAxis::Y,
                                                       ori::CoordinateAxis::Y,
                                                       shoulder_ry_rotor_gear_ratio_};

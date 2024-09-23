@@ -129,6 +129,12 @@ namespace grbda
         }
 
         template <typename Scalar>
+        const std::vector<bool> &GenericImplicit<Scalar>::isCoordinateIndependent() const
+        {
+            return is_coordinate_independent_;
+        }
+
+        template <typename Scalar>
         DMat<Scalar> GenericImplicit<Scalar>::runCasadiFcn(const casadi::Function &fcn,
                                                            const JointCoordinate<Scalar> &arg)
         {

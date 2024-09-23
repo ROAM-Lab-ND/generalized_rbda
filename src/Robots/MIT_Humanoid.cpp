@@ -238,7 +238,8 @@ namespace grbda
                                                                 shoulder_ry_parent_name,
                                                                 xtreeShoulderRyRotor);
             GearedTransModule shoulder_ry_module{shoulder_ry_link, shoulder_ry_rotor,
-                                                 shoulder_ry_link_joint_name, shoulder_ry_rotor_joint_name,
+                                                 shoulder_ry_link_joint_name,
+                                                 shoulder_ry_rotor_joint_name,
                                                  ori::CoordinateAxis::Y, ori::CoordinateAxis::Y,
                                                  _shoulderRyGearRatio};
             model.template appendRegisteredBodiesAsCluster<RevoluteWithRotor>(shoulder_ry_name,
@@ -272,7 +273,8 @@ namespace grbda
                                                                 shoulder_rx_parent_name,
                                                                 xtreeShoulderRxRotor);
             GearedTransModule shoulder_rx_module{shoulder_rx_link, shoulder_rx_rotor,
-                                                 shoulder_rx_link_joint_name, shoulder_rx_rotor_joint_name,
+                                                 shoulder_rx_link_joint_name,
+                                                 shoulder_rx_rotor_joint_name,
                                                  ori::CoordinateAxis::X, ori::CoordinateAxis::X,
                                                  _shoulderRxGearRatio};
             model.template appendRegisteredBodiesAsCluster<RevoluteWithRotor>(shoulder_rx_name,
@@ -306,7 +308,8 @@ namespace grbda
                                                                 shoulder_rz_parent_name,
                                                                 xtreeShoulderRzRotor);
             GearedTransModule shoulder_rz_module{shoulder_rz_link, shoulder_rz_rotor,
-                                                 shoulder_rz_link_joint_name, shoulder_rz_rotor_joint_name,
+                                                 shoulder_rz_link_joint_name,
+                                                 shoulder_rz_rotor_joint_name,
                                                  ori::CoordinateAxis::Z, ori::CoordinateAxis::Z,
                                                  _shoulderRzGearRatio};
             model.template appendRegisteredBodiesAsCluster<RevoluteWithRotor>(shoulder_rz_name,

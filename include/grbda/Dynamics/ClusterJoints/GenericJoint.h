@@ -31,11 +31,11 @@ namespace grbda
                 return GenericImplicit<SX>(this->is_coordinate_independent_, phi_sym_);
             }
 
+            DVec<Scalar> gamma(const JointCoordinate<Scalar> &joint_pos) const override;
             void updateJacobians(const JointCoordinate<Scalar> &joint_pos) override;
             void updateBiases(const JointState<Scalar> &joint_state) override;
-
-            DVec<Scalar> gamma(const JointCoordinate<Scalar> &joint_pos) const override;
-            const std::vector<bool>& isCoordinateIndependent() const { return is_coordinate_independent_; }
+            
+            const std::vector<bool>& isCoordinateIndependent() const;
 
             void createRandomStateHelpers() override;
 
