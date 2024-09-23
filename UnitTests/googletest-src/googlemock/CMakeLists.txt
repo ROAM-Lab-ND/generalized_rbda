@@ -42,7 +42,7 @@ else()
   cmake_policy(SET CMP0048 NEW)
   project(gmock VERSION ${GOOGLETEST_VERSION} LANGUAGES CXX C)
 endif()
-cmake_minimum_required(VERSION 3.13)
+cmake_minimum_required(VERSION 3.15)
 
 if (COMMAND set_up_hermetic_build)
   set_up_hermetic_build()

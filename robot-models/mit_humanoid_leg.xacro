@@ -185,23 +185,6 @@
 
     <!-- Ankle Flexion/Extension -->
     <xacro:macro name="ankle" params="prefix y_sign">
-        <joint name="${prefix}knee_to_ankle" type="revolute">
-            <axis xyz="0 1 0"/>
-            <origin xyz="0.0 0.0 -0.2785"/>
-            <parent link="${prefix}knee_link"/>
-            <child link="${prefix}ankle_link"/>
-            <limit effort="${effort_limit}" velocity="${velocity_limit}"
-                   lower="${joint_lower_limit}" upper="${joint_upper_limit}"/>
-        </joint>
-        <link name="${prefix}ankle_link">
-            <inertial>
-                <mass value="0.280951"/>
-                <origin xyz="0.022623 0.0 -0.012826"/>
-                <inertia ixx="0.0000842" ixy="0.0" ixz="-0.0000488"
-                         iyy="0.0007959" iyz="0.0" izz="0.0007681"/>
-            </inertial>
-        </link>
-
         <joint name="${prefix}hipy_to_ankle_rotor" type="revolute" independent="false">
             <axis xyz="0 1 0"/>
             <origin xyz=".01563 ${y_sign * -.0454} -.13354"/>
@@ -216,6 +199,23 @@
                 <origin xyz="0. 0. 0."/>
                 <inertia ixx="1.084e-4" ixy="0.0" ixz="0.0"
                          iyy="1.6841e-4" iyz="0.0" izz="1.084e-4"/>
+            </inertial>
+        </link>
+
+        <joint name="${prefix}knee_to_ankle" type="revolute">
+            <axis xyz="0 1 0"/>
+            <origin xyz="0.0 0.0 -0.2785"/>
+            <parent link="${prefix}knee_link"/>
+            <child link="${prefix}ankle_link"/>
+            <limit effort="${effort_limit}" velocity="${velocity_limit}"
+                   lower="${joint_lower_limit}" upper="${joint_upper_limit}"/>
+        </joint>
+        <link name="${prefix}ankle_link">
+            <inertial>
+                <mass value="0.280951"/>
+                <origin xyz="0.022623 0.0 -0.012826"/>
+                <inertia ixx="0.0000842" ixy="0.0" ixz="-0.0000488"
+                         iyy="0.0007959" iyz="0.0" izz="0.0007681"/>
             </inertial>
         </link>
 
