@@ -14,7 +14,7 @@ struct RobotSpecification
     std::string name;
 
     RobotSpecification(std::string urdf_filename, bool floating_base,
-                       std::string outfile_suffix = "Systems")
+                       std::string outfile_suffix = "systems")
         : urdf_filename(urdf_filename), floating_base(floating_base), outfile_suffix(outfile_suffix)
     {
         registerNameFromUrdfFilename(urdf_filename);
@@ -191,7 +191,7 @@ SpecVector GetFourBarUrdfFiles()
 SpecVector GetBenchmarkUrdfFiles()
 {
     std::vector<std::string> sys_types = {"revolute_chain", "revolute_pair_chain",
-                                          "four_bar_chain", "Systems"};
+                                          "four_bar_chain", "systems"};
     for (std::string bench_type : {"Instruction", "Timing"})
     {
         for (std::string sys_type : sys_types)
@@ -513,10 +513,6 @@ TEST_P(PinocchioBenchmark, compareInstructionCount)
                                casadi::SXVector{cs_q, cs_v, cs_tau},
                                casadi::SXVector{cs_qdd_grbda});
 
-    // print the numbers of insructions
-    std::cout << "cABA instructions: " << csClusterABA.n_instructions() << std::endl;
-    std::cout << "pinocchioFD instructions: " << csPinocchioFD.n_instructions() << std::endl;
-    std::cout << "grbdaFD instructions: " << csGrbdaFD.n_instructions() << std::endl;
     const int i_cluster = static_cast<int>(csClusterABA.n_instructions());
     const int i_pinocchio = static_cast<int>(csPinocchioFD.n_instructions());
     const int i_lg = static_cast<int>(csGrbdaFD.n_instructions());

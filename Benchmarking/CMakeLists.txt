@@ -25,30 +25,6 @@ else()
   message(FATAL_ERROR "Pinocchio not found. Please install it or specify its location.")
 endif()
 
-add_executable(time_benchmark_fd src/timeBenchmarkForwardDynamics.cpp)
-target_link_libraries(time_benchmark_fd ${PROJECT_NAME})
-
-add_executable(time_benchmark_iosim src/timeBenchmarkInverseOSIM.cpp)
-target_link_libraries(time_benchmark_iosim ${PROJECT_NAME})
-
-add_executable(time_benchmark_robots src/timeBenchmarkRobots.cpp)
-target_link_libraries(time_benchmark_robots ${PROJECT_NAME})
-
-add_executable(accuracy_benchmark_fd src/accuracyBenchmarkForwardDynamics.cpp)
-target_link_libraries(accuracy_benchmark_fd ${PROJECT_NAME})
-
-add_executable(accuracy_benchmark_id src/accuracyBenchmarkInverseDynamics.cpp)
-target_link_libraries(accuracy_benchmark_id ${PROJECT_NAME})
-
-add_executable(accuracy_benchmark_atf src/accuracyBenchmarkApplyTestForce.cpp)
-target_link_libraries(accuracy_benchmark_atf ${PROJECT_NAME})
-
-add_executable(accuracy_benchmark_robots src/accuracyBenchmarkRobots.cpp)
-target_link_libraries(accuracy_benchmark_robots ${PROJECT_NAME})
-
-add_executable(accuracy_benchmark_ee_tracking src/accuracyBenchmarkEndEffectorTracking.cpp)
-target_link_libraries(accuracy_benchmark_ee_tracking ${PROJECT_NAME})
-
 add_executable(parallel_chains_benchmark src/parallelChainsBenchmark.cpp)
 target_link_libraries(parallel_chains_benchmark ${PROJECT_NAME} ${PINOCCHIO_LIBRARIES})
 target_link_libraries(parallel_chains_benchmark gtest gmock_main)
