@@ -75,8 +75,8 @@ std::vector<LinkOrderTestdata> GetLinkOrders()
     mit_humanoid_leg_data.link_order.push_back("hip_ry_rotor");
     mit_humanoid_leg_data.link_order.push_back("knee_link");
     mit_humanoid_leg_data.link_order.push_back("knee_rotor");
-    mit_humanoid_leg_data.link_order.push_back("ankle_rotor");
     mit_humanoid_leg_data.link_order.push_back("ankle_link");
+    mit_humanoid_leg_data.link_order.push_back("ankle_rotor");
     datas.push_back(mit_humanoid_leg_data);
 
     return datas;
