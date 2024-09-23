@@ -11,13 +11,28 @@ namespace grbda
             throw std::runtime_error("Could not parse URDF file");
 
         std::shared_ptr<const urdf::Link> root = model->getRoot();
-        UrdfClusterPtr root_cluster = model->getClusterContaining(root->name);
-        if (root_cluster->links.size() != 1)
+
+        // Root (i.e. world) can only have one child
+        if (root->child_links.size() != 1)
         {
-            throw std::runtime_error("The root cluster may only contain one body");
+            throw std::runtime_error("The root link must have exactly one child");
         }
 
-        if (floating_base)
+        // Get root child, check if it is attached to world via a fixed or floating joint
+        std::shared_ptr<const urdf::Link> first_body = root->child_links.begin()->second;
+        UrdfClusterPtr first_cluster = model->getClusterContaining(first_body->name);
+        if (first_cluster->links.size() != 1)
+        {
+            throw std::runtime_error("The first cluster may only contain one body");
+        }
+
+        std::shared_ptr<const urdf::Joint> first_joint = first_body->parent_joint;
+        if (first_joint->type == urdf::Joint::FIXED)
+        {
+            body_name_to_body_index_.clear();
+            body_name_to_body_index_[root->name] = -1;
+        }
+        else if (first_joint->type == urdf::Joint::FLOATING)
         {
             std::string name = root->name;
             std::string parent_name = "ground";
@@ -26,15 +41,14 @@ namespace grbda
             using Free = ClusterJoints::Free<Scalar, OrientationRepresentation>;
             appendBody<Free>(name, inertia, parent_name, xtree);
         }
-        else
+        else if ()
         {
-            body_name_to_body_index_.clear();
-            body_name_to_body_index_[root->name] = -1;
+            throw std::runtime_error("The first joint must be fixed or floating");
         }
 
         // Add remaining bodies
         std::map<UrdfClusterPtr, bool> visited;
-        for (UrdfClusterPtr child : root_cluster->child_clusters)
+        for (UrdfClusterPtr child : first_cluster->child_clusters)
         {
             appendClustersViaDFS(visited, child);
         }
