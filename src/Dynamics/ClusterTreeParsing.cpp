@@ -8,7 +8,7 @@ namespace grbda
         if (model == nullptr)
             throw std::runtime_error("Could not parse URDF file");
 
-        // TODO(@MatthewChignoli): Add some comment about what is going on here
+        // Ensure valid root
         std::shared_ptr<const urdf::Link> root = model->getRoot();
         body_name_to_body_index_[root->name] = -1;
         UrdfClusterPtr root_cluster = model->getClusterContaining(root->name);
@@ -176,7 +176,9 @@ namespace grbda
     void
     ClusterTreeModel<Scalar, OriTpl>::appendSimpleFloatingJointFromUrdfCluster(UrdfLinkPtr link)
     {
-        // TOOD(@MatthewChignoli): Add checks to make sure that this is the first joint in the system?
+        if (cluster_nodes_.size() > 0)
+            throw std::runtime_error("Floating joint must be the first joint in the system");
+
         std::string name = link->name;
         std::string parent_name = link->getParent()->name;
         SpatialInertia<Scalar> inertia(link->inertial);

@@ -178,7 +178,7 @@ SpecVector GetFourBarUrdfFiles()
                                     "variable_four_bar_urdf/four_bar_branch_" +
                                     std::to_string(b) + "_" + std::to_string(d) + ".urdf";
             urdf_files.push_back(std::make_shared<BranchAndDepthSpecification>(urdf_file,
-                                                                              outfile_suffix));
+                                                                               outfile_suffix));
         }
     return urdf_files;
 }
