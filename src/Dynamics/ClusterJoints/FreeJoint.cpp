@@ -7,7 +7,7 @@ namespace grbda
     {
 
         template <typename Scalar, typename OrientationRepresentation>
-        Free<Scalar, OrientationRepresentation>::Free(const Body<Scalar> &body)
+        Free<Scalar, OrientationRepresentation>::Free(const Body<Scalar> &body, std::string name)
             : Base<Scalar>(1, OrientationRepresentation::num_ori_parameter + 3, 6), body_(body)
         {
             if (body.parent_index_ >= 0)
@@ -16,7 +16,8 @@ namespace grbda
             this->S_.setIdentity();
             this->Psi_.setIdentity();
 
-            this->single_joints_.emplace_back(new Joints::Free<Scalar, OrientationRepresentation>());
+            this->single_joints_.emplace_back(
+                new Joints::Free<Scalar, OrientationRepresentation>(name));
 
             this->spanning_tree_to_independent_coords_conversion_ = DMat<int>::Identity(6, 6);
 

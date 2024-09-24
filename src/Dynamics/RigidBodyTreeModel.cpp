@@ -149,13 +149,14 @@ namespace grbda
         qd_ = qd;
 
         this->setExternalForces();
+        loop_constraints_updated_ = false;
     }
 
     template <typename Scalar>
     void RigidBodyTreeModel<Scalar>::updateLoopConstraints()
     {
 #ifdef DEBUG_MODE
-        if (q_.size() != getNumPositions() || qd_.size() != getNumDegreesOfFreedom())
+        if (q_.size() != this->getNumPositions() || qd_.size() != this->getNumDegreesOfFreedom())
             throw std::runtime_error("State is not initialized");
 #endif
         if (loop_constraints_updated_)

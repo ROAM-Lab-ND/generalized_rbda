@@ -92,7 +92,7 @@ protected:
 using testing::Types;
 
 typedef Types<
-    TeleopArm, Tello, TelloWithArms, PlanarLegLinkage<>,
+    TeleopArm, Tello<double>, TelloWithArms<double>, PlanarLegLinkage<>,
     MIT_Humanoid<>, MIT_Humanoid<double, ori_representation::RollPitchYaw>,
     MiniCheetah<>, MiniCheetah<double, ori_representation::RollPitchYaw>,
     RevoluteChainWithRotor<2>,
@@ -261,6 +261,9 @@ TYPED_TEST(RigidBodyDynamicsAlgosTest, LambdaInv)
                 std::cout << "No end effectors in cluster model. Skipping test." << std::endl;
                 return;
             }
+
+            GTEST_ASSERT_EQ(cluster_model.getNumEndEffectors(), gen_model.getNumEndEffectors());
+            GTEST_ASSERT_EQ(cluster_model.getNumEndEffectors(), proj_model.getNumEndEffectors());
 
             const DMat<double> lambda_inv = cluster_model.inverseOperationalSpaceInertiaMatrix();
             const DMat<double> lambda_inv_gen = gen_model.inverseOperationalSpaceInertiaMatrix();

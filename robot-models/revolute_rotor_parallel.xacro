@@ -1,0 +1,24 @@
+<?xml version="1.0"?>
+
+<robot name="variable_revolute_rotor_parallel" xmlns:xacro="http://ros.org/wiki/xacro">
+
+    <xacro:arg name="loop_count" default="3"/>
+    <xacro:property name="loop_count" value="$(arg loop_count)"/>
+    <xacro:include filename="revolute_rotor_properties.xacro"/>
+
+    <xacro:macro name="revolute_rotor_loop" params="idx">
+        <xacro:if value="${idx - 1}">
+            <xacro:independent_joint name="link_${idx - 1}_to_link_${idx}" parent="link_${idx - 1}" child="link_${idx}"/>
+            <xacro:link name="link_${idx}"/>
+            <xacro:dependent_joint name="base_to_rotor_${idx}" parent="base" child="rotor_${idx}"/>
+            <xacro:rotor name="rotor_${idx}"/>
+            <xacro:transmission name="transmission_${idx}" predecessor="link_${idx}" successor="rotor_${idx}"/>
+
+            <xacro:revolute_rotor_loop idx="${idx - 1}"/>
+        </xacro:if>
+    </xacro:macro>
+
+    <link name="base"/>
+    <xacro:root_branch branch_count="1"/>
+    <xacro:revolute_rotor_loop idx="${loop_count}"/>
+</robot>

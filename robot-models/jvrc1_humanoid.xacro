@@ -1,0 +1,285 @@
+<?xml version="1.0" ?>
+
+<robot name="jvrc1_humanoid" xmlns:xacro="http://ros.org/wiki/xacro">
+
+    <xacro:include filename="jvrc1_properties.xacro"/>
+    <xacro:property name="base" value="base"/>
+
+    <link name="${base}"/>
+
+    <xacro:pelvis name="pelvis"/>
+    <joint name="base_to_pelvis" type="floating">
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <parent link="${base}"/>
+        <child link="pelvis"/>
+    </joint>
+
+    <xacro:independent_waist_yaw_joint parent="pelvis"/>
+    <xacro:waist_yaw/>
+    <xacro:dependent_waist_yaw_rotor_joint parent="pelvis"/>
+    <xacro:waist_yaw_rotor/>
+    <xacro:trans_constraint name="waist-yaw-transmission"
+                            predecessor="waist-yaw"
+                            successor="waist-yaw-rotor"/>
+
+    <xacro:independent_waist_pitch_joint parent="waist-yaw"/>
+    <xacro:waist_pitch/>
+    <xacro:dependent_waist_pitch_rotor_joint parent="waist-yaw"/>
+    <xacro:waist_pitch_rotor/>
+    <xacro:trans_constraint name="waist-pitch-transmission"
+                            predecessor="waist-pitch"
+                            successor="waist-pitch-rotor"/>
+
+
+    <xacro:independent_waist_roll_joint parent="waist-pitch"/>
+    <xacro:waist_roll/>
+    <xacro:dependent_waist_roll_rotor_joint parent="waist-pitch"/>
+    <xacro:waist_roll_rotor/>
+    <xacro:trans_constraint name="waist-roll-transmission"
+                            predecessor="waist-roll"
+                            successor="waist-roll-rotor"/>
+
+
+    <xacro:independent_neck_yaw_joint parent="waist-roll"/>
+    <xacro:neck_yaw/>
+    <!-- <xacro:dependent_neck_yaw_rotor_joint parent="waist-roll"/>
+    <xacro:neck_yaw_rotor/>
+    <xacro:trans_constraint name="neck-yaw-transmission"
+                            predecessor="neck-yaw"
+                            successor="neck-yaw-rotor"/> -->
+
+    <xacro:independent_neck_roll_joint parent="neck-yaw"/>
+    <xacro:neck_roll/>
+    <!-- <xacro:dependent_neck_roll_rotor_joint parent="neck-yaw"/>
+    <xacro:neck_roll_rotor/>
+    <xacro:trans_constraint name="neck-roll-transmission"
+                            predecessor="neck-roll"
+                            successor="neck-roll-rotor"/> -->
+
+    <xacro:independent_neck_pitch_joint parent="neck-roll"/>
+    <xacro:neck_pitch/>
+    <!-- <xacro:dependent_neck_pitch_rotor_joint parent="neck-roll"/>
+    <xacro:neck_pitch_rotor/>
+    <xacro:trans_constraint name="neck-pitch-transmission"
+                            predecessor="neck-pitch"
+                            successor="neck-pitch-rotor"/> -->
+
+    <!-- Left Leg -->
+
+    <xacro:L_independent_hip_pitch_joint parent="pelvis"/>
+    <xacro:hip_pitch prefix="left-"/>
+    <xacro:L_dependent_hip_pitch_rotor_joint parent="pelvis"/>
+    <xacro:hip_pitch_rotor prefix="left-"/>
+    <xacro:trans_constraint name="left-hip-pitch-transmission"
+                            predecessor="left-hip-pitch"
+                            successor="left-hip-pitch-rotor"/>
+
+    <xacro:L_independent_hip_roll_joint parent="left-hip-pitch"/>
+    <xacro:hip_roll prefix="left-"/>
+    <xacro:L_dependent_hip_roll_rotor_joint parent="left-hip-pitch"/>
+    <xacro:hip_roll_rotor prefix="left-"/>
+    <xacro:trans_constraint name="left-hip-roll-transmission"
+                            predecessor="left-hip-roll"
+                            successor="left-hip-roll-rotor"/>
+
+    <xacro:L_independent_hip_yaw_joint parent="left-hip-roll"/>
+    <xacro:hip_yaw prefix="left-"/>
+    <xacro:L_dependent_hip_yaw_rotor_joint parent="left-hip-roll"/>
+    <xacro:hip_yaw_rotor prefix="left-"/>
+    <xacro:trans_constraint name="left-hip-yaw-transmission"
+                            predecessor="left-hip-yaw"
+                            successor="left-hip-yaw-rotor"/>
+
+    <xacro:L_independent_knee_joint parent="left-hip-yaw"/>
+    <xacro:knee prefix="left-"/>
+    <xacro:L_dependent_knee_rotor_joint parent="left-hip-yaw"/>
+    <xacro:knee_rotor prefix="left-"/>
+    <xacro:trans_constraint name="left-knee-transmission"
+                            predecessor="left-knee"
+                            successor="left-knee-rotor"/>
+
+    <xacro:L_independent_ankle_roll_joint parent="left-knee"/>
+    <xacro:ankle_roll prefix="left-"/>
+    <xacro:L_dependent_ankle_roll_rotor_joint parent="left-knee"/>
+    <xacro:ankle_roll_rotor prefix="left-"/>
+    <xacro:trans_constraint name="left-ankle-roll-transmission"
+                            predecessor="left-ankle-roll"
+                            successor="left-ankle-roll-rotor"/>
+
+    <xacro:L_independent_ankle_pitch_joint parent="left-ankle-roll"/>
+    <xacro:ankle_pitch prefix="left-"/>
+    <xacro:L_dependent_ankle_pitch_rotor_joint parent="left-ankle-roll"/>
+    <xacro:ankle_pitch_rotor prefix="left-"/>
+    <xacro:trans_constraint name="left-ankle-pitch-transmission"
+                            predecessor="left-ankle-pitch"
+                            successor="left-ankle-pitch-rotor"/>
+
+    <!-- Right Leg -->
+
+    <xacro:R_independent_hip_pitch_joint parent="pelvis"/>
+    <xacro:hip_pitch prefix="right-"/>
+    <xacro:R_dependent_hip_pitch_rotor_joint parent="pelvis"/>
+    <xacro:hip_pitch_rotor prefix="right-"/>
+    <xacro:trans_constraint name="right-hip-pitch-transmission"
+                            predecessor="right-hip-pitch"
+                            successor="right-hip-pitch-rotor"/>
+
+    <xacro:R_independent_hip_roll_joint parent="right-hip-pitch"/>
+    <xacro:hip_roll prefix="right-"/>
+    <xacro:R_dependent_hip_roll_rotor_joint parent="right-hip-pitch"/>
+    <xacro:hip_roll_rotor prefix="right-"/>
+    <xacro:trans_constraint name="right-hip-roll-transmission"
+                            predecessor="right-hip-roll"
+                            successor="right-hip-roll-rotor"/>
+
+    <xacro:R_independent_hip_yaw_joint parent="right-hip-roll"/>
+    <xacro:hip_yaw prefix="right-"/>
+    <xacro:R_dependent_hip_yaw_rotor_joint parent="right-hip-roll"/>
+    <xacro:hip_yaw_rotor prefix="right-"/>
+    <xacro:trans_constraint name="right-hip-yaw-transmission"
+                            predecessor="right-hip-yaw"
+                            successor="right-hip-yaw-rotor"/>
+
+    <xacro:R_independent_knee_joint parent="right-hip-yaw"/>
+    <xacro:knee prefix="right-"/>
+    <xacro:R_dependent_knee_rotor_joint parent="right-hip-yaw"/>
+    <xacro:knee_rotor prefix="right-"/>
+    <xacro:trans_constraint name="right-knee-transmission"
+                            predecessor="right-knee"
+                            successor="right-knee-rotor"/>
+
+    <xacro:R_independent_ankle_roll_joint parent="right-knee"/>
+    <xacro:ankle_roll prefix="right-"/>
+    <xacro:R_dependent_ankle_roll_rotor_joint parent="right-knee"/>
+    <xacro:ankle_roll_rotor prefix="right-"/>
+    <xacro:trans_constraint name="right-ankle-roll-transmission"
+                            predecessor="right-ankle-roll"
+                            successor="right-ankle-roll-rotor"/>
+
+    <xacro:R_independent_ankle_pitch_joint parent="right-ankle-roll"/>
+    <xacro:ankle_pitch prefix="right-"/>
+    <xacro:R_dependent_ankle_pitch_rotor_joint parent="right-ankle-roll"/>
+    <xacro:ankle_pitch_rotor prefix="right-"/>
+    <xacro:trans_constraint name="right-ankle-pitch-transmission"
+                            predecessor="right-ankle-pitch"
+                            successor="right-ankle-pitch-rotor"/>
+
+    <!-- Left Arm -->
+    
+    <xacro:L_independent_shoulder_pitch_joint parent="waist-roll"/>
+    <xacro:shoulder_pitch prefix="left-"/>
+    <xacro:L_dependent_shoulder_pitch_rotor_joint parent="waist-roll"/>
+    <xacro:shoulder_pitch_rotor prefix="left-"/>
+    <xacro:trans_constraint name="left-shoulder-pitch-transmission"
+                            predecessor="left-shoulder-pitch"
+                            successor="left-shoulder-pitch-rotor"/>
+
+
+    <xacro:L_independent_shoulder_roll_joint parent="left-shoulder-pitch"/>
+    <xacro:shoulder_roll prefix="left-"/>
+    <xacro:L_dependent_shoulder_roll_rotor_joint parent="left-shoulder-pitch"/>
+    <xacro:shoulder_roll_rotor prefix="left-"/>
+    <xacro:trans_constraint name="left-shoulder-roll-transmission"
+                            predecessor="left-shoulder-roll"
+                            successor="left-shoulder-roll-rotor"/>
+
+    <xacro:L_independent_shoulder_yaw_joint parent="left-shoulder-roll"/>
+    <xacro:shoulder_yaw prefix="left-"/>
+    <xacro:L_dependent_shoulder_yaw_rotor_joint parent="left-shoulder-roll"/>
+    <xacro:shoulder_yaw_rotor prefix="left-"/>
+    <xacro:trans_constraint name="left-shoulder-yaw-transmission"
+                            predecessor="left-shoulder-yaw"
+                            successor="left-shoulder-yaw-rotor"/>
+
+    <xacro:L_independent_elbow_pitch_joint parent="left-shoulder-yaw"/>
+    <xacro:elbow_pitch prefix="left-"/>
+    <xacro:L_dependent_elbow_pitch_rotor_joint parent="left-shoulder-yaw"/>
+    <xacro:elbow_pitch_rotor prefix="left-"/>
+    <xacro:trans_constraint name="left-elbow-pitch-transmission"
+                            predecessor="left-elbow-pitch"
+                            successor="left-elbow-pitch-rotor"/>
+
+    <xacro:L_independent_elbow_yaw_joint parent="left-elbow-pitch"/>
+    <xacro:elbow_yaw prefix="left-"/>
+    <xacro:L_dependent_elbow_yaw_rotor_joint parent="left-elbow-pitch"/>
+    <xacro:elbow_yaw_rotor prefix="left-"/>
+    <xacro:trans_constraint name="left-elbow-yaw-transmission"
+                            predecessor="left-elbow-yaw"
+                            successor="left-elbow-yaw-rotor"/>
+
+    <xacro:L_independent_wrist_roll_joint parent="left-elbow-yaw"/>
+    <xacro:wrist_roll prefix="left-"/>
+    <!-- <xacro:L_dependent_wrist_roll_rotor_joint parent="left-elbow-yaw"/>
+    <xacro:wrist_roll_rotor prefix="left-"/>
+    <xacro:trans_constraint name="left-wrist-roll-transmission"
+                            predecessor="left-wrist-roll"
+                            successor="left-wrist-roll-rotor"/> -->
+
+    <xacro:L_independent_wrist_yaw_joint parent="left-wrist-roll"/>
+    <xacro:left_wrist_yaw/>
+    <!-- <xacro:L_dependent_wrist_yaw_rotor_joint parent="left-wrist-roll"/>
+    <xacro:wrist_yaw_rotor prefix="left-"/>
+    <xacro:trans_constraint name="left-wrist-yaw-transmission"
+                            predecessor="left-wrist-yaw"
+                            successor="left-wrist-yaw-rotor"/> -->
+
+    <!-- Right Arm -->
+
+    <xacro:R_independent_shoulder_pitch_joint parent="waist-roll"/>
+    <xacro:shoulder_pitch prefix="right-"/>
+    <xacro:R_dependent_shoulder_pitch_rotor_joint parent="waist-roll"/>
+    <xacro:shoulder_pitch_rotor prefix="right-"/>
+    <xacro:trans_constraint name="right-shoulder-pitch-transmission"
+                            predecessor="right-shoulder-pitch"
+                            successor="right-shoulder-pitch-rotor"/>
+
+
+    <xacro:R_independent_shoulder_roll_joint parent="right-shoulder-pitch"/>
+    <xacro:shoulder_roll prefix="right-"/>
+    <xacro:R_dependent_shoulder_roll_rotor_joint parent="right-shoulder-pitch"/>
+    <xacro:shoulder_roll_rotor prefix="right-"/>
+    <xacro:trans_constraint name="right-shoulder-roll-transmission"
+                            predecessor="right-shoulder-roll"
+                            successor="right-shoulder-roll-rotor"/>
+
+    <xacro:R_independent_shoulder_yaw_joint parent="right-shoulder-roll"/>
+    <xacro:shoulder_yaw prefix="right-"/>
+    <xacro:R_dependent_shoulder_yaw_rotor_joint parent="right-shoulder-roll"/>
+    <xacro:shoulder_yaw_rotor prefix="right-"/>
+    <xacro:trans_constraint name="right-shoulder-yaw-transmission"
+                            predecessor="right-shoulder-yaw"
+                            successor="right-shoulder-yaw-rotor"/>
+
+    <xacro:R_independent_elbow_pitch_joint parent="right-shoulder-yaw"/>
+    <xacro:elbow_pitch prefix="right-"/>
+    <xacro:R_dependent_elbow_pitch_rotor_joint parent="right-shoulder-yaw"/>
+    <xacro:elbow_pitch_rotor prefix="right-"/>
+    <xacro:trans_constraint name="right-elbow-pitch-transmission"
+                            predecessor="right-elbow-pitch"
+                            successor="right-elbow-pitch-rotor"/>
+
+    <xacro:R_independent_elbow_yaw_joint parent="right-elbow-pitch"/>
+    <xacro:elbow_yaw prefix="right-"/>
+    <xacro:R_dependent_elbow_yaw_rotor_joint parent="right-elbow-pitch"/>
+    <xacro:elbow_yaw_rotor prefix="right-"/>
+    <xacro:trans_constraint name="right-elbow-yaw-transmission"
+                            predecessor="right-elbow-yaw"
+                            successor="right-elbow-yaw-rotor"/>
+
+    <xacro:R_independent_wrist_roll_joint parent="right-elbow-yaw"/>
+    <xacro:wrist_roll prefix="right-"/>
+    <!-- <xacro:R_dependent_wrist_roll_rotor_joint parent="right-elbow-yaw"/>
+    <xacro:wrist_roll_rotor prefix="right-"/>
+    <xacro:trans_constraint name="right-wrist-roll-transmission"
+                            predecessor="right-wrist-roll"
+                            successor="right-wrist-roll-rotor"/> -->
+
+    <xacro:R_independent_wrist_yaw_joint parent="right-wrist-roll"/>
+    <xacro:right_wrist_yaw/>
+    <!-- <xacro:R_dependent_wrist_yaw_rotor_joint parent="right-wrist-roll"/>
+    <xacro:wrist_yaw_rotor prefix="right-"/>
+    <xacro:trans_constraint name="right-wrist-yaw-transmission"
+                            predecessor="right-wrist-yaw"
+                            successor="right-wrist-yaw-rotor"/> -->
+
+</robot>

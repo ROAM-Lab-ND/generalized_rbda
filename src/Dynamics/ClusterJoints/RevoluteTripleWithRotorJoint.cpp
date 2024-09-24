@@ -107,8 +107,8 @@ namespace grbda
             spatial::GeneralizedTransform<Scalar> &Xup) const
         {
 #ifdef DEBUG_MODE
-            if (Xup.getNumOutputBodies() != 4)
-                throw std::runtime_error("[RevoluteTripleWithRotor] Xup must have 24 rows");
+            if (Xup.getNumOutputBodies() != 6)
+                throw std::runtime_error("[RevoluteTripleWithRotor] Xup must have 36 rows");
 #endif
 
             Xup[0] = link_1_joint_->XJ() * link_1_.Xtree_;

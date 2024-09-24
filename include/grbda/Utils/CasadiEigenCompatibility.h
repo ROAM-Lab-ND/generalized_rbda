@@ -4,21 +4,14 @@
 #include <eigen3/Eigen/Dense>
 #include <casadi/casadi.hpp>
 
+// TODO(@MatthewChignoli): This gets dicey. I guess we need pinocchio to be a dependency of grbda?
+#include "pinocchio/autodiff/casadi.hpp"
+
 // This code is based the workaround implemented by Pinocchio to make CasADi compatible with Eigen
 // https://github.com/stack-of-tasks/pinocchio/blob/master/src/autodiff/casadi.hpp
 
 namespace casadi
 {
-    inline bool operator||(const bool x, const casadi::Matrix<SXElem> & /*y*/)
-    {
-        return x;
-    }
-
-    inline bool operator&&(const bool x, const casadi::Matrix<SXElem> & /*y*/)
-    {
-        return x;
-    }
-
     // Copy Eigen matrix to casadi matrix
     template <typename MT, typename Scalar>
     inline void copy(Eigen::MatrixBase<MT> const &src,
@@ -65,60 +58,5 @@ namespace casadi
         }
     }
 }
-
-namespace Eigen
-{
-    /// @brief Eigen::NumTraits<> specialization for casadi::SX
-    ///
-    template <typename Scalar>
-    struct NumTraits<casadi::Matrix<Scalar>>
-    {
-        using Real = casadi::Matrix<Scalar>;
-        using NonInteger = casadi::Matrix<Scalar>;
-        using Literal = casadi::Matrix<Scalar>;
-        using Nested = casadi::Matrix<Scalar>;
-
-        enum
-        {
-            // does not support complex Base types
-            IsComplex = 0,
-            // does not support integer Base types
-            IsInteger = 0,
-            // only support signed Base types
-            IsSigned = 1,
-            // must initialize an AD<Base> object
-            RequireInitialization = 1,
-            // computational cost of the corresponding operations
-            ReadCost = 1,
-            AddCost = 2,
-            MulCost = 2
-        };
-
-        static casadi::Matrix<Scalar> epsilon()
-        {
-            return casadi::Matrix<Scalar>(std::numeric_limits<double>::epsilon());
-        }
-
-        static casadi::Matrix<Scalar> dummy_precision()
-        {
-            return casadi::Matrix<Scalar>(NumTraits<double>::dummy_precision());
-        }
-
-        static casadi::Matrix<Scalar> highest()
-        {
-            return casadi::Matrix<Scalar>(std::numeric_limits<double>::max());
-        }
-
-        static casadi::Matrix<Scalar> lowest()
-        {
-            return casadi::Matrix<Scalar>(std::numeric_limits<double>::min());
-        }
-
-        static int digits10()
-        {
-            return std::numeric_limits<double>::digits10;
-        }
-    };
-} // namespace Eigen
 
 #endif // GRBDA_CASADI_EIGEN_COMPATIBILITY_H

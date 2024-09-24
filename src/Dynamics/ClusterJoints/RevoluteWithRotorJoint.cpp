@@ -10,8 +10,10 @@ namespace grbda
             : Base<Scalar>(2, 1, 1), link_(module.body_), rotor_(module.rotor_)
         {
             using Rev = Joints::Revolute<Scalar>;
-            link_joint_ = this->single_joints_.emplace_back(new Rev(module.joint_axis_));
-            rotor_joint_ = this->single_joints_.emplace_back(new Rev(module.rotor_axis_));
+            link_joint_ = this->single_joints_.emplace_back(new Rev(module.joint_axis_,
+                                                                    module.body_joint_name_));
+            rotor_joint_ = this->single_joints_.emplace_back(new Rev(module.rotor_axis_,
+                                                                     module.rotor_joint_name_));
 
             this->spanning_tree_to_independent_coords_conversion_ = DMat<int>::Zero(1, 2);
             this->spanning_tree_to_independent_coords_conversion_ << 1, 0;

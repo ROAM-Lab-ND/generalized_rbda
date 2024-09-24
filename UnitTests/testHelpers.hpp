@@ -38,6 +38,12 @@ namespace TestHelpers
                                                                      joints, constraint);
         }
 
+        // Extract End Effectors & Contact Points
+        for (const auto &contact_point : model.contactPoints())
+        {
+            generic_model.appendContactPoint(contact_point);
+        }
+
         return generic_model;
     }
 

@@ -1,0 +1,17 @@
+<?xml version="1.0"?>
+
+<robot name="parallel_chain_exp_d10_l8" xmlns:xacro="http://ros.org/wiki/xacro">
+    <xacro:include filename="../explicit_parallel_chains_properties.xacro"/>
+
+    <xacro:add_parallel_links_and_joints_from_base/>
+    <xacro:add_parallel_links_and_joints idx="2"/>
+    <xacro:add_parallel_links_and_joints idx="3"/>
+    <xacro:add_constrained_parallel_links_and_joints idx="4"/>
+    <xacro:add_parallel_links_and_joints idx="5"/>
+    <xacro:add_parallel_links_and_joints idx="6"/>
+    <xacro:add_parallel_links_and_joints idx="7"/>
+    <xacro:add_parallel_links_and_joints idx="8"/>
+    <xacro:add_parallel_links_and_joints idx="9"/>
+    <xacro:add_parallel_links_and_joints idx="10"/>
+
+</robot>
