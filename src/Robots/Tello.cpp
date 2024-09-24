@@ -17,14 +17,14 @@ namespace grbda
         // Set gravity in z direction
         model.setGravity(Vec3<Scalar>{0., 0., grav});
 
-        // TODO(@MatthewChignoli): Add these back in
         // Torso
-        /*const std::string torso_name = base;
+        const std::string torso_name = base;
         const std::string torso_parent_name = "ground";
         const SpatialInertia<Scalar> torso_spatial_inertia =
             SpatialInertia<Scalar>{torso_mass, torso_CoM, torso_inertia};
-        model.appendBody<Free<Scalar>>(torso_name, torso_spatial_inertia,
-                                 torso_parent_name, spatial::Transform{});*/
+        model.template appendBody<Free<Scalar>>(torso_name, torso_spatial_inertia,
+                                                torso_parent_name, spatial::Transform<Scalar>{},
+                                                "torso-to-ground");
 
         std::vector<std::string> sides = {"left", "right"};
         const std::string hip_clamp_parent_name = base;
@@ -38,7 +38,7 @@ namespace grbda
             const Mat3<Scalar> R_hip_clamp = i == 0 ? R_left_hip_clamp : R_right_hip_clamp;
             const Vec3<Scalar> p_hip_clamp = i == 0 ? p_left_hip_clamp : p_right_hip_clamp;
             const spatial::Transform<Scalar> hip_clamp_Xtree = spatial::Transform(R_hip_clamp,
-                                                                            p_hip_clamp);
+                                                                                  p_hip_clamp);
             const std::string hip_clamp_name = side + "-hip-clamp";
             const SpatialInertia<Scalar> hip_clamp_spatial_inertia =
                 SpatialInertia<Scalar>{hip_clamp_mass, hip_clamp_CoM, hip_clamp_inertia};

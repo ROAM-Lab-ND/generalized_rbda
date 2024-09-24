@@ -4,17 +4,23 @@
 <!-- |    EDITING THIS FILE BY HAND IS NOT RECOMMENDED                                 | -->
 <!-- =================================================================================== -->
 <robot name="jvrc1_humanoid" xmlns:xacro="http://ros.org/wiki/xacro">
-  <link name="base">
+  <link name="base"/>
+  <link name="pelvis">
     <inertial>
       <mass value="10"/>
       <origin xyz="-0.01 0.0 0.034"/>
       <inertia ixx="0.089583" ixy="0.0" ixz="0.0" iyy="0.089583" iyz="0.0" izz="0.1125"/>
     </inertial>
   </link>
-  <joint independent="true" name="base-to-waist-yaw" type="revolute">
+  <joint name="base_to_pelvis" type="floating">
+    <origin rpy="0 0 0" xyz="0 0 0"/>
+    <parent link="base"/>
+    <child link="pelvis"/>
+  </joint>
+  <joint independent="true" name="pelvis-to-waist-yaw" type="revolute">
     <axis xyz="0 0 1"/>
     <origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.192"/>
-    <parent link="base"/>
+    <parent link="pelvis"/>
     <child link="waist-yaw"/>
     <limit effort="150" lower="-10" upper="10" velocity="100"/>
   </joint>
@@ -25,10 +31,10 @@
       <inertia ixx="0.00173" ixy="0.0" ixz="0.0" iyy="0.00173" iyz="0.0" izz="0.0032"/>
     </inertial>
   </link>
-  <joint independent="false" name="base-to-waist-yaw-rotor" type="revolute">
+  <joint independent="false" name="pelvis-to-waist-yaw-rotor" type="revolute">
     <axis xyz="0 0 1"/>
     <origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.192"/>
-    <parent link="base"/>
+    <parent link="pelvis"/>
     <child link="waist-yaw-rotor"/>
     <limit effort="150" lower="-10" upper="10" velocity="100"/>
   </joint>
@@ -168,10 +174,10 @@
                             predecessor="neck-pitch"
                             successor="neck-pitch-rotor"/> -->
   <!-- Left Leg -->
-  <joint independent="true" name="base-to-left-hip-pitch" type="revolute">
+  <joint independent="true" name="pelvis-to-left-hip-pitch" type="revolute">
     <axis xyz="0 1 0"/>
     <origin rpy="0.0 0.0 0.0" xyz="0.0 0.096 0.0"/>
-    <parent link="base"/>
+    <parent link="pelvis"/>
     <child link="left-hip-pitch"/>
     <limit effort="150" lower="-10" upper="10" velocity="100"/>
   </joint>
@@ -182,10 +188,10 @@
       <inertia ixx="0.00196" ixy="0.0" ixz="0.0" iyy="0.00196" iyz="0.0" izz="0.00196"/>
     </inertial>
   </link>
-  <joint independent="false" name="base-to-left-hip-pitch-rotor" type="revolute">
+  <joint independent="false" name="pelvis-to-left-hip-pitch-rotor" type="revolute">
     <axis xyz="0 1 0"/>
     <origin rpy="0.0 0.0 0.0" xyz="0.0 0.096 0.0"/>
-    <parent link="base"/>
+    <parent link="pelvis"/>
     <child link="left-hip-pitch-rotor"/>
     <limit effort="150" lower="-10" upper="10" velocity="100"/>
   </joint>
@@ -367,10 +373,10 @@
     <ratio value="6.0"/>
   </constraint>
   <!-- Right Leg -->
-  <joint independent="true" name="base-to-right-hip-pitch" type="revolute">
+  <joint independent="true" name="pelvis-to-right-hip-pitch" type="revolute">
     <axis xyz="0 1 0"/>
     <origin rpy="0.0 0.0 0.0" xyz="0.0 -0.096 -87e-03"/>
-    <parent link="base"/>
+    <parent link="pelvis"/>
     <child link="right-hip-pitch"/>
     <limit effort="150" lower="-10" upper="10" velocity="100"/>
   </joint>
@@ -381,10 +387,10 @@
       <inertia ixx="0.00196" ixy="0.0" ixz="0.0" iyy="0.00196" iyz="0.0" izz="0.00196"/>
     </inertial>
   </link>
-  <joint independent="false" name="base-to-right-hip-pitch-rotor" type="revolute">
+  <joint independent="false" name="pelvis-to-right-hip-pitch-rotor" type="revolute">
     <axis xyz="0 1 0"/>
     <origin rpy="0.0 0.0 0.0" xyz="0.0 -0.096 -87e-03"/>
-    <parent link="base"/>
+    <parent link="pelvis"/>
     <child link="right-hip-pitch-rotor"/>
     <limit effort="150" lower="-10" upper="10" velocity="100"/>
   </joint>

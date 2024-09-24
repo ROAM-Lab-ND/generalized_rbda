@@ -5,7 +5,6 @@
 struct RobotSpecification
 {
     std::string urdf_filename;
-    bool floating_base;
     std::string outfile_suffix;
     std::string instruction_prefix = "InstructionPinocchioFD_";
     std::string timing_prefix = "TimingPinocchioFD_";
@@ -13,9 +12,8 @@ struct RobotSpecification
     std::ofstream timing_outfile;
     std::string name;
 
-    RobotSpecification(std::string urdf_filename, bool floating_base,
-                       std::string outfile_suffix = "systems")
-        : urdf_filename(urdf_filename), floating_base(floating_base), outfile_suffix(outfile_suffix)
+    RobotSpecification(std::string urdf_filename, std::string outfile_suffix = "systems")
+        : urdf_filename(urdf_filename), outfile_suffix(outfile_suffix)
     {
         registerNameFromUrdfFilename(urdf_filename);
         openOutfile();
@@ -90,9 +88,9 @@ struct BranchAndDepthSpecification : public RobotSpecification
     int branch_count;
     int depth_count;
 
-    BranchAndDepthSpecification(std::string urdf_filename, bool floating_base,
-                               std::string outfile_suffix = "revolute_chain")
-        : RobotSpecification(urdf_filename, floating_base, outfile_suffix)
+    BranchAndDepthSpecification(std::string urdf_filename,
+                                std::string outfile_suffix = "revolute_chain")
+        : RobotSpecification(urdf_filename, outfile_suffix)
     {
         registerBranchAndDepthCountFromName(name);
     }
@@ -126,16 +124,13 @@ SpecVector GetIndividualUrdfFiles()
 
     SpecVector urdf_files;
     urdf_files.push_back(std::make_shared<RobotSpecification>(
-        main_urdf_directory + "four_bar.urdf", false));
+        main_urdf_directory + "four_bar.urdf"));
     urdf_files.push_back(std::make_shared<RobotSpecification>(
-        main_urdf_directory + "revolute_rotor_chain.urdf", false));
+        main_urdf_directory + "revolute_rotor_chain.urdf"));
     urdf_files.push_back(std::make_shared<RobotSpecification>(
-        main_urdf_directory + "mit_humanoid.urdf", false));
+        main_urdf_directory + "mit_humanoid.urdf"));
     urdf_files.push_back(std::make_shared<RobotSpecification>(
-        main_urdf_directory + "mini_cheetah.urdf", false));
-    // urdf_files.push_back(std::make_shared<RobotSpecification>(
-    //    main_urdf_directory + "cassie_v4.urdf", false));
-
+        main_urdf_directory + "mini_cheetah.urdf"));
     return urdf_files;
 }
 
@@ -149,7 +144,7 @@ SpecVector GetRevoluteRotorUrdfFiles()
             std::string urdf_file = urdf_directory +
                                     "variable_revolute_urdf/revolute_rotor_branch_" +
                                     std::to_string(b) + "_" + std::to_string(d) + ".urdf";
-            urdf_files.push_back(std::make_shared<BranchAndDepthSpecification>(urdf_file, false));
+            urdf_files.push_back(std::make_shared<BranchAndDepthSpecification>(urdf_file));
         }
     return urdf_files;
 }
@@ -165,8 +160,8 @@ SpecVector GetRevoluteRotorPairUrdfFiles()
             std::string urdf_file = urdf_directory +
                                     "variable_revolute_pair_urdf/revolute_rotor_pair_branch_" +
                                     std::to_string(b) + "_" + std::to_string(d) + ".urdf";
-            urdf_files.push_back(std::make_shared<BranchAndDepthSpecification>(urdf_file, false,
-                                                                              outfile_suffix));
+            urdf_files.push_back(std::make_shared<BranchAndDepthSpecification>(urdf_file,
+                                                                               outfile_suffix));
         }
     return urdf_files;
 }
@@ -182,7 +177,7 @@ SpecVector GetFourBarUrdfFiles()
             std::string urdf_file = urdf_directory +
                                     "variable_four_bar_urdf/four_bar_branch_" +
                                     std::to_string(b) + "_" + std::to_string(d) + ".urdf";
-            urdf_files.push_back(std::make_shared<BranchAndDepthSpecification>(urdf_file, false,
+            urdf_files.push_back(std::make_shared<BranchAndDepthSpecification>(urdf_file,
                                                                               outfile_suffix));
         }
     return urdf_files;
@@ -248,11 +243,11 @@ TEST_P(PinocchioNumericalValidation, forward_dynamics)
     pinocchio::Data data(model);
 
     grbda::ClusterTreeModel<double> cluster_tree;
-    cluster_tree.buildModelFromURDF(GetParam()->urdf_filename, GetParam()->floating_base);
+    cluster_tree.buildModelFromURDF(GetParam()->urdf_filename);
 
     using RigidBodyTreeModel = grbda::RigidBodyTreeModel<double>;
     RigidBodyTreeModel lgm_model(cluster_tree, grbda::FwdDynMethod::LagrangeMultiplierEigen);
-    Eigen::MatrixXd joint_map = jointMap(lgm_model, model);
+    JointMap<double> joint_map = jointMap(lgm_model, model);
 
     const int nv = cluster_tree.getNumDegreesOfFreedom();
     const int nv_span = lgm_model.getNumDegreesOfFreedom();
@@ -285,8 +280,8 @@ TEST_P(PinocchioNumericalValidation, forward_dynamics)
         lgm_model.setState(spanning_joint_pos, spanning_joint_vel);
 
         Eigen::VectorXd pin_q(nv_span), pin_v(nv_span);
-        pin_q = joint_map * spanning_joint_pos;
-        pin_v = joint_map * spanning_joint_vel;
+        pin_q = joint_map.pos * spanning_joint_pos;
+        pin_v = joint_map.vel* spanning_joint_vel;
 
         // Extract loop constraints from the cluster tree
         cluster_tree.forwardKinematics();
@@ -314,7 +309,7 @@ TEST_P(PinocchioNumericalValidation, forward_dynamics)
         GTEST_ASSERT_GT(G_cluster.norm(), 1e-10);
 
         // Convert implicit loop constraint to Pinocchio joint order
-        const Eigen::MatrixXd K_pinocchio = K_cluster * joint_map.transpose();
+        const Eigen::MatrixXd K_pinocchio = K_cluster * joint_map.vel.transpose();
         const Eigen::VectorXd k_pinocchio = -k_cluster;
 
         // Compute the forward dynamics
@@ -323,7 +318,7 @@ TEST_P(PinocchioNumericalValidation, forward_dynamics)
 
         const double mu0 = 1e-14;
         Eigen::VectorXd pin_tau(nv_span);
-        pin_tau = joint_map * spanning_joint_tau;
+        pin_tau = joint_map.vel* spanning_joint_tau;
 
         const Eigen::VectorXd ydd_cluster = cluster_tree.forwardDynamics(tau);
         Eigen::VectorXd qdd_cluster = Eigen::VectorXd::Zero(0);
@@ -347,10 +342,10 @@ TEST_P(PinocchioNumericalValidation, forward_dynamics)
             << "qdd_cluster: " << qdd_cluster.transpose();
 
         // Check grbda lagrange multiplier solution against pinocchio
-        const Eigen::VectorXd qdd_error = data.ddq - joint_map * qdd_lgm;
+        const Eigen::VectorXd qdd_error = data.ddq - joint_map.vel* qdd_lgm;
         GTEST_ASSERT_LT(qdd_error.norm(), 1e-6)
             << "qdd_pinocchio   : " << data.ddq.transpose() << "\n"
-            << "jmap * qdd_lgm: " << (joint_map * qdd_lgm).transpose();
+            << "jmap * qdd_lgm: " << (joint_map.vel* qdd_lgm).transpose();
 
         // Check that solutions satisfy the loop constraints
         Eigen::VectorXd cnstr_violation_pinocchio = K_pinocchio * data.ddq + k_pinocchio;
@@ -403,11 +398,11 @@ TEST_P(PinocchioBenchmark, compareInstructionCount)
     PinocchioADModel::Data ad_data(ad_model);
 
     grbda::ClusterTreeModel<ADScalar> cluster_tree;
-    cluster_tree.buildModelFromURDF(GetParam()->urdf_filename, GetParam()->floating_base);
+    cluster_tree.buildModelFromURDF(GetParam()->urdf_filename);
 
     using RigidBodyTreeModel = grbda::RigidBodyTreeModel<ADScalar>;
     RigidBodyTreeModel lgm_model(cluster_tree, grbda::FwdDynMethod::LagrangeMultiplierEigen);
-    DynamicADMatrix joint_map = jointMap(lgm_model, model);
+    JointMap<ADScalar> joint_map = jointMap(lgm_model, model);
 
     const int nq = cluster_tree.getNumPositions();
     const int nv = cluster_tree.getNumDegreesOfFreedom();
@@ -446,8 +441,8 @@ TEST_P(PinocchioBenchmark, compareInstructionCount)
     lgm_model.setState(spanning_joint_pos, spanning_joint_vel);
 
     DynamicADVector pin_q(nv_span), pin_v(nv_span);
-    pin_q = joint_map * spanning_joint_pos;
-    pin_v = joint_map * spanning_joint_vel;
+    pin_q = joint_map.pos * spanning_joint_pos;
+    pin_v = joint_map.vel* spanning_joint_vel;
 
     // Extract loop constraints from the cluster tree
     cluster_tree.forwardKinematics();
@@ -464,7 +459,7 @@ TEST_P(PinocchioBenchmark, compareInstructionCount)
     }
 
     // Convert implicit loop constraint to Pinocchio joint order
-    const DynamicADMatrix K_pinocchio = K_cluster * joint_map.transpose();
+    const DynamicADMatrix K_pinocchio = K_cluster * joint_map.vel.transpose();
     const DynamicADVector k_pinocchio = -k_cluster;
 
     // Compute the forward dynamics
@@ -475,7 +470,7 @@ TEST_P(PinocchioBenchmark, compareInstructionCount)
 
     const ADScalar mu0 = 1e-14;
     DynamicADVector pin_tau(nv_span);
-    pin_tau = joint_map * spanning_joint_tau;
+    pin_tau = joint_map.vel* spanning_joint_tau;
 
     const DynamicADVector ydd_cluster = cluster_tree.forwardDynamics(tau);
     DynamicADVector qdd_cluster = DynamicADVector::Zero(0);
@@ -525,8 +520,7 @@ TEST_P(PinocchioBenchmark, compareInstructionCount)
     for (int i = 0; i < num_samples; ++i)
     {
         ScalarModel numerical_cluster_tree;
-        numerical_cluster_tree.buildModelFromURDF(GetParam()->urdf_filename,
-                                                  GetParam()->floating_base);
+        numerical_cluster_tree.buildModelFromURDF(GetParam()->urdf_filename);
 
         ScalarModelState scalar_model_state;
         for (const auto &cluster : numerical_cluster_tree.clusters())
@@ -572,10 +566,10 @@ TEST_P(PinocchioBenchmark, compareInstructionCount)
             << "qdd_cABA: " << cABA_res.transpose();
 
         // Check grbda lagrange multiplier solution against pinocchio
-        const DynamicVector qdd_error = pin_res - joint_map.cast<Scalar>() * lgm_res;
+        const DynamicVector qdd_error = pin_res - joint_map.vel.cast<Scalar>() * lgm_res;
         GTEST_ASSERT_LT(qdd_error.norm(), 1e-4)
             << "qdd_pinocchio   : " << pin_res.transpose() << "\n"
-            << "jmap * qdd_grbda: " << (joint_map.cast<Scalar>() * lgm_res).transpose();
+            << "jmap * qdd_grbda: " << (joint_map.vel.cast<Scalar>() * lgm_res).transpose();
     }
 
     GetParam()->writeToFile(GetParam()->instruction_outfile,

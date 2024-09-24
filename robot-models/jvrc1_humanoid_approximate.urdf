@@ -4,13 +4,19 @@
 <!-- |    EDITING THIS FILE BY HAND IS NOT RECOMMENDED                                 | -->
 <!-- =================================================================================== -->
 <robot name="jvrc1_humanoid" xmlns:xacro="http://ros.org/wiki/xacro">
-  <link name="base">
+  <link name="base"/>
+  <link name="pelvis">
     <inertial>
       <mass value="10"/>
       <origin xyz="-0.01 0.0 0.034"/>
       <inertia ixx="0.089583" ixy="0.0" ixz="0.0" iyy="0.089583" iyz="0.0" izz="0.1125"/>
     </inertial>
   </link>
+  <joint name="base_to_pelvis" type="floating">
+    <origin rpy="0 0 0" xyz="0 0 0"/>
+    <parent link="base"/>
+    <child link="pelvis"/>
+  </joint>
   <joint independent="true" name="base-to-waist-yaw" type="revolute">
     <axis xyz="0 0 1"/>
     <origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.192"/>

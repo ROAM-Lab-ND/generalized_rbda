@@ -9,8 +9,7 @@ struct RobotSpecification
     std::string approx_urdf_filename;
     grbda::ClusterTreeModel<Scalar> cluster_tree;
     grbda::ClusterTreeModel<double> numerical_cluster_tree;
-    bool floating_base; // TODO(@MatthewChignoli): I think we are assuming no floating bases so can remove...
-    
+
     std::string outfile_suffix = "Approx";
     std::string instruction_prefix = "InstructionPinocchioFD_";
     std::string timing_prefix = "TimingPinocchioFD_";
@@ -20,13 +19,12 @@ struct RobotSpecification
 
     const double tol;
 
-    RobotSpecification(std::string urdf_filename_, bool floating_base_, double tol_ = 1e-6)
+    RobotSpecification(std::string urdf_filename_, double tol_ = 1e-6)
         : urdf_filename(urdf_filename_ + ".urdf"),
-          approx_urdf_filename(urdf_filename_ + "_approximate.urdf"),
-          floating_base(floating_base_), tol(tol_)
+          approx_urdf_filename(urdf_filename_ + "_approximate.urdf"), tol(tol_)
     {
-        cluster_tree.buildModelFromURDF(urdf_filename, floating_base);
-        numerical_cluster_tree.buildModelFromURDF(urdf_filename, floating_base);
+        cluster_tree.buildModelFromURDF(urdf_filename);
+        numerical_cluster_tree.buildModelFromURDF(urdf_filename);
         registerNameFromUrdfFilename(urdf_filename);
         openOutfile();
     }
@@ -34,12 +32,11 @@ struct RobotSpecification
     using RobotPtr = std::shared_ptr<grbda::Robot<Scalar>>;
     using RobotPtrDouble = std::shared_ptr<grbda::Robot<double>>;
     RobotSpecification(RobotPtr robot_, RobotPtrDouble numerical_robot_,
-                       std::string urdf_filename_, bool floating_base_, double tol_ = 1e-6)
+                       std::string urdf_filename_, double tol_ = 1e-6)
         : urdf_filename(urdf_filename_ + ".urdf"),
           approx_urdf_filename(urdf_filename_ + "_approximate.urdf"),
           cluster_tree(robot_->buildClusterTreeModel()),
-          numerical_cluster_tree(numerical_robot_->buildClusterTreeModel()),
-          floating_base(floating_base_), tol(tol_)
+          numerical_cluster_tree(numerical_robot_->buildClusterTreeModel()), tol(tol_)
     {
         registerNameFromUrdfFilename(urdf_filename);
         openOutfile();
@@ -133,29 +130,29 @@ SpecVector<double> RobotSpecificationAsDouble()
 {
     clearOldDataFiles();
 
-    // TODO(@MatthewChignoli): These should be floating base...
     SpecVector<double> urdf_files;
-    
+
     {
         std::string urdf_file = main_urdf_directory + "mini_cheetah";
-        urdf_files.push_back(std::make_shared<RobotSpecification<double>>(urdf_file, false));
+        urdf_files.push_back(std::make_shared<RobotSpecification<double>>(urdf_file));
     }
 
     {
         std::string urdf_file = main_urdf_directory + "mit_humanoid";
-        urdf_files.push_back(std::make_shared<RobotSpecification<double>>(urdf_file, false));
+        urdf_files.push_back(std::make_shared<RobotSpecification<double>>(urdf_file));
     }
-    
+
     {
+        // TODO(@MatthewChignoli): Why does it require higher tolerance?
         std::string urdf_file = main_urdf_directory + "tello_humanoid";
-        std::shared_ptr<grbda::TelloWithArms<double>> robot =  std::make_shared<grbda::TelloWithArms<double>>();
+        std::shared_ptr<grbda::TelloWithArms<double>> robot = std::make_shared<grbda::TelloWithArms<double>>();
         urdf_files.push_back(std::make_shared<RobotSpecification<double>>(
-            robot, robot, urdf_file, false, 1.0));
+            robot, robot, urdf_file, 1.0));
     }
 
     {
         std::string urdf_file = main_urdf_directory + "jvrc1_humanoid";
-        urdf_files.push_back(std::make_shared<RobotSpecification<double>>(urdf_file, false));
+        urdf_files.push_back(std::make_shared<RobotSpecification<double>>(urdf_file));
     }
 
     return urdf_files;
@@ -177,19 +174,13 @@ TEST_P(PinocchioNumericalValidation, forward_dynamics)
     using StatePair = std::pair<Eigen::VectorXd, Eigen::VectorXd>;
 
     // Build models
-    grbda::ClusterTreeModel<double>& cluster_tree = GetParam()->cluster_tree;
+    grbda::ClusterTreeModel<double> &cluster_tree = GetParam()->cluster_tree;
     grbda::ClusterTreeModel<double> approx_tree;
-    approx_tree.buildModelFromURDF(GetParam()->approx_urdf_filename, GetParam()->floating_base);
+    approx_tree.buildModelFromURDF(GetParam()->approx_urdf_filename);
+    GTEST_ASSERT_EQ(cluster_tree.getNumDegreesOfFreedom(), approx_tree.getNumDegreesOfFreedom());
 
     using RigidBodyTreeModel = grbda::RigidBodyTreeModel<double>;
     RigidBodyTreeModel lgm_model(cluster_tree, grbda::FwdDynMethod::LagrangeMultiplierEigen);
-
-    // TODO(@MatthewChignoli): Commented this out for Tello because no independent position for cluster tree model
-    // GTEST_ASSERT_EQ(cluster_tree.getNumPositions(), approx_tree.getNumPositions());
-    GTEST_ASSERT_EQ(cluster_tree.getNumDegreesOfFreedom(), approx_tree.getNumDegreesOfFreedom());
-
-    const int nv = cluster_tree.getNumDegreesOfFreedom();
-    // const int nv_span = lgm_model.getNumDegreesOfFreedom();
 
     for (int i = 0; i < num_samples; i++)
     {
@@ -243,6 +234,7 @@ TEST_P(PinocchioNumericalValidation, forward_dynamics)
         GTEST_ASSERT_GT(G_cluster.norm(), 1e-10);
 
         // Compute the forward dynamics
+        const int nv = cluster_tree.getNumDegreesOfFreedom();
         Eigen::VectorXd tau = Eigen::VectorXd::Random(nv);
 
         const Eigen::VectorXd ydd_cluster = cluster_tree.forwardDynamics(tau);
@@ -278,30 +270,30 @@ SpecVector<casadi::SX> RobotSpecificationAsSX()
 {
     clearOldDataFiles();
 
-    // TODO(@MatthewChignoli): These should be floating base...
     SpecVector<casadi::SX> urdf_files;
-    
+
     {
         std::string urdf_file = main_urdf_directory + "mini_cheetah";
-        urdf_files.push_back(std::make_shared<RobotSpecification<casadi::SX>>(urdf_file, false));
+        urdf_files.push_back(std::make_shared<RobotSpecification<casadi::SX>>(urdf_file));
     }
 
     {
         std::string urdf_file = main_urdf_directory + "mit_humanoid";
-        urdf_files.push_back(std::make_shared<RobotSpecification<casadi::SX>>(urdf_file, false));
+        urdf_files.push_back(std::make_shared<RobotSpecification<casadi::SX>>(urdf_file));
     }
 
     {
+        // TODO(@MatthewChignoli): Why does it require higher tolerance? Probably a small mis-match between manually built model and the URDF
         std::string urdf_file = main_urdf_directory + "tello_humanoid";
-       std::shared_ptr<grbda::TelloWithArms<casadi::SX>> robot =  std::make_shared<grbda::TelloWithArms<casadi::SX>>();
-       std::shared_ptr<grbda::TelloWithArms<double>> numerical_robot =  std::make_shared<grbda::TelloWithArms<double>>();
+        std::shared_ptr<grbda::TelloWithArms<casadi::SX>> robot = std::make_shared<grbda::TelloWithArms<casadi::SX>>();
+        std::shared_ptr<grbda::TelloWithArms<double>> numerical_robot = std::make_shared<grbda::TelloWithArms<double>>();
         urdf_files.push_back(std::make_shared<RobotSpecification<casadi::SX>>(
-            robot, numerical_robot, urdf_file, false, 1.0));
+            robot, numerical_robot, urdf_file, 50.0));
     }
 
     {
         std::string urdf_file = main_urdf_directory + "jvrc1_humanoid";
-        urdf_files.push_back(std::make_shared<RobotSpecification<casadi::SX>>(urdf_file, false));
+        urdf_files.push_back(std::make_shared<RobotSpecification<casadi::SX>>(urdf_file));
     }
 
     return urdf_files;
@@ -347,13 +339,13 @@ TEST_P(PinocchioBenchmark, compareInstructionCount)
     PinocchioADModel ad_model = model.cast<ADScalar>();
     PinocchioADModel::Data ad_data(ad_model);
 
-    grbda::ClusterTreeModel<ADScalar>& cluster_tree = GetParam()->cluster_tree;
+    grbda::ClusterTreeModel<ADScalar> &cluster_tree = GetParam()->cluster_tree;
     grbda::ClusterTreeModel<ADScalar> approx_tree;
-    approx_tree.buildModelFromURDF(GetParam()->approx_urdf_filename, GetParam()->floating_base);
+    approx_tree.buildModelFromURDF(GetParam()->approx_urdf_filename);
 
     using RigidBodyTreeModel = grbda::RigidBodyTreeModel<ADScalar>;
     RigidBodyTreeModel lgm_model(cluster_tree, grbda::FwdDynMethod::LagrangeMultiplierEigen);
-    DynamicADMatrix joint_map = jointMap(lgm_model, model);
+    JointMap<ADScalar> joint_map = jointMap(lgm_model, model);
 
     const int nq = cluster_tree.getNumPositions();
     const int nv = cluster_tree.getNumDegreesOfFreedom();
@@ -376,7 +368,7 @@ TEST_P(PinocchioBenchmark, compareInstructionCount)
 
         JointState joint_state;
         LoopConstraintPtr loop_constraint = cluster->joint_->cloneLoopConstraint();
-        joint_state.position = JointCoordinate(q_i, !loop_constraint->isExplicit());
+        joint_state.position = JointCoordinate(q_i, loop_constraint->isImplicit());
         joint_state.velocity = JointCoordinate(v_i, false);
 
         JointState spanning_joint_state = cluster->joint_->toSpanningTreeState(joint_state);
@@ -392,9 +384,12 @@ TEST_P(PinocchioBenchmark, compareInstructionCount)
     approx_tree.setState(grbda::modelStateToVector(model_state));
     lgm_model.setState(spanning_joint_pos, spanning_joint_vel);
 
-    DynamicADVector pin_q(nv_span), pin_v(nv_span);
-    pin_q = joint_map * spanning_joint_pos;
-    pin_v = joint_map * spanning_joint_vel;
+    GTEST_ASSERT_EQ(spanning_joint_pos.size(), model.nq);
+    GTEST_ASSERT_EQ(spanning_joint_vel.size(), model.nv);
+
+    DynamicADVector pin_q(model.nq), pin_v(model.nv);
+    pin_q = joint_map.pos * spanning_joint_pos;
+    pin_v = joint_map.vel * spanning_joint_vel;
 
     // Extract loop constraints from the cluster tree
     cluster_tree.forwardKinematics();
@@ -411,7 +406,7 @@ TEST_P(PinocchioBenchmark, compareInstructionCount)
     }
 
     // Convert implicit loop constraint to Pinocchio joint order
-    const DynamicADMatrix K_pinocchio = K_cluster * joint_map.transpose();
+    const DynamicADMatrix K_pinocchio = K_cluster * joint_map.vel.transpose();
     const DynamicADVector k_pinocchio = -k_cluster;
 
     // Compute the forward dynamics
@@ -422,7 +417,7 @@ TEST_P(PinocchioBenchmark, compareInstructionCount)
 
     const ADScalar mu0 = 1e-14;
     DynamicADVector pin_tau(nv_span);
-    pin_tau = joint_map * spanning_joint_tau;
+    pin_tau = joint_map.vel * spanning_joint_tau;
 
     const DynamicADVector ydd_cluster = cluster_tree.forwardDynamics(tau);
     const DynamicADVector ydd_approx = approx_tree.forwardDynamics(tau);
@@ -453,8 +448,8 @@ TEST_P(PinocchioBenchmark, compareInstructionCount)
                                   casadi::SXVector{cs_ydd_cluster});
 
     casadi::Function csApproxABA("clusterApprox",
-                                  casadi::SXVector{cs_q, cs_v, cs_tau},
-                                  casadi::SXVector{cs_ydd_approx});
+                                 casadi::SXVector{cs_q, cs_v, cs_tau},
+                                 casadi::SXVector{cs_ydd_approx});
 
     casadi::Function csPinocchioFD("pinocchioFD",
                                    casadi::SXVector{cs_q, cs_v, cs_tau},
@@ -480,7 +475,7 @@ TEST_P(PinocchioBenchmark, compareInstructionCount)
     using ScalarStatePair = std::pair<Eigen::VectorXd, Eigen::VectorXd>;
     for (int i = 0; i < num_samples; ++i)
     {
-        ScalarModel& numerical_cluster_tree = GetParam()->numerical_cluster_tree;
+        ScalarModel &numerical_cluster_tree = GetParam()->numerical_cluster_tree;
 
         ScalarModelState scalar_model_state;
         for (const auto &cluster : numerical_cluster_tree.clusters())
@@ -538,10 +533,10 @@ TEST_P(PinocchioBenchmark, compareInstructionCount)
             << "cABA_res: " << cABA_res.transpose();
 
         // Check grbda lagrange multiplier solution against pinocchio
-        const DynamicVector qdd_error = pin_res - joint_map.cast<Scalar>() * lgm_res;
+        const DynamicVector qdd_error = pin_res - joint_map.vel.cast<Scalar>() * lgm_res;
         GTEST_ASSERT_LT(qdd_error.norm(), GetParam()->tol)
             << "qdd_pinocchio   : " << pin_res.transpose() << "\n"
-            << "jmap * qdd_grbda: " << (joint_map.cast<Scalar>() * lgm_res).transpose();
+            << "jmap * qdd_grbda: " << (joint_map.vel.cast<Scalar>() * lgm_res).transpose();
     }
 
     GetParam()->writeToFile(GetParam()->instruction_outfile,

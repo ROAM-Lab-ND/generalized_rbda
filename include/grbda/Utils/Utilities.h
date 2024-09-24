@@ -46,12 +46,12 @@ namespace grbda
    * Generate a std::vector of random numbers
    */
   template <typename T>
-  std::vector<T> random(int n)
+  std::vector<T> random(int n, T scale = T(1))
   {
     std::vector<T> v(n);
     for (int i = 0; i < n; ++i)
     {
-      v[i] = random<T>();
+      v[i] = random<T>() * scale;
     }
     return v;
   }

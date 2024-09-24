@@ -56,7 +56,7 @@ namespace grbda
         class Free : public Base<Scalar>
         {
         public:
-            Free(const Body<Scalar> &body);
+            Free(const Body<Scalar> &body, std::string name = "unnamed_free_joint");
             virtual ~Free() {}
 
             ClusterJointTypes type() const override { return ClusterJointTypes::Free; }

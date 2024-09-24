@@ -2,61 +2,32 @@
 
 namespace grbda
 {
-    template <typename Scalar>
-    template <typename OrientationRepresentation>
-    void ClusterTreeModel<Scalar>::buildFromUrdfModelInterface(
-        const UrdfModelPtr model, bool floating_base)
+    template <typename Scalar, typename OriTpl>
+    void ClusterTreeModel<Scalar, OriTpl>::buildFromUrdfModelInterface(const UrdfModelPtr model)
     {
         if (model == nullptr)
             throw std::runtime_error("Could not parse URDF file");
 
+        // TODO(@MatthewChignoli): Add some comment about what is going on here
         std::shared_ptr<const urdf::Link> root = model->getRoot();
-
-        // Root (i.e. world) can only have one child
-        if (root->child_links.size() != 1)
+        body_name_to_body_index_[root->name] = -1;
+        UrdfClusterPtr root_cluster = model->getClusterContaining(root->name);
+        if (root_cluster->links.size() != 1)
         {
-            throw std::runtime_error("The root link must have exactly one child");
-        }
-
-        // Get root child, check if it is attached to world via a fixed or floating joint
-        std::shared_ptr<const urdf::Link> first_body = root->child_links.begin()->second;
-        UrdfClusterPtr first_cluster = model->getClusterContaining(first_body->name);
-        if (first_cluster->links.size() != 1)
-        {
-            throw std::runtime_error("The first cluster may only contain one body");
-        }
-
-        std::shared_ptr<const urdf::Joint> first_joint = first_body->parent_joint;
-        if (first_joint->type == urdf::Joint::FIXED)
-        {
-            body_name_to_body_index_.clear();
-            body_name_to_body_index_[root->name] = -1;
-        }
-        else if (first_joint->type == urdf::Joint::FLOATING)
-        {
-            std::string name = root->name;
-            std::string parent_name = "ground";
-            SpatialInertia<Scalar> inertia(root->inertial);
-            spatial::Transform<Scalar> xtree = spatial::Transform<Scalar>{};
-            using Free = ClusterJoints::Free<Scalar, OrientationRepresentation>;
-            appendBody<Free>(name, inertia, parent_name, xtree);
-        }
-        else if ()
-        {
-            throw std::runtime_error("The first joint must be fixed or floating");
+            throw std::runtime_error("The root cluster may only contain one body");
         }
 
         // Add remaining bodies
         std::map<UrdfClusterPtr, bool> visited;
-        for (UrdfClusterPtr child : first_cluster->child_clusters)
+        for (UrdfClusterPtr child : root_cluster->child_clusters)
         {
             appendClustersViaDFS(visited, child);
         }
     }
 
-    template <typename Scalar>
-    void ClusterTreeModel<Scalar>::appendClustersViaDFS(std::map<UrdfClusterPtr, bool> &visited,
-                                                        UrdfClusterPtr cluster)
+    template <typename Scalar, typename OriTpl>
+    void ClusterTreeModel<Scalar, OriTpl>::appendClustersViaDFS(
+        std::map<UrdfClusterPtr, bool> &visited, UrdfClusterPtr cluster)
     {
         visited[cluster] = true;
         appendClusterFromUrdfCluster(cluster);
@@ -71,14 +42,28 @@ namespace grbda
     }
 
     // TODO(@MatthewChignoli): Eventually add some specialization and detection for common clusters so that we can use sparsity exploiting classes
-    template <typename Scalar>
-    void ClusterTreeModel<Scalar>::appendClusterFromUrdfCluster(UrdfClusterPtr cluster)
+    template <typename Scalar, typename OriTpl>
+    void ClusterTreeModel<Scalar, OriTpl>::appendClusterFromUrdfCluster(UrdfClusterPtr cluster)
     {
         // Special case for a cluster with one link and no constraints
         if (cluster->links.size() == 1 && cluster->constraints.size() == 0)
         {
             UrdfLinkPtr link = cluster->links.begin()->second;
-            appendSimpleRevoluteJointFromUrdfCluster(link);
+            UrdfJointPtr joint = link->parent_joint;
+
+            if (joint->type == urdf::Joint::CONTINUOUS || joint->type == urdf::Joint::REVOLUTE)
+            {
+                appendSimpleRevoluteJointFromUrdfCluster(link);
+            }
+            else if (joint->type == urdf::Joint::FLOATING)
+            {
+                appendSimpleFloatingJointFromUrdfCluster(link);
+            }
+            else
+            {
+                throw std::runtime_error("The only joint in a cluster with one link must be revolute or floating");
+            }
+
             return;
         }
 
@@ -174,14 +159,10 @@ namespace grbda
         }
     }
 
-    template <typename Scalar>
-    void ClusterTreeModel<Scalar>::appendSimpleRevoluteJointFromUrdfCluster(UrdfLinkPtr link)
+    template <typename Scalar, typename OriTpl>
+    void
+    ClusterTreeModel<Scalar, OriTpl>::appendSimpleRevoluteJointFromUrdfCluster(UrdfLinkPtr link)
     {
-        if (link->parent_joint->type != urdf::Joint::CONTINUOUS &&
-            link->parent_joint->type != urdf::Joint::REVOLUTE)
-        {
-            throw std::runtime_error("The only joint in a cluster with one link must be revolute");
-        }
         std::string name = link->name;
         std::string parent_name = link->getParent()->name;
         SpatialInertia<Scalar> inertia(link->inertial);
@@ -191,8 +172,21 @@ namespace grbda
         appendBody<Revolute>(name, inertia, parent_name, xtree, axis, link->parent_joint->name);
     }
 
-    template <typename Scalar>
-    void ClusterTreeModel<Scalar>::registerBodiesInUrdfCluster(
+    template <typename Scalar, typename OriTpl>
+    void
+    ClusterTreeModel<Scalar, OriTpl>::appendSimpleFloatingJointFromUrdfCluster(UrdfLinkPtr link)
+    {
+        // TOOD(@MatthewChignoli): Add checks to make sure that this is the first joint in the system?
+        std::string name = link->name;
+        std::string parent_name = link->getParent()->name;
+        SpatialInertia<Scalar> inertia(link->inertial);
+        spatial::Transform<Scalar> xtree(link->parent_joint->parent_to_joint_origin_transform);
+        using Free = ClusterJoints::Free<Scalar, OriTpl>;
+        appendBody<Free>(name, inertia, parent_name, xtree, link->parent_joint->name);
+    }
+
+    template <typename Scalar, typename OriTpl>
+    void ClusterTreeModel<Scalar, OriTpl>::registerBodiesInUrdfCluster(
         UrdfClusterPtr cluster,
         std::vector<JointPtr<Scalar>> &joints,
         std::vector<bool> &independent_coordinates,
@@ -242,9 +236,9 @@ namespace grbda
         }
     }
 
-    template <typename Scalar>
+    template <typename Scalar, typename OriTpl>
     std::function<DVec<casadi::SX>(const JointCoordinate<casadi::SX> &)>
-    ClusterTreeModel<Scalar>::implicitPositionConstraint(
+    ClusterTreeModel<Scalar, OriTpl>::implicitPositionConstraint(
         std::vector<PositionConstraintCapture> &captures,
         std::map<std::string, JointPtr<SX>> joints_sx)
     {
@@ -313,9 +307,9 @@ namespace grbda
         };
     }
 
-    template <typename Scalar>
+    template <typename Scalar, typename OriTpl>
     std::pair<DMat<Scalar>, DMat<Scalar>>
-    ClusterTreeModel<Scalar>::explicitRollingConstraint(
+    ClusterTreeModel<Scalar, OriTpl>::explicitRollingConstraint(
         std::vector<RollingConstraintCapture> &captures,
         std::vector<bool> independent_coordinates)
     {
@@ -380,19 +374,5 @@ namespace grbda
     template class ClusterTreeModel<double>;
     template class ClusterTreeModel<float>;
     template class ClusterTreeModel<casadi::SX>;
-
-    template void ClusterTreeModel<double>::buildFromUrdfModelInterface<ori_representation::Quaternion>(
-        const UrdfModelPtr model, bool floating_base);
-    template void ClusterTreeModel<float>::buildFromUrdfModelInterface<ori_representation::Quaternion>(
-        const UrdfModelPtr model, bool floating_base);
-    template void ClusterTreeModel<casadi::SX>::buildFromUrdfModelInterface<ori_representation::Quaternion>(
-        const UrdfModelPtr model, bool floating_base);
-    template void ClusterTreeModel<double>::buildFromUrdfModelInterface<ori_representation::RollPitchYaw>(
-        const UrdfModelPtr model, bool floating_base);
-    template void ClusterTreeModel<float>::buildFromUrdfModelInterface<ori_representation::RollPitchYaw>(
-        const UrdfModelPtr model, bool floating_base);
-    template void ClusterTreeModel<casadi::SX>::buildFromUrdfModelInterface<ori_representation::RollPitchYaw>(
-        const UrdfModelPtr model, bool floating_base);
-
 
 } // namespace grbda

@@ -5,11 +5,18 @@
     <xacro:include filename="jvrc1_properties.xacro"/>
     <xacro:property name="base" value="base"/>
 
-    <xacro:pelvis name="${base}"/>
+    <link name="${base}"/>
 
-    <xacro:independent_waist_yaw_joint parent="${base}"/>
+    <xacro:pelvis name="pelvis"/>
+    <joint name="base_to_pelvis" type="floating">
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <parent link="${base}"/>
+        <child link="pelvis"/>
+    </joint>
+
+    <xacro:independent_waist_yaw_joint parent="pelvis"/>
     <xacro:waist_yaw/>
-    <xacro:dependent_waist_yaw_rotor_joint parent="${base}"/>
+    <xacro:dependent_waist_yaw_rotor_joint parent="pelvis"/>
     <xacro:waist_yaw_rotor/>
     <xacro:trans_constraint name="waist-yaw-transmission"
                             predecessor="waist-yaw"
@@ -59,9 +66,9 @@
 
     <!-- Left Leg -->
 
-    <xacro:L_independent_hip_pitch_joint parent="${base}"/>
+    <xacro:L_independent_hip_pitch_joint parent="pelvis"/>
     <xacro:hip_pitch prefix="left-"/>
-    <xacro:L_dependent_hip_pitch_rotor_joint parent="${base}"/>
+    <xacro:L_dependent_hip_pitch_rotor_joint parent="pelvis"/>
     <xacro:hip_pitch_rotor prefix="left-"/>
     <xacro:trans_constraint name="left-hip-pitch-transmission"
                             predecessor="left-hip-pitch"
@@ -109,9 +116,9 @@
 
     <!-- Right Leg -->
 
-    <xacro:R_independent_hip_pitch_joint parent="${base}"/>
+    <xacro:R_independent_hip_pitch_joint parent="pelvis"/>
     <xacro:hip_pitch prefix="right-"/>
-    <xacro:R_dependent_hip_pitch_rotor_joint parent="${base}"/>
+    <xacro:R_dependent_hip_pitch_rotor_joint parent="pelvis"/>
     <xacro:hip_pitch_rotor prefix="right-"/>
     <xacro:trans_constraint name="right-hip-pitch-transmission"
                             predecessor="right-hip-pitch"

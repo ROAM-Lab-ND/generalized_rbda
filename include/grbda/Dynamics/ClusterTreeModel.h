@@ -20,12 +20,13 @@ namespace grbda
     using UrdfModelPtr = std::shared_ptr<urdf::ModelInterface>;
     using UrdfClusterPtr = std::shared_ptr<urdf::Cluster>;
     using UrdfLinkPtr = std::shared_ptr<urdf::Link>;
+    using UrdfJointPtr = std::shared_ptr<urdf::Joint>;
     using UrdfConstraintPtr = std::shared_ptr<urdf::Constraint>;
 
     /*!
      * Class to represent a floating base rigid body model with rotors and ground contacts.
      */
-    template <typename Scalar = double>
+    template <typename Scalar = double, typename OriTpl = ori_representation::Quaternion>
     class ClusterTreeModel : public TreeModel<Scalar>
     {
     public:
@@ -37,22 +38,19 @@ namespace grbda
         ~ClusterTreeModel() {}
 
         
-        template <typename OrientationRepresentation = ori_representation::Quaternion>
-        void buildModelFromURDF(
-            const std::string &urdf_filename, bool floating_base)
+        void buildModelFromURDF(const std::string &urdf_filename)
         {
             std::shared_ptr<urdf::ModelInterface> model;
             model = urdf::parseURDFFile(urdf_filename, false);
-            buildFromUrdfModelInterface<OrientationRepresentation>(model, floating_base);
+            buildFromUrdfModelInterface(model);
         }
         
-        template <typename OrientationRepresentation = ori_representation::Quaternion>
         void buildModelFromURDF(
-            const std::vector<std::string> &urdf_filenames, bool floating_base)
+            const std::vector<std::string> &urdf_filenames)
         {
             std::shared_ptr<urdf::ModelInterface> model;
             model = urdf::parseURDFFiles(urdf_filenames, false);
-            buildFromUrdfModelInterface<OrientationRepresentation>(model, floating_base);
+            buildFromUrdfModelInterface(model);
         }
 
         // The standard process for appending a cluster to the tree is to register all the bodies
@@ -170,12 +168,12 @@ namespace grbda
     protected:
         using SX = casadi::SX;
 
-        template <typename OrientationRepresentation = ori_representation::Quaternion>
-        void buildFromUrdfModelInterface(const UrdfModelPtr model, bool floating_base);
+        void buildFromUrdfModelInterface(const UrdfModelPtr model);
         
         void appendClustersViaDFS(std::map<UrdfClusterPtr, bool> &visited, UrdfClusterPtr cluster);
         void appendClusterFromUrdfCluster(UrdfClusterPtr cluster);
         void appendSimpleRevoluteJointFromUrdfCluster(UrdfLinkPtr link);
+        void appendSimpleFloatingJointFromUrdfCluster(UrdfLinkPtr link);
         void registerBodiesInUrdfCluster(UrdfClusterPtr cluster,
                                          std::vector<JointPtr<Scalar>>& joints,
                                          std::vector<bool>& independent_coordinates,

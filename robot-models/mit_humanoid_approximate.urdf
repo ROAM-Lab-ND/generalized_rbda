@@ -5,6 +5,7 @@
 <!-- =================================================================================== -->
 <robot name="mit_humanoid" xmlns:xacro="http://ros.org/wiki/xacro">
   <!-- End of macro definitions -->
+  <link name="base"/>
   <link name="Floating Base">
     <inertial>
       <mass value="8.52"/>
@@ -12,6 +13,11 @@
       <inertia ixx="0.172699" ixy="0.001419" ixz="0.004023" iyy="0.105949" iyz="-0.001672" izz="0.091906"/>
     </inertial>
   </link>
+  <joint name="base_to_Floating Base" type="floating">
+    <origin rpy="0 0 0" xyz="0 0 0"/>
+    <parent link="base"/>
+    <child link="Floating Base"/>
+  </joint>
   <joint name="base_to_right_hipz_link" type="revolute">
     <axis xyz="0 0 1"/>
     <origin rpy="0 -0.174533 0" xyz="-0.00565 -0.082 -0.05735"/>

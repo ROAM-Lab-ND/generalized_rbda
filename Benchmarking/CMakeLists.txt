@@ -36,3 +36,8 @@ target_link_libraries(rotors_benchmark gtest gmock_main)
 add_executable(approx_benchmark src/approximateBenchmark.cpp)
 target_link_libraries(approx_benchmark ${PROJECT_NAME} ${PINOCCHIO_LIBRARIES})
 target_link_libraries(approx_benchmark gtest gmock_main)
+
+add_executable(test_parsing src/testNewParsing.cpp)
+target_link_libraries(test_parsing ${PROJECT_NAME} ${PINOCCHIO_LIBRARIES})
+target_link_libraries(test_parsing gtest gmock_main)
+

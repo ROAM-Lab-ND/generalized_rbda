@@ -4,6 +4,7 @@
 <!-- |    EDITING THIS FILE BY HAND IS NOT RECOMMENDED                                 | -->
 <!-- =================================================================================== -->
 <robot name="mini_cheetah" xmlns:xacro="http://ros.org/wiki/xacro">
+  <link name="base"/>
   <link name="Floating Base">
     <inertial>
       <mass value="3.3"/>
@@ -11,6 +12,11 @@
       <inertia ixx="0.011252999999999999" ixy="0" ixz="0" iyy="0.036203" iyz="0" izz="0.042672999999999996"/>
     </inertial>
   </link>
+  <joint name="base_to_floating_base" type="floating">
+    <origin rpy="0 0 0" xyz="0 0 0"/>
+    <parent link="base"/>
+    <child link="Floating Base"/>
+  </joint>
   <joint name="torso_to_FR_abad_j" type="revolute">
     <axis xyz="1 0 0"/>
     <origin xyz="0.19 -0.049 0.0"/>
