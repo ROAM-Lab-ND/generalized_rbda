@@ -5,7 +5,14 @@
     <xacro:include filename="jvrc1_properties.xacro"/>
     <xacro:property name="base" value="base"/>
 
-    <xacro:pelvis name="${base}"/>
+    <link name="${base}"/>
+
+    <xacro:pelvis name="pelvis"/>
+    <joint name="base_to_pelvis" type="floating">
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <parent link="${base}"/>
+        <child link="pelvis"/>
+    </joint>
 
     <xacro:independent_waist_yaw_joint parent="${base}"/>
     <xacro:waist_yaw/>

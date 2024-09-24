@@ -1,11 +1,19 @@
 <?xml version="1.0" encoding="utf-8"?>
 <robot name="mini_cheetah_base" xmlns:xacro="http://ros.org/wiki/xacro">
-  <link name="Floating Base">
-    <inertial>
-      <mass value="3.3"/>
-      <origin xyz="0.0 0.0 0.0"/>
-      <inertia ixx="0.011253" ixy="0" ixz="0" iyy="0.036203" iyz="0" izz="0.042673"/>
-    </inertial>
-  </link>
+    <link name="base"/>
+    <link name="Floating Base">
+        <inertial>
+            <mass value="3.3"/>
+            <origin xyz="0.0 0.0 0.0"/>
+            <inertia ixx="11253 * 1e-6" ixy="0" 
+                     ixz="0" iyy="36203 * 1e-6" 
+                     iyz="0" izz="42673 * 1e-6"/>
+        </inertial>
+    </link>
+    <joint name="base_to_floating_base" type="floating">
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <parent link="base"/>
+        <child link="Floating Base"/>
+    </joint>
 </robot>
 

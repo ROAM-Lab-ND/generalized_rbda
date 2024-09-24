@@ -79,7 +79,7 @@ TEST_P(PinocchioParallelChainsNumericalValidation, forward_dynamics)
     pinocchio::Data data(model);
 
     grbda::ClusterTreeModel<double> cluster_tree;
-    cluster_tree.buildModelFromURDF(urdf_filename, false);
+    cluster_tree.buildModelFromURDF(urdf_filename);
 
     // Check that the cluster tree is properly formed
     int expected_bodies = GetParam().constraint_type == "Explicit" ? 2 * GetParam().depth
@@ -96,7 +96,7 @@ TEST_P(PinocchioParallelChainsNumericalValidation, forward_dynamics)
 
     using RigidBodyTreeModel = grbda::RigidBodyTreeModel<double>;
     RigidBodyTreeModel lgm_model(cluster_tree, grbda::FwdDynMethod::LagrangeMultiplierEigen);
-    Eigen::MatrixXd joint_map = jointMap(lgm_model, model);
+    JointMap<double> joint_map = jointMap(lgm_model, model);
 
     const int nv = cluster_tree.getNumDegreesOfFreedom();
     const int nv_span = lgm_model.getNumDegreesOfFreedom();
@@ -129,8 +129,8 @@ TEST_P(PinocchioParallelChainsNumericalValidation, forward_dynamics)
         lgm_model.setState(spanning_joint_pos, spanning_joint_vel);
 
         Eigen::VectorXd pin_q(nv_span), pin_v(nv_span);
-        pin_q = joint_map * spanning_joint_pos;
-        pin_v = joint_map * spanning_joint_vel;
+        pin_q = joint_map.pos * spanning_joint_pos;
+        pin_v = joint_map.vel* spanning_joint_vel;
 
         // Extract loop constraints from the cluster tree
         cluster_tree.forwardKinematics();
@@ -158,7 +158,7 @@ TEST_P(PinocchioParallelChainsNumericalValidation, forward_dynamics)
         GTEST_ASSERT_GT(G_cluster.norm(), 1e-10);
 
         // Convert implicit loop constraint to Pinocchio joint order
-        const Eigen::MatrixXd K_pinocchio = K_cluster * joint_map.transpose();
+        const Eigen::MatrixXd K_pinocchio = K_cluster * joint_map.vel.transpose();
         const Eigen::VectorXd k_pinocchio = -k_cluster;
 
         // Compute the forward dynamics
@@ -167,7 +167,7 @@ TEST_P(PinocchioParallelChainsNumericalValidation, forward_dynamics)
 
         const double mu0 = 1e-14;
         Eigen::VectorXd pin_tau(nv_span);
-        pin_tau = joint_map * spanning_joint_tau;
+        pin_tau = joint_map.vel* spanning_joint_tau;
 
         const Eigen::VectorXd ydd_cluster = cluster_tree.forwardDynamics(tau);
         Eigen::VectorXd qdd_cluster = Eigen::VectorXd::Zero(0);
@@ -191,10 +191,10 @@ TEST_P(PinocchioParallelChainsNumericalValidation, forward_dynamics)
             << "qdd_cluster: " << qdd_cluster.transpose();
 
         // Check grbda lagrange multiplier solution against pinocchio
-        const Eigen::VectorXd pin_error = data.ddq - joint_map * qdd_lgm;
+        const Eigen::VectorXd pin_error = data.ddq - joint_map.vel* qdd_lgm;
         GTEST_ASSERT_LT(pin_error.norm(), GetParam().tol)
             << "qdd_pinocchio   : " << data.ddq.transpose() << "\n"
-            << "jmap * qdd_lgm: " << (joint_map * qdd_lgm).transpose();
+            << "jmap * qdd_lgm: " << (joint_map.vel* qdd_lgm).transpose();
 
         // Check that solutions satisfy the loop constraints
         Eigen::VectorXd cnstr_violation_pinocchio = K_pinocchio * data.ddq + k_pinocchio;
@@ -273,7 +273,7 @@ TEST_P(PinocchioParallelChainsBenchmark, compareInstructionCount)
     PinocchioADModel::Data ad_data(ad_model);
 
     grbda::ClusterTreeModel<ADScalar> cluster_tree;
-    cluster_tree.buildModelFromURDF(urdf_filename, false);
+    cluster_tree.buildModelFromURDF(urdf_filename);
 
     // Check that the cluster tree is properly formed
     int expected_bodies = GetParam().constraint_type == "Explicit" ? 2 * GetParam().depth
@@ -290,7 +290,7 @@ TEST_P(PinocchioParallelChainsBenchmark, compareInstructionCount)
 
     using RigidBodyTreeModel = grbda::RigidBodyTreeModel<ADScalar>;
     RigidBodyTreeModel lgm_model(cluster_tree, grbda::FwdDynMethod::LagrangeMultiplierEigen);
-    DynamicADMatrix joint_map = jointMap(lgm_model, model);
+    JointMap<ADScalar> joint_map = jointMap(lgm_model, model);
 
     const int nq = cluster_tree.getNumPositions();
     const int nv = cluster_tree.getNumDegreesOfFreedom();
@@ -329,8 +329,8 @@ TEST_P(PinocchioParallelChainsBenchmark, compareInstructionCount)
     lgm_model.setState(spanning_joint_pos, spanning_joint_vel);
 
     DynamicADVector pin_q(nv_span), pin_v(nv_span);
-    pin_q = joint_map * spanning_joint_pos;
-    pin_v = joint_map * spanning_joint_vel;
+    pin_q = joint_map.pos * spanning_joint_pos;
+    pin_v = joint_map.vel* spanning_joint_vel;
 
     // Extract loop constraints from the cluster tree
     cluster_tree.forwardKinematics();
@@ -347,7 +347,7 @@ TEST_P(PinocchioParallelChainsBenchmark, compareInstructionCount)
     }
 
     // Convert implicit loop constraint to Pinocchio joint order
-    const DynamicADMatrix K_pinocchio = K_cluster * joint_map.transpose();
+    const DynamicADMatrix K_pinocchio = K_cluster * joint_map.vel.transpose();
     const DynamicADVector k_pinocchio = -k_cluster;
 
     // Compute the forward dynamics
@@ -358,7 +358,7 @@ TEST_P(PinocchioParallelChainsBenchmark, compareInstructionCount)
 
     const ADScalar mu0 = 1e-14;
     DynamicADVector pin_tau(nv_span);
-    pin_tau = joint_map * spanning_joint_tau;
+    pin_tau = joint_map.vel* spanning_joint_tau;
 
     // TODO(@MatthewChignoli): Do we need to include the conversion to qdd for cABA?
     const DynamicADVector ydd_cluster = cluster_tree.forwardDynamics(tau);
@@ -405,7 +405,7 @@ TEST_P(PinocchioParallelChainsBenchmark, compareInstructionCount)
     for (int i = 0; i < num_samples; ++i)
     {
         ScalarModel numerical_cluster_tree;
-        numerical_cluster_tree.buildModelFromURDF(urdf_filename, false);
+        numerical_cluster_tree.buildModelFromURDF(urdf_filename);
 
         ScalarModelState scalar_model_state;
         for (const auto &cluster : numerical_cluster_tree.clusters())
@@ -450,10 +450,10 @@ TEST_P(PinocchioParallelChainsBenchmark, compareInstructionCount)
             << "cABA_res: " << cABA_res.transpose();
 
         // Check grbda lagrange multiplier solution against pinocchio
-        const DynamicVector qdd_error = pin_res - joint_map.cast<Scalar>() * lgm_res;
+        const DynamicVector qdd_error = pin_res - joint_map.vel.cast<Scalar>() * lgm_res;
         GTEST_ASSERT_LT(qdd_error.norm(), GetParam().tol)
             << "qdd_pinocchio   : " << pin_res.transpose() << "\n"
-            << "jmap * qdd_lgm: " << (joint_map.cast<Scalar>() * lgm_res).transpose();
+            << "jmap * qdd_lgm: " << (joint_map.vel.cast<Scalar>() * lgm_res).transpose();
     }
 
     // csv format: depth, loop size , cluster_instr, pinocchio_instr, cluster_time, pinocchio_time

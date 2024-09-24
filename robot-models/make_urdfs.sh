@@ -15,5 +15,7 @@ xacro mini_cheetah_hl_leg.xacro > mini_cheetah_hl_leg.urdf
 xacro mit_humanoid_leg.xacro > mit_humanoid_leg.urdf
 xacro mit_humanoid.xacro > mit_humanoid.urdf
 xacro mit_humanoid_approximate.xacro > mit_humanoid_approximate.urdf
+xacro tello_humanoid.xacro > tello_humanoid.urdf
+xacro tello_humanoid_approximate.xacro > tello_humanoid_approximate.urdf
 xacro jvrc1_humanoid.xacro > jvrc1_humanoid.urdf
 xacro jvrc1_humanoid_approximate.xacro > jvrc1_humanoid_approximate.urdf

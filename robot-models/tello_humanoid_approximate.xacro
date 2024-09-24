@@ -3,15 +3,21 @@
 <robot name="tello_humanoid_approximate" xmlns:xacro="http://ros.org/wiki/xacro">
     
     <xacro:include filename="tello_properties.xacro"/>
-    <xacro:property name="base" value="base"/>
+    <xacro:property name="base" value="ground"/>
 
     <!-- Torso -->
 
-    <xacro:torso name="${base}"/>
+    <link name="${base}" />
+    <xacro:torso name="torso"/>
+    <joint name="torso-to-${base}" type="floating">
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <parent link="${base}"/>
+        <child link="torso"/>
+    </joint>
 
     <!-- Left Hip Clamp -->
     
-    <xacro:L_independent_hip_clamp_joint parent="${base}"/>
+    <xacro:L_independent_hip_clamp_joint parent="torso"/>
     <xacro:hip_clamp prefix="left-"/>
     
     <!-- Left Gimbal, Thigh -->
@@ -30,7 +36,7 @@
 
     <!-- Right Hip Clamp -->
 
-    <xacro:R_independent_hip_clamp_joint parent="${base}"/>
+    <xacro:R_independent_hip_clamp_joint parent="torso"/>
     <xacro:hip_clamp prefix="right-"/>
     
     <!-- Right Gimbal, Thigh -->
@@ -49,7 +55,7 @@
 
     <!-- Left Shoulder RY -->
 
-    <xacro:L_independent_shoulder_ry_joint parent="${base}"/>
+    <xacro:L_independent_shoulder_ry_joint parent="torso"/>
     <xacro:left_shoulder_ry/>
 
     <!-- Left Shoulder RX -->
@@ -69,7 +75,7 @@
 
     <!-- Right Shoulder RY -->
 
-    <xacro:R_independent_shoulder_ry_joint parent="${base}"/>
+    <xacro:R_independent_shoulder_ry_joint parent="torso"/>
     <xacro:right_shoulder_ry/>
 
     <!-- Right Shoulder RX -->

@@ -398,6 +398,8 @@
     </xacro:macro>    
     <!-- End of macro definitions -->
 
+    <link name="ground"/>
+
     <link name="Floating Base">
         <inertial>
             <mass value="8.52"/>
@@ -406,6 +408,11 @@
                      iyy="0.105949" iyz="-0.001672" izz="0.091906"/>
         </inertial>
     </link>
+    <joint name="world_to_base" type="floating">
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <parent link="ground"/>
+        <child link="Floating Base"/>
+    </joint>
 
     <xacro:hipz prefix="right_" y_sign="1"/>
     <xacro:hipz prefix="left_" y_sign="-1"/>

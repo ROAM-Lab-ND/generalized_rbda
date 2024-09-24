@@ -4,6 +4,8 @@
 
     <xacro:include filename="mini_cheetah_properties.xacro"/>
 
+    <link name="base"/>
+
     <link name="Floating Base">
         <inertial>
             <mass value="3.3"/>
@@ -13,6 +15,11 @@
                      iyz="0" izz="${42673 * 1e-6}"/>
         </inertial>
     </link>
+    <joint name="base_to_floating_base" type="floating">
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <parent link="base"/>
+        <child link="Floating Base"/>
+    </joint>
 
     <xacro:abad_approx prefix="FR" x_sign="1" y_sign="-1"/>
     <xacro:hip_approx prefix="FR" x_sign="1" y_sign="-1"/>

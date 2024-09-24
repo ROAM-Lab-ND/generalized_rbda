@@ -7,13 +7,19 @@
 
     <!-- Torso -->
 
-    <xacro:torso name="${base}"/>
+    <link name="${base}" />
+    <xacro:torso name="torso"/>
+    <joint name="torso-to-${base}" type="floating">
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <parent link="${base}"/>
+        <child link="torso"/>
+    </joint>
 
     <!-- Left Hip Cluster -->
     
-    <xacro:L_dependent_hip_clamp_rotor_joint parent="${base}"/>
+    <xacro:L_dependent_hip_clamp_rotor_joint parent="torso"/>
     <xacro:hip_clamp_rotor prefix="left-"/>
-    <xacro:L_independent_hip_clamp_joint parent="${base}"/>
+    <xacro:L_independent_hip_clamp_joint parent="torso"/>
     <xacro:hip_clamp prefix="left-"/>
     
     <!-- Left Hip Differentials -->
@@ -40,9 +46,9 @@
 
     <!-- Right Hip Cluster -->
 
-    <xacro:R_dependent_hip_clamp_rotor_joint parent="${base}"/>
+    <xacro:R_dependent_hip_clamp_rotor_joint parent="torso"/>
     <xacro:hip_clamp_rotor prefix="right-"/>
-    <xacro:R_independent_hip_clamp_joint parent="${base}"/>
+    <xacro:R_independent_hip_clamp_joint parent="torso"/>
     <xacro:hip_clamp prefix="right-"/>
     
     <!-- Right Hip Differentials -->
@@ -69,9 +75,9 @@
 
     <!-- Left Shoulder RY -->
 
-    <xacro:L_independent_shoulder_ry_joint parent="${base}"/>
+    <xacro:L_independent_shoulder_ry_joint parent="torso"/>
     <xacro:left_shoulder_ry/>
-    <xacro:L_dependent_shoulder_ry_rotor_joint parent="${base}"/>
+    <xacro:L_dependent_shoulder_ry_rotor_joint parent="torso"/>
     <xacro:shoulder_ry_rotor prefix="left-"/>
 
     <!-- Left Shoulder RX -->
@@ -97,9 +103,9 @@
 
     <!-- Right Shoulder RY -->
 
-    <xacro:R_independent_shoulder_ry_joint parent="${base}"/>
+    <xacro:R_independent_shoulder_ry_joint parent="torso"/>
     <xacro:right_shoulder_ry/>
-    <xacro:R_dependent_shoulder_ry_rotor_joint parent="${base}"/>
+    <xacro:R_dependent_shoulder_ry_rotor_joint parent="torso"/>
     <xacro:shoulder_ry_rotor prefix="right-"/>
 
     <!-- Right Shoulder RX -->

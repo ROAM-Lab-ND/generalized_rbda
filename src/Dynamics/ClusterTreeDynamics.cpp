@@ -7,9 +7,9 @@
 namespace grbda
 {
 
-    template <typename Scalar>
+    template <typename Scalar, typename OriTpl>
     const D6Mat<Scalar> &
-    ClusterTreeModel<Scalar>::contactJacobianWorldFrame(const std::string &cp_name)
+    ClusterTreeModel<Scalar, OriTpl>::contactJacobianWorldFrame(const std::string &cp_name)
     {
         this->forwardKinematics();
 
@@ -44,8 +44,9 @@ namespace grbda
         return cp.jacobian_;
     }
 
-    template <typename Scalar>
-    D6Mat<Scalar> ClusterTreeModel<Scalar>::contactJacobianBodyFrame(const std::string &cp_name)
+    template <typename Scalar, typename OriTpl>
+    D6Mat<Scalar>
+    ClusterTreeModel<Scalar, OriTpl>::contactJacobianBodyFrame(const std::string &cp_name)
     {
         this->forwardKinematics();
 
@@ -75,14 +76,14 @@ namespace grbda
         return J;
     }
 
-    template <typename Scalar>
-    DVec<Scalar> ClusterTreeModel<Scalar>::inverseDynamics(const DVec<Scalar> &qdd)
+    template <typename Scalar, typename OriTpl>
+    DVec<Scalar> ClusterTreeModel<Scalar, OriTpl>::inverseDynamics(const DVec<Scalar> &qdd)
     {
         return this->recursiveNewtonEulerAlgorithm(qdd);
     }
 
-    template <typename Scalar>
-    DVec<Scalar> ClusterTreeModel<Scalar>::forwardDynamics(const DVec<Scalar> &tau)
+    template <typename Scalar, typename OriTpl>
+    DVec<Scalar> ClusterTreeModel<Scalar, OriTpl>::forwardDynamics(const DVec<Scalar> &tau)
     {
         DVec<Scalar> qdd = DVec<Scalar>::Zero(this->getNumDegreesOfFreedom());
 
@@ -153,8 +154,8 @@ namespace grbda
         return qdd;
     }
 
-    template <typename Scalar>
-    void ClusterTreeModel<Scalar>::updateArticulatedBodies()
+    template <typename Scalar, typename OriTpl>
+    void ClusterTreeModel<Scalar, OriTpl>::updateArticulatedBodies()
     {
         if (articulated_bodies_updated_)
             return;
@@ -189,10 +190,10 @@ namespace grbda
         articulated_bodies_updated_ = true;
     }
 
-    template <typename Scalar>
-    Scalar ClusterTreeModel<Scalar>::applyTestForce(const std::string &contact_point_name,
-                                                    const Vec3<Scalar> &force,
-                                                    DVec<Scalar> &dstate_out)
+    template <typename Scalar, typename OriTpl>
+    Scalar ClusterTreeModel<Scalar, OriTpl>::applyTestForce(const std::string &contact_point_name,
+                                                            const Vec3<Scalar> &force,
+                                                            DVec<Scalar> &dstate_out)
     {
         const int contact_point_index = this->contact_name_to_contact_index_.at(contact_point_name);
         const ContactPoint<Scalar> &contact_point = this->contact_points_[contact_point_index];
@@ -231,8 +232,8 @@ namespace grbda
         return lambda_inv;
     }
 
-    template <typename Scalar>
-    void ClusterTreeModel<Scalar>::updateForcePropagators()
+    template <typename Scalar, typename OriTpl>
+    void ClusterTreeModel<Scalar, OriTpl>::updateForcePropagators()
     {
         if (force_propagators_updated_)
             return;
@@ -250,8 +251,8 @@ namespace grbda
         force_propagators_updated_ = true;
     }
 
-    template <typename Scalar>
-    void ClusterTreeModel<Scalar>::updateQddEffects()
+    template <typename Scalar, typename OriTpl>
+    void ClusterTreeModel<Scalar, OriTpl>::updateQddEffects()
     {
         if (qdd_effects_updated_)
             return;
@@ -290,8 +291,8 @@ namespace grbda
         qdd_effects_updated_ = true;
     }
 
-    template <typename Scalar>
-    DMat<Scalar> ClusterTreeModel<Scalar>::inverseOperationalSpaceInertiaMatrix()
+    template <typename Scalar, typename OriTpl>
+    DMat<Scalar> ClusterTreeModel<Scalar, OriTpl>::inverseOperationalSpaceInertiaMatrix()
     {
         // Based on the EFPA from "https://www3.nd.edu/~pwensing/Papers/WensingFeatherstoneOrin12-ICRA.pdf"
 
