@@ -79,13 +79,14 @@
         <limit effort="30" velocity="1.0" lower="-13.14" upper="13.14"/>
     </joint>
 
-    <constraint name="constraint1" type="position">
+    <loop name="loop1" type="revolute">
         <predecessor link="link2">
             <origin xyz="1.0 0.0 0.0"/>
         </predecessor>
         <successor link="link3">
             <origin xyz="0.5 0.0 0.0"/>
         </successor>
-    </constraint>
+        <axis xyz="0 0 1"/>
+    </loop>
 
 </robot>

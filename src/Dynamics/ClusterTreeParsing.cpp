@@ -9,17 +9,18 @@ namespace grbda
             throw std::runtime_error("Could not parse URDF file");
 
         // Ensure valid root
-        std::shared_ptr<const urdf::Link> root = model->getRoot();
+        urdf::LinkConstSharedPtr root = model->getRoot();
         body_name_to_body_index_[root->name] = -1;
-        UrdfClusterPtr root_cluster = model->getClusterContaining(root->name);
-        if (root_cluster->links.size() != 1)
+        // TODO(@MatthewChignoli): Maybe a helper function to shorten this line? Or maybe a wrapper for the urdf::ModelInterface class
+        urdf::ClusterSharedPtr root_cluster = model->clusters_[model->containing_cluster_[root->name]];
+        if (root_cluster->size() != 1)
         {
             throw std::runtime_error("The root cluster may only contain one body");
         }
 
         // Add remaining bodies
         std::map<UrdfClusterPtr, bool> visited;
-        for (UrdfClusterPtr child : root_cluster->child_clusters)
+        for (urdf::ClusterSharedPtr child : root_cluster->child_clusters)
         {
             appendClustersViaDFS(visited, child);
         }
@@ -45,11 +46,17 @@ namespace grbda
     template <typename Scalar, typename OriTpl>
     void ClusterTreeModel<Scalar, OriTpl>::appendClusterFromUrdfCluster(UrdfClusterPtr cluster)
     {
-        // Special case for a cluster with one link and no constraints
-        if (cluster->links.size() == 1 && cluster->constraints.size() == 0)
+        // Error if cluster is empty or null
+        if (cluster->size() == 0)
         {
-            UrdfLinkPtr link = cluster->links.begin()->second;
-            UrdfJointPtr joint = link->parent_joint;
+            throw std::runtime_error("Cluster is empty");
+        }
+
+        // Special case for a cluster with one link and (necessarily) no constraints
+        if (cluster->size() == 1)
+        {
+            urdf::LinkSharedPtr link = cluster->front();
+            urdf::JointSharedPtr joint = link->parent_joint;
 
             if (joint->type == urdf::Joint::CONTINUOUS || joint->type == urdf::Joint::REVOLUTE)
             {
@@ -65,7 +72,7 @@ namespace grbda
             }
 
             return;
-        }
+        } 
 
         // Register bodies in cluster. Symbolic bodies and joints are needed to define
         // the constraint symbolically
@@ -77,85 +84,164 @@ namespace grbda
                                     bodies_sx, joints_sx);
 
         // Verify that all constraints in the cluster are of the same type
-        auto constraint_type = cluster->constraints.front()->type;
-        for (UrdfConstraintPtr constraint : cluster->constraints)
+        // TODO(@MatthewChignoli): This can be something that we do in the wrapper
+        std::vector<urdf::ConstraintSharedPtr> cluster_constraints;
+        for (urdf::LinkSharedPtr link : *cluster)
         {
-            if (constraint->type != constraint_type)
-                throw std::runtime_error("All constraints in a cluster must be of the same type");
+            for (urdf::ConstraintSharedPtr constraint : link->constraints)
+            {
+                cluster_constraints.push_back(constraint);
+            }
         }
 
-        // For each constraint, collect the captures that will be supplied to the lambda function
-        // encoding the constraint
-        std::vector<PositionConstraintCapture> position_constraint_captures;
-        std::vector<RollingConstraintCapture> rolling_constraint_captures;
-        for (UrdfConstraintPtr constraint : cluster->constraints)
+        // Error if there are no constraints
+        if (cluster_constraints.size() == 0)
         {
-            std::vector<Body<SX>> nca_to_predecessor_subtree, nca_to_successor_subtree;
-            for (UrdfLinkPtr link : constraint->nca_to_predecessor_subtree)
-            {
-                const auto &body_i = body(link->name);
-                nca_to_predecessor_subtree.push_back(bodies_sx[body_i.sub_index_within_cluster_]);
-            }
-            for (UrdfLinkPtr link : constraint->nca_to_successor_subtree)
-            {
-                const auto &body_i = body(link->name);
-                nca_to_successor_subtree.push_back(bodies_sx[body_i.sub_index_within_cluster_]);
-            }
+            throw std::runtime_error("Cluster must have at least one constraint");
+        }
 
-            if (constraint_type == urdf::Constraint::POSITION)
+        // Verify that all constraints in the cluster are of the same type
+        auto constraint_class_type = cluster_constraints.front()->class_type;
+        for (urdf::ConstraintSharedPtr constraint : cluster_constraints)
+        {
+            if (constraint->class_type != constraint_class_type)
+                throw std::runtime_error("All constraints in cluster must be of same class type");
+        }
+
+        // And so here is where we do the hard split on the constraint class type
+        if (constraint_class_type == urdf::Constraint::LOOP)
+        {
+            // TODO(@MatthewChignoli): Now check that all of the loop constraints come from the same joint type
+
+            // TODO(@MatthewChignoli): Rename these
+            // For each constraint, collect the captures that will be supplied to the lambda 
+            // function encoding the constraint
+            std::vector<PositionConstraintCapture> constraint_captures;
+            for (UrdfConstraintPtr constraint : cluster_constraints)
             {
+                // TODO(@MatthewChignoli): static cast?
+                urdf::LoopConstraintSharedPtr loop_constraint =
+                    std::dynamic_pointer_cast<urdf::LoopConstraint>(constraint);
+
+                std::vector<Body<SX>> nca_to_predecessor_subchain, nca_to_successor_subchain;
+
+                // TODO(@MatthewChignoli): Helper function for this?
+                std::string link_name = constraint->predecessor_link_name;
+                while (link_name != constraint->nearest_common_ancestor_name)
+                {
+                    const Body<Scalar> &body_i = body(link_name);
+                    const int sub_index = body_i.sub_index_within_cluster_;
+                    nca_to_predecessor_subchain.insert(nca_to_predecessor_subchain.begin(),
+                                                       bodies_sx[sub_index]);
+
+                    const int& parent_index = body_i.parent_index_;
+                    if (parent_index == -1)
+                        break;
+                    link_name = body(parent_index).name_;
+                }
+
+                link_name = constraint->successor_link_name;
+                while (link_name != constraint->nearest_common_ancestor_name)
+                {
+                    const Body<Scalar> &body_i = body(link_name);
+                    const int sub_index = body_i.sub_index_within_cluster_;
+                    nca_to_successor_subchain.insert(nca_to_successor_subchain.begin(),
+                                                    bodies_sx[sub_index]);
+                    
+                    const int& parent_index = body_i.parent_index_;
+                    if (parent_index == -1)
+                        break;
+                    link_name = body(parent_index).name_;
+                }
+
                 PositionConstraintCapture capture;
-                capture.nca_to_predecessor_subtree = nca_to_predecessor_subtree;
-                capture.nca_to_successor_subtree = nca_to_successor_subtree;
-                capture.predecessor_to_constraint_origin_transform = *constraint->predecessor_to_constraint_origin_transform;
-                capture.successor_to_constraint_origin_transform = *constraint->successor_to_constraint_origin_transform;
-                position_constraint_captures.push_back(capture);
+                capture.nca_to_predecessor_subchain = nca_to_predecessor_subchain;
+                capture.nca_to_successor_subchain = nca_to_successor_subchain;
+                capture.predecessor_to_joint_origin_transform = loop_constraint->predecessor_to_joint_origin_transform;
+                capture.successor_to_joint_origin_transform = loop_constraint->successor_to_joint_origin_transform;
+                constraint_captures.push_back(capture);
             }
-            else if (constraint_type == urdf::Constraint::ROLLING)
-            {
-                RollingConstraintCapture capture;
-                capture.nca_to_predecessor_subtree = nca_to_predecessor_subtree;
-                capture.nca_to_successor_subtree = nca_to_successor_subtree;
-                capture.ratio = *constraint->ratio;
-                rolling_constraint_captures.push_back(capture);
-            }
-            else
-            {
-                throw std::runtime_error("Constraint type not supported");
-            }
-        }
 
-        // TODO(@MatthewChignoli): Would like to do some more sophisticated detection and specialization here. For example, if the jacobian of phi is constant, then we can use an explicit constraint. The best solution might just be codegen
-        // Create constraints and add clusters
-        std::string cluster_name = "cluster-" + std::to_string(cluster_nodes_.size());
-        if (constraint_type == urdf::Constraint::POSITION)
-        {
+            // TODO(@MatthewChignoli): Would like to do some more sophisticated detection and specialization here. For example, if the jacobian of phi is constant, then we can use an explicit constraint. The best solution might just be codegen
+            // Create constraints and add clusters
+            std::string cluster_name = "cluster-" + std::to_string(cluster_nodes_.size());
             std::function<DVec<SX>(const JointCoordinate<SX> &)> phi;
-            phi = implicitPositionConstraint(position_constraint_captures, joints_sx);
+            phi = implicitPositionConstraint(constraint_captures, joints_sx);
 
             using LoopConstraintType = LoopConstraint::GenericImplicit<Scalar>;
-            std::shared_ptr<LoopConstraintType> loop_constraint;
-            loop_constraint = std::make_shared<LoopConstraintType>(independent_coordinates, phi);
+            std::shared_ptr<LoopConstraintType> generic_implicit;
+            generic_implicit = std::make_shared<LoopConstraintType>(independent_coordinates, phi);
             appendRegisteredBodiesAsCluster<ClusterJoints::Generic<Scalar>>(
                 cluster_name, bodies_in_current_cluster_,
-                joints_in_current_cluster, loop_constraint);
+                joints_in_current_cluster, generic_implicit);
         }
-        else if (constraint_type == urdf::Constraint::ROLLING)
+        else if (constraint_class_type == urdf::Constraint::COUPLING)
         {
+
+            // TODO(@MatthewChignoli): Rename these
+            // For each constraint, collect the captures that will be supplied to the lambda 
+            // function encoding the constraint
+            std::vector<RollingConstraintCapture> constraint_captures;
+            for (UrdfConstraintPtr constraint : cluster_constraints)
+            {
+                // TODO(@MatthewChignoli): static cast?
+                urdf::CouplingConstraintSharedPtr coupling_constraint =
+                    std::dynamic_pointer_cast<urdf::CouplingConstraint>(constraint);
+
+                std::vector<Body<SX>> nca_to_predecessor_subchain, nca_to_successor_subchain;
+                
+                std::string link_name = constraint->predecessor_link_name;
+                while (link_name != constraint->nearest_common_ancestor_name)
+                {
+                    const Body<Scalar> &body_i = body(link_name);
+                    const int sub_index = body_i.sub_index_within_cluster_;
+                    nca_to_predecessor_subchain.insert(nca_to_predecessor_subchain.begin(),
+                                                       bodies_sx[sub_index]);
+
+                    const int &parent_index = body_i.parent_index_;
+                    if (parent_index == -1)
+                        break;
+                    link_name = body(parent_index).name_;
+                }
+
+                link_name = constraint->successor_link_name;
+                while (link_name != constraint->nearest_common_ancestor_name)
+                {
+                    const Body<Scalar> &body_i = body(link_name);
+                    const int sub_index = body_i.sub_index_within_cluster_;
+                    nca_to_successor_subchain.insert(nca_to_successor_subchain.begin(),
+                                                     bodies_sx[sub_index]);
+
+                    const int &parent_index = body_i.parent_index_;
+                    if (parent_index == -1)
+                        break;
+                    link_name = body(parent_index).name_;
+                }
+
+                RollingConstraintCapture capture;
+                capture.nca_to_predecessor_subchain = nca_to_predecessor_subchain;
+                capture.nca_to_successor_subchain = nca_to_successor_subchain;
+                capture.ratio = coupling_constraint->ratio;
+                constraint_captures.push_back(capture);
+            }
+
+            // TODO(@MatthewChignoli): Would like to do some more sophisticated detection and specialization here. For example, if the jacobian of phi is constant, then we can use an explicit constraint. The best solution might just be codegen
+            // Create constraints and add clusters
+            std::string cluster_name = "cluster-" + std::to_string(cluster_nodes_.size());
             using KGPair = std::pair<DMat<Scalar>, DMat<Scalar>>;
-            KGPair K_G = explicitRollingConstraint(rolling_constraint_captures,
+            KGPair K_G = explicitRollingConstraint(constraint_captures,
                                                    independent_coordinates);
-            
-            std::shared_ptr<LoopConstraint::Static<Scalar>> loop_constraint;
-            loop_constraint = std::make_shared<LoopConstraint::Static<Scalar>>(K_G.second,
-                                                                               K_G.first);
+
+            std::shared_ptr<LoopConstraint::Static<Scalar>> static_constraint;
+            static_constraint = std::make_shared<LoopConstraint::Static<Scalar>>(K_G.second,
+                                                                                 K_G.first);
             appendRegisteredBodiesAsCluster<ClusterJoints::Generic<Scalar>>(
                 cluster_name, bodies_in_current_cluster_,
-                joints_in_current_cluster, loop_constraint);
+                joints_in_current_cluster, static_constraint);
         }
         else
         {
-            throw std::runtime_error("Constraint type not supported");
+            throw std::runtime_error("Constraint class type not supported");
         }
     }
 
@@ -195,20 +281,18 @@ namespace grbda
         std::vector<Body<SX>> &bodies_sx,
         std::map<std::string, JointPtr<SX>> &joints_sx)
     {
-        std::map<int, UrdfLinkPtr> unregistered_links = cluster->links;
+        std::vector<urdf::LinkSharedPtr> unregistered_links = *cluster;
         while (unregistered_links.size() > 0)
         {
-            std::map<int, UrdfLinkPtr> unregistered_links_next;
-            for (const auto &pair : unregistered_links)
+            std::vector<urdf::LinkSharedPtr> unregistered_links_next;
+            for (urdf::LinkSharedPtr link : unregistered_links)
             {
-                UrdfLinkPtr link = pair.second;
-
                 // If the parent of this link is not registered, then we will try again
                 // next iteration
                 const std::string parent_name = link->getParent()->name;
                 if (body_name_to_body_index_.find(parent_name) == body_name_to_body_index_.end())
                 {
-                    unregistered_links_next.insert({pair.first, link});
+                    unregistered_links_next.push_back(link);
                     continue;
                 }
 
@@ -238,6 +322,7 @@ namespace grbda
         }
     }
 
+    // TODO(@MatthewChignoli): This needs to depend on the joint type
     template <typename Scalar, typename OriTpl>
     std::function<DVec<casadi::SX>(const JointCoordinate<casadi::SX> &)>
     ClusterTreeModel<Scalar, OriTpl>::implicitPositionConstraint(
@@ -257,7 +342,7 @@ namespace grbda
 
                 // Through predecessor
                 Xform X_via_predecessor;
-                for (const Body<SX> &body : capture.nca_to_predecessor_subtree)
+                for (const Body<SX> &body : capture.nca_to_predecessor_subchain)
                 {
                     JointPtr<SX> joint = joints_sx.at(body.name_);
                     joint->updateKinematics(q.segment(jidx, joint->numPositions()),
@@ -265,13 +350,13 @@ namespace grbda
                     jidx += joint->numPositions();
                     X_via_predecessor = joint->XJ() * body.Xtree_ * X_via_predecessor;
                 }
-                X_via_predecessor = Xform(capture.predecessor_to_constraint_origin_transform) *
+                X_via_predecessor = Xform(capture.predecessor_to_joint_origin_transform) *
                                     X_via_predecessor;
                 Vec3<SX> r_nca_to_constraint_via_predecessor = X_via_predecessor.getTranslation();
 
                 // Through successor
                 Xform X_via_successor;
-                for (const Body<SX> &body : capture.nca_to_successor_subtree)
+                for (const Body<SX> &body : capture.nca_to_successor_subchain)
                 {
                     JointPtr<SX> joint = joints_sx.at(body.name_);
                     joint->updateKinematics(q.segment(jidx, joint->numPositions()),
@@ -279,7 +364,7 @@ namespace grbda
                     jidx += joint->numPositions();
                     X_via_successor = joint->XJ() * body.Xtree_ * X_via_successor;
                 }
-                X_via_successor = Xform(capture.successor_to_constraint_origin_transform) *
+                X_via_successor = Xform(capture.successor_to_joint_origin_transform) *
                                   X_via_successor;
                 Vec3<SX> r_nca_to_constraint_via_successor = X_via_successor.getTranslation();
 
@@ -322,13 +407,13 @@ namespace grbda
             const RollingConstraintCapture &capture = captures[i];
 
             // Through predecessor
-            for (const Body<SX> &body : capture.nca_to_predecessor_subtree)
+            for (const Body<SX> &body : capture.nca_to_predecessor_subchain)
             {
                 K(i, body.sub_index_within_cluster_) = capture.ratio;
             }
 
             // Through successor
-            for (const Body<SX> &body : capture.nca_to_successor_subtree)
+            for (const Body<SX> &body : capture.nca_to_successor_subchain)
             {
                 K(i, body.sub_index_within_cluster_) = -1;
             }

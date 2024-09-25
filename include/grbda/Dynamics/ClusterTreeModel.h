@@ -10,13 +10,14 @@
 #include "grbda/Dynamics/TreeModel.h"
 #include "grbda/Dynamics/ClusterJoints/LoopConstraintCaptures.h"
 #include "grbda/Dynamics/Nodes/ClusterTreeNode.h"
-#include "grbda/Urdf/urdf_parser.h"
+#include "urdf_parser/urdf_parser.h"
 
 namespace grbda
 {
     template <typename Scalar>
     using ClusterTreeNodePtr = std::shared_ptr<ClusterTreeNode<Scalar>>;
 
+    // TODO(@MatthewChignoli): Remove these and use the typedefs in urdf::
     using UrdfModelPtr = std::shared_ptr<urdf::ModelInterface>;
     using UrdfClusterPtr = std::shared_ptr<urdf::Cluster>;
     using UrdfLinkPtr = std::shared_ptr<urdf::Link>;
@@ -41,17 +42,18 @@ namespace grbda
         void buildModelFromURDF(const std::string &urdf_filename)
         {
             std::shared_ptr<urdf::ModelInterface> model;
-            model = urdf::parseURDFFile(urdf_filename, false);
+            model = urdf::parseURDFFile(urdf_filename);
             buildFromUrdfModelInterface(model);
         }
         
-        void buildModelFromURDF(
-            const std::vector<std::string> &urdf_filenames)
-        {
-            std::shared_ptr<urdf::ModelInterface> model;
-            model = urdf::parseURDFFiles(urdf_filenames, false);
-            buildFromUrdfModelInterface(model);
-        }
+        // TODO(@MatthewChignoli): Implement this
+        // void buildModelFromURDF(
+        //     const std::vector<std::string> &urdf_filenames)
+        // {
+        //     std::shared_ptr<urdf::ModelInterface> model;
+        //     model = urdf::parseURDFFiles(urdf_filenames, false);
+        //     buildFromUrdfModelInterface(model);
+        // }
 
         // The standard process for appending a cluster to the tree is to register all the bodies
         // in  given cluster and then append them as a cluster by specifying the type of cluster

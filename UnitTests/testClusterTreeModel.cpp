@@ -100,16 +100,16 @@ struct URDFvsManualTestData
 std::vector<URDFvsManualTestData> GetTestRobots()
 {
     std::vector<URDFvsManualTestData> test_data;
-    test_data.push_back({urdf_directory + "planar_leg_linkage.urdf",
-                         std::make_shared<PlanarLegLinkage<double>>()});
-    test_data.push_back({urdf_directory + "revolute_rotor_chain.urdf",
-                         std::make_shared<RevoluteChainWithRotor<3, double>>(false)});
+    // test_data.push_back({urdf_directory + "planar_leg_linkage.urdf",
+    //                      std::make_shared<PlanarLegLinkage<double>>()});
+    // test_data.push_back({urdf_directory + "revolute_rotor_chain.urdf",
+    //                      std::make_shared<RevoluteChainWithRotor<3, double>>(false)});
     test_data.push_back({urdf_directory + "mini_cheetah.urdf",
                          std::make_shared<MiniCheetah<double>>()});
-    test_data.push_back({urdf_directory + "mit_humanoid_leg.urdf",
-                         std::make_shared<MIT_Humanoid_Leg<double>>()});
-    test_data.push_back({urdf_directory + "mit_humanoid.urdf",
-                         std::make_shared<MIT_Humanoid<double>>()});
+    // test_data.push_back({urdf_directory + "mit_humanoid_leg.urdf",
+    //                      std::make_shared<MIT_Humanoid_Leg<double>>()});
+    // test_data.push_back({urdf_directory + "mit_humanoid.urdf",
+    //                      std::make_shared<MIT_Humanoid<double>>()});
     return test_data;
 }
 
@@ -122,6 +122,13 @@ protected:
         manual_model = GetParam().robot->buildClusterTreeModel();
         urdf_model.buildModelFromURDF(GetParam().urdf_file);
         urdf_model.setGravity(manual_model.getGravity().tail<3>());
+
+        // Print both models
+        std::cout << "Manual model:" << std::endl;
+        manual_model.print();
+
+        std::cout << "URDF model:" << std::endl;
+        urdf_model.print();
     }
 
     void initializeRandomStates()

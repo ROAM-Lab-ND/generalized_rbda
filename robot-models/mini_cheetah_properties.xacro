@@ -49,11 +49,13 @@
             </inertial>
         </link>
 
-        <constraint name="${prefix}_abad_tranmission" type="rolling">
+        <coupling name="${prefix}_abad_tranmission">
+            <predecessor link="${prefix}_abad_link"/>
+            <successor link="${prefix}_abad_rotor"/>
             <predecessor link="${prefix}_abad_link"/>
             <successor link="${prefix}_abad_rotor"/>
             <ratio value="6.0"/>
-        </constraint>
+        </coupling>
 
     </xacro:macro>
 
@@ -118,11 +120,11 @@
             </inertial>
         </link>
 
-        <constraint name="${prefix}_hip_tranmission" type="rolling">
+        <coupling name="${prefix}_hip_tranmission">
             <predecessor link="${prefix}_hip_link"/>
             <successor link="${prefix}_hip_rotor"/>
             <ratio value="6.0"/>
-        </constraint>
+        </coupling>
 
     </xacro:macro>
 
@@ -186,11 +188,11 @@
             </inertial>
         </link>
 
-        <constraint name="${prefix}_knee_tranmission" type="rolling">
+        <coupling name="${prefix}_knee_tranmission">
             <predecessor link="${prefix}_knee_link"/>
             <successor link="${prefix}_knee_rotor"/>
             <ratio value="9.33"/>
-        </constraint>
+        </coupling>
 
     </xacro:macro>
 
