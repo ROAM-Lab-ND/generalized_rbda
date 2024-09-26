@@ -12,8 +12,7 @@ namespace grbda
         // Ensure valid root
         urdf::LinkConstSharedPtr root = model->getRoot();
         body_name_to_body_index_[root->name] = -1;
-        // TODO(@MatthewChignoli): Maybe a helper function to shorten this line? Or maybe a wrapper for the urdf::ModelInterface class
-        urdf::ClusterSharedPtr root_cluster = model->clusters_[model->containing_cluster_[root->name]];
+        urdf::ClusterConstSharedPtr root_cluster = model->getContainingCluster(root->name);
         if (root_cluster->size() != 1)
         {
             throw std::runtime_error("The root cluster may only contain one body");
@@ -86,7 +85,6 @@ namespace grbda
                                     bodies_sx, joints_sx);
 
         // Verify that all constraints in the cluster are of the same type
-        // TODO(@MatthewChignoli): This can be something that we do in the wrapper
         std::vector<urdf::ConstraintSharedPtr> cluster_constraints;
         for (urdf::LinkSharedPtr link : *cluster)
         {
@@ -115,13 +113,11 @@ namespace grbda
         {
             // TODO(@MatthewChignoli): Now check that all of the loop constraints come from the same joint type
 
-            // TODO(@MatthewChignoli): Rename these
             // For each constraint, collect the captures that will be supplied to the lambda 
             // function encoding the constraint
             std::vector<LoopConstraintCapture> constraint_captures;
             for (urdf::ConstraintSharedPtr constraint : cluster_constraints)
             {
-                // TODO(@MatthewChignoli): static cast?
                 urdf::LoopConstraintSharedPtr loop_constraint =
                     std::dynamic_pointer_cast<urdf::LoopConstraint>(constraint);
 
@@ -180,13 +176,11 @@ namespace grbda
         else if (constraint_class_type == urdf::Constraint::COUPLING)
         {
 
-            // TODO(@MatthewChignoli): Rename these
             // For each constraint, collect the captures that will be supplied to the lambda 
             // function encoding the constraint
             std::vector<CouplingConstraintCapture> constraint_captures;
             for (urdf::ConstraintSharedPtr constraint : cluster_constraints)
             {
-                // TODO(@MatthewChignoli): static cast?
                 urdf::CouplingConstraintSharedPtr coupling_constraint =
                     std::dynamic_pointer_cast<urdf::CouplingConstraint>(constraint);
 
