@@ -106,10 +106,10 @@ std::vector<URDFvsManualTestData> GetTestRobots()
     //                      std::make_shared<RevoluteChainWithRotor<3, double>>(false)});
     test_data.push_back({urdf_directory + "mini_cheetah.urdf",
                          std::make_shared<MiniCheetah<double>>()});
-    // test_data.push_back({urdf_directory + "mit_humanoid_leg.urdf",
-    //                      std::make_shared<MIT_Humanoid_Leg<double>>()});
-    // test_data.push_back({urdf_directory + "mit_humanoid.urdf",
-    //                      std::make_shared<MIT_Humanoid<double>>()});
+    test_data.push_back({urdf_directory + "mit_humanoid_leg.urdf",
+                         std::make_shared<MIT_Humanoid_Leg<double>>()});
+    test_data.push_back({urdf_directory + "mit_humanoid.urdf",
+                         std::make_shared<MIT_Humanoid<double>>()});
     return test_data;
 }
 

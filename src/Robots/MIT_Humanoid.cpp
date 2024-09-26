@@ -28,9 +28,8 @@ namespace grbda
         Vec3<Scalar> torsoDims(_torsoLength, _torsoWidth, _torsoHeight);
         model.appendContactBox(torso_name, torsoDims);
 
-        for (int legID = 0; legID < 2; legID++)
+        auto appendLeg = [&](int legID)
         {
-
             // HipRz
             const std::string hip_rz_parent_name = torso_name;
             const std::string hip_rz_name = withLeftRightSigns("hip_rz", legID);
@@ -206,9 +205,9 @@ namespace grbda
             model.appendContactPoint(ankle_link_name,
                                      Vec3<Scalar>(-_footHeelLength, 0, -_footHeight),
                                      heel_contact_name);
-        }
+        };
 
-        for (int armID = 0; armID < 2; armID++)
+        auto appendArm = [&](int armID)
         {
             // ShoulderRy
             const std::string shoulder_ry_parent_name = torso_name;
@@ -349,7 +348,12 @@ namespace grbda
             model.appendContactPoint(elbow_link_name, Vec3<Scalar>(0, 0, 0), elbow_contact_name);
             model.appendContactPoint(elbow_link_name, Vec3<Scalar>(0, 0, -_lowerArmLength),
                                      hand_contact_name);
-        }
+        };
+
+        appendArm(0);
+        appendLeg(0);
+        appendArm(1);
+        appendLeg(1);
 
         return model;
     }
