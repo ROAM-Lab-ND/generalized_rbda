@@ -28,7 +28,7 @@ namespace grbda
         Vec3<Scalar> torsoDims(_torsoLength, _torsoWidth, _torsoHeight);
         model.appendContactBox(torso_name, torsoDims);
 
-        auto appendLeg = [&](int legID)
+        auto appendLeg = [&](const int &legID)
         {
             // HipRz
             const std::string hip_rz_parent_name = torso_name;
@@ -207,7 +207,7 @@ namespace grbda
                                      heel_contact_name);
         };
 
-        auto appendArm = [&](int armID)
+        auto appendArm = [&](const int &armID)
         {
             // ShoulderRy
             const std::string shoulder_ry_parent_name = torso_name;
