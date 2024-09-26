@@ -3,7 +3,8 @@
 namespace grbda
 {
     template <typename Scalar, typename OriTpl>
-    void ClusterTreeModel<Scalar, OriTpl>::buildFromUrdfModelInterface(const UrdfModelPtr model)
+    void ClusterTreeModel<Scalar, OriTpl>::buildFromUrdfModelInterface(
+        const urdf::ModelInterfaceSharedPtr model)
     {
         if (model == nullptr)
             throw std::runtime_error("Could not parse URDF file");
@@ -19,7 +20,7 @@ namespace grbda
         }
 
         // Add remaining bodies
-        std::map<UrdfClusterPtr, bool> visited;
+        std::map<urdf::ClusterSharedPtr, bool> visited;
         for (urdf::ClusterSharedPtr child : root_cluster->child_clusters)
         {
             appendClustersViaDFS(visited, child);
@@ -28,12 +29,12 @@ namespace grbda
 
     template <typename Scalar, typename OriTpl>
     void ClusterTreeModel<Scalar, OriTpl>::appendClustersViaDFS(
-        std::map<UrdfClusterPtr, bool> &visited, UrdfClusterPtr cluster)
+        std::map<urdf::ClusterSharedPtr, bool> &visited, urdf::ClusterSharedPtr cluster)
     {
         visited[cluster] = true;
         appendClusterFromUrdfCluster(cluster);
 
-        for (const UrdfClusterPtr &child : cluster->child_clusters)
+        for (const urdf::ClusterSharedPtr &child : cluster->child_clusters)
         {
             if (!visited[child])
             {
@@ -44,7 +45,8 @@ namespace grbda
 
     // TODO(@MatthewChignoli): Eventually add some specialization and detection for common clusters so that we can use sparsity exploiting classes
     template <typename Scalar, typename OriTpl>
-    void ClusterTreeModel<Scalar, OriTpl>::appendClusterFromUrdfCluster(UrdfClusterPtr cluster)
+    void
+    ClusterTreeModel<Scalar, OriTpl>::appendClusterFromUrdfCluster(urdf::ClusterSharedPtr cluster)
     {
         // Error if cluster is empty or null
         if (cluster->size() == 0)
@@ -116,8 +118,8 @@ namespace grbda
             // TODO(@MatthewChignoli): Rename these
             // For each constraint, collect the captures that will be supplied to the lambda 
             // function encoding the constraint
-            std::vector<PositionConstraintCapture> constraint_captures;
-            for (UrdfConstraintPtr constraint : cluster_constraints)
+            std::vector<LoopConstraintCapture> constraint_captures;
+            for (urdf::ConstraintSharedPtr constraint : cluster_constraints)
             {
                 // TODO(@MatthewChignoli): static cast?
                 urdf::LoopConstraintSharedPtr loop_constraint =
@@ -154,7 +156,7 @@ namespace grbda
                     link_name = body(parent_index).name_;
                 }
 
-                PositionConstraintCapture capture;
+                LoopConstraintCapture capture;
                 capture.nca_to_predecessor_subchain = nca_to_predecessor_subchain;
                 capture.nca_to_successor_subchain = nca_to_successor_subchain;
                 capture.predecessor_to_joint_origin_transform = loop_constraint->predecessor_to_joint_origin_transform;
@@ -181,8 +183,8 @@ namespace grbda
             // TODO(@MatthewChignoli): Rename these
             // For each constraint, collect the captures that will be supplied to the lambda 
             // function encoding the constraint
-            std::vector<RollingConstraintCapture> constraint_captures;
-            for (UrdfConstraintPtr constraint : cluster_constraints)
+            std::vector<CouplingConstraintCapture> constraint_captures;
+            for (urdf::ConstraintSharedPtr constraint : cluster_constraints)
             {
                 // TODO(@MatthewChignoli): static cast?
                 urdf::CouplingConstraintSharedPtr coupling_constraint =
@@ -218,7 +220,7 @@ namespace grbda
                     link_name = body(parent_index).name_;
                 }
 
-                RollingConstraintCapture capture;
+                CouplingConstraintCapture capture;
                 capture.nca_to_predecessor_subchain = nca_to_predecessor_subchain;
                 capture.nca_to_successor_subchain = nca_to_successor_subchain;
                 capture.ratio = coupling_constraint->ratio;
@@ -246,8 +248,8 @@ namespace grbda
     }
 
     template <typename Scalar, typename OriTpl>
-    void
-    ClusterTreeModel<Scalar, OriTpl>::appendSimpleRevoluteJointFromUrdfCluster(UrdfLinkPtr link)
+    void ClusterTreeModel<Scalar, OriTpl>::appendSimpleRevoluteJointFromUrdfCluster(
+        urdf::LinkSharedPtr link)
     {
         std::string name = link->name;
         std::string parent_name = link->getParent()->name;
@@ -259,8 +261,8 @@ namespace grbda
     }
 
     template <typename Scalar, typename OriTpl>
-    void
-    ClusterTreeModel<Scalar, OriTpl>::appendSimpleFloatingJointFromUrdfCluster(UrdfLinkPtr link)
+    void ClusterTreeModel<Scalar, OriTpl>::appendSimpleFloatingJointFromUrdfCluster(
+        urdf::LinkSharedPtr link)
     {
         if (cluster_nodes_.size() > 0)
             throw std::runtime_error("Floating joint must be the first joint in the system");
@@ -275,7 +277,7 @@ namespace grbda
 
     template <typename Scalar, typename OriTpl>
     void ClusterTreeModel<Scalar, OriTpl>::registerBodiesInUrdfCluster(
-        UrdfClusterPtr cluster,
+        urdf::ClusterSharedPtr cluster,
         std::vector<JointPtr<Scalar>> &joints,
         std::vector<bool> &independent_coordinates,
         std::vector<Body<SX>> &bodies_sx,
@@ -326,7 +328,7 @@ namespace grbda
     template <typename Scalar, typename OriTpl>
     std::function<DVec<casadi::SX>(const JointCoordinate<casadi::SX> &)>
     ClusterTreeModel<Scalar, OriTpl>::implicitPositionConstraint(
-        std::vector<PositionConstraintCapture> &captures,
+        std::vector<LoopConstraintCapture> &captures,
         std::map<std::string, JointPtr<SX>> joints_sx)
     {
         return [captures, joints_sx](const JointCoordinate<SX> &q)
@@ -338,7 +340,7 @@ namespace grbda
             DVec<SX> phi_out = DVec<SX>(0);
             for (size_t i = 0; i < captures.size(); i++)
             {
-                const PositionConstraintCapture &capture = captures[i];
+                const LoopConstraintCapture &capture = captures[i];
 
                 // Through predecessor
                 Xform X_via_predecessor;
@@ -397,14 +399,14 @@ namespace grbda
     template <typename Scalar, typename OriTpl>
     std::pair<DMat<Scalar>, DMat<Scalar>>
     ClusterTreeModel<Scalar, OriTpl>::explicitRollingConstraint(
-        std::vector<RollingConstraintCapture> &captures,
+        std::vector<CouplingConstraintCapture> &captures,
         std::vector<bool> independent_coordinates)
     {
         // TODO(@MatthewChignoli): Assumes all joints are 1 DOF?
         DMat<Scalar> K = DMat<Scalar>::Zero(captures.size(), independent_coordinates.size());
         for (size_t i = 0; i < captures.size(); i++)
         {
-            const RollingConstraintCapture &capture = captures[i];
+            const CouplingConstraintCapture &capture = captures[i];
 
             // Through predecessor
             for (const Body<SX> &body : capture.nca_to_predecessor_subchain)

@@ -17,13 +17,6 @@ namespace grbda
     template <typename Scalar>
     using ClusterTreeNodePtr = std::shared_ptr<ClusterTreeNode<Scalar>>;
 
-    // TODO(@MatthewChignoli): Remove these and use the typedefs in urdf::
-    using UrdfModelPtr = std::shared_ptr<urdf::ModelInterface>;
-    using UrdfClusterPtr = std::shared_ptr<urdf::Cluster>;
-    using UrdfLinkPtr = std::shared_ptr<urdf::Link>;
-    using UrdfJointPtr = std::shared_ptr<urdf::Joint>;
-    using UrdfConstraintPtr = std::shared_ptr<urdf::Constraint>;
-
     /*!
      * Class to represent a floating base rigid body model with rotors and ground contacts.
      */
@@ -170,24 +163,25 @@ namespace grbda
     protected:
         using SX = casadi::SX;
 
-        void buildFromUrdfModelInterface(const UrdfModelPtr model);
-        
-        void appendClustersViaDFS(std::map<UrdfClusterPtr, bool> &visited, UrdfClusterPtr cluster);
-        void appendClusterFromUrdfCluster(UrdfClusterPtr cluster);
-        void appendSimpleRevoluteJointFromUrdfCluster(UrdfLinkPtr link);
-        void appendSimpleFloatingJointFromUrdfCluster(UrdfLinkPtr link);
-        void registerBodiesInUrdfCluster(UrdfClusterPtr cluster,
+        void buildFromUrdfModelInterface(const urdf::ModelInterfaceSharedPtr model);
+
+        void appendClustersViaDFS(std::map<urdf::ClusterSharedPtr, bool> &visited,
+                                  urdf::ClusterSharedPtr cluster);
+        void appendClusterFromUrdfCluster(urdf::ClusterSharedPtr cluster);
+        void appendSimpleRevoluteJointFromUrdfCluster(urdf::LinkSharedPtr link);
+        void appendSimpleFloatingJointFromUrdfCluster(urdf::LinkSharedPtr link);
+        void registerBodiesInUrdfCluster(urdf::ClusterSharedPtr cluster,
                                          std::vector<JointPtr<Scalar>>& joints,
                                          std::vector<bool>& independent_coordinates,
                                          std::vector<Body<SX>>& bodies_sx,
                                          std::map<std::string, JointPtr<SX>>& joints_sx);
 
         std::function<DVec<SX>(const JointCoordinate<SX> &)> implicitPositionConstraint(
-            std::vector<PositionConstraintCapture> &captures,
+            std::vector<LoopConstraintCapture> &captures,
             std::map<std::string, JointPtr<SX>> joints_sx);
 
         std::pair<DMat<Scalar>, DMat<Scalar>> explicitRollingConstraint(
-            std::vector<RollingConstraintCapture> &captures,
+            std::vector<CouplingConstraintCapture> &captures,
             std::vector<bool> independent_coordinates);
 
         void appendRegisteredBodiesAsCluster(const std::string name,

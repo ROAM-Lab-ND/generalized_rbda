@@ -7,20 +7,19 @@
 namespace grbda
 {
 
-    // TODO(@MatthewChignoli): Rename these
     struct ConstraintCapture
     {
         std::vector<Body<casadi::SX>> nca_to_predecessor_subchain;
         std::vector<Body<casadi::SX>> nca_to_successor_subchain;
     };
 
-    struct PositionConstraintCapture : public ConstraintCapture
+    struct LoopConstraintCapture : public ConstraintCapture
     {
         urdf::Pose predecessor_to_joint_origin_transform;
         urdf::Pose successor_to_joint_origin_transform;
     };
 
-    struct RollingConstraintCapture : public ConstraintCapture
+    struct CouplingConstraintCapture : public ConstraintCapture
     {
         double ratio;
     };
