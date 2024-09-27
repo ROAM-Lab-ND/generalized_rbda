@@ -15,8 +15,8 @@ namespace grbda
 
     struct LoopConstraintCapture : public ConstraintCapture
     {
-        urdf::Pose predecessor_to_joint_origin_transform;
-        urdf::Pose successor_to_joint_origin_transform;
+        urdf::Pose predecessor_to_constraint_origin_transform;
+        urdf::Pose successor_to_constraint_origin_transform;
     };
 
     struct CouplingConstraintCapture : public ConstraintCapture

@@ -145,10 +145,10 @@
     <axis xyz="0 0 1"/>
     <limit effort="30" lower="-10" upper="10" velocity="1.0"/>
   </joint>
-  <constraint name="rolling_5" type="rolling">
+  <coupling name="coupling_5">
     <predecessor link="link_1_5"/>
     <successor link="link_2_5"/>
     <ratio value="1"/>
-  </constraint>
+  </coupling>
 </robot>
 

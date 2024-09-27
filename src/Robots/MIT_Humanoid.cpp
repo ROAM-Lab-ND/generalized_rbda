@@ -151,15 +151,6 @@ namespace grbda
             const spatial::Transform<Scalar> xtreeKnee(I3, kneeLocation);
             const spatial::Transform<Scalar> xtreeKneeRotor(I3, kneeRotorLocation);
 
-            Body<Scalar> knee_link = model.registerBody(knee_link_name, knee_link_inertia,
-                                                        knee_parent_name, xtreeKnee);
-            Body<Scalar> knee_rotor = model.registerBody(knee_rotor_name, knee_rotor_inertia,
-                                                         knee_parent_name, xtreeKneeRotor);
-
-            KneeTransModule knee_module{knee_link, knee_rotor,
-                                        ori::CoordinateAxis::Y, ori::CoordinateAxis::Y,
-                                        _kneeGearRatio, _kneeBeltRatios};
-
             // Ankle
             const std::string ankle_parent_name = knee_link_name;
             const std::string ankle_link_name = withLeftRightSigns("ankle_link", legID);
@@ -177,16 +168,24 @@ namespace grbda
             const spatial::Transform<Scalar> xtreeAnkle(I3, ankleLocation);
             const spatial::Transform<Scalar> xtreeAnkleRotor(I3, ankleRotorLocation);
 
+            // Cluster
             Body<Scalar> ankle_rotor = model.registerBody(ankle_rotor_name, ankle_rotor_inertia,
                                                           knee_parent_name, xtreeAnkleRotor);
+            Body<Scalar> knee_link = model.registerBody(knee_link_name, knee_link_inertia,
+                                                        knee_parent_name, xtreeKnee);
+            Body<Scalar> knee_rotor = model.registerBody(knee_rotor_name, knee_rotor_inertia,
+                                                         knee_parent_name, xtreeKneeRotor);
             Body<Scalar> ankle_link = model.registerBody(ankle_link_name, ankle_link_inertia,
                                                          ankle_parent_name, xtreeAnkle);
+
+            KneeTransModule knee_module{knee_link, knee_rotor,
+                                        ori::CoordinateAxis::Y, ori::CoordinateAxis::Y,
+                                        _kneeGearRatio, _kneeBeltRatios};
 
             AnkleTransModule ankle_module{ankle_link, ankle_rotor,
                                           ori::CoordinateAxis::Y, ori::CoordinateAxis::Y,
                                           _ankleGearRatio, _ankleBeltRatios};
 
-            // Cluster
             const std::string knee_and_ankle_name = withLeftRightSigns("knee_and_ankle", legID);
             model.template appendRegisteredBodiesAsCluster<RevolutePairWithRotor>(
                 knee_and_ankle_name, knee_module, ankle_module);

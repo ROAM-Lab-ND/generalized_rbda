@@ -459,9 +459,9 @@ std::vector<NeighborsTestData> GetLinksAndNeighbors()
     NeighborsTestData mini_cheetah_leg_data;
     mini_cheetah_leg_data.urdf_file = "mini_cheetah_leg";
     mini_cheetah_leg_data.links_and_neighbors.insert(std::make_pair("base", std::vector<std::string>{"abduct", "abduct_rotor"}));
-    mini_cheetah_leg_data.links_and_neighbors.insert(std::make_pair("abduct", std::vector<std::string>{"abduct_rotor", "thigh", "hip_rotor"}));
+    mini_cheetah_leg_data.links_and_neighbors.insert(std::make_pair("abduct", std::vector<std::string>{"hip_rotor", "thigh", "abduct_rotor"}));
     mini_cheetah_leg_data.links_and_neighbors.insert(std::make_pair("abduct_rotor", std::vector<std::string>{"abduct"}));
-    mini_cheetah_leg_data.links_and_neighbors.insert(std::make_pair("thigh", std::vector<std::string>{"hip_rotor", "shank", "knee_rotor"}));
+    mini_cheetah_leg_data.links_and_neighbors.insert(std::make_pair("thigh", std::vector<std::string>{"shank", "knee_rotor", "hip_rotor"}));
     mini_cheetah_leg_data.links_and_neighbors.insert(std::make_pair("hip_rotor", std::vector<std::string>{"thigh"}));
     mini_cheetah_leg_data.links_and_neighbors.insert(std::make_pair("shank", std::vector<std::string>{"knee_rotor"}));
     mini_cheetah_leg_data.links_and_neighbors.insert(std::make_pair("knee_rotor", std::vector<std::string>{"shank"}));
@@ -489,9 +489,6 @@ TEST_P(NeighborsTest, neighbors)
 
     for (const auto &[link_name, neighbors_names] : GetParam().links_and_neighbors)
     {
-        // const std::string &link_name = link_and_neighbors.first;
-        // const std::vector<std::string> &neighbors_names = link_and_neighbors.second;
-
         std::vector<LinkConstSharedPtr> neighbors;
         for (const LinkConstSharedPtr child : model_->getLink(link_name)->child_links)
         {
@@ -501,7 +498,6 @@ TEST_P(NeighborsTest, neighbors)
         {
             neighbors.push_back(loop_link);
         }
-
 
         ASSERT_EQ(neighbors_names.size(), neighbors.size());
         int i = 0;

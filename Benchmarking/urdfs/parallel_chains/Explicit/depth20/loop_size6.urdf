@@ -89,11 +89,11 @@
     <axis xyz="0 0 1"/>
     <limit effort="30" lower="-10" upper="10" velocity="1.0"/>
   </joint>
-  <constraint name="rolling_3" type="rolling">
+  <coupling name="coupling_3">
     <predecessor link="link_1_3"/>
     <successor link="link_2_3"/>
     <ratio value="1"/>
-  </constraint>
+  </coupling>
   <link name="link_1_4">
     <inertial>
       <mass value="0.25"/>

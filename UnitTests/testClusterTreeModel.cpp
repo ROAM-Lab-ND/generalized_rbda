@@ -100,10 +100,10 @@ struct URDFvsManualTestData
 std::vector<URDFvsManualTestData> GetTestRobots()
 {
     std::vector<URDFvsManualTestData> test_data;
-    // test_data.push_back({urdf_directory + "planar_leg_linkage.urdf",
-    //                      std::make_shared<PlanarLegLinkage<double>>()});
-    // test_data.push_back({urdf_directory + "revolute_rotor_chain.urdf",
-    //                      std::make_shared<RevoluteChainWithRotor<3, double>>(false)});
+    test_data.push_back({urdf_directory + "planar_leg_linkage.urdf",
+                         std::make_shared<PlanarLegLinkage<double>>()});
+    test_data.push_back({urdf_directory + "revolute_rotor_chain.urdf",
+                         std::make_shared<RevoluteChainWithRotor<3, double>>(false)});
     test_data.push_back({urdf_directory + "mini_cheetah.urdf",
                          std::make_shared<MiniCheetah<double>>()});
     test_data.push_back({urdf_directory + "mit_humanoid_leg.urdf",
@@ -164,6 +164,33 @@ TEST_P(URDFvsManualTests, compareToManuallyConstructed)
     for (int i = 0; i < 25; i++)
     {
         this->initializeRandomStates();
+        this->manual_model.forwardKinematics();
+        this->urdf_model.forwardKinematics();
+
+        // Verify the constraint Jacobians
+        for (size_t j = 0; j < this->manual_model.clusters().size(); j++)
+        {
+            auto manual_cluster = this->manual_model.cluster(j);
+            std::shared_ptr<LoopConstraint::Base<double>> constraint =
+                manual_cluster->joint_->cloneLoopConstraint();
+            DMat<double> G_manual = constraint->G();
+            DVec<double> g_manual = constraint->g();
+            DMat<double> K_manual = constraint->K();
+            DVec<double> k_manual = constraint->k();
+
+            auto urdf_cluster = this->urdf_model.cluster(j);
+            std::shared_ptr<LoopConstraint::Base<double>> urdf_constraint =
+                urdf_cluster->joint_->cloneLoopConstraint();
+            DMat<double> G_urdf = urdf_constraint->G();
+            DVec<double> g_urdf = urdf_constraint->g();
+            DMat<double> K_urdf = urdf_constraint->K();
+            DVec<double> k_urdf = urdf_constraint->k();
+
+            GTEST_ASSERT_LT((G_manual - G_urdf).norm(), tol);
+            GTEST_ASSERT_LT((g_manual - g_urdf).norm(), tol);
+            GTEST_ASSERT_LT((K_manual - K_urdf).norm(), tol);
+            GTEST_ASSERT_LT((k_manual - k_urdf).norm(), tol);
+        }
 
         // Verify link kinematics
         for (const auto &body : this->manual_model.bodies())

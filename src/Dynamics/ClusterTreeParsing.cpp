@@ -84,7 +84,7 @@ namespace grbda
         registerBodiesInUrdfCluster(cluster, joints_in_current_cluster, independent_coordinates,
                                     bodies_sx, joints_sx);
 
-        // Verify that all constraints in the cluster are of the same type
+        // Collect all constraints in the cluster
         std::vector<urdf::ConstraintSharedPtr> cluster_constraints;
         for (urdf::LinkSharedPtr link : *cluster)
         {
@@ -100,7 +100,8 @@ namespace grbda
             throw std::runtime_error("Cluster must have at least one constraint");
         }
 
-        // Verify that all constraints in the cluster are of the same type
+        // TODO(@MatthewChignoli): This is an unnecessary restriction
+        // Verify that all constraints in the cluster are of the same class type
         auto constraint_class_type = cluster_constraints.front()->class_type;
         for (urdf::ConstraintSharedPtr constraint : cluster_constraints)
         {
@@ -108,7 +109,6 @@ namespace grbda
                 throw std::runtime_error("All constraints in cluster must be of same class type");
         }
 
-        // And so here is where we do the hard split on the constraint class type
         if (constraint_class_type == urdf::Constraint::LOOP)
         {
             // TODO(@MatthewChignoli): Now check that all of the loop constraints come from the same joint type
@@ -123,7 +123,7 @@ namespace grbda
 
                 std::vector<Body<SX>> nca_to_predecessor_subchain, nca_to_successor_subchain;
 
-                // TODO(@MatthewChignoli): Helper function for this?
+                // TODO(@MatthewChignoli): Helper function for this
                 std::string link_name = constraint->predecessor_link_name;
                 while (link_name != constraint->nearest_common_ancestor_name)
                 {
@@ -155,8 +155,8 @@ namespace grbda
                 LoopConstraintCapture capture;
                 capture.nca_to_predecessor_subchain = nca_to_predecessor_subchain;
                 capture.nca_to_successor_subchain = nca_to_successor_subchain;
-                capture.predecessor_to_joint_origin_transform = loop_constraint->predecessor_to_joint_origin_transform;
-                capture.successor_to_joint_origin_transform = loop_constraint->successor_to_joint_origin_transform;
+                capture.predecessor_to_constraint_origin_transform = loop_constraint->predecessor_to_constraint_origin_transform;
+                capture.successor_to_constraint_origin_transform = loop_constraint->successor_to_constraint_origin_transform;
                 constraint_captures.push_back(capture);
             }
 
@@ -327,8 +327,7 @@ namespace grbda
     {
         return [captures, joints_sx](const JointCoordinate<SX> &q)
         {
-            // TODO(@MatthewChignoli): There is a bug with the joint idx. It assumes that joints are ordered so that pred sub tree comes first, in order
-            int jidx = 0;
+            // TODO(@MatthewChignoli): We assume all joints are 1 DOF
             using Xform = spatial::Transform<SX>;
 
             DVec<SX> phi_out = DVec<SX>(0);
@@ -341,12 +340,11 @@ namespace grbda
                 for (const Body<SX> &body : capture.nca_to_predecessor_subchain)
                 {
                     JointPtr<SX> joint = joints_sx.at(body.name_);
-                    joint->updateKinematics(q.segment(jidx, joint->numPositions()),
-                                            DVec<SX>::Zero(joint->numVelocities()));
-                    jidx += joint->numPositions();
+                    joint->updateKinematics(q.segment(body.sub_index_within_cluster_, 1),
+                                            DVec<SX>::Zero(1));
                     X_via_predecessor = joint->XJ() * body.Xtree_ * X_via_predecessor;
                 }
-                X_via_predecessor = Xform(capture.predecessor_to_joint_origin_transform) *
+                X_via_predecessor = Xform(capture.predecessor_to_constraint_origin_transform) *
                                     X_via_predecessor;
                 Vec3<SX> r_nca_to_constraint_via_predecessor = X_via_predecessor.getTranslation();
 
@@ -355,12 +353,11 @@ namespace grbda
                 for (const Body<SX> &body : capture.nca_to_successor_subchain)
                 {
                     JointPtr<SX> joint = joints_sx.at(body.name_);
-                    joint->updateKinematics(q.segment(jidx, joint->numPositions()),
-                                            DVec<SX>::Zero(joint->numVelocities()));
-                    jidx += joint->numPositions();
+                    joint->updateKinematics(q.segment(body.sub_index_within_cluster_, 1),
+                                            DVec<SX>::Zero(1));
                     X_via_successor = joint->XJ() * body.Xtree_ * X_via_successor;
                 }
-                X_via_successor = Xform(capture.successor_to_joint_origin_transform) *
+                X_via_successor = Xform(capture.successor_to_constraint_origin_transform) *
                                   X_via_successor;
                 Vec3<SX> r_nca_to_constraint_via_successor = X_via_successor.getTranslation();
 
