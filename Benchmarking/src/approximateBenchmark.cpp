@@ -195,7 +195,9 @@ TEST_P(PinocchioNumericalValidation, forward_dynamics)
 
             std::shared_ptr<LoopConstraint> constraint = cluster->joint_->cloneLoopConstraint();
             if (!constraint->isExplicit())
+            {
                 ASSERT_TRUE(constraint->isValidSpanningPosition(spanning_joint_state.position));
+            }
             constraint->updateJacobians(spanning_joint_state.position);
             ASSERT_TRUE(constraint->isValidSpanningVelocity(spanning_joint_state.velocity));
 
