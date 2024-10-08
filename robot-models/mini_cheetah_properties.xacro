@@ -52,8 +52,6 @@
         <coupling name="${prefix}_abad_tranmission">
             <predecessor link="${prefix}_abad_link"/>
             <successor link="${prefix}_abad_rotor"/>
-            <predecessor link="${prefix}_abad_link"/>
-            <successor link="${prefix}_abad_rotor"/>
             <ratio value="6.0"/>
         </coupling>
 
