@@ -349,25 +349,22 @@ INSTANTIATE_TEST_SUITE_P(ClustersTest, ClustersTest, ::testing::ValuesIn(GetTest
 
 TEST_P(ClustersTest, parents)
 {
-    using LinkPtr = std::shared_ptr<Link>;
-    using ClusterPtr = std::shared_ptr<Cluster>;
-
-    std::vector<LinkPtr> links;
+    std::vector<LinkSharedPtr> links;
     model_->getLinks(links);
 
-    for (const LinkPtr &link : links)
+    for (const LinkSharedPtr &link : links)
     {
         if (link->getParent() == nullptr)
             continue;
 
-        LinkPtr parent = link->getParent();
+        LinkSharedPtr parent = link->getParent();
 
-        ClusterPtr cluster_containing_link =
+        ClusterSharedPtr cluster_containing_link =
             model_->clusters_[model_->containing_cluster_[link->name]];
-        ClusterPtr cluster_containing_parent =
+        ClusterSharedPtr cluster_containing_parent =
             model_->clusters_[model_->containing_cluster_[parent->name]];
-        
-        ClusterPtr parent_cluster_of_cluster_containing_link = cluster_containing_link->getParent();
+        ClusterSharedPtr parent_cluster_of_cluster_containing_link =
+            cluster_containing_link->getParent();
 
         ASSERT_TRUE(cluster_containing_parent == cluster_containing_link ||
                     cluster_containing_parent == parent_cluster_of_cluster_containing_link);
@@ -376,19 +373,15 @@ TEST_P(ClustersTest, parents)
 
 TEST_P(ClustersTest, children)
 {
-    // TODO(@MatthewChignoli): Remove these kinds of aliases
-    using LinkPtr = std::shared_ptr<Link>;
-    using ClusterPtr = std::shared_ptr<Cluster>;
-
-    std::vector<LinkPtr> links;
+    std::vector<LinkSharedPtr> links;
     model_->getLinks(links);
 
-    for (const LinkPtr &link : links)
+    for (const LinkSharedPtr &link : links)
     {
         ClusterSharedPtr cluster_containing_link =
             model_->clusters_[model_->containing_cluster_[link->name]];
 
-        std::vector<ClusterPtr> child_clusters = cluster_containing_link->child_clusters;
+        std::vector<ClusterSharedPtr> child_clusters = cluster_containing_link->child_clusters;
 
         for (const LinkConstSharedPtr child_link : link->child_links)
         {
