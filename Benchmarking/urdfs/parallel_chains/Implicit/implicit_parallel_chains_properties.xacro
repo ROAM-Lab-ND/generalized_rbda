@@ -40,14 +40,15 @@
             <axis xyz="0 0 1"/>
             <limit effort="30" velocity="1.0" lower="-10" upper="10"/>
         </joint>
-        <constraint name="position_${idx}" type="position">
+        <loop name="position_${idx}" type="revolute">
             <predecessor link="connecting_rod">
                 <origin xyz="${distance_between_chains} 0.0 0.0"/>
             </predecessor>
             <successor link="link_2_${idx}">
                 <origin xyz="0.0 ${link_length} 0.0"/>
             </successor>
-        </constraint>
+            <axis xyz="0 0 1"/>
+        </loop>
     </xacro:macro>
 
     <xacro:macro name="add_constrained_parallel_links_and_joints" params="idx">

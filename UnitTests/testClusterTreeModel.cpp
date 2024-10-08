@@ -122,13 +122,6 @@ protected:
         manual_model = GetParam().robot->buildClusterTreeModel();
         urdf_model.buildModelFromURDF(GetParam().urdf_file);
         urdf_model.setGravity(manual_model.getGravity().tail<3>());
-
-        // Print both models
-        std::cout << "Manual model:" << std::endl;
-        manual_model.print();
-
-        std::cout << "URDF model:" << std::endl;
-        urdf_model.print();
     }
 
     void initializeRandomStates()

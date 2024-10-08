@@ -121,7 +121,7 @@ namespace grbda
                 urdf::LoopConstraintSharedPtr loop_constraint =
                     std::dynamic_pointer_cast<urdf::LoopConstraint>(constraint);
 
-                std::vector<Body<SX>> nca_to_predecessor_subchain, nca_to_successor_subchain;
+                std::vector<Body<SX>> predecessor_to_nca_subchain, successor_to_nca_subchain;
 
                 // TODO(@MatthewChignoli): Helper function for this
                 std::string link_name = constraint->predecessor_link_name;
@@ -129,9 +129,7 @@ namespace grbda
                 {
                     const Body<Scalar> &body_i = body(link_name);
                     const int sub_index = body_i.sub_index_within_cluster_;
-                    nca_to_predecessor_subchain.insert(nca_to_predecessor_subchain.begin(),
-                                                       bodies_sx[sub_index]);
-
+                    predecessor_to_nca_subchain.push_back(bodies_sx[sub_index]);
                     const int& parent_index = body_i.parent_index_;
                     if (parent_index == -1)
                         break;
@@ -143,9 +141,7 @@ namespace grbda
                 {
                     const Body<Scalar> &body_i = body(link_name);
                     const int sub_index = body_i.sub_index_within_cluster_;
-                    nca_to_successor_subchain.insert(nca_to_successor_subchain.begin(),
-                                                    bodies_sx[sub_index]);
-                    
+                    successor_to_nca_subchain.push_back(bodies_sx[sub_index]);
                     const int& parent_index = body_i.parent_index_;
                     if (parent_index == -1)
                         break;
@@ -153,8 +149,16 @@ namespace grbda
                 }
 
                 LoopConstraintCapture capture;
-                capture.nca_to_predecessor_subchain = nca_to_predecessor_subchain;
-                capture.nca_to_successor_subchain = nca_to_successor_subchain;
+                for (auto it = predecessor_to_nca_subchain.rbegin();
+                     it != predecessor_to_nca_subchain.rend(); ++it)
+                {
+                    capture.nca_to_predecessor_subchain.push_back(*it);
+                }
+                for (auto it = successor_to_nca_subchain.rbegin();
+                     it != successor_to_nca_subchain.rend(); ++it)
+                {
+                    capture.nca_to_successor_subchain.push_back(*it);
+                }
                 capture.predecessor_to_constraint_origin_transform = loop_constraint->predecessor_to_constraint_origin_transform;
                 capture.successor_to_constraint_origin_transform = loop_constraint->successor_to_constraint_origin_transform;
                 constraint_captures.push_back(capture);
@@ -184,17 +188,16 @@ namespace grbda
                 urdf::CouplingConstraintSharedPtr coupling_constraint =
                     std::dynamic_pointer_cast<urdf::CouplingConstraint>(constraint);
 
-                std::vector<Body<SX>> nca_to_predecessor_subchain, nca_to_successor_subchain;
-                
+                std::vector<Body<SX>> predecessor_to_nca_subchain, successor_to_nca_subchain;
+
+                // TODO(@MatthewChignoli): Helper function for this
                 std::string link_name = constraint->predecessor_link_name;
                 while (link_name != constraint->nearest_common_ancestor_name)
                 {
                     const Body<Scalar> &body_i = body(link_name);
                     const int sub_index = body_i.sub_index_within_cluster_;
-                    nca_to_predecessor_subchain.insert(nca_to_predecessor_subchain.begin(),
-                                                       bodies_sx[sub_index]);
-
-                    const int &parent_index = body_i.parent_index_;
+                    predecessor_to_nca_subchain.push_back(bodies_sx[sub_index]);
+                    const int& parent_index = body_i.parent_index_;
                     if (parent_index == -1)
                         break;
                     link_name = body(parent_index).name_;
@@ -205,18 +208,24 @@ namespace grbda
                 {
                     const Body<Scalar> &body_i = body(link_name);
                     const int sub_index = body_i.sub_index_within_cluster_;
-                    nca_to_successor_subchain.insert(nca_to_successor_subchain.begin(),
-                                                     bodies_sx[sub_index]);
-
-                    const int &parent_index = body_i.parent_index_;
+                    successor_to_nca_subchain.push_back(bodies_sx[sub_index]);
+                    const int& parent_index = body_i.parent_index_;
                     if (parent_index == -1)
                         break;
                     link_name = body(parent_index).name_;
                 }
 
                 CouplingConstraintCapture capture;
-                capture.nca_to_predecessor_subchain = nca_to_predecessor_subchain;
-                capture.nca_to_successor_subchain = nca_to_successor_subchain;
+                for (auto it = predecessor_to_nca_subchain.rbegin();
+                     it != predecessor_to_nca_subchain.rend(); ++it)
+                {
+                    capture.nca_to_predecessor_subchain.push_back(*it);
+                }
+                for (auto it = successor_to_nca_subchain.rbegin();
+                     it != successor_to_nca_subchain.rend(); ++it)
+                {
+                    capture.nca_to_successor_subchain.push_back(*it);
+                }
                 capture.ratio = coupling_constraint->ratio;
                 constraint_captures.push_back(capture);
             }

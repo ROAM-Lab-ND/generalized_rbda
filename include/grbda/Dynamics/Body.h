@@ -30,7 +30,9 @@ namespace grbda
           cluster_ancestor_sub_index_within_cluster_(
               body.cluster_ancestor_sub_index_within_cluster_) {}
 
+    // TODO(@MatthewChignoli): I am skeptical of this assignment operator
     Body<Scalar> &operator=(const Body<Scalar> &body) { return *this; }
+    // Body<Scalar> &operator=(const Body<Scalar> &body) = delete;
 
     const int index_;
     const std::string name_;
