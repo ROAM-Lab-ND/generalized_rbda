@@ -26,11 +26,11 @@
         <xacro:add_joint chain_idx="1" link_idx="${idx}" independent="true"/>
         <xacro:add_link chain_idx="2" link_idx="${idx}"/>
         <xacro:add_joint chain_idx="2" link_idx="${idx}" independent="false"/>
-        <constraint name="rolling_${idx}" type="rolling">
+        <coupling name="coupling_${idx}">
             <predecessor link="link_1_${idx}"/>
             <successor link="link_2_${idx}"/>
             <ratio value="1"/>
-        </constraint>
+        </coupling>
     </xacro:macro>
 
     <xacro:macro name="add_constrained_parallel_links_and_joints_from_base">
@@ -38,11 +38,11 @@
         <xacro:add_joint_from_base chain_idx="1" independent="true"/>
         <xacro:add_link chain_idx="2" link_idx="1"/>
         <xacro:add_joint_from_base chain_idx="2" independent="false"/>
-        <constraint name="rolling_1" type="rolling">
+        <coupling name="coupling_1">
             <predecessor link="link_1_1"/>
             <successor link="link_2_1"/>
             <ratio value="1"/>
-        </constraint>
+        </coupling>
     </xacro:macro>
     
 </robot>

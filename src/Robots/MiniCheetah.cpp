@@ -26,7 +26,7 @@ namespace grbda
         model.appendContactBox(torso_name, torsoDims);
 
         int sideSign = -1;
-        for (int legID = 0; legID < 4; legID++)
+        for (int legID : {2, 3, 0, 1})
         {
             // Ab/Ad joint
             const std::string abad_parent_name = torso_name;

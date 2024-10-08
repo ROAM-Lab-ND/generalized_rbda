@@ -33,11 +33,11 @@
       <inertia ixx="1e-4" ixy="0" ixz="0" iyy="1e-4" iyz="0" izz="1e-4"/>
     </inertial>
   </link>
-  <constraint name="transmission_6" type="rolling">
+  <coupling name="transmission_6">
     <predecessor link="link_6"/>
     <successor link="rotor_6"/>
     <ratio value="6.0"/>
-  </constraint>
+  </coupling>
   <joint independent="true" name="base_to_link_5" type="revolute">
     <parent link="base"/>
     <child link="link_5"/>
@@ -66,11 +66,11 @@
       <inertia ixx="1e-4" ixy="0" ixz="0" iyy="1e-4" iyz="0" izz="1e-4"/>
     </inertial>
   </link>
-  <constraint name="transmission_5" type="rolling">
+  <coupling name="transmission_5">
     <predecessor link="link_5"/>
     <successor link="rotor_5"/>
     <ratio value="6.0"/>
-  </constraint>
+  </coupling>
   <joint independent="true" name="base_to_link_4" type="revolute">
     <parent link="base"/>
     <child link="link_4"/>
@@ -99,11 +99,11 @@
       <inertia ixx="1e-4" ixy="0" ixz="0" iyy="1e-4" iyz="0" izz="1e-4"/>
     </inertial>
   </link>
-  <constraint name="transmission_4" type="rolling">
+  <coupling name="transmission_4">
     <predecessor link="link_4"/>
     <successor link="rotor_4"/>
     <ratio value="6.0"/>
-  </constraint>
+  </coupling>
   <joint independent="true" name="base_to_link_3" type="revolute">
     <parent link="base"/>
     <child link="link_3"/>
@@ -132,11 +132,11 @@
       <inertia ixx="1e-4" ixy="0" ixz="0" iyy="1e-4" iyz="0" izz="1e-4"/>
     </inertial>
   </link>
-  <constraint name="transmission_3" type="rolling">
+  <coupling name="transmission_3">
     <predecessor link="link_3"/>
     <successor link="rotor_3"/>
     <ratio value="6.0"/>
-  </constraint>
+  </coupling>
   <joint independent="true" name="base_to_link_2" type="revolute">
     <parent link="base"/>
     <child link="link_2"/>
@@ -165,11 +165,11 @@
       <inertia ixx="1e-4" ixy="0" ixz="0" iyy="1e-4" iyz="0" izz="1e-4"/>
     </inertial>
   </link>
-  <constraint name="transmission_2" type="rolling">
+  <coupling name="transmission_2">
     <predecessor link="link_2"/>
     <successor link="rotor_2"/>
     <ratio value="6.0"/>
-  </constraint>
+  </coupling>
   <joint independent="true" name="base_to_link_1" type="revolute">
     <parent link="base"/>
     <child link="link_1"/>
@@ -198,11 +198,11 @@
       <inertia ixx="1e-4" ixy="0" ixz="0" iyy="1e-4" iyz="0" izz="1e-4"/>
     </inertial>
   </link>
-  <constraint name="transmission_1" type="rolling">
+  <coupling name="transmission_1">
     <predecessor link="link_1"/>
     <successor link="rotor_1"/>
     <ratio value="6.0"/>
-  </constraint>
+  </coupling>
   <joint independent="true" name="link_6_to_link_32" type="revolute">
     <parent link="link_6"/>
     <child link="link_32"/>
@@ -231,11 +231,11 @@
       <inertia ixx="1e-4" ixy="0" ixz="0" iyy="1e-4" iyz="0" izz="1e-4"/>
     </inertial>
   </link>
-  <constraint name="transmission_32" type="rolling">
+  <coupling name="transmission_32">
     <predecessor link="link_32"/>
     <successor link="rotor_32"/>
     <ratio value="6.0"/>
-  </constraint>
+  </coupling>
   <joint independent="true" name="link_32_to_link_33" type="revolute">
     <parent link="link_32"/>
     <child link="link_33"/>
@@ -264,11 +264,11 @@
       <inertia ixx="1e-4" ixy="0" ixz="0" iyy="1e-4" iyz="0" izz="1e-4"/>
     </inertial>
   </link>
-  <constraint name="transmission_33" type="rolling">
+  <coupling name="transmission_33">
     <predecessor link="link_33"/>
     <successor link="rotor_33"/>
     <ratio value="6.0"/>
-  </constraint>
+  </coupling>
   <joint independent="true" name="link_33_to_link_34" type="revolute">
     <parent link="link_33"/>
     <child link="link_34"/>
@@ -297,11 +297,11 @@
       <inertia ixx="1e-4" ixy="0" ixz="0" iyy="1e-4" iyz="0" izz="1e-4"/>
     </inertial>
   </link>
-  <constraint name="transmission_34" type="rolling">
+  <coupling name="transmission_34">
     <predecessor link="link_34"/>
     <successor link="rotor_34"/>
     <ratio value="6.0"/>
-  </constraint>
+  </coupling>
   <joint independent="true" name="link_34_to_link_35" type="revolute">
     <parent link="link_34"/>
     <child link="link_35"/>
@@ -330,11 +330,11 @@
       <inertia ixx="1e-4" ixy="0" ixz="0" iyy="1e-4" iyz="0" izz="1e-4"/>
     </inertial>
   </link>
-  <constraint name="transmission_35" type="rolling">
+  <coupling name="transmission_35">
     <predecessor link="link_35"/>
     <successor link="rotor_35"/>
     <ratio value="6.0"/>
-  </constraint>
+  </coupling>
   <joint independent="true" name="link_35_to_link_36" type="revolute">
     <parent link="link_35"/>
     <child link="link_36"/>
@@ -363,11 +363,11 @@
       <inertia ixx="1e-4" ixy="0" ixz="0" iyy="1e-4" iyz="0" izz="1e-4"/>
     </inertial>
   </link>
-  <constraint name="transmission_36" type="rolling">
+  <coupling name="transmission_36">
     <predecessor link="link_36"/>
     <successor link="rotor_36"/>
     <ratio value="6.0"/>
-  </constraint>
+  </coupling>
   <joint independent="true" name="link_5_to_link_27" type="revolute">
     <parent link="link_5"/>
     <child link="link_27"/>
@@ -396,11 +396,11 @@
       <inertia ixx="1e-4" ixy="0" ixz="0" iyy="1e-4" iyz="0" izz="1e-4"/>
     </inertial>
   </link>
-  <constraint name="transmission_27" type="rolling">
+  <coupling name="transmission_27">
     <predecessor link="link_27"/>
     <successor link="rotor_27"/>
     <ratio value="6.0"/>
-  </constraint>
+  </coupling>
   <joint independent="true" name="link_27_to_link_28" type="revolute">
     <parent link="link_27"/>
     <child link="link_28"/>
@@ -429,11 +429,11 @@
       <inertia ixx="1e-4" ixy="0" ixz="0" iyy="1e-4" iyz="0" izz="1e-4"/>
     </inertial>
   </link>
-  <constraint name="transmission_28" type="rolling">
+  <coupling name="transmission_28">
     <predecessor link="link_28"/>
     <successor link="rotor_28"/>
     <ratio value="6.0"/>
-  </constraint>
+  </coupling>
   <joint independent="true" name="link_28_to_link_29" type="revolute">
     <parent link="link_28"/>
     <child link="link_29"/>
@@ -462,11 +462,11 @@
       <inertia ixx="1e-4" ixy="0" ixz="0" iyy="1e-4" iyz="0" izz="1e-4"/>
     </inertial>
   </link>
-  <constraint name="transmission_29" type="rolling">
+  <coupling name="transmission_29">
     <predecessor link="link_29"/>
     <successor link="rotor_29"/>
     <ratio value="6.0"/>
-  </constraint>
+  </coupling>
   <joint independent="true" name="link_29_to_link_30" type="revolute">
     <parent link="link_29"/>
     <child link="link_30"/>
@@ -495,11 +495,11 @@
       <inertia ixx="1e-4" ixy="0" ixz="0" iyy="1e-4" iyz="0" izz="1e-4"/>
     </inertial>
   </link>
-  <constraint name="transmission_30" type="rolling">
+  <coupling name="transmission_30">
     <predecessor link="link_30"/>
     <successor link="rotor_30"/>
     <ratio value="6.0"/>
-  </constraint>
+  </coupling>
   <joint independent="true" name="link_30_to_link_31" type="revolute">
     <parent link="link_30"/>
     <child link="link_31"/>
@@ -528,11 +528,11 @@
       <inertia ixx="1e-4" ixy="0" ixz="0" iyy="1e-4" iyz="0" izz="1e-4"/>
     </inertial>
   </link>
-  <constraint name="transmission_31" type="rolling">
+  <coupling name="transmission_31">
     <predecessor link="link_31"/>
     <successor link="rotor_31"/>
     <ratio value="6.0"/>
-  </constraint>
+  </coupling>
   <joint independent="true" name="link_4_to_link_22" type="revolute">
     <parent link="link_4"/>
     <child link="link_22"/>
@@ -561,11 +561,11 @@
       <inertia ixx="1e-4" ixy="0" ixz="0" iyy="1e-4" iyz="0" izz="1e-4"/>
     </inertial>
   </link>
-  <constraint name="transmission_22" type="rolling">
+  <coupling name="transmission_22">
     <predecessor link="link_22"/>
     <successor link="rotor_22"/>
     <ratio value="6.0"/>
-  </constraint>
+  </coupling>
   <joint independent="true" name="link_22_to_link_23" type="revolute">
     <parent link="link_22"/>
     <child link="link_23"/>
@@ -594,11 +594,11 @@
       <inertia ixx="1e-4" ixy="0" ixz="0" iyy="1e-4" iyz="0" izz="1e-4"/>
     </inertial>
   </link>
-  <constraint name="transmission_23" type="rolling">
+  <coupling name="transmission_23">
     <predecessor link="link_23"/>
     <successor link="rotor_23"/>
     <ratio value="6.0"/>
-  </constraint>
+  </coupling>
   <joint independent="true" name="link_23_to_link_24" type="revolute">
     <parent link="link_23"/>
     <child link="link_24"/>
@@ -627,11 +627,11 @@
       <inertia ixx="1e-4" ixy="0" ixz="0" iyy="1e-4" iyz="0" izz="1e-4"/>
     </inertial>
   </link>
-  <constraint name="transmission_24" type="rolling">
+  <coupling name="transmission_24">
     <predecessor link="link_24"/>
     <successor link="rotor_24"/>
     <ratio value="6.0"/>
-  </constraint>
+  </coupling>
   <joint independent="true" name="link_24_to_link_25" type="revolute">
     <parent link="link_24"/>
     <child link="link_25"/>
@@ -660,11 +660,11 @@
       <inertia ixx="1e-4" ixy="0" ixz="0" iyy="1e-4" iyz="0" izz="1e-4"/>
     </inertial>
   </link>
-  <constraint name="transmission_25" type="rolling">
+  <coupling name="transmission_25">
     <predecessor link="link_25"/>
     <successor link="rotor_25"/>
     <ratio value="6.0"/>
-  </constraint>
+  </coupling>
   <joint independent="true" name="link_25_to_link_26" type="revolute">
     <parent link="link_25"/>
     <child link="link_26"/>
@@ -693,11 +693,11 @@
       <inertia ixx="1e-4" ixy="0" ixz="0" iyy="1e-4" iyz="0" izz="1e-4"/>
     </inertial>
   </link>
-  <constraint name="transmission_26" type="rolling">
+  <coupling name="transmission_26">
     <predecessor link="link_26"/>
     <successor link="rotor_26"/>
     <ratio value="6.0"/>
-  </constraint>
+  </coupling>
   <joint independent="true" name="link_3_to_link_17" type="revolute">
     <parent link="link_3"/>
     <child link="link_17"/>
@@ -726,11 +726,11 @@
       <inertia ixx="1e-4" ixy="0" ixz="0" iyy="1e-4" iyz="0" izz="1e-4"/>
     </inertial>
   </link>
-  <constraint name="transmission_17" type="rolling">
+  <coupling name="transmission_17">
     <predecessor link="link_17"/>
     <successor link="rotor_17"/>
     <ratio value="6.0"/>
-  </constraint>
+  </coupling>
   <joint independent="true" name="link_17_to_link_18" type="revolute">
     <parent link="link_17"/>
     <child link="link_18"/>
@@ -759,11 +759,11 @@
       <inertia ixx="1e-4" ixy="0" ixz="0" iyy="1e-4" iyz="0" izz="1e-4"/>
     </inertial>
   </link>
-  <constraint name="transmission_18" type="rolling">
+  <coupling name="transmission_18">
     <predecessor link="link_18"/>
     <successor link="rotor_18"/>
     <ratio value="6.0"/>
-  </constraint>
+  </coupling>
   <joint independent="true" name="link_18_to_link_19" type="revolute">
     <parent link="link_18"/>
     <child link="link_19"/>
@@ -792,11 +792,11 @@
       <inertia ixx="1e-4" ixy="0" ixz="0" iyy="1e-4" iyz="0" izz="1e-4"/>
     </inertial>
   </link>
-  <constraint name="transmission_19" type="rolling">
+  <coupling name="transmission_19">
     <predecessor link="link_19"/>
     <successor link="rotor_19"/>
     <ratio value="6.0"/>
-  </constraint>
+  </coupling>
   <joint independent="true" name="link_19_to_link_20" type="revolute">
     <parent link="link_19"/>
     <child link="link_20"/>
@@ -825,11 +825,11 @@
       <inertia ixx="1e-4" ixy="0" ixz="0" iyy="1e-4" iyz="0" izz="1e-4"/>
     </inertial>
   </link>
-  <constraint name="transmission_20" type="rolling">
+  <coupling name="transmission_20">
     <predecessor link="link_20"/>
     <successor link="rotor_20"/>
     <ratio value="6.0"/>
-  </constraint>
+  </coupling>
   <joint independent="true" name="link_20_to_link_21" type="revolute">
     <parent link="link_20"/>
     <child link="link_21"/>
@@ -858,11 +858,11 @@
       <inertia ixx="1e-4" ixy="0" ixz="0" iyy="1e-4" iyz="0" izz="1e-4"/>
     </inertial>
   </link>
-  <constraint name="transmission_21" type="rolling">
+  <coupling name="transmission_21">
     <predecessor link="link_21"/>
     <successor link="rotor_21"/>
     <ratio value="6.0"/>
-  </constraint>
+  </coupling>
   <joint independent="true" name="link_2_to_link_12" type="revolute">
     <parent link="link_2"/>
     <child link="link_12"/>
@@ -891,11 +891,11 @@
       <inertia ixx="1e-4" ixy="0" ixz="0" iyy="1e-4" iyz="0" izz="1e-4"/>
     </inertial>
   </link>
-  <constraint name="transmission_12" type="rolling">
+  <coupling name="transmission_12">
     <predecessor link="link_12"/>
     <successor link="rotor_12"/>
     <ratio value="6.0"/>
-  </constraint>
+  </coupling>
   <joint independent="true" name="link_12_to_link_13" type="revolute">
     <parent link="link_12"/>
     <child link="link_13"/>
@@ -924,11 +924,11 @@
       <inertia ixx="1e-4" ixy="0" ixz="0" iyy="1e-4" iyz="0" izz="1e-4"/>
     </inertial>
   </link>
-  <constraint name="transmission_13" type="rolling">
+  <coupling name="transmission_13">
     <predecessor link="link_13"/>
     <successor link="rotor_13"/>
     <ratio value="6.0"/>
-  </constraint>
+  </coupling>
   <joint independent="true" name="link_13_to_link_14" type="revolute">
     <parent link="link_13"/>
     <child link="link_14"/>
@@ -957,11 +957,11 @@
       <inertia ixx="1e-4" ixy="0" ixz="0" iyy="1e-4" iyz="0" izz="1e-4"/>
     </inertial>
   </link>
-  <constraint name="transmission_14" type="rolling">
+  <coupling name="transmission_14">
     <predecessor link="link_14"/>
     <successor link="rotor_14"/>
     <ratio value="6.0"/>
-  </constraint>
+  </coupling>
   <joint independent="true" name="link_14_to_link_15" type="revolute">
     <parent link="link_14"/>
     <child link="link_15"/>
@@ -990,11 +990,11 @@
       <inertia ixx="1e-4" ixy="0" ixz="0" iyy="1e-4" iyz="0" izz="1e-4"/>
     </inertial>
   </link>
-  <constraint name="transmission_15" type="rolling">
+  <coupling name="transmission_15">
     <predecessor link="link_15"/>
     <successor link="rotor_15"/>
     <ratio value="6.0"/>
-  </constraint>
+  </coupling>
   <joint independent="true" name="link_15_to_link_16" type="revolute">
     <parent link="link_15"/>
     <child link="link_16"/>
@@ -1023,11 +1023,11 @@
       <inertia ixx="1e-4" ixy="0" ixz="0" iyy="1e-4" iyz="0" izz="1e-4"/>
     </inertial>
   </link>
-  <constraint name="transmission_16" type="rolling">
+  <coupling name="transmission_16">
     <predecessor link="link_16"/>
     <successor link="rotor_16"/>
     <ratio value="6.0"/>
-  </constraint>
+  </coupling>
   <joint independent="true" name="link_1_to_link_7" type="revolute">
     <parent link="link_1"/>
     <child link="link_7"/>
@@ -1056,11 +1056,11 @@
       <inertia ixx="1e-4" ixy="0" ixz="0" iyy="1e-4" iyz="0" izz="1e-4"/>
     </inertial>
   </link>
-  <constraint name="transmission_7" type="rolling">
+  <coupling name="transmission_7">
     <predecessor link="link_7"/>
     <successor link="rotor_7"/>
     <ratio value="6.0"/>
-  </constraint>
+  </coupling>
   <joint independent="true" name="link_7_to_link_8" type="revolute">
     <parent link="link_7"/>
     <child link="link_8"/>
@@ -1089,11 +1089,11 @@
       <inertia ixx="1e-4" ixy="0" ixz="0" iyy="1e-4" iyz="0" izz="1e-4"/>
     </inertial>
   </link>
-  <constraint name="transmission_8" type="rolling">
+  <coupling name="transmission_8">
     <predecessor link="link_8"/>
     <successor link="rotor_8"/>
     <ratio value="6.0"/>
-  </constraint>
+  </coupling>
   <joint independent="true" name="link_8_to_link_9" type="revolute">
     <parent link="link_8"/>
     <child link="link_9"/>
@@ -1122,11 +1122,11 @@
       <inertia ixx="1e-4" ixy="0" ixz="0" iyy="1e-4" iyz="0" izz="1e-4"/>
     </inertial>
   </link>
-  <constraint name="transmission_9" type="rolling">
+  <coupling name="transmission_9">
     <predecessor link="link_9"/>
     <successor link="rotor_9"/>
     <ratio value="6.0"/>
-  </constraint>
+  </coupling>
   <joint independent="true" name="link_9_to_link_10" type="revolute">
     <parent link="link_9"/>
     <child link="link_10"/>
@@ -1155,11 +1155,11 @@
       <inertia ixx="1e-4" ixy="0" ixz="0" iyy="1e-4" iyz="0" izz="1e-4"/>
     </inertial>
   </link>
-  <constraint name="transmission_10" type="rolling">
+  <coupling name="transmission_10">
     <predecessor link="link_10"/>
     <successor link="rotor_10"/>
     <ratio value="6.0"/>
-  </constraint>
+  </coupling>
   <joint independent="true" name="link_10_to_link_11" type="revolute">
     <parent link="link_10"/>
     <child link="link_11"/>
@@ -1188,10 +1188,9 @@
       <inertia ixx="1e-4" ixy="0" ixz="0" iyy="1e-4" iyz="0" izz="1e-4"/>
     </inertial>
   </link>
-  <constraint name="transmission_11" type="rolling">
+  <coupling name="transmission_11">
     <predecessor link="link_11"/>
     <successor link="rotor_11"/>
     <ratio value="6.0"/>
-  </constraint>
+  </coupling>
 </robot>
-

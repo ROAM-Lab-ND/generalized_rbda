@@ -64,13 +64,14 @@
         <axis xyz="0 0 1"/>
     </joint>
 
-    <constraint name="linkage" type="position">
+    <loop name="linkage" type="revolute">
         <predecessor link="foot">
             <origin xyz="0.031 0.0 0.0"/>
         </predecessor>
         <successor link="shank_support">
             <origin xyz="0.096 0.0 0.0"/>
         </successor>
-    </constraint>
+        <axis xyz="0 0 1"/>
+    </loop>
 
 </robot>

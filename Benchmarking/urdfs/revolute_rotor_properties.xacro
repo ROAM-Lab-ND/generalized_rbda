@@ -52,11 +52,11 @@
     </xacro:macro>
 
     <xacro:macro name="transmission" params="name predecessor successor">
-        <constraint name="${name}" type="rolling">
+        <coupling name="${name}">
             <predecessor link="${predecessor}"/>
             <successor link="${successor}"/>
             <ratio value="6.0"/>
-        </constraint>
+        </coupling>
     </xacro:macro>
 
     <xacro:macro name="root_branch" params="branch_count">

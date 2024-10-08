@@ -213,8 +213,8 @@ namespace grbda
                 options["expand"] = true;   
                 options["error_on_fail"] = true;
                 this->random_state_helpers_.phi_root_finder = casadi::rootfinder("solver", "newton",
-                                                                           rootfinder_problem,
-                                                                           options);
+                                                                                 rootfinder_problem,
+                                                                                 options);
             }
 
             // Explicit constraint Jacobian
@@ -222,7 +222,7 @@ namespace grbda
                 SX cs_q_sym = SX::sym("q", this->numSpanningPos());
                 DVec<SX> q_sym(this->numSpanningPos());
                 casadi::copy(cs_q_sym, q_sym);
-                JointCoordinate<SX> joint_pos(q_sym, false);
+                JointCoordinate<SX> joint_pos(q_sym, true);
                 symbolic.updateJacobians(joint_pos);
                 DMat<SX> G = symbolic.G();
                 SX G_sym = casadi::SX(casadi::Sparsity::dense(G.rows(), G.cols()));

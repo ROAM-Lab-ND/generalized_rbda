@@ -12,8 +12,8 @@ struct RobotSpecification
     std::ofstream timing_outfile;
     std::string name;
 
-    RobotSpecification(std::string urdf_filename, std::string outfile_suffix = "systems")
-        : urdf_filename(urdf_filename), outfile_suffix(outfile_suffix)
+    RobotSpecification(std::string urdf_filename_, std::string outfile_suffix_ = "systems")
+        : urdf_filename(urdf_filename_), outfile_suffix(outfile_suffix_)
     {
         registerNameFromUrdfFilename(urdf_filename);
         openOutfile();
@@ -88,19 +88,19 @@ struct BranchAndDepthSpecification : public RobotSpecification
     int branch_count;
     int depth_count;
 
-    BranchAndDepthSpecification(std::string urdf_filename,
-                                std::string outfile_suffix = "revolute_chain")
-        : RobotSpecification(urdf_filename, outfile_suffix)
+    BranchAndDepthSpecification(std::string urdf_filename_,
+                                std::string outfile_suffix_ = "revolute_chain")
+        : RobotSpecification(urdf_filename_, outfile_suffix_)
     {
         registerBranchAndDepthCountFromName(name);
     }
 
-    void registerBranchAndDepthCountFromName(const std::string &name)
+    void registerBranchAndDepthCountFromName(const std::string &name_)
     {
         std::regex re(R"(_(\d+)_+(\d+)_?)");
         std::smatch match;
 
-        if (std::regex_search(name, match, re) && match.size() > 2)
+        if (std::regex_search(name_, match, re) && match.size() > 2)
         {
             branch_count = std::stoi(match.str(1));
             depth_count = std::stoi(match.str(2));
@@ -265,7 +265,9 @@ TEST_P(PinocchioNumericalValidation, forward_dynamics)
 
             std::shared_ptr<LoopConstraint> constraint = cluster->joint_->cloneLoopConstraint();
             if (!constraint->isExplicit())
+            {
                 ASSERT_TRUE(constraint->isValidSpanningPosition(spanning_joint_state.position));
+            }
             constraint->updateJacobians(spanning_joint_state.position);
             ASSERT_TRUE(constraint->isValidSpanningVelocity(spanning_joint_state.velocity));
 

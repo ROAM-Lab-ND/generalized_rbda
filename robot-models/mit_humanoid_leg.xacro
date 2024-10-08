@@ -45,11 +45,11 @@
             </inertial>
         </link>
 
-        <constraint name="hipz_transmission" type="rolling">
+        <coupling name="hipz_transmission">
             <predecessor link="${prefix}hip_rz_link"/>
             <successor link="${prefix}hip_rz_rotor"/>
             <ratio value="6.0"/>
-        </constraint>
+        </coupling>
     </xacro:macro>
 
     <!-- Hip Abduction/Adduction -->
@@ -89,11 +89,11 @@
             </inertial>
         </link>
 
-        <constraint name="hipx_transmission" type="rolling">
+        <coupling name="hipx_transmission">
             <predecessor link="${prefix}hip_rx_link"/>
             <successor link="${prefix}hip_rx_rotor"/>
             <ratio value="6.0"/>
-        </constraint>
+        </coupling>
     </xacro:macro>
 
 
@@ -133,11 +133,11 @@
             </inertial>
         </link>
 
-        <constraint name="hipy_transmission" type="rolling">
+        <coupling name="hipy_transmission">
             <predecessor link="${prefix}hip_ry_link"/>
             <successor link="${prefix}hip_ry_rotor"/>
             <ratio value="6.0"/>
-        </constraint>
+        </coupling>
     </xacro:macro>
 
     <!-- Knee Flexion/Extension -->
@@ -176,11 +176,11 @@
             </inertial>
         </link>
 
-        <constraint name="knee_transmission" type="rolling">
+        <coupling name="knee_transmission">
             <predecessor link="${prefix}knee_link"/>
             <successor link="${prefix}knee_rotor"/>
             <ratio value="12.0"/>
-        </constraint>
+        </coupling>
     </xacro:macro>
 
     <!-- Ankle Flexion/Extension -->
@@ -219,11 +219,11 @@
             </inertial>
         </link>
 
-        <constraint name="ankle_transmission" type="rolling">
+        <coupling name="ankle_transmission">
             <predecessor link="${prefix}ankle_link"/>
             <successor link="${prefix}ankle_rotor"/>
             <ratio value="12.0"/>
-        </constraint>
+        </coupling>
     </xacro:macro>
 
     <link name="base"/>
