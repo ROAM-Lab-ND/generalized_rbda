@@ -100,7 +100,7 @@ namespace grbda
             throw std::runtime_error("Cluster must have at least one constraint");
         }
 
-        // TODO(@MatthewChignoli): This is an unnecessary restriction
+        // TODO(@MatthewChignoli): Relax this restriction
         // Verify that all constraints in the cluster are of the same class type
         auto constraint_class_type = cluster_constraints.front()->class_type;
         for (urdf::ConstraintSharedPtr constraint : cluster_constraints)
@@ -109,10 +109,27 @@ namespace grbda
                 throw std::runtime_error("All constraints in cluster must be of same class type");
         }
 
+        // Helper function for creating a subchain of bodies from one body to another
+        auto subchainFromTo = [this, bodies_sx](const std::string &from,
+                                                const std::string &to) -> std::vector<Body<SX>>
+        {
+            std::vector<Body<SX>> subchain;
+            std::string link_name = from;
+            while (link_name != to)
+            {
+                const Body<Scalar> &body_i = body(link_name);
+                const int sub_index = body_i.sub_index_within_cluster_;
+                subchain.push_back(bodies_sx[sub_index]);
+                const int& parent_index = body_i.parent_index_;
+                if (parent_index == -1)
+                    break;
+                link_name = body(parent_index).name_;
+            }
+            return subchain;
+        };
+
         if (constraint_class_type == urdf::Constraint::LOOP)
         {
-            // TODO(@MatthewChignoli): Now check that all of the loop constraints come from the same joint type
-
             // For each constraint, collect the captures that will be supplied to the lambda 
             // function encoding the constraint
             std::vector<LoopConstraintCapture> constraint_captures;
@@ -121,32 +138,13 @@ namespace grbda
                 urdf::LoopConstraintSharedPtr loop_constraint =
                     std::dynamic_pointer_cast<urdf::LoopConstraint>(constraint);
 
-                std::vector<Body<SX>> predecessor_to_nca_subchain, successor_to_nca_subchain;
+                std::vector<Body<SX>> predecessor_to_nca_subchain =
+                    subchainFromTo(loop_constraint->predecessor_link_name,
+                                   loop_constraint->nearest_common_ancestor_name);
 
-                // TODO(@MatthewChignoli): Helper function for this
-                std::string link_name = constraint->predecessor_link_name;
-                while (link_name != constraint->nearest_common_ancestor_name)
-                {
-                    const Body<Scalar> &body_i = body(link_name);
-                    const int sub_index = body_i.sub_index_within_cluster_;
-                    predecessor_to_nca_subchain.push_back(bodies_sx[sub_index]);
-                    const int& parent_index = body_i.parent_index_;
-                    if (parent_index == -1)
-                        break;
-                    link_name = body(parent_index).name_;
-                }
-
-                link_name = constraint->successor_link_name;
-                while (link_name != constraint->nearest_common_ancestor_name)
-                {
-                    const Body<Scalar> &body_i = body(link_name);
-                    const int sub_index = body_i.sub_index_within_cluster_;
-                    successor_to_nca_subchain.push_back(bodies_sx[sub_index]);
-                    const int& parent_index = body_i.parent_index_;
-                    if (parent_index == -1)
-                        break;
-                    link_name = body(parent_index).name_;
-                }
+                std::vector<Body<SX>> successor_to_nca_subchain =
+                    subchainFromTo(loop_constraint->successor_link_name,
+                                   loop_constraint->nearest_common_ancestor_name);
 
                 LoopConstraintCapture capture;
                 for (auto it = predecessor_to_nca_subchain.rbegin();
@@ -188,32 +186,13 @@ namespace grbda
                 urdf::CouplingConstraintSharedPtr coupling_constraint =
                     std::dynamic_pointer_cast<urdf::CouplingConstraint>(constraint);
 
-                std::vector<Body<SX>> predecessor_to_nca_subchain, successor_to_nca_subchain;
+                std::vector<Body<SX>> predecessor_to_nca_subchain =
+                    subchainFromTo(coupling_constraint->predecessor_link_name,
+                                   coupling_constraint->nearest_common_ancestor_name);
 
-                // TODO(@MatthewChignoli): Helper function for this
-                std::string link_name = constraint->predecessor_link_name;
-                while (link_name != constraint->nearest_common_ancestor_name)
-                {
-                    const Body<Scalar> &body_i = body(link_name);
-                    const int sub_index = body_i.sub_index_within_cluster_;
-                    predecessor_to_nca_subchain.push_back(bodies_sx[sub_index]);
-                    const int& parent_index = body_i.parent_index_;
-                    if (parent_index == -1)
-                        break;
-                    link_name = body(parent_index).name_;
-                }
-
-                link_name = constraint->successor_link_name;
-                while (link_name != constraint->nearest_common_ancestor_name)
-                {
-                    const Body<Scalar> &body_i = body(link_name);
-                    const int sub_index = body_i.sub_index_within_cluster_;
-                    successor_to_nca_subchain.push_back(bodies_sx[sub_index]);
-                    const int& parent_index = body_i.parent_index_;
-                    if (parent_index == -1)
-                        break;
-                    link_name = body(parent_index).name_;
-                }
+                std::vector<Body<SX>> successor_to_nca_subchain =
+                    subchainFromTo(coupling_constraint->successor_link_name,
+                                   coupling_constraint->nearest_common_ancestor_name);
 
                 CouplingConstraintCapture capture;
                 for (auto it = predecessor_to_nca_subchain.rbegin();
