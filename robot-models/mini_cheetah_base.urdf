@@ -5,9 +5,7 @@
         <inertial>
             <mass value="3.3"/>
             <origin xyz="0.0 0.0 0.0"/>
-            <inertia ixx="11253 * 1e-6" ixy="0" 
-                     ixz="0" iyy="36203 * 1e-6" 
-                     iyz="0" izz="42673 * 1e-6"/>
+            <inertia ixx="0.011252999999999999" ixy="0" ixz="0" iyy="0.036203" iyz="0" izz="0.042672999999999996"/>
         </inertial>
     </link>
     <joint name="base_to_floating_base" type="floating">

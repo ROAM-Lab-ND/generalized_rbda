@@ -39,14 +39,12 @@ namespace grbda
             buildFromUrdfModelInterface(model);
         }
         
-        // TODO(@MatthewChignoli): Implement this
-        // void buildModelFromURDF(
-        //     const std::vector<std::string> &urdf_filenames)
-        // {
-        //     std::shared_ptr<urdf::ModelInterface> model;
-        //     model = urdf::parseURDFFiles(urdf_filenames, false);
-        //     buildFromUrdfModelInterface(model);
-        // }
+        void buildModelFromURDF(const std::vector<std::string> &urdf_filenames)
+        {
+            urdf::ModelInterfaceSharedPtr model;
+            model = urdf::parseURDFFiles(urdf_filenames);
+            buildFromUrdfModelInterface(model);
+        }
 
         // The standard process for appending a cluster to the tree is to register all the bodies
         // in  given cluster and then append them as a cluster by specifying the type of cluster

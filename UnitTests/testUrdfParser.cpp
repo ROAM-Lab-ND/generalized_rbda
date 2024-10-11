@@ -1,6 +1,7 @@
 #include "gtest/gtest.h"
 
 #include "config.h"
+#include <tinyxml2.h>
 #include "urdf_parser/urdf_parser.h"
 
 // These tests validate the performance of the urdf parser, which is used to create 
@@ -394,84 +395,82 @@ TEST_P(ClustersTest, children)
     }
 }
 
-// TODO(@MatthewChignoli): Add this test back in
-// TEST(parser, combined_parse)
-// {
-//     std::vector<std::string> files;
-//     files.push_back(urdf_directory + "mini_cheetah_base.urdf");
-//     files.push_back(urdf_directory + "mini_cheetah_fr_leg.urdf");
-//     files.push_back(urdf_directory + "mini_cheetah_fl_leg.urdf");
-//     files.push_back(urdf_directory + "mini_cheetah_hr_leg.urdf");
-//     files.push_back(urdf_directory + "mini_cheetah_hl_leg.urdf");
-//     std::shared_ptr<ModelInterface> combined_model = parseURDFFiles(files, false);
+TEST(parser, combined_parse)
+{
+    std::vector<std::string> files;
+    files.push_back(urdf_directory + "mini_cheetah_base.urdf");
+    files.push_back(urdf_directory + "mini_cheetah_fr_leg.urdf");
+    files.push_back(urdf_directory + "mini_cheetah_fl_leg.urdf");
+    files.push_back(urdf_directory + "mini_cheetah_hr_leg.urdf");
+    files.push_back(urdf_directory + "mini_cheetah_hl_leg.urdf");
+    std::shared_ptr<ModelInterface> combined_model = parseURDFFiles(files);
 
-//     std::shared_ptr<ModelInterface> model = parseURDFFile(urdf_directory + "mini_cheetah.urdf");
+    std::shared_ptr<ModelInterface> model = parseURDFFile(urdf_directory + "mini_cheetah.urdf");
 
-//     // Verify the models have the same size and root
-//     ASSERT_EQ(combined_model->links_.size(), model->links_.size());
-//     ASSERT_EQ(combined_model->joints_.size(), model->joints_.size());
-//     ASSERT_EQ(combined_model->constraints_.size(), model->constraints_.size());
-//     ASSERT_EQ(combined_model->getRoot()->name, model->getRoot()->name);
+    // Verify the models have the same size and root
+    ASSERT_EQ(combined_model->links_.size(), model->links_.size());
+    ASSERT_EQ(combined_model->joints_.size(), model->joints_.size());
+    ASSERT_EQ(combined_model->constraints_.size(), model->constraints_.size());
+    ASSERT_EQ(combined_model->getRoot()->name, model->getRoot()->name);
 
-//     // Verify that the links are the same
-//     for (const auto &link : combined_model->links_)
-//     {
-//         ASSERT_TRUE(model->getLink(link->name) != nullptr);
-//     }
-//     for (const auto &link : model->links_)
-//     {
-//         ASSERT_TRUE(combined_model->getLink(link->name) != nullptr);
-//     }
+    // Verify that the links are the same
+    for (const auto &[name, link] : combined_model->links_)
+    {
+        ASSERT_TRUE(model->getLink(name) != nullptr);
+    }
+    for (const auto &[name, link] : model->links_)
+    {
+        ASSERT_TRUE(combined_model->getLink(name) != nullptr);
+    }
 
-//     // Verify that the joints are the same
-//     for (const auto &joint : combined_model->joints_)
-//     {
-//         ASSERT_TRUE(model->getJoint(joint.second->name) != nullptr);
-//     }
-//     for (const auto &joint : model->joints_)
-//     {
-//         ASSERT_TRUE(combined_model->getJoint(joint.second->name) != nullptr);
-//     }
+    // Verify that the joints are the same
+    for (const auto &[name, joint] : combined_model->joints_)
+    {
+        ASSERT_TRUE(model->getJoint(name) != nullptr);
+    }
+    for (const auto &[name, joint] : model->joints_)
+    {
+        ASSERT_TRUE(combined_model->getJoint(name) != nullptr);
+    }
 
-//     // Verify that the constraints are the same
-//     for (const auto &constraint : combined_model->constraints_)
-//     {
-//         ASSERT_TRUE(model->getConstraint(constraint.second->name) != nullptr);
-//     }
-//     for (const auto &constraint : model->constraints_)
-//     {
-//         ASSERT_TRUE(combined_model->getConstraint(constraint.second->name) != nullptr);
-//     }
-// }
+    // Verify that the constraints are the same
+    for (const auto &[name, constraint] : combined_model->constraints_)
+    {
+        ASSERT_TRUE(model->getConstraint(name) != nullptr);
+    }
+    for (const auto &[name, constraint] : model->constraints_)
+    {
+        ASSERT_TRUE(combined_model->getConstraint(name) != nullptr);
+    }
+}
 
 
-// TODO(@MatthewChignoli): Add this test back in
-// class ExporterTest : public ::testing::TestWithParam<std::string>
-// {
-//     void SetUp() override
-//     {
-//         urdf_file_name = urdf_directory + GetParam() + ".urdf";
-//         exported_file_name = urdf_directory + GetParam() + "_exported.urdf";
-//     }
+class ExporterTest : public ::testing::TestWithParam<std::string>
+{
+    void SetUp() override
+    {
+        urdf_file_name = urdf_directory + GetParam() + ".urdf";
+        exported_file_name = urdf_directory + GetParam() + "_exported.urdf";
+    }
 
-//     void TearDown() override
-//     {
-//         std::remove(exported_file_name.c_str());
-//     }
+    void TearDown() override
+    {
+        std::remove(exported_file_name.c_str());
+    }
 
-// protected:
-//     std::string urdf_file_name;
-//     std::string exported_file_name;
-// };
+protected:
+    std::string urdf_file_name;
+    std::string exported_file_name;
+};
 
-// INSTANTIATE_TEST_SUITE_P(ExporterTest, ExporterTest, ::testing::ValuesIn(GetTestUrdfFiles()));
+INSTANTIATE_TEST_SUITE_P(ExporterTest, ExporterTest, ::testing::ValuesIn(GetTestUrdfFiles()));
 
-// TEST_P(ExporterTest, parseAndExport)
-// {
-//     std::shared_ptr<ModelInterface> model = parseURDFFile(urdf_file_name);
-//     ASSERT_TRUE(model != nullptr);
-//     tinyxml2::XMLDocument *xml_doc = exportURDF(model);
-//     ASSERT_TRUE(xml_doc != nullptr);
-//     xml_doc->SaveFile(exported_file_name);
-//     delete xml_doc;
-// }
+TEST_P(ExporterTest, parseAndExport)
+{
+    ModelInterfaceSharedPtr model = parseURDFFile(urdf_file_name);
+    ASSERT_TRUE(model != nullptr);
+    tinyxml2::XMLDocument *xml_doc = exportURDF(model);
+    ASSERT_TRUE(xml_doc != nullptr);
+    xml_doc->SaveFile(exported_file_name.c_str());
+    delete xml_doc;
+}
