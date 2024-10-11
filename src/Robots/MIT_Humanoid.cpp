@@ -28,9 +28,8 @@ namespace grbda
         Vec3<Scalar> torsoDims(_torsoLength, _torsoWidth, _torsoHeight);
         model.appendContactBox(torso_name, torsoDims);
 
-        for (int legID = 0; legID < 2; legID++)
+        auto appendLeg = [&](const int &legID)
         {
-
             // HipRz
             const std::string hip_rz_parent_name = torso_name;
             const std::string hip_rz_name = withLeftRightSigns("hip_rz", legID);
@@ -152,15 +151,6 @@ namespace grbda
             const spatial::Transform<Scalar> xtreeKnee(I3, kneeLocation);
             const spatial::Transform<Scalar> xtreeKneeRotor(I3, kneeRotorLocation);
 
-            Body<Scalar> knee_link = model.registerBody(knee_link_name, knee_link_inertia,
-                                                        knee_parent_name, xtreeKnee);
-            Body<Scalar> knee_rotor = model.registerBody(knee_rotor_name, knee_rotor_inertia,
-                                                         knee_parent_name, xtreeKneeRotor);
-
-            KneeTransModule knee_module{knee_link, knee_rotor,
-                                        ori::CoordinateAxis::Y, ori::CoordinateAxis::Y,
-                                        _kneeGearRatio, _kneeBeltRatios};
-
             // Ankle
             const std::string ankle_parent_name = knee_link_name;
             const std::string ankle_link_name = withLeftRightSigns("ankle_link", legID);
@@ -178,16 +168,24 @@ namespace grbda
             const spatial::Transform<Scalar> xtreeAnkle(I3, ankleLocation);
             const spatial::Transform<Scalar> xtreeAnkleRotor(I3, ankleRotorLocation);
 
+            // Cluster
             Body<Scalar> ankle_rotor = model.registerBody(ankle_rotor_name, ankle_rotor_inertia,
                                                           knee_parent_name, xtreeAnkleRotor);
+            Body<Scalar> knee_link = model.registerBody(knee_link_name, knee_link_inertia,
+                                                        knee_parent_name, xtreeKnee);
+            Body<Scalar> knee_rotor = model.registerBody(knee_rotor_name, knee_rotor_inertia,
+                                                         knee_parent_name, xtreeKneeRotor);
             Body<Scalar> ankle_link = model.registerBody(ankle_link_name, ankle_link_inertia,
                                                          ankle_parent_name, xtreeAnkle);
+
+            KneeTransModule knee_module{knee_link, knee_rotor,
+                                        ori::CoordinateAxis::Y, ori::CoordinateAxis::Y,
+                                        _kneeGearRatio, _kneeBeltRatios};
 
             AnkleTransModule ankle_module{ankle_link, ankle_rotor,
                                           ori::CoordinateAxis::Y, ori::CoordinateAxis::Y,
                                           _ankleGearRatio, _ankleBeltRatios};
 
-            // Cluster
             const std::string knee_and_ankle_name = withLeftRightSigns("knee_and_ankle", legID);
             model.template appendRegisteredBodiesAsCluster<RevolutePairWithRotor>(
                 knee_and_ankle_name, knee_module, ankle_module);
@@ -206,9 +204,9 @@ namespace grbda
             model.appendContactPoint(ankle_link_name,
                                      Vec3<Scalar>(-_footHeelLength, 0, -_footHeight),
                                      heel_contact_name);
-        }
+        };
 
-        for (int armID = 0; armID < 2; armID++)
+        auto appendArm = [&](const int &armID)
         {
             // ShoulderRy
             const std::string shoulder_ry_parent_name = torso_name;
@@ -349,7 +347,12 @@ namespace grbda
             model.appendContactPoint(elbow_link_name, Vec3<Scalar>(0, 0, 0), elbow_contact_name);
             model.appendContactPoint(elbow_link_name, Vec3<Scalar>(0, 0, -_lowerArmLength),
                                      hand_contact_name);
-        }
+        };
+
+        appendArm(0);
+        appendLeg(0);
+        appendArm(1);
+        appendLeg(1);
 
         return model;
     }

@@ -92,22 +92,22 @@
         <limit effort="30" velocity="1.0" lower="-10" upper="10"/>
     </joint>
 
-    <constraint name="transmission1" type="rolling">
+    <coupling name="transmission1" type="rolling">
         <predecessor link="link-0"/>
         <successor link="rotor-0"/>
         <ratio value="6.0"/>
-    </constraint>
+    </coupling>
 
-    <constraint name="transmission2" type="rolling">
+    <coupling name="transmission2" type="rolling">
         <predecessor link="link-1"/>
         <successor link="rotor-1"/>
         <ratio value="6.0"/>
-    </constraint>
+    </coupling>
 
-    <constraint name="transmission3" type="rolling">
+    <coupling name="transmission3" type="rolling">
         <predecessor link="link-2"/>
         <successor link="rotor-2"/>
         <ratio value="6.0"/>
-    </constraint>
+    </coupling>
 
 </robot>

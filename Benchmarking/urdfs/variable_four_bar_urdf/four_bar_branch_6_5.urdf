@@ -74,14 +74,15 @@
     <axis xyz="0 0 1"/>
     <limit effort="30" lower="-10" upper="10" velocity="1.0"/>
   </joint>
-  <constraint name="constraint_16" type="position">
+  <loop name="constraint_16" type="revolute">
     <predecessor link="link_16">
       <origin xyz="0.5 0.0 0.0"/>
     </predecessor>
     <successor link="link_18">
       <origin xyz="1.0 0.0 0.0"/>
     </successor>
-  </constraint>
+    <axis xyz="0 0 1"/>
+  </loop>
   <link name="link_13">
     <inertial>
       <mass value="3.3"/>
@@ -151,14 +152,15 @@
     <axis xyz="0 0 1"/>
     <limit effort="30" lower="-10" upper="10" velocity="1.0"/>
   </joint>
-  <constraint name="constraint_13" type="position">
+  <loop name="constraint_13" type="revolute">
     <predecessor link="link_13">
       <origin xyz="0.5 0.0 0.0"/>
     </predecessor>
     <successor link="link_15">
       <origin xyz="1.0 0.0 0.0"/>
     </successor>
-  </constraint>
+    <axis xyz="0 0 1"/>
+  </loop>
   <link name="link_10">
     <inertial>
       <mass value="3.3"/>
@@ -228,14 +230,15 @@
     <axis xyz="0 0 1"/>
     <limit effort="30" lower="-10" upper="10" velocity="1.0"/>
   </joint>
-  <constraint name="constraint_10" type="position">
+  <loop name="constraint_10" type="revolute">
     <predecessor link="link_10">
       <origin xyz="0.5 0.0 0.0"/>
     </predecessor>
     <successor link="link_12">
       <origin xyz="1.0 0.0 0.0"/>
     </successor>
-  </constraint>
+    <axis xyz="0 0 1"/>
+  </loop>
   <link name="link_7">
     <inertial>
       <mass value="3.3"/>
@@ -305,14 +308,15 @@
     <axis xyz="0 0 1"/>
     <limit effort="30" lower="-10" upper="10" velocity="1.0"/>
   </joint>
-  <constraint name="constraint_7" type="position">
+  <loop name="constraint_7" type="revolute">
     <predecessor link="link_7">
       <origin xyz="0.5 0.0 0.0"/>
     </predecessor>
     <successor link="link_9">
       <origin xyz="1.0 0.0 0.0"/>
     </successor>
-  </constraint>
+    <axis xyz="0 0 1"/>
+  </loop>
   <link name="link_4">
     <inertial>
       <mass value="3.3"/>
@@ -382,14 +386,15 @@
     <axis xyz="0 0 1"/>
     <limit effort="30" lower="-10" upper="10" velocity="1.0"/>
   </joint>
-  <constraint name="constraint_4" type="position">
+  <loop name="constraint_4" type="revolute">
     <predecessor link="link_4">
       <origin xyz="0.5 0.0 0.0"/>
     </predecessor>
     <successor link="link_6">
       <origin xyz="1.0 0.0 0.0"/>
     </successor>
-  </constraint>
+    <axis xyz="0 0 1"/>
+  </loop>
   <link name="link_1">
     <inertial>
       <mass value="3.3"/>
@@ -459,14 +464,15 @@
     <axis xyz="0 0 1"/>
     <limit effort="30" lower="-10" upper="10" velocity="1.0"/>
   </joint>
-  <constraint name="constraint_1" type="position">
+  <loop name="constraint_1" type="revolute">
     <predecessor link="link_1">
       <origin xyz="0.5 0.0 0.0"/>
     </predecessor>
     <successor link="link_3">
       <origin xyz="1.0 0.0 0.0"/>
     </successor>
-  </constraint>
+    <axis xyz="0 0 1"/>
+  </loop>
   <link name="link_79">
     <inertial>
       <mass value="3.3"/>
@@ -536,14 +542,15 @@
     <axis xyz="0 0 1"/>
     <limit effort="30" lower="-10" upper="10" velocity="1.0"/>
   </joint>
-  <constraint name="constraint_79" type="position">
+  <loop name="constraint_79" type="revolute">
     <predecessor link="link_79">
       <origin xyz="0.5 0.0 0.0"/>
     </predecessor>
     <successor link="link_81">
       <origin xyz="1.0 0.0 0.0"/>
     </successor>
-  </constraint>
+    <axis xyz="0 0 1"/>
+  </loop>
   <link name="link_82">
     <inertial>
       <mass value="3.3"/>
@@ -613,14 +620,15 @@
     <axis xyz="0 0 1"/>
     <limit effort="30" lower="-10" upper="10" velocity="1.0"/>
   </joint>
-  <constraint name="constraint_82" type="position">
+  <loop name="constraint_82" type="revolute">
     <predecessor link="link_82">
       <origin xyz="0.5 0.0 0.0"/>
     </predecessor>
     <successor link="link_84">
       <origin xyz="1.0 0.0 0.0"/>
     </successor>
-  </constraint>
+    <axis xyz="0 0 1"/>
+  </loop>
   <link name="link_85">
     <inertial>
       <mass value="3.3"/>
@@ -690,14 +698,15 @@
     <axis xyz="0 0 1"/>
     <limit effort="30" lower="-10" upper="10" velocity="1.0"/>
   </joint>
-  <constraint name="constraint_85" type="position">
+  <loop name="constraint_85" type="revolute">
     <predecessor link="link_85">
       <origin xyz="0.5 0.0 0.0"/>
     </predecessor>
     <successor link="link_87">
       <origin xyz="1.0 0.0 0.0"/>
     </successor>
-  </constraint>
+    <axis xyz="0 0 1"/>
+  </loop>
   <link name="link_88">
     <inertial>
       <mass value="3.3"/>
@@ -767,14 +776,15 @@
     <axis xyz="0 0 1"/>
     <limit effort="30" lower="-10" upper="10" velocity="1.0"/>
   </joint>
-  <constraint name="constraint_88" type="position">
+  <loop name="constraint_88" type="revolute">
     <predecessor link="link_88">
       <origin xyz="0.5 0.0 0.0"/>
     </predecessor>
     <successor link="link_90">
       <origin xyz="1.0 0.0 0.0"/>
     </successor>
-  </constraint>
+    <axis xyz="0 0 1"/>
+  </loop>
   <link name="link_67">
     <inertial>
       <mass value="3.3"/>
@@ -844,14 +854,15 @@
     <axis xyz="0 0 1"/>
     <limit effort="30" lower="-10" upper="10" velocity="1.0"/>
   </joint>
-  <constraint name="constraint_67" type="position">
+  <loop name="constraint_67" type="revolute">
     <predecessor link="link_67">
       <origin xyz="0.5 0.0 0.0"/>
     </predecessor>
     <successor link="link_69">
       <origin xyz="1.0 0.0 0.0"/>
     </successor>
-  </constraint>
+    <axis xyz="0 0 1"/>
+  </loop>
   <link name="link_70">
     <inertial>
       <mass value="3.3"/>
@@ -921,14 +932,15 @@
     <axis xyz="0 0 1"/>
     <limit effort="30" lower="-10" upper="10" velocity="1.0"/>
   </joint>
-  <constraint name="constraint_70" type="position">
+  <loop name="constraint_70" type="revolute">
     <predecessor link="link_70">
       <origin xyz="0.5 0.0 0.0"/>
     </predecessor>
     <successor link="link_72">
       <origin xyz="1.0 0.0 0.0"/>
     </successor>
-  </constraint>
+    <axis xyz="0 0 1"/>
+  </loop>
   <link name="link_73">
     <inertial>
       <mass value="3.3"/>
@@ -998,14 +1010,15 @@
     <axis xyz="0 0 1"/>
     <limit effort="30" lower="-10" upper="10" velocity="1.0"/>
   </joint>
-  <constraint name="constraint_73" type="position">
+  <loop name="constraint_73" type="revolute">
     <predecessor link="link_73">
       <origin xyz="0.5 0.0 0.0"/>
     </predecessor>
     <successor link="link_75">
       <origin xyz="1.0 0.0 0.0"/>
     </successor>
-  </constraint>
+    <axis xyz="0 0 1"/>
+  </loop>
   <link name="link_76">
     <inertial>
       <mass value="3.3"/>
@@ -1075,14 +1088,15 @@
     <axis xyz="0 0 1"/>
     <limit effort="30" lower="-10" upper="10" velocity="1.0"/>
   </joint>
-  <constraint name="constraint_76" type="position">
+  <loop name="constraint_76" type="revolute">
     <predecessor link="link_76">
       <origin xyz="0.5 0.0 0.0"/>
     </predecessor>
     <successor link="link_78">
       <origin xyz="1.0 0.0 0.0"/>
     </successor>
-  </constraint>
+    <axis xyz="0 0 1"/>
+  </loop>
   <link name="link_55">
     <inertial>
       <mass value="3.3"/>
@@ -1152,14 +1166,15 @@
     <axis xyz="0 0 1"/>
     <limit effort="30" lower="-10" upper="10" velocity="1.0"/>
   </joint>
-  <constraint name="constraint_55" type="position">
+  <loop name="constraint_55" type="revolute">
     <predecessor link="link_55">
       <origin xyz="0.5 0.0 0.0"/>
     </predecessor>
     <successor link="link_57">
       <origin xyz="1.0 0.0 0.0"/>
     </successor>
-  </constraint>
+    <axis xyz="0 0 1"/>
+  </loop>
   <link name="link_58">
     <inertial>
       <mass value="3.3"/>
@@ -1229,14 +1244,15 @@
     <axis xyz="0 0 1"/>
     <limit effort="30" lower="-10" upper="10" velocity="1.0"/>
   </joint>
-  <constraint name="constraint_58" type="position">
+  <loop name="constraint_58" type="revolute">
     <predecessor link="link_58">
       <origin xyz="0.5 0.0 0.0"/>
     </predecessor>
     <successor link="link_60">
       <origin xyz="1.0 0.0 0.0"/>
     </successor>
-  </constraint>
+    <axis xyz="0 0 1"/>
+  </loop>
   <link name="link_61">
     <inertial>
       <mass value="3.3"/>
@@ -1306,14 +1322,15 @@
     <axis xyz="0 0 1"/>
     <limit effort="30" lower="-10" upper="10" velocity="1.0"/>
   </joint>
-  <constraint name="constraint_61" type="position">
+  <loop name="constraint_61" type="revolute">
     <predecessor link="link_61">
       <origin xyz="0.5 0.0 0.0"/>
     </predecessor>
     <successor link="link_63">
       <origin xyz="1.0 0.0 0.0"/>
     </successor>
-  </constraint>
+    <axis xyz="0 0 1"/>
+  </loop>
   <link name="link_64">
     <inertial>
       <mass value="3.3"/>
@@ -1383,14 +1400,15 @@
     <axis xyz="0 0 1"/>
     <limit effort="30" lower="-10" upper="10" velocity="1.0"/>
   </joint>
-  <constraint name="constraint_64" type="position">
+  <loop name="constraint_64" type="revolute">
     <predecessor link="link_64">
       <origin xyz="0.5 0.0 0.0"/>
     </predecessor>
     <successor link="link_66">
       <origin xyz="1.0 0.0 0.0"/>
     </successor>
-  </constraint>
+    <axis xyz="0 0 1"/>
+  </loop>
   <link name="link_43">
     <inertial>
       <mass value="3.3"/>
@@ -1460,14 +1478,15 @@
     <axis xyz="0 0 1"/>
     <limit effort="30" lower="-10" upper="10" velocity="1.0"/>
   </joint>
-  <constraint name="constraint_43" type="position">
+  <loop name="constraint_43" type="revolute">
     <predecessor link="link_43">
       <origin xyz="0.5 0.0 0.0"/>
     </predecessor>
     <successor link="link_45">
       <origin xyz="1.0 0.0 0.0"/>
     </successor>
-  </constraint>
+    <axis xyz="0 0 1"/>
+  </loop>
   <link name="link_46">
     <inertial>
       <mass value="3.3"/>
@@ -1537,14 +1556,15 @@
     <axis xyz="0 0 1"/>
     <limit effort="30" lower="-10" upper="10" velocity="1.0"/>
   </joint>
-  <constraint name="constraint_46" type="position">
+  <loop name="constraint_46" type="revolute">
     <predecessor link="link_46">
       <origin xyz="0.5 0.0 0.0"/>
     </predecessor>
     <successor link="link_48">
       <origin xyz="1.0 0.0 0.0"/>
     </successor>
-  </constraint>
+    <axis xyz="0 0 1"/>
+  </loop>
   <link name="link_49">
     <inertial>
       <mass value="3.3"/>
@@ -1614,14 +1634,15 @@
     <axis xyz="0 0 1"/>
     <limit effort="30" lower="-10" upper="10" velocity="1.0"/>
   </joint>
-  <constraint name="constraint_49" type="position">
+  <loop name="constraint_49" type="revolute">
     <predecessor link="link_49">
       <origin xyz="0.5 0.0 0.0"/>
     </predecessor>
     <successor link="link_51">
       <origin xyz="1.0 0.0 0.0"/>
     </successor>
-  </constraint>
+    <axis xyz="0 0 1"/>
+  </loop>
   <link name="link_52">
     <inertial>
       <mass value="3.3"/>
@@ -1691,14 +1712,15 @@
     <axis xyz="0 0 1"/>
     <limit effort="30" lower="-10" upper="10" velocity="1.0"/>
   </joint>
-  <constraint name="constraint_52" type="position">
+  <loop name="constraint_52" type="revolute">
     <predecessor link="link_52">
       <origin xyz="0.5 0.0 0.0"/>
     </predecessor>
     <successor link="link_54">
       <origin xyz="1.0 0.0 0.0"/>
     </successor>
-  </constraint>
+    <axis xyz="0 0 1"/>
+  </loop>
   <link name="link_31">
     <inertial>
       <mass value="3.3"/>
@@ -1768,14 +1790,15 @@
     <axis xyz="0 0 1"/>
     <limit effort="30" lower="-10" upper="10" velocity="1.0"/>
   </joint>
-  <constraint name="constraint_31" type="position">
+  <loop name="constraint_31" type="revolute">
     <predecessor link="link_31">
       <origin xyz="0.5 0.0 0.0"/>
     </predecessor>
     <successor link="link_33">
       <origin xyz="1.0 0.0 0.0"/>
     </successor>
-  </constraint>
+    <axis xyz="0 0 1"/>
+  </loop>
   <link name="link_34">
     <inertial>
       <mass value="3.3"/>
@@ -1845,14 +1868,15 @@
     <axis xyz="0 0 1"/>
     <limit effort="30" lower="-10" upper="10" velocity="1.0"/>
   </joint>
-  <constraint name="constraint_34" type="position">
+  <loop name="constraint_34" type="revolute">
     <predecessor link="link_34">
       <origin xyz="0.5 0.0 0.0"/>
     </predecessor>
     <successor link="link_36">
       <origin xyz="1.0 0.0 0.0"/>
     </successor>
-  </constraint>
+    <axis xyz="0 0 1"/>
+  </loop>
   <link name="link_37">
     <inertial>
       <mass value="3.3"/>
@@ -1922,14 +1946,15 @@
     <axis xyz="0 0 1"/>
     <limit effort="30" lower="-10" upper="10" velocity="1.0"/>
   </joint>
-  <constraint name="constraint_37" type="position">
+  <loop name="constraint_37" type="revolute">
     <predecessor link="link_37">
       <origin xyz="0.5 0.0 0.0"/>
     </predecessor>
     <successor link="link_39">
       <origin xyz="1.0 0.0 0.0"/>
     </successor>
-  </constraint>
+    <axis xyz="0 0 1"/>
+  </loop>
   <link name="link_40">
     <inertial>
       <mass value="3.3"/>
@@ -1999,14 +2024,15 @@
     <axis xyz="0 0 1"/>
     <limit effort="30" lower="-10" upper="10" velocity="1.0"/>
   </joint>
-  <constraint name="constraint_40" type="position">
+  <loop name="constraint_40" type="revolute">
     <predecessor link="link_40">
       <origin xyz="0.5 0.0 0.0"/>
     </predecessor>
     <successor link="link_42">
       <origin xyz="1.0 0.0 0.0"/>
     </successor>
-  </constraint>
+    <axis xyz="0 0 1"/>
+  </loop>
   <link name="link_19">
     <inertial>
       <mass value="3.3"/>
@@ -2076,14 +2102,15 @@
     <axis xyz="0 0 1"/>
     <limit effort="30" lower="-10" upper="10" velocity="1.0"/>
   </joint>
-  <constraint name="constraint_19" type="position">
+  <loop name="constraint_19" type="revolute">
     <predecessor link="link_19">
       <origin xyz="0.5 0.0 0.0"/>
     </predecessor>
     <successor link="link_21">
       <origin xyz="1.0 0.0 0.0"/>
     </successor>
-  </constraint>
+    <axis xyz="0 0 1"/>
+  </loop>
   <link name="link_22">
     <inertial>
       <mass value="3.3"/>
@@ -2153,14 +2180,15 @@
     <axis xyz="0 0 1"/>
     <limit effort="30" lower="-10" upper="10" velocity="1.0"/>
   </joint>
-  <constraint name="constraint_22" type="position">
+  <loop name="constraint_22" type="revolute">
     <predecessor link="link_22">
       <origin xyz="0.5 0.0 0.0"/>
     </predecessor>
     <successor link="link_24">
       <origin xyz="1.0 0.0 0.0"/>
     </successor>
-  </constraint>
+    <axis xyz="0 0 1"/>
+  </loop>
   <link name="link_25">
     <inertial>
       <mass value="3.3"/>
@@ -2230,14 +2258,15 @@
     <axis xyz="0 0 1"/>
     <limit effort="30" lower="-10" upper="10" velocity="1.0"/>
   </joint>
-  <constraint name="constraint_25" type="position">
+  <loop name="constraint_25" type="revolute">
     <predecessor link="link_25">
       <origin xyz="0.5 0.0 0.0"/>
     </predecessor>
     <successor link="link_27">
       <origin xyz="1.0 0.0 0.0"/>
     </successor>
-  </constraint>
+    <axis xyz="0 0 1"/>
+  </loop>
   <link name="link_28">
     <inertial>
       <mass value="3.3"/>
@@ -2307,13 +2336,13 @@
     <axis xyz="0 0 1"/>
     <limit effort="30" lower="-10" upper="10" velocity="1.0"/>
   </joint>
-  <constraint name="constraint_28" type="position">
+  <loop name="constraint_28" type="revolute">
     <predecessor link="link_28">
       <origin xyz="0.5 0.0 0.0"/>
     </predecessor>
     <successor link="link_30">
       <origin xyz="1.0 0.0 0.0"/>
     </successor>
-  </constraint>
+    <axis xyz="0 0 1"/>
+  </loop>
 </robot>
-

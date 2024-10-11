@@ -21,7 +21,7 @@
 #include <type_traits>
 #include "cppTypes.h"
 #include "Utilities.h"
-#include "grbda/Urdf/pose.h"
+#include "urdf_model/pose.h"
 
 namespace grbda
 {
@@ -69,7 +69,7 @@ namespace grbda
 
     inline CoordinateAxis urdfAxisToCoordinateAxis(const urdf::Vector3 &axis)
     {
-      if (axis.norm() != 1)
+      if (sqrt(axis.x * axis.x + axis.y * axis.y + axis.z * axis.z) != 1)
       {
         throw std::runtime_error("Error: Joint axis must be a unit vector");
       }

@@ -98,14 +98,15 @@
     </xacro:macro>
 
     <xacro:macro name="constraint" params="name predecessor successor">
-        <constraint name="${name}" type="position">
+        <loop name="${name}" type="revolute">
             <predecessor link="${predecessor}">
                 <origin xyz="0.5 0.0 0.0"/>
             </predecessor>
             <successor link="${successor}">
                 <origin xyz="1.0 0.0 0.0"/>
             </successor>
-        </constraint>
+            <axis xyz="0 0 1"/>
+        </loop>
     </xacro:macro>
 
     <xacro:macro name="root_branch" params="branch_count">

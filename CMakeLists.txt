@@ -42,6 +42,16 @@ else()
   message(FATAL_ERROR "CasADi not found. Please install it or specify its location.")
 endif()
 
+set(urdfdom_HINT "/usr/local/")
+find_package(urdfdom REQUIRED HINTS ${urdfdom_HINT})
+if(urdfdom_FOUND)
+  message(STATUS "urdfdom_model found")
+  include_directories("${urdfdom_HINT}/include/urdfdom_headers")
+  include_directories("${urdfdom_HINT}/include/urdfdom")
+else()
+  message(FATAL_ERROR "urdfdom_model not found. Please install it or specify its location.")
+endif()
+
 ################################################################################
 # Setup Compilation
 ################################################################################
@@ -108,7 +118,7 @@ if(NOT GRBDA_SRCS)
 	set(LIBRARY_NAME)
 else()
   add_library(${PROJECT_NAME} ${GRBDA_SRCS})
-  target_link_libraries(${PROJECT_NAME} PRIVATE ${CASADI_LIBRARIES})
+  target_link_libraries(${PROJECT_NAME} PRIVATE ${CASADI_LIBRARIES} ${urdfdom_LIBRARIES})
 
   set(LIBRARY_NAME ${PROJECT_NAME})
   set_target_properties(${PROJECT_NAME} PROPERTIES POSITION_INDEPENDENT_CODE TRUE) 
