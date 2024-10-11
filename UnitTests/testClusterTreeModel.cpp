@@ -28,7 +28,7 @@ typedef Types<
     RevolutePairChainWithRotor<4>,
     RevoluteChainWithAndWithoutRotor<4ul, 4ul>,
     PlanarLegLinkage<>,
-    Tello, TeleopArm,
+    Tello<double>, TeleopArm,
     MIT_Humanoid<>,
     MIT_Humanoid<double, ori_representation::RollPitchYaw>,
     MIT_Humanoid_no_rotors<>,
@@ -68,28 +68,22 @@ TYPED_TEST(ClusterTreeModelTest, EndEffectors)
 
 const std::string urdf_directory = SOURCE_DIRECTORY "/robot-models/";
 
-struct URDFParserTestData
-{
-    std::string urdf_file;
-    bool floating_base;  
-};
-
 GTEST_TEST(UrdfParser, parseFile)
 {
-    std::vector<URDFParserTestData> test_data;
-    test_data.push_back({urdf_directory + "four_bar.urdf", false});
-    test_data.push_back({urdf_directory + "six_bar.urdf", false});
-    test_data.push_back({urdf_directory + "revolute_rotor_chain.urdf", false});
-    test_data.push_back({urdf_directory + "planar_leg_linkage.urdf", false});
-    test_data.push_back({urdf_directory + "mini_cheetah.urdf", true});
-    test_data.push_back({urdf_directory + "mit_humanoid_leg.urdf", false});
-    test_data.push_back({urdf_directory + "mit_humanoid.urdf", true});
+    std::vector<std::string> test_data;
+    test_data.push_back(urdf_directory + "four_bar.urdf");
+    test_data.push_back(urdf_directory + "six_bar.urdf");
+    test_data.push_back(urdf_directory + "revolute_rotor_chain.urdf");
+    test_data.push_back(urdf_directory + "planar_leg_linkage.urdf");
+    test_data.push_back(urdf_directory + "mini_cheetah.urdf");
+    test_data.push_back(urdf_directory + "mit_humanoid_leg.urdf");
+    test_data.push_back(urdf_directory + "mit_humanoid.urdf");
 
-    for (const URDFParserTestData &sample : test_data)
+    for (const std::string &sample : test_data)
     {
-        std::cout << "\n\nURDF file: " << sample.urdf_file << std::endl;
+        std::cout << "\n\nURDF file: " << sample << std::endl;
         ClusterTreeModel<double> cluster_model;
-        cluster_model.buildModelFromURDF(sample.urdf_file, sample.floating_base);
+        cluster_model.buildModelFromURDF(sample);
         cluster_model.print();
         GTEST_ASSERT_GT(cluster_model.bodies().size(), 0);
     }
@@ -101,27 +95,21 @@ struct URDFvsManualTestData
 {
     std::string urdf_file;
     RobotPtr robot;
-    bool floating_base;  
 };
 
 std::vector<URDFvsManualTestData> GetTestRobots()
 {
     std::vector<URDFvsManualTestData> test_data;
     test_data.push_back({urdf_directory + "planar_leg_linkage.urdf",
-                         std::make_shared<PlanarLegLinkage<double>>(),
-                         false});
+                         std::make_shared<PlanarLegLinkage<double>>()});
     test_data.push_back({urdf_directory + "revolute_rotor_chain.urdf",
-                         std::make_shared<RevoluteChainWithRotor<3, double>>(false),
-                         false});
+                         std::make_shared<RevoluteChainWithRotor<3, double>>(false)});
     test_data.push_back({urdf_directory + "mini_cheetah.urdf",
-                         std::make_shared<MiniCheetah<double>>(),
-                         true});
+                         std::make_shared<MiniCheetah<double>>()});
     test_data.push_back({urdf_directory + "mit_humanoid_leg.urdf",
-                         std::make_shared<MIT_Humanoid_Leg<double>>(),
-                         false});
+                         std::make_shared<MIT_Humanoid_Leg<double>>()});
     test_data.push_back({urdf_directory + "mit_humanoid.urdf",
-                         std::make_shared<MIT_Humanoid<double>>(),
-                         true});
+                         std::make_shared<MIT_Humanoid<double>>()});
     return test_data;
 }
 
@@ -132,7 +120,7 @@ protected:
     {
         std::cout << "URDF file: " << GetParam().urdf_file << std::endl;
         manual_model = GetParam().robot->buildClusterTreeModel();
-        urdf_model.buildModelFromURDF(GetParam().urdf_file, GetParam().floating_base);
+        urdf_model.buildModelFromURDF(GetParam().urdf_file);
         urdf_model.setGravity(manual_model.getGravity().tail<3>());
     }
 
@@ -169,6 +157,33 @@ TEST_P(URDFvsManualTests, compareToManuallyConstructed)
     for (int i = 0; i < 25; i++)
     {
         this->initializeRandomStates();
+        this->manual_model.forwardKinematics();
+        this->urdf_model.forwardKinematics();
+
+        // Verify the constraint Jacobians
+        for (size_t j = 0; j < this->manual_model.clusters().size(); j++)
+        {
+            auto manual_cluster = this->manual_model.cluster(j);
+            std::shared_ptr<LoopConstraint::Base<double>> constraint =
+                manual_cluster->joint_->cloneLoopConstraint();
+            DMat<double> G_manual = constraint->G();
+            DVec<double> g_manual = constraint->g();
+            DMat<double> K_manual = constraint->K();
+            DVec<double> k_manual = constraint->k();
+
+            auto urdf_cluster = this->urdf_model.cluster(j);
+            std::shared_ptr<LoopConstraint::Base<double>> urdf_constraint =
+                urdf_cluster->joint_->cloneLoopConstraint();
+            DMat<double> G_urdf = urdf_constraint->G();
+            DVec<double> g_urdf = urdf_constraint->g();
+            DMat<double> K_urdf = urdf_constraint->K();
+            DVec<double> k_urdf = urdf_constraint->k();
+
+            GTEST_ASSERT_LT((G_manual - G_urdf).norm(), tol);
+            GTEST_ASSERT_LT((g_manual - g_urdf).norm(), tol);
+            GTEST_ASSERT_LT((K_manual - K_urdf).norm(), tol);
+            GTEST_ASSERT_LT((k_manual - k_urdf).norm(), tol);
+        }
 
         // Verify link kinematics
         for (const auto &body : this->manual_model.bodies())

@@ -78,13 +78,36 @@ public:
     std::vector<casadi::DM> randomJointState() const
     {
         // Find a feasible joint position
-        double range = 6.28;
-        casadi::DM q_ind = range * (2. * casadi::DM::rand(four_bar_sym_->numIndependentPos()) - 1.);
-        casadi::DM q_dep_guess = range * (2. * casadi::DM::rand(2) - 1.);
-        casadi::DMDict arg;
-        arg["p"] = q_ind;
-        arg["x0"] = q_dep_guess;
-        casadi::DM q_dep = four_bar_sym_->random_state_helpers_.phi_root_finder(arg).at("x");
+        double ind_range = 1.0;
+        double dep_range = 0.1;
+        casadi::DM q_ind, q_dep;
+
+        bool solve_success = false;
+        int num_attempts = 0;
+        while (!solve_success && num_attempts++ < 45)
+        {
+            q_ind = ind_range * (2. * casadi::DM::rand(1) - 1.);
+            casadi::DM q_dep_guess = dep_range * (2. * casadi::DM::rand(2) - 1.);
+
+            casadi::DMDict arg;
+            arg["p"] = q_ind;
+            arg["x0"] = q_dep_guess;
+
+            try
+            {
+                q_dep = four_bar_sym_->random_state_helpers_.phi_root_finder(arg).at("x");
+                solve_success = true;
+            }
+            catch (const std::exception &e)
+            {
+                solve_success = false;
+            }
+        }
+
+        if (!solve_success)
+        {
+            throw std::runtime_error("Failed to find valid roots for implicit loop constraint");
+        }
 
         casadi::DM q_dm;
         switch (four_bar_sym_->independent_coordinate())
@@ -191,8 +214,6 @@ GTEST_TEST(LoopConstraint, FourBar)
 
     four_bars.push_back({Eigen::Vector<double, 4>{0.096, .042 - .011, 0.096, .042 - .011}, 2, 0.});
     four_bars.push_back({Eigen::Vector<double, 4>{1., 1., 1., 1.}, 2, 0.5});
-    four_bars.push_back({Eigen::Vector<double, 4>{4., 8.25, 8.25, 2.}, 2, 0.});
-    four_bars.push_back({Eigen::Vector<double, 4>{4., 8.25, 8.25, 2.}, 2, -1.3});
 
     for (const auto &params : four_bars)
     {

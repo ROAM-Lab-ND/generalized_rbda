@@ -49,59 +49,65 @@
         </inertial>
     </link>   
 
-    <joint name="joint1" type="continuous">
+    <joint name="joint1" type="revolute">
         <parent link="ground"/>
         <child link="link-0"/>
         <axis xyz="0 0 1"/>
+        <limit effort="30" velocity="1.0" lower="-10" upper="10"/>
     </joint>
-    <joint name="joint1r" type="continuous" independent="false">
+    <joint name="joint1r" type="revolute" independent="false">
         <parent link="ground"/>
         <child link="rotor-0"/>
         <axis xyz="0 0 1"/>
+        <limit effort="30" velocity="1.0" lower="-10" upper="10"/>
     </joint>
 
-    <joint name="joint2" type="continuous">
+    <joint name="joint2" type="revolute">
         <parent link="link-0"/>
         <child link="link-1"/>
         <origin xyz="1.0 0.0 0.0"/>
         <axis xyz="0 0 1"/>
+        <limit effort="30" velocity="1.0" lower="-10" upper="10"/>
     </joint>
-    <joint name="joint2r" type="continuous" independent="false">
+    <joint name="joint2r" type="revolute" independent="false">
         <parent link="link-0"/>
         <child link="rotor-1"/>
         <origin xyz="1.0 0.0 0.0"/>
         <axis xyz="0 0 1"/>
+        <limit effort="30" velocity="1.0" lower="-10" upper="10"/>
     </joint>
 
-    <joint name="joint3" type="continuous">
+    <joint name="joint3" type="revolute">
         <parent link="link-1"/>
         <child link="link-2"/>
         <origin xyz="1.0 0.0 0.0"/>
         <axis xyz="0 0 1"/>
+        <limit effort="30" velocity="1.0" lower="-10" upper="10"/>
     </joint>
-    <joint name="joint3r" type="continuous" independent="false">
+    <joint name="joint3r" type="revolute" independent="false">
         <parent link="link-1"/>
         <child link="rotor-2"/>
         <origin xyz="1.0 0.0 0.0"/>
         <axis xyz="0 0 1"/>
+        <limit effort="30" velocity="1.0" lower="-10" upper="10"/>
     </joint>
 
-    <constraint name="transmission1" type="rolling">
+    <coupling name="transmission1" type="rolling">
         <predecessor link="link-0"/>
         <successor link="rotor-0"/>
         <ratio value="6.0"/>
-    </constraint>
+    </coupling>
 
-    <constraint name="transmission2" type="rolling">
+    <coupling name="transmission2" type="rolling">
         <predecessor link="link-1"/>
         <successor link="rotor-1"/>
         <ratio value="6.0"/>
-    </constraint>
+    </coupling>
 
-    <constraint name="transmission3" type="rolling">
+    <coupling name="transmission3" type="rolling">
         <predecessor link="link-2"/>
         <successor link="rotor-2"/>
         <ratio value="6.0"/>
-    </constraint>
+    </coupling>
 
 </robot>

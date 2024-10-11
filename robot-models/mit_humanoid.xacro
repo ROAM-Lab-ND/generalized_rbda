@@ -2,14 +2,21 @@
 
 <robot name="mit_humanoid" xmlns:xacro="http://ros.org/wiki/xacro">
 
+    <xacro:property name="effort_limit" value="150"/>
+    <xacro:property name="velocity_limit" value="100"/>
+    <xacro:property name="joint_lower_limit" value="-10"/>
+    <xacro:property name="joint_upper_limit" value="10"/>
+
     <!-- Hip Yaw Macro -->
     <xacro:property name="hipz_pitch" value="-0.174533"/>
     <xacro:macro name="hipz" params="prefix y_sign">
-        <joint name="base_to_${prefix}hipz_link" type="continuous">
+        <joint name="base_to_${prefix}hipz_link" type="revolute">
             <axis xyz="0 0 1"/>
             <origin xyz="-0.00565 ${y_sign * -0.082} -0.05735" rpy="0 ${hipz_pitch} 0"/>
             <parent link="Floating Base"/>
             <child link="${prefix}hip_rz_link"/>
+            <limit effort="${effort_limit}" velocity="${velocity_limit}"
+                   lower="${joint_lower_limit}" upper="${joint_upper_limit}"/>
         </joint>
         <link name="${prefix}hip_rz_link">
             <inertial>
@@ -20,11 +27,14 @@
             </inertial>
         </link>
 
-        <joint name="${prefix}base_to_hipz_rotor" type="continuous" independent="false">
+        <joint name="${prefix}base_to_hipz_rotor" type="revolute" independent="false">
             <axis xyz="0 0 1"/>
             <origin xyz="-0.00842837 ${y_sign * -0.082} -0.041593" rpy="0 ${hipz_pitch} 0"/>
             <parent link="Floating Base"/>
             <child link="${prefix}hip_rz_rotor"/>
+            <limit effort="${effort_limit}" velocity="${velocity_limit}"
+                   lower="${joint_lower_limit}" upper="${joint_upper_limit}"/>
+
         </joint>
         <link name="${prefix}hip_rz_rotor">
             <inertial>
@@ -35,21 +45,23 @@
             </inertial>
         </link>
 
-        <constraint name="${prefix}hipz_transmission" type="rolling">
+        <coupling name="${prefix}hipz_transmission">
             <predecessor link="${prefix}hip_rz_link"/>
             <successor link="${prefix}hip_rz_rotor"/>
             <ratio value="6.0"/>
-        </constraint>
+        </coupling>
     </xacro:macro>
 
     <!-- Hip Abduction/Adduction -->
     <xacro:property name="hipx_pitch" value="0.436332"/>
     <xacro:macro name="hipx" params="prefix y_sign">
-        <joint name="${prefix}hipz_to_hipx_link" type="continuous">
+        <joint name="${prefix}hipz_to_hipx_link" type="revolute">
             <axis xyz="1 0 0"/>
             <origin xyz="-0.06435 0.0 -.07499" rpy="0 ${hipx_pitch} 0"/>
             <parent link="${prefix}hip_rz_link"/>
             <child link="${prefix}hip_rx_link"/>
+            <limit effort="${effort_limit}" velocity="${velocity_limit}"
+                   lower="${joint_lower_limit}" upper="${joint_upper_limit}"/>
         </joint>
         <link name="${prefix}hip_rx_link">
             <inertial>
@@ -60,11 +72,13 @@
             </inertial>
         </link>
 
-        <joint name="${prefix}hipz_to_hipx_rotor" type="continuous" independent="false">
+        <joint name="${prefix}hipz_to_hipx_rotor" type="revolute" independent="false">
             <axis xyz="1 0 0"/>
             <origin xyz="-0.0827 0.0 -0.066436" rpy="0 ${hipx_pitch} 0"/>
             <parent link="${prefix}hip_rz_link"/>
             <child link="${prefix}hip_rx_rotor"/>
+            <limit effort="${effort_limit}" velocity="${velocity_limit}"
+                   lower="${joint_lower_limit}" upper="${joint_upper_limit}"/>
         </joint>
         <link name="${prefix}hip_rx_rotor">
             <inertial>
@@ -75,20 +89,22 @@
             </inertial>
         </link>
 
-        <constraint name="${prefix}hipx_transmission" type="rolling">
+        <coupling name="${prefix}hipx_transmission">
             <predecessor link="${prefix}hip_rx_link"/>
             <successor link="${prefix}hip_rx_rotor"/>
             <ratio value="6.0"/>
-        </constraint>
+        </coupling>
     </xacro:macro>
 
     <!-- Hip Flexion/Extension -->
     <xacro:macro name="hipy" params="prefix y_sign">
-        <joint name="${prefix}hipx_to_hipy_link" type="continuous">
+        <joint name="${prefix}hipx_to_hipy_link" type="revolute">
             <axis xyz="0 1 0"/>
             <origin xyz="0.071 ${y_sign * 0.0018375} 0.0" rpy="0 -${hipz_pitch + hipx_pitch} 0"/>
             <parent link="${prefix}hip_rx_link"/>
             <child link="${prefix}hip_ry_link"/>
+            <limit effort="${effort_limit}" velocity="${velocity_limit}"
+                   lower="${joint_lower_limit}" upper="${joint_upper_limit}"/>
         </joint>
         <link name="${prefix}hip_ry_link">
             <inertial>
@@ -99,11 +115,13 @@
             </inertial>
         </link>
 
-        <joint name="${prefix}hipx_to_hipy_rotor" type="continuous" independent="false">
+        <joint name="${prefix}hipx_to_hipy_rotor" type="revolute" independent="false">
             <axis xyz="0 1 0"/>
             <origin xyz="0.071 ${y_sign * 0.024} 0.0" rpy="0 -${hipz_pitch + hipx_pitch} 0"/>
             <parent link="${prefix}hip_rx_link"/>
             <child link="${prefix}hip_ry_rotor"/>
+            <limit effort="${effort_limit}" velocity="${velocity_limit}"
+                   lower="${joint_lower_limit}" upper="${joint_upper_limit}"/>
         </joint>
         <link name="${prefix}hip_ry_rotor">
             <inertial>
@@ -114,20 +132,22 @@
             </inertial>
         </link>
 
-        <constraint name="${prefix}hipy_transmission" type="rolling">
+        <coupling name="${prefix}hipy_transmission">
             <predecessor link="${prefix}hip_ry_link"/>
             <successor link="${prefix}hip_ry_rotor"/>
             <ratio value="6.0"/>
-        </constraint>
+        </coupling>
     </xacro:macro>
 
     <!-- Knee Flexion/Extension -->
     <xacro:macro name="knee" params="prefix y_sign">
-        <joint name="${prefix}hipy_to_knee_link" type="continuous">
+        <joint name="${prefix}hipy_to_knee_link" type="revolute">
             <axis xyz="0 1 0"/>
             <origin xyz="0.0 0.0 -0.267"/>
             <parent link="${prefix}hip_ry_link"/>
             <child link="${prefix}knee_link"/>
+            <limit effort="${effort_limit}" velocity="${velocity_limit}"
+                   lower="${joint_lower_limit}" upper="${joint_upper_limit}"/>
         </joint>
         <link name="${prefix}knee_link">
             <inertial>
@@ -138,11 +158,13 @@
             </inertial>
         </link>
 
-        <joint name="${prefix}hipy_to_knee_rotor" type="continuous" independent="false">
+        <joint name="${prefix}hipy_to_knee_rotor" type="revolute" independent="false">
             <axis xyz="0 1 0"/>
             <origin xyz="0.013 ${y_sign * -0.0497} -0.0178"/>
             <parent link="${prefix}hip_ry_link"/>
             <child link="${prefix}knee_rotor"/>
+            <limit effort="${effort_limit}" velocity="${velocity_limit}"
+                   lower="${joint_lower_limit}" upper="${joint_upper_limit}"/>
         </joint>
         <link name="${prefix}knee_rotor">
             <inertial>
@@ -153,20 +175,22 @@
             </inertial>
         </link>
 
-        <constraint name="${prefix}knee_transmission" type="rolling">
+        <coupling name="${prefix}knee_transmission">
             <predecessor link="${prefix}knee_link"/>
             <successor link="${prefix}knee_rotor"/>
             <ratio value="12.0"/>
-        </constraint>
+        </coupling>
     </xacro:macro>
 
     <!-- Ankle Flexion/Extension -->
     <xacro:macro name="ankle" params="prefix y_sign">
-        <joint name="${prefix}hipy_to_ankle_rotor" type="continuous" independent="false">
+        <joint name="${prefix}hipy_to_ankle_rotor" type="revolute" independent="false">
             <axis xyz="0 1 0"/>
             <origin xyz=".01563 ${y_sign * -.0454} -.13354"/>
             <parent link="${prefix}hip_ry_link"/>
             <child link="${prefix}ankle_rotor"/>
+            <limit effort="${effort_limit}" velocity="${velocity_limit}"
+                   lower="${joint_lower_limit}" upper="${joint_upper_limit}"/>
         </joint>
         <link name="${prefix}ankle_rotor">
             <inertial>
@@ -177,11 +201,13 @@
             </inertial>
         </link>
 
-        <joint name="${prefix}knee_to_ankle" type="continuous">
+        <joint name="${prefix}knee_to_ankle" type="revolute">
             <axis xyz="0 1 0"/>
             <origin xyz="0.0 0.0 -0.2785"/>
             <parent link="${prefix}knee_link"/>
             <child link="${prefix}ankle_link"/>
+            <limit effort="${effort_limit}" velocity="${velocity_limit}"
+                   lower="${joint_lower_limit}" upper="${joint_upper_limit}"/>
         </joint>
         <link name="${prefix}ankle_link">
             <inertial>
@@ -192,20 +218,22 @@
             </inertial>
         </link>
 
-        <constraint name="${prefix}ankle_transmission" type="rolling">
+        <coupling name="${prefix}ankle_transmission">
             <predecessor link="${prefix}ankle_link"/>
             <successor link="${prefix}ankle_rotor"/>
             <ratio value="12.0"/>
-        </constraint>
+        </coupling>
     </xacro:macro>
 
     <!-- Shoulder Y-axis -->
     <xacro:macro name="shouldery" params="prefix y_sign">
-        <joint name="base_to_${prefix}shouldery_link" type="continuous">
+        <joint name="base_to_${prefix}shouldery_link" type="revolute">
             <axis xyz="0 1 0"/>
             <origin xyz="0.01346 ${y_sign * -0.17608} 0.24657"/>
             <parent link="Floating Base"/>
             <child link="${prefix}shoulder_ry_link"/>
+            <limit effort="${effort_limit}" velocity="${velocity_limit}"
+                   lower="${joint_lower_limit}" upper="${joint_upper_limit}"/>
         </joint>
         <link name="${prefix}shoulder_ry_link">
             <inertial>
@@ -216,11 +244,13 @@
             </inertial>
         </link>
 
-        <joint name="base_to_${prefix}shouldery_rotor" type="continuous" independent="false">
+        <joint name="base_to_${prefix}shouldery_rotor" type="revolute" independent="false">
             <axis xyz="0 1 0"/>
             <origin xyz="0.01346 ${y_sign * -0.16} 0.24657"/>
             <parent link="Floating Base"/>
             <child link="${prefix}shoulder_ry_rotor"/>
+            <limit effort="${effort_limit}" velocity="${velocity_limit}"
+                   lower="${joint_lower_limit}" upper="${joint_upper_limit}"/>
         </joint>
         <link name="${prefix}shoulder_ry_rotor">
             <inertial>
@@ -231,20 +261,22 @@
             </inertial>
         </link>
 
-        <constraint name="${prefix}shouldery_transmission" type="rolling">
+        <coupling name="${prefix}shouldery_transmission">
             <predecessor link="${prefix}shoulder_ry_link"/>
             <successor link="${prefix}shoulder_ry_rotor"/>
             <ratio value="6.0"/>
-        </constraint>
+        </coupling>
     </xacro:macro>
 
     <!-- Shoulder X-axis -->
     <xacro:macro name="shoulderx" params="prefix y_sign">
-        <joint name="${prefix}shouldery_shoulderx_link" type="continuous">
+        <joint name="${prefix}shouldery_shoulderx_link" type="revolute">
             <axis xyz="1 0 0"/>
             <origin xyz="0. ${y_sign * -0.0575} 0."/>
             <parent link="${prefix}shoulder_ry_link"/>
             <child link="${prefix}shoulder_rx_link"/>
+            <limit effort="${effort_limit}" velocity="${velocity_limit}"
+                   lower="${joint_lower_limit}" upper="${joint_upper_limit}"/>
         </joint>
         <link name="${prefix}shoulder_rx_link">
             <inertial>
@@ -255,11 +287,13 @@
             </inertial>
         </link>
 
-        <joint name="${prefix}shouldery_to_shoulderx_rotor" type="continuous" independent="false">
+        <joint name="${prefix}shouldery_to_shoulderx_rotor" type="revolute" independent="false">
             <axis xyz="1 0 0"/>
             <origin xyz="0. ${y_sign * -0.0575} 0."/>
             <parent link="${prefix}shoulder_ry_link"/>
             <child link="${prefix}shoulder_rx_rotor"/>
+            <limit effort="${effort_limit}" velocity="${velocity_limit}"
+                   lower="${joint_lower_limit}" upper="${joint_upper_limit}"/>
         </joint>
         <link name="${prefix}shoulder_rx_rotor">
             <inertial>
@@ -270,20 +304,22 @@
             </inertial>
         </link>
 
-        <constraint name="${prefix}shoulderx_transmission" type="rolling">
+        <coupling name="${prefix}shoulderx_transmission">
             <predecessor link="${prefix}shoulder_rx_link"/>
             <successor link="${prefix}shoulder_rx_rotor"/>
             <ratio value="6.0"/>
-        </constraint>
+        </coupling>
     </xacro:macro>
 
     <!-- Shoulder Z-axis -->
     <xacro:macro name="shoulderz" params="prefix y_sign">
-        <joint name="${prefix}shoulderx_shoulderz_link" type="continuous">
+        <joint name="${prefix}shoulderx_shoulderz_link" type="revolute">
             <axis xyz="0 0 1"/>
             <origin xyz="0. ${y_sign * 0.} -0.10250"/>
             <parent link="${prefix}shoulder_rx_link"/>
             <child link="${prefix}shoulder_rz_link"/>
+            <limit effort="${effort_limit}" velocity="${velocity_limit}"
+                   lower="${joint_lower_limit}" upper="${joint_upper_limit}"/>
         </joint>
         <link name="${prefix}shoulder_rz_link">
             <inertial>
@@ -294,11 +330,13 @@
             </inertial>
         </link>
 
-        <joint name="${prefix}shoulderx_to_shoulderz_rotor" type="continuous" independent="false">
+        <joint name="${prefix}shoulderx_to_shoulderz_rotor" type="revolute" independent="false">
             <axis xyz="0 0 1"/>
             <origin xyz="0. ${y_sign * 0.} -0.10250"/>
             <parent link="${prefix}shoulder_rx_link"/>
             <child link="${prefix}shoulder_rz_rotor"/>
+            <limit effort="${effort_limit}" velocity="${velocity_limit}"
+                   lower="${joint_lower_limit}" upper="${joint_upper_limit}"/>
         </joint>
         <link name="${prefix}shoulder_rz_rotor">
             <inertial>
@@ -309,20 +347,22 @@
             </inertial>
         </link>
 
-        <constraint name="${prefix}shoulderz_transmission" type="rolling">
+        <coupling name="${prefix}shoulderz_transmission">
             <predecessor link="${prefix}shoulder_rz_link"/>
             <successor link="${prefix}shoulder_rz_rotor"/>
             <ratio value="6.0"/>
-        </constraint>
+        </coupling>
     </xacro:macro>
 
     <!-- Elbow Flexion/Extension -->
     <xacro:macro name="elbow" params="prefix y_sign">
-        <joint name="${prefix}shoulderz_elbow_link" type="continuous">
+        <joint name="${prefix}shoulderz_elbow_link" type="revolute">
             <axis xyz="0 1 0"/>
             <origin xyz="0. ${y_sign * 0.} -0.1455"/>
             <parent link="${prefix}shoulder_rz_link"/>
             <child link="${prefix}elbow_link"/>
+            <limit effort="${effort_limit}" velocity="${velocity_limit}"
+                   lower="${joint_lower_limit}" upper="${joint_upper_limit}"/>
         </joint>
         <link name="${prefix}elbow_link">
             <inertial>
@@ -333,11 +373,13 @@
             </inertial>
         </link>
 
-        <joint name="${prefix}shoulderz_to_elbow_rotor" type="continuous" independent="false">
+        <joint name="${prefix}shoulderz_to_elbow_rotor" type="revolute" independent="false">
             <axis xyz="0 1 0"/>
             <origin xyz="0. ${y_sign * 0.0325} -0.06"/>
             <parent link="${prefix}shoulder_rz_link"/>
             <child link="${prefix}elbow_rotor"/>
+            <limit effort="${effort_limit}" velocity="${velocity_limit}"
+                   lower="${joint_lower_limit}" upper="${joint_upper_limit}"/>
         </joint>
         <link name="${prefix}elbow_rotor">
             <inertial>
@@ -348,13 +390,15 @@
             </inertial>
         </link>
 
-        <constraint name="${prefix}elbow_transmission" type="rolling">
+        <coupling name="${prefix}elbow_transmission">
             <predecessor link="${prefix}elbow_link"/>
             <successor link="${prefix}elbow_rotor"/>
             <ratio value="9.0"/>
-        </constraint>
+        </coupling>
     </xacro:macro>    
     <!-- End of macro definitions -->
+
+    <link name="ground"/>
 
     <link name="Floating Base">
         <inertial>
@@ -364,32 +408,37 @@
                      iyy="0.105949" iyz="-0.001672" izz="0.091906"/>
         </inertial>
     </link>
+    <joint name="world_to_base" type="floating">
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <parent link="ground"/>
+        <child link="Floating Base"/>
+    </joint>
 
-    <hipz prefix="right_" y_sign="1"/>
-    <hipz prefix="left_" y_sign="-1"/>
+    <xacro:hipz prefix="right_" y_sign="1"/>
+    <xacro:hipz prefix="left_" y_sign="-1"/>
 
-    <hipx prefix="right_" y_sign="1"/>
-    <hipx prefix="left_" y_sign="-1"/>
+    <xacro:hipx prefix="right_" y_sign="1"/>
+    <xacro:hipx prefix="left_" y_sign="-1"/>
 
-    <hipy prefix="right_" y_sign="1"/>
-    <hipy prefix="left_" y_sign="-1"/>
+    <xacro:hipy prefix="right_" y_sign="1"/>
+    <xacro:hipy prefix="left_" y_sign="-1"/>
 
-    <knee prefix="right_" y_sign="1"/>
-    <knee prefix="left_" y_sign="-1"/>
+    <xacro:knee prefix="right_" y_sign="1"/>
+    <xacro:knee prefix="left_" y_sign="-1"/>
 
-    <ankle prefix="right_" y_sign="1"/>
-    <ankle prefix="left_" y_sign="-1"/>
+    <xacro:ankle prefix="right_" y_sign="1"/>
+    <xacro:ankle prefix="left_" y_sign="-1"/>
 
-    <shouldery prefix="right_" y_sign="1"/>
-    <shouldery prefix="left_" y_sign="-1"/>
+    <xacro:shouldery prefix="right_" y_sign="1"/>
+    <xacro:shouldery prefix="left_" y_sign="-1"/>
 
-    <shoulderx prefix="right_" y_sign="1"/>
-    <shoulderx prefix="left_" y_sign="-1"/>
+    <xacro:shoulderx prefix="right_" y_sign="1"/>
+    <xacro:shoulderx prefix="left_" y_sign="-1"/>
 
-    <shoulderz prefix="right_" y_sign="1"/>
-    <shoulderz prefix="left_" y_sign="-1"/>
+    <xacro:shoulderz prefix="right_" y_sign="1"/>
+    <xacro:shoulderz prefix="left_" y_sign="-1"/>
 
-    <elbow prefix="right_" y_sign="1"/>
-    <elbow prefix="left_" y_sign="-1"/>
+    <xacro:elbow prefix="right_" y_sign="1"/>
+    <xacro:elbow prefix="left_" y_sign="-1"/>
 
 </robot>
