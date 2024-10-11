@@ -382,6 +382,16 @@ namespace grbda
     }
 
     template <typename Scalar>
+    spatial::Transform<Scalar>
+    ClusterTreeModel<Scalar>::getAbsoluteSpatialTransform(const std::string &body_name)
+    {
+        const int cluster_idx = getIndexOfClusterContainingBody(body_name);
+        const int subindex_within_cluster = body(body_name).sub_index_within_cluster_;
+        this->forwardKinematics();
+        return cluster_nodes_[cluster_idx]->Xa_[subindex_within_cluster];
+    }
+
+    template <typename Scalar>
     int ClusterTreeModel<Scalar>::getClusterAncestorIndexFromParent(const int body_index)
     {
         int cluster_ancestor_index = body_index;

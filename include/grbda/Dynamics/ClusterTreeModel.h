@@ -148,11 +148,11 @@ namespace grbda
         Vec3<Scalar> getLinearVelocity(const std::string &body_name,
                                        const Vec3<Scalar> &offset = Vec3<Scalar>::Zero()) override;
         Vec3<Scalar> getAngularVelocity(const std::string &body_name) override;
-        Vec3<Scalar> getLinearAcceleration(const DVec<Scalar> &qdd,
-                                           const std::string &body_name,
+        Vec3<Scalar> getLinearAcceleration(const DVec<Scalar> &qdd, const std::string &body_name,
                                            const Vec3<Scalar> &offset = Vec3<Scalar>::Zero())override;
         Vec3<Scalar> getAngularAcceleration(const DVec<Scalar> &qdd,
                                             const std::string &body_name) override;
+        spatial::Transform<Scalar> getAbsoluteSpatialTransform(const std::string &body_name);
 
         D6Mat<Scalar> contactJacobianBodyFrame(const std::string &cp_name) override;
         const D6Mat<Scalar> &contactJacobianWorldFrame(const std::string &cp_name) override;
