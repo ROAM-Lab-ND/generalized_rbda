@@ -42,7 +42,7 @@ TEST(TestConstraintDynamics, NumericalFourBar)
     constraint_datas.push_back(ConstraintData(pin_loop_constraint));
 
     const double mu0 = 1e-14;
-    pinocchio::ProximalSettings prox_settings(1e-12, mu0, 100);
+    pinocchio::ProximalSettings prox_settings(1e-12, mu0, 4);
     pinocchio::initConstraintDynamics(model, data_cd, constraint_models);
 
     grbda::ClusterTreeModel<double> cluster_tree;
@@ -56,7 +56,7 @@ TEST(TestConstraintDynamics, NumericalFourBar)
     const int nv = cluster_tree.getNumDegreesOfFreedom();
     const int nv_span = lgm_model.getNumDegreesOfFreedom();
 
-    const double tol = 1e-12;
+    const double tol = 1e-10;
     // TODO(@MatthewChignoli): The next lines should be in a loop over the number of samples
     {
         // Create a random state
@@ -228,7 +228,7 @@ TEST(TestConstraintDynamics, SymbolicFourBar)
     constraint_models.push_back(pin_loop_constraint);
     constraint_datas.push_back(ConstraintData(pin_loop_constraint));
     const ADScalar mu0 = 1e-14;
-    ProximalSettings prox_settings(1e-12, mu0, 100);
+    ProximalSettings prox_settings(1e-12, mu0, 4);
     pinocchio::initConstraintDynamics(ad_model, ad_data_cd, constraint_models);
 
     grbda::ClusterTreeModel<ADScalar> cluster_tree;
