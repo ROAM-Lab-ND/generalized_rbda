@@ -31,10 +31,10 @@ done
 # Define arrays for depths and corresponding loop sizes for implicit parallel chains
 depths=("depth5" "depth10" "depth20" "depth40")
 loop_sizes=(
-  "3 5 7 9 11"      # For depth5
+  "3 5 9 11"      # For depth5
   "3 5 9 13 17"     # For depth10
-  "3 7 13 21 31"    # For depth20
-  "3 9 17 29 41"    # For depth40
+  "3 5 9 13 21 31"    # For depth20
+  "3 5 9 17 29 41"    # For depth40
 )
 
 # Change to the appropriate directory
