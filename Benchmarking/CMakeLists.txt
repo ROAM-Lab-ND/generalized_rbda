@@ -29,6 +29,10 @@ add_executable(parallel_chains_benchmark src/parallelChainsBenchmark.cpp)
 target_link_libraries(parallel_chains_benchmark ${PROJECT_NAME} ${PINOCCHIO_LIBRARIES})
 target_link_libraries(parallel_chains_benchmark gtest gmock_main)
 
+add_executable(parallel_chains_benchmark_v2 src/parallelChainsBenchmark_v2.cpp)
+target_link_libraries(parallel_chains_benchmark_v2 ${PROJECT_NAME} ${PINOCCHIO_LIBRARIES})
+target_link_libraries(parallel_chains_benchmark_v2 gtest gmock_main)
+
 add_executable(rotors_benchmark src/rotorsBenchmark.cpp)
 target_link_libraries(rotors_benchmark ${PROJECT_NAME} ${PINOCCHIO_LIBRARIES})
 target_link_libraries(rotors_benchmark gtest gmock_main)
