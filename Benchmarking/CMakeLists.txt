@@ -40,3 +40,7 @@ target_link_libraries(rotors_benchmark gtest gmock_main)
 add_executable(approx_benchmark src/approximateBenchmark.cpp)
 target_link_libraries(approx_benchmark ${PROJECT_NAME} ${PINOCCHIO_LIBRARIES})
 target_link_libraries(approx_benchmark gtest gmock_main)
+
+add_executable(test_cnstr_dyn src/testConstraintDynamics.cpp)
+target_link_libraries(test_cnstr_dyn ${PROJECT_NAME} ${PINOCCHIO_LIBRARIES})
+target_link_libraries(test_cnstr_dyn gtest gmock_main)
