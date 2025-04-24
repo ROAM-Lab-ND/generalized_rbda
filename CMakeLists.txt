@@ -157,6 +157,10 @@ else()
   )
 endif()
 
+if (BUILD_TESTS OR BUILD_BENCHMARKS)
+  add_subdirectory(UnitTests/googletest-src)
+endif() 
+
 if(BUILD_TESTS)
   message(STATUS "======>  Setup Tests  ")
   enable_testing()
