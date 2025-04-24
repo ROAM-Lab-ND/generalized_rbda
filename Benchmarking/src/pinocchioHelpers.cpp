@@ -537,7 +537,7 @@ SpecificationVector GetBenchmarkRobotSpecifications()
         for (std::string sys_type : sys_types)
         {
             std::ofstream outfile;
-            outfile.open(path_to_data + bench_type + "PinocchioFD_" + sys_type + ".csv",
+            outfile.open(path_to_data + bench_type + sys_type + ".csv",
                          std::ios::trunc);
             if (!outfile.is_open())
             {
