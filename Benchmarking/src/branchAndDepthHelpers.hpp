@@ -41,8 +41,7 @@ struct BranchAndDepthSpecification : public RobotSpecification
     int branch_count;
     int depth_count;
 
-    BranchAndDepthSpecification(std::string urdf_filename_,
-                                std::string outfile_suffix_ = "revolute_chain")
+    BranchAndDepthSpecification(std::string urdf_filename_, std::string outfile_suffix_)
         : RobotSpecification(urdf_filename_, outfile_suffix_)
     {
         registerBranchAndDepthCountFromName(name);
@@ -54,11 +53,11 @@ struct BranchAndDepthSpecification : public RobotSpecification
                      double i_cluster, double i_pinocchio, double i_lg) override;
 };
 
-using SpecVector = std::vector<std::shared_ptr<RobotSpecification>>;
-SpecVector GetIndividualUrdfFiles();
-SpecVector GetRevoluteRotorUrdfFiles();
-SpecVector GetRevoluteRotorPairUrdfFiles();
-SpecVector GetFourBarUrdfFiles();
-SpecVector GetBenchmarkUrdfFiles();
+using SpecificationVector = std::vector<std::shared_ptr<RobotSpecification>>;
+SpecificationVector GetIndividualRobotSpecifications();
+SpecificationVector GetRevoluteRotorRobotSpecifications();
+SpecificationVector GetRevoluteRotorPairRobotSpecifications();
+SpecificationVector GetFourBarRobotSpecifications();
+SpecificationVector GetBenchmarkRobotSpecifications();
 
 #endif // GRBDA_BRANCH_AND_DEPTH_HELPERS_H
