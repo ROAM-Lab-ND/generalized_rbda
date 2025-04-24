@@ -1,8 +1,10 @@
-#include "branchAndDepthHelpers.hpp"
+#include "pinocchioHelpers.hpp"
+
+// TODO(@MatthewChignoli): Need to rename this
 
 // TODO(@MatthewChignoli): Log the constrainedDynamics error in a csv?
 template <typename Scalar>
-class BranchAndDepth : public ::testing::TestWithParam<std::shared_ptr<RobotSpecification>>
+class PinocchioBase : public ::testing::TestWithParam<std::shared_ptr<RobotSpecification>>
 {
 protected:
     using ModelState = grbda::ModelState<Scalar>;
@@ -12,7 +14,7 @@ protected:
     using LoopConstraintPtr = std::shared_ptr<grbda::LoopConstraint::Base<Scalar>>;
     using StatePair = std::pair<DVec<Scalar>, DVec<Scalar>>;
 
-    BranchAndDepth(int num_samples) : num_samples_(num_samples),
+    PinocchioBase(int num_samples) : num_samples_(num_samples),
                                       cluster_tree_(GetParam()->urdf_filename),
                                       lgm_model_(cluster_tree_,
                                                  grbda::FwdDynMethod::LagrangeMultiplierEigen)
@@ -62,11 +64,11 @@ protected:
     JointMap<Scalar> joint_map_;
 };
 
-class BranchAndDepthNumericalValidation : public BranchAndDepth<double>
+class PinocchioNumericalValidation : public PinocchioBase<double>
 {
 protected:
     using Scalar = double;
-    BranchAndDepthNumericalValidation() : BranchAndDepth<double>(8) {}
+    PinocchioNumericalValidation() : PinocchioBase<double>(8) {}
 
     StatePair createRandomState()
     {
@@ -103,10 +105,10 @@ protected:
     }
 };
 
-INSTANTIATE_TEST_SUITE_P(BranchAndDepthNumericalValidation, BranchAndDepthNumericalValidation,
+INSTANTIATE_TEST_SUITE_P(PinocchioNumericalValidation, PinocchioNumericalValidation,
                          ::testing::ValuesIn(GetBenchmarkRobotSpecifications()));
 
-TEST_P(BranchAndDepthNumericalValidation, forward_dynamics)
+TEST_P(PinocchioNumericalValidation, forward_dynamics)
 {
     for (int i = 0; i < num_samples_; i++)
     {
@@ -218,11 +220,11 @@ TEST_P(BranchAndDepthNumericalValidation, forward_dynamics)
     }
 }
 
-class BranchAndDepthBenchmark : public BranchAndDepth<casadi::SX>
+class PinocchioBenchmark : public PinocchioBase<casadi::SX>
 {
 protected:
     using Scalar = casadi::SX;
-    BranchAndDepthBenchmark() : BranchAndDepth<casadi::SX>(25) {}
+    PinocchioBenchmark() : PinocchioBase<casadi::SX>(25) {}
 
     grbda::Timer timer_;
     double t_cluster_ = 0.;
@@ -231,12 +233,16 @@ protected:
     double t_pin_cd1_ = 0.;
     double t_pin_cd2_ = 0.;
     double t_pin_cd5_ = 0.;
+
+    double e_pin_cd1_ = 0.;
+    double e_pin_cd2_ = 0.;
+    double e_pin_cd5_ = 0.;
 };
 
-INSTANTIATE_TEST_SUITE_P(BranchAndDepthBenchmark, BranchAndDepthBenchmark,
+INSTANTIATE_TEST_SUITE_P(PinocchioBenchmark, PinocchioBenchmark,
                          ::testing::ValuesIn(GetBenchmarkRobotSpecifications()));
 
-TEST_P(BranchAndDepthBenchmark, forward_dynamics)
+TEST_P(PinocchioBenchmark, forward_dynamics)
 {
     // Symbolic state
     const int nq = cluster_tree_.getNumPositions();
@@ -458,6 +464,10 @@ TEST_P(BranchAndDepthBenchmark, forward_dynamics)
             EXPECT_LT(pin5_error.norm(), qdd_cd_tol_)
                 << "qdd_pinocchio_fd: " << pin_fd_res.transpose() << "\n"
                 << "qdd_pinocchio_cd: " << pin_cd5_res.transpose();
+
+            e_pin_cd1_ += pin1_error.norm();
+            e_pin_cd2_ += pin2_error.norm();
+            e_pin_cd5_ += pin5_error.norm();
         }
     }
 
@@ -471,4 +481,10 @@ TEST_P(BranchAndDepthBenchmark, forward_dynamics)
                             t_pin_cd1_ / num_samples_,
                             t_pin_cd2_ / num_samples_,
                             t_pin_cd5_ / num_samples_);
+
+    GetParam()->writeToFile(GetParam()->error_outfile,
+                            0., 0., 0.,
+                            e_pin_cd1_ / num_samples_,
+                            e_pin_cd2_ / num_samples_,
+                            e_pin_cd5_ / num_samples_);
 }

@@ -4,6 +4,8 @@
 #include <iostream>
 #include <fstream>
 #include <sstream>
+#include <regex>
+#include <algorithm>
 #include <tinyxml2.h>
 #include <console_bridge/console.h>
 
@@ -69,7 +71,6 @@ struct PinConstraintVectors
 template <typename Scalar>
 using PinProxSettings = pinocchio::ProximalSettingsTpl<Scalar>;
 
-
 template <typename Scalar>
 struct ConstrainedLinkInfo
 {
@@ -84,5 +85,84 @@ ConstrainedLinkInfo<Scalar> constrainedLinkInfoFromXml(tinyxml2::XMLElement *con
 template <typename Scalar>
 PinConstraintVectors<Scalar> parseURDFFileForLoopConstraints(const std::string &path,
                                                              const PinModel<Scalar> &model);
+
+struct RobotSpecification
+{
+    std::string urdf_filename;
+    std::string outfile_suffix;
+    static inline const std::string instruction_prefix = "InstructionPinocchioFD_";
+    static inline const std::string timing_prefix = "TimingPinocchioFD_";
+    static inline const std::string error_prefix = "ErrorPinocchioFD_";
+    std::ofstream instruction_outfile;
+    std::ofstream timing_outfile;
+    std::ofstream error_outfile;
+    std::string name;
+
+    RobotSpecification(std::string urdf_filename_, std::string outfile_suffix_)
+        : urdf_filename(urdf_filename_), outfile_suffix(outfile_suffix_)
+    {
+        registerNameFromUrdfFilename(urdf_filename);
+        openOutfile();
+    }
+
+    virtual ~RobotSpecification() { closeOutfile(); }
+
+    void registerNameFromUrdfFilename(const std::string &url);
+
+    void openOutfile();
+    void closeOutfile();
+
+    virtual void writeToFile(std::ofstream &outfile,
+                             double i_cluster, double i_lg,
+                             double i_pin_fd, double i_pin_cd1,
+                             double i_pin_cd2, double i_pin_cd5);
+};
+
+struct BranchAndDepthSpecification : public RobotSpecification
+{
+    int branch_count;
+    int depth_count;
+
+    BranchAndDepthSpecification(std::string urdf_filename_, std::string outfile_suffix_)
+        : RobotSpecification(urdf_filename_, outfile_suffix_)
+    {
+        registerBranchAndDepthCountFromName(name);
+    }
+
+    void registerBranchAndDepthCountFromName(const std::string &name_);
+
+    void writeToFile(std::ofstream &outfile,
+                     double i_cluster, double i_lg,
+                     double i_pin_fd, double i_pin_cd1, 
+                     double i_pin_cd2, double i_pin_cd5) override;
+};
+
+// TODO(@MatthewChignoli): move definition of this function to a separate file
+struct ParallelChainSpecification : public RobotSpecification
+{
+    const int depth;
+    const int loop_size;
+    const double tol; // TODO(@MatthewChignoli): Do we need this?
+    const std::string constraint_type;
+
+    ParallelChainSpecification(int depth_, int loop_size_, double tol_,
+                               std::string constraint_type_);
+
+    template <typename ModelType>
+    bool clusterTreeProperlyFormed(const ModelType &cluster_tree) const;
+
+    void writeToFile(std::ofstream &outfile,
+                     double i_cluster, double i_lg,
+                     double i_pin_fd, double i_pin_cd1,
+                     double i_pin_cd2, double i_pin_cd5) override;
+};
+
+using SpecificationVector = std::vector<std::shared_ptr<RobotSpecification>>;
+SpecificationVector GetIndividualRobotSpecifications();
+SpecificationVector GetRevoluteRotorRobotSpecifications();
+SpecificationVector GetRevoluteRotorPairRobotSpecifications();
+SpecificationVector GetFourBarRobotSpecifications();
+SpecificationVector GetParallelChainSpecifications();
+SpecificationVector GetBenchmarkRobotSpecifications();
 
 #endif // GRBDA_PINOCCHIO_HELPERS_H

@@ -1,5 +1,3 @@
-add_subdirectory(googletest-src)
-
 # Create single executable for all tests
 file(GLOB_RECURSE test_sources "*.cpp")
 
