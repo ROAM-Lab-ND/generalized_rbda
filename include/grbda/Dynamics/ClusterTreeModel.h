@@ -29,6 +29,12 @@ namespace grbda
             body_name_to_body_index_["ground"] = -1;
             body_index_to_cluster_index_[-1] = -1;
         }
+
+        ClusterTreeModel(const std::string &urdf_filename) : ClusterTreeModel()
+        {
+            buildModelFromURDF(urdf_filename);
+        }
+
         ~ClusterTreeModel() {}
 
         

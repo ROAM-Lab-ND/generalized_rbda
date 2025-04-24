@@ -315,7 +315,6 @@ TEST(TestConstraintDynamics, SymbolicFourBar)
                                    casadi::SXVector{cs_q, cs_v, cs_tau},
                                    casadi::SXVector{cs_qdd_pinocchio_cd});
 
-
     // Check the solutions against each other
     using ScalarModel = grbda::ClusterTreeModel<Scalar>;
     using ScalarModelState = grbda::ModelState<Scalar>;

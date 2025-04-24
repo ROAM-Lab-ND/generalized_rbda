@@ -33,7 +33,9 @@ struct RobotSpecification
     void closeOutfile();
 
     virtual void writeToFile(std::ofstream &outfile,
-                             double i_cluster, double i_pinocchio, double i_lg);
+                             double i_cluster, double i_lg,
+                             double i_pin_fd, double i_pin_cd1,
+                             double i_pin_cd2, double i_pin_cd5);
 };
 
 struct BranchAndDepthSpecification : public RobotSpecification
@@ -50,7 +52,9 @@ struct BranchAndDepthSpecification : public RobotSpecification
     void registerBranchAndDepthCountFromName(const std::string &name_);
 
     void writeToFile(std::ofstream &outfile,
-                     double i_cluster, double i_pinocchio, double i_lg) override;
+                     double i_cluster, double i_lg,
+                     double i_pin_fd, double i_pin_cd1, 
+                     double i_pin_cd2, double i_pin_cd5) override;
 };
 
 using SpecificationVector = std::vector<std::shared_ptr<RobotSpecification>>;

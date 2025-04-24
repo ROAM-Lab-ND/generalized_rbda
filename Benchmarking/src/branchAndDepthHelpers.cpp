@@ -51,12 +51,17 @@ void RobotSpecification::closeOutfile()
 }
 
 void RobotSpecification::writeToFile(std::ofstream &outfile,
-                                     double i_cluster, double i_pinocchio, double i_lg)
+                                     double i_cluster, double i_lg,
+                                     double i_pin_fd, double i_pin_cd1,
+                                     double i_pin_cd2, double i_pin_cd5)
 {
     outfile << name << ","
             << i_cluster << ","
-            << i_pinocchio << ","
-            << i_lg << std::endl;
+            << i_lg << ","
+            << i_pin_fd << ","
+            << i_pin_cd1 << ","
+            << i_pin_cd2 << ","
+            << i_pin_cd5 << std::endl;
 }
 
 void BranchAndDepthSpecification::registerBranchAndDepthCountFromName(const std::string &name_)
@@ -72,13 +77,18 @@ void BranchAndDepthSpecification::registerBranchAndDepthCountFromName(const std:
 }
 
 void BranchAndDepthSpecification::writeToFile(std::ofstream &outfile,
-                                              double i_cluster, double i_pinocchio, double i_lg)
+                                              double i_cluster, double i_lg,
+                                              double i_pin_fd, double i_pin_cd1,
+                                              double i_pin_cd2, double i_pin_cd5)
 {
     outfile << branch_count << ","
             << depth_count << ","
             << i_cluster << ","
-            << i_pinocchio << ","
-            << i_lg << std::endl;
+            << i_lg << ","
+            << i_pin_fd << ","
+            << i_pin_cd1 << ","
+            << i_pin_cd2 << ","
+            << i_pin_cd5 << std::endl;
 }
 
 SpecificationVector GetIndividualRobotSpecifications()
