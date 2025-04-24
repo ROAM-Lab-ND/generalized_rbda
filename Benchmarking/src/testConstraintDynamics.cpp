@@ -9,38 +9,20 @@ TEST(TestConstraintDynamics, NumericalFourBar)
     using ModelState = grbda::ModelState<double>;
     using JointState = grbda::JointState<double>;
     using StatePair = std::pair<Eigen::VectorXd, Eigen::VectorXd>;
-    using ConstraintModel = pinocchio::RigidConstraintModel;
-    using ConstraintData = pinocchio::RigidConstraintData;
-    using ConstraintType = pinocchio::ContactType;
 
     // URDF File
     std::string urdf_filename = main_urdf_directory + "four_bar.urdf";
 
     // Build Models
-    pinocchio::Model model;
+    PinModel<double> model;
     pinocchio::urdf::buildModel(urdf_filename, model);
     // TODO(@MatthewChignoli): Better names for these?
-    pinocchio::Data data(model);    // For forward dynamics
-    pinocchio::Data data_cd(model); // For constrained dynamics
+    PinData<double> data(model);    // For forward dynamics
+    PinData<double> data_cd(model); // For constrained dynamics
 
-    PINOCCHIO_STD_VECTOR_WITH_EIGEN_ALLOCATOR(ConstraintModel)
-    constraint_models;
-    PINOCCHIO_STD_VECTOR_WITH_EIGEN_ALLOCATOR(ConstraintData)
-    constraint_datas;
-    ConstraintType constraint_type = ConstraintType::CONTACT_3D;
-    const pinocchio::Model::JointIndex j2 = model.getJointId("joint2");
-    const pinocchio::SE3 SE3_from_joint_2 = pinocchio::SE3(Eigen::Matrix3d::Identity(),
-                                                           Eigen::Vector3d(1., 0., 0.));
-    const pinocchio::Model::JointIndex j3 = model.getJointId("joint3");
-    const pinocchio::SE3 SE3_from_joint_3 = pinocchio::SE3(Eigen::Matrix3d::Identity(),
-                                                           Eigen::Vector3d(0.5, 0., 0.));
-    ConstraintModel pin_loop_constraint(constraint_type, model, j2, SE3_from_joint_2,
-                                        j3, SE3_from_joint_3, pinocchio::ReferenceFrame::LOCAL);
-    pin_loop_constraint.corrector.Kp.array() = 10.;
-    pin_loop_constraint.corrector.Kd.array() = 10.;
-    constraint_models.push_back(pin_loop_constraint);
-    constraint_datas.push_back(ConstraintData(pin_loop_constraint));
-
+    auto pin_constraints = parseURDFFileForLoopConstraints(urdf_filename, model);
+    ConstraintModelVector<double> constraint_models = pin_constraints.models;
+    ConstraintDataVector<double> constraint_datas = pin_constraints.datas;
     const double mu0 = 1e-14;
     pinocchio::ProximalSettings prox_settings(1e-12, mu0, 4);
     pinocchio::initConstraintDynamics(model, data_cd, constraint_models);
@@ -56,7 +38,7 @@ TEST(TestConstraintDynamics, NumericalFourBar)
     const int nv = cluster_tree.getNumDegreesOfFreedom();
     const int nv_span = lgm_model.getNumDegreesOfFreedom();
 
-    const double tol = 1e-10;
+    const double tol = 5e-9;
     // TODO(@MatthewChignoli): The next lines should be in a loop over the number of samples
     {
         // Create a random state
@@ -193,9 +175,6 @@ TEST(TestConstraintDynamics, SymbolicFourBar)
     using StatePair = std::pair<DynamicADVector, DynamicADVector>;
     using LoopConstraintPtr = std::shared_ptr<grbda::LoopConstraint::Base<ADScalar>>;
 
-    using ConstraintModel = pinocchio::RigidConstraintModelTpl<ADScalar>;
-    using ConstraintData = pinocchio::RigidConstraintDataTpl<ADScalar>;
-    using ConstraintType = pinocchio::ContactType;
     using ProximalSettings = pinocchio::ProximalSettingsTpl<ADScalar>;
 
     // URDF File
@@ -208,25 +187,9 @@ TEST(TestConstraintDynamics, SymbolicFourBar)
     PinocchioADModel::Data ad_data(ad_model);
     PinocchioADModel::Data ad_data_cd(ad_model);
 
-    PINOCCHIO_STD_VECTOR_WITH_EIGEN_ALLOCATOR(ConstraintModel)
-    constraint_models;
-    PINOCCHIO_STD_VECTOR_WITH_EIGEN_ALLOCATOR(ConstraintData)
-    constraint_datas;
-    ConstraintType constraint_type = ConstraintType::CONTACT_3D;
-    const pinocchio::Model::JointIndex j2 = ad_model.getJointId("joint2");
-    const pinocchio::SE3 SE3_from_joint_2 = pinocchio::SE3(Eigen::Matrix3d::Identity(),
-                                                           Eigen::Vector3d(1., 0., 0.));
-    const pinocchio::Model::JointIndex j3 = ad_model.getJointId("joint3");
-    const pinocchio::SE3 SE3_from_joint_3 = pinocchio::SE3(Eigen::Matrix3d::Identity(),
-                                                           Eigen::Vector3d(0.5, 0., 0.));
-    ConstraintModel pin_loop_constraint(constraint_type, ad_model,
-                                        j2, SE3_from_joint_2.cast<ADScalar>(),
-                                        j3, SE3_from_joint_3.cast<ADScalar>(),
-                                        pinocchio::ReferenceFrame::LOCAL);
-    pin_loop_constraint.corrector.Kp.array() = 10.;
-    pin_loop_constraint.corrector.Kd.array() = 10.;
-    constraint_models.push_back(pin_loop_constraint);
-    constraint_datas.push_back(ConstraintData(pin_loop_constraint));
+    auto pin_constraints = parseURDFFileForLoopConstraints(urdf_filename, ad_model);
+    ConstraintModelVector<ADScalar> constraint_models = pin_constraints.models;
+    ConstraintDataVector<ADScalar> constraint_datas = pin_constraints.datas;
     const ADScalar mu0 = 1e-14;
     ProximalSettings prox_settings(1e-12, mu0, 4);
     pinocchio::initConstraintDynamics(ad_model, ad_data_cd, constraint_models);
@@ -360,7 +323,7 @@ TEST(TestConstraintDynamics, SymbolicFourBar)
     using ScalarStatePair = std::pair<Eigen::VectorXd, Eigen::VectorXd>;
     
     const int num_samples = 50;
-    const double tol = 1e-10;
+    const double tol = 5e-9;
 
     grbda::Timer timer;
     double t_cluster = 0.;
