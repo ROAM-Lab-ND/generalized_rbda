@@ -81,40 +81,52 @@ void BranchAndDepthSpecification::writeToFile(std::ofstream &outfile,
             << i_lg << std::endl;
 }
 
-SpecVector GetIndividualUrdfFiles()
+SpecificationVector GetIndividualRobotSpecifications()
 {
 
-    SpecVector urdf_files;
-    urdf_files.push_back(std::make_shared<RobotSpecification>(
-        main_urdf_directory + "four_bar.urdf"));
-    urdf_files.push_back(std::make_shared<RobotSpecification>(
-        main_urdf_directory + "revolute_rotor_chain.urdf"));
-    urdf_files.push_back(std::make_shared<RobotSpecification>(
-        main_urdf_directory + "mit_humanoid.urdf"));
-    urdf_files.push_back(std::make_shared<RobotSpecification>(
-        main_urdf_directory + "mini_cheetah.urdf"));
-    return urdf_files;
+    SpecificationVector robot_specifications;
+
+    const std::string four_bar_urdf = main_urdf_directory + "four_bar.urdf";
+    auto four_bar_spec = std::make_shared<RobotSpecification>(four_bar_urdf);
+    robot_specifications.push_back(four_bar_spec);
+
+    const std::string rev_rotor_chain_urdf = main_urdf_directory + "revolute_rotor_chain.urdf";
+    auto rev_rotor_chain_spec = std::make_shared<RobotSpecification>(rev_rotor_chain_urdf);
+    robot_specifications.push_back(rev_rotor_chain_spec);
+
+    const std::string mit_humanoid_urdf = main_urdf_directory + "mit_humanoid.urdf";
+    auto mit_humanoid_spec = std::make_shared<RobotSpecification>(mit_humanoid_urdf);
+    robot_specifications.push_back(mit_humanoid_spec);
+
+    const std::string mini_cheetah_urdf = main_urdf_directory + "mini_cheetah.urdf";
+    auto mini_cheetah_spec = std::make_shared<RobotSpecification>(mini_cheetah_urdf);
+    robot_specifications.push_back(mini_cheetah_spec);
+
+    return robot_specifications;
 }
 
-SpecVector GetRevoluteRotorUrdfFiles()
+SpecificationVector GetRevoluteRotorRobotSpecifications()
 {
     // TODO(@nicholasadr): automatically search for urdf files from variable_revolute_urdf dir
-    SpecVector urdf_files;
+    SpecificationVector robot_specifications;
+    std::string outfile_suffix = "revolute_chain";
     for (int b : {1, 2, 4, 6})
         for (int d : {1, 2, 3, 4, 5, 6, 7, 8, 9, 10})
         {
             std::string urdf_file = urdf_directory +
                                     "variable_revolute_urdf/revolute_rotor_branch_" +
                                     std::to_string(b) + "_" + std::to_string(d) + ".urdf";
-            urdf_files.push_back(std::make_shared<BranchAndDepthSpecification>(urdf_file));
+            auto robot_spec = std::make_shared<BranchAndDepthSpecification>(urdf_file,
+                                                                            outfile_suffix);
+            robot_specifications.push_back(robot_spec);
         }
-    return urdf_files;
+    return robot_specifications;
 }
 
-SpecVector GetRevoluteRotorPairUrdfFiles()
+SpecificationVector GetRevoluteRotorPairRobotSpecifications()
 {
     // TODO(@nicholasadr): automatically search for urdf files from variable_revolute_pair_urdf dir
-    SpecVector urdf_files;
+    SpecificationVector robot_specifications;
     std::string outfile_suffix = "revolute_pair_chain";
     for (int b : {1, 2, 4, 6})
         for (int d : {1, 2, 3, 4, 5, 6, 7})
@@ -122,16 +134,17 @@ SpecVector GetRevoluteRotorPairUrdfFiles()
             std::string urdf_file = urdf_directory +
                                     "variable_revolute_pair_urdf/revolute_rotor_pair_branch_" +
                                     std::to_string(b) + "_" + std::to_string(d) + ".urdf";
-            urdf_files.push_back(std::make_shared<BranchAndDepthSpecification>(urdf_file,
-                                                                               outfile_suffix));
+            auto robot_spec = std::make_shared<BranchAndDepthSpecification>(urdf_file,
+                                                                            outfile_suffix);
+            robot_specifications.push_back(robot_spec);
         }
-    return urdf_files;
+    return robot_specifications;
 }
 
-SpecVector GetFourBarUrdfFiles()
+SpecificationVector GetFourBarRobotSpecifications()
 {
     // TODO(@nicholasadr): automatically search for urdf files from variable_four_bar_urdf dir
-    SpecVector urdf_files;
+    SpecificationVector robot_specifications;
     std::string outfile_suffix = "four_bar_chain";
     for (int b : {1, 2, 4, 6})
         for (int d : {1, 2, 3, 4, 5, 6, 7})
@@ -139,14 +152,16 @@ SpecVector GetFourBarUrdfFiles()
             std::string urdf_file = urdf_directory +
                                     "variable_four_bar_urdf/four_bar_branch_" +
                                     std::to_string(b) + "_" + std::to_string(d) + ".urdf";
-            urdf_files.push_back(std::make_shared<BranchAndDepthSpecification>(urdf_file,
-                                                                               outfile_suffix));
+            auto robot_spec = std::make_shared<BranchAndDepthSpecification>(urdf_file,
+                                                                            outfile_suffix);
+            robot_specifications.push_back(robot_spec);
         }
-    return urdf_files;
+    return robot_specifications;
 }
 
-SpecVector GetBenchmarkUrdfFiles()
+SpecificationVector GetBenchmarkRobotSpecifications()
 {
+    // Test that all output files are created
     std::vector<std::string> sys_types = {"revolute_chain", "revolute_pair_chain",
                                           "four_bar_chain", "systems"};
     for (std::string bench_type : {"Instruction", "Timing"})
@@ -167,19 +182,20 @@ SpecVector GetBenchmarkUrdfFiles()
         }
     }
 
-    SpecVector test_urdf_files = GetIndividualUrdfFiles();
+    // Get the actual RobotSpecifications
+    SpecificationVector test_robot_specs = GetIndividualRobotSpecifications();
 
-    SpecVector revrotor_urdf_files = GetRevoluteRotorUrdfFiles();
-    test_urdf_files.insert(test_urdf_files.end(), revrotor_urdf_files.begin(),
-                           revrotor_urdf_files.end());
+    SpecificationVector revrotor_robot_specs = GetRevoluteRotorRobotSpecifications();
+    test_robot_specs.insert(test_robot_specs.end(), revrotor_robot_specs.begin(),
+                            revrotor_robot_specs.end());
 
-    SpecVector revrotor_pair_urdf_files = GetRevoluteRotorPairUrdfFiles();
-    test_urdf_files.insert(test_urdf_files.end(), revrotor_pair_urdf_files.begin(),
-                           revrotor_pair_urdf_files.end());
+    // SpecificationVector revrotor_pair_robot_specs = GetRevoluteRotorPairRobotSpecifications();
+    // test_robot_specs.insert(test_robot_specs.end(), revrotor_pair_robot_specs.begin(),
+    //                         revrotor_pair_robot_specs.end());
 
-    SpecVector four_bar_urdf_files = GetFourBarUrdfFiles();
-    test_urdf_files.insert(test_urdf_files.end(), four_bar_urdf_files.begin(),
-                           four_bar_urdf_files.end());
+    SpecificationVector four_bar_robot_specs = GetFourBarRobotSpecifications();
+    test_robot_specs.insert(test_robot_specs.end(), four_bar_robot_specs.begin(),
+                            four_bar_robot_specs.end());
 
-    return test_urdf_files;
+    return test_robot_specs;
 }

@@ -4,11 +4,9 @@ template <typename Scalar>
 JointMap<Scalar> jointMap(const grbda::RigidBodyTreeModel<Scalar> &grbda_model,
                           const pinocchio::Model &pin_model)
 {
-
     JointMap<Scalar> joint_map;
-    using EigMat = Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic>;
-    joint_map.pos = EigMat::Zero(pin_model.nq, grbda_model.getNumPositions());
-    joint_map.vel = EigMat::Zero(pin_model.nv, grbda_model.getNumDegreesOfFreedom());
+    joint_map.pos = DMat<Scalar>::Zero(pin_model.nq, grbda_model.getNumPositions());
+    joint_map.vel = DMat<Scalar>::Zero(pin_model.nv, grbda_model.getNumDegreesOfFreedom());
 
     int i_pos = 0, i_vel = 0;
     for (const auto &name : pin_model.names)
@@ -43,8 +41,8 @@ JointMap<Scalar> jointMap(const grbda::RigidBodyTreeModel<Scalar> &grbda_model,
     }
 
     // Check that the joint map is valid
-    Eigen::MatrixXd jmap_pos_double = joint_map.pos.template cast<double>();
-    Eigen::MatrixXd jmap_vel_double = joint_map.vel.template cast<double>();
+    DMat<double> jmap_pos_double = joint_map.pos.template cast<double>();
+    DMat<double> jmap_vel_double = joint_map.vel.template cast<double>();
     for (int i = 0; i < joint_map.pos.rows(); i++)
     {
         EXPECT_TRUE(jmap_pos_double.row(i).sum() == 1);
@@ -92,8 +90,6 @@ ConstrainedLinkInfo<Scalar> constrainedLinkInfoFromXml(tinyxml2::XMLElement *con
         pinocchio::Model::FrameIndex frame_idx = model.getFrameId(std::string(pname));
         info.idx = model.frames[frame_idx].parentJoint;
     }
-    std::cout << "Found predecessor: " << pname << std::endl;
-    std::cout << "Predecessor index: " << info.idx << std::endl;
 
     tinyxml2::XMLElement *origin_xml = config->FirstChildElement("origin");
     if (!origin_xml)
@@ -114,7 +110,6 @@ ConstrainedLinkInfo<Scalar> constrainedLinkInfoFromXml(tinyxml2::XMLElement *con
                 throw std::runtime_error("Invalid input: expected 3 doubles");
             }
         }
-        std::cout << "translation: " << translation.transpose() << std::endl;
         info.local_pose = pinocchio::SE3(rotation, translation).cast<Scalar>();
     }
 

@@ -25,10 +25,16 @@ const std::string urdf_directory = SOURCE_DIRECTORY "/Benchmarking/urdfs/";
 const std::string path_to_data = SOURCE_DIRECTORY "/Benchmarking/data/";
 
 template <typename Scalar>
+using DVec = Eigen::Vector<Scalar, Eigen::Dynamic>;
+
+template <typename Scalar>
+using DMat = Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic>;
+
+template <typename Scalar>
 struct JointMap
 {
-    Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> pos;
-    Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> vel;
+    DMat<Scalar> pos;
+    DMat<Scalar> vel;
 };
 
 template <typename Scalar>
@@ -59,6 +65,10 @@ struct PinConstraintVectors
     ConstraintModelVector<Scalar> models;
     ConstraintDataVector<Scalar> datas;
 };
+
+template <typename Scalar>
+using PinProxSettings = pinocchio::ProximalSettingsTpl<Scalar>;
+
 
 template <typename Scalar>
 struct ConstrainedLinkInfo
