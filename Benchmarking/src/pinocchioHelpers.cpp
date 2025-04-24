@@ -368,7 +368,7 @@ template bool ParallelChainSpecification::clusterTreeProperlyFormed(
 void ParallelChainSpecification::writeToFile(std::ofstream &outfile,
                                              double i_cluster, double i_lg,
                                              double i_pin_fd, double i_pin_cd1,
-                                             double i_pin_cd2, double i_pin_cd5) override
+                                             double i_pin_cd2, double i_pin_cd5)
 {
     outfile << depth << ","
             << loop_size << ","
