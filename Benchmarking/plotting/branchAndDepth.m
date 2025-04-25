@@ -1,7 +1,8 @@
 close all; clear; clc;
+run plottingOptions.m
+
 load('custom_colors.mat')
 
-% csv format: # branches, cluster tree depth, c-aba instr count, pinochhio instr count
 path_to_data = '../data/InstructionPinocchioFD_';
 
 % TODO(@MatthewChignoli): Add these to custom colors?
@@ -36,24 +37,15 @@ system_list{2} = rev_pair_chain;
 system_list{3} = four_bar;
 
 %% Plot
-% Options
-% symbols = {'o--', 's--', 'd--', '^--', '*--', 'p--', 'h--', 'x--', '+--'};
-symbols = {'o--', 'o--', 'o--', 'o--', 'o--', 'o--', 'o--', 'o--', 'o--'};
-plot_opts.MarkerSize = 4;
-plot_opts.LineWidth = 2.0;
-font_size = 16;
-
-text_opts.Interpreter = 'latex';
-text_opts.FontSize = font_size;
-text_opts.Color = 'k';
-text_opts.VerticalAlignment = 'top';
-
 figure
-
-% Set figure size
 size_scale = 3500;
 size_ratio = 0.5;
 set(gcf, 'Position', [200, 100, size_scale, size_scale * size_ratio]);
+
+t = tiledlayout(3, length(system_list));
+t.TileSpacing = 'compact';
+t.Padding = 'compact';
+t.TileIndexing = 'columnmajor';
 
 for j = 1:length(system_list)
     sys = system_list{j};
@@ -75,36 +67,17 @@ for j = 1:length(system_list)
     row_idx = 0;
 
     for i = branches
-        sp_idx = 3 * row_idx + j;
         row_idx = row_idx + 1;
-        subplot(length(branches), length(system_list), sp_idx)
+        ax = nexttile;
         hold on
 
-        plot_opts.Color = subdued_red;
-        plot_opts.MarkerFaceColor = subdued_red;
-        plot_opts.DisplayName = 'Constraint-Embedding ABA (Our Implementation)';
-        plot(caba.branches{i}(:, 1), caba.branches{i}(:, 2), symbols{i}, plot_opts)
-
-        plot_opts.Color = subdued_blue;
-        plot_opts.MarkerFaceColor = subdued_blue;
-        plot_opts.DisplayName = 'Cholesky (Pinocchio)';
-        plot(pin_fd.branches{i}(:, 1), pin_fd.branches{i}(:, 2), symbols{i}, plot_opts)
+        plot(caba.branches{i}(:, 1), caba.branches{i}(:, 2), symbols{i}, caba_opts)
+        plot(pin_fd.branches{i}(:, 1), pin_fd.branches{i}(:, 2), symbols{i}, pin_fd_opts)
 
         if sys.implicit
-            plot_opts.Color = green1;
-            plot_opts.MarkerFaceColor = green1;
-            plot_opts.DisplayName = 'Proximal and Sparse, 1 iter (Pinocchio)';
-            plot(pin_cd1.branches{i}(:, 1), pin_cd1.branches{i}(:, 2), symbols{i}, plot_opts)
-
-            plot_opts.Color = green2;
-            plot_opts.MarkerFaceColor = green2;
-            plot_opts.DisplayName = 'Proximal and Sparse, 2 iter (Pinocchio)';
-            plot(pin_cd2.branches{i}(:, 1), pin_cd2.branches{i}(:, 2), symbols{i}, plot_opts)
-
-            plot_opts.Color = green3;
-            plot_opts.MarkerFaceColor = green3;
-            plot_opts.DisplayName = 'Proximal and Sparse, 5 iter (Pinocchio)';
-            plot(pin_cd5.branches{i}(:, 1), pin_cd5.branches{i}(:, 2), symbols{i}, plot_opts)
+            plot(pin_cd1.branches{i}(:, 1), pin_cd1.branches{i}(:, 2), symbols{i}, pin_cd1_opts)
+            plot(pin_cd2.branches{i}(:, 1), pin_cd2.branches{i}(:, 2), symbols{i}, pin_cd2_opts)
+            plot(pin_cd5.branches{i}(:, 1), pin_cd5.branches{i}(:, 2), symbols{i}, pin_cd5_opts)
         end
 
         % Format applied to all subplots
@@ -114,36 +87,43 @@ for j = 1:length(system_list)
         set(gca, 'Fontsize', font_size)
         set(gca, 'TickLabelInterpreter', 'latex')
         set(gca, 'XLim', sys.axis(1:2))
-        ax = gca;
-        ax.YAxis.Exponent = 3;
+
+        ax.YAxis.Exponent = 5;
         ax.YRuler.ExponentMode = 'manual';
-        text(1.15, 0.95 * get(gca).YLim(2), ['Branch Length ($b_a$) = ', num2str(i)], text_opts)
-        
+
+        if (row_idx ~= 1 ||  j ~= length(system_list))
+            annotation('textbox', [ax.Position(1:2) 0.1 0.25], ...
+                'String', ['Branch Length ($b_a$) = ', num2str(i)], ...
+                text_opts)
+        end
+
+        % Format top row
+        if row_idx == 1
+            title(sys.title, 'Interpreter', 'latex')
+        end
+
+        % Format bottom row
+        if row_idx == length(branches)
+            xlabel('Branch Depth ($d_a$)', 'Interpreter', 'latex')
+        end
+
         % Format Left column
         if j == 1
             ylabel('Instruction Count', 'Interpreter', 'latex')
         end
 
-    end
+        % Format Bottom Right
+        if (row_idx == length(branches) && j == length(system_list))
+            l = legend();
+            l.Location = 'Best';
+            l.Interpreter = 'latex';
+            l.Orientation = 'vertical';
+            % l.IconColumnWidth = 80.;
+            l.Position = [0.6796,0.8528,0.1982,0.1009];
+        end
 
-    % Format top row
-    row_idx = 0;
-    sp_idx = 3 * row_idx + j;
-    subplot(length(branches), length(system_list), sp_idx)
-    title(sys.title, 'Interpreter', 'latex')
-
-    % Format bottom row
-    row_idx = length(branches) - 1;
-    sp_idx = 3 * row_idx + j;
-    subplot(length(branches), length(system_list), sp_idx)
-    xlabel('Branch Depth ($d_a$)', 'Interpreter', 'latex')
-
-    % Format bottom right
-    if j == length(system_list)
-        l = legend();
-        l.Location = 'Best';
-        l.Interpreter = 'latex';
-        l.Orientation = 'horizontal';
     end
 
 end
+
+saveas(gcf, '../figures/BranchAndDepth.png')
