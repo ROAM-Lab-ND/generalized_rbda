@@ -299,6 +299,25 @@ void RobotSpecification::writeToFile(std::ofstream &outfile,
             << i_pin_cd5 << std::endl;
 }
 
+void RobotSpecification::setTolerances(double qdd_tol, double qdd_cd_tol, double cnstr_tol)
+{
+    qdd_tol_ = qdd_tol;
+    qdd_cd_tol_ = qdd_cd_tol;
+    cnstr_tol_ = cnstr_tol;
+}
+void RobotSpecification::setQddTolerance(double qdd_tol)
+{
+    qdd_tol_ = qdd_tol;
+}
+void RobotSpecification::setQddCdTolerance(double qdd_cd_tol)
+{
+    qdd_cd_tol_ = qdd_cd_tol;
+}
+void RobotSpecification::setCnstrTolerance(double cnstr_tol)
+{
+    cnstr_tol_ = cnstr_tol;
+}
+
 void BranchAndDepthSpecification::registerBranchAndDepthCountFromName(const std::string &name_)
 {
     std::regex re(R"(_(\d+)_+(\d+)_?)");
@@ -333,7 +352,10 @@ ParallelChainSpecification::ParallelChainSpecification(int depth_, int loop_size
                              std::to_string(depth_) + "/loop_size" +
                              std::to_string(loop_size_) + ".urdf",
                          constraint_type_),
-      depth(depth_), loop_size(loop_size_), tol(tol_), constraint_type(constraint_type_) {}
+      depth(depth_), loop_size(loop_size_), constraint_type(constraint_type_)
+{
+    setQddTolerance(tol_);
+}
 
 template <typename ModelType>
 bool ParallelChainSpecification::clusterTreeProperlyFormed(const ModelType &cluster_tree) const
@@ -465,36 +487,34 @@ SpecificationVector GetFourBarRobotSpecifications()
 SpecificationVector GetParallelChainSpecifications()
 {
     SpecificationVector parallel_chains;
-    // for (int i : {2, 4, 6, 8, 10})
-    for (int i : {2, 4})
+    for (int i : {2, 4, 6, 8, 10})
     {
         auto exp_chain = std::make_shared<ParallelChainSpecification>(5, i, 1e-8, "Explicit");
         auto imp_chain = std::make_shared<ParallelChainSpecification>(5, i + 1, 1e-4, "Implicit");
         parallel_chains.push_back(exp_chain);
         parallel_chains.push_back(imp_chain);
     }
-    // for (int i : {2, 4, 8, 12, 16})
-    for (int i : {2, 4})
+    for (int i : {2, 4, 8, 12, 16})
     {
         auto exp_chain = std::make_shared<ParallelChainSpecification>(10, i, 1e-6, "Explicit");
         auto imp_chain = std::make_shared<ParallelChainSpecification>(10, i + 1, 1e-3, "Implicit");
         parallel_chains.push_back(exp_chain);
         parallel_chains.push_back(imp_chain);
     }
-    // for (int i : {2, 6, 12, 20, 30})
-    // {
-    //     auto exp_chain = std::make_shared<ParallelChainSpecification>(20, i, 1e-2, "Explicit");
-    //     auto imp_chain = std::make_shared<ParallelChainSpecification>(20, i + 1, 1e1, "Implicit");
-    //     parallel_chains.push_back(exp_chain);
-    //     parallel_chains.push_back(imp_chain);
-    // }
-    // for (int i : {2, 8, 16, 28, 40})
-    // {
-    //     auto exp_chain = std::make_shared<ParallelChainSpecification>(40, i, 5e0, "Explicit");
-    //     auto imp_chain = std::make_shared<ParallelChainSpecification>(40, i + 1, 1e2, "Implicit");
-    //     parallel_chains.push_back(exp_chain);
-    //     parallel_chains.push_back(imp_chain);
-    // }
+    for (int i : {2, 6, 12, 20, 30})
+    {
+        auto exp_chain = std::make_shared<ParallelChainSpecification>(20, i, 1e-2, "Explicit");
+        auto imp_chain = std::make_shared<ParallelChainSpecification>(20, i + 1, 1e1, "Implicit");
+        parallel_chains.push_back(exp_chain);
+        parallel_chains.push_back(imp_chain);
+    }
+    for (int i : {2, 8, 16, 28, 40})
+    {
+        auto exp_chain = std::make_shared<ParallelChainSpecification>(40, i, 5e0, "Explicit");
+        auto imp_chain = std::make_shared<ParallelChainSpecification>(40, i + 1, 1e2, "Implicit");
+        parallel_chains.push_back(exp_chain);
+        parallel_chains.push_back(imp_chain);
+    }
 
     return parallel_chains;
 }
@@ -508,13 +528,13 @@ SpecificationVector GetBenchmarkRobotSpecifications()
     test_robot_specs.insert(test_robot_specs.end(), revrotor_robot_specs.begin(),
                             revrotor_robot_specs.end());
 
-    // SpecificationVector revrotor_pair_robot_specs = GetRevoluteRotorPairRobotSpecifications();
-    // test_robot_specs.insert(test_robot_specs.end(), revrotor_pair_robot_specs.begin(),
-    //                         revrotor_pair_robot_specs.end());
+    SpecificationVector revrotor_pair_robot_specs = GetRevoluteRotorPairRobotSpecifications();
+    test_robot_specs.insert(test_robot_specs.end(), revrotor_pair_robot_specs.begin(),
+                            revrotor_pair_robot_specs.end());
 
-    // SpecificationVector four_bar_robot_specs = GetFourBarRobotSpecifications();
-    // test_robot_specs.insert(test_robot_specs.end(), four_bar_robot_specs.begin(),
-    //                         four_bar_robot_specs.end());
+    SpecificationVector four_bar_robot_specs = GetFourBarRobotSpecifications();
+    test_robot_specs.insert(test_robot_specs.end(), four_bar_robot_specs.begin(),
+                            four_bar_robot_specs.end());
 
     SpecificationVector parallel_chain_robot_specs = GetParallelChainSpecifications();
     test_robot_specs.insert(test_robot_specs.end(), parallel_chain_robot_specs.begin(),

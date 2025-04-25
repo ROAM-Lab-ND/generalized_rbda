@@ -25,18 +25,6 @@ else()
   message(FATAL_ERROR "Pinocchio not found. Please install it or specify its location.")
 endif()
 
-# add_executable(parallel_chains_benchmark src/parallelChainsBenchmark.cpp)
-# target_link_libraries(parallel_chains_benchmark ${PROJECT_NAME} ${PINOCCHIO_LIBRARIES})
-# target_link_libraries(parallel_chains_benchmark gtest gmock_main)
-
-# add_executable(parallel_chains_benchmark_v2 src/parallelChainsBenchmark_v2.cpp)
-# target_link_libraries(parallel_chains_benchmark_v2 ${PROJECT_NAME} ${PINOCCHIO_LIBRARIES})
-# target_link_libraries(parallel_chains_benchmark_v2 gtest gmock_main)
-
-# add_executable(rotors_benchmark src/rotorsBenchmark.cpp)
-# target_link_libraries(rotors_benchmark ${PROJECT_NAME} ${PINOCCHIO_LIBRARIES})
-# target_link_libraries(rotors_benchmark gtest gmock_main)
-
 # add_executable(approx_benchmark src/approximateBenchmark.cpp)
 # target_link_libraries(approx_benchmark ${PROJECT_NAME} ${PINOCCHIO_LIBRARIES})
 # target_link_libraries(approx_benchmark gtest gmock_main)
@@ -45,10 +33,6 @@ file(GLOB_RECURSE HELPER_SRCS "src/*Helpers.cpp")
 add_library(benchmarkHelpers ${HELPER_SRCS})
 target_link_libraries(benchmarkHelpers ${PROJECT_NAME} ${PINOCCHIO_LIBRARIES} console_bridge)
 
-add_executable(test_cnstr_dyn src/testConstraintDynamics.cpp)
-target_link_libraries(test_cnstr_dyn benchmarkHelpers)
-target_link_libraries(test_cnstr_dyn gtest gmock_main)
-
-add_executable(branchAndDepth src/branchAndDepthBenchmark.cpp)
-target_link_libraries(branchAndDepth benchmarkHelpers)
-target_link_libraries(branchAndDepth gtest gmock_main)
+add_executable(pinocchio_benchmark src/pinocchioBenchmark.cpp)
+target_link_libraries(pinocchio_benchmark benchmarkHelpers)
+target_link_libraries(pinocchio_benchmark gtest gmock_main)
