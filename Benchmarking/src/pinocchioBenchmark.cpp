@@ -1,8 +1,5 @@
 #include "pinocchioHelpers.hpp"
 
-// TODO(@MatthewChignoli): Need to rename this
-
-// TODO(@MatthewChignoli): Log the constrainedDynamics error in a csv?
 template <typename Scalar>
 class PinocchioBase : public ::testing::TestWithParam<std::shared_ptr<RobotSpecification>>
 {
@@ -15,9 +12,12 @@ protected:
     using StatePair = std::pair<DVec<Scalar>, DVec<Scalar>>;
 
     PinocchioBase(int num_samples) : num_samples_(num_samples),
-                                      cluster_tree_(GetParam()->urdf_filename),
-                                      lgm_model_(cluster_tree_,
-                                                 grbda::FwdDynMethod::LagrangeMultiplierEigen)
+                                     qdd_tol_(GetParam()->qdd_tol_),
+                                     qdd_cd_tol_(GetParam()->qdd_cd_tol_),
+                                     cnstr_tol_(GetParam()->cnstr_tol_),
+                                     cluster_tree_(GetParam()->urdf_filename),
+                                     lgm_model_(cluster_tree_,
+                                                grbda::FwdDynMethod::LagrangeMultiplierEigen)
     {
         PinModel<double> tmp_model;
         pinocchio::urdf::buildModel(GetParam()->urdf_filename, tmp_model);
@@ -45,9 +45,9 @@ protected:
     }
 
     const int num_samples_;
-    const double qdd_tol_ = 5e-5;
-    const double qdd_cd_tol_ = 1e-2;
-    const double cnstr_tol_ = 1e-6;
+    const double qdd_tol_;
+    const double qdd_cd_tol_;
+    const double cnstr_tol_;
 
     const Scalar fd_mu_ = 1e-14;
     PinProxSettings<Scalar> prox_settings1_, prox_settings2_, prox_settings5_;

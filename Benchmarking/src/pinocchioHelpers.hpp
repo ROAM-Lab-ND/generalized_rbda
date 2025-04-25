@@ -116,6 +116,14 @@ struct RobotSpecification
                              double i_cluster, double i_lg,
                              double i_pin_fd, double i_pin_cd1,
                              double i_pin_cd2, double i_pin_cd5);
+
+    void setTolerances(double qdd_tol, double qdd_cd_tol, double cnstr_tol);
+    void setQddTolerance(double qdd_tol);
+    void setQddCdTolerance(double qdd_cd_tol);
+    void setCnstrTolerance(double cnstr_tol);
+    double qdd_tol_ = 5e-5;    // For comparing qdd
+    double qdd_cd_tol_ = 5e-2; // For comparing qdd with constrained dynamics
+    double cnstr_tol_ = 1e-6;  // For comparing constraint violations
 };
 
 struct BranchAndDepthSpecification : public RobotSpecification
@@ -142,7 +150,6 @@ struct ParallelChainSpecification : public RobotSpecification
 {
     const int depth;
     const int loop_size;
-    const double tol; // TODO(@MatthewChignoli): Do we need this?
     const std::string constraint_type;
 
     ParallelChainSpecification(int depth_, int loop_size_, double tol_,
