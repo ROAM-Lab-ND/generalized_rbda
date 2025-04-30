@@ -115,10 +115,10 @@
             <xacro:L2 name="link_${(branch_count - 1) * 3 + 2}"/>
             <xacro:L3 name="link_${(branch_count - 1) * 3 + 3}"/>
             <xacro:J1 name="base_to_link_${(branch_count - 1) * 3 + 1}"
-                      parent_link="base"
+                      parent_link="Floating Base"
                       child_link="link_${(branch_count - 1) * 3 + 1}"/>
             <xacro:J2 name="base_to_link_${(branch_count - 1) * 3 + 2}"
-                      parent_link="base"
+                      parent_link="Floating Base"
                       child_link="link_${(branch_count - 1 ) * 3 + 2}"/>
             <xacro:J3 name="link_${(branch_count - 1) * 3 + 2}_to_link_${(branch_count - 1) * 3 + 3}"
                       parent_link="link_${(branch_count - 1) * 3 + 2}"

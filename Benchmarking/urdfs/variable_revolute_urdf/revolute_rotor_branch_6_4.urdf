@@ -4,9 +4,21 @@
 <!-- |    EDITING THIS FILE BY HAND IS NOT RECOMMENDED                                 | -->
 <!-- =================================================================================== -->
 <robot name="variable_revolute_rotor_branch">
-  <link name="base"/>
+  <link name="ground"/>
+  <link name="Floating Base">
+    <inertial>
+      <mass value="5.0"/>
+      <origin xyz="0. 0. 0."/>
+      <inertia ixx="0.1" ixy="0." ixz="0." iyy="0.1" iyz="0." izz="0.1"/>
+    </inertial>
+  </link>
+  <joint name="world_to_base" type="floating">
+    <origin rpy="0 0 0" xyz="0 0 0"/>
+    <parent link="ground"/>
+    <child link="Floating Base"/>
+  </joint>
   <joint independent="true" name="base_to_link_6" type="revolute">
-    <parent link="base"/>
+    <parent link="Floating Base"/>
     <child link="link_6"/>
     <axis xyz="0 0 1"/>
     <origin xyz="1.0 0.0 0.0"/>
@@ -20,7 +32,7 @@
     </inertial>
   </link>
   <joint independent="false" name="base_to_rotor_6" type="revolute">
-    <parent link="base"/>
+    <parent link="Floating Base"/>
     <child link="rotor_6"/>
     <axis xyz="0 0 1"/>
     <origin xyz="1.0 0.0 0.0"/>
@@ -39,7 +51,7 @@
     <ratio value="6.0"/>
   </coupling>
   <joint independent="true" name="base_to_link_5" type="revolute">
-    <parent link="base"/>
+    <parent link="Floating Base"/>
     <child link="link_5"/>
     <axis xyz="0 0 1"/>
     <origin xyz="1.0 0.0 0.0"/>
@@ -53,7 +65,7 @@
     </inertial>
   </link>
   <joint independent="false" name="base_to_rotor_5" type="revolute">
-    <parent link="base"/>
+    <parent link="Floating Base"/>
     <child link="rotor_5"/>
     <axis xyz="0 0 1"/>
     <origin xyz="1.0 0.0 0.0"/>
@@ -72,7 +84,7 @@
     <ratio value="6.0"/>
   </coupling>
   <joint independent="true" name="base_to_link_4" type="revolute">
-    <parent link="base"/>
+    <parent link="Floating Base"/>
     <child link="link_4"/>
     <axis xyz="0 0 1"/>
     <origin xyz="1.0 0.0 0.0"/>
@@ -86,7 +98,7 @@
     </inertial>
   </link>
   <joint independent="false" name="base_to_rotor_4" type="revolute">
-    <parent link="base"/>
+    <parent link="Floating Base"/>
     <child link="rotor_4"/>
     <axis xyz="0 0 1"/>
     <origin xyz="1.0 0.0 0.0"/>
@@ -105,7 +117,7 @@
     <ratio value="6.0"/>
   </coupling>
   <joint independent="true" name="base_to_link_3" type="revolute">
-    <parent link="base"/>
+    <parent link="Floating Base"/>
     <child link="link_3"/>
     <axis xyz="0 0 1"/>
     <origin xyz="1.0 0.0 0.0"/>
@@ -119,7 +131,7 @@
     </inertial>
   </link>
   <joint independent="false" name="base_to_rotor_3" type="revolute">
-    <parent link="base"/>
+    <parent link="Floating Base"/>
     <child link="rotor_3"/>
     <axis xyz="0 0 1"/>
     <origin xyz="1.0 0.0 0.0"/>
@@ -138,7 +150,7 @@
     <ratio value="6.0"/>
   </coupling>
   <joint independent="true" name="base_to_link_2" type="revolute">
-    <parent link="base"/>
+    <parent link="Floating Base"/>
     <child link="link_2"/>
     <axis xyz="0 0 1"/>
     <origin xyz="1.0 0.0 0.0"/>
@@ -152,7 +164,7 @@
     </inertial>
   </link>
   <joint independent="false" name="base_to_rotor_2" type="revolute">
-    <parent link="base"/>
+    <parent link="Floating Base"/>
     <child link="rotor_2"/>
     <axis xyz="0 0 1"/>
     <origin xyz="1.0 0.0 0.0"/>
@@ -171,7 +183,7 @@
     <ratio value="6.0"/>
   </coupling>
   <joint independent="true" name="base_to_link_1" type="revolute">
-    <parent link="base"/>
+    <parent link="Floating Base"/>
     <child link="link_1"/>
     <axis xyz="0 0 1"/>
     <origin xyz="1.0 0.0 0.0"/>
@@ -185,7 +197,7 @@
     </inertial>
   </link>
   <joint independent="false" name="base_to_rotor_1" type="revolute">
-    <parent link="base"/>
+    <parent link="Floating Base"/>
     <child link="rotor_1"/>
     <axis xyz="0 0 1"/>
     <origin xyz="1.0 0.0 0.0"/>
