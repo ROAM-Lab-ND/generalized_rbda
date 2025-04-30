@@ -234,9 +234,19 @@ protected:
     double t_pin_cd2_ = 0.;
     double t_pin_cd5_ = 0.;
 
-    double e_pin_cd1_ = 0.;
-    double e_pin_cd2_ = 0.;
-    double e_pin_cd5_ = 0.;
+    double eL2_cluster_ = 0.;
+    double eL2_lg_ = 0.;
+    double eL2_pin_fd_ = 0.;
+    double eL2_pin_cd1_ = 0.;
+    double eL2_pin_cd2_ = 0.;
+    double eL2_pin_cd5_ = 0.;
+
+    double eLinf_cluster_ = 0.;
+    double eLinf_lg_ = 0.;
+    double eLinf_pin_fd_ = 0.;
+    double eLinf_pin_cd1_ = 0.;
+    double eLinf_pin_cd2_ = 0.;
+    double eLinf_pin_cd5_ = 0.;
 };
 
 INSTANTIATE_TEST_SUITE_P(PinocchioBenchmark, PinocchioBenchmark,
@@ -435,17 +445,23 @@ TEST_P(PinocchioBenchmark, forward_dynamics)
         casadi::copy(dm_pin_cd5_res[0], pin_cd5_res);
 
         // Check the cluster ABA solution against the Lagrange multiplier solution
-        const DVec<double> grbda_error = lgm_res - cABA_res;
-        EXPECT_LT(grbda_error.norm(), qdd_tol_)
+        const DVec<double> caba_error = pin_fd_res - joint_map_.vel.cast<double>() * cABA_res;
+        EXPECT_LT(caba_error.norm(), qdd_tol_)
             << "qdd_lgm: " << lgm_res.transpose() << "\n"
             << "qdd_cABA: " << cABA_res.transpose() << "\n"
             << "cABA_res: " << cABA_res.transpose();
 
         // Check grbda lagrange multiplier solution against pinocchio
-        const DVec<double> qdd_error = pin_fd_res - joint_map_.vel.cast<double>() * lgm_res;
-        EXPECT_LT(qdd_error.norm(), qdd_tol_)
+        const DVec<double> lgm_error = pin_fd_res - joint_map_.vel.cast<double>() * lgm_res;
+        EXPECT_LT(lgm_error.norm(), qdd_tol_)
             << "qdd_pinocchio   : " << pin_fd_res.transpose() << "\n"
             << "jmap * qdd_lgm: " << (joint_map_.vel.cast<double>() * lgm_res).transpose();
+
+        eL2_cluster_ += caba_error.norm();
+        eL2_lg_ += lgm_error.norm();
+
+        eLinf_cluster_ += caba_error.lpNorm<Eigen::Infinity>();
+        eLinf_lg_ += lgm_error.lpNorm<Eigen::Infinity>();
 
         // Check the pinocchio constrained dynamics solution against the pinocchio forward dynamics
         const DVec<double> pin1_error = pin_fd_res - pin_cd1_res;
@@ -465,9 +481,13 @@ TEST_P(PinocchioBenchmark, forward_dynamics)
                 << "qdd_pinocchio_fd: " << pin_fd_res.transpose() << "\n"
                 << "qdd_pinocchio_cd: " << pin_cd5_res.transpose();
 
-            e_pin_cd1_ += pin1_error.norm();
-            e_pin_cd2_ += pin2_error.norm();
-            e_pin_cd5_ += pin5_error.norm();
+            eL2_pin_cd1_ += pin1_error.norm();
+            eL2_pin_cd2_ += pin2_error.norm();
+            eL2_pin_cd5_ += pin5_error.norm();
+
+            eLinf_pin_cd1_ += pin1_error.lpNorm<Eigen::Infinity>();
+            eLinf_pin_cd2_ += pin2_error.lpNorm<Eigen::Infinity>();
+            eLinf_pin_cd5_ += pin5_error.lpNorm<Eigen::Infinity>();
         }
     }
 
@@ -482,9 +502,19 @@ TEST_P(PinocchioBenchmark, forward_dynamics)
                             t_pin_cd2_ / num_samples_,
                             t_pin_cd5_ / num_samples_);
 
-    GetParam()->writeToFile(GetParam()->error_outfile,
-                            0., 0., 0.,
-                            e_pin_cd1_ / num_samples_,
-                            e_pin_cd2_ / num_samples_,
-                            e_pin_cd5_ / num_samples_);
+    GetParam()->writeToFile(GetParam()->errorL2_outfile,
+                            eL2_cluster_ / num_samples_,
+                            eL2_lg_ / num_samples_,
+                            eL2_pin_fd_ / num_samples_,
+                            eL2_pin_cd1_ / num_samples_,
+                            eL2_pin_cd2_ / num_samples_,
+                            eL2_pin_cd5_ / num_samples_);
+
+    GetParam()->writeToFile(GetParam()->errorInf_outfile,
+                            eLinf_cluster_ / num_samples_,
+                            eLinf_lg_ / num_samples_,
+                            eLinf_pin_fd_ / num_samples_,
+                            eLinf_pin_cd1_ / num_samples_,
+                            eLinf_pin_cd2_ / num_samples_,
+                            eLinf_pin_cd5_ / num_samples_);
 }
