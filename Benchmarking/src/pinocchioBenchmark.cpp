@@ -279,12 +279,15 @@ TEST_P(PinocchioBenchmark, forward_dynamics)
     const int nv_approx = approx_cluster_tree_.getNumDegreesOfFreedom();
     const int nv_span_approx = approx_lgm_model_.getNumDegreesOfFreedom();
 
+    const int nq_input = std::max(nq, nq_approx);
+    const int nv_input = std::max(nv, nv_approx);
+
     // TODO(@MatthewChignoli): Add an assert that nv_approx = nv_span_approx
 
-    Scalar cs_q = Scalar::sym("q", nq);
-    Scalar cs_v = Scalar::sym("v", nv);
+    Scalar cs_q = Scalar::sym("q", nq_input);
+    Scalar cs_v = Scalar::sym("v", nv_input);
 
-    DVec<Scalar> q(nq), v(nv);
+    DVec<Scalar> q(nq_input), v(nv_input);
     casadi::copy(cs_q, q);
     casadi::copy(cs_v, v);
 
@@ -315,7 +318,14 @@ TEST_P(PinocchioBenchmark, forward_dynamics)
 
         JointState approx_joint_state;
         LoopConstraintPtr loop_constraint = cluster->joint_->cloneLoopConstraint();
-        approx_joint_state.position = JointCoordinate(q_i, !loop_constraint->isExplicit());
+        if (loop_constraint)
+        {
+            approx_joint_state.position = JointCoordinate(q_i, !loop_constraint->isExplicit());
+        }
+        else
+        {
+            approx_joint_state.position = JointCoordinate(q_i, false);
+        }
         approx_joint_state.velocity = JointCoordinate(v_i, false);
 
         JointState approx_spanning_joint_state =
@@ -478,12 +488,12 @@ TEST_P(PinocchioBenchmark, forward_dynamics)
 
         auto scalar_q_and_v = grbda::modelStateToVector(scalar_model_state);
         DVec<double> scalar_q = scalar_q_and_v.first;
-        casadi::DMVector dm_q;
+        casadi::DMVector dm_q = grbda::random<casadi::DM>(nq_input);
         for (int j = 0; j < scalar_q.size(); ++j)
         {
-            dm_q.push_back(scalar_q(j));
+            dm_q[j] = scalar_q(j);
         }
-        casadi::DMVector dm_v = grbda::random<casadi::DM>(nv);
+        casadi::DMVector dm_v = grbda::random<casadi::DM>(nv_input);
         casadi::DMVector dm_tau = grbda::random<casadi::DM>(nv_span);
 
         timer_.start();
