@@ -371,7 +371,7 @@ ParallelChainSpecification::ParallelChainSpecification(int depth_, int loop_size
                              std::to_string(loop_size_) + ".urdf",
                          urdf_directory + "parallel_chains/" +
                              constraint_type_ + "/depth" +
-                             std::to_string(depth_) + "/loop_size" +
+                             std::to_string(depth_) + "/approx_loop_size" +
                              std::to_string(loop_size_) + ".urdf",
                          constraint_type_),
       depth(depth_), loop_size(loop_size_), constraint_type(constraint_type_)
