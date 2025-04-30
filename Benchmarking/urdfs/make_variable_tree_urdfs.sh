@@ -72,6 +72,9 @@ for branch_count in "${arg1[@]}"; do
     for depth_count in "${arg2[@]}"; do
         xacro revolute_rotor_branch.xacro branch_count:=${branch_count} depth_count:=${depth_count} > \
             "$VAR_REVOLUTE_DIR/revolute_rotor_branch_${branch_count}_${depth_count}.urdf"
+
+        xacro approx_revolute_rotor_branch.xacro branch_count:=${branch_count} depth_count:=${depth_count} > \
+            "$VAR_REVOLUTE_DIR/approx_revolute_rotor_branch_${branch_count}_${depth_count}.urdf"
     done
 done
 
@@ -79,6 +82,9 @@ for branch_count in "${arg3[@]}"; do
     for depth_count in "${arg4[@]}"; do
         xacro revolute_rotor_pair_branch.xacro branch_count:=${branch_count} depth_count:=${depth_count} > \
             "$VAR_REVOLUTE_PAIR_DIR/revolute_rotor_pair_branch_${branch_count}_${depth_count}.urdf"
+
+        xacro approx_revolute_rotor_pair_branch.xacro branch_count:=${branch_count} depth_count:=${depth_count} > \
+            "$VAR_REVOLUTE_PAIR_DIR/approx_revolute_rotor_pair_branch_${branch_count}_${depth_count}.urdf"
     done
 done
 
@@ -86,5 +92,8 @@ for branch_count in "${arg5[@]}"; do
     for depth_count in "${arg6[@]}"; do
         xacro four_bar_branch.xacro branch_count:=${branch_count} depth_count:=${depth_count} > \
             "$VAR_FOUR_BAR_DIR/four_bar_branch_${branch_count}_${depth_count}.urdf"
+
+        xacro approx_four_bar_branch.xacro branch_count:=${branch_count} depth_count:=${depth_count} > \
+            "$VAR_FOUR_BAR_DIR/approx_four_bar_branch_${branch_count}_${depth_count}.urdf"
     done
 done

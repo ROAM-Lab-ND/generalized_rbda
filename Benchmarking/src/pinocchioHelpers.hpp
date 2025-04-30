@@ -89,6 +89,7 @@ PinConstraintVectors<Scalar> parseURDFFileForLoopConstraints(const std::string &
 struct RobotSpecification
 {
     std::string urdf_filename;
+    std::string approx_urdf_filename;
     std::string outfile_suffix;
     static inline const std::string instruction_prefix = "InstructionPinocchioFD_";
     static inline const std::string timing_prefix = "TimingPinocchioFD_";
@@ -100,8 +101,11 @@ struct RobotSpecification
     std::ofstream errorInf_outfile;
     std::string name;
 
-    RobotSpecification(std::string urdf_filename_, std::string outfile_suffix_)
-        : urdf_filename(urdf_filename_), outfile_suffix(outfile_suffix_)
+    RobotSpecification(std::string urdf_filename_,
+                       std::string approx_urdf_filename_,
+                       std::string outfile_suffix_)
+        : urdf_filename(urdf_filename_), approx_urdf_filename(approx_urdf_filename_),
+          outfile_suffix(outfile_suffix_)
     {
         registerNameFromUrdfFilename(urdf_filename);
         openOutfile();
@@ -117,7 +121,8 @@ struct RobotSpecification
     virtual void writeToFile(std::ofstream &outfile,
                              double i_cluster, double i_lg,
                              double i_pin_fd, double i_pin_cd1,
-                             double i_pin_cd2, double i_pin_cd5);
+                             double i_pin_cd2, double i_pin_cd5,
+                             double i_aba, double i_pin_aba);
 
     void setTolerances(double qdd_tol, double qdd_cd_tol, double cnstr_tol);
     void setQddTolerance(double qdd_tol);
@@ -133,8 +138,9 @@ struct BranchAndDepthSpecification : public RobotSpecification
     int branch_count;
     int depth_count;
 
-    BranchAndDepthSpecification(std::string urdf_filename_, std::string outfile_suffix_)
-        : RobotSpecification(urdf_filename_, outfile_suffix_)
+    BranchAndDepthSpecification(std::string urdf_filename_, std::string approx_urdf_filename_,
+                                std::string outfile_suffix_)
+        : RobotSpecification(urdf_filename_, approx_urdf_filename_, outfile_suffix_)
     {
         registerBranchAndDepthCountFromName(name);
     }
@@ -144,7 +150,8 @@ struct BranchAndDepthSpecification : public RobotSpecification
     void writeToFile(std::ofstream &outfile,
                      double i_cluster, double i_lg,
                      double i_pin_fd, double i_pin_cd1, 
-                     double i_pin_cd2, double i_pin_cd5) override;
+                     double i_pin_cd2, double i_pin_cd5,
+                     double i_aba, double i_pin_aba) override;
 };
 
 // TODO(@MatthewChignoli): move definition of this function to a separate file
@@ -163,7 +170,8 @@ struct ParallelChainSpecification : public RobotSpecification
     void writeToFile(std::ofstream &outfile,
                      double i_cluster, double i_lg,
                      double i_pin_fd, double i_pin_cd1,
-                     double i_pin_cd2, double i_pin_cd5) override;
+                     double i_pin_cd2, double i_pin_cd5,
+                     double i_aba, double i_pin_aba) override;
 };
 
 using SpecificationVector = std::vector<std::shared_ptr<RobotSpecification>>;

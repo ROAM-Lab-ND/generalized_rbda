@@ -1,0 +1,51 @@
+<?xml version="1.0"?>
+
+<robot xmlns:xacro="http://ros.org/wiki/xacro">
+    <xacro:include filename="approx_revolute_rotor_properties.xacro"/>
+
+    <xacro:macro name="one_revolute_rotor_pair_serial_chain"
+                 params="parent_link_idx child_link_idx">
+        <xacro:independent_joint name="link_${parent_link_idx}_to_link_${child_link_idx}"
+            parent="link_${parent_link_idx}"
+            child="link_${child_link_idx}"/>
+        <xacro:link name="link_${child_link_idx}"/>
+            
+        <xacro:independent_joint name="link_${child_link_idx}_to_link_${child_link_idx + 1}"
+            parent="link_${child_link_idx}"
+            child="link_${child_link_idx + 1}"/>
+        <xacro:link name="link_${child_link_idx + 1}"/>
+    </xacro:macro>
+
+    <xacro:macro name="revolute_rotor_pair_root_branch" params="branch_count">
+        <xacro:if value="${branch_count}">
+            <xacro:independent_joint name="base_to_link_${branch_count * 2 - 1}"
+                parent="Floating Base"
+                child="link_${branch_count * 2 - 1}"/>
+            <xacro:link name="link_${branch_count * 2 - 1}"/>
+                
+            <xacro:independent_joint name="link_${branch_count * 2 - 1}_to_link_${branch_count * 2}"
+                parent="link_${branch_count * 2 - 1}"
+                child="link_${branch_count * 2}"/>
+            <xacro:link name="link_${branch_count * 2}"/>
+
+            <xacro:revolute_rotor_pair_root_branch branch_count="${branch_count - 1}"/>
+        </xacro:if>
+    </xacro:macro>
+
+    <xacro:macro name="sequential_revolute_rotor_pair_serial_chain" params="parent_link_idx count">
+        <xacro:if value="${count - 1}">
+            <xacro:one_revolute_rotor_pair_serial_chain parent_link_idx="${parent_link_idx}"
+                child_link_idx="${parent_link_idx + 1}"/>
+
+            <xacro:sequential_revolute_rotor_pair_serial_chain parent_link_idx="${parent_link_idx + 2}"
+                count="${count - 1}"/>
+        </xacro:if>
+    </xacro:macro>
+
+    <xacro:macro name="nonsequential_revolute_rotor_pair_serial_chain" params="parent_link_idx first_child_link_idx count">
+        <xacro:one_revolute_rotor_pair_serial_chain parent_link_idx="${parent_link_idx}"
+            child_link_idx="${first_child_link_idx}"/>
+        <xacro:sequential_revolute_rotor_pair_serial_chain parent_link_idx="${first_child_link_idx + 1}" count="${count - 1}"/>
+    </xacro:macro>
+
+</robot>
