@@ -62,10 +62,12 @@
     <xacro:macro name="root_branch" params="branch_count">
         <xacro:if value="${branch_count}">
             <xacro:independent_joint name="base_to_link_${branch_count}"
-                                     parent="base" child="link_${branch_count}"/>
+                                     parent="Floating Base"
+                                     child="link_${branch_count}"/>
             <xacro:link name="link_${branch_count}"/>
             <xacro:dependent_joint name="base_to_rotor_${branch_count}"
-                                   parent="base" child="rotor_${branch_count}"/>
+                                   parent="Floating Base"
+                                   child="rotor_${branch_count}"/>
             <xacro:rotor name="rotor_${branch_count}"/>
             <xacro:transmission name="transmission_${branch_count}"
                                 predecessor="link_${branch_count}" successor="rotor_${branch_count}"/>

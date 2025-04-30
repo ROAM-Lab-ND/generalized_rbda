@@ -4,7 +4,19 @@
 <!-- |    EDITING THIS FILE BY HAND IS NOT RECOMMENDED                                 | -->
 <!-- =================================================================================== -->
 <robot name="variable_four_bar_branch">
-  <link name="base"/>
+  <link name="ground"/>
+  <link name="Floating Base">
+    <inertial>
+      <mass value="5.0"/>
+      <origin xyz="0. 0. 0."/>
+      <inertia ixx="0.1" ixy="0." ixz="0." iyy="0.1" iyz="0." izz="0.1"/>
+    </inertial>
+  </link>
+  <joint name="world_to_base" type="floating">
+    <origin rpy="0 0 0" xyz="0 0 0"/>
+    <parent link="ground"/>
+    <child link="Floating Base"/>
+  </joint>
   <link name="link_4">
     <inertial>
       <mass value="3.3"/>
@@ -54,14 +66,14 @@
     </visual>
   </link>
   <joint independent="false" name="base_to_link_4" type="revolute">
-    <parent link="base"/>
+    <parent link="Floating Base"/>
     <child link="link_4"/>
     <origin xyz="1.0 0.0 0.0"/>
     <axis xyz="0 0 1"/>
     <limit effort="30" lower="-10" upper="10" velocity="1.0"/>
   </joint>
   <joint independent="true" name="base_to_link_5" type="revolute">
-    <parent link="base"/>
+    <parent link="Floating Base"/>
     <child link="link_5"/>
     <origin xyz="0.0 0.0 0.0"/>
     <axis xyz="0 0 1"/>
@@ -132,14 +144,14 @@
     </visual>
   </link>
   <joint independent="false" name="base_to_link_1" type="revolute">
-    <parent link="base"/>
+    <parent link="Floating Base"/>
     <child link="link_1"/>
     <origin xyz="1.0 0.0 0.0"/>
     <axis xyz="0 0 1"/>
     <limit effort="30" lower="-10" upper="10" velocity="1.0"/>
   </joint>
   <joint independent="true" name="base_to_link_2" type="revolute">
-    <parent link="base"/>
+    <parent link="Floating Base"/>
     <child link="link_2"/>
     <origin xyz="0.0 0.0 0.0"/>
     <axis xyz="0 0 1"/>

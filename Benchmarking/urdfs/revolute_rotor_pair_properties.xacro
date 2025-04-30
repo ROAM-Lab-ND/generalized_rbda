@@ -32,11 +32,11 @@
     <xacro:macro name="revolute_rotor_pair_root_branch" params="branch_count">
         <xacro:if value="${branch_count}">
             <xacro:independent_joint name="base_to_link_${branch_count * 2 - 1}"
-                parent="base"
+                parent="Floating Base"
                 child="link_${branch_count * 2 - 1}"/>
             <xacro:link name="link_${branch_count * 2 - 1}"/>
             <xacro:dependent_joint name="base_to_rotor_${branch_count * 2 - 1}"
-                parent="base"
+                parent="Floating Base"
                 child="rotor_${branch_count * 2 - 1}"/>
             <xacro:rotor name="rotor_${branch_count * 2 - 1}"/>
             <xacro:transmission name="transmission_${branch_count * 2 - 1}"
@@ -48,7 +48,7 @@
                 child="link_${branch_count * 2}"/>
             <xacro:link name="link_${branch_count * 2}"/>
             <xacro:dependent_joint name="base_to_rotor_${branch_count * 2}"
-                parent="base" child="rotor_${branch_count * 2}"/>
+                parent="Floating Base" child="rotor_${branch_count * 2}"/>
             <xacro:rotor name="rotor_${branch_count * 2}"/>
             <xacro:transmission name="transmission_${branch_count * 2}"
                 predecessor="link_${branch_count * 2}"
