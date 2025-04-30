@@ -43,3 +43,13 @@ pin_cd5_opts = plot_opts;
 pin_cd5_opts.Color = [0.0, 0.4, 0.0]; % A dark forest green
 pin_cd5_opts.MarkerFaceColor = pin_cd5_opts.Color;
 pin_cd5_opts.DisplayName = 'Proximal and Sparse, 5 iter (Pinocchio)';
+
+aba_opts = plot_opts;
+aba_opts.Color  = [255, 141, 161] / 255; % A light pink 
+aba_opts.MarkerFaceColor = aba_opts.Color;
+aba_opts.DisplayName = 'ABA (Our Implementation)';
+
+pin_aba_opts = plot_opts;
+pin_aba_opts.Color = [222, 65, 255] / 255; % A light magenta
+pin_aba_opts.MarkerFaceColor = pin_aba_opts.Color;
+pin_aba_opts.DisplayName = 'ABA (Pinocchio)';

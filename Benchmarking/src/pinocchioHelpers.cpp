@@ -300,7 +300,8 @@ void RobotSpecification::closeOutfile()
 void RobotSpecification::writeToFile(std::ofstream &outfile,
                                      double i_cluster, double i_lg,
                                      double i_pin_fd, double i_pin_cd1,
-                                     double i_pin_cd2, double i_pin_cd5)
+                                     double i_pin_cd2, double i_pin_cd5,
+                                     double i_aba, double i_pin_aba)
 {
     outfile << name << ","
             << i_cluster << ","
@@ -308,7 +309,9 @@ void RobotSpecification::writeToFile(std::ofstream &outfile,
             << i_pin_fd << ","
             << i_pin_cd1 << ","
             << i_pin_cd2 << ","
-            << i_pin_cd5 << std::endl;
+            << i_pin_cd5 << ","
+            << i_aba << ","
+            << i_pin_aba << std::endl;
 }
 
 void RobotSpecification::setTolerances(double qdd_tol, double qdd_cd_tol, double cnstr_tol)
@@ -345,7 +348,8 @@ void BranchAndDepthSpecification::registerBranchAndDepthCountFromName(const std:
 void BranchAndDepthSpecification::writeToFile(std::ofstream &outfile,
                                               double i_cluster, double i_lg,
                                               double i_pin_fd, double i_pin_cd1,
-                                              double i_pin_cd2, double i_pin_cd5)
+                                              double i_pin_cd2, double i_pin_cd5,
+                                              double i_aba, double i_pin_aba)
 {
     outfile << branch_count << ","
             << depth_count << ","
@@ -354,12 +358,18 @@ void BranchAndDepthSpecification::writeToFile(std::ofstream &outfile,
             << i_pin_fd << ","
             << i_pin_cd1 << ","
             << i_pin_cd2 << ","
-            << i_pin_cd5 << std::endl;
+            << i_pin_cd5 << ","
+            << i_aba << ","
+            << i_pin_aba << std::endl;
 }
 
 ParallelChainSpecification::ParallelChainSpecification(int depth_, int loop_size_, double tol_,
                                                        std::string constraint_type_)
     : RobotSpecification(urdf_directory + "parallel_chains/" +
+                             constraint_type_ + "/depth" +
+                             std::to_string(depth_) + "/loop_size" +
+                             std::to_string(loop_size_) + ".urdf",
+                         urdf_directory + "parallel_chains/" +
                              constraint_type_ + "/depth" +
                              std::to_string(depth_) + "/loop_size" +
                              std::to_string(loop_size_) + ".urdf",
@@ -402,7 +412,8 @@ template bool ParallelChainSpecification::clusterTreeProperlyFormed(
 void ParallelChainSpecification::writeToFile(std::ofstream &outfile,
                                              double i_cluster, double i_lg,
                                              double i_pin_fd, double i_pin_cd1,
-                                             double i_pin_cd2, double i_pin_cd5)
+                                             double i_pin_cd2, double i_pin_cd5,
+                                             double i_aba, double i_pin_aba)
 {
     outfile << depth << ","
             << loop_size << ","
@@ -411,9 +422,12 @@ void ParallelChainSpecification::writeToFile(std::ofstream &outfile,
             << i_pin_fd << ","
             << i_pin_cd1 << ","
             << i_pin_cd2 << ","
-            << i_pin_cd5 << std::endl;
+            << i_pin_cd5 << ","
+            << i_aba << ","
+            << i_pin_aba << std::endl;
 }
 
+// TODO(@MatthewChignoli): some of these are not using the approx URDF and that is a problem
 SpecificationVector GetIndividualRobotSpecifications()
 {
     SpecificationVector robot_specifications;
@@ -421,21 +435,25 @@ SpecificationVector GetIndividualRobotSpecifications()
 
     const std::string four_bar_urdf = main_urdf_directory + "four_bar.urdf";
     auto four_bar_spec = std::make_shared<RobotSpecification>(four_bar_urdf,
+                                                              four_bar_urdf,
                                                               outfile_suffix);
     robot_specifications.push_back(four_bar_spec);
 
     const std::string rev_rotor_chain_urdf = main_urdf_directory + "revolute_rotor_chain.urdf";
     auto rev_rotor_chain_spec = std::make_shared<RobotSpecification>(rev_rotor_chain_urdf,
+                                                                     rev_rotor_chain_urdf,
                                                                      outfile_suffix);
     robot_specifications.push_back(rev_rotor_chain_spec);
 
     const std::string mit_humanoid_urdf = main_urdf_directory + "mit_humanoid.urdf";
     auto mit_humanoid_spec = std::make_shared<RobotSpecification>(mit_humanoid_urdf,
+                                                                  mit_humanoid_urdf,
                                                                   outfile_suffix);
     robot_specifications.push_back(mit_humanoid_spec);
 
     const std::string mini_cheetah_urdf = main_urdf_directory + "mini_cheetah.urdf";
     auto mini_cheetah_spec = std::make_shared<RobotSpecification>(mini_cheetah_urdf,
+                                                                  mini_cheetah_urdf,
                                                                   outfile_suffix);
     robot_specifications.push_back(mini_cheetah_spec);
 
@@ -453,7 +471,11 @@ SpecificationVector GetRevoluteRotorRobotSpecifications()
             std::string urdf_file = urdf_directory +
                                     "variable_revolute_urdf/revolute_rotor_branch_" +
                                     std::to_string(b) + "_" + std::to_string(d) + ".urdf";
+            std::string approx_urdf_file = urdf_directory +
+                                           "variable_revolute_urdf/approx_revolute_rotor_branch_" +
+                                           std::to_string(b) + "_" + std::to_string(d) + ".urdf";
             auto robot_spec = std::make_shared<BranchAndDepthSpecification>(urdf_file,
+                                                                            approx_urdf_file,
                                                                             outfile_suffix);
             robot_specifications.push_back(robot_spec);
         }
@@ -471,7 +493,11 @@ SpecificationVector GetRevoluteRotorPairRobotSpecifications()
             std::string urdf_file = urdf_directory +
                                     "variable_revolute_pair_urdf/revolute_rotor_pair_branch_" +
                                     std::to_string(b) + "_" + std::to_string(d) + ".urdf";
+            std::string approx_urdf_file = urdf_directory + "variable_revolute_pair_urdf/" +
+                                           "approx_revolute_rotor_pair_branch_" +
+                                           std::to_string(b) + "_" + std::to_string(d) + ".urdf";
             auto robot_spec = std::make_shared<BranchAndDepthSpecification>(urdf_file,
+                                                                            approx_urdf_file,
                                                                             outfile_suffix);
             robot_specifications.push_back(robot_spec);
         }
@@ -489,7 +515,11 @@ SpecificationVector GetFourBarRobotSpecifications()
             std::string urdf_file = urdf_directory +
                                     "variable_four_bar_urdf/four_bar_branch_" +
                                     std::to_string(b) + "_" + std::to_string(d) + ".urdf";
+            std::string approx_urdf_file = urdf_directory +
+                                           "variable_four_bar_urdf/approx_four_bar_branch_" +
+                                           std::to_string(b) + "_" + std::to_string(d) + ".urdf";
             auto robot_spec = std::make_shared<BranchAndDepthSpecification>(urdf_file,
+                                                                            approx_urdf_file,
                                                                             outfile_suffix);
             robot_specifications.push_back(robot_spec);
         }
@@ -533,8 +563,11 @@ SpecificationVector GetParallelChainSpecifications()
 
 SpecificationVector GetBenchmarkRobotSpecifications()
 {
-    // Get the actual RobotSpecifications
-    SpecificationVector test_robot_specs = GetIndividualRobotSpecifications();
+    SpecificationVector test_robot_specs;
+
+    SpecificationVector indv_robot_specs = GetIndividualRobotSpecifications();
+    test_robot_specs.insert(test_robot_specs.end(), indv_robot_specs.begin(),
+                            indv_robot_specs.end());
 
     SpecificationVector revrotor_robot_specs = GetRevoluteRotorRobotSpecifications();
     test_robot_specs.insert(test_robot_specs.end(), revrotor_robot_specs.begin(),

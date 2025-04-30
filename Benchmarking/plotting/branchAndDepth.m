@@ -3,7 +3,8 @@ run plottingOptions.m
 
 load('custom_colors.mat')
 
-path_to_data = '../data/InstructionPinocchioFD_';
+% path_to_data = '../data/InstructionPinocchioFD_';
+path_to_data = '../data/TimingPinocchioFD_';
 
 % TODO(@MatthewChignoli): Add these to custom colors?
 green1 = [0.1, 0.8, 0.4]; % A lighter, minty green
@@ -61,6 +62,8 @@ for j = 1:length(system_list)
         pin_cd1.branches{i} = data(data(:, 1) == i, [2 6]);
         pin_cd2.branches{i} = data(data(:, 1) == i, [2 7]);
         pin_cd5.branches{i} = data(data(:, 1) == i, [2 8]);
+        aba.branches{i} = data(data(:, 1) == i, [2 9]);
+        pin_aba.branches{i} = data(data(:, 1) == i, [2 10]);
     end
 
     % Plot Data
@@ -80,6 +83,9 @@ for j = 1:length(system_list)
             plot(pin_cd5.branches{i}(:, 1), pin_cd5.branches{i}(:, 2), symbols{i}, pin_cd5_opts)
         end
 
+        plot(aba.branches{i}(:, 1), aba.branches{i}(:, 2), symbols{i}, aba_opts)
+        plot(pin_aba.branches{i}(:, 1), pin_aba.branches{i}(:, 2), symbols{i}, pin_aba_opts)
+
         % Format applied to all subplots
         grid on
         set(gca, 'YScale', sys.yscale)
@@ -88,8 +94,8 @@ for j = 1:length(system_list)
         set(gca, 'TickLabelInterpreter', 'latex')
         set(gca, 'XLim', sys.axis(1:2))
 
-        ax.YAxis.Exponent = 5;
-        ax.YRuler.ExponentMode = 'manual';
+        % ax.YAxis.Exponent = 5;
+        % ax.YRuler.ExponentMode = 'manual';
 
         if (row_idx ~= 1 ||  j ~= length(system_list))
             annotation('textbox', [ax.Position(1:2) 0.1 0.25], ...
