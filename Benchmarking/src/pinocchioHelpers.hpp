@@ -92,10 +92,12 @@ struct RobotSpecification
     std::string outfile_suffix;
     static inline const std::string instruction_prefix = "InstructionPinocchioFD_";
     static inline const std::string timing_prefix = "TimingPinocchioFD_";
-    static inline const std::string error_prefix = "ErrorPinocchioFD_";
+    static inline const std::string errorL2_prefix = "ErrorL2PinocchioFD_";
+    static inline const std::string errorLinf_prefix = "ErrorLinfPinocchioFD_";
     std::ofstream instruction_outfile;
     std::ofstream timing_outfile;
-    std::ofstream error_outfile;
+    std::ofstream errorL2_outfile;
+    std::ofstream errorInf_outfile;
     std::string name;
 
     RobotSpecification(std::string urdf_filename_, std::string outfile_suffix_)

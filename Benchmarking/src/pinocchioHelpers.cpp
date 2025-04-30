@@ -259,11 +259,18 @@ void RobotSpecification::openOutfile()
         std::cerr << "Failed to open time benchmark file." << std::endl;
     }
 
-    std::string path_to_error = path_to_data + error_prefix + outfile_suffix + ".csv";
-    error_outfile.open(path_to_error, std::ios::app);
-    if (!error_outfile.is_open())
+    std::string path_to_error = path_to_data + errorL2_prefix + outfile_suffix + ".csv";
+    errorL2_outfile.open(path_to_error, std::ios::app);
+    if (!errorL2_outfile.is_open())
     {
-        std::cerr << "Failed to open error benchmark file." << std::endl;
+        std::cerr << "Failed to open error L2 benchmark file." << std::endl;
+    }
+
+    path_to_error = path_to_data + errorLinf_prefix + outfile_suffix + ".csv";
+    errorInf_outfile.open(path_to_error, std::ios::app);
+    if (!errorInf_outfile.is_open())
+    {
+        std::cerr << "Failed to open error Linf benchmark file." << std::endl;
     }
 }
 
@@ -279,9 +286,14 @@ void RobotSpecification::closeOutfile()
         timing_outfile.close();
     }
 
-    if (error_outfile.is_open())
+    if (errorL2_outfile.is_open())
     {
-        error_outfile.close();
+        errorL2_outfile.close();
+    }
+
+    if (errorInf_outfile.is_open())
+    {
+        errorInf_outfile.close();
     }
 }
 
@@ -552,7 +564,8 @@ SpecificationVector GetBenchmarkRobotSpecifications()
 
     for (std::string bench_type : {RobotSpecification::instruction_prefix,
                                    RobotSpecification::timing_prefix,
-                                   RobotSpecification::error_prefix})
+                                   RobotSpecification::errorL2_prefix,
+                                   RobotSpecification::errorLinf_prefix})
     {
         for (std::string sys_type : sys_types)
         {
