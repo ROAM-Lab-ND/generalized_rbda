@@ -78,7 +78,7 @@ class PinocchioNumericalValidation : public PinocchioBase<double>
 {
 protected:
     using Scalar = double;
-    PinocchioNumericalValidation() : PinocchioBase<double>(8) {}
+    PinocchioNumericalValidation() : PinocchioBase<double>(5) {}
 
     StatePair createRandomState()
     {
@@ -234,7 +234,7 @@ class PinocchioBenchmark : public PinocchioBase<casadi::SX>
 {
 protected:
     using Scalar = casadi::SX;
-    PinocchioBenchmark() : PinocchioBase<casadi::SX>(25) {}
+    PinocchioBenchmark() : PinocchioBase<casadi::SX>(150) {}
 
     grbda::Timer timer_;
     double t_cluster_ = 0.;
