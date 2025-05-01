@@ -1,15 +1,10 @@
 close all; clear; clc;
 run plottingOptions.m
 
-load('custom_colors.mat')
-
-% path_to_data = '../data/InstructionPinocchioFD_';
-path_to_data = '../data/TimingPinocchioFD_';
-
-% TODO(@MatthewChignoli): Add these to custom colors?
-green1 = [0.1, 0.8, 0.4]; % A lighter, minty green
-green2 = [0.2, 0.6, 0.2]; % A medium, natural green
-green3 = [0.0, 0.4, 0.0]; % A dark forest green
+data_type = 'Timing';
+% data_type = 'Instruction';
+% data_type = 'ErrorL2';
+path_to_data = ['../data/', data_type, 'PinocchioFD_'];
 
 %% Systems
 rev_chain.urdf_name = 'revolute_chain';
@@ -37,16 +32,19 @@ system_list{1} = rev_chain;
 system_list{2} = rev_pair_chain;
 system_list{3} = four_bar;
 
+font_size = 12;
+text_opts.FontSize = 12;
+
 %% Plot
 figure
-size_scale = 3500;
-size_ratio = 0.5;
+size_scale = 3050;
+size_ratio = 0.45;
 set(gcf, 'Position', [200, 100, size_scale, size_scale * size_ratio]);
 
-t = tiledlayout(3, length(system_list));
+t = tiledlayout(3, length(system_list)+1);
 t.TileSpacing = 'compact';
 t.Padding = 'compact';
-t.TileIndexing = 'columnmajor';
+t.TileIndexing = 'rowmajor';
 
 for j = 1:length(system_list)
     sys = system_list{j};
@@ -69,22 +67,28 @@ for j = 1:length(system_list)
     % Plot Data
     row_idx = 0;
 
-    for i = branches
+    for i = [branches 0]
         row_idx = row_idx + 1;
         ax = nexttile;
-        hold on
 
-        plot(caba.branches{i}(:, 1), caba.branches{i}(:, 2), symbols{i}, caba_opts)
-        plot(pin_fd.branches{i}(:, 1), pin_fd.branches{i}(:, 2), symbols{i}, pin_fd_opts)
-
-        if sys.implicit
-            plot(pin_cd1.branches{i}(:, 1), pin_cd1.branches{i}(:, 2), symbols{i}, pin_cd1_opts)
-            plot(pin_cd2.branches{i}(:, 1), pin_cd2.branches{i}(:, 2), symbols{i}, pin_cd2_opts)
-            plot(pin_cd5.branches{i}(:, 1), pin_cd5.branches{i}(:, 2), symbols{i}, pin_cd5_opts)
+        if i == 0
+            continue
         end
 
-        plot(aba.branches{i}(:, 1), aba.branches{i}(:, 2), symbols{i}, aba_opts)
-        plot(pin_aba.branches{i}(:, 1), pin_aba.branches{i}(:, 2), symbols{i}, pin_aba_opts)
+        hold on
+
+        plot(caba.branches{i}(:, 1), caba.branches{i}(:, 2), caba_opts)
+        plot(aba.branches{i}(:, 1), aba.branches{i}(:, 2), aba_opts)
+
+        plot(pin_fd.branches{i}(:, 1), pin_fd.branches{i}(:, 2), pin_fd_opts)
+
+        if sys.implicit
+            plot(pin_cd1.branches{i}(:, 1), pin_cd1.branches{i}(:, 2), pin_cd1_opts)
+            plot(pin_cd2.branches{i}(:, 1), pin_cd2.branches{i}(:, 2), pin_cd2_opts)
+            plot(pin_cd5.branches{i}(:, 1), pin_cd5.branches{i}(:, 2), pin_cd5_opts)
+        end
+
+        plot(pin_aba.branches{i}(:, 1), pin_aba.branches{i}(:, 2), pin_aba_opts)
 
         % Format applied to all subplots
         grid on
@@ -94,42 +98,56 @@ for j = 1:length(system_list)
         set(gca, 'TickLabelInterpreter', 'latex')
         set(gca, 'XLim', sys.axis(1:2))
 
-        % ax.YAxis.Exponent = 5;
-        % ax.YRuler.ExponentMode = 'manual';
+        if strcmp(data_type, 'Instruction')
+            ax.YAxis.Exponent = 5;
+            ax.YRuler.ExponentMode = 'manual';
+        end
 
-        if (row_idx ~= 1 ||  j ~= length(system_list))
-            annotation('textbox', [ax.Position(1:2) 0.1 0.25], ...
-                'String', ['Branch Length ($b_a$) = ', num2str(i)], ...
+        if (row_idx ~= length(branches) || j ~= 2)
+            annotation('textbox', [ax.Position(1:2) 0.1 0.26], ...
+                'String', ['Branches ($b_a$) = ', num2str(i)], ...
                 text_opts)
         end
 
-        % Format top row
-        if row_idx == 1
-            title(sys.title, 'Interpreter', 'latex')
-        end
+        % % Format top row
+        % if row_idx == 1
+        %     title(sys.title, 'Interpreter', 'latex')
+        % end
 
         % Format bottom row
-        if row_idx == length(branches)
+        if j == length(system_list)
             xlabel('Branch Depth ($d_a$)', 'Interpreter', 'latex')
         end
 
         % Format Left column
-        if j == 1
-            ylabel('Instruction Count', 'Interpreter', 'latex')
+        if row_idx == 1
+
+            if strcmp(data_type, 'Instruction')
+                ylabel('Instruction Count', 'Interpreter', 'latex')
+            else
+                ylabel('Computation Time (ms)', 'Interpreter', 'latex')
+            end
+
         end
 
         % Format Bottom Right
-        if (row_idx == length(branches) && j == length(system_list))
+        if (row_idx == length(branches) && j == 3)
             l = legend();
             l.Location = 'Best';
             l.Interpreter = 'latex';
             l.Orientation = 'vertical';
-            % l.IconColumnWidth = 80.;
-            l.Position = [0.6796,0.8528,0.1982,0.1009];
+            l.IconColumnWidth = 20.;
+            l.Position = [0.514688640902593,0.51063829787234,0.143808091123551,0.130803827312107];
+            l.FontSize = 10.;
         end
 
     end
 
 end
 
-saveas(gcf, '../figures/BranchAndDepth.png')
+% Delete the two axes on the right to make space for the mechanism diagrams
+delete(t.Children(1))
+delete(t.Children(5))
+delete(t.Children(8))
+
+saveas(gcf, ['../figures/', data_type, 'branchAndDepth.png'])

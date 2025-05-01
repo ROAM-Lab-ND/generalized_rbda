@@ -1,9 +1,11 @@
 close all; clear; clc;
-load('custom_colors.mat')
+run plottingOptions.m
 
 %% Load data
-% csv format: system name, c-aba instr count, a-aba instr count, pinochhio instr count
-path_to_data = '../data/InstructionPinocchioFD_Approx.csv';
+data_type = 'Timing';
+% data_type = 'Instruction';
+path_to_data = ['../data/', data_type, 'PinocchioFD_Approx'];
+
 data = readmatrix(path_to_data);
 data_as_text = readmatrix(path_to_data,'OutputType','string');
 
@@ -42,15 +44,26 @@ x = 1:spacing:(spacing * num_robots);
 
 % Create a figure and axis
 figure
+size_scale = 1800;
+size_ratio = 0.55;
+set(gcf, 'Position', [200, 100, size_scale, size_scale * size_ratio]);
+
 hold on
 
-bar(x - 2 * offset, data(:, 3), barWidth, 'FaceColor', subdued_yellow, 'DisplayName', 'Approximate ABA (Our Implementation)');
-bar(x, data(:, 2), barWidth,  'FaceColor', subdued_red, 'DisplayName', 'Constraint-Embedding ABA (Our Implementation)');
-bar(x + 2 * offset, data(:, 4), barWidth, 'FaceColor', subdued_blue, 'DisplayName', 'Proximal and Sparse (Pinocchio)');
+bar(x - 2 * offset, data(:, 3), barWidth, 'FaceColor', aba_color, 'DisplayName', 'Approximate ABA (GRBDA)');
+bar(x, data(:, 2), barWidth,  'FaceColor', subdued_red, 'DisplayName', 'Constraint-Embedding ABA (GRBDA)');
+bar(x + 2 * offset, data(:, 4), barWidth, 'FaceColor', pin_fd_color, 'DisplayName', 'Cholesky (Pinocchio)');
 
 % Customize the plot
-ylabel('Instruction Count', 'Interpreter', 'latex')
-legend('Location', 'best')
+if strcmp(data_type, 'Instruction')
+    ylabel('Instruction Count', 'Interpreter', 'latex')
+else
+    ylabel('Computation Time (ms)', 'Interpreter', 'latex')
+end
+
+l = legend();
+l.Interpreter = 'latex';
+l.Position = [0.139916488272131,0.737218813905932,0.434527956172313,0.174964447427726];
 grid on
 set(gca, 'Fontsize', 20)
 set(gca, 'TickLabelInterpreter', 'latex')
@@ -63,3 +76,5 @@ ylim([0 max(data, [], 'all') * 1.2])
 % Set the x-axis tick labels
 xticks(x)
 xticklabels({'Mini Cheetah', 'MIT Humanoid', 'Tello Humanoid', 'JVRC1'})
+
+saveas(gcf, ['../figures/', data_type, 'Approx.png'])
