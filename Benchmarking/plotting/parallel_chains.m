@@ -120,13 +120,7 @@ for j = 1:2
         end
         ax.YAxis.Exponent = -2;
         ax.YRuler.ExponentMode = 'manual';
-        % text(1.15, 0.98 * get(gca).YLim(2), ['Loop Type: ', data_names{j}], text_opts)
         text(1.15, 0.96 * get(gca).YLim(2), ['Tree Depth ($d_t$) = ', num2str(i)], text_opts)
-
-        % Format Top row
-        % if j == 1
-        %     title(['Tree Depth ($d_t$) = ', num2str(i)], 'Interpreter', 'latex')
-        % end
 
         % Format Bottom row
         if j == 2

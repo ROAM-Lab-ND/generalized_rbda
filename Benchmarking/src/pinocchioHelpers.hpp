@@ -154,7 +154,6 @@ struct BranchAndDepthSpecification : public RobotSpecification
                      double i_aba, double i_pin_aba) override;
 };
 
-// TODO(@MatthewChignoli): move definition of this function to a separate file
 struct ParallelChainSpecification : public RobotSpecification
 {
     const int depth;
