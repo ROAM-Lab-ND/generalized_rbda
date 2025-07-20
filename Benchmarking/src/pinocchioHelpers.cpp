@@ -168,7 +168,6 @@ PinConstraintVectors<Scalar> parseURDFFileForLoopConstraints(const std::string &
 
         ConstrainedLinkInfo<Scalar> pred_info, succ_info;
 
-        // TODO(@MatthewChignoli): Maybe a way to check to make sure the helper returned something reasonable?
         tinyxml2::XMLElement *predecessor_xml = constraint_xml->FirstChildElement("predecessor");
         if (!predecessor_xml)
         {
@@ -192,12 +191,6 @@ PinConstraintVectors<Scalar> parseURDFFileForLoopConstraints(const std::string &
         {
             succ_info = constrainedLinkInfoFromXml(successor_xml, model);
         }
-
-        // // Print the predecessor and successor info
-        // std::cout << "Predecessor index: " << pred_info.idx << std::endl;
-        // std::cout << "Predecessor local pose: " << pred_info.local_pose.translation().transpose() << std::endl;
-        // std::cout << "Successor index: " << succ_info.idx << std::endl;
-        // std::cout << "Successor local pose: " << succ_info.local_pose.translation().transpose() << std::endl;
 
         ConstraintModel<Scalar> constraint(constraint_type, model,
                                            pred_info.idx, pred_info.local_pose,
@@ -427,7 +420,6 @@ void ParallelChainSpecification::writeToFile(std::ofstream &outfile,
             << i_pin_aba << std::endl;
 }
 
-// TODO(@MatthewChignoli): some of these are not using the approx URDF and that is a problem
 SpecificationVector GetIndividualRobotSpecifications()
 {
     SpecificationVector robot_specifications;

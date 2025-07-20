@@ -25,10 +25,6 @@ else()
   message(FATAL_ERROR "Pinocchio not found. Please install it or specify its location.")
 endif()
 
-# add_executable(approx_benchmark src/approximateBenchmark.cpp)
-# target_link_libraries(approx_benchmark ${PROJECT_NAME} ${PINOCCHIO_LIBRARIES})
-# target_link_libraries(approx_benchmark gtest gmock_main)
-
 file(GLOB_RECURSE HELPER_SRCS "src/*Helpers.cpp")
 add_library(benchmarkHelpers ${HELPER_SRCS})
 target_link_libraries(benchmarkHelpers ${PROJECT_NAME} ${PINOCCHIO_LIBRARIES} console_bridge)
