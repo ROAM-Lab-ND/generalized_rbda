@@ -69,7 +69,7 @@ pin_aba_data{2} = pin_aba.impl;
 data_names = {'Transmission', 'Connecting Rod'};
 
 figure
-size_scale = 2200;
+size_scale = 1200;
 size_ratio = 0.6;
 set(gcf, 'Position', [200, 100, size_scale, size_scale * size_ratio]);
 
@@ -130,18 +130,16 @@ for j = 1:2
 
         % Format Bottom row
         if j == 2
-            xlabel('Loop Size ($d_l$)', 'Interpreter', 'latex')
+            xlabel('Loop Size Parameter ($d_l$)', 'Interpreter', 'latex')
         end
 
         % Format Bottom Right
         if (col_idx == 4 && j == 2)
             l = legend();
-            % l.Location = 'Best';
+            set(l, 'ItemTokenSize', [18, 15]);
             l.Interpreter = 'latex';
-            % l.Orientation = 'horizontal';
-            % l.IconColumnWidth = 80.;
-            l.Position = [0.771161583432518,0.430801897780805,0.223156643931198,0.164939341238279];
-            l.FontSize = 10.5;
+            l.Position = [0.776436298211417,0.431611110501819,0.194750366210937,0.149722223149405];
+            l.FontSize = 12;
         end
 
         % Format Left column
@@ -150,7 +148,7 @@ for j = 1:2
             if strcmp(data_type, 'Instruction')
                 ylabel('Instruction Count', 'Interpreter', 'latex')
             else
-                ylabel('Computation Time (ms)', 'Interpreter', 'latex')
+                ylabel({'Computation Time (ms)','via Code Generation'}, 'Interpreter', 'latex')
             end
 
         end
@@ -168,6 +166,7 @@ delete(t.Children(1))
 delete(t.Children(6))
 
 saveas(gcf, ['../figures/', data_type, 'ParallelChains.png'])
+exportgraphics(gcf,['../figures/', data_type, 'ParallelChains.pdf'],'ContentType','vector')
 
 %% Helpers
 function plotDepths(data, opts)

@@ -22,7 +22,7 @@ plot_opts.MarkerSize = marker_size;
 plot_opts.LineWidth = line_width;
 
 text_opts.Interpreter = 'latex';
-text_opts.FontSize = 12.;
+text_opts.FontSize = 14.;
 text_opts.Color = 'k';
 text_opts.VerticalAlignment = 'top';
 text_opts.EdgeColor = 'none';

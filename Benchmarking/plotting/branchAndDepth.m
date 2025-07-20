@@ -32,12 +32,12 @@ system_list{1} = rev_chain;
 system_list{2} = rev_pair_chain;
 system_list{3} = four_bar;
 
-font_size = 12;
-text_opts.FontSize = 12;
+font_size = 14;
+text_opts.FontSize = 14;
 
 %% Plot
 figure
-size_scale = 3050;
+size_scale = 1500;cd 
 size_ratio = 0.45;
 set(gcf, 'Position', [200, 100, size_scale, size_scale * size_ratio]);
 
@@ -104,7 +104,7 @@ for j = 1:length(system_list)
         end
 
         if (row_idx ~= length(branches) || j ~= 2)
-            annotation('textbox', [ax.Position(1:2) 0.1 0.26], ...
+            annotation('textbox', [ax.Position(1:2)+[0.01 0] 0.1 0.26], ...
                 'String', ['Branches ($b_a$) = ', num2str(i)], ...
                 text_opts)
         end
@@ -125,7 +125,7 @@ for j = 1:length(system_list)
             if strcmp(data_type, 'Instruction')
                 ylabel('Instruction Count', 'Interpreter', 'latex')
             else
-                ylabel('Computation Time (ms)', 'Interpreter', 'latex')
+                ylabel({'Computation Time (ms)','via Code Generation'}, 'Interpreter', 'latex')
             end
 
         end
@@ -133,12 +133,12 @@ for j = 1:length(system_list)
         % Format Bottom Right
         if (row_idx == length(branches) && j == 3)
             l = legend();
+            set(l, 'ItemTokenSize', [18, 15]);
             l.Location = 'Best';
             l.Interpreter = 'latex';
             l.Orientation = 'vertical';
-            l.IconColumnWidth = 20.;
-            l.Position = [0.514688640902593,0.51063829787234,0.143808091123551,0.130803827312107];
-            l.FontSize = 10.;
+            l.Position = [0.519333333333333,0.506469047193037,0.13101118648021,0.134814814814815];
+            l.FontSize = 10;
         end
 
     end
@@ -151,3 +151,4 @@ delete(t.Children(5))
 delete(t.Children(8))
 
 saveas(gcf, ['../figures/', data_type, 'branchAndDepth.png'])
+exportgraphics(gcf,['../figures/', data_type, 'branchAndDepth.pdf'],'ContentType','vector')
