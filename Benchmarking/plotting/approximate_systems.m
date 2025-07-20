@@ -44,26 +44,26 @@ x = 1:spacing:(spacing * num_robots);
 
 % Create a figure and axis
 figure
-size_scale = 1800;
+size_scale = 1000;
 size_ratio = 0.55;
 set(gcf, 'Position', [200, 100, size_scale, size_scale * size_ratio]);
 
 hold on
 
-bar(x - 2 * offset, data(:, 3), barWidth, 'FaceColor', aba_color, 'DisplayName', 'Approximate ABA (GRBDA)');
-bar(x, data(:, 2), barWidth,  'FaceColor', subdued_red, 'DisplayName', 'Constraint-Embedding ABA (GRBDA)');
-bar(x + 2 * offset, data(:, 4), barWidth, 'FaceColor', pin_fd_color, 'DisplayName', 'Cholesky (Pinocchio)');
+bar(x - 2 * offset, data(:, 3), barWidth, 'FaceColor', aba_color, 'DisplayName', 'grbda::aba()');
+bar(x, data(:, 2), barWidth,  'FaceColor', subdued_red, 'DisplayName', 'grbda::constraintEmbeddingABA()');
+bar(x + 2 * offset, data(:, 4), barWidth, 'FaceColor', pin_fd_color, 'DisplayName', 'pinocchio::forwardDynamics()');
 
 % Customize the plot
 if strcmp(data_type, 'Instruction')
     ylabel('Instruction Count', 'Interpreter', 'latex')
 else
-    ylabel('Computation Time (ms)', 'Interpreter', 'latex')
+    ylabel({'Computation Time (ms)','via Code Generation'}, 'Interpreter', 'latex')
 end
 
 l = legend();
 l.Interpreter = 'latex';
-l.Position = [0.139916488272131,0.737218813905932,0.434527956172313,0.174964447427726];
+l.Position = [0.137916488272131,0.745454545454545,0.327083511727869,0.17400144315184];
 grid on
 set(gca, 'Fontsize', 20)
 set(gca, 'TickLabelInterpreter', 'latex')
@@ -78,3 +78,4 @@ xticks(x)
 xticklabels({'Mini Cheetah', 'MIT Humanoid', 'Tello Humanoid', 'JVRC1'})
 
 saveas(gcf, ['../figures/', data_type, 'Approx.png'])
+exportgraphics(gcf,['../figures/', data_type, 'Approx.pdf'],'ContentType','vector')
