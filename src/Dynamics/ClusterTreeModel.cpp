@@ -6,11 +6,12 @@
 
 namespace grbda
 {
-    template <typename Scalar>
-    Body<Scalar> ClusterTreeModel<Scalar>::registerBody(const std::string name,
-                                                        const SpatialInertia<Scalar> inertia,
-                                                        const std::string parent_name,
-                                                        const spatial::Transform<Scalar> Xtree)
+    template <typename Scalar, typename OriTpl>
+    Body<Scalar>
+    ClusterTreeModel<Scalar, OriTpl>::registerBody(const std::string name,
+                                                   const SpatialInertia<Scalar> inertia,
+                                                   const std::string parent_name,
+                                                   const spatial::Transform<Scalar> Xtree)
     {
         const int body_index = (int)bodies_.size();
         body_name_to_body_index_[name] = body_index;
@@ -30,8 +31,8 @@ namespace grbda
         return body;
     }
 
-    template <typename Scalar>
-    void ClusterTreeModel<Scalar>::appendRegisteredBodiesAsCluster(
+    template <typename Scalar, typename OriTpl>
+    void ClusterTreeModel<Scalar, OriTpl>::appendRegisteredBodiesAsCluster(
         const std::string name, std::shared_ptr<ClusterJoints::Base<Scalar>> joint)
     {
         const int parent_cluster_index = getIndexOfParentClusterFromBodies(bodies_in_current_cluster_);
@@ -52,9 +53,9 @@ namespace grbda
 
         checkValidParentClusterForBodiesInCluster(cluster_nodes_.back());
 
-        // TODO(@MatthewChignoli): Much of the code is built to support spanning or independent 
-        // representations of the joint state. However, this method of assigning the position and 
-        // velocity indices determine whether the cluster tree model is compatible with spanning or 
+        // TODO(@MatthewChignoli): Much of the code is built to support spanning or independent
+        // representations of the joint state. However, this method of assigning the position and
+        // velocity indices determine whether the cluster tree model is compatible with spanning or
         // non spanning joints states. Needs to be changed if we want to support both options
         this->position_index_ += joint->numPositions();
         this->velocity_index_ += joint->numVelocities();
@@ -65,8 +66,8 @@ namespace grbda
         bodies_in_current_cluster_.clear();
     }
 
-    template <typename Scalar>
-    void ClusterTreeModel<Scalar>::print() const
+    template <typename Scalar, typename OriTpl>
+    void ClusterTreeModel<Scalar, OriTpl>::print() const
     {
         printf("\nCluster Tree Model:\n");
         printf("** Clusters **\n");
@@ -94,22 +95,22 @@ namespace grbda
         }
     }
 
-    template <typename Scalar>
-    DMat<Scalar> ClusterTreeModel<Scalar>::getMassMatrix()
+    template <typename Scalar, typename OriTpl>
+    DMat<Scalar> ClusterTreeModel<Scalar, OriTpl>::getMassMatrix()
     {
         this->compositeRigidBodyAlgorithm();
         return this->H_;
     }
 
-    template <typename Scalar>
-    DVec<Scalar> ClusterTreeModel<Scalar>::getBiasForceVector()
+    template <typename Scalar, typename OriTpl>
+    DVec<Scalar> ClusterTreeModel<Scalar, OriTpl>::getBiasForceVector()
     {
         this->updateBiasForceVector();
         return this->C_;
     }
 
-    template <typename Scalar>
-    void ClusterTreeModel<Scalar>::checkValidParentClusterForBodiesInCluster(
+    template <typename Scalar, typename OriTpl>
+    void ClusterTreeModel<Scalar, OriTpl>::checkValidParentClusterForBodiesInCluster(
         const ClusterTreeNodePtr<Scalar> cluster)
     {
         const int cluster_index = cluster->index_;
@@ -124,23 +125,23 @@ namespace grbda
         }
     }
 
-    template <typename Scalar>
-    void
-    ClusterTreeModel<Scalar>::checkValidParentClusterForBodiesInCluster(const int cluster_index)
+    template <typename Scalar, typename OriTpl>
+    void ClusterTreeModel<Scalar, OriTpl>::checkValidParentClusterForBodiesInCluster(
+        const int cluster_index)
     {
         checkValidParentClusterForBodiesInCluster(cluster_nodes_[cluster_index]);
     }
 
-    template <typename Scalar>
-    void ClusterTreeModel<Scalar>::checkValidParentClusterForBodiesInCluster(
+    template <typename Scalar, typename OriTpl>
+    void ClusterTreeModel<Scalar, OriTpl>::checkValidParentClusterForBodiesInCluster(
         const std::string &cluster_name)
     {
         checkValidParentClusterForBodiesInCluster(cluster_nodes_[cluster_name_to_cluster_index_
                                                                      .at(cluster_name)]);
     }
 
-    template <typename Scalar>
-    void ClusterTreeModel<Scalar>::resizeSystemMatrices()
+    template <typename Scalar, typename OriTpl>
+    void ClusterTreeModel<Scalar, OriTpl>::resizeSystemMatrices()
     {
         const int num_degrees_of_freedom = this->getNumDegreesOfFreedom();
 
@@ -160,11 +161,11 @@ namespace grbda
         }
     }
 
-    template <typename Scalar>
-    void ClusterTreeModel<Scalar>::appendContactPoint(const std::string body_name,
-                                                      const Vec3<Scalar> &local_offset,
-                                                      const std::string contact_point_name,
-                                                      const bool is_end_effector)
+    template <typename Scalar, typename OriTpl>
+    void ClusterTreeModel<Scalar, OriTpl>::appendContactPoint(const std::string body_name,
+                                                              const Vec3<Scalar> &local_offset,
+                                                              const std::string contact_point_name,
+                                                              const bool is_end_effector)
     {
         const int contact_point_index = (int)this->contact_points_.size();
         this->contact_name_to_contact_index_[contact_point_name] = contact_point_index;
@@ -179,7 +180,52 @@ namespace grbda
         this->contact_points_.emplace_back(body_name_to_body_index_.at(body_name), local_offset,
                                            contact_point_name, this->getNumDegreesOfFreedom(),
                                            this->num_end_effectors_++);
+
+        resizeEndEffectorMatrices();
+    }
+
+    template <typename Scalar, typename OriTpl>
+    void
+    ClusterTreeModel<Scalar, OriTpl>::appendContactPoint(const ContactPoint<Scalar> &contact_point)
+    {
+        this->contact_points_.push_back(contact_point);
+        if (contact_point.is_end_effector_)
+        {
+            this->num_end_effectors_++;
+            resizeEndEffectorMatrices();
+        }
+    }
+
+    template <typename Scalar, typename OriTpl>
+    void ClusterTreeModel<Scalar, OriTpl>::appendContactBox(const std::string body_name,
+                                                            const Vec3<Scalar> &dims)
+    {
+        using V3d = Vec3<Scalar>;
+        appendContactPoint(body_name, V3d(dims(0), dims(1), dims(2)) / 2, "torso-contact-1");
+        appendContactPoint(body_name, V3d(-dims(0), dims(1), dims(2)) / 2, "torso-contact-2");
+        appendContactPoint(body_name, V3d(dims(0), -dims(1), dims(2)) / 2, "torso-contact-3");
+        appendContactPoint(body_name, V3d(-dims(0), -dims(1), dims(2)) / 2, "torso-contact-4");
+
+        appendContactPoint(body_name, V3d(dims(0), dims(1), -dims(2)) / 2, "torso-contact-5");
+        appendContactPoint(body_name, V3d(-dims(0), dims(1), -dims(2)) / 2, "torso-contact-6");
+        appendContactPoint(body_name, V3d(dims(0), -dims(1), -dims(2)) / 2, "torso-contact-7");
+        appendContactPoint(body_name, V3d(-dims(0), -dims(1), -dims(2)) / 2, "torso-contact-8");
+    }
+
+    template <typename Scalar, typename OriTpl>
+    void ClusterTreeModel<Scalar, OriTpl>::appendEndEffector(const std::string body_name,
+                                                             const Vec3<Scalar> &local_offset,
+                                                             const std::string end_effector_name)
+    {
+        appendContactPoint(body_name, local_offset, end_effector_name, true);
+    }
+
+    template <typename Scalar, typename OriTpl>
+    void ClusterTreeModel<Scalar, OriTpl>::resizeEndEffectorMatrices()
+    {
         ContactPoint<Scalar> &contact_point = this->contact_points_.back();
+        const int contact_point_index = (int)this->contact_points_.size() - 1;
+        const std::string body_name = bodies_[contact_point.body_index_].name_;
 
         // Keep track of which nodes support this new end effector
         int i = getIndexOfClusterContainingBody(body_name_to_body_index_.at(body_name));
@@ -207,32 +253,8 @@ namespace grbda
         }
     }
 
-    template <typename Scalar>
-    void ClusterTreeModel<Scalar>::appendContactBox(const std::string body_name,
-                                                    const Vec3<Scalar> &dims)
-    {
-        using V3d = Vec3<Scalar>;
-        appendContactPoint(body_name, V3d(dims(0), dims(1), dims(2)) / 2, "torso-contact-1");
-        appendContactPoint(body_name, V3d(-dims(0), dims(1), dims(2)) / 2, "torso-contact-2");
-        appendContactPoint(body_name, V3d(dims(0), -dims(1), dims(2)) / 2, "torso-contact-3");
-        appendContactPoint(body_name, V3d(-dims(0), -dims(1), dims(2)) / 2, "torso-contact-4");
-
-        appendContactPoint(body_name, V3d(dims(0), dims(1), -dims(2)) / 2, "torso-contact-5");
-        appendContactPoint(body_name, V3d(-dims(0), dims(1), -dims(2)) / 2, "torso-contact-6");
-        appendContactPoint(body_name, V3d(dims(0), -dims(1), -dims(2)) / 2, "torso-contact-7");
-        appendContactPoint(body_name, V3d(-dims(0), -dims(1), -dims(2)) / 2, "torso-contact-8");
-    }
-
-    template <typename Scalar>
-    void ClusterTreeModel<Scalar>::appendEndEffector(const std::string body_name,
-                                                     const Vec3<Scalar> &local_offset,
-                                                     const std::string end_effector_name)
-    {
-        appendContactPoint(body_name, local_offset, end_effector_name, true);
-    }
-
-    template <typename Scalar>
-    void ClusterTreeModel<Scalar>::setState(const ModelState<Scalar> &model_state)
+    template <typename Scalar, typename OriTpl>
+    void ClusterTreeModel<Scalar, OriTpl>::setState(const ModelState<Scalar> &model_state)
     {
         size_t i = 0;
         for (auto &cluster : cluster_nodes_)
@@ -244,15 +266,15 @@ namespace grbda
         this->setExternalForces();
     }
 
-    template <typename Scalar>
-    void ClusterTreeModel<Scalar>::setState(const StatePair &q_qd_pair)
+    template <typename Scalar, typename OriTpl>
+    void ClusterTreeModel<Scalar, OriTpl>::setState(const StatePair &q_qd_pair)
     {
         ModelState<Scalar> state = stateVectorToModelState(q_qd_pair);
         setState(state);
     }
 
-    template <typename Scalar>
-    void ClusterTreeModel<Scalar>::setState(const DVec<Scalar> &q_qd_vec)
+    template <typename Scalar, typename OriTpl>
+    void ClusterTreeModel<Scalar, OriTpl>::setState(const DVec<Scalar> &q_qd_vec)
     {
         const int nq = this->getNumPositions();
         const int nv = this->getNumDegreesOfFreedom();
@@ -262,9 +284,9 @@ namespace grbda
         setState(state);
     }
 
-    template <typename Scalar>
+    template <typename Scalar, typename OriTpl>
     // NOTE: This function is only for non-spanning joint coordinates
-    ModelState<Scalar> ClusterTreeModel<Scalar>::stateVectorToModelState(const StatePair &q_qd_pair)
+    ModelState<Scalar> ClusterTreeModel<Scalar, OriTpl>::stateVectorToModelState(const StatePair &q_qd_pair)
     {
 
         ModelState<Scalar> state;
@@ -285,8 +307,8 @@ namespace grbda
         return state;
     }
 
-    template <typename Scalar>
-    void ClusterTreeModel<Scalar>::resetCache()
+    template <typename Scalar, typename OriTpl>
+    void ClusterTreeModel<Scalar, OriTpl>::resetCache()
     {
         TreeModel<Scalar>::resetCache();
         articulated_bodies_updated_ = false;
@@ -294,9 +316,9 @@ namespace grbda
         qdd_effects_updated_ = false;
     }
 
-    template <typename Scalar>
-    Vec3<Scalar> ClusterTreeModel<Scalar>::getPosition(const std::string &body_name,
-                                                       const Vec3<Scalar> &offset)
+    template <typename Scalar, typename OriTpl>
+    Vec3<Scalar> ClusterTreeModel<Scalar, OriTpl>::getPosition(const std::string &body_name,
+                                                               const Vec3<Scalar> &offset)
     {
         const int cluster_idx = getIndexOfClusterContainingBody(body_name);
         const int subindex_within_cluster = body(body_name).sub_index_within_cluster_;
@@ -309,8 +331,8 @@ namespace grbda
         return link_pos;
     }
 
-    template <typename Scalar>
-    Mat3<Scalar> ClusterTreeModel<Scalar>::getOrientation(const std::string &body_name)
+    template <typename Scalar, typename OriTpl>
+    Mat3<Scalar> ClusterTreeModel<Scalar, OriTpl>::getOrientation(const std::string &body_name)
     {
         const int cluster_idx = getIndexOfClusterContainingBody(body_name);
         const int subindex_within_cluster = body(body_name).sub_index_within_cluster_;
@@ -323,9 +345,9 @@ namespace grbda
         return Rai;
     }
 
-    template <typename Scalar>
-    Vec3<Scalar> ClusterTreeModel<Scalar>::getLinearVelocity(const std::string &body_name,
-                                                             const Vec3<Scalar> &offset)
+    template <typename Scalar, typename OriTpl>
+    Vec3<Scalar> ClusterTreeModel<Scalar, OriTpl>::getLinearVelocity(const std::string &body_name,
+                                                                     const Vec3<Scalar> &offset)
     {
         const int cluster_idx = getIndexOfClusterContainingBody(body_name);
         const int subindex_within_cluster = body(body_name).sub_index_within_cluster_;
@@ -337,8 +359,8 @@ namespace grbda
         return Rai * spatial::spatialToLinearVelocity(v, offset);
     }
 
-    template <typename Scalar>
-    Vec3<Scalar> ClusterTreeModel<Scalar>::getAngularVelocity(const std::string &body_name)
+    template <typename Scalar, typename OriTpl>
+    Vec3<Scalar> ClusterTreeModel<Scalar, OriTpl>::getAngularVelocity(const std::string &body_name)
     {
         const int cluster_idx = getIndexOfClusterContainingBody(body_name);
         const int subindex_within_cluster = body(body_name).sub_index_within_cluster_;
@@ -350,10 +372,11 @@ namespace grbda
         return Rai * v.template head<3>();
     }
 
-    template <typename Scalar>
-    Vec3<Scalar> ClusterTreeModel<Scalar>::getLinearAcceleration(const DVec<Scalar> &qdd,
-                                                                 const std::string &body_name,
-                                                                 const Vec3<Scalar> &offset)
+    template <typename Scalar, typename OriTpl>
+    Vec3<Scalar>
+    ClusterTreeModel<Scalar, OriTpl>::getLinearAcceleration(const DVec<Scalar> &qdd,
+                                                            const std::string &body_name,
+                                                            const Vec3<Scalar> &offset)
     {
         const int cluster_idx = getIndexOfClusterContainingBody(body_name);
         const int subindex_within_cluster = body(body_name).sub_index_within_cluster_;
@@ -367,9 +390,9 @@ namespace grbda
         return Rai * spatial::spatialToLinearAcceleration(a, v, offset);
     }
 
-    template <typename Scalar>
-    Vec3<Scalar> ClusterTreeModel<Scalar>::getAngularAcceleration(const DVec<Scalar> &qdd,
-                                                                  const std::string &body_name)
+    template <typename Scalar, typename OriTpl>
+    Vec3<Scalar> ClusterTreeModel<Scalar, OriTpl>::getAngularAcceleration(
+        const DVec<Scalar> &qdd, const std::string &body_name)
     {
         const int cluster_idx = getIndexOfClusterContainingBody(body_name);
         const int subindex_within_cluster = body(body_name).sub_index_within_cluster_;
@@ -381,8 +404,8 @@ namespace grbda
         return Rai * a.template head<3>();
     }
 
-    template <typename Scalar>
-    int ClusterTreeModel<Scalar>::getClusterAncestorIndexFromParent(const int body_index)
+    template <typename Scalar, typename OriTpl>
+    int ClusterTreeModel<Scalar, OriTpl>::getClusterAncestorIndexFromParent(const int body_index)
     {
         int cluster_ancestor_index = body_index;
         while (!searchClustersForBody(cluster_ancestor_index) && cluster_ancestor_index != -1)
@@ -392,46 +415,49 @@ namespace grbda
         return cluster_ancestor_index;
     }
 
-    template <typename Scalar>
-    int ClusterTreeModel<Scalar>::getSubIndexWithinClusterForBody(const int body_index) const
+    template <typename Scalar, typename OriTpl>
+    int ClusterTreeModel<Scalar, OriTpl>::getSubIndexWithinClusterForBody(
+        const int body_index) const
     {
         return body_index >= 0 ? bodies_[body_index].sub_index_within_cluster_ : 0;
     }
 
-    template <typename Scalar>
-    int ClusterTreeModel<Scalar>::getSubIndexWithinClusterForBody(const Body<Scalar> &body) const
+    template <typename Scalar, typename OriTpl>
+    int ClusterTreeModel<Scalar, OriTpl>::getSubIndexWithinClusterForBody(
+        const Body<Scalar> &body) const
     {
         return getSubIndexWithinClusterForBody(body.index_);
     }
 
-    template <typename Scalar>
-    int
-    ClusterTreeModel<Scalar>::getSubIndexWithinClusterForBody(const std::string &body_name) const
+    template <typename Scalar, typename OriTpl>
+    int ClusterTreeModel<Scalar, OriTpl>::getSubIndexWithinClusterForBody(
+        const std::string &body_name) const
     {
         return getSubIndexWithinClusterForBody(body_name_to_body_index_.at(body_name));
     }
 
-    template <typename Scalar>
-    int ClusterTreeModel<Scalar>::getNumBodiesInCluster(const int cluster_index) const
+    template <typename Scalar, typename OriTpl>
+    int ClusterTreeModel<Scalar, OriTpl>::getNumBodiesInCluster(const int cluster_index) const
     {
         return cluster_index >= 0 ? cluster_nodes_[cluster_index]->bodies_.size() : 1;
     }
 
-    template <typename Scalar>
-    int
-    ClusterTreeModel<Scalar>::getNumBodiesInCluster(const ClusterTreeNodePtr<Scalar> cluster) const
+    template <typename Scalar, typename OriTpl>
+    int ClusterTreeModel<Scalar, OriTpl>::getNumBodiesInCluster(
+        const ClusterTreeNodePtr<Scalar> cluster) const
     {
         return getNumBodiesInCluster(cluster->index_);
     }
 
-    template <typename Scalar>
-    int ClusterTreeModel<Scalar>::getNumBodiesInCluster(const std::string &cluster_name) const
+    template <typename Scalar, typename OriTpl>
+    int ClusterTreeModel<Scalar, OriTpl>::getNumBodiesInCluster(
+        const std::string &cluster_name) const
     {
         return getNumBodiesInCluster(cluster_name_to_cluster_index_.at(cluster_name));
     }
 
-    template <typename Scalar>
-    int ClusterTreeModel<Scalar>::getIndexOfParentClusterFromBodies(
+    template <typename Scalar, typename OriTpl>
+    int ClusterTreeModel<Scalar, OriTpl>::getIndexOfParentClusterFromBodies(
         const std::vector<Body<Scalar>> &bodies)
     {
         int parent_cluster_index;
@@ -460,8 +486,8 @@ namespace grbda
         return parent_cluster_index;
     }
 
-    template <typename Scalar>
-    int ClusterTreeModel<Scalar>::getIndexOfClusterContainingBody(const int body_index)
+    template <typename Scalar, typename OriTpl>
+    int ClusterTreeModel<Scalar, OriTpl>::getIndexOfClusterContainingBody(const int body_index)
     {
         auto body_found_in_map = body_index_to_cluster_index_.find(body_index);
         if (body_found_in_map == body_index_to_cluster_index_.end())
@@ -476,20 +502,21 @@ namespace grbda
             return body_found_in_map->second;
     }
 
-    template <typename Scalar>
-    int ClusterTreeModel<Scalar>::getIndexOfClusterContainingBody(const Body<Scalar> &body)
+    template <typename Scalar, typename OriTpl>
+    int ClusterTreeModel<Scalar, OriTpl>::getIndexOfClusterContainingBody(const Body<Scalar> &body)
     {
         return getIndexOfClusterContainingBody(body.index_);
     }
 
-    template <typename Scalar>
-    int ClusterTreeModel<Scalar>::getIndexOfClusterContainingBody(const std::string &body_name)
+    template <typename Scalar, typename OriTpl>
+    int ClusterTreeModel<Scalar, OriTpl>::getIndexOfClusterContainingBody(
+        const std::string &body_name)
     {
         return getIndexOfClusterContainingBody(body_name_to_body_index_.at(body_name));
     }
 
-    template <typename Scalar>
-    std::optional<int> ClusterTreeModel<Scalar>::searchClustersForBody(const int body_index)
+    template <typename Scalar, typename OriTpl>
+    std::optional<int> ClusterTreeModel<Scalar, OriTpl>::searchClustersForBody(const int body_index)
     {
         for (size_t i = 0; i < cluster_nodes_.size(); i++)
             if (cluster_nodes_[i]->containsBody(body_index))
@@ -500,29 +527,30 @@ namespace grbda
         return std::nullopt;
     }
 
-    template <typename Scalar>
+    template <typename Scalar, typename OriTpl>
     ClusterTreeNodePtr<Scalar>
-    ClusterTreeModel<Scalar>::getClusterContainingBody(const int body_index)
+    ClusterTreeModel<Scalar, OriTpl>::getClusterContainingBody(const int body_index)
     {
         return cluster_nodes_[getIndexOfClusterContainingBody(body_index)];
     }
 
-    template <typename Scalar>
+    template <typename Scalar, typename OriTpl>
     ClusterTreeNodePtr<Scalar>
-    ClusterTreeModel<Scalar>::getClusterContainingBody(const Body<Scalar> &body)
+    ClusterTreeModel<Scalar, OriTpl>::getClusterContainingBody(const Body<Scalar> &body)
     {
         return cluster_nodes_[getIndexOfClusterContainingBody(body)];
     }
 
-    template <typename Scalar>
+    template <typename Scalar, typename OriTpl>
     ClusterTreeNodePtr<Scalar>
-    ClusterTreeModel<Scalar>::getClusterContainingBody(const std::string &body_name)
+    ClusterTreeModel<Scalar, OriTpl>::getClusterContainingBody(const std::string &body_name)
     {
         return cluster_nodes_[getIndexOfClusterContainingBody(body_name)];
     }
 
-    template <typename Scalar>
-    DVec<Scalar> ClusterTreeModel<Scalar>::localCartesianForceAtPointToWorldPluckerForceOnCluster(
+    template <typename Scalar, typename OriTpl>
+    DVec<Scalar>
+    ClusterTreeModel<Scalar, OriTpl>::localCartesianForceAtPointToWorldPluckerForceOnCluster(
         const Vec3<Scalar> &force, const ContactPoint<Scalar> &contact_point)
     {
         const auto &body = bodies_[contact_point.body_index_];

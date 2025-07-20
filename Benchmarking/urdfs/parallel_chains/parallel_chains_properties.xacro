@@ -1,0 +1,48 @@
+<?xml version="1.0"?>
+
+<robot xmlns:xacro="http://ros.org/wiki/xacro">
+
+    <xacro:property name="link_length" value="1.0"/>
+
+    <xacro:macro name="link_visual">
+        <visual>
+			<origin xyz="0.25 0 0" rpy="0 0 0"/>
+			<geometry>
+				<box size="0.05 ${link_length} 0.05"/>
+			</geometry>
+	     	<material name="Red">
+				<color rgba="0.8 0.1 0.1 1.0"/>
+			</material>
+	   </visual>
+    </xacro:macro>
+
+    <xacro:macro name="add_link" params="chain_idx link_idx">
+        <link name="link_${chain_idx}_${link_idx}">
+            <inertial>
+                <mass value="0.25"/>
+                <origin rpy="0 0 0" xyz="0 0.5 0"/>
+                <inertia ixx="0.01" ixy="0" ixz="0" iyy="0.1" iyz="0" izz="0.01"/>
+            </inertial>
+        </link>
+    </xacro:macro>
+
+    <xacro:macro name="add_joint" params="chain_idx link_idx independent">
+        <joint name="joint_${chain_idx}_${link_idx}" type="revolute" independent="${independent}">
+            <parent link="link_${chain_idx}_${link_idx - 1}"/>
+            <child link="link_${chain_idx}_${link_idx}"/>
+            <origin xyz="0 ${link_length} 0"/>
+            <axis xyz="0 0 1"/>
+            <limit effort="30" velocity="1.0" lower="-10" upper="10"/>
+        </joint>
+    </xacro:macro>
+
+    <xacro:macro name="add_parallel_links_and_joints" params="idx">
+        <xacro:add_link chain_idx="1" link_idx="${idx}"/>
+        <xacro:add_joint chain_idx="1" link_idx="${idx}" independent="true"/>
+        <xacro:add_link chain_idx="2" link_idx="${idx}"/>
+        <xacro:add_joint chain_idx="2" link_idx="${idx}" independent="true"/>
+    </xacro:macro>
+
+    <link name="base"/>
+
+</robot>

@@ -30,13 +30,7 @@ namespace grbda
             void updateJacobians(const JointCoordinate<Scalar> &joint_pos) override;
             void updateBiases(const JointState<Scalar> &joint_state) override;
 
-            void createRandomStateHelpers();
-            struct
-            {
-                bool created = false;
-                casadi::Function phi_root_finder;
-                casadi::Function G;
-            } random_state_helpers_;
+            void createRandomStateHelpers() override;
 
             const int& independent_coordinate() const { return independent_coordinate_; }
 

@@ -14,14 +14,15 @@ namespace grbda
         class Base
         {
         public:
-            Base(int num_positions, int num_velocities)
-                : num_positions_(num_positions), num_velocities_(num_velocities) {}
+            Base(int num_positions, int num_velocities, std::string name)
+                : name_(name), num_positions_(num_positions), num_velocities_(num_velocities)  {}
             virtual ~Base() {}
 
             virtual std::shared_ptr<Base<Scalar>> clone() const = 0;
 
             virtual void updateKinematics(const DVec<Scalar> &q, const DVec<Scalar> &qd) = 0;
 
+            const std::string& name() const { return name_; }
             int numPositions() const { return num_positions_; }
             int numVelocities() const { return num_velocities_; }
 
@@ -30,6 +31,7 @@ namespace grbda
             const spatial::Transform<Scalar> &XJ() const { return XJ_; }
 
         protected:
+            const std::string name_;             
             const int num_positions_;
             const int num_velocities_;
 
@@ -43,7 +45,8 @@ namespace grbda
         class Free : public Base<Scalar>
         {
         public:
-            Free() : Base<Scalar>(OrientationRepresentation::num_ori_parameter + 3, 6)
+            Free(std::string name = "unnamed_free_joint")
+                : Base<Scalar>(OrientationRepresentation::num_ori_parameter + 3, 6, name)
             {
                 this->S_ = D6Mat<Scalar>::Identity(6, 6);
                 this->Psi_ = D6Mat<Scalar>::Identity(6, 6);
@@ -71,7 +74,8 @@ namespace grbda
         class Revolute : public Base<Scalar>
         {
         public:
-            Revolute(ori::CoordinateAxis axis) : Base<Scalar>(1, 1), axis_(axis)
+            Revolute(ori::CoordinateAxis axis, std::string name = "unnamed_revolute_joint")
+                : Base<Scalar>(1, 1, name), axis_(axis)
             {
                 spatial::JointType Rev = spatial::JointType::Revolute;
 

@@ -9,6 +9,7 @@ namespace grbda
         template <typename Scalar>
         GenericImplicit<Scalar>::GenericImplicit(std::vector<bool> is_coordinate_independent,
                                                  SymPhiFcn phi_fcn)
+            : is_coordinate_independent_(is_coordinate_independent), phi_sym_(phi_fcn)
         {
             // Separate coordinates into independent and dependent
             int state_dim = is_coordinate_independent.size();
@@ -128,6 +129,12 @@ namespace grbda
         }
 
         template <typename Scalar>
+        const std::vector<bool> &GenericImplicit<Scalar>::isCoordinateIndependent() const
+        {
+            return is_coordinate_independent_;
+        }
+
+        template <typename Scalar>
         DMat<Scalar> GenericImplicit<Scalar>::runCasadiFcn(const casadi::Function &fcn,
                                                            const JointCoordinate<Scalar> &arg)
         {
@@ -163,6 +170,67 @@ namespace grbda
             return res.template cast<Scalar>();
         }
 
+        template <typename Scalar>
+        void GenericImplicit<Scalar>::createRandomStateHelpers()
+        {
+            if (this->random_state_helpers_.created)
+            {
+                return;
+            }
+            this->random_state_helpers_.created = true;
+
+            // Create symbolic generic implicit loop constraint
+            GenericImplicit<SX> symbolic = copyAsSymbolic();
+
+            // Root finding
+            {
+                SX cs_q_sym = SX::sym("q", this->numSpanningPos());
+                DVec<SX> q_sym(this->numSpanningPos());
+                casadi::copy(cs_q_sym, q_sym);
+
+                // Compuate constraint violation
+                JointCoordinate<SX> joint_pos(q_sym, true);
+                DVec<SX> phi_sx = symbolic.phi(joint_pos);
+                SX cs_phi_sym = casadi::SX(casadi::Sparsity::dense(phi_sx.rows(), 1));
+                casadi::copy(phi_sx, cs_phi_sym);
+
+                // Slice depending on independent coordinate
+                std::vector<int> ind_coords, dep_coords;
+                for (int i = 0; i < this->numSpanningPos(); i++)
+                {
+                    if (this->is_coordinate_independent_[i])
+                        ind_coords.push_back(i);
+                    else
+                        dep_coords.push_back(i);
+                }
+
+                // Create rootfinder problem
+                casadi::SXDict rootfinder_problem;
+                rootfinder_problem["x"] = cs_q_sym(dep_coords);
+                rootfinder_problem["p"] = cs_q_sym(ind_coords);
+                rootfinder_problem["g"] = cs_phi_sym;
+                casadi::Dict options;
+                options["expand"] = true;   
+                options["error_on_fail"] = true;
+                this->random_state_helpers_.phi_root_finder = casadi::rootfinder("solver", "newton",
+                                                                                 rootfinder_problem,
+                                                                                 options);
+            }
+
+            // Explicit constraint Jacobian
+            {
+                SX cs_q_sym = SX::sym("q", this->numSpanningPos());
+                DVec<SX> q_sym(this->numSpanningPos());
+                casadi::copy(cs_q_sym, q_sym);
+                JointCoordinate<SX> joint_pos(q_sym, true);
+                symbolic.updateJacobians(joint_pos);
+                DMat<SX> G = symbolic.G();
+                SX G_sym = casadi::SX(casadi::Sparsity::dense(G.rows(), G.cols()));
+                casadi::copy(G, G_sym);
+                this->random_state_helpers_.G = casadi::Function("G", {cs_q_sym}, {G_sym}, {"q"}, {"G"});
+            }
+        }
+
         template struct GenericImplicit<double>;
         template struct GenericImplicit<float>;
         template struct GenericImplicit<casadi::SX>;
@@ -176,9 +244,32 @@ namespace grbda
                                  const std::vector<JointPtr<Scalar>> &joints,
                                  std::shared_ptr<LoopConstraint::Base<Scalar>> loop_constraint)
             : Base<Scalar>((int)bodies.size(),
-                           loop_constraint->numIndependentPos(),
+                           loop_constraint->isExplicit() ? loop_constraint->numIndependentPos()
+                                                         : loop_constraint->numSpanningPos(),
                            loop_constraint->numIndependentVel()),
               bodies_(bodies)
+        {
+            initialize(joints, loop_constraint);
+        }
+
+        template <typename Scalar>
+        Generic<Scalar>::Generic(const std::vector<Body<Scalar>> &bodies,
+                                 const std::vector<JointPtr<Scalar>> &joints,
+                                 std::shared_ptr<LoopConstraint::GenericImplicit<Scalar>> loop_constraint)
+            : Base<Scalar>((int)bodies.size(),
+                           loop_constraint->isExplicit() ? loop_constraint->numIndependentPos()
+                                                         : loop_constraint->numSpanningPos(),
+                           loop_constraint->numIndependentVel()),
+              bodies_(bodies)
+        {
+            generic_constraint_ = loop_constraint;
+            initialize(joints, loop_constraint);
+        }
+
+        template <typename Scalar>
+        void
+        Generic<Scalar>::initialize(const std::vector<JointPtr<Scalar>> &joints,
+                                    std::shared_ptr<LoopConstraint::Base<Scalar>> loop_constraint)
         {
             this->loop_constraint_ = loop_constraint;
 
@@ -193,6 +284,104 @@ namespace grbda
 
             X_intra_ = DMat<Scalar>::Identity(6 * this->num_bodies_, 6 * this->num_bodies_);
             X_intra_ring_ = DMat<Scalar>::Zero(6 * this->num_bodies_, 6 * this->num_bodies_);
+        }
+
+        template <typename Scalar>
+        JointCoordinate<double> Generic<Scalar>::findRootsForPhi() const
+        {
+            using DM = casadi::DM;
+
+            using LoopConstraintPtr = const std::shared_ptr<LoopConstraint::Base<Scalar>>;
+            LoopConstraintPtr &loop_constraint = this->loop_constraint_;
+
+            const int n_ind = loop_constraint->numIndependentPos();
+            const int n_span = loop_constraint->numSpanningPos();
+            // TODO(@MatthewChignoli): Make this an input parameter
+            double ind_range = 1.0;
+            double dep_range = 0.1;
+
+            DM q_ind, q_dep;
+            bool solve_success = false;
+            int num_attempts = 0;
+            while (!solve_success && num_attempts++ < 45)
+            {
+                q_ind = ind_range * (2. * DM::rand(n_ind) - 1.);
+                DM q_dep_guess = dep_range * (2. * DM::rand(n_span - n_ind) - 1.);
+
+                casadi::DMDict arg;
+                arg["p"] = q_ind;
+                arg["x0"] = q_dep_guess;
+
+                try
+                {
+                    q_dep = loop_constraint->random_state_helpers_.phi_root_finder(arg).at("x");
+                    solve_success = true;
+                }
+                catch (const std::exception &e)
+                {
+                    solve_success = false;
+                }
+            }
+
+            if (!solve_success)
+            {
+                throw std::runtime_error("Failed to find valid roots for implicit loop constraint");
+            }
+
+            DM q_dm(n_span, 1);
+            int ind_cnt = 0, dep_cnt = 0;
+            for (int i = 0; i < n_span; i++)
+            {
+                if (generic_constraint_->isCoordinateIndependent()[i])
+                {
+                    q_dm(i) = q_ind(ind_cnt++);
+                }
+                else
+                {
+                    q_dm(i) = q_dep(dep_cnt++);
+                }
+            }
+            DVec<double> q(n_span);
+            casadi::copy(q_dm, q);
+
+            return JointCoordinate<double>(q, true);
+        }
+
+        template <typename Scalar>
+        JointState<double> Generic<Scalar>::randomJointState() const
+        {
+            if (this->loop_constraint_->isExplicit())
+               return Base<Scalar>::randomJointState(); 
+
+            if (!generic_constraint_)
+            {
+                throw std::runtime_error("GenericImplicit loop constraint not set");
+            }
+
+            // Create Helper functions
+            this->loop_constraint_->createRandomStateHelpers();
+
+            // Attempt to find valid spanning position
+            int attempts = 0;
+            JointCoordinate<double> joint_pos(findRootsForPhi());
+            auto numerical_loop_constraint = generic_constraint_->copyAsDouble();
+            bool is_valid = numerical_loop_constraint.isValidSpanningPosition(joint_pos);
+            while (!is_valid && attempts++ < 10)
+            {
+                joint_pos = findRootsForPhi();
+                is_valid = numerical_loop_constraint.isValidSpanningPosition(joint_pos);
+            }
+
+            if (!is_valid)
+            {
+                throw std::runtime_error("Invalid random state for implicit loop constraint");
+            }
+
+            // Random independent joint velocity
+            DVec<double> v = DVec<double>::Random(this->loop_constraint_->numIndependentVel());
+            JointCoordinate<double> joint_vel(v, false);
+
+            return JointState<double>(joint_pos, joint_vel);
         }
 
         template <typename Scalar>

@@ -44,6 +44,10 @@ namespace grbda
         {
             return rigid_body_nodes_[index];
         }
+        const std::vector<RigidBodyTreeNodePtr<Scalar>> &rigidBodyNodes() const
+        {
+            return rigid_body_nodes_;
+        }
 
         void setState(const DVec<Scalar> &q, const DVec<Scalar> &qd);
 

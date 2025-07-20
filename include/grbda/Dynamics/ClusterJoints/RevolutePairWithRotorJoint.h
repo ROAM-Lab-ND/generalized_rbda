@@ -45,6 +45,11 @@ namespace grbda
             const Body<Scalar> rotor1_;
             const Body<Scalar> rotor2_;
 
+            const int link1_index_;
+            const int link2_index_;
+            const int rotor1_index_;
+            const int rotor2_index_;
+
             DMat<Scalar> X_intra_S_span_;
             DMat<Scalar> X_intra_S_span_ring_;
         };

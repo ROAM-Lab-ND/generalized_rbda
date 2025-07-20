@@ -1,0 +1,67 @@
+<?xml version="1.0"?>
+
+<robot xmlns:xacro="http://ros.org/wiki/xacro">
+    
+    <xacro:property name="effort_limit" value="30"/>
+    <xacro:property name="velocity_limit" value="1.0"/>
+    <xacro:property name="joint_lower_limit" value="-10"/>
+    <xacro:property name="joint_upper_limit" value="10"/>
+    <xacro:property name="link_mass" value="1"/>
+
+    <xacro:macro name="independent_joint" params="name parent child">
+        <joint name="${name}" type="revolute" independent="true">
+            <parent link="${parent}"/>
+            <child link="${child}"/>
+            <axis xyz="0 0 1"/>
+            <origin xyz="1.0 0.0 0.0"/>
+            <limit effort="${effort_limit}" velocity="${velocity_limit}"
+                   lower="${joint_lower_limit}" upper="${joint_upper_limit}"/>
+        </joint>
+    </xacro:macro>
+
+    <xacro:macro name="link" params="name">
+        <link name="${name}">
+            <inertial>
+                <mass value="${link_mass}"/>
+                <origin rpy="0 0 0" xyz="0.5 0 0"/>
+                <inertia ixx="1" ixy="0" ixz="0" iyy="1" iyz="0" izz="1"/>
+            </inertial>
+        </link>
+    </xacro:macro>
+        
+    <xacro:macro name="root_branch" params="branch_count">
+        <xacro:if value="${branch_count}">
+            <xacro:independent_joint name="base_to_link_${branch_count}"
+                                     parent="Floating Base"
+                                     child="link_${branch_count}"/>
+            <xacro:link name="link_${branch_count}"/>
+
+            <xacro:root_branch branch_count="${branch_count - 1}"/>
+        </xacro:if>
+    </xacro:macro>
+
+    <xacro:macro name="one_serial_chain" params="parent_link_idx child_link_idx">
+        <xacro:independent_joint name="link_${parent_link_idx}_to_link_${child_link_idx}"
+                                 parent="link_${parent_link_idx}"
+                                 child="link_${child_link_idx}"/>
+        <xacro:link name="link_${child_link_idx}"/>
+    </xacro:macro>
+
+    <xacro:macro name="sequential_serial_chain" params="parent_link_idx count">
+        <xacro:if value="${count - 1}">
+            <xacro:one_serial_chain parent_link_idx="${parent_link_idx}"
+                                    child_link_idx="${parent_link_idx + 1}"/>
+
+            <xacro:sequential_serial_chain parent_link_idx="${parent_link_idx + 1}"
+                                           count="${count - 1}"/>
+        </xacro:if>
+    </xacro:macro>
+
+    <xacro:macro name="nonsequential_serial_chain" params="parent_link_idx first_child_link_idx count">
+        <xacro:one_serial_chain parent_link_idx="${parent_link_idx}"
+                                child_link_idx="${first_child_link_idx}"/>
+        <xacro:sequential_serial_chain parent_link_idx="${first_child_link_idx}"
+                                       count="${count - 1}"/>
+    </xacro:macro>
+
+</robot>

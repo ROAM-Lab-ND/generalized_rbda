@@ -25,7 +25,9 @@ namespace grbda
         Body<> base_rotor = model.registerBody(base_rotor_name_, base_rotor_spatial_inertia_,
                                              base_rotor_parent_name_, base_rotor_Xtree);
 
-        GearedTransmissionModule<> base_module{base, base_rotor, ori::CoordinateAxis::Z,
+        GearedTransmissionModule<> base_module{base, base_rotor,
+                                               "base_link_joint", "base_rotor_joint",
+                                               ori::CoordinateAxis::Z,
                                                ori::CoordinateAxis::Z, base_rotor_gear_ratio_};
         model.appendRegisteredBodiesAsCluster<RevoluteWithRotor<>>(base_cluster_name_, base_module);
 
@@ -43,6 +45,8 @@ namespace grbda
                                                     shoulder_rx_rotor_Xtree);
 
         GearedTransmissionModule<> shoulder_rx_module{shoulder_rx_link, shoulder_rx_rotor,
+                                                      "shoulder_rx_link_joint",
+                                                      "shoulder_rx_rotor_joint",
                                                       ori::CoordinateAxis::X,
                                                       ori::CoordinateAxis::X,
                                                       shoulder_rx_rotor_gear_ratio_};
@@ -63,6 +67,8 @@ namespace grbda
                                                     shoulder_ry_rotor_Xtree);
 
         GearedTransmissionModule<> shoulder_ry_module{shoulder_ry_link, shoulder_ry_rotor,
+                                                      "shoulder_ry_link_joint",
+                                                      "shoulder_ry_rotor_joint",
                                                       ori::CoordinateAxis::Y,
                                                       ori::CoordinateAxis::Y,
                                                       shoulder_ry_rotor_gear_ratio_};
@@ -144,6 +150,7 @@ namespace grbda
                                                 gripper_rotor_parent_name_, gripper_rotor_Xtree);
 
         GearedTransmissionModule<> gripper_module{gripper, gripper_rotor,
+                                                  "gripper_joint", "gripper_rotor_joint",
                                                   ori::CoordinateAxis::X,
                                                   ori::CoordinateAxis::X,
                                                   gripper_rotor_gear_ratio_};

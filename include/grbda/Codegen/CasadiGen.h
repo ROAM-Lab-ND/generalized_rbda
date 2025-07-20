@@ -33,16 +33,6 @@
 #include "rev_pair_w_rotor_4dof_ID_ref_inertia.h"
 #include "rev_pair_w_rotor_4dof_ID_ref_inertia_diag.h"
 
-#include "thd_IK_pos.h"
-#include "thd_IK_vel.h"
-#include "thd_jacobian.h"
-#include "thd_bias.h"
-
-#include "tkad_IK_pos.h"
-#include "tkad_IK_vel.h"
-#include "tkad_jacobian.h"
-#include "tkad_bias.h"
-
 namespace grbda
 {
 

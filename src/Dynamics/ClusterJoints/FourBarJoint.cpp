@@ -23,8 +23,9 @@ namespace grbda
             {
                 DVec<Scalar> phi = DVec<Scalar>::Zero(2);
 
-                DVec<Scalar> path1_joints = joint_pos.head(links_in_path1_);
-                DVec<Scalar> path2_joints = joint_pos.tail(links_in_path2_);
+                DVec<Scalar> path1_joints(2), path2_joints(1);
+                path1_joints << joint_pos(0), joint_pos(2);
+                path2_joints << joint_pos(1);
 
                 Scalar cumulative_angle = 0.;
                 DVec<Scalar> path1 = DVec<Scalar>::Zero(2);
@@ -86,9 +87,10 @@ namespace grbda
         template <typename Scalar>
         void FourBar<Scalar>::updateImplicitJacobian(const JointCoordinate<Scalar> &joint_pos)
         {
-            DVec<Scalar> q1 = joint_pos.head(links_in_path1_);
-            DVec<Scalar> q2 = joint_pos.tail(links_in_path2_);
-
+            DVec<Scalar> q1(2), q2(1);
+            q1 << joint_pos(0), joint_pos(2);
+            q2 << joint_pos(1);
+            
             Scalar cumulative_angle = 0.;
             DMat<Scalar> K1 = DMat<Scalar>::Zero(2, links_in_path1_);
             for (size_t i = 0; i < path1_link_lengths_.size(); i++)
@@ -113,7 +115,7 @@ namespace grbda
                 }
             }
 
-            this->K_ << K1, K2;
+            this->K_ << K1.col(0), K2.col(0), K1.col(1);
         }
 
         template <typename Scalar>
@@ -147,11 +149,11 @@ namespace grbda
             const JointCoordinate<Scalar> &joint_pos = joint_state.position;
             const JointCoordinate<Scalar> &joint_vel = joint_state.velocity;
 
-            DVec<Scalar> q1 = joint_pos.head(links_in_path1_);
-            DVec<Scalar> q2 = joint_pos.tail(links_in_path2_);
-
-            DVec<Scalar> qd1 = joint_vel.head(links_in_path1_);
-            DVec<Scalar> qd2 = joint_vel.tail(links_in_path2_);
+            DVec<Scalar> q1(2), q2(1), qd1(2), qd2(1);
+            q1 << joint_pos(0), joint_pos(2);
+            q2 << joint_pos(1);
+            qd1 << joint_vel(0), joint_vel(2);
+            qd2 << joint_vel(1);
 
             // Update k
             Scalar cumulative_angle = 0.;
@@ -187,7 +189,7 @@ namespace grbda
             }
 
             DMat<Scalar> Kdot(2, 3);
-            Kdot << Kd1, Kd2;
+            Kdot << Kd1.col(0), Kd2.col(0), Kd1.col(1);
             this->k_ = -Kdot * joint_vel;
 
             // Update g
@@ -196,14 +198,15 @@ namespace grbda
             this->g_ = indepenent_coordinate_map_ * this->g_;
         }
 
+        // TODO(@MatthewChignoli): This is the same as generic joint, so do we need it? Probably not. In fact, we can probably deprecate this entire class.
         template <typename Scalar>
         void FourBar<Scalar>::createRandomStateHelpers()
         {
-            if (random_state_helpers_.created)
+            if (this->random_state_helpers_.created)
             {
                 return;
             }
-            random_state_helpers_.created = true;
+            this->random_state_helpers_.created = true;
 
             using SX = casadi::SX;
 
@@ -262,9 +265,9 @@ namespace grbda
                 casadi::Dict options;
                 options["expand"] = true;
                 options["error_on_fail"] = true;
-                random_state_helpers_.phi_root_finder = casadi::rootfinder("solver", "newton",
-                                                                           rootfinder_problem,
-                                                                           options);
+                this->random_state_helpers_.phi_root_finder = casadi::rootfinder("solver", "newton",
+                                                                                 rootfinder_problem,
+                                                                                 options);
             }
 
             // Explicit constraint jacobian
@@ -277,7 +280,7 @@ namespace grbda
                 DMat<SX> G = symbolic.G();
                 SX G_sym = casadi::SX(casadi::Sparsity::dense(G.rows(), G.cols()));
                 casadi::copy(G, G_sym);
-                random_state_helpers_.G = casadi::Function("G", {cs_q_sym}, {G_sym}, {"q"}, {"G"});
+                this->random_state_helpers_.G = casadi::Function("G", {cs_q_sym}, {G_sym}, {"q"}, {"G"});
             }
         }
 
@@ -298,15 +301,38 @@ namespace grbda
 
             // Random independent position coordinate
             const int n_ind = four_bar_constraint_->numIndependentPos();
-            double range = 6.28;
-            DM q_ind = range * (2. * DM::rand(n_ind) - 1.);
-            DM q_dep_guess = range * (2. * DM::rand(n_ind - 1) - 1.);
+            const int n_span = four_bar_constraint_->numSpanningPos();
+            double ind_range = 1.0;
+            double dep_range = 0.1;
+            DM q_ind, q_dep;
 
             // Call the rootfinder to get dependent position coordinates
-            casadi::DMDict arg;
-            arg["p"] = q_ind;
-            arg["x0"] = q_dep_guess;
-            DM q_dep = four_bar_constraint_->random_state_helpers_.phi_root_finder(arg).at("x");
+            bool solve_success = false;
+            int num_attempts = 0;
+            while (!solve_success && num_attempts++ < 45)
+            {
+                q_ind = ind_range * (2. * DM::rand(n_ind) - 1.);
+                DM q_dep_guess = dep_range * (2. * DM::rand(n_span - n_ind) - 1.);
+
+                casadi::DMDict arg;
+                arg["p"] = q_ind;
+                arg["x0"] = q_dep_guess;
+
+                try
+                {
+                    q_dep = four_bar_constraint_->random_state_helpers_.phi_root_finder(arg).at("x");
+                    solve_success = true;
+                }
+                catch (const std::exception &e)
+                {
+                    solve_success = false;
+                }
+            }
+
+            if (!solve_success)
+            {
+                throw std::runtime_error("Failed to find valid roots for implicit loop constraint");
+            }
 
             DM q_dm;
             switch (four_bar_constraint_->independent_coordinate())

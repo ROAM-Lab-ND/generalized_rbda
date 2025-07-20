@@ -10,22 +10,17 @@
 #include "grbda/Dynamics/TreeModel.h"
 #include "grbda/Dynamics/ClusterJoints/LoopConstraintCaptures.h"
 #include "grbda/Dynamics/Nodes/ClusterTreeNode.h"
-#include "grbda/Urdf/urdf_parser.h"
+#include "urdf_parser/urdf_parser.h"
 
 namespace grbda
 {
     template <typename Scalar>
     using ClusterTreeNodePtr = std::shared_ptr<ClusterTreeNode<Scalar>>;
 
-    using UrdfModelPtr = std::shared_ptr<urdf::ModelInterface>;
-    using UrdfClusterPtr = std::shared_ptr<urdf::Cluster>;
-    using UrdfLinkPtr = std::shared_ptr<urdf::Link>;
-    using UrdfConstraintPtr = std::shared_ptr<urdf::Constraint>;
-
     /*!
      * Class to represent a floating base rigid body model with rotors and ground contacts.
      */
-    template <typename Scalar = double>
+    template <typename Scalar = double, typename OriTpl = ori_representation::Quaternion>
     class ClusterTreeModel : public TreeModel<Scalar>
     {
     public:
@@ -34,25 +29,27 @@ namespace grbda
             body_name_to_body_index_["ground"] = -1;
             body_index_to_cluster_index_[-1] = -1;
         }
+
+        ClusterTreeModel(const std::string &urdf_filename) : ClusterTreeModel()
+        {
+            buildModelFromURDF(urdf_filename);
+        }
+
         ~ClusterTreeModel() {}
 
         
-        template <typename OrientationRepresentation = ori_representation::Quaternion>
-        void buildModelFromURDF(
-            const std::string &urdf_filename, bool floating_base)
+        void buildModelFromURDF(const std::string &urdf_filename)
         {
             std::shared_ptr<urdf::ModelInterface> model;
-            model = urdf::parseURDFFile(urdf_filename, false);
-            buildFromUrdfModelInterface<OrientationRepresentation>(model, floating_base);
+            model = urdf::parseURDFFile(urdf_filename);
+            buildFromUrdfModelInterface(model);
         }
         
-        template <typename OrientationRepresentation = ori_representation::Quaternion>
-        void buildModelFromURDF(
-            const std::vector<std::string> &urdf_filenames, bool floating_base)
+        void buildModelFromURDF(const std::vector<std::string> &urdf_filenames)
         {
-            std::shared_ptr<urdf::ModelInterface> model;
-            model = urdf::parseURDFFiles(urdf_filenames, false);
-            buildFromUrdfModelInterface<OrientationRepresentation>(model, floating_base);
+            urdf::ModelInterfaceSharedPtr model;
+            model = urdf::parseURDFFiles(urdf_filenames);
+            buildFromUrdfModelInterface(model);
         }
 
         // The standard process for appending a cluster to the tree is to register all the bodies
@@ -82,6 +79,7 @@ namespace grbda
 
         void appendContactPoint(const std::string body_name, const Vec3<Scalar> &local_offset,
                                 const std::string contact_name, const bool is_end_eff = false);
+        void appendContactPoint(const ContactPoint<Scalar> &contact_point);
         void appendContactBox(const std::string body_name, const Vec3<Scalar> &box_dimensions);
 
         // Current implementation every operational space has size 6x1
@@ -169,24 +167,25 @@ namespace grbda
     protected:
         using SX = casadi::SX;
 
-        template <typename OrientationRepresentation = ori_representation::Quaternion>
-        void buildFromUrdfModelInterface(const UrdfModelPtr model, bool floating_base);
-        
-        void appendClustersViaDFS(std::map<UrdfClusterPtr, bool> &visited, UrdfClusterPtr cluster);
-        void appendClusterFromUrdfCluster(UrdfClusterPtr cluster);
-        void appendSimpleRevoluteJointFromUrdfCluster(UrdfLinkPtr link);
-        void registerBodiesInUrdfCluster(UrdfClusterPtr cluster,
+        void buildFromUrdfModelInterface(const urdf::ModelInterfaceSharedPtr model);
+
+        void appendClustersViaDFS(std::map<urdf::ClusterSharedPtr, bool> &visited,
+                                  urdf::ClusterSharedPtr cluster);
+        void appendClusterFromUrdfCluster(urdf::ClusterSharedPtr cluster);
+        void appendSimpleRevoluteJointFromUrdfCluster(urdf::LinkSharedPtr link);
+        void appendSimpleFloatingJointFromUrdfCluster(urdf::LinkSharedPtr link);
+        void registerBodiesInUrdfCluster(urdf::ClusterSharedPtr cluster,
                                          std::vector<JointPtr<Scalar>>& joints,
                                          std::vector<bool>& independent_coordinates,
                                          std::vector<Body<SX>>& bodies_sx,
                                          std::map<std::string, JointPtr<SX>>& joints_sx);
 
         std::function<DVec<SX>(const JointCoordinate<SX> &)> implicitPositionConstraint(
-            std::vector<PositionConstraintCapture> &captures,
+            std::vector<LoopConstraintCapture> &captures,
             std::map<std::string, JointPtr<SX>> joints_sx);
 
         std::pair<DMat<Scalar>, DMat<Scalar>> explicitRollingConstraint(
-            std::vector<RollingConstraintCapture> &captures,
+            std::vector<CouplingConstraintCapture> &captures,
             std::vector<bool> independent_coordinates);
 
         void appendRegisteredBodiesAsCluster(const std::string name,
@@ -199,6 +198,7 @@ namespace grbda
 
         void resizeSystemMatrices();
         void resetCache() override;
+        void resizeEndEffectorMatrices();
 
         void updateArticulatedBodies();
         void updateForcePropagators();

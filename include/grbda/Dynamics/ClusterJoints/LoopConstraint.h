@@ -2,6 +2,7 @@
 #define GRBDA_LOOP_CONSTRAINT_H
 
 #include <memory>
+#include "grbda/Utils/Utilities.h"
 #include "grbda/Utils/StateRepresentation.h"
 
 namespace grbda
@@ -38,6 +39,14 @@ namespace grbda
 
             const DMat<Scalar> &K() const { return K_; }
             const DVec<Scalar> &k() const { return k_; }
+
+            virtual void createRandomStateHelpers();
+            struct
+            {
+                bool created = false;
+                casadi::Function phi_root_finder;
+                casadi::Function G;
+            } random_state_helpers_;
 
         protected:
             std::function<DVec<Scalar>(const JointCoordinate<Scalar> &)> phi_;
