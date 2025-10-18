@@ -45,7 +45,7 @@ To run the unit tests and bencmarks
 - Run CMake: `cmake ..`
 - Build: `make`
 - Unit tests can be run all at once with `ctest` or individually with `./bin/<name-of-unit-test-binary>`
-- The benchmark can be run with `./bin/pinocchio_benchmark`
+- The benchmark can be run with `./bin/pinocchio_benchmark` after installing the benchmark dependencies following [this script](scripts/install_benchmark_dependencies.sh)
 
 To incorporate the library into your own project, see [Configuration](#configuration).
 
