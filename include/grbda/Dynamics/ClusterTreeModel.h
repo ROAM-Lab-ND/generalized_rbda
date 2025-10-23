@@ -164,6 +164,8 @@ namespace grbda
         DMat<Scalar> getMassMatrix() override;
         DVec<Scalar> getBiasForceVector() override;
 
+        std::pair<DMat<Scalar>, DMat<Scalar>> firstOrderInverseDynamicsDerivatives(const DVec<Scalar> &qdd);
+
     protected:
         using SX = casadi::SX;
 

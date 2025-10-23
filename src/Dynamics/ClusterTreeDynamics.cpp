@@ -434,6 +434,53 @@ namespace grbda
         return lambda_inv;
     }
 
+    template <typename Scalar, typename OriTpl>
+    std::pair<DMat<Scalar>, DMat<Scalar>> ClusterTreeModel<Scalar, OriTpl>::firstOrderInverseDynamicsDerivatives(const DVec<Scalar> &qdd)
+    {   
+        this->forwardAccelerationKinematics(qdd);
+        updateArticulatedBodies();
+        DMat<Scalar> dtaudq = DMat<Scalar>::Zero(this->getNumDegreesOfFreedom(), this->getNumDegreesOfFreedom());
+        DMat<Scalar> dtaudqdot = DMat<Scalar>::Zero(this->getNumDegreesOfFreedom(), this->getNumDegreesOfFreedom());
+
+        //Forward Pass
+        for (auto &cluster : cluster_nodes_)
+        {
+            if (cluster->parent_index_ >= 0)
+            {
+                auto parent_cluster = cluster_nodes_[cluster->parent_index_];
+                
+                cluster->Psi_dot_ =
+                spatial::generalMotionCrossMatrix(cluster->Xup_.transformMotionVector(parent_cluster->v_))*cluster->S(); // + gradient terms
+
+                cluster->Psi_ddot_ =
+                spatial::generalMotionCrossMatrix(cluster->Xup_.transformMotionVector(parent_cluster->a_))*cluster->S()
+                + spatial::generalMotionCrossMatrix(parent_cluster->v_)*cluster->Psi_dot_; // + gradient terms
+
+                cluster->Gamma_dot_ = spatial::generalMotionCrossMatrix(cluster->v_)*cluster->S()
+                + cluster->Psi_dot_; // + cluster->S_ring
+
+                cluster->M_cup_ = cluster->I_;
+
+                cluster->B_cup_ = spatial::generalForceCrossMatrix(cluster->v_)*cluster->I_
+                - cluster->I_*spatial::generalMotionCrossMatrix(cluster->v_);
+                //+ spatial::generalForceCrossMatrix(cluster->I_*cluster->v_) //Look into how to define a swapped cross product function
+
+                cluster->F_ = cluster->I_*cluster->a_ + spatial::generalForceCrossMatrix(cluster->v_)*cluster->I_*cluster->v_;
+            }
+        }
+        //Backward Pass
+        for (int i = (int)cluster_nodes_.size() - 1; i >= 1; i--)
+        {
+            auto &cluster = cluster_nodes_[i];
+            DMat<Scalar> t1 = cluster->M_cup_*cluster->S();
+            DMat<Scalar> t2 = cluster->B_cup_*cluster->S()+cluster->M_cup_*cluster->Gamma_dot_;
+            DMat<Scalar> t3 = cluster->B_cup_*cluster->Psi_dot_+cluster->M_cup_*cluster->Psi_ddot_;
+            //+spatial::generalForceCrossMatrix(cluster->S())*cluster->F_ //Swapped cross product function also needed here
+            DMat<Scalar> t4 = cluster->B_cup_.transpose()*cluster->S();
+        }
+        return {dtaudq, dtaudqdot};
+    }
+
     template class ClusterTreeModel<double>;
     template class ClusterTreeModel<float>;
     template class ClusterTreeModel<casadi::SX>;

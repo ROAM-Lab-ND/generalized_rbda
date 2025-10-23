@@ -53,6 +53,13 @@ namespace grbda
         DMat<Scalar> qdd_for_subtree_due_to_subtree_root_joint_qdd;
         DMat<Scalar> K_;
         DMat<Scalar> L_;
+
+        DMat<Scalar> Psi_dot_;
+        DMat<Scalar> Psi_ddot_;
+        DMat<Scalar> Upsilon_dot_;
+        DMat<Scalar> M_cup_;
+        DMat<Scalar> B_cup_;
+        DVec<Scalar> F_;
     };
 
 } // namespace grbda
