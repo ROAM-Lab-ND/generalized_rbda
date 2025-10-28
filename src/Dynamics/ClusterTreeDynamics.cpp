@@ -439,8 +439,8 @@ namespace grbda
     {   
         this->forwardAccelerationKinematics(qdd);
         updateArticulatedBodies();
-        DMat<Scalar> dtaudq = DMat<Scalar>::Zero(this->getNumDegreesOfFreedom(), this->getNumDegreesOfFreedom());
-        DMat<Scalar> dtaudqdot = DMat<Scalar>::Zero(this->getNumDegreesOfFreedom(), this->getNumDegreesOfFreedom());
+        DMat<Scalar> dtau_dq = DMat<Scalar>::Zero(this->getNumDegreesOfFreedom(), this->getNumDegreesOfFreedom());
+        DMat<Scalar> dtau_dq_dot = DMat<Scalar>::Zero(this->getNumDegreesOfFreedom(), this->getNumDegreesOfFreedom());
 
         //Forward Pass
         for (auto &cluster : cluster_nodes_)
@@ -456,7 +456,7 @@ namespace grbda
                 spatial::generalMotionCrossMatrix(cluster->Xup_.transformMotionVector(parent_cluster->a_))*cluster->S()
                 + spatial::generalMotionCrossMatrix(parent_cluster->v_)*cluster->Psi_dot_; // + gradient terms
 
-                cluster->Gamma_dot_ = spatial::generalMotionCrossMatrix(cluster->v_)*cluster->S()
+                cluster->Upsilon_dot_ = spatial::generalMotionCrossMatrix(cluster->v_)*cluster->S()
                 + cluster->Psi_dot_; // + cluster->S_ring
 
                 cluster->M_cup_ = cluster->I_;
@@ -471,14 +471,57 @@ namespace grbda
         //Backward Pass
         for (int i = (int)cluster_nodes_.size() - 1; i >= 1; i--)
         {
-            auto &cluster = cluster_nodes_[i];
-            DMat<Scalar> t1 = cluster->M_cup_*cluster->S();
-            DMat<Scalar> t2 = cluster->B_cup_*cluster->S()+cluster->M_cup_*cluster->Gamma_dot_;
-            DMat<Scalar> t3 = cluster->B_cup_*cluster->Psi_dot_+cluster->M_cup_*cluster->Psi_ddot_;
-            //+spatial::generalForceCrossMatrix(cluster->S())*cluster->F_ //Swapped cross product function also needed here
-            DMat<Scalar> t4 = cluster->B_cup_.transpose()*cluster->S();
+            auto &cluster_i = cluster_nodes_[i];
+            const int &ii = cluster_i->velocity_index_;
+
+            DMat<Scalar> t1 = cluster_i->M_cup_*cluster_i->S();
+            DMat<Scalar> t2 = cluster_i->B_cup_*cluster_i->S()+cluster_i->M_cup_*cluster_i->Upsilon_dot_;
+            DMat<Scalar> t3 = cluster_i->B_cup_*cluster_i->Psi_dot_+cluster_i->M_cup_*cluster_i->Psi_ddot_;
+            //+spatial::generalForceCrossMatrix(cluster_i->S())*cluster_i->F_ //Swapped cross product function also needed here
+            DMat<Scalar> t4 = cluster_i->B_cup_.transpose()*cluster_i->S();
+
+            int j = i;
+            while (j > 0)
+            {
+                auto &cluster_j = cluster_nodes_[j];
+                const int &jj = cluster_j->velocity_index_;
+
+                dtau_dq.block(ii,jj,cluster_i->num_velocities_,cluster_j->num_velocities_) = t1.transpose()*cluster_j->Psi_ddot_+t4.transpose()*cluster_j->Psi_dot_;
+
+                if (j < i)
+                {
+                    dtau_dq.block(jj,ii,cluster_j->num_velocities_,cluster_i->num_velocities_) = cluster_j->S().transpose()*t3;
+                }
+                else
+                {
+                    //dtau_dq.block(jj,ii,cluster_j->num_velocities_,cluster_i->num_velocities_) = dtau_dq.block(ii,ii,cluster_i->num_velocities_,cluster_i->num_velocities_) + gradient terms;
+                }
+
+                dtau_dq_dot.block(jj,ii,cluster_j->num_velocities_,cluster_i->num_velocities_) = cluster_j->S().transpose()*t2;
+                dtau_dq_dot.block(ii,jj,cluster_i->num_velocities_,cluster_j->num_velocities_) = t1.transpose()*cluster_j->Upsilon_dot_+t4.transpose()*cluster_j->S();
+
+                if (cluster_j->parent_index_ > 0)
+                {
+                    t1 = cluster_j->Xup_.toMatrix().transpose()*t1;
+                    t2 = cluster_j->Xup_.toMatrix().transpose()*t2;
+                    t3 = cluster_j->Xup_.toMatrix().transpose()*t3;
+                    t4 = cluster_j->Xup_.toMatrix().transpose()*t4;
+                }
+
+                j = cluster_j->parent_index_;
+            }
+
+            if (cluster_i->parent_index_ > 0)
+            {
+                auto parent_cluster = cluster_nodes_[cluster_i->parent_index_];
+
+                parent_cluster->M_cup_ += cluster_i->Xup_.toMatrix().transpose()*cluster_i->M_cup_*cluster_i->Xup_.toMatrix();
+                parent_cluster->B_cup_ += cluster_i->Xup_.toMatrix().transpose()*cluster_i->B_cup_*cluster_i->Xup_.toMatrix();
+                parent_cluster->F_ += cluster_i->Xup_.toMatrix().transpose()*cluster_i->F_*cluster_i->Xup_.toMatrix();
+            }
+            
         }
-        return {dtaudq, dtaudqdot};
+        return {dtau_dq, dtau_dq_dot};
     }
 
     template class ClusterTreeModel<double>;
