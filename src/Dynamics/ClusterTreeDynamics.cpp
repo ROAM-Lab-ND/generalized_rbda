@@ -450,22 +450,22 @@ namespace grbda
                 auto parent_cluster = cluster_nodes_[cluster->parent_index_];
                 
                 cluster->Psi_dot_ =
-                spatial::generalMotionCrossMatrix(cluster->Xup_.transformMotionVector(parent_cluster->v_))*cluster->S(); // + gradient terms
+                spatial::generalMotionCrossMatrix(cluster->Xup_.transformMotionVector(parent_cluster->v_)) * cluster->S(); // + gradient terms
 
                 cluster->Psi_ddot_ =
-                spatial::generalMotionCrossMatrix(cluster->Xup_.transformMotionVector(parent_cluster->a_))*cluster->S()
-                + spatial::generalMotionCrossMatrix(parent_cluster->v_)*cluster->Psi_dot_; // + gradient terms
+                spatial::generalMotionCrossMatrix(cluster->Xup_.transformMotionVector(parent_cluster->a_)) * cluster->S()
+                + spatial::generalMotionCrossMatrix(parent_cluster->v_) * cluster->Psi_dot_; // + gradient terms
 
-                cluster->Upsilon_dot_ = spatial::generalMotionCrossMatrix(cluster->v_)*cluster->S()
+                cluster->Upsilon_dot_ = spatial::generalMotionCrossMatrix(cluster->v_) * cluster->S()
                 + cluster->Psi_dot_; // + cluster->S_ring
 
                 cluster->M_cup_ = cluster->I_;
 
-                cluster->B_cup_ = spatial::generalForceCrossMatrix(cluster->v_)*cluster->I_
-                - cluster->I_*spatial::generalMotionCrossMatrix(cluster->v_);
-                //+ spatial::generalForceCrossMatrix(cluster->I_*cluster->v_) //Look into how to define a swapped cross product function
+                cluster->B_cup_ = spatial::generalForceCrossMatrix(cluster->v_) * cluster->I_
+                - cluster->I_ * spatial::generalMotionCrossMatrix(cluster->v_)
+                + spatial::swappedForceCrossMatrix(cluster->I_ * cluster->v_);
 
-                cluster->F_ = cluster->I_*cluster->a_ + spatial::generalForceCrossMatrix(cluster->v_)*cluster->I_*cluster->v_;
+                cluster->F_ = cluster->I_ * cluster->a_ + spatial::generalForceCrossMatrix(cluster->v_) * cluster->I_ * cluster->v_;
             }
         }
         //Backward Pass
@@ -474,38 +474,40 @@ namespace grbda
             auto &cluster_i = cluster_nodes_[i];
             const int &ii = cluster_i->velocity_index_;
 
-            DMat<Scalar> t1 = cluster_i->M_cup_*cluster_i->S();
-            DMat<Scalar> t2 = cluster_i->B_cup_*cluster_i->S()+cluster_i->M_cup_*cluster_i->Upsilon_dot_;
-            DMat<Scalar> t3 = cluster_i->B_cup_*cluster_i->Psi_dot_+cluster_i->M_cup_*cluster_i->Psi_ddot_;
-            //+spatial::generalForceCrossMatrix(cluster_i->S())*cluster_i->F_ //Swapped cross product function also needed here
-            DMat<Scalar> t4 = cluster_i->B_cup_.transpose()*cluster_i->S();
-
+            DMat<Scalar> t1 = cluster_i->M_cup_ * cluster_i->S();
+            DMat<Scalar> t2 = cluster_i->B_cup_ * cluster_i->S() + cluster_i->M_cup_ * cluster_i->Upsilon_dot_;
+            DMat<Scalar> t3 = cluster_i->B_cup_ * cluster_i->Psi_dot_ + cluster_i->M_cup_ * cluster_i->Psi_ddot_
+            + spatial::swappedForceCrossMatrix(cluster_i->S()) * cluster_i->F_;
+            DMat<Scalar> t4 = cluster_i->B_cup_.transpose() * cluster_i->S();
+            
             int j = i;
             while (j > 0)
             {
                 auto &cluster_j = cluster_nodes_[j];
                 const int &jj = cluster_j->velocity_index_;
-
-                dtau_dq.block(ii,jj,cluster_i->num_velocities_,cluster_j->num_velocities_) = t1.transpose()*cluster_j->Psi_ddot_+t4.transpose()*cluster_j->Psi_dot_;
+                dtau_dq.block(ii,jj,cluster_i->num_velocities_,cluster_j->num_velocities_) = 
+                t1.transpose() * cluster_j->Psi_ddot_ + t4.transpose() * cluster_j->Psi_dot_;
 
                 if (j < i)
                 {
-                    dtau_dq.block(jj,ii,cluster_j->num_velocities_,cluster_i->num_velocities_) = cluster_j->S().transpose()*t3;
+                    dtau_dq.block(jj,ii,cluster_j->num_velocities_,cluster_i->num_velocities_) = cluster_j->S().transpose() * t3;
                 }
                 else
                 {
-                    //dtau_dq.block(jj,ii,cluster_j->num_velocities_,cluster_i->num_velocities_) = dtau_dq.block(ii,ii,cluster_i->num_velocities_,cluster_i->num_velocities_) + gradient terms;
+                    //dtau_dq.block(jj,ii,cluster_j->num_velocities_,cluster_i->num_velocities_) = 
+                    //dtau_dq.block(ii,ii,cluster_i->num_velocities_,cluster_i->num_velocities_) + gradient terms;
                 }
 
-                dtau_dq_dot.block(jj,ii,cluster_j->num_velocities_,cluster_i->num_velocities_) = cluster_j->S().transpose()*t2;
-                dtau_dq_dot.block(ii,jj,cluster_i->num_velocities_,cluster_j->num_velocities_) = t1.transpose()*cluster_j->Upsilon_dot_+t4.transpose()*cluster_j->S();
+                dtau_dq_dot.block(jj,ii,cluster_j->num_velocities_,cluster_i->num_velocities_) = cluster_j->S().transpose() * t2;
+                dtau_dq_dot.block(ii,jj,cluster_i->num_velocities_,cluster_j->num_velocities_) =
+                t1.transpose() * cluster_j->Upsilon_dot_ + t4.transpose() * cluster_j->S();
 
                 if (cluster_j->parent_index_ > 0)
                 {
-                    t1 = cluster_j->Xup_.toMatrix().transpose()*t1;
-                    t2 = cluster_j->Xup_.toMatrix().transpose()*t2;
-                    t3 = cluster_j->Xup_.toMatrix().transpose()*t3;
-                    t4 = cluster_j->Xup_.toMatrix().transpose()*t4;
+                    t1 = cluster_j->Xup_.toMatrix().transpose() * t1;
+                    t2 = cluster_j->Xup_.toMatrix().transpose() * t2;
+                    t3 = cluster_j->Xup_.toMatrix().transpose() * t3;
+                    t4 = cluster_j->Xup_.toMatrix().transpose() * t4;
                 }
 
                 j = cluster_j->parent_index_;
@@ -515,9 +517,11 @@ namespace grbda
             {
                 auto parent_cluster = cluster_nodes_[cluster_i->parent_index_];
 
-                parent_cluster->M_cup_ += cluster_i->Xup_.toMatrix().transpose()*cluster_i->M_cup_*cluster_i->Xup_.toMatrix();
-                parent_cluster->B_cup_ += cluster_i->Xup_.toMatrix().transpose()*cluster_i->B_cup_*cluster_i->Xup_.toMatrix();
-                parent_cluster->F_ += cluster_i->Xup_.toMatrix().transpose()*cluster_i->F_*cluster_i->Xup_.toMatrix();
+                const auto X = cluster_i->Xup_.toMatrix();
+
+                parent_cluster->M_cup_ += X.transpose() * cluster_i->M_cup_ * X;
+                parent_cluster->B_cup_ += X.transpose() * cluster_i->B_cup_ * X;
+                parent_cluster->F_ += X.transpose() * cluster_i->F_ * X;
             }
             
         }

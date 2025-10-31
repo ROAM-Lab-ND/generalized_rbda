@@ -215,10 +215,10 @@ namespace grbda
     }
 
     /*!
-     * Compute swaped force cross matrix.
+     * Compute swapped force cross matrix.
      */
     template <typename T>
-    auto swapedforceCrossMatrix(const Eigen::MatrixBase<T> &v)
+    auto swappedForceCrossMatrix(const Eigen::MatrixBase<T> &v)
     {
       Mat6<typename T::Scalar> f;
       f << 0, v(2), -v(1), 0, v(5), -v(4),
