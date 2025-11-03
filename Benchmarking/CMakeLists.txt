@@ -27,7 +27,7 @@ endif()
 
 file(GLOB_RECURSE HELPER_SRCS "src/*Helpers.cpp")
 add_library(benchmarkHelpers ${HELPER_SRCS})
-target_link_libraries(benchmarkHelpers ${PROJECT_NAME} ${PINOCCHIO_LIBRARIES} console_bridge)
+target_link_libraries(benchmarkHelpers ${PROJECT_NAME} ${PINOCCHIO_LIBRARIES} console_bridge gtest)
 
 add_executable(pinocchio_benchmark src/pinocchioBenchmark.cpp)
 target_link_libraries(pinocchio_benchmark benchmarkHelpers)
