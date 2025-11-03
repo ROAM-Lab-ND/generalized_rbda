@@ -226,5 +226,13 @@ TEST_P(URDFvsManualTests, compareToManuallyConstructed)
         const DVec<double> tau_manual = this->manual_model.inverseDynamics(ydd);
         const DVec<double> tau_urdf = this->urdf_model.inverseDynamics(ydd);
         GTEST_ASSERT_LT((tau_manual - tau_urdf).norm(), tol);
+
+        /*
+        //Verify the inverse dynamics derivatives
+        const std::pair<DMat<double>, DMat<double>> tau_derivs_manual =
+            this->manual_model.firstOrderInverseDynamicsDerivatives(ydd);
+        const std::pair<DMat<double>, DMat<double>> tau_derivs_urdf =
+            this->urdf_model.firstOrderInverseDynamicsDerivatives(ydd);
+        */
     }
 }

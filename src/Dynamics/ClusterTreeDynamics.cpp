@@ -441,13 +441,12 @@ namespace grbda
         updateArticulatedBodies();
         DMat<Scalar> dtau_dq = DMat<Scalar>::Zero(this->getNumDegreesOfFreedom(), this->getNumDegreesOfFreedom());
         DMat<Scalar> dtau_dq_dot = DMat<Scalar>::Zero(this->getNumDegreesOfFreedom(), this->getNumDegreesOfFreedom());
-
         //Forward Pass
         for (auto &cluster : cluster_nodes_)
         {
             if (cluster->parent_index_ >= 0)
             {
-                auto parent_cluster = cluster_nodes_[cluster->parent_index_];
+                auto &parent_cluster = cluster_nodes_[cluster->parent_index_];
                 
                 cluster->Psi_dot_ =
                 spatial::generalMotionCrossMatrix(cluster->Xup_.transformMotionVector(parent_cluster->v_)) * cluster->S(); // + gradient terms
@@ -473,21 +472,22 @@ namespace grbda
         {
             auto &cluster_i = cluster_nodes_[i];
             const int &ii = cluster_i->velocity_index_;
-
-            DMat<Scalar> t1 = cluster_i->M_cup_ * cluster_i->S();
-            DMat<Scalar> t2 = cluster_i->B_cup_ * cluster_i->S() + cluster_i->M_cup_ * cluster_i->Upsilon_dot_;
-            DMat<Scalar> t3 = cluster_i->B_cup_ * cluster_i->Psi_dot_ + cluster_i->M_cup_ * cluster_i->Psi_ddot_
-            + spatial::swappedForceCrossMatrix(cluster_i->S()) * cluster_i->F_;
-            DMat<Scalar> t4 = cluster_i->B_cup_.transpose() * cluster_i->S();
             
+            DMat<Scalar> t1 = cluster_i->M_cup_ * cluster_i->S();
+            DMat<Scalar> t2 = DMat<Scalar>(cluster_i->B_cup_ * cluster_i->S()) + DMat<Scalar>(cluster_i->M_cup_ * cluster_i->Upsilon_dot_);
+            DMat<Scalar> t3 = DMat<Scalar>(cluster_i->B_cup_ * cluster_i->Psi_dot_) + DMat<Scalar>(cluster_i->M_cup_ * cluster_i->Psi_ddot_)
+            + DMat<Scalar>(spatial::swappedForceCrossMatrix(cluster_i->S()) * cluster_i->F_);
+            DMat<Scalar> t4 = cluster_i->B_cup_.transpose() * cluster_i->S();
+
             int j = i;
+            
             while (j > 0)
             {
                 auto &cluster_j = cluster_nodes_[j];
                 const int &jj = cluster_j->velocity_index_;
                 dtau_dq.block(ii,jj,cluster_i->num_velocities_,cluster_j->num_velocities_) = 
                 t1.transpose() * cluster_j->Psi_ddot_ + t4.transpose() * cluster_j->Psi_dot_;
-
+                
                 if (j < i)
                 {
                     dtau_dq.block(jj,ii,cluster_j->num_velocities_,cluster_i->num_velocities_) = cluster_j->S().transpose() * t3;
@@ -501,7 +501,7 @@ namespace grbda
                 dtau_dq_dot.block(jj,ii,cluster_j->num_velocities_,cluster_i->num_velocities_) = cluster_j->S().transpose() * t2;
                 dtau_dq_dot.block(ii,jj,cluster_i->num_velocities_,cluster_j->num_velocities_) =
                 t1.transpose() * cluster_j->Upsilon_dot_ + t4.transpose() * cluster_j->S();
-
+                
                 if (cluster_j->parent_index_ > 0)
                 {
                     t1 = cluster_j->Xup_.toMatrix().transpose() * t1;
@@ -509,27 +509,25 @@ namespace grbda
                     t3 = cluster_j->Xup_.toMatrix().transpose() * t3;
                     t4 = cluster_j->Xup_.toMatrix().transpose() * t4;
                 }
-
                 j = cluster_j->parent_index_;
             }
-
+            
             if (cluster_i->parent_index_ > 0)
             {
-                auto parent_cluster = cluster_nodes_[cluster_i->parent_index_];
+                auto &parent_cluster = cluster_nodes_[cluster_i->parent_index_];
 
                 const auto X = cluster_i->Xup_.toMatrix();
 
-                parent_cluster->M_cup_ += X.transpose() * cluster_i->M_cup_ * X;
-                parent_cluster->B_cup_ += X.transpose() * cluster_i->B_cup_ * X;
-                parent_cluster->F_ += X.transpose() * cluster_i->F_ * X;
+                parent_cluster->M_cup_.noalias() += X.transpose() * cluster_i->M_cup_ * X;
+                parent_cluster->B_cup_.noalias() += X.transpose() * cluster_i->B_cup_ * X;
+                parent_cluster->F_.noalias()     += X.transpose() * cluster_i->F_ * X;
             }
-            
         }
         return {dtau_dq, dtau_dq_dot};
     }
 
     template class ClusterTreeModel<double>;
-    template class ClusterTreeModel<float>;
+    template class ClusterTreeModel<float>;     
     template class ClusterTreeModel<casadi::SX>;
 
 } // namespace grbda
