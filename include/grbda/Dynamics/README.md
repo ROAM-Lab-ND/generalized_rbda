@@ -13,7 +13,6 @@ The first two models are included for benchmarking purposes and are not recommen
 ## Constructing a Model
 
 ### Procedure
-This project does not currently offer support for URDF parsing, so the model has to be constructed manually.
 The process for constructing a `ClusterTreeModel` proceeds as follows:
 - Register all of the bodies contained in a cluster using the `ClusterTreeModel::registerBody` function for each of the bodies.
     - Function parameters:
@@ -38,6 +37,8 @@ The process for constructing a `ClusterTreeModel` proceeds as follows:
         - `parent_name`: The name of the parent body.
         - `Xtree`: The tree transforms between the body and its parent.
         - `... args`: Arguments to the constructor of the `ClusterJointType`.
+
+Optionally, starting in `v2.1.0`, we also support for constructing a `ClusterTreeModel` from a URDF file (see `ClusterTreeMode::buildModelFromURDF()`). For systems with loops, we support the [URDF+](https://github.com/mit-biomimetics/urdfdom) format—a minimal extension of URDF to specify kinematic loops (see the main README file).
 
 `RigidBodyTree` and `ReflectedInertiaTree` models are constructed automatically from `ClusterTreeModel`s.
 ### Example
