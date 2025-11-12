@@ -261,9 +261,9 @@ namespace grbda
 
       Mat3<typename T::Scalar> R;
 
-      R << T(1) - T(2) * (e2 * e2 + e3 * e3), T(2) * (e1 * e2 - e0 * e3), T(2) * (e1 * e3 + e0 * e2),
-          T(2) * (e1 * e2 + e0 * e3), T(1) - T(2) * (e1 * e1 + e3 * e3), T(2) * (e2 * e3 - e0 * e1),
-          T(2) * (e1 * e3 - e0 * e2), T(2) * (e2 * e3 + e0 * e1), T(1) - T(2) * (e1 * e1 + e2 * e2);
+      R << typename T::Scalar(1.) - typename T::Scalar(2) * (e2 * e2 + e3 * e3), typename T::Scalar(2.) * (e1 * e2 - e0 * e3), typename T::Scalar(2.) * (e1 * e3 + e0 * e2),
+          typename T::Scalar(2.) * (e1 * e2 + e0 * e3), typename T::Scalar(1.) - typename T::Scalar(2.) * (e1 * e1 + e3 * e3), typename T::Scalar(2.) * (e2 * e3 - e0 * e1),
+          typename T::Scalar(2.) * (e1 * e3 - e0 * e2), typename T::Scalar(2.) * (e2 * e3 + e0 * e1), typename T::Scalar(1.) - typename T::Scalar(2.) * (e1 * e1 + e2 * e2);
       R.transposeInPlace();
       return R;
     }
