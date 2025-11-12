@@ -184,6 +184,7 @@ namespace grbda
     }
 
     template class RigidBodyTreeModel<double>;
+template class RigidBodyTreeModel<std::complex<double>>;
     template class RigidBodyTreeModel<casadi::SX>;
 
 } // namespace grbda

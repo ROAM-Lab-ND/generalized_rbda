@@ -277,6 +277,7 @@ namespace grbda
     }
 
     template class Tello<double>;
+template class Tello<std::complex<double>>;
     template class Tello<casadi::SX>;
 
 } // namespace grbda

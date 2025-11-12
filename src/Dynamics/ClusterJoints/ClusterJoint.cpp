@@ -80,6 +80,7 @@ namespace grbda
         }
 
         template class Base<double>;
+template class Base<std::complex<double>>;
         template class Base<float>;
         template class Base<casadi::SX>;
 

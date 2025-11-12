@@ -741,6 +741,7 @@ namespace grbda
     }
 
     template class ReflectedInertiaTreeModel<double>;
+template class ReflectedInertiaTreeModel<std::complex<double>>;
     template class ReflectedInertiaTreeModel<casadi::SX>;
 
 } // namespace grbda

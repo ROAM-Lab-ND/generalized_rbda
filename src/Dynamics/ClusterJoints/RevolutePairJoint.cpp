@@ -90,6 +90,7 @@ namespace grbda
         }
 
         template class RevolutePair<double>;
+template class RevolutePair<std::complex<double>>;
         template class RevolutePair<float>;
         template class RevolutePair<casadi::SX>;
     }

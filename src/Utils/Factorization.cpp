@@ -144,6 +144,7 @@ namespace grbda
         }
 
         template class LTL<double>;
+template class LTL<std::complex<double>>;
         template class LTL<casadi::SX>;
 
     }

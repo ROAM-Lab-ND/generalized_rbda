@@ -263,6 +263,7 @@ namespace grbda
     }
 
     template class TreeModel<double>;
+template class TreeModel<std::complex<double>>;
     template class TreeModel<float>;
     template class TreeModel<casadi::SX>;
 

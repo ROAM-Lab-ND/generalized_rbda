@@ -197,6 +197,7 @@ namespace grbda
         }
 
         template class Transform<double>;
+template class Transform<std::complex<double>>;
         template class Transform<float>;
         template class Transform<casadi::SX>;
 
@@ -256,6 +257,7 @@ namespace grbda
         }
 
         template class GeneralizedAbsoluteTransform<double>;
+template class GeneralizedAbsoluteTransform<std::complex<double>>;
         template class GeneralizedAbsoluteTransform<float>;
         template class GeneralizedAbsoluteTransform<casadi::SX>;
 
@@ -477,6 +479,7 @@ namespace grbda
         }
 
         template class GeneralizedTransform<double>;
+template class GeneralizedTransform<std::complex<double>>;
         template class GeneralizedTransform<float>;
         template class GeneralizedTransform<casadi::SX>;
 

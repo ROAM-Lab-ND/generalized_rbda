@@ -74,6 +74,7 @@ namespace grbda
         }
 
         template class RevoluteWithRotor<double>;
+template class RevoluteWithRotor<std::complex<double>>;
         template class RevoluteWithRotor<float>;
         template class RevoluteWithRotor<casadi::SX>;
     }

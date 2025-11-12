@@ -166,6 +166,7 @@ namespace grbda
     }
 
     template class TelloWithArms<double>;
+template class TelloWithArms<std::complex<double>>;
     template class TelloWithArms<casadi::SX>;
 
 } // namespace grbda

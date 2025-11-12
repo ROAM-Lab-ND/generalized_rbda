@@ -359,6 +359,7 @@ namespace grbda
         }
 
         template class FourBar<double>;
+template class FourBar<std::complex<double>>;
         template class FourBar<casadi::SX>;
     }
 }

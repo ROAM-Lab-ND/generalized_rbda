@@ -95,5 +95,6 @@ namespace grbda
     }
 
     template class PlanarLegLinkage<double>;
+template class PlanarLegLinkage<std::complex<double>>;
     template class PlanarLegLinkage<casadi::SX>;
 }

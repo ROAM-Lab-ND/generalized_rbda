@@ -261,9 +261,9 @@ namespace grbda
 
       Mat3<typename T::Scalar> R;
 
-      R << 1 - 2 * (e2 * e2 + e3 * e3), 2 * (e1 * e2 - e0 * e3), 2 * (e1 * e3 + e0 * e2),
-          2 * (e1 * e2 + e0 * e3), 1 - 2 * (e1 * e1 + e3 * e3), 2 * (e2 * e3 - e0 * e1),
-          2 * (e1 * e3 - e0 * e2), 2 * (e2 * e3 + e0 * e1), 1 - 2 * (e1 * e1 + e2 * e2);
+      R << T(1) - T(2) * (e2 * e2 + e3 * e3), T(2) * (e1 * e2 - e0 * e3), T(2) * (e1 * e3 + e0 * e2),
+          T(2) * (e1 * e2 + e0 * e3), T(1) - T(2) * (e1 * e1 + e3 * e3), T(2) * (e2 * e3 - e0 * e1),
+          T(2) * (e1 * e3 - e0 * e2), T(2) * (e2 * e3 + e0 * e1), T(1) - T(2) * (e1 * e1 + e2 * e2);
       R.transposeInPlace();
       return R;
     }

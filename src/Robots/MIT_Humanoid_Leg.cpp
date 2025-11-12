@@ -165,6 +165,7 @@ namespace grbda
     }
 
     template class MIT_Humanoid_Leg<double>;
+template class MIT_Humanoid_Leg<std::complex<double>>;
     template class MIT_Humanoid_Leg<casadi::SX>;
 
 } // namespace grbda
