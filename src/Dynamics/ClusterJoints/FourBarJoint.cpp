@@ -312,6 +312,7 @@ namespace grbda
 
         template struct FourBar<double>;
         template struct FourBar<casadi::SX>;
+        template struct FourBar<std::complex<double>>;
 
     } // namespace LoopConstraint
 

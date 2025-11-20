@@ -34,6 +34,7 @@ namespace grbda
         template struct Base<double>;
         template struct Base<float>;
         template struct Base<casadi::SX>;
+        template struct Base<std::complex<double>>;
 
         template <typename Scalar>
         Static<Scalar>::Static(DMat<Scalar> G, DMat<Scalar> K)
@@ -54,6 +55,7 @@ namespace grbda
         template struct Static<double>;
         template struct Static<float>;
         template struct Static<casadi::SX>;
+        template struct Static<std::complex<double>>;
 
         template <typename Scalar>
         DVec<Scalar> Collection<Scalar>::gamma(const DVec<Scalar> y) const
@@ -215,6 +217,7 @@ namespace grbda
         template struct Collection<double>;
         template struct Collection<float>;
         template struct Collection<casadi::SX>;
+        template struct Collection<std::complex<double>>;
 
     }
 
