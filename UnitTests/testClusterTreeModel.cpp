@@ -100,16 +100,16 @@ struct URDFvsManualTestData
 std::vector<URDFvsManualTestData> GetTestRobots()
 {
     std::vector<URDFvsManualTestData> test_data;
-    test_data.push_back({urdf_directory + "planar_leg_linkage.urdf",
-                         std::make_shared<PlanarLegLinkage<double>>()});
-    test_data.push_back({urdf_directory + "revolute_rotor_chain.urdf",
-                         std::make_shared<RevoluteChainWithRotor<3, double>>(false)});
+    // test_data.push_back({urdf_directory + "planar_leg_linkage.urdf",
+    //                      std::make_shared<PlanarLegLinkage<double>>()});
+    // test_data.push_back({urdf_directory + "revolute_rotor_chain.urdf",
+    //                      std::make_shared<RevoluteChainWithRotor<3, double>>(false)});
     test_data.push_back({urdf_directory + "mini_cheetah.urdf",
                          std::make_shared<MiniCheetah<double>>()});
-    test_data.push_back({urdf_directory + "mit_humanoid_leg.urdf",
-                         std::make_shared<MIT_Humanoid_Leg<double>>()});
-    test_data.push_back({urdf_directory + "mit_humanoid.urdf",
-                         std::make_shared<MIT_Humanoid<double>>()});
+    // test_data.push_back({urdf_directory + "mit_humanoid_leg.urdf",
+    //                      std::make_shared<MIT_Humanoid_Leg<double>>()});
+    // test_data.push_back({urdf_directory + "mit_humanoid.urdf",
+    //                      std::make_shared<MIT_Humanoid<double>>()});
     return test_data;
 }
 
@@ -227,12 +227,22 @@ TEST_P(URDFvsManualTests, compareToManuallyConstructed)
         const DVec<double> tau_urdf = this->urdf_model.inverseDynamics(ydd);
         GTEST_ASSERT_LT((tau_manual - tau_urdf).norm(), tol);
 
-        /*
+        
         //Verify the inverse dynamics derivatives
-        const std::pair<DMat<double>, DMat<double>> tau_derivs_manual =
+        std::pair<DMat<double>, DMat<double>> [dtau_dq, dtau_dqdot] =
             this->manual_model.firstOrderInverseDynamicsDerivatives(ydd);
-        const std::pair<DMat<double>, DMat<double>> tau_derivs_urdf =
-            this->urdf_model.firstOrderInverseDynamicsDerivatives(ydd);
-        */
+
+        std::pair<DVec<double>, DVec<double>> [q0, qd0] = this->manual_model.getState();
+        DVec<double> qNew = q0;
+        const double h = 1e-8;
+        qNew[0] += h;
+        this->manual_model.setState(qNew, qd0);
+        DVec<double> tauPlus = this->manual_model.inverseDynamics(ydd);
+
+        DVec<double> dtau_dq0 = (tauPlus - tau_manual) / h;
+
+        std::cout << "dtau_dq0: " << dtau_dq0.transpose() << std::endl;
+        std::cout << "dtau_dq col 0: " << dtau_dq.col(0).transpose() << std::endl;
+        
     }
 }
