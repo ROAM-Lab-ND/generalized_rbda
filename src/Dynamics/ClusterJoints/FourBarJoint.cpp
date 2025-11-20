@@ -214,13 +214,39 @@ namespace grbda
             std::vector<SX> path1_link_lengths_sym, path2_link_lengths_sym;
             for (size_t i = 0; i < path1_link_lengths_.size(); i++)
             {
-                path1_link_lengths_sym.push_back(path1_link_lengths_[i]);
+                if constexpr (std::is_same<Scalar, casadi::SX>::value)
+                {
+                    path1_link_lengths_sym.push_back(path1_link_lengths_[i]);
+                }
+                else
+                {
+                    using std::real;
+                    path1_link_lengths_sym.push_back(real(path1_link_lengths_[i])); 
+                }
+                
             }
             for (size_t i = 0; i < path2_link_lengths_.size(); i++)
             {
-                path2_link_lengths_sym.push_back(path2_link_lengths_[i]);
+                if constexpr (std::is_same<Scalar, casadi::SX>::value)
+                {
+                    path2_link_lengths_sym.push_back(path2_link_lengths_[i]);
+                }
+                else
+                {
+                    using std::real;
+                    path2_link_lengths_sym.push_back(real(path2_link_lengths_[i]));
+                }
             }
-            Vec2<SX> offset_sym{offset_[0], offset_[1]};
+            Vec2<SX> offset_sym;
+            if constexpr (std::is_same<Scalar, casadi::SX>::value)
+            {
+                offset_sym = Vec2<SX>{offset_[0], offset_[1]};
+            }
+            else
+            {
+                using std::real;
+                offset_sym = Vec2<SX>{real(offset_[0]), real(offset_[1])};
+            }
             FourBar<SX> symbolic = FourBar<SX>(path1_link_lengths_sym,
                                                path2_link_lengths_sym,
                                                offset_sym, independent_coordinate_);
@@ -359,7 +385,7 @@ namespace grbda
         }
 
         template class FourBar<double>;
-template class FourBar<std::complex<double>>;
+        template class FourBar<std::complex<double>>;
         template class FourBar<casadi::SX>;
     }
 }
