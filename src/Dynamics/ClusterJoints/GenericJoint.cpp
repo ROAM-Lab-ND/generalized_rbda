@@ -154,8 +154,9 @@ namespace grbda
             CasadiScalar arg_cs(arg.rows());
 
             if constexpr (std::is_same_v<Scalar, std::complex<double>>) {
-                for (int i = 0; i < arg.rows(); ++i)
-                    arg_cs(i) = std::real(arg(i));
+                throw std::runtime_error("GenericImplicit::runCasadiFcn does not support std::complex<double> arguments.");
+                // for (int i = 0; i < arg.rows(); ++i)
+                //     arg_cs(i) = std::real(arg(i));
             } else {
                 casadi::copy(arg, arg_cs);
             }
@@ -188,8 +189,9 @@ namespace grbda
             // position
             args_cs[0] = CasadiScalar(args.position.rows());
             if constexpr (std::is_same_v<Scalar, std::complex<double>>) {
-                for (int i = 0; i < args.position.rows(); ++i)
-                    args_cs[0](i) = std::real(args.position(i));
+                throw std::runtime_error("GenericImplicit::runCasadiFcn does not support std::complex<double> arguments.");
+                // for (int i = 0; i < args.position.rows(); ++i)
+                //     args_cs[0](i) = std::real(args.position(i));
             } else {
                 casadi::copy(args.position, args_cs[0]);
             }
