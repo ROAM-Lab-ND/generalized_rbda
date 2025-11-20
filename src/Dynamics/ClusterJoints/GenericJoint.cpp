@@ -138,15 +138,31 @@ namespace grbda
         DMat<Scalar> GenericImplicit<Scalar>::runCasadiFcn(const casadi::Function &fcn,
                                                            const JointCoordinate<Scalar> &arg)
         {
-            using CasadiScalar = typename std::conditional<std::is_same<Scalar, casadi::SX>::value, casadi::SX, casadi::DM>::type;
-            using CasadiResult = typename std::conditional<std::is_same<Scalar, float>::value, double, Scalar>::type;
+            using CasadiScalar = std::conditional_t<
+                std::is_same<Scalar, casadi::SX>::value,
+                casadi::SX,
+                casadi::DM
+            >;
+
+            using CasadiResult = std::conditional_t<
+                std::is_same<Scalar, float>::value
+                || std::is_same<Scalar, std::complex<double>>::value,
+                double,
+                Scalar
+            >;
 
             CasadiScalar arg_cs(arg.rows());
-            casadi::copy(arg, arg_cs);
+
+            if constexpr (std::is_same_v<Scalar, std::complex<double>>) {
+                for (int i = 0; i < arg.rows(); ++i)
+                    arg_cs(i) = std::real(arg(i));
+            } else {
+                casadi::copy(arg, arg_cs);
+            }
+
             CasadiScalar res_cs = fcn(arg_cs)[0];
             DMat<CasadiResult> res(res_cs.size1(), res_cs.size2());
             casadi::copy(res_cs, res);
-
             return res.template cast<Scalar>();
         }
 
@@ -154,14 +170,38 @@ namespace grbda
         DMat<Scalar> GenericImplicit<Scalar>::runCasadiFcn(const casadi::Function &fcn,
                                                            const JointState<Scalar> &args)
         {
-            using CasadiScalar = typename std::conditional<std::is_same<Scalar, casadi::SX>::value, casadi::SX, casadi::DM>::type;
-            using CasadiResult = typename std::conditional<std::is_same<Scalar, float>::value, double, Scalar>::type;
+            using CasadiScalar = std::conditional_t<
+                std::is_same<Scalar, casadi::SX>::value,
+                casadi::SX,
+                casadi::DM
+            >;
+
+            using CasadiResult = std::conditional_t<
+                std::is_same<Scalar, float>::value
+                || std::is_same<Scalar, std::complex<double>>::value,
+                double,
+                Scalar
+            >;
 
             std::vector<CasadiScalar> args_cs(2);
+
+            // position
             args_cs[0] = CasadiScalar(args.position.rows());
-            casadi::copy(args.position, args_cs[0]);
+            if constexpr (std::is_same_v<Scalar, std::complex<double>>) {
+                for (int i = 0; i < args.position.rows(); ++i)
+                    args_cs[0](i) = std::real(args.position(i));
+            } else {
+                casadi::copy(args.position, args_cs[0]);
+            }
+
+            // velocity
             args_cs[1] = CasadiScalar(args.velocity.rows());
-            casadi::copy(args.velocity, args_cs[1]);
+            if constexpr (std::is_same_v<Scalar, std::complex<double>>) {
+                for (int i = 0; i < args.velocity.rows(); ++i)
+                    args_cs[1](i) = std::real(args.velocity(i));
+            } else {
+                casadi::copy(args.velocity, args_cs[1]);
+            }
 
             CasadiScalar res_cs = fcn(args_cs)[0];
             DMat<CasadiResult> res(res_cs.size1(), res_cs.size2());
@@ -233,6 +273,7 @@ namespace grbda
 
         template struct GenericImplicit<double>;
         template struct GenericImplicit<float>;
+        template struct GenericImplicit<std::complex<double>>;
         template struct GenericImplicit<casadi::SX>;
     }
 
