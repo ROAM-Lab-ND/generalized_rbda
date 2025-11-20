@@ -39,6 +39,7 @@ namespace grbda
         virtual const DVec<Scalar> &vJ() const = 0;
         virtual const DMat<Scalar> &S() const = 0;
         virtual const DVec<Scalar> &cJ() const = 0;
+        virtual const DMat<Scalar> &S_ring() const = 0;
 
         virtual const spatial::Transform<Scalar> &getAbsoluteTransformForBody(const Body<Scalar> &body) = 0;
         virtual DVec<Scalar> getVelocityForBody(const Body<Scalar> &body) = 0;

@@ -24,6 +24,7 @@ namespace grbda
         const DVec<Scalar> &vJ() const override { return joint_->vJ(); }
         const DMat<Scalar> &S() const override { return joint_->S(); }
         const DVec<Scalar> &cJ() const override { return joint_->cJ(); }
+        const DMat<Scalar> &S_ring() const override { return joint_->S_ring(); }
 
         const spatial::Transform<Scalar> &getAbsoluteTransformForBody(const Body<Scalar> &body) override;
         DVec<Scalar> getVelocityForBody(const Body<Scalar> &body) override;

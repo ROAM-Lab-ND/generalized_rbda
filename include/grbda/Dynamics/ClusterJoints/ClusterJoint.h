@@ -60,6 +60,7 @@ namespace grbda
             const DMat<Scalar> &Psi() const { return Psi_; }
             const DVec<Scalar> &vJ() const { return vJ_; }
             const DVec<Scalar> &cJ() const { return cJ_; }
+            const DMat<Scalar> &S_ring() const { return S_ring_; }
 
             std::shared_ptr<LoopConstraint::Base<Scalar>> cloneLoopConstraint() const
             {
@@ -90,6 +91,7 @@ namespace grbda
             DMat<Scalar> Psi_;
             DVec<Scalar> vJ_;
             DVec<Scalar> cJ_;
+            DMat<Scalar> S_ring_;
 
             std::shared_ptr<LoopConstraint::Base<Scalar>> loop_constraint_;
             std::vector<JointPtr<Scalar>> single_joints_;

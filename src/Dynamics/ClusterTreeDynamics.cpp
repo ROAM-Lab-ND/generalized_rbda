@@ -456,7 +456,7 @@ namespace grbda
                 + spatial::generalMotionCrossMatrix(parent_cluster->v_) * cluster->Psi_dot_; // + gradient terms
 
                 cluster->Upsilon_dot_ = spatial::generalMotionCrossMatrix(cluster->v_) * cluster->S()
-                + cluster->Psi_dot_; // + cluster->S_ring
+                + cluster->Psi_dot_ + cluster->S_ring();
 
                 cluster->M_cup_ = cluster->I_;
 

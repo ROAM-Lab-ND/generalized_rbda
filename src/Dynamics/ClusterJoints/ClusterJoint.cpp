@@ -17,6 +17,7 @@ namespace grbda
             Psi_ = DMat<Scalar>::Zero(motion_subspace_dimension, num_velocities_);
             vJ_ = DVec<Scalar>::Zero(motion_subspace_dimension);
             cJ_ = DVec<Scalar>::Zero(motion_subspace_dimension);
+            S_ring_ = DMat<Scalar>::Zero(motion_subspace_dimension, num_velocities_);
         }
 
         template <typename Scalar>

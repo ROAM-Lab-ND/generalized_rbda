@@ -448,6 +448,7 @@ namespace grbda
 
             this->cJ_ = X_intra_ring_ * this->S_spanning_ * qd +
                         S_implicit * this->loop_constraint_->g();
+            this->S_ring_ = X_intra_ring_ * this->S_spanning_ * this->loop_constraint_->G(); //+X_intra*S_panning_*G_dot_;
         }
 
         template <typename Scalar>

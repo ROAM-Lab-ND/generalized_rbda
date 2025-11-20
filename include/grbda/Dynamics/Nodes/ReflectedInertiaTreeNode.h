@@ -20,6 +20,7 @@ namespace grbda
         const DVec<Scalar> &vJ() const override { return vJ_; }
         const DMat<Scalar> &S() const override { return joint_->S(); }
         const DVec<Scalar> &cJ() const override { return cJ_; }
+        const DMat<Scalar> &S_ring() const override { return S_ring_; }
 
         const spatial::Transform<Scalar> &getAbsoluteTransformForBody(const Body<Scalar> &body) override;
         DVec<Scalar> getVelocityForBody(const Body<Scalar> &body) override;
@@ -31,6 +32,7 @@ namespace grbda
 
         DVec<Scalar> vJ_;
         DVec<Scalar> cJ_ = DVec<Scalar>::Zero(6);
+        DMat<Scalar> S_ring_ = DMat<Scalar>::Zero(6, joint_->numVelocities());
         const spatial::Transform<Scalar> Xtree_;
 
         Mat6<Scalar> IA_;    // articulated body inertia
