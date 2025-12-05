@@ -1,5 +1,4 @@
-# Base image: Ubuntu 18.04 LTS for hardware compatibility with robots
-FROM ubuntu:18.04
+FROM ubuntu:22.04
 
 LABEL maintainer="Robotics Optimization and Assitive Mobility Laboratory"
 

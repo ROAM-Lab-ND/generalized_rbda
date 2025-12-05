@@ -40,12 +40,21 @@ They can be installed using the provided [install script](scripts/install_depend
 - MacOS 10.15 or higher (Note: When compiling on a machine with Apple M1 chip, you can optimize the performance by using the following command: `cmake -DM1_BUILD=ON ..`)
 
 ### Building
-To run the unit tests and bencmarks
+To run the unit tests and benchmarks
 - Create a build directory: `mkdir build && cd build`
-- Run CMake: `cmake ..`
+- Run CMake: `cmake -DBUILD_BENCHMARKS=ON ..`
 - Build: `make`
 - Unit tests can be run all at once with `ctest` or individually with `./bin/<name-of-unit-test-binary>`
-- The benchmark can be run with `./bin/pinocchio_benchmark` after installing the benchmark dependencies following [this script](scripts/install_benchmark_dependencies.sh)
+- The benchmark can be run with `./bin/pinocchio_benchmark` and the output files are at `Benchmarking/data/`
+
+Optionally, a dockerfile is provided to run the benchmarks:
+- Build the container using [this script](grbda-docker/build_container)
+- Start the container using [this script](grbda-docker/start_container)
+- (within the container) `mkdir build && cd build`
+- (within the container) Run CMake: `cmake -DBUILD_BENCHMARKS=ON ..`
+- (within the container) Build: `make`
+- (within the container, optional) Unit tests: `ctest`
+- (within the container) Run benchmark: `./bin/pinocchio_benchmark` and see the output files at `Benchmarking/data/`
 
 To incorporate the library into your own project, see [Configuration](#configuration).
 
