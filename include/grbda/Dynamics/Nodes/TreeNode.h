@@ -15,6 +15,7 @@ namespace grbda
     template <typename Scalar = double>
     struct TreeNode
     {
+        EIGEN_MAKE_ALIGNED_OPERATOR_NEW
         TreeNode(int index, std::string name, int parent_index, int num_parent_bodies, 
                  int motion_subspace_index, int motion_subspace_dimension,
                  int position_index, int num_positions,

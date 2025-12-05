@@ -504,10 +504,10 @@ namespace grbda
                 
                 if (cluster_j->parent_index_ > 0)
                 {
-                    t1 = cluster_j->Xup_.toMatrix().transpose() * t1;
-                    t2 = cluster_j->Xup_.toMatrix().transpose() * t2;
-                    t3 = cluster_j->Xup_.toMatrix().transpose() * t3;
-                    t4 = cluster_j->Xup_.toMatrix().transpose() * t4;
+                    t1 = cluster_j->Xup_.inverseTransformForceSubspace(t1);
+                    t2 = cluster_j->Xup_.inverseTransformForceSubspace(t2);
+                    t3 = cluster_j->Xup_.inverseTransformForceSubspace(t3);
+                    t4 = cluster_j->Xup_.inverseTransformForceSubspace(t4);
                 }
                 j = cluster_j->parent_index_;
             }

@@ -14,6 +14,7 @@ namespace grbda
         class Transform
         {
         public:
+            EIGEN_MAKE_ALIGNED_OPERATOR_NEW
             Transform(const Mat3<Scalar> &E = Mat3<Scalar>::Identity(),
                       const Vec3<Scalar> &r = Vec3<Scalar>::Zero());
 
@@ -55,6 +56,7 @@ namespace grbda
         class GeneralizedAbsoluteTransform
         {
         public:
+            EIGEN_MAKE_ALIGNED_OPERATOR_NEW
             GeneralizedAbsoluteTransform(){};
 
             void appendTransform(const Transform<Scalar> &X);
@@ -70,13 +72,14 @@ namespace grbda
 
         private:
             int num_output_bodies_ = 0;
-            std::vector<Transform<Scalar>> transforms_;
+            std::vector<Transform<Scalar>,Eigen::aligned_allocator<Transform<Scalar>>> transforms_;
         };
 
         template <typename Scalar = double>
         class GeneralizedTransform
         {
         public:
+            EIGEN_MAKE_ALIGNED_OPERATOR_NEW
             GeneralizedTransform(int num_parent_bodies);
 
             void appendTransformWithClusterAncestorSubIndex(const Transform<Scalar> &X,
@@ -109,7 +112,7 @@ namespace grbda
         private:
             int num_output_bodies_ = 0;
             const int num_parent_bodies_ = 0;
-            std::vector<std::pair<Transform<Scalar>, int>> transforms_and_parent_subindices_;
+            std::vector<std::pair<Transform<Scalar>, int>, Eigen::aligned_allocator<std::pair<Transform<Scalar>, int>>> transforms_and_parent_subindices_;
         };
 
     } // namespace spatial

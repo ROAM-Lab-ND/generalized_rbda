@@ -221,11 +221,11 @@ TYPED_TEST(RigidBodyDynamicsAlgosTest, ForwardAndInverseDyanmics)
             const DVec<double> tau_cluster = cluster_model.inverseDynamics(qdd_cluster);
             const DVec<double> tau_proj = projection_model.inverseDynamics(qdd_cluster);
 
-            /*
+            
             //Inverse Dynamics Derivatives
             const std::pair<DMat<double>, DMat<double>> tau_derivs_cluster =
                 cluster_model.firstOrderInverseDynamicsDerivatives(qdd_cluster);
-            */
+            
             
                 
             // Verify joint acceleration agreement

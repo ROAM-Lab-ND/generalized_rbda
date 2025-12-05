@@ -10,6 +10,7 @@ namespace grbda
     template <typename Scalar = double>
     struct ClusterTreeNode : TreeNode<Scalar>
     {
+        EIGEN_MAKE_ALIGNED_OPERATOR_NEW
         typedef typename CorrectMatrixInverseType<Scalar>::type InverseType;
         typedef std::shared_ptr<ClusterJoints::Base<Scalar>> ClusterJointPtr;
         typedef std::pair<Body<Scalar>, JointPtr<Scalar>> BodyJointPair;
