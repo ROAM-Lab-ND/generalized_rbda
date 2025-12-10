@@ -450,14 +450,14 @@ namespace grbda
                 
                 cluster->Psi_dot_ =
                 spatial::generalMotionCrossMatrix(cluster->Xup_.transformMotionVector(parent_cluster->v_)) * cluster->S(); // + gradient terms
-
+                
                 cluster->Psi_ddot_ =
                 spatial::generalMotionCrossMatrix(cluster->Xup_.transformMotionVector(parent_cluster->a_)) * cluster->S()
                 + spatial::generalMotionCrossMatrix(parent_cluster->v_) * cluster->Psi_dot_; // + gradient terms
-
+                /*
                 cluster->Upsilon_dot_ = spatial::generalMotionCrossMatrix(cluster->v_) * cluster->S()
                 + cluster->Psi_dot_ + cluster->S_ring();
-
+                
                 cluster->M_cup_ = cluster->I_;
 
                 cluster->B_cup_ = spatial::generalForceCrossMatrix(cluster->v_) * cluster->I_
@@ -465,8 +465,10 @@ namespace grbda
                 + spatial::swappedForceCrossMatrix(cluster->I_ * cluster->v_);
 
                 cluster->F_ = cluster->I_ * cluster->a_ + spatial::generalForceCrossMatrix(cluster->v_) * cluster->I_ * cluster->v_;
+                */
             }
         }
+        /*
         //Backward Pass
         for (int i = (int)cluster_nodes_.size() - 1; i >= 1; i--)
         {
@@ -523,6 +525,7 @@ namespace grbda
                 parent_cluster->F_.noalias()     += X.transpose() * cluster_i->F_ * X;
             }
         }
+        */
         return {dtau_dq, dtau_dq_dot};
     }
 
