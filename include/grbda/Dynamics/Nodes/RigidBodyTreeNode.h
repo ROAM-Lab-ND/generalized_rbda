@@ -10,6 +10,7 @@ namespace grbda
     template <typename Scalar = double>
     struct RigidBodyTreeNode : TreeNode<Scalar>
     {
+        EIGEN_MAKE_ALIGNED_OPERATOR_NEW
         RigidBodyTreeNode(const Body<Scalar> &body,
                           const std::shared_ptr<Joints::Base<Scalar>> &joint,
                           const int position_index, const int velocity_index,
@@ -31,7 +32,7 @@ namespace grbda
 
         DVec<Scalar> vJ_;
         DVec<Scalar> cJ_ = DVec<Scalar>::Zero(6);
-        DMat<Scalar> S_ring_ = DMat<Scalar>::Zero(6, joint_->numVelocities());
+        DMat<Scalar> S_ring_;
         const spatial::Transform<Scalar> Xtree_;
     };
 

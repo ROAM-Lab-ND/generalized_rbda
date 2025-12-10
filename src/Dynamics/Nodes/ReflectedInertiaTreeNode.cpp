@@ -18,6 +18,7 @@ namespace grbda
         this->I_ = link.inertia_.getMatrix();
         this->Xup_.appendTransformWithClusterAncestorSubIndex(spatial::Transform<Scalar>{}, 0);
         this->Xa_.appendTransform(spatial::Transform<Scalar>{});
+        S_ring_ = DMat<Scalar>::Zero(6, joint->numVelocities());
     }
 
     template <typename Scalar>
