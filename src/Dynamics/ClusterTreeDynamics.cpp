@@ -447,13 +447,15 @@ namespace grbda
             if (cluster->parent_index_ >= 0)
             {
                 auto &parent_cluster = cluster_nodes_[cluster->parent_index_];
+                const auto v_parent_up = cluster->Xup_.transformMotionVector(parent_cluster->v_);
+                const auto a_parent_up = cluster->Xup_.transformMotionVector(parent_cluster->a_);
                 
                 cluster->Psi_dot_ =
-                spatial::generalMotionCrossMatrix(cluster->Xup_.transformMotionVector(parent_cluster->v_)) * cluster->S(); // + gradient terms
-                
+                spatial::generalMotionCrossMatrix(v_parent_up) * cluster->S(); // + gradient terms
+
                 cluster->Psi_ddot_ =
-                spatial::generalMotionCrossMatrix(cluster->Xup_.transformMotionVector(parent_cluster->a_)) * cluster->S()
-                + spatial::generalMotionCrossMatrix(parent_cluster->v_) * cluster->Psi_dot_; // + gradient terms
+                spatial::generalMotionCrossMatrix(a_parent_up) * cluster->S()
+                + spatial::generalMotionCrossMatrix(v_parent_up) * cluster->Psi_dot_; // + gradient terms
                 /*
                 cluster->Upsilon_dot_ = spatial::generalMotionCrossMatrix(cluster->v_) * cluster->S()
                 + cluster->Psi_dot_ + cluster->S_ring();
