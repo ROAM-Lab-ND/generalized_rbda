@@ -3,10 +3,9 @@ cmake_minimum_required(VERSION 3.13)
 project(grbda VERSION 2.1.0)
 
 if(CMAKE_BUILD_TYPE MATCHES Debug)
-    message(STATUS "Debug build - enabling sanitizers")
-    add_compile_options(-fsanitize=address,undefined -fno-omit-frame-pointer -O0 -g3)
-    add_link_options(-fsanitize=address,undefined)
-    add_compile_definitions(EIGEN_INITIALIZE_MATRICES_BY_NAN)
+    message(STATUS "Debug build")
+    add_compile_options(-O0 -g3)
+    # add_compile_definitions(EIGEN_INITIALIZE_MATRICES_BY_NAN)
 endif()
 
 message(STATUS "=============  !Generalized Rigid-Body Dynamics Algorithms!  =============")
