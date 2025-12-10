@@ -229,20 +229,24 @@ TEST_P(URDFvsManualTests, compareToManuallyConstructed)
 
         
         //Verify the inverse dynamics derivatives
-        std::pair<DMat<double>, DMat<double>> [dtau_dq, dtau_dqdot] =
+        auto [dtau_dq, dtau_dqdot] =
             this->manual_model.firstOrderInverseDynamicsDerivatives(ydd);
 
-        std::pair<DVec<double>, DVec<double>> [q0, qd0] = this->manual_model.getState();
+        std::pair<DVec<double>, DVec<double>> state = this->manual_model.getState();
+        const DVec<double>& q0 = state.first;
+        const DVec<double>& qd0 = state.second;
         DVec<double> qNew = q0;
         const double h = 1e-8;
         qNew[0] += h;
-        this->manual_model.setState(qNew, qd0);
+        std::pair<DVec<double>, DVec<double>> stateNew = {qNew, qd0};
+        this->manual_model.setState(stateNew);
         DVec<double> tauPlus = this->manual_model.inverseDynamics(ydd);
 
         DVec<double> dtau_dq0 = (tauPlus - tau_manual) / h;
 
         std::cout << "dtau_dq0: " << dtau_dq0.transpose() << std::endl;
         std::cout << "dtau_dq col 0: " << dtau_dq.col(0).transpose() << std::endl;
+        GTEST_ASSERT_LT((dtau_dq0 - dtau_dq.col(0)).norm(), tol);
         
     }
 }

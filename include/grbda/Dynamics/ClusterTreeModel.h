@@ -90,6 +90,9 @@ namespace grbda
 
         typedef std::pair<DVec<Scalar>, DVec<Scalar>> StatePair;
         void setState(const ModelState<Scalar> &model_state);
+
+        std::pair<DVec<Scalar>, DVec<Scalar>> getState();
+
         void setState(const StatePair &q_qd_pair);
         void setState(const DVec<Scalar>& q_qd_vec);
         ModelState<Scalar> stateVectorToModelState(const StatePair& q_qd_pair);
