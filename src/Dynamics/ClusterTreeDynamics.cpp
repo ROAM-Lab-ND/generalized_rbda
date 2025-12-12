@@ -454,23 +454,21 @@ namespace grbda
                 spatial::generalMotionCrossMatrix(v_parent_up) * cluster->S(); // + gradient terms
 
                 cluster->Psi_ddot_ =
-                spatial::generalMotionCrossMatrix(a_parent_up) * cluster->S()
+                (spatial::generalMotionCrossMatrix(a_parent_up) * cluster->S()).eval()
                 + spatial::generalMotionCrossMatrix(v_parent_up) * cluster->Psi_dot_; // + gradient terms
-                /*
-                cluster->Upsilon_dot_ = spatial::generalMotionCrossMatrix(cluster->v_) * cluster->S()
+
+                cluster->Upsilon_dot_ = (spatial::generalMotionCrossMatrix(cluster->v_) * cluster->S()).eval()
                 + cluster->Psi_dot_ + cluster->S_ring();
                 
                 cluster->M_cup_ = cluster->I_;
 
                 cluster->B_cup_ = spatial::generalForceCrossMatrix(cluster->v_) * cluster->I_
                 - cluster->I_ * spatial::generalMotionCrossMatrix(cluster->v_)
-                + spatial::swappedForceCrossMatrix(cluster->I_ * cluster->v_);
+                + spatial::generalSwappedForceCrossMatrix(DVec<Scalar>(cluster->I_ * cluster->v_));
 
                 cluster->F_ = cluster->I_ * cluster->a_ + spatial::generalForceCrossMatrix(cluster->v_) * cluster->I_ * cluster->v_;
-                */
             }
         }
-        /*
         //Backward Pass
         for (int i = (int)cluster_nodes_.size() - 1; i >= 1; i--)
         {
@@ -480,9 +478,9 @@ namespace grbda
             DMat<Scalar> t1 = cluster_i->M_cup_ * cluster_i->S();
             DMat<Scalar> t2 = DMat<Scalar>(cluster_i->B_cup_ * cluster_i->S()) + DMat<Scalar>(cluster_i->M_cup_ * cluster_i->Upsilon_dot_);
             DMat<Scalar> t3 = DMat<Scalar>(cluster_i->B_cup_ * cluster_i->Psi_dot_) + DMat<Scalar>(cluster_i->M_cup_ * cluster_i->Psi_ddot_)
-            + DMat<Scalar>(spatial::swappedForceCrossMatrix(cluster_i->S()) * cluster_i->F_);
+            + DMat<Scalar>(spatial::generalSwappedForceCrossMatrix(cluster_i->F_)*cluster_i->S());
             DMat<Scalar> t4 = cluster_i->B_cup_.transpose() * cluster_i->S();
-
+            
             int j = i;
             
             while (j > 0)
@@ -515,7 +513,6 @@ namespace grbda
                 }
                 j = cluster_j->parent_index_;
             }
-            
             if (cluster_i->parent_index_ > 0)
             {
                 auto &parent_cluster = cluster_nodes_[cluster_i->parent_index_];
@@ -527,7 +524,6 @@ namespace grbda
                 parent_cluster->F_.noalias()     += X.transpose() * cluster_i->F_ * X;
             }
         }
-        */
         return {dtau_dq, dtau_dq_dot};
     }
 

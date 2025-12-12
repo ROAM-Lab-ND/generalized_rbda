@@ -232,6 +232,29 @@ namespace grbda
     }
 
     /*!
+     * Compute swapped force cross matrix. Generalized version for multi-body clusters
+     *
+     * This is a general formulation to deal with the ability of aggregate bodies to have
+     * 6N dimensional spatial forces
+     */
+    template <typename T>
+    DMat<T> generalSwappedForceCrossMatrix(const DVec<T> &v)
+    {
+      const int n = v.rows();
+      if (n == 6)
+        return swappedForceCrossMatrix(v.template head<6>());
+      else if (n % 6 == 0)
+      {
+        DMat<T> f = DMat<T>::Zero(n, n);
+        for (int i = 0; i < (n / 6); i++)
+          f.template block<6, 6>(6 * i, 6 * i) = swappedForceCrossMatrix(v.template segment<6>(6 * i));
+        return f;
+      }
+      else
+        throw std::runtime_error("Invalid number of rows provided to General Swapped Force Cross Matrix");
+    }
+
+    /*!
      * Create spatial coordinate transformation from rotation and translation
      */
     template <typename T, typename T2>
