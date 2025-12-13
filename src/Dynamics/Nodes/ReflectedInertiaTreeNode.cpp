@@ -56,6 +56,7 @@ namespace grbda
     }
 
     template struct ReflectedInertiaTreeNode<double>;
+    template struct ReflectedInertiaTreeNode<std::complex<double>>;
     template struct ReflectedInertiaTreeNode<float>;
     template struct ReflectedInertiaTreeNode<casadi::SX>;
 

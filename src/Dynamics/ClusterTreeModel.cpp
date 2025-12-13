@@ -267,6 +267,26 @@ namespace grbda
     }
 
     template <typename Scalar, typename OriTpl>
+    std::pair<DVec<Scalar>, DVec<Scalar>> ClusterTreeModel<Scalar, OriTpl>::getState()
+    {
+        const int nq = this->getNumPositions();
+        const int nv = this->getNumDegreesOfFreedom();
+
+        DVec<Scalar> q = DVec<Scalar>::Zero(nq);
+        DVec<Scalar> qd = DVec<Scalar>::Zero(nv);
+
+        for (const auto &cluster : cluster_nodes_)
+        {
+            q.segment(cluster->position_index_, cluster->num_positions_) = 
+                cluster->joint_state_.position;
+            qd.segment(cluster->velocity_index_, cluster->num_velocities_) = 
+                cluster->joint_state_.velocity;
+        }
+
+        return {q, qd};
+    }
+
+    template <typename Scalar, typename OriTpl>
     void ClusterTreeModel<Scalar, OriTpl>::setState(const StatePair &q_qd_pair)
     {
         ModelState<Scalar> state = stateVectorToModelState(q_qd_pair);
@@ -571,6 +591,7 @@ namespace grbda
     }
 
     template class ClusterTreeModel<double>;
+    template class ClusterTreeModel<std::complex<double>>;
     template class ClusterTreeModel<float>;
     template class ClusterTreeModel<casadi::SX>;
 

@@ -32,6 +32,7 @@ namespace grbda
         }
 
         template struct Base<double>;
+        template struct Base<std::complex<double>>;
         template struct Base<float>;
         template struct Base<casadi::SX>;
 
@@ -52,6 +53,7 @@ namespace grbda
         }
 
         template struct Static<double>;
+        template struct Static<std::complex<double>>;
         template struct Static<float>;
         template struct Static<casadi::SX>;
 
@@ -213,6 +215,7 @@ namespace grbda
         }
 
         template struct Collection<double>;
+        template struct Collection<std::complex<double>>;
         template struct Collection<float>;
         template struct Collection<casadi::SX>;
 

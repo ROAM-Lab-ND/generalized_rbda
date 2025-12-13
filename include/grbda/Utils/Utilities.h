@@ -124,7 +124,7 @@ namespace grbda
   template <typename T>
   bool nearZero(const Eigen::MatrixBase<T> &vec, const typename T::Scalar &tol = 1e-8)
   {
-    if (vec.norm() < tol)
+    if (vec.norm() < std::abs(tol))
       return true;
     return false;
   }

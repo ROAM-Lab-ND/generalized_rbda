@@ -148,6 +148,7 @@ namespace grbda
         }
 
         template class RevoluteTripleWithRotor<double>;
+        template class RevoluteTripleWithRotor<std::complex<double>>;
         template class RevoluteTripleWithRotor<casadi::SX>;
 
     }
