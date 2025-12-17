@@ -62,10 +62,16 @@ namespace grbda
         throw std::runtime_error("Not implemented");
     }
 
+    template class RevoluteChainWithAndWithoutRotor<0ul, 2ul>;
+    template class RevoluteChainWithAndWithoutRotor<0ul, 3ul>;
+    template class RevoluteChainWithAndWithoutRotor<0ul, 4ul>;
     template class RevoluteChainWithAndWithoutRotor<0ul, 8ul>;
     template class RevoluteChainWithAndWithoutRotor<1ul, 7ul>;
+    template class RevoluteChainWithAndWithoutRotor<2ul, 0ul>;
     template class RevoluteChainWithAndWithoutRotor<2ul, 6ul>;
+    template class RevoluteChainWithAndWithoutRotor<3ul, 0ul>;
     template class RevoluteChainWithAndWithoutRotor<3ul, 5ul>;
+    template class RevoluteChainWithAndWithoutRotor<4ul, 0ul>;
     template class RevoluteChainWithAndWithoutRotor<4ul, 4ul>;
     template class RevoluteChainWithAndWithoutRotor<5ul, 3ul>;
     template class RevoluteChainWithAndWithoutRotor<6ul, 2ul>;

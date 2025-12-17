@@ -468,9 +468,27 @@ namespace grbda
 
                 cluster->F_ = cluster->I_ * cluster->a_ + spatial::generalForceCrossMatrix(cluster->v_) * cluster->I_ * cluster->v_;
             }
+            else
+            {
+                // Root cluster (no parent) - initialize with zero parent motion
+                const int mss_dim = cluster->motion_subspace_dimension_;
+                cluster->Psi_dot_ = DMat<Scalar>::Zero(mss_dim, cluster->num_velocities_);
+                cluster->Psi_ddot_ = DMat<Scalar>::Zero(mss_dim, cluster->num_velocities_);
+
+                cluster->Upsilon_dot_ = (spatial::generalMotionCrossMatrix(cluster->v_) * cluster->S()).eval()
+                + cluster->S_ring();
+
+                cluster->M_cup_ = cluster->I_;
+
+                cluster->B_cup_ = spatial::generalForceCrossMatrix(cluster->v_) * cluster->I_
+                - cluster->I_ * spatial::generalMotionCrossMatrix(cluster->v_)
+                + spatial::generalSwappedForceCrossMatrix(DVec<Scalar>(cluster->I_ * cluster->v_));
+
+                cluster->F_ = cluster->I_ * cluster->a_ + spatial::generalForceCrossMatrix(cluster->v_) * cluster->I_ * cluster->v_;
+            }
         }
         //Backward Pass
-        for (int i = (int)cluster_nodes_.size() - 1; i >= 1; i--)
+        for (int i = (int)cluster_nodes_.size() - 1; i >= 0; i--)
         {
             auto &cluster_i = cluster_nodes_[i];
             const int &ii = cluster_i->velocity_index_;
@@ -513,7 +531,7 @@ namespace grbda
                 }
                 j = cluster_j->parent_index_;
             }
-            if (cluster_i->parent_index_ > 0)
+            if (cluster_i->parent_index_ >= 0)
             {
                 auto &parent_cluster = cluster_nodes_[cluster_i->parent_index_];
 
