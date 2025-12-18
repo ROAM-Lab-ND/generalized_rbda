@@ -444,57 +444,42 @@ namespace grbda
         //Forward Pass
         for (auto &cluster : cluster_nodes_)
         {
+            // Get parent velocity and acceleration
+            // For root cluster (parent_index_ == -1): parent is ground with v=0, a=-gravity
+            // For other clusters: parent is the actual parent cluster
+            DVec<Scalar> v_parent, a_parent;
             if (cluster->parent_index_ >= 0)
             {
                 auto &parent_cluster = cluster_nodes_[cluster->parent_index_];
-                const auto v_parent_up = cluster->Xup_.transformMotionVector(parent_cluster->v_);
-                const auto a_parent_up = cluster->Xup_.transformMotionVector(parent_cluster->a_);
-
-                cluster->Psi_dot_ =
-                spatial::generalMotionCrossMatrix(v_parent_up) * cluster->S();
-
-                cluster->Psi_ddot_ =
-                (spatial::generalMotionCrossMatrix(a_parent_up) * cluster->S()).eval()
-                + spatial::generalMotionCrossMatrix(v_parent_up) * cluster->Psi_dot_;
-
-                cluster->Upsilon_dot_ = (spatial::generalMotionCrossMatrix(cluster->v_) * cluster->S()).eval()
-                + cluster->Psi_dot_ + cluster->S_ring();
-
-                cluster->M_cup_ = cluster->I_;
-
-                cluster->B_cup_ = spatial::generalForceCrossMatrix(cluster->v_) * cluster->I_
-                - cluster->I_ * spatial::generalMotionCrossMatrix(cluster->v_)
-                + spatial::generalSwappedForceCrossMatrix(DVec<Scalar>(cluster->I_ * cluster->v_));
-
-                cluster->F_ = cluster->I_ * cluster->a_ + spatial::generalForceCrossMatrix(cluster->v_) * cluster->I_ * cluster->v_;
+                v_parent = parent_cluster->v_;
+                a_parent = parent_cluster->a_;
             }
             else
             {
-                // Root cluster (parent_index_ == -1)
-                // Parent is ground with v_parent = 0, a_parent = -gravity
-                const DVec<Scalar> v_parent_ground = DVec<Scalar>::Zero(6);
-                const DVec<Scalar> a_parent_ground = -this->getGravity();
-
-                const auto v_parent_up = cluster->Xup_.transformMotionVector(v_parent_ground);
-                const auto a_parent_up = cluster->Xup_.transformMotionVector(a_parent_ground);
-
-                cluster->Psi_dot_ = spatial::generalMotionCrossMatrix(v_parent_up) * cluster->S();
-
-                cluster->Psi_ddot_ =
-                (spatial::generalMotionCrossMatrix(a_parent_up) * cluster->S()).eval()
-                + spatial::generalMotionCrossMatrix(v_parent_up) * cluster->Psi_dot_;
-
-                cluster->Upsilon_dot_ = (spatial::generalMotionCrossMatrix(cluster->v_) * cluster->S()).eval()
-                + cluster->Psi_dot_ + cluster->S_ring();
-
-                cluster->M_cup_ = cluster->I_;
-
-                cluster->B_cup_ = spatial::generalForceCrossMatrix(cluster->v_) * cluster->I_
-                - cluster->I_ * spatial::generalMotionCrossMatrix(cluster->v_)
-                + spatial::generalSwappedForceCrossMatrix(DVec<Scalar>(cluster->I_ * cluster->v_));
-
-                cluster->F_ = cluster->I_ * cluster->a_ + spatial::generalForceCrossMatrix(cluster->v_) * cluster->I_ * cluster->v_;
+                v_parent = DVec<Scalar>::Zero(6);
+                a_parent = -this->getGravity();
             }
+
+            const auto v_parent_up = cluster->Xup_.transformMotionVector(v_parent);
+            const auto a_parent_up = cluster->Xup_.transformMotionVector(a_parent);
+
+            cluster->Psi_dot_ =
+            spatial::generalMotionCrossMatrix(v_parent_up) * cluster->S();
+
+            cluster->Psi_ddot_ =
+            (spatial::generalMotionCrossMatrix(a_parent_up) * cluster->S()).eval()
+            + spatial::generalMotionCrossMatrix(v_parent_up) * cluster->Psi_dot_;
+
+            cluster->Upsilon_dot_ = (spatial::generalMotionCrossMatrix(cluster->v_) * cluster->S()).eval()
+            + cluster->Psi_dot_ + cluster->S_ring();
+
+            cluster->M_cup_ = cluster->I_;
+
+            cluster->B_cup_ = spatial::generalForceCrossMatrix(cluster->v_) * cluster->I_
+            - cluster->I_ * spatial::generalMotionCrossMatrix(cluster->v_)
+            + spatial::generalSwappedForceCrossMatrix(DVec<Scalar>(cluster->I_ * cluster->v_));
+
+            cluster->F_ = cluster->I_ * cluster->a_ + spatial::generalForceCrossMatrix(cluster->v_) * cluster->I_ * cluster->v_;
         }
         //Backward Pass
         for (int i = (int)cluster_nodes_.size() - 1; i >= 0; i--)
