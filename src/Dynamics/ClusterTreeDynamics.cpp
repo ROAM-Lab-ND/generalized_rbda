@@ -451,11 +451,11 @@ namespace grbda
                 const auto a_parent_up = cluster->Xup_.transformMotionVector(parent_cluster->a_);
 
                 cluster->Psi_dot_ =
-                spatial::generalMotionCrossMatrix(v_parent_up) * cluster->S(); // + gradient terms
+                spatial::generalMotionCrossMatrix(v_parent_up) * cluster->S();
 
                 cluster->Psi_ddot_ =
                 (spatial::generalMotionCrossMatrix(a_parent_up) * cluster->S()).eval()
-                + spatial::generalMotionCrossMatrix(v_parent_up) * cluster->Psi_dot_; // + gradient terms
+                + spatial::generalMotionCrossMatrix(v_parent_up) * cluster->Psi_dot_;
 
                 cluster->Upsilon_dot_ = (spatial::generalMotionCrossMatrix(cluster->v_) * cluster->S()).eval()
                 + cluster->Psi_dot_ + cluster->S_ring();
@@ -470,13 +470,22 @@ namespace grbda
             }
             else
             {
-                // Root cluster (no parent) - initialize with zero parent motion
-                const int mss_dim = cluster->motion_subspace_dimension_;
-                cluster->Psi_dot_ = DMat<Scalar>::Zero(mss_dim, cluster->num_velocities_);
-                cluster->Psi_ddot_ = DMat<Scalar>::Zero(mss_dim, cluster->num_velocities_);
+                // Root cluster (parent_index_ == -1)
+                // Parent is ground with v_parent = 0, a_parent = -gravity
+                const DVec<Scalar> v_parent_ground = DVec<Scalar>::Zero(6);
+                const DVec<Scalar> a_parent_ground = -this->getGravity();
+
+                const auto v_parent_up = cluster->Xup_.transformMotionVector(v_parent_ground);
+                const auto a_parent_up = cluster->Xup_.transformMotionVector(a_parent_ground);
+
+                cluster->Psi_dot_ = spatial::generalMotionCrossMatrix(v_parent_up) * cluster->S();
+
+                cluster->Psi_ddot_ =
+                (spatial::generalMotionCrossMatrix(a_parent_up) * cluster->S()).eval()
+                + spatial::generalMotionCrossMatrix(v_parent_up) * cluster->Psi_dot_;
 
                 cluster->Upsilon_dot_ = (spatial::generalMotionCrossMatrix(cluster->v_) * cluster->S()).eval()
-                + cluster->S_ring();
+                + cluster->Psi_dot_ + cluster->S_ring();
 
                 cluster->M_cup_ = cluster->I_;
 
@@ -492,30 +501,25 @@ namespace grbda
         {
             auto &cluster_i = cluster_nodes_[i];
             const int &ii = cluster_i->velocity_index_;
-
+            
             DMat<Scalar> t1 = cluster_i->M_cup_ * cluster_i->S();
             DMat<Scalar> t2 = DMat<Scalar>(cluster_i->B_cup_ * cluster_i->S()) + DMat<Scalar>(cluster_i->M_cup_ * cluster_i->Upsilon_dot_);
             DMat<Scalar> t3 = DMat<Scalar>(cluster_i->B_cup_ * cluster_i->Psi_dot_) + DMat<Scalar>(cluster_i->M_cup_ * cluster_i->Psi_ddot_)
             + DMat<Scalar>(spatial::generalSwappedForceCrossMatrix(cluster_i->F_)*cluster_i->S());
             DMat<Scalar> t4 = cluster_i->B_cup_.transpose() * cluster_i->S();
-
+            
             int j = i;
 
             while (j >= 0)
             {
                 auto &cluster_j = cluster_nodes_[j];
                 const int &jj = cluster_j->velocity_index_;
-                dtau_dq.block(ii,jj,cluster_i->num_velocities_,cluster_j->num_velocities_) =
+                dtau_dq.block(ii,jj,cluster_i->num_velocities_,cluster_j->num_velocities_) = 
                 t1.transpose() * cluster_j->Psi_ddot_ + t4.transpose() * cluster_j->Psi_dot_;
-
+                
                 if (j < i)
                 {
                     dtau_dq.block(jj,ii,cluster_j->num_velocities_,cluster_i->num_velocities_) = cluster_j->S().transpose() * t3;
-                }
-                else
-                {
-                    //dtau_dq.block(jj,ii,cluster_j->num_velocities_,cluster_i->num_velocities_) =
-                    //dtau_dq.block(ii,ii,cluster_i->num_velocities_,cluster_i->num_velocities_) + gradient terms;
                 }
 
                 dtau_dq_dot.block(jj,ii,cluster_j->num_velocities_,cluster_i->num_velocities_) = cluster_j->S().transpose() * t2;
@@ -539,11 +543,12 @@ namespace grbda
 
                 parent_cluster->M_cup_.noalias() += X.transpose() * cluster_i->M_cup_ * X;
                 parent_cluster->B_cup_.noalias() += X.transpose() * cluster_i->B_cup_ * X;
-                parent_cluster->F_.noalias()     += X.transpose() * cluster_i->F_ * X;
+                parent_cluster->F_.noalias()     += X.transpose() * cluster_i->F_;
             }
         }
         return {dtau_dq, dtau_dq_dot};
     }
+    
 
     template class ClusterTreeModel<double>;
     template class ClusterTreeModel<std::complex<double>>;

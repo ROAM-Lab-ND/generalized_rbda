@@ -25,12 +25,13 @@ toComplexState(const DVec<double>& q, const DVec<double>& qd) {
     return {q_complex, qd_complex};
 }
 
-// Helper function to run complex-step derivative test on any model
-void testInverseDynamicsDerivativesComplexStep(ClusterTreeModel<double>& model_real,
-                                                 const std::string& robot_name,
-                                                 int expected_dof,
-                                                 double tol_dq = 1e-12,
-                                                 double tol_dqdot = 1e-12) {
+// Helper function to run complex-step derivative test on simple serial chain models
+// NOTE: This version only works for models with simple revolute joints (no rotors, no free joints)
+void testInverseDynamicsDerivativesComplexStepSimple(ClusterTreeModel<double>& model_real,
+                                                       const std::string& robot_name,
+                                                       int expected_dof,
+                                                       double tol_dq = 1e-12,
+                                                       double tol_dqdot = 1e-12) {
     std::cout << std::setprecision(16);
 
     const int nDOF = model_real.getNumDegreesOfFreedom();
@@ -71,7 +72,7 @@ void testInverseDynamicsDerivativesComplexStep(ClusterTreeModel<double>& model_r
     // Copy structure from real model
     using namespace ClusterJoints;
 
-    // Rebuild the model with complex types
+    // Rebuild the model with complex types (simple revolute joints only)
     for (size_t i = 0; i < model_real.bodies().size(); ++i) {
         const auto& body = model_real.bodies()[i];
 
@@ -101,9 +102,23 @@ void testInverseDynamicsDerivativesComplexStep(ClusterTreeModel<double>& model_r
         // Get the joint axis from the real cluster
         if (i < model_real.clusters().size()) {
             auto cluster = model_real.cluster(i);
-            // Assume Z-axis revolute joints for simplicity
+            const DMat<double>& S = cluster->S();
+
+            // Determine the joint axis from the motion subspace matrix
+            // For a revolute joint, S = [w; 0] where w is the rotation axis
+            ori::CoordinateAxis axis;
+            if (std::abs(S(0)) > 0.9) {
+                axis = ori::CoordinateAxis::X;
+            } else if (std::abs(S(1)) > 0.9) {
+                axis = ori::CoordinateAxis::Y;
+            } else if (std::abs(S(2)) > 0.9) {
+                axis = ori::CoordinateAxis::Z;
+            } else {
+                throw std::runtime_error("Complex-step test only supports axis-aligned revolute joints");
+            }
+
             model_complex.appendRegisteredBodiesAsCluster<Revolute<std::complex<double>>>(
-                body.name_, body_c, ori::CoordinateAxis::Z, body.name_ + "_joint"
+                body.name_, body_c, axis, body.name_ + "_joint"
             );
         }
     }
@@ -229,7 +244,7 @@ TEST(InverseDynamicsDerivativesComplexStep, DoublePendulumURDF) {
     ClusterTreeModel<double> model;
     model.buildModelFromURDF("/home/docker/generalized_rbda/robot-models/double_pendulum.urdf");
     // 2-link double pendulum from URDF should work perfectly with complex-step
-    testInverseDynamicsDerivativesComplexStep(model, "Double pendulum (URDF)", 2);
+    testInverseDynamicsDerivativesComplexStepSimple(model, "Double pendulum (URDF)", 2);
 }
 
 TEST(InverseDynamicsDerivativesComplexStep, ThreeLinkChain) {
@@ -239,10 +254,7 @@ TEST(InverseDynamicsDerivativesComplexStep, ThreeLinkChain) {
     //       making the geometry much more complex than simple Z-axis chains
     RevoluteChainWithAndWithoutRotor<0, 3> robot(true); // use random parameters
     ClusterTreeModel<double> model = robot.buildClusterTreeModel();
-    // Very relaxed tolerance due to missing gradient terms + random geometry
-    testInverseDynamicsDerivativesComplexStep(model, "3-link revolute chain (random geometry)", 3,
-                                               10.0,   // very relaxed for dtau/dq
-                                               10.0);  // very relaxed for dtau/dqdot
+    testInverseDynamicsDerivativesComplexStepSimple(model, "3-link revolute chain (random geometry)", 3);
 }
 
 TEST(InverseDynamicsDerivativesComplexStep, FourLinkChain) {
@@ -252,10 +264,7 @@ TEST(InverseDynamicsDerivativesComplexStep, FourLinkChain) {
     //       making the geometry much more complex than simple Z-axis chains
     RevoluteChainWithAndWithoutRotor<0, 4> robot(true); // use random parameters
     ClusterTreeModel<double> model = robot.buildClusterTreeModel();
-    // Very relaxed tolerance due to missing gradient terms + random geometry
-    testInverseDynamicsDerivativesComplexStep(model, "4-link revolute chain (random geometry)", 4,
-                                               15.0,   // very relaxed for dtau/dq
-                                               10.0);  // very relaxed for dtau/dqdot
+    testInverseDynamicsDerivativesComplexStepSimple(model, "4-link revolute chain (random geometry)", 4);
 }
 
 // NOTE: MiniCheetah tests are not included in the complex-step test because:
