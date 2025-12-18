@@ -9,6 +9,20 @@ using namespace grbda;
 // NOTE: The tolerance is set to 1e-6 to account for numerical errors in finite
 // difference verification with step size h=1e-8. The analytical derivatives match
 // the finite difference results within this numerical precision.
+auto finiteDifferenceJacobian = [](auto func, const Eigen::VectorXd& point, double h) {
+    int n = point.size();
+    Eigen::VectorXd f0 = func(point);
+    int m = f0.size();
+    Eigen::MatrixXd jacobian(m, n);
+    
+    for (int i = 0; i < n; ++i) {
+        Eigen::VectorXd pointPert = point;
+        pointPert[i] += h;
+        Eigen::VectorXd fPert = func(pointPert);
+        jacobian.col(i) = (fPert - f0) / h;
+    }
+    return jacobian;
+};
 
 
 // Helper function to run the finite difference test on any model
@@ -55,60 +69,28 @@ void testInverseDynamicsDerivatives(ClusterTreeModel<double>& model,
     std::cout << "Finite difference verification (h = " << h << "):\n";
     std::cout << "  Tolerance: dtau/dq = " << tol_dq << ", dtau/dqdot = " << tol_dqdot << "\n\n";
 
-    // Test dtau/dq
-    double max_error_dq = 0.0;
-    for (int i = 0; i < nDOF; ++i) {
-        model.setState(state);
-        DVec<double> tau0 = model.inverseDynamics(ydd);
+    auto tau_func_q = [&](const DVec<double>& q) {
+        std::pair<DVec<double>, DVec<double>> state_q = {q, qd0};
+        model.setState(state_q);
+        return model.inverseDynamics(ydd);
+    };
 
-        DVec<double> qNew = q0;
-        qNew[i] += h;
-        std::pair<DVec<double>, DVec<double>> stateNew1 = {qNew, qd0};
-        model.setState(stateNew1);
-        DVec<double> tauPlus = model.inverseDynamics(ydd);
+    auto tau_func_qd = [&](const DVec<double>& qd) {
+        std::pair<DVec<double>, DVec<double>> state_qd = {q0, qd};
+        model.setState(state_qd);
+        return model.inverseDynamics(ydd);
+    };
 
-        DVec<double> dtau_dqi_fd = (tauPlus - tau0) / h;
-        double error = (dtau_dqi_fd - dtau_dq.col(i)).norm();
-        max_error_dq = std::max(max_error_dq, error);
+    auto dtau_dq_fd = finiteDifferenceJacobian(tau_func_q, q0, h);
+    auto dtau_dqdot_fd = finiteDifferenceJacobian(tau_func_qd, qd0, h);
 
-        std::cout << "  dtau/dq" << i << " error: " << error;
-        if (error < tol_dq) std::cout << " [PASS]";
-        else std::cout << " [FAIL]";
-        std::cout << "\n";
-
-        EXPECT_LT(error, tol_dq);
-    }
-
-    std::cout << "\n";
-
-    // Test dtau/dqdot
-    double max_error_dqdot = 0.0;
-    for (int i = 0; i < nDOF; ++i) {
-        model.setState(state);
-        DVec<double> tau0 = model.inverseDynamics(ydd);
-
-        DVec<double> qdNew = qd0;
-        qdNew[i] += h;
-        std::pair<DVec<double>, DVec<double>> stateNew2 = {q0, qdNew};
-        model.setState(stateNew2);
-        DVec<double> tauPlus = model.inverseDynamics(ydd);
-
-        DVec<double> dtau_dqdoti_fd = (tauPlus - tau0) / h;
-        double error = (dtau_dqdoti_fd - dtau_dqdot.col(i)).norm();
-        max_error_dqdot = std::max(max_error_dqdot, error);
-
-        std::cout << "  dtau/dqd" << i << " error: " << error;
-        if (error < tol_dqdot) std::cout << " [PASS]";
-        else std::cout << " [FAIL]";
-        std::cout << "\n";
-
-        EXPECT_LT(error, tol_dqdot);
-    }
+    EXPECT_TRUE( dtau_dq.isApprox(dtau_dq_fd, tol_dq) );
+    EXPECT_TRUE( dtau_dqdot.isApprox(dtau_dqdot_fd, tol_dqdot) );
 
     std::cout << "\n========================================\n";
     std::cout << "RESULTS:\n";
-    std::cout << "  Max error (dtau/dq):    " << max_error_dq << " (tol: " << tol_dq << ")\n";
-    std::cout << "  Max error (dtau/dqdot): " << max_error_dqdot << " (tol: " << tol_dqdot << ")\n";
+    std::cout << "  Max error (dtau/dq):    " << (dtau_dq - dtau_dq_fd).cwiseAbs().maxCoeff() << " (tol: " << tol_dq << ")\n";
+    std::cout << "  Max error (dtau/dqdot): " << (dtau_dqdot - dtau_dqdot_fd).cwiseAbs().maxCoeff() << " (tol: " << tol_dqdot << ")\n";
     std::cout << "========================================\n\n";
 }
 
