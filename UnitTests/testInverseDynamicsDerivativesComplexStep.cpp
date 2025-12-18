@@ -7,6 +7,40 @@
 
 using namespace grbda;
 
+
+
+auto conf_add = [&](const DVec<std::complex<double>> &dq)
+    {
+        if(!floating_base)
+        {
+            return q0 + dq;
+        }
+        else
+        {
+            throw std::runtime_error("Floating base configuration addition not implemented in this helper function.");
+            const int n = q0.size();
+            DVec<std::complex<double>> q_new = q0;;
+            const int nj = n - 6; // number of joint DOFs
+            q_new.tail(nj) += dq.tail(nj);
+
+            DVec<std::complex<double>> quat = q0.head(4);
+            DVec<std::complex<double>> p = q0.segment(4,3);
+            DMat<std::complex<double>> R = ori::quatToRotMat(quat); // I'm not sure if this gives R or R^T in terms of what we want
+            p += R*dq.segment(3,3);
+            DVec<std::complex<double>> dquat;
+            dquat.setZero(4);
+            dquat.tail(3) = dq.head(3);
+            auto QuatRight = quatR(dquat)/2; // This needs implemented;
+            
+            Quat<std::complex<double>> quat_new = quat + QuatRight*quat;
+            q_new.head(4) = quat_new.toVec();
+            q_new.segment(4,3) = p;
+            return q_new;
+        }
+    };
+
+
+
 // NOTE: This test uses complex-step differentiation to verify inverse dynamics derivatives.
 // Complex-step provides machine-precision derivatives without subtractive cancellation errors.
 // The method computes: f'(x) ≈ Im(f(x + ih)) / h  where i is the imaginary unit.

@@ -29,6 +29,7 @@ auto finiteDifferenceJacobian = [](auto func, const Eigen::VectorXd& point, doub
 void testInverseDynamicsDerivatives(ClusterTreeModel<double>& model,
                                      const std::string& robot_name,
                                      int expected_dof,
+                                     bool floating_base = false,
                                      double tol_dq = 1e-6,
                                      double tol_dqdot = 1e-6) {
     std::cout << std::setprecision(12);
@@ -69,7 +70,37 @@ void testInverseDynamicsDerivatives(ClusterTreeModel<double>& model,
     std::cout << "Finite difference verification (h = " << h << "):\n";
     std::cout << "  Tolerance: dtau/dq = " << tol_dq << ", dtau/dqdot = " << tol_dqdot << "\n\n";
 
-    auto tau_func_q = [&](const DVec<double>& q) {
+    auto conf_add = [&](const DVec<double> &dq)
+    {
+        if(!floating_base)
+        {
+            return q0 + dq;
+        }
+        else
+        {
+            throw std::runtime_error("Floating base configuration addition not implemented in this helper function.");
+            // const int n = q0.size();
+            // DVec<double> q_new = q0;;
+            // const int nj = n - 6; // number of joint DOFs
+            // q_new.tail(nj) += dq.tail(nj);
+
+            // DVec<double> quat = q0.head(4);
+            // DVec<double> p = q0.segment(4,3);
+            // DMat<double> R = ori::quatToRotMat(quat);
+            // p += R*dq.segment(3,3);
+            // DVec<double> angle_axis = dq.head(3);
+            // DVec<double> delta_quat = ori::angleAxisToQuat(angle_axis);
+            // Quat<double> quat_new = ori::quatMultiply(Quat<double>(quat), Quat<double>(delta_quat));
+            // quat_new.normalize(); // shouldn't be necessary.
+            // q_new.head(4) = quat_new.toVec();
+            // q_new.head(4) = quat_new.toVec();
+            // q_new.segment(4,3) = p;
+            // return q_new;
+        }
+    };
+
+    auto tau_func_q = [&](const DVec<double>& dq) {
+        auto q = conf_add(dq);
         std::pair<DVec<double>, DVec<double>> state_q = {q, qd0};
         model.setState(state_q);
         return model.inverseDynamics(ydd);
@@ -81,7 +112,7 @@ void testInverseDynamicsDerivatives(ClusterTreeModel<double>& model,
         return model.inverseDynamics(ydd);
     };
 
-    auto dtau_dq_fd = finiteDifferenceJacobian(tau_func_q, q0, h);
+    auto dtau_dq_fd = finiteDifferenceJacobian(tau_func_q, qd0*0, h);
     auto dtau_dqdot_fd = finiteDifferenceJacobian(tau_func_qd, qd0, h);
 
     EXPECT_TRUE( dtau_dq.isApprox(dtau_dq_fd, tol_dq) );
@@ -131,15 +162,15 @@ TEST(InverseDynamicsDerivatives, FourLinkChain) {
 }
 
 
-TEST(InverseDynamicsDerivatives, MiniCheetahRollPitchYaw) {
-    // MiniCheetah quadruped with floating base (RPY orientation)
-    // Floating base: 6 DOF (3 translational + 3 rotational via RPY)
+TEST(InverseDynamicsDerivatives, MiniCheetahQuaternion) {
+    // MiniCheetah quadruped with floating base (Quaternion orientation)
+    // Floating base: 6 DOF (3 translational + 3 rotational via Quaternion)
     // 4 legs × 3 joints/leg = 12 DOF
     // Total: 18 DOF
-    MiniCheetah<double, ori_representation::RollPitchYaw> robot;
+    MiniCheetah<double, ori_representation::Quaternion> robot;
     ClusterTreeModel<double> model = robot.buildClusterTreeModel();
     // Very relaxed tolerance due to floating base + complex geometry + missing gradient terms
     // Note: Finite differences have additional numerical error compared to complex-step
     // Based on direct config perturbation test, errors are around 60-87 for floating base DOFs
-    testInverseDynamicsDerivatives(model, "MiniCheetah (RollPitchYaw)", 18);  // relaxed for dtau/dqdot
+    testInverseDynamicsDerivatives(model, "MiniCheetah (Quaternion)", 18, true /*floating base*/);  // relaxed for dtau/dqdot
 }
