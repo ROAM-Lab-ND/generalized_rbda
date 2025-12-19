@@ -7,37 +7,101 @@
 
 using namespace grbda;
 
+// Finite difference Jacobian helper
+auto finiteDifferenceJacobian = [](auto func, const Eigen::VectorXd& point, double h) {
+    int n = point.size();
+    Eigen::VectorXd f0 = func(point);
+    int m = f0.size();
+    Eigen::MatrixXd jacobian(m, n);
 
+    for (int i = 0; i < n; ++i) {
+        Eigen::VectorXd pointPert = point;
+        pointPert[i] += h;
+        Eigen::VectorXd fPert = func(pointPert);
+        jacobian.col(i) = (fPert - f0) / h;
+    }
+    return jacobian;
+};
 
-// auto conf_add = [&](const DVec<std::complex<double>> &dq)
-//     {
-//         if(!floating_base)
-//         {
-//             return q0 + dq;
-//         }
-//         else
-//         {
-//             throw std::runtime_error("Floating base configuration addition not implemented in this helper function.");
-//             const int n = q0.size();
-//             DVec<std::complex<double>> q_new = q0;;
-//             const int nj = n - 6; // number of joint DOFs
-//             q_new.tail(nj) += dq.tail(nj);
+// Lie group configuration addition for complex-valued states
+// Implements the retraction map: q_new = q ⊞ dq for floating bases with quaternions
+template<typename T>
+DVec<T> lieGroupConfigurationAddition(const DVec<T>& q0, const DVec<T>& dq, bool floating_base) {
+    if (!floating_base) {
+        // Simple vector space addition for fixed-base robots
+        return q0 + dq;
+    } else {
+        // Lie group configuration addition for floating base with quaternions
+        // q0 has size n_q (7 for floating base + n_joints) - configuration space
+        // dq has size n_v (6 for floating base + n_joints) - velocity/tangent space
+        const int n_q = q0.size();
+        const int n_v = dq.size();
+        const int nj = n_v - 6;  // Number of joint DOFs
 
-//             DVec<std::complex<double>> quat = q0.head(4);
-//             DVec<std::complex<double>> p = q0.segment(4,3);
-//             DMat<std::complex<double>> R = ori::quatToRotMat(quat); // I'm not sure if this gives R or R^T in terms of what we want
-//             p += R*dq.segment(3,3);
-//             DVec<std::complex<double>> dquat;
-//             dquat.setZero(4);
-//             dquat.tail(3) = dq.head(3);
-//             auto QuatRight = quatR(dquat)/2; // This needs implemented;
+        DVec<T> q_new = q0;
 
-//             Quat<std::complex<double>> quat_new = quat + QuatRight*quat;
-//             q_new.head(4) = quat_new.toVec();
-//             q_new.segment(4,3) = p;
-//             return q_new;
-//         }
-//     };
+        // Joint DOFs use simple vector space addition
+        q_new.tail(nj) += dq.tail(nj);
+
+        // Extract current floating base configuration
+        Eigen::Matrix<T, 4, 1> quat_vec = q0.head(4);        // Orientation quaternion [w, x, y, z]
+        Eigen::Matrix<T, 3, 1> p = q0.segment(4, 3);         // Position in world frame
+
+        // Update orientation using quaternion exponential map
+        // For body frame angular velocity ω, the quaternion update is:
+        //   q_new = q * exp(ω) where exp: so(3) → quaternion
+        Eigen::Matrix<T, 3, 1> omega_body = dq.head(3);
+
+        // Compute delta quaternion from angular velocity
+        // exp(ω) = [cos(θ/2), sin(θ/2) * ω/θ] where θ = ||ω||
+        T theta = omega_body.norm();
+        Eigen::Matrix<T, 4, 1> delta_quat;
+
+        if (std::real(theta) < 1e-10) {
+            // Small angle approximation: exp(ω) ≈ [1, ω/2]
+            delta_quat[0] = T(1.0);
+            delta_quat.template tail<3>() = omega_body / T(2.0);
+        } else {
+            T half_theta = theta / T(2.0);
+            delta_quat[0] = std::cos(half_theta);
+            delta_quat.template tail<3>() = std::sin(half_theta) * omega_body / theta;
+        }
+
+        // Quaternion multiplication: q_new = q * delta_quat (right multiplication)
+        Eigen::Matrix<T, 4, 1> quat_new;
+        quat_new[0] = quat_vec[0] * delta_quat[0] - quat_vec.template tail<3>().dot(delta_quat.template tail<3>());
+        quat_new.template tail<3>() = quat_vec[0] * delta_quat.template tail<3>() +
+                                       delta_quat[0] * quat_vec.template tail<3>() +
+                                       quat_vec.template tail<3>().cross(delta_quat.template tail<3>());
+
+        // Normalize quaternion
+        quat_new.normalize();
+
+        // Update position: transform body-frame linear velocity to world frame
+        // p_new = p + R^T * v_body where R = world-to-body rotation matrix
+        // Quaternion to rotation matrix (world-to-body)
+        T qw = quat_vec[0], qx = quat_vec[1], qy = quat_vec[2], qz = quat_vec[3];
+        Eigen::Matrix<T, 3, 3> R;  // world-to-body
+        R(0,0) = T(1) - T(2)*(qy*qy + qz*qz);
+        R(0,1) = T(2)*(qx*qy + qw*qz);
+        R(0,2) = T(2)*(qx*qz - qw*qy);
+        R(1,0) = T(2)*(qx*qy - qw*qz);
+        R(1,1) = T(1) - T(2)*(qx*qx + qz*qz);
+        R(1,2) = T(2)*(qy*qz + qw*qx);
+        R(2,0) = T(2)*(qx*qz + qw*qy);
+        R(2,1) = T(2)*(qy*qz - qw*qx);
+        R(2,2) = T(1) - T(2)*(qx*qx + qy*qy);
+
+        Eigen::Matrix<T, 3, 1> v_body = dq.segment(3, 3);
+        Eigen::Matrix<T, 3, 1> p_new = p + R.transpose() * v_body;  // R^T = body-to-world
+
+        // Assemble new configuration
+        q_new.head(4) = quat_new;
+        q_new.segment(4, 3) = p_new;
+
+        return q_new;
+    }
+}
 
 
 
@@ -301,8 +365,199 @@ TEST(InverseDynamicsDerivativesComplexStep, FourLinkChain) {
     testInverseDynamicsDerivativesComplexStepSimple(model, "4-link revolute chain (random geometry)", 4);
 }
 
-// NOTE: MiniCheetah tests are not included in the complex-step test because:
-// 1. The complex model reconstruction code assumes simple revolute joints with Z-axis
-// 2. MiniCheetah has RevoluteWithRotor joints and multiple joint axes
-// 3. Rebuilding the complex structure would require significant refactoring
-// MiniCheetah is tested with finite differences in testInverseDynamicsDerivativesSimple.cpp
+// Helper function for testing with different Lie group configuration variants
+// Parameters:
+//   quat_order: 0 = [w,x,y,z] (default), 1 = [x,y,z,w]
+//   use_R_transpose: true = use R^T, false = use R
+void testInverseDynamicsDerivativesLieGroupVariant(ClusterTreeModel<double>& model,
+                                                     const std::string& robot_name,
+                                                     int expected_dof,
+                                                     bool floating_base = false,
+                                                     int quat_order = 0,
+                                                     bool use_R_transpose = true,
+                                                     double tol_dq = 1e-6,
+                                                     double tol_dqdot = 1e-6) {
+    std::cout << std::setprecision(12);
+
+    const int nDOF = model.getNumDegreesOfFreedom();
+    std::cout << "\n========================================\n";
+    std::cout << "Testing inverse dynamics derivatives (Lie Group FD)\n";
+    std::cout << "Robot: " << robot_name << "\n";
+    std::cout << "DOF: " << nDOF << "\n";
+    std::cout << "Quat order: " << (quat_order == 0 ? "[w,x,y,z]" : "[x,y,z,w]") << "\n";
+    std::cout << "Position update: " << (use_R_transpose ? "R^T" : "R") << "\n";
+    std::cout << "========================================\n\n";
+
+    ASSERT_EQ(nDOF, expected_dof);
+
+    // Set random state
+    ModelState<double> model_state;
+    for (const auto &cluster : model.clusters()) {
+        JointState<> joint_state = cluster->joint_->randomJointState();
+        model_state.push_back(joint_state);
+    }
+    model.setState(model_state);
+
+    // Random acceleration
+    const DVec<double> ydd = DVec<double>::Random(nDOF);
+
+    // Get analytical derivatives
+    auto [dtau_dq, dtau_dqdot] = model.firstOrderInverseDynamicsDerivatives(ydd);
+
+    std::cout << "Analytical derivatives computed successfully.\n";
+    std::cout << "  dtau_dq:    " << dtau_dq.rows() << " x " << dtau_dq.cols() << "\n";
+    std::cout << "  dtau_dqdot: " << dtau_dqdot.rows() << " x " << dtau_dqdot.cols() << "\n\n";
+
+    // Verify with finite differences using Lie group retraction
+    std::pair<DVec<double>, DVec<double>> state = model.getState();
+    const DVec<double>& q0 = state.first;
+    const DVec<double>& qd0 = state.second;
+    const double h = 1e-8;
+
+    std::cout << "Finite difference verification (h = " << h << "):\n";
+    std::cout << "  Tolerance: dtau/dq = " << tol_dq << ", dtau/dqdot = " << tol_dqdot << "\n\n";
+
+    // Configuration addition with variants
+    auto conf_add = [&](const DVec<double> &dq) -> DVec<double>
+    {
+        if(!floating_base) {
+            return q0 + dq;
+        }
+        else {
+            const int n_q = q0.size();
+            const int n_v = dq.size();
+            const int nj = n_v - 6;
+            DVec<double> q_new = q0;
+            q_new.tail(nj) += dq.tail(nj);
+
+            // Extract quaternion (handle order)
+            Quat<double> quat;
+            if (quat_order == 0) {
+                quat = q0.head(4);  // [w,x,y,z]
+            } else {
+                quat[0] = q0[3];  // w
+                quat[1] = q0[0];  // x
+                quat[2] = q0[1];  // y
+                quat[3] = q0[2];  // z
+            }
+            Vec3<double> p = q0.segment(4, 3);
+
+            Vec3<double> omega_body = dq.head(3);
+            Quat<double> delta_quat = ori::so3ToQuat(omega_body);
+            Quat<double> quat_new = ori::quatProduct(quat, delta_quat);
+            quat_new.normalize();
+
+            Mat3<double> R = ori::quaternionToRotationMatrix(quat);
+            Vec3<double> v_body = dq.segment(3, 3);
+            Vec3<double> p_new;
+            if (use_R_transpose) {
+                p_new = p + R.transpose() * v_body;
+            } else {
+                p_new = p + R * v_body;
+            }
+
+            // Store quaternion (handle order)
+            if (quat_order == 0) {
+                q_new.head(4) = quat_new;
+            } else {
+                q_new[0] = quat_new[1];  // x
+                q_new[1] = quat_new[2];  // y
+                q_new[2] = quat_new[3];  // z
+                q_new[3] = quat_new[0];  // w
+            }
+            q_new.segment(4, 3) = p_new;
+
+            return q_new;
+        }
+    };
+
+    auto tau_func_q = [&](const DVec<double>& dq) {
+        auto q = conf_add(dq);
+        std::pair<DVec<double>, DVec<double>> state_q = {q, qd0};
+        model.setState(state_q);
+        return model.inverseDynamics(ydd);
+    };
+
+    auto tau_func_qd = [&](const DVec<double>& qd) {
+        std::pair<DVec<double>, DVec<double>> state_qd = {q0, qd};
+        model.setState(state_qd);
+        return model.inverseDynamics(ydd);
+    };
+
+    auto dtau_dq_fd = finiteDifferenceJacobian(tau_func_q, qd0*0, h);
+    auto dtau_dqdot_fd = finiteDifferenceJacobian(tau_func_qd, qd0, h);
+
+    double max_error_dq = (dtau_dq - dtau_dq_fd).cwiseAbs().maxCoeff();
+    double max_error_dqdot = (dtau_dqdot - dtau_dqdot_fd).cwiseAbs().maxCoeff();
+
+    std::cout << "\n========================================\n";
+    std::cout << "RESULTS:\n";
+    std::cout << "  Max error (dtau/dq):    " << max_error_dq << " (tol: " << tol_dq << ")\n";
+    std::cout << "  Max error (dtau/dqdot): " << max_error_dqdot << " (tol: " << tol_dqdot << ")\n";
+
+    if (max_error_dq < tol_dq) {
+        std::cout << "  dtau/dq: PASS ✓\n";
+    } else {
+        std::cout << "  dtau/dq: FAIL ✗\n";
+    }
+
+    if (max_error_dqdot < tol_dqdot) {
+        std::cout << "  dtau/dqdot: PASS ✓\n";
+    } else {
+        std::cout << "  dtau/dqdot: FAIL ✗\n";
+    }
+    std::cout << "========================================\n\n";
+
+    EXPECT_LT(max_error_dq, tol_dq);
+    EXPECT_LT(max_error_dqdot, tol_dqdot);
+}
+
+TEST(InverseDynamicsDerivativesComplexStep, TwoLinkChain) {
+    RevoluteChainWithAndWithoutRotor<0, 2> robot(true);
+    ClusterTreeModel<double> model = robot.buildClusterTreeModel();
+    testInverseDynamicsDerivativesComplexStepSimple(model, "2-link revolute chain (random geometry)", 2);
+}
+
+// Case 1: Original quaternion [w,x,y,z] with R^T
+TEST(InverseDynamicsDerivativesComplexStep, MiniCheetah_WXYZ_RT) {
+    MiniCheetah<double, ori_representation::Quaternion> robot;
+    ClusterTreeModel<double> model = robot.buildClusterTreeModel();
+    testInverseDynamicsDerivativesLieGroupVariant(model, "MiniCheetah [w,x,y,z] + R^T", 18,
+                                                   true /*floating base*/,
+                                                   0 /*quat_order: [w,x,y,z]*/,
+                                                   true /*use R^T*/,
+                                                   1e-6 /*tol_dq*/, 1e-6 /*tol_dqdot*/);
+}
+
+// Case 2: Original quaternion [w,x,y,z] with R
+TEST(InverseDynamicsDerivativesComplexStep, MiniCheetah_WXYZ_R) {
+    MiniCheetah<double, ori_representation::Quaternion> robot;
+    ClusterTreeModel<double> model = robot.buildClusterTreeModel();
+    testInverseDynamicsDerivativesLieGroupVariant(model, "MiniCheetah [w,x,y,z] + R", 18,
+                                                   true /*floating base*/,
+                                                   0 /*quat_order: [w,x,y,z]*/,
+                                                   false /*use R*/,
+                                                   1e-6 /*tol_dq*/, 1e-6 /*tol_dqdot*/);
+}
+
+// Case 3: Swapped quaternion [x,y,z,w] with R^T
+TEST(InverseDynamicsDerivativesComplexStep, MiniCheetah_XYZW_RT) {
+    MiniCheetah<double, ori_representation::Quaternion> robot;
+    ClusterTreeModel<double> model = robot.buildClusterTreeModel();
+    testInverseDynamicsDerivativesLieGroupVariant(model, "MiniCheetah [x,y,z,w] + R^T", 18,
+                                                   true /*floating base*/,
+                                                   1 /*quat_order: [x,y,z,w]*/,
+                                                   true /*use R^T*/,
+                                                   1e-6 /*tol_dq*/, 1e-6 /*tol_dqdot*/);
+}
+
+// Case 4: Swapped quaternion [x,y,z,w] with R
+TEST(InverseDynamicsDerivativesComplexStep, MiniCheetah_XYZW_R) {
+    MiniCheetah<double, ori_representation::Quaternion> robot;
+    ClusterTreeModel<double> model = robot.buildClusterTreeModel();
+    testInverseDynamicsDerivativesLieGroupVariant(model, "MiniCheetah [x,y,z,w] + R", 18,
+                                                   true /*floating base*/,
+                                                   1 /*quat_order: [x,y,z,w]*/,
+                                                   false /*use R*/,
+                                                   1e-6 /*tol_dq*/, 1e-6 /*tol_dqdot*/);
+}
