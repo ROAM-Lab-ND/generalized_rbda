@@ -70,7 +70,7 @@ void testInverseDynamicsDerivatives(ClusterTreeModel<double>& model,
     std::cout << "Finite difference verification (h = " << h << "):\n";
     std::cout << "  Tolerance: dtau/dq = " << tol_dq << ", dtau/dqdot = " << tol_dqdot << "\n\n";
 
-    auto conf_add = [&](const DVec<double> &dq)
+    auto conf_add = [&](const DVec<double> &dq) -> DVec<double>
     {
         if(!floating_base)
         {
@@ -78,24 +78,50 @@ void testInverseDynamicsDerivatives(ClusterTreeModel<double>& model,
         }
         else
         {
-            throw std::runtime_error("Floating base configuration addition not implemented in this helper function.");
-            // const int n = q0.size();
-            // DVec<double> q_new = q0;;
-            // const int nj = n - 6; // number of joint DOFs
-            // q_new.tail(nj) += dq.tail(nj);
+            // Lie group configuration addition for floating base with quaternions
+            // Implements the retraction map: q_new = q ⊞ dq
+            // where dq is in the tangent space (velocity space) at q
+            //
+            // Note: q0 has size n_q (7 for floating base + n_joints)
+            //       dq has size n_v (6 for floating base + n_joints) - velocity space
+            //
+            // The floating base velocity dq(1:6) is in BODY frame:
+            //   dq(1:3) = angular velocity in body frame
+            //   dq(4:6) = linear velocity in body frame
+            //
+            // This matches the MATLAB spatial_v2 convention in configurationAddition.m
+            const int n_q = q0.size();        // Configuration space dimension
+            const int n_v = dq.size();        // Velocity space dimension
+            const int nj = n_v - 6;           // Number of joint DOFs
 
-            // DVec<double> quat = q0.head(4);
-            // DVec<double> p = q0.segment(4,3);
-            // DMat<double> R = ori::quatToRotMat(quat);
-            // p += R*dq.segment(3,3);
-            // DVec<double> angle_axis = dq.head(3);
-            // DVec<double> delta_quat = ori::angleAxisToQuat(angle_axis);
-            // Quat<double> quat_new = ori::quatMultiply(Quat<double>(quat), Quat<double>(delta_quat));
-            // quat_new.normalize(); // shouldn't be necessary.
-            // q_new.head(4) = quat_new.toVec();
-            // q_new.head(4) = quat_new.toVec();
-            // q_new.segment(4,3) = p;
-            // return q_new;
+            DVec<double> q_new = q0;
+
+            // Joint DOFs use simple vector space addition
+            q_new.tail(nj) += dq.tail(nj);
+
+            // Extract current floating base configuration
+            Quat<double> quat = q0.head(4);        // Orientation quaternion [w, x, y, z]
+            Vec3<double> p = q0.segment(4, 3);     // Position in world frame
+
+            // Update orientation using quaternion exponential map
+            // For body frame angular velocity ω, the quaternion update is:
+            //   q_new = q * exp(ω) where exp: so(3) → quaternion
+            Vec3<double> omega_body = dq.head(3);
+            Quat<double> delta_quat = ori::so3ToQuat(omega_body);
+            Quat<double> quat_new = ori::quatProduct(quat, delta_quat);  // Right multiplication
+            quat_new.normalize();
+
+            // Update position: transform body-frame linear velocity to world frame
+            // p_new = p + R^T * v_body where R = world-to-body rotation matrix
+            Mat3<double> R = ori::quaternionToRotationMatrix(quat);  // world-to-body
+            Vec3<double> v_body = dq.segment(3, 3);
+            Vec3<double> p_new = p + R.transpose() * v_body;  // R^T = body-to-world
+
+            // Assemble new configuration
+            q_new.head(4) = quat_new;
+            q_new.segment(4, 3) = p_new;
+
+            return q_new;
         }
     };
 
@@ -169,8 +195,7 @@ TEST(InverseDynamicsDerivatives, MiniCheetahQuaternion) {
     // Total: 18 DOF
     MiniCheetah<double, ori_representation::Quaternion> robot;
     ClusterTreeModel<double> model = robot.buildClusterTreeModel();
-    // Very relaxed tolerance due to floating base + complex geometry + missing gradient terms
-    // Note: Finite differences have additional numerical error compared to complex-step
-    // Based on direct config perturbation test, errors are around 60-87 for floating base DOFs
-    testInverseDynamicsDerivatives(model, "MiniCheetah (Quaternion)", 18, true /*floating base*/);  // relaxed for dtau/dqdot
+    // Testing with Lie group finite differences for quaternion floating base
+    testInverseDynamicsDerivatives(model, "MiniCheetah (Quaternion)", 18, true /*floating base*/,
+                                    1e-6 /*tol_dq*/, 1e-6 /*tol_dqdot*/);
 }
