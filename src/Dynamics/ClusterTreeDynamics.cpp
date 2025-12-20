@@ -464,11 +464,11 @@ namespace grbda
             const auto a_parent_up = cluster->Xup_.transformMotionVector(a_parent);
 
             cluster->Psi_dot_ =
-            spatial::generalMotionCrossMatrix(v_parent_up) * cluster->S();
+            spatial::generalMotionCrossMatrix(v_parent_up) * cluster->S(); // + gradient wrt q_i(S_i*q_dot_i)
 
             cluster->Psi_ddot_ =
             (spatial::generalMotionCrossMatrix(a_parent_up) * cluster->S()).eval()
-            + spatial::generalMotionCrossMatrix(v_parent_up) * cluster->Psi_dot_;
+            + spatial::generalMotionCrossMatrix(v_parent_up) * cluster->Psi_dot_; // + spatial::generalMotionCrossMatrix(cluster->v_)*(gradient wrt q_i(S_i*q_dot_i))+ gradient wrt q_i(S_i*q_ddot_i+S_ring_i*q_dot_i)
 
             cluster->Upsilon_dot_ = (spatial::generalMotionCrossMatrix(cluster->v_) * cluster->S()).eval()
             + cluster->Psi_dot_ + cluster->S_ring();
@@ -505,6 +505,11 @@ namespace grbda
                 if (j < i)
                 {
                     dtau_dq.block(jj,ii,cluster_j->num_velocities_,cluster_i->num_velocities_) = cluster_j->S().transpose() * t3;
+                }
+                else
+                {
+                    //dtau_dq.block(ii,ii,cluster_i->num_velocities_,cluster_i->num_velocities_) = 
+                    //dtau_dq.block(ii,ii,cluster_i->num_velocities_,cluster_i->num_velocities_) + (gradient wrt q_i(S_i)).transpose()*cluster_i->F_;
                 }
 
                 dtau_dq_dot.block(jj,ii,cluster_j->num_velocities_,cluster_i->num_velocities_) = cluster_j->S().transpose() * t2;
