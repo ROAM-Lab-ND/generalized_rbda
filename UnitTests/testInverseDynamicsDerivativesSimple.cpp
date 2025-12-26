@@ -65,7 +65,7 @@ void testInverseDynamicsDerivatives(ClusterTreeModel<double>& model,
     std::pair<DVec<double>, DVec<double>> state = model.getState();
     const DVec<double>& q0 = state.first;
     const DVec<double>& qd0 = state.second;
-    const double h = 1e-6;
+    const double h = floating_base ? 1e-6 : 1e-8;
 
     std::cout << "Finite difference verification (h = " << h << "):\n";
     std::cout << "  Tolerance: dtau/dq = " << tol_dq << ", dtau/dqdot = " << tol_dqdot << "\n\n";
@@ -100,8 +100,9 @@ void testInverseDynamicsDerivatives(ClusterTreeModel<double>& model,
             q_new.tail(nj) += dq.tail(nj);
 
             // Extract current floating base configuration
-            Quat<double> quat = q0.head(4);        // Orientation quaternion [w, x, y, z]
-            Vec3<double> p = q0.segment(4, 3);     // Position in world frame
+            // NOTE: Configuration ordering is [pos(3), quat(4)] based on Joint.h Free joint
+            Vec3<double> p = q0.head(3);           // Position in world frame
+            Quat<double> quat = q0.segment(3, 4);  // Orientation quaternion [w, x, y, z]
 
             // Update orientation using quaternion exponential map
             // For body frame angular velocity ω, the quaternion update is:
@@ -117,9 +118,9 @@ void testInverseDynamicsDerivatives(ClusterTreeModel<double>& model,
             Vec3<double> v_body = dq.segment(3, 3);
             Vec3<double> p_new = p + R.transpose() * v_body;  // R^T = body-to-world
 
-            // Assemble new configuration
-            q_new.head(4) = quat_new;
-            q_new.segment(4, 3) = p_new;
+            // Assemble new configuration [pos(3), quat(4)]
+            q_new.head(3) = p_new;
+            q_new.segment(3, 4) = quat_new;
 
             return q_new;
         }

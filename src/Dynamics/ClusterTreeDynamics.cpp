@@ -3,23 +3,9 @@
  */
 
 #include "grbda/Dynamics/ClusterTreeModel.h"
-#include <type_traits>
 
 namespace grbda
 {
-    // Helper function to compute scalar product a^T * b
-    // For real scalars: uses efficient dot() product
-    // For complex/CasADi scalars: uses transpose()*vec to avoid conjugation
-    template<typename Scalar>
-    inline Scalar scalarProduct(const DVec<Scalar>& a, const DVec<Scalar>& b) {
-        // For real arithmetic types (double, float), use dot() which is faster
-        if constexpr (std::is_arithmetic<Scalar>::value) {
-            return a.dot(b);
-        } else {
-            // For complex or CasADi types, avoid conjugation by using transpose
-            return (a.transpose() * b)(0);
-        }
-    }
 
     template <typename Scalar, typename OriTpl>
     const D6Mat<Scalar> &
@@ -233,9 +219,7 @@ namespace grbda
             const auto joint = cluster->joint_;
 
             DVec<Scalar> tmp = joint->S().transpose() * f;
-            // Use scalarProduct to correctly handle both real and complex scalars
-            // (avoids conjugation for complex-step derivatives)
-            lambda_inv += scalarProduct(tmp, DVec<Scalar>(cluster->D_inv_.solve(tmp)));
+            lambda_inv += tmp.dot(DVec<Scalar>(cluster->D_inv_.solve(tmp)));
 
             dstate_out +=
                 cluster->qdd_for_subtree_due_to_subtree_root_joint_qdd * cluster->D_inv_.solve(tmp);
@@ -452,30 +436,23 @@ namespace grbda
 
     template <typename Scalar, typename OriTpl>
     std::pair<DMat<Scalar>, DMat<Scalar>> ClusterTreeModel<Scalar, OriTpl>::firstOrderInverseDynamicsDerivatives(const DVec<Scalar> &qdd)
-    {
-        // Strategy: Separate Psi derivative computation from acceleration computation
-        // This ensures consistency with standard dynamics while computing correct derivatives
-
-        // Step 1: Compute velocity kinematics only (not accelerations yet)
-        this->forwardKinematics();
-
+    {   
+        this->forwardAccelerationKinematics(qdd);
+        updateArticulatedBodies();
         DMat<Scalar> dtau_dq = DMat<Scalar>::Zero(this->getNumDegreesOfFreedom(), this->getNumDegreesOfFreedom());
         DMat<Scalar> dtau_dq_dot = DMat<Scalar>::Zero(this->getNumDegreesOfFreedom(), this->getNumDegreesOfFreedom());
-
-        // Step 2: Single forward pass - compute Psi derivatives and accelerations together
-        // Match MATLAB's approach: compute Psi derivatives based on incrementally-built accelerations
+        //Forward Pass
         for (auto &cluster : cluster_nodes_)
         {
-            const int vel_idx = cluster->velocity_index_;
-            const int num_vel = cluster->num_velocities_;
-
-            // Get parent velocity and acceleration (from incrementally-built state)
+            // Get parent velocity and acceleration
+            // For root cluster (parent_index_ == -1): parent is ground with v=0, a=-gravity
+            // For other clusters: parent is the actual parent cluster
             DVec<Scalar> v_parent, a_parent;
             if (cluster->parent_index_ >= 0)
             {
                 auto &parent_cluster = cluster_nodes_[cluster->parent_index_];
                 v_parent = parent_cluster->v_;
-                a_parent = parent_cluster->a_;  // Built incrementally in this loop
+                a_parent = parent_cluster->a_;
             }
             else
             {
@@ -483,34 +460,24 @@ namespace grbda
                 a_parent = -this->getGravity();
             }
 
-            // Transform parent velocities/accelerations
             const auto v_parent_up = cluster->Xup_.transformMotionVector(v_parent);
             const auto a_parent_up = cluster->Xup_.transformMotionVector(a_parent);
 
-            // Compute Psi derivatives BEFORE adding qdd contribution (matches MATLAB)
-            cluster->Psi_dot_ = spatial::generalMotionCrossMatrix(v_parent_up) * cluster->S();
+            cluster->Psi_dot_ =
+            spatial::generalMotionCrossMatrix(v_parent_up) * cluster->S(); // + gradient wrt q_i(S_i*q_dot_i)
 
-            cluster->Psi_ddot_ = (spatial::generalMotionCrossMatrix(a_parent_up) * cluster->S()).eval()
-                               + spatial::generalMotionCrossMatrix(v_parent_up) * cluster->Psi_dot_;
+            cluster->Psi_ddot_ =
+            (spatial::generalMotionCrossMatrix(a_parent_up) * cluster->S()).eval()
+            + spatial::generalMotionCrossMatrix(v_parent_up) * cluster->Psi_dot_; // + spatial::generalMotionCrossMatrix(cluster->v_)*(gradient wrt q_i(S_i*q_dot_i))+ gradient wrt q_i(S_i*q_ddot_i+S_ring_i*q_dot_i)
 
             cluster->Upsilon_dot_ = (spatial::generalMotionCrossMatrix(cluster->v_) * cluster->S()).eval()
-                                  + cluster->Psi_dot_ + cluster->S_ring();
+            + cluster->Psi_dot_ + cluster->S_ring();
 
-            // Now compute acceleration for this cluster (standard formula)
-            cluster->a_ = a_parent_up + cluster->S() * qdd.segment(vel_idx, num_vel)
-                        + cluster->cJ() + cluster->avp_;
-        }
-
-        // Step 4: Update articulated bodies and compute inertia/force terms
-        updateArticulatedBodies();
-
-        for (auto &cluster : cluster_nodes_)
-        {
             cluster->M_cup_ = cluster->I_;
 
             cluster->B_cup_ = spatial::generalForceCrossMatrix(cluster->v_) * cluster->I_
-                            - cluster->I_ * spatial::generalMotionCrossMatrix(cluster->v_)
-                            + spatial::generalSwappedForceCrossMatrix(DVec<Scalar>(cluster->I_ * cluster->v_));
+            - cluster->I_ * spatial::generalMotionCrossMatrix(cluster->v_)
+            + spatial::generalSwappedForceCrossMatrix(DVec<Scalar>(cluster->I_ * cluster->v_));
 
             cluster->F_ = cluster->I_ * cluster->a_ + spatial::generalForceCrossMatrix(cluster->v_) * cluster->I_ * cluster->v_;
         }
@@ -519,30 +486,29 @@ namespace grbda
         {
             auto &cluster_i = cluster_nodes_[i];
             const int &ii = cluster_i->velocity_index_;
-
+            
             DMat<Scalar> t1 = cluster_i->M_cup_ * cluster_i->S();
             DMat<Scalar> t2 = DMat<Scalar>(cluster_i->B_cup_ * cluster_i->S()) + DMat<Scalar>(cluster_i->M_cup_ * cluster_i->Upsilon_dot_);
             DMat<Scalar> t3 = DMat<Scalar>(cluster_i->B_cup_ * cluster_i->Psi_dot_) + DMat<Scalar>(cluster_i->M_cup_ * cluster_i->Psi_ddot_)
             + DMat<Scalar>(spatial::generalSwappedForceCrossMatrix(cluster_i->F_)*cluster_i->S());
             DMat<Scalar> t4 = cluster_i->B_cup_.transpose() * cluster_i->S();
-
+            
             int j = i;
 
             while (j >= 0)
             {
                 auto &cluster_j = cluster_nodes_[j];
                 const int &jj = cluster_j->velocity_index_;
-
-                dtau_dq.block(ii,jj,cluster_i->num_velocities_,cluster_j->num_velocities_) =
+                dtau_dq.block(ii,jj,cluster_i->num_velocities_,cluster_j->num_velocities_) = 
                 t1.transpose() * cluster_j->Psi_ddot_ + t4.transpose() * cluster_j->Psi_dot_;
-
+                
                 if (j < i)
                 {
                     dtau_dq.block(jj,ii,cluster_j->num_velocities_,cluster_i->num_velocities_) = cluster_j->S().transpose() * t3;
                 }
                 else
                 {
-                    //dtau_dq.block(ii,ii,cluster_i->num_velocities_,cluster_i->num_velocities_) =
+                    //dtau_dq.block(ii,ii,cluster_i->num_velocities_,cluster_i->num_velocities_) = 
                     //dtau_dq.block(ii,ii,cluster_i->num_velocities_,cluster_i->num_velocities_) + (gradient wrt q_i(S_i)).transpose()*cluster_i->F_;
                 }
 

@@ -192,9 +192,9 @@ if(BUILD_BENCHMARKS)
 endif()
 
 # Debug executable for floating base investigation
-add_executable(debug_fb debug_floating_base.cpp)
-target_link_libraries(debug_fb PRIVATE ${PROJECT_NAME})
+# add_executable(debug_fb debug_floating_base.cpp)
+# target_link_libraries(debug_fb PRIVATE ${PROJECT_NAME})
 
 # Complex step test for floating base
-add_executable(test_fb_complex_step test_fb_complex_step.cpp)
-target_link_libraries(test_fb_complex_step PRIVATE ${PROJECT_NAME})
+# add_executable(test_fb_complex_step test_fb_complex_step.cpp)
+# target_link_libraries(test_fb_complex_step PRIVATE ${PROJECT_NAME})
