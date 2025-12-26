@@ -261,6 +261,7 @@ namespace grbda
 
       Mat3<typename T::Scalar> R;
 
+      // Standard quaternion to rotation matrix formula
       R << typename T::Scalar(1.) - typename T::Scalar(2) * (e2 * e2 + e3 * e3), typename T::Scalar(2.) * (e1 * e2 - e0 * e3), typename T::Scalar(2.) * (e1 * e3 + e0 * e2),
           typename T::Scalar(2.) * (e1 * e2 + e0 * e3), typename T::Scalar(1.) - typename T::Scalar(2.) * (e1 * e1 + e3 * e3), typename T::Scalar(2.) * (e2 * e3 - e0 * e1),
           typename T::Scalar(2.) * (e1 * e3 - e0 * e2), typename T::Scalar(2.) * (e2 * e3 + e0 * e1), typename T::Scalar(1.) - typename T::Scalar(2.) * (e1 * e1 + e2 * e2);
@@ -370,8 +371,26 @@ namespace grbda
       Vec3<typename T::Scalar> v1(q1[1], q1[2], q1[3]);
       Vec3<typename T::Scalar> v2(q2[1], q2[2], q2[3]);
 
-      typename T::Scalar r = r1 * r2 - v1.dot(v2);
-      Vec3<typename T::Scalar> v = r1 * v2 + r2 * v1 + v1.cross(v2);
+      typename T::Scalar r;
+      Vec3<typename T::Scalar> v;
+
+      // CRITICAL FIX: For std::complex types, avoid conjugation in dot() and cross()
+      // For other types (real, CasADi), use standard Eigen operations
+      if constexpr (std::is_same<typename T::Scalar, std::complex<double>>::value ||
+                    std::is_same<typename T::Scalar, std::complex<float>>::value) {
+          // Use transpose() * instead of dot() to avoid complex conjugation
+          r = r1 * r2 - (v1.transpose() * v2)(0);
+          // Compute cross product manually to avoid complex conjugation in Eigen's cross()
+          v[0] = v1[1] * v2[2] - v1[2] * v2[1];
+          v[1] = v1[2] * v2[0] - v1[0] * v2[2];
+          v[2] = v1[0] * v2[1] - v1[1] * v2[0];
+          v = r1 * v2 + r2 * v1 + v;
+      } else {
+          // Standard formula using Eigen's dot() and cross()
+          r = r1 * r2 - v1.dot(v2);
+          v = r1 * v2 + r2 * v1 + v1.cross(v2);
+      }
+
       Quat<typename T::Scalar> q(r, v[0], v[1], v[2]);
       return q;
     }

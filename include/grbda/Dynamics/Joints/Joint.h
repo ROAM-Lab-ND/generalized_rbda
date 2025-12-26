@@ -59,13 +59,49 @@ namespace grbda
             }
 
             void updateKinematics(const DVec<Scalar> &q, const DVec<Scalar> &qd) override
-            {   
-                const int& num_ori_param = OrientationRepresentation::num_ori_parameter;
-                const RotMat<Scalar> R =
-                    OrientationRepresentation::getRotationMatrix(q.template tail<num_ori_param>());
-                const Vec3<Scalar> q_pos = q.template head<3>();
+            {
+                constexpr int num_ori_param = OrientationRepresentation::num_ori_parameter;
+                // CRITICAL FIX: Quaternion floating base has q = [quat(4), pos(3)]
+                // Orientation is the FIRST num_ori_param elements, position is the LAST 3 elements
+
+                // Extract orientation (use fixed-size to satisfy static assertions in orientation functions)
+                auto q_ori = q.template head<num_ori_param>().eval();
+
+                // CRITICAL FIX #2: Normalize quaternion before use!
+                // For quaternion representation (num_ori_param==4) with real scalars (double/float),
+                // normalize to handle unnormalized quaternions from integration/perturbation
+                normalizeIfQuaternion(q_ori);
+
+                const RotMat<Scalar> R = OrientationRepresentation::getRotationMatrix(q_ori);
+                const Vec3<Scalar> q_pos = q.template tail<3>();
                 this->XJ_ = spatial::Transform<Scalar>(R, q_pos);
             }
+
+        private:
+            // Normalize only for quaternions with real scalar types
+            template<typename Derived>
+            void normalizeIfQuaternion(Eigen::MatrixBase<Derived>& q_ori) {
+                constexpr int num_ori_param = OrientationRepresentation::num_ori_parameter;
+                if (num_ori_param == 4 && q_ori.size() == 4) {
+                    normalizeIfRealScalar(q_ori);
+                }
+            }
+
+            // SFINAE: Normalize for real arithmetic types
+            template<typename Derived>
+            typename std::enable_if<std::is_arithmetic<typename Derived::Scalar>::value, void>::type
+            normalizeIfRealScalar(Eigen::MatrixBase<Derived>& vec) {
+                vec.normalize();
+            }
+
+            // SFINAE: No-op for non-arithmetic types (CasADi, complex)
+            template<typename Derived>
+            typename std::enable_if<!std::is_arithmetic<typename Derived::Scalar>::value, void>::type
+            normalizeIfRealScalar(Eigen::MatrixBase<Derived>& vec) {
+                // Do nothing
+            }
+
+        public:
             
             OrientationRepresentation orientation_representation_;
         };

@@ -54,19 +54,24 @@ namespace TestHelpers
 
         if (joint_type == ClusterJointTypes::Free)
         {
-            const Vec3<SX> pos = q.head<3>();
-            const Quat<SX> quat = q.tail<4>();
+            // CRITICAL: Free joint uses [quat, pos] ordering (quaternion FIRST, position LAST)
+            // This matches Joint.h line 64-65 and FreeJoint.cpp line 55-60
+            const Quat<SX> quat = q.head<4>();
+            const Vec3<SX> pos = q.tail<3>();
 
-            const Vec3<SX> dquat = dq.head<3>();
-            const Vec3<SX> dpos = dq.tail<3>();
+            const Vec3<SX> dquat = dq.head<3>();  // Angular velocity in velocity space
+            const Vec3<SX> dpos = dq.tail<3>();   // Linear velocity in velocity space
 
             Vec7<SX> q_plus_dq_vec;
 
             const Mat3<SX> R = ori::quaternionToRotationMatrix(quat);
-            q_plus_dq_vec.head<3>() = pos + R.transpose() * dpos;
 
+            // Update quaternion using quaternion product
             Quat<casadi::SX> dquat_vec(0, dquat[0], dquat[1], dquat[2]);
-            q_plus_dq_vec.template tail<4>() = quat + 0.5 * ori::quatProduct(quat, dquat_vec);
+            q_plus_dq_vec.head<4>() = quat + 0.5 * ori::quatProduct(quat, dquat_vec);
+
+            // Update position
+            q_plus_dq_vec.tail<3>() = pos + R.transpose() * dpos;
 
             return q_plus_dq_vec;
         }
