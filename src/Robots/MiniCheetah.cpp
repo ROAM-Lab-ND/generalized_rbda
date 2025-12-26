@@ -142,5 +142,4 @@ namespace grbda
     template class MiniCheetah<double, ori_representation::Quaternion>;
     template class MiniCheetah<casadi::SX, ori_representation::RollPitchYaw>;
     template class MiniCheetah<casadi::SX, ori_representation::Quaternion>;
-    template class MiniCheetah<std::complex<double>, ori_representation::Quaternion>;
 }

@@ -52,12 +52,9 @@ namespace grbda
 
             JointState<double> joint_state(false, false);
             joint_state.position = DVec<double>::Zero(num_ori_param + 3);
-            // CRITICAL: Joints::Free expects [orientation, position] ordering
-            // Orientation comes FIRST (indices 0 to num_ori_param-1)
-            joint_state.position.template head<num_ori_param>() =
+            joint_state.position.template segment<3>(0) = Vec3<double>::Random(3);
+            joint_state.position.template segment<num_ori_param>(3) =
                 OrientationRepresentation::template randomOrientation<double>();
-            // Position comes LAST (indices num_ori_param to num_ori_param+2)
-            joint_state.position.template tail<3>() = Vec3<double>::Random(3);
             joint_state.velocity = DVec<double>::Random(6);
             return joint_state;
         }
