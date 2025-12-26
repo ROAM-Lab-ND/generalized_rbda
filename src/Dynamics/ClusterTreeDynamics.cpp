@@ -3,9 +3,23 @@
  */
 
 #include "grbda/Dynamics/ClusterTreeModel.h"
+#include <type_traits>
 
 namespace grbda
 {
+    // Helper function to compute scalar product a^T * b
+    // For real scalars: uses efficient dot() product
+    // For complex/CasADi scalars: uses transpose()*vec to avoid conjugation
+    template<typename Scalar>
+    inline Scalar scalarProduct(const DVec<Scalar>& a, const DVec<Scalar>& b) {
+        // For real arithmetic types (double, float), use dot() which is faster
+        if constexpr (std::is_arithmetic<Scalar>::value) {
+            return a.dot(b);
+        } else {
+            // For complex or CasADi types, avoid conjugation by using transpose
+            return (a.transpose() * b)(0);
+        }
+    }
 
     template <typename Scalar, typename OriTpl>
     const D6Mat<Scalar> &
@@ -219,9 +233,9 @@ namespace grbda
             const auto joint = cluster->joint_;
 
             DVec<Scalar> tmp = joint->S().transpose() * f;
-            // CRITICAL FIX: Use transpose()*vec instead of dot() to avoid complex conjugation
-            // Eigen's dot(a,b) computes conj(a)^T * b, but we need a^T * b for complex-step
-            lambda_inv += (tmp.transpose() * DVec<Scalar>(cluster->D_inv_.solve(tmp)))(0);
+            // Use scalarProduct to correctly handle both real and complex scalars
+            // (avoids conjugation for complex-step derivatives)
+            lambda_inv += scalarProduct(tmp, DVec<Scalar>(cluster->D_inv_.solve(tmp)));
 
             dstate_out +=
                 cluster->qdd_for_subtree_due_to_subtree_root_joint_qdd * cluster->D_inv_.solve(tmp);
@@ -439,29 +453,29 @@ namespace grbda
     template <typename Scalar, typename OriTpl>
     std::pair<DMat<Scalar>, DMat<Scalar>> ClusterTreeModel<Scalar, OriTpl>::firstOrderInverseDynamicsDerivatives(const DVec<Scalar> &qdd)
     {
-        // Match MATLAB's approach: compute kinematics and Psi derivatives in the same forward pass
-        // BEFORE adding qdd to accelerations
+        // Strategy: Separate Psi derivative computation from acceleration computation
+        // This ensures consistency with standard dynamics while computing correct derivatives
+
+        // Step 1: Compute velocity kinematics only (not accelerations yet)
         this->forwardKinematics();
-        updateArticulatedBodies();
 
         DMat<Scalar> dtau_dq = DMat<Scalar>::Zero(this->getNumDegreesOfFreedom(), this->getNumDegreesOfFreedom());
         DMat<Scalar> dtau_dq_dot = DMat<Scalar>::Zero(this->getNumDegreesOfFreedom(), this->getNumDegreesOfFreedom());
 
-        //Forward Pass - matches MATLAB's loop structure
+        // Step 2: Single forward pass - compute Psi derivatives and accelerations together
+        // Match MATLAB's approach: compute Psi derivatives based on incrementally-built accelerations
         for (auto &cluster : cluster_nodes_)
         {
             const int vel_idx = cluster->velocity_index_;
             const int num_vel = cluster->num_velocities_;
 
-            // Get parent velocity and acceleration (from partially-built v and a, like MATLAB)
-            // For root cluster (parent_index_ == -1): parent is ground with v=0, a=-gravity
-            // For other clusters: parent is the actual parent cluster
+            // Get parent velocity and acceleration (from incrementally-built state)
             DVec<Scalar> v_parent, a_parent;
             if (cluster->parent_index_ >= 0)
             {
                 auto &parent_cluster = cluster_nodes_[cluster->parent_index_];
                 v_parent = parent_cluster->v_;
-                a_parent = parent_cluster->a_;
+                a_parent = parent_cluster->a_;  // Built incrementally in this loop
             }
             else
             {
@@ -469,34 +483,29 @@ namespace grbda
                 a_parent = -this->getGravity();
             }
 
-            // Transform parent velocities/accelerations (like MATLAB: vp = Xup*vp, ap = Xup*ap)
+            // Transform parent velocities/accelerations
             const auto v_parent_up = cluster->Xup_.transformMotionVector(v_parent);
             const auto a_parent_up = cluster->Xup_.transformMotionVector(a_parent);
 
-            // Compute Psi derivatives using transformed parent values (like MATLAB)
+            // Compute Psi derivatives BEFORE adding qdd contribution (matches MATLAB)
             cluster->Psi_dot_ = spatial::generalMotionCrossMatrix(v_parent_up) * cluster->S();
 
-            // Psi_ddot computation
             cluster->Psi_ddot_ = (spatial::generalMotionCrossMatrix(a_parent_up) * cluster->S()).eval()
                                + spatial::generalMotionCrossMatrix(v_parent_up) * cluster->Psi_dot_;
 
             cluster->Upsilon_dot_ = (spatial::generalMotionCrossMatrix(cluster->v_) * cluster->S()).eval()
                                   + cluster->Psi_dot_ + cluster->S_ring();
 
-            // NOW compute the full acceleration for this cluster (like MATLAB: a{i} = ap + S*qdd + Sd*qd)
-            // This matches forwardAccelerationKinematics but done here to maintain MATLAB's order
-            if (cluster->parent_index_ >= 0)
-            {
-                cluster->a_ = a_parent_up + cluster->S() * qdd.segment(vel_idx, num_vel)
-                            + cluster->cJ() + cluster->avp_;
-            }
-            else
-            {
-                cluster->a_ = a_parent_up + cluster->S() * qdd.segment(vel_idx, num_vel)
-                            + cluster->cJ() + cluster->avp_;
-            }
+            // Now compute acceleration for this cluster (standard formula)
+            cluster->a_ = a_parent_up + cluster->S() * qdd.segment(vel_idx, num_vel)
+                        + cluster->cJ() + cluster->avp_;
+        }
 
-            // Compute inertia and force terms
+        // Step 4: Update articulated bodies and compute inertia/force terms
+        updateArticulatedBodies();
+
+        for (auto &cluster : cluster_nodes_)
+        {
             cluster->M_cup_ = cluster->I_;
 
             cluster->B_cup_ = spatial::generalForceCrossMatrix(cluster->v_) * cluster->I_
