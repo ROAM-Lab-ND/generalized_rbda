@@ -219,7 +219,9 @@ namespace grbda
             const auto joint = cluster->joint_;
 
             DVec<Scalar> tmp = joint->S().transpose() * f;
-            lambda_inv += tmp.dot(DVec<Scalar>(cluster->D_inv_.solve(tmp)));
+            // CRITICAL FIX: Use transpose()*vec instead of dot() to avoid complex conjugation
+            // Eigen's dot(a,b) computes conj(a)^T * b, but we need a^T * b for complex-step
+            lambda_inv += (tmp.transpose() * DVec<Scalar>(cluster->D_inv_.solve(tmp)))(0);
 
             dstate_out +=
                 cluster->qdd_for_subtree_due_to_subtree_root_joint_qdd * cluster->D_inv_.solve(tmp);

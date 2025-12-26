@@ -60,9 +60,10 @@ DVec<T> lieGroupConfigurationAddition(const DVec<T>& q0, const DVec<T>& dq, bool
         q_new.tail(nj) += dq.tail(nj);
 
         // Extract current floating base configuration
+        // NOTE: Configuration ordering is [pos(3), quat(4)] based on Joint.h Free joint
         // NOTE: q0 should already have a normalized quaternion (normalized before conversion to complex)
-        Eigen::Matrix<T, 4, 1> quat_vec = q0.head(4);        // Orientation quaternion [w, x, y, z]
-        Eigen::Matrix<T, 3, 1> p = q0.segment(4, 3);         // Position in world frame
+        Eigen::Matrix<T, 3, 1> p = q0.head(3);              // Position in world frame
+        Eigen::Matrix<T, 4, 1> quat_vec = q0.segment(3, 4);  // Orientation quaternion [w, x, y, z]
 
         // Update orientation using quaternion exponential map
         // For body frame angular velocity ω, the quaternion update is:
@@ -208,9 +209,9 @@ DVec<T> lieGroupConfigurationAddition(const DVec<T>& q0, const DVec<T>& dq, bool
         Eigen::Matrix<T, 3, 1> v_body = dq.segment(3, 3);
         Eigen::Matrix<T, 3, 1> p_new = p + R.transpose() * v_body;  // R^T = body-to-world
 
-        // Assemble new configuration
-        q_new.head(4) = quat_new;
-        q_new.segment(4, 3) = p_new;
+        // Assemble new configuration [pos(3), quat(4)]
+        q_new.head(3) = p_new;
+        q_new.segment(3, 4) = quat_new;
 
         return q_new;
     }
@@ -545,17 +546,17 @@ void testInverseDynamicsDerivativesLieGroupVariant(ClusterTreeModel<double>& mod
             DVec<double> q_new = q0;
             q_new.tail(nj) += dq.tail(nj);
 
-            // Extract quaternion (handle order)
+            // Extract configuration with [pos(3), quat(4)] ordering
+            Vec3<double> p = q0.head(3);  // Position in world frame
             Quat<double> quat;
             if (quat_order == 0) {
-                quat = q0.head(4);  // [w,x,y,z]
+                quat = q0.segment(3, 4);  // [w,x,y,z]
             } else {
-                quat[0] = q0[3];  // w
-                quat[1] = q0[0];  // x
-                quat[2] = q0[1];  // y
-                quat[3] = q0[2];  // z
+                quat[0] = q0[6];  // w
+                quat[1] = q0[3];  // x
+                quat[2] = q0[4];  // y
+                quat[3] = q0[5];  // z
             }
-            Vec3<double> p = q0.segment(4, 3);
 
             Vec3<double> omega_body = dq.head(3);
             Quat<double> delta_quat = ori::so3ToQuat(omega_body);
@@ -571,16 +572,16 @@ void testInverseDynamicsDerivativesLieGroupVariant(ClusterTreeModel<double>& mod
                 p_new = p + R * v_body;
             }
 
-            // Store quaternion (handle order)
+            // Assemble configuration with [pos(3), quat(4)] ordering
+            q_new.head(3) = p_new;
             if (quat_order == 0) {
-                q_new.head(4) = quat_new;
+                q_new.segment(3, 4) = quat_new;
             } else {
-                q_new[0] = quat_new[1];  // x
-                q_new[1] = quat_new[2];  // y
-                q_new[2] = quat_new[3];  // z
-                q_new[3] = quat_new[0];  // w
+                q_new[3] = quat_new[1];  // x
+                q_new[4] = quat_new[2];  // y
+                q_new[5] = quat_new[3];  // z
+                q_new[6] = quat_new[0];  // w
             }
-            q_new.segment(4, 3) = p_new;
 
             return q_new;
         }
