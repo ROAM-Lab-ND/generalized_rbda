@@ -151,13 +151,14 @@ DVec<T> lieGroupConfigurationAddition(const DVec<T>& q0, const DVec<T>& dq, bool
             // Vector part: vec*q[0] + (1+sca)*q_vec - skew(vec)*q_vec
             //            = vec*q[0] + (1+sca)*q_vec - vec × q_vec
             // CRITICAL: Eigen's cross(a,b) for complex vectors computes conj(a) × b
-            // We need vec × q_vec. Compute manually to avoid conjugation.
+            // We need -vec × q_vec = q_vec × vec. Compute manually to avoid conjugation.
             // cross(a, b) = [a[1]*b[2] - a[2]*b[1], a[2]*b[0] - a[0]*b[2], a[0]*b[1] - a[1]*b[0]]
             Eigen::Matrix<T, 3, 1> cross_vec_q;
             auto q_vec_3 = quat_vec.template tail<3>();
-            cross_vec_q[0] = vec[1] * q_vec_3[2] - vec[2] * q_vec_3[1];
-            cross_vec_q[1] = vec[2] * q_vec_3[0] - vec[0] * q_vec_3[2];
-            cross_vec_q[2] = vec[0] * q_vec_3[1] - vec[1] * q_vec_3[0];
+            // Compute q_vec × vec (not vec × q_vec) to get -vec × q_vec
+            cross_vec_q[0] = q_vec_3[1] * vec[2] - q_vec_3[2] * vec[1];
+            cross_vec_q[1] = q_vec_3[2] * vec[0] - q_vec_3[0] * vec[2];
+            cross_vec_q[2] = q_vec_3[0] * vec[1] - q_vec_3[1] * vec[0];
 
             // DEBUG
             static bool debug_cross = true;
@@ -193,8 +194,12 @@ DVec<T> lieGroupConfigurationAddition(const DVec<T>& q0, const DVec<T>& dq, bool
 
         // Update position: transform body-frame linear velocity to world frame
         // p_new = p + R^T * v_body where R = world-to-body rotation matrix
+        // CRITICAL: MATLAB's jcalc('Fb', q) calls rq(q(1:4)) which normalizes the quaternion!
+        // We must match this exactly: normalize quat_vec before computing rotation matrix
+        Eigen::Matrix<T, 4, 1> quat_normalized = quat_vec / quat_vec.norm();
+
         // Quaternion to rotation matrix (world-to-body)
-        T qw = quat_vec[0], qx = quat_vec[1], qy = quat_vec[2], qz = quat_vec[3];
+        T qw = quat_normalized[0], qx = quat_normalized[1], qy = quat_normalized[2], qz = quat_normalized[3];
         Eigen::Matrix<T, 3, 3> R;  // world-to-body
         R(0,0) = T(1) - T(2)*(qy*qy + qz*qz);
         R(0,1) = T(2)*(qx*qy + qw*qz);
@@ -212,6 +217,20 @@ DVec<T> lieGroupConfigurationAddition(const DVec<T>& q0, const DVec<T>& dq, bool
         // Assemble new configuration [pos(3), quat(4)]
         q_new.head(3) = p_new;
         q_new.segment(3, 4) = quat_new;
+
+        // DEBUG: Print for first complex perturbation
+        if constexpr (!std::is_arithmetic<T>::value) {
+            static bool debug_output = true;
+            if (debug_output) {
+                std::cout << "[lieGroupConfigurationAddition DEBUG]\n";
+                std::cout << "  Input q0 config: pos=" << p.transpose() << ", quat=" << quat_vec.transpose() << "\n";
+                std::cout << "  Input dq velocity: omega=" << omega_body.transpose() << ", v=" << v_body.transpose() << "\n";
+                std::cout << "  Rotation matrix R (from original quat):\n" << R << "\n";
+                std::cout << "  R.transpose() * v_body = " << (R.transpose() * v_body).transpose() << "\n";
+                std::cout << "  Output q_new: pos=" << p_new.transpose() << ", quat=" << quat_new.transpose() << "\n";
+                debug_output = false;
+            }
+        }
 
         return q_new;
     }
@@ -675,7 +694,8 @@ void testInverseDynamicsDerivativesComplexStepFloatingBase(ClusterTreeModel<doub
     const DVec<double>& qd0 = state_real.second;
 
     // Ensure quaternion is normalized (should already be, but make sure)
-    q0.head<4>().normalize();
+    // Configuration ordering is [pos(3), quat(4)], so quaternion is at indices 3-6
+    q0.segment<4>(3).normalize();
 
     // Create complex model (same structure as real model)
     ClusterTreeModel<std::complex<double>> model_complex;
@@ -683,62 +703,179 @@ void testInverseDynamicsDerivativesComplexStepFloatingBase(ClusterTreeModel<doub
     // Build complex model from the real model
     using namespace ClusterJoints;
 
-    for (size_t i = 0; i < model_real.bodies().size(); ++i) {
-        const auto& body = model_real.bodies()[i];
+    // Iterate over clusters and create each cluster inline (register bodies then create cluster)
+    for (size_t cluster_idx = 0; cluster_idx < model_real.clusters().size(); ++cluster_idx) {
+        auto cluster = model_real.cluster(cluster_idx);
+        const auto& bodies_in_cluster = cluster->bodies();
 
-        // Convert spatial inertia to complex
-        SpatialInertia<std::complex<double>> inertia_c(
-            std::complex<double>(body.inertia_.getMass(), 0.0),
-            body.inertia_.getCOM().template cast<std::complex<double>>(),
-            body.inertia_.getInertiaTensor().template cast<std::complex<double>>()
-        );
+        // Check if this is a free joint (floating base)
+        if (cluster->num_velocities_ == 6 && cluster->num_positions_ == 7) {
+            // Free joint (floating base with quaternion) - 1 body
+            const auto& body_real = bodies_in_cluster[0];
 
-        // Convert transform to complex
-        spatial::Transform<std::complex<double>> Xtree_c(
-            body.Xtree_.getRotation().template cast<std::complex<double>>(),
-            body.Xtree_.getTranslation().template cast<std::complex<double>>()
-        );
+            SpatialInertia<std::complex<double>> inertia_c(
+                std::complex<double>(body_real.inertia_.getMass(), 0.0),
+                body_real.inertia_.getCOM().template cast<std::complex<double>>(),
+                body_real.inertia_.getInertiaTensor().template cast<std::complex<double>>()
+            );
 
-        // Find parent name
-        std::string parent_name = "ground";
-        if (body.parent_index_ >= 0 && body.parent_index_ < model_real.bodies().size()) {
-            parent_name = model_real.bodies()[body.parent_index_].name_;
-        }
+            spatial::Transform<std::complex<double>> Xtree_c(
+                body_real.Xtree_.getRotation().template cast<std::complex<double>>(),
+                body_real.Xtree_.getTranslation().template cast<std::complex<double>>()
+            );
 
-        Body<std::complex<double>> body_c = model_complex.registerBody(
-            body.name_, inertia_c, parent_name, Xtree_c
-        );
-
-        // Determine joint type and register appropriately
-        if (i < model_real.clusters().size()) {
-            auto cluster = model_real.cluster(i);
-
-            // Check if this is a free joint (floating base)
-            if (cluster->num_velocities_ == 6 && cluster->num_positions_ == 7) {
-                // This is a free joint (floating base with quaternion)
-                model_complex.appendRegisteredBodiesAsCluster<Free<std::complex<double>, ori_representation::Quaternion>>(
-                    body.name_, body_c, body.name_ + "_joint"
-                );
-            } else if (cluster->num_velocities_ == 1 && cluster->num_positions_ == 1) {
-                // This is a revolute joint - determine the axis
-                const DMat<double>& S = cluster->S();
-                ori::CoordinateAxis axis;
-                if (std::abs(S(0)) > 0.9) {
-                    axis = ori::CoordinateAxis::X;
-                } else if (std::abs(S(1)) > 0.9) {
-                    axis = ori::CoordinateAxis::Y;
-                } else if (std::abs(S(2)) > 0.9) {
-                    axis = ori::CoordinateAxis::Z;
-                } else {
-                    throw std::runtime_error("Complex-step test only supports axis-aligned revolute joints");
-                }
-
-                model_complex.appendRegisteredBodiesAsCluster<Revolute<std::complex<double>>>(
-                    body.name_, body_c, axis, body.name_ + "_joint"
-                );
-            } else {
-                throw std::runtime_error("Complex-step test only supports Free and Revolute joints");
+            std::string parent_name = "ground";
+            if (body_real.parent_index_ >= 0 && body_real.parent_index_ < model_real.bodies().size()) {
+                parent_name = model_real.bodies()[body_real.parent_index_].name_;
             }
+
+            Body<std::complex<double>> body_c = model_complex.registerBody(
+                body_real.name_, inertia_c, parent_name, Xtree_c
+            );
+
+            model_complex.appendRegisteredBodiesAsCluster<Free<std::complex<double>, ori_representation::Quaternion>>(
+                body_real.name_, body_c, body_real.name_ + "_joint"
+            );
+
+        } else if (cluster->joint_->type() == ClusterJointTypes::RevoluteWithRotor) {
+            // RevoluteWithRotor joint: 2 bodies (link and rotor)
+            if (bodies_in_cluster.size() != 2) {
+                throw std::runtime_error("RevoluteWithRotor cluster should have exactly 2 bodies");
+            }
+
+            const auto& link_body_real = bodies_in_cluster[0];
+            const auto& rotor_body_real = bodies_in_cluster[1];
+
+            // Convert link body to complex
+            SpatialInertia<std::complex<double>> link_inertia_c(
+                std::complex<double>(link_body_real.inertia_.getMass(), 0.0),
+                link_body_real.inertia_.getCOM().template cast<std::complex<double>>(),
+                link_body_real.inertia_.getInertiaTensor().template cast<std::complex<double>>()
+            );
+
+            spatial::Transform<std::complex<double>> link_Xtree_c(
+                link_body_real.Xtree_.getRotation().template cast<std::complex<double>>(),
+                link_body_real.Xtree_.getTranslation().template cast<std::complex<double>>()
+            );
+
+            std::string link_parent_name = "ground";
+            if (link_body_real.parent_index_ >= 0 && link_body_real.parent_index_ < model_real.bodies().size()) {
+                link_parent_name = model_real.bodies()[link_body_real.parent_index_].name_;
+            }
+
+            Body<std::complex<double>> link_body_c = model_complex.registerBody(
+                link_body_real.name_, link_inertia_c, link_parent_name, link_Xtree_c
+            );
+
+            // Convert rotor body to complex
+            SpatialInertia<std::complex<double>> rotor_inertia_c(
+                std::complex<double>(rotor_body_real.inertia_.getMass(), 0.0),
+                rotor_body_real.inertia_.getCOM().template cast<std::complex<double>>(),
+                rotor_body_real.inertia_.getInertiaTensor().template cast<std::complex<double>>()
+            );
+
+            spatial::Transform<std::complex<double>> rotor_Xtree_c(
+                rotor_body_real.Xtree_.getRotation().template cast<std::complex<double>>(),
+                rotor_body_real.Xtree_.getTranslation().template cast<std::complex<double>>()
+            );
+
+            std::string rotor_parent_name = "ground";
+            if (rotor_body_real.parent_index_ >= 0 && rotor_body_real.parent_index_ < model_real.bodies().size()) {
+                rotor_parent_name = model_real.bodies()[rotor_body_real.parent_index_].name_;
+            }
+
+            Body<std::complex<double>> rotor_body_c = model_complex.registerBody(
+                rotor_body_real.name_, rotor_inertia_c, rotor_parent_name, rotor_Xtree_c
+            );
+
+            // Extract gear ratio from loop constraint: G = [1; gear_ratio]
+            const DMat<double>& G = cluster->joint_->G();
+            double gear_ratio = G(1, 0);
+
+            // Extract axes from motion subspace
+            const DMat<double>& S_cluster = cluster->S();
+
+            // Link joint axis (first 6 rows, angular component in rows 0-2)
+            ori::CoordinateAxis link_axis;
+            if (std::abs(S_cluster(0, 0)) > 0.9) {
+                link_axis = ori::CoordinateAxis::X;
+            } else if (std::abs(S_cluster(1, 0)) > 0.9) {
+                link_axis = ori::CoordinateAxis::Y;
+            } else if (std::abs(S_cluster(2, 0)) > 0.9) {
+                link_axis = ori::CoordinateAxis::Z;
+            } else {
+                throw std::runtime_error("Complex-step test only supports axis-aligned revolute joints");
+            }
+
+            // Rotor joint axis (next 6 rows, angular component in rows 6-8)
+            ori::CoordinateAxis rotor_axis;
+            if (std::abs(S_cluster(6, 0)) > 0.9) {
+                rotor_axis = ori::CoordinateAxis::X;
+            } else if (std::abs(S_cluster(7, 0)) > 0.9) {
+                rotor_axis = ori::CoordinateAxis::Y;
+            } else if (std::abs(S_cluster(8, 0)) > 0.9) {
+                rotor_axis = ori::CoordinateAxis::Z;
+            } else {
+                throw std::runtime_error("Complex-step test only supports axis-aligned revolute joints");
+            }
+
+            // Create geared transmission module
+            GearedTransmissionModule<std::complex<double>> module{
+                link_body_c,
+                rotor_body_c,
+                link_body_real.name_ + "_joint",
+                rotor_body_real.name_ + "_joint",
+                link_axis,
+                rotor_axis,
+                std::complex<double>(gear_ratio, 0.0)
+            };
+
+            model_complex.appendRegisteredBodiesAsCluster<RevoluteWithRotor<std::complex<double>>>(
+                link_body_real.name_, module
+            );
+
+        } else if (cluster->num_velocities_ == 1 && cluster->num_positions_ == 1) {
+            // Simple Revolute joint: 1 body
+            const auto& body_real = bodies_in_cluster[0];
+
+            SpatialInertia<std::complex<double>> inertia_c(
+                std::complex<double>(body_real.inertia_.getMass(), 0.0),
+                body_real.inertia_.getCOM().template cast<std::complex<double>>(),
+                body_real.inertia_.getInertiaTensor().template cast<std::complex<double>>()
+            );
+
+            spatial::Transform<std::complex<double>> Xtree_c(
+                body_real.Xtree_.getRotation().template cast<std::complex<double>>(),
+                body_real.Xtree_.getTranslation().template cast<std::complex<double>>()
+            );
+
+            std::string parent_name = "ground";
+            if (body_real.parent_index_ >= 0 && body_real.parent_index_ < model_real.bodies().size()) {
+                parent_name = model_real.bodies()[body_real.parent_index_].name_;
+            }
+
+            Body<std::complex<double>> body_c = model_complex.registerBody(
+                body_real.name_, inertia_c, parent_name, Xtree_c
+            );
+
+            const DMat<double>& S = cluster->S();
+            ori::CoordinateAxis axis;
+            if (std::abs(S(0)) > 0.9) {
+                axis = ori::CoordinateAxis::X;
+            } else if (std::abs(S(1)) > 0.9) {
+                axis = ori::CoordinateAxis::Y;
+            } else if (std::abs(S(2)) > 0.9) {
+                axis = ori::CoordinateAxis::Z;
+            } else {
+                throw std::runtime_error("Complex-step test only supports axis-aligned revolute joints");
+            }
+
+            model_complex.appendRegisteredBodiesAsCluster<Revolute<std::complex<double>>>(
+                body_real.name_, body_c, axis, body_real.name_ + "_joint"
+            );
+
+        } else {
+            throw std::runtime_error("Complex-step test only supports Free, Revolute, and RevoluteWithRotor joints");
         }
     }
 
@@ -922,6 +1059,56 @@ void testInverseDynamicsDerivativesComplexStepFloatingBase(ClusterTreeModel<doub
 //
 //       By using the linearized exponential for complex perturbations, we get
 //       machine-precision derivatives while maintaining geometric correctness!
+
+TEST(InverseDynamicsDerivativesComplexStep, SimpleFloatingBaseWithRotor) {
+    // Create a very simple floating base + 1 revolute with rotor joint model
+    using namespace ClusterJoints;
+    ClusterTreeModel<double> model;
+
+    // Create floating base body
+    SpatialInertia<double> fb_inertia(1.0, Vec3<double>(0, 0, 0), Mat3<double>::Identity() * 0.01);
+    Body<double> fb_body = model.registerBody("floating_base", fb_inertia, "ground", spatial::Transform<double>());
+    model.appendRegisteredBodiesAsCluster<Free<double, ori_representation::Quaternion>>(
+        "floating_base", fb_body, "fb_joint");
+
+    // Create one revolute joint WITH ROTOR attached to floating base
+    SpatialInertia<double> link_inertia(0.5, Vec3<double>(0.1, 0, 0), Mat3<double>::Identity() * 0.005);
+    SpatialInertia<double> rotor_inertia(0.05, Vec3<double>(0, 0, 0), Mat3<double>::Identity() * 0.0001);
+    spatial::Transform<double> Xtree_link(Mat3<double>::Identity(), Vec3<double>(0, 0, 0.5));
+    spatial::Transform<double> Xtree_rotor(Mat3<double>::Identity(), Vec3<double>(0, 0, 0.5));
+
+    Body<double> link_body = model.registerBody("link1", link_inertia, "floating_base", Xtree_link);
+    Body<double> rotor_body = model.registerBody("rotor1", rotor_inertia, "floating_base", Xtree_rotor);
+
+    GearedTransmissionModule<double> module{link_body, rotor_body,
+                                            "link1_joint", "rotor1_joint",
+                                            ori::CoordinateAxis::Z, ori::CoordinateAxis::Z,
+                                            6.0};  // gear ratio
+    model.appendRegisteredBodiesAsCluster<RevoluteWithRotor<double>>("joint1", module);
+
+    testInverseDynamicsDerivativesComplexStepFloatingBase(model, "Simple Floating Base + 1 Revolute With Rotor", 7);
+}
+
+TEST(InverseDynamicsDerivativesComplexStep, SimpleFloatingBase) {
+    // Create a very simple floating base + 1 revolute joint model
+    using namespace ClusterJoints;
+    ClusterTreeModel<double> model;
+
+    // Create floating base body
+    SpatialInertia<double> fb_inertia(1.0, Vec3<double>(0, 0, 0), Mat3<double>::Identity() * 0.01);
+    Body<double> fb_body = model.registerBody("floating_base", fb_inertia, "ground", spatial::Transform<double>());
+    model.appendRegisteredBodiesAsCluster<Free<double, ori_representation::Quaternion>>(
+        "floating_base", fb_body, "fb_joint");
+
+    // Create one revolute joint attached to floating base
+    SpatialInertia<double> link_inertia(0.5, Vec3<double>(0.1, 0, 0), Mat3<double>::Identity() * 0.005);
+    spatial::Transform<double> Xtree(Mat3<double>::Identity(), Vec3<double>(0, 0, 0.5));
+    Body<double> link_body = model.registerBody("link1", link_inertia, "floating_base", Xtree);
+    model.appendRegisteredBodiesAsCluster<Revolute<double>>(
+        "link1", link_body, ori::CoordinateAxis::Z, "link1_joint");
+
+    testInverseDynamicsDerivativesComplexStepFloatingBase(model, "Simple Floating Base + 1 Revolute", 7);
+}
 
 TEST(InverseDynamicsDerivativesComplexStep, MiniCheetahQuaternion) {
     MiniCheetah<double, ori_representation::Quaternion> robot;

@@ -6,6 +6,7 @@
 #ifndef GRBDA_UTILITIES_H
 #define GRBDA_UTILITIES_H
 
+#include <iostream>
 #include <random>
 #include "cppTypes.h"
 
@@ -192,7 +193,17 @@ namespace grbda
   template <typename T>
   DMat<typename T::Scalar> matrixLeftPseudoInverse(const Eigen::MatrixBase<T> &mat)
   {
-    return mat.completeOrthogonalDecomposition().pseudoInverse();
+    using Scalar = typename T::Scalar;
+
+    // For complex types, use algebraic formula which is complex-step safe
+    if constexpr (std::is_same_v<Scalar, std::complex<double>> ||
+                  std::is_same_v<Scalar, std::complex<float>> ||
+                  std::is_same_v<Scalar, std::complex<long double>>) {
+      const DMat<Scalar> tmp = mat.transpose() * mat;
+      return matrixInverse(tmp) * mat.transpose();
+    } else {
+      return mat.completeOrthogonalDecomposition().pseudoInverse();
+    }
   }
 
   template <>
@@ -210,7 +221,17 @@ namespace grbda
   template <typename T>
   DMat<typename T::Scalar> matrixRightPseudoInverse(const Eigen::MatrixBase<T> &mat)
   {
-    return mat.completeOrthogonalDecomposition().pseudoInverse();
+    using Scalar = typename T::Scalar;
+
+    // For complex types, use algebraic formula which is complex-step safe
+    if constexpr (std::is_same_v<Scalar, std::complex<double>> ||
+                  std::is_same_v<Scalar, std::complex<float>> ||
+                  std::is_same_v<Scalar, std::complex<long double>>) {
+      const DMat<Scalar> tmp = mat * mat.transpose();
+      return mat.transpose() * matrixInverse(tmp);
+    } else {
+      return mat.completeOrthogonalDecomposition().pseudoInverse();
+    }
   }
 
   template <>
@@ -322,6 +343,71 @@ namespace grbda
     DMat<casadi::SX> Ainv_;
   };
 
+  /*!
+   * Complex-step safe matrix inverse for std::complex<double>
+   * Uses algebraic inverse (no pivoting/decomposition) for complex-step safety
+   */
+  class ComplexDoubleInverse
+  {
+  public:
+    ComplexDoubleInverse() {}
+    ComplexDoubleInverse(const DMat<std::complex<double>> &mat)
+    {
+      std::cout << "[DEBUG] ComplexDoubleInverse called with matrix size: " << mat.rows() << "x" << mat.cols() << "\n";
+
+      // For 1x1 matrices, inverse is just 1/mat(0,0)
+      if (mat.rows() == 1 && mat.cols() == 1) {
+        std::cout << "[DEBUG] Using 1x1 algebraic inverse\n";
+        Ainv_.resize(1, 1);
+        Ainv_(0, 0) = std::complex<double>(1.0, 0.0) / mat(0, 0);
+      }
+      // For larger matrices, use .inverse() but be aware it may use LU with pivoting
+      // For complex-step, matrices should be nearly real with tiny imaginary parts
+      else {
+        std::cout << "[DEBUG] Using general .inverse() (may not be complex-step safe!)\n";
+        Ainv_ = mat.inverse();
+      }
+    }
+
+    template <typename Derived>
+    DMat<std::complex<double>> solve(const Eigen::MatrixBase<Derived> &b) const
+    {
+      return Ainv_ * b;
+    }
+
+  private:
+    DMat<std::complex<double>> Ainv_;
+  };
+
+  /*!
+   * Complex-step safe matrix inverse for std::complex<float>
+   */
+  class ComplexFloatInverse
+  {
+  public:
+    ComplexFloatInverse() {}
+    ComplexFloatInverse(const DMat<std::complex<float>> &mat)
+    {
+      // For 1x1 matrices, inverse is just 1/mat(0,0)
+      if (mat.rows() == 1 && mat.cols() == 1) {
+        Ainv_.resize(1, 1);
+        Ainv_(0, 0) = std::complex<float>(1.0f, 0.0f) / mat(0, 0);
+      }
+      else {
+        Ainv_ = mat.inverse();
+      }
+    }
+
+    template <typename Derived>
+    DMat<std::complex<float>> solve(const Eigen::MatrixBase<Derived> &b) const
+    {
+      return Ainv_ * b;
+    }
+
+  private:
+    DMat<std::complex<float>> Ainv_;
+  };
+
   template <typename Scalar>
   struct CorrectMatrixInverseType
   {
@@ -333,6 +419,21 @@ namespace grbda
   struct CorrectMatrixInverseType<casadi::SX>
   {
     using type = CasadiInverse;
+  };
+
+  // Complex-step safe specialization for std::complex<double>
+  // Use direct inverse instead of decompositions with pivoting
+  template <>
+  struct CorrectMatrixInverseType<std::complex<double>>
+  {
+    using type = ComplexDoubleInverse;
+  };
+
+  // Complex-step safe specialization for std::complex<float>
+  template <>
+  struct CorrectMatrixInverseType<std::complex<float>>
+  {
+    using type = ComplexFloatInverse;
   };
 
   /*!

@@ -61,10 +61,31 @@ namespace grbda
             void updateKinematics(const DVec<Scalar> &q, const DVec<Scalar> &qd) override
             {
                 const int& num_ori_param = OrientationRepresentation::num_ori_parameter;
-                const RotMat<Scalar> R =
-                    OrientationRepresentation::getRotationMatrix(q.template tail<num_ori_param>());
-                const Vec3<Scalar> q_pos = q.template head<3>();
-                this->XJ_ = spatial::Transform<Scalar>(R, q_pos);
+
+                // Extract orientation parameters and normalize if quaternion
+                // CRITICAL: MATLAB's rq() function normalizes quaternions before converting to rotation matrix
+                // Unnormalized quaternions produce incorrect rotation matrices
+                auto orientation_segment = q.template tail<num_ori_param>();
+
+                if constexpr (num_ori_param == 4) {
+                    // For quaternions, normalize before converting to rotation matrix
+                    // CRITICAL: MATLAB's rq() function normalizes quaternions (line 28: q = q / norm(q))
+                    // We must match this exactly, including for complex types!
+                    // For complex-step differentiation, normalization is differentiable and the
+                    // imaginary part will carry through correctly via the chain rule.
+                    Quat<Scalar> quat_segment = orientation_segment;
+                    Scalar norm_val = quat_segment.norm();
+                    quat_segment = quat_segment / norm_val;
+
+                    const RotMat<Scalar> R = OrientationRepresentation::getRotationMatrix(quat_segment);
+                    const Vec3<Scalar> q_pos = q.template head<3>();
+                    this->XJ_ = spatial::Transform<Scalar>(R, q_pos);
+                } else {
+                    // For RPY, use as-is
+                    const RotMat<Scalar> R = OrientationRepresentation::getRotationMatrix(orientation_segment);
+                    const Vec3<Scalar> q_pos = q.template head<3>();
+                    this->XJ_ = spatial::Transform<Scalar>(R, q_pos);
+                }
             }
 
             OrientationRepresentation orientation_representation_;

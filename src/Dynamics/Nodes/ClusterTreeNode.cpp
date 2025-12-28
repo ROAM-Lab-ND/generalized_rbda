@@ -33,6 +33,9 @@ namespace grbda
     template <typename Scalar>
     void ClusterTreeNode<Scalar>::updateDinv(const DMat<Scalar> &D)
     {
+        if constexpr (std::is_same_v<Scalar, std::complex<double>>) {
+            std::cout << "[DEBUG updateDinv] Creating InverseType for complex<double>, D size: " << D.rows() << "x" << D.cols() << "\n";
+        }
         D_inv_ = InverseType(D);
     }
 

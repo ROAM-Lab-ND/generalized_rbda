@@ -173,6 +173,14 @@ namespace grbda
     template <typename Scalar>
     DVec<Scalar> TreeModel<Scalar>::recursiveNewtonEulerAlgorithm(const DVec<Scalar> &qdd)
     {
+        if constexpr (std::is_same_v<Scalar, std::complex<double>>) {
+            static int call_count = 0;
+            if (call_count < 3) {
+                std::cout << "[recursiveNE] Call " << call_count << ", nodes_.size() = " << nodes_.size() << "\n";
+                call_count++;
+            }
+        }
+
         forwardAccelerationKinematics(qdd);
 
         DVec<Scalar> tau = DVec<Scalar>::Zero(qdd.rows());
@@ -205,6 +213,15 @@ namespace grbda
             {
                 auto &parent_node = nodes_[node->parent_index_];
                 parent_node->f_ += node->Xup_.inverseTransformForceVector(node->f_);
+            }
+        }
+
+        if constexpr (std::is_same_v<Scalar, std::complex<double>>) {
+            static int return_count = 0;
+            if (return_count < 3 && tau.rows() > 0) {
+                std::cout << "[recursiveNE] Returning tau, first element: real=" << tau[0].real()
+                          << " imag=" << tau[0].imag() << "\n";
+                return_count++;
             }
         }
 

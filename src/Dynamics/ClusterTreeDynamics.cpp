@@ -472,29 +472,129 @@ namespace grbda
             (spatial::generalMotionCrossMatrix(a_parent_up) * cluster->S()).eval()
             + spatial::generalMotionCrossMatrix(v_parent_up) * cluster->Psi_dot_; // + spatial::generalMotionCrossMatrix(cluster->v_)*(gradient wrt q_i(S_i*q_dot_i))+ gradient wrt q_i(S_i*q_ddot_i+S_ring_i*q_dot_i)
 
+
             cluster->Upsilon_dot_ = (spatial::generalMotionCrossMatrix(cluster->v_) * cluster->S()).eval()
             + cluster->Psi_dot_ + cluster->S_ring();
 
             cluster->M_cup_ = cluster->I_;
 
+#ifdef GRBDA_DEBUG_DERIVATIVES
+            // Print body mass from inertia matrix
+            if (cluster->I_.rows() >= 6 && cluster->I_.cols() >= 6) {
+                std::cout << "[DEBUG] Forward pass - Body mass from I_[3,3] = " << cluster->I_(3,3) << "\n";
+            }
+#endif
+
             cluster->B_cup_ = spatial::generalForceCrossMatrix(cluster->v_) * cluster->I_
             - cluster->I_ * spatial::generalMotionCrossMatrix(cluster->v_)
             + spatial::generalSwappedForceCrossMatrix(DVec<Scalar>(cluster->I_ * cluster->v_));
 
+#ifdef GRBDA_DEBUG_DERIVATIVES
+            // Debug BC computation for Body 1 (floating base - parent_index == -1)
+            if (cluster->parent_index_ == -1) {
+                std::cout << "\n[DEBUG] Body 1 B_cup FRESH (recomputed, before accumulation):\n";
+                for (int row = 0; row < std::min(3, (int)cluster->B_cup_.rows()); row++) {
+                    std::cout << "   ";
+                    for (int col = 0; col < std::min(6, (int)cluster->B_cup_.cols()); col++) {
+                        std::cout << " " << std::setw(12) << std::setprecision(6) << std::scientific << cluster->B_cup_(row, col);
+                    }
+                    std::cout << "\n";
+                }
+            }
+#endif
+
             cluster->F_ = cluster->I_ * cluster->a_ + spatial::generalForceCrossMatrix(cluster->v_) * cluster->I_ * cluster->v_;
+            cluster->F_ = cluster->I_ * cluster->a_ + spatial::generalForceCrossMatrix(cluster->v_) * cluster->I_ * cluster->v_;
+            
         }
         //Backward Pass
         for (int i = (int)cluster_nodes_.size() - 1; i >= 0; i--)
         {
             auto &cluster_i = cluster_nodes_[i];
             const int &ii = cluster_i->velocity_index_;
-            
+
+#ifdef GRBDA_DEBUG_DERIVATIVES
+            // Print detailed M_cup comparison for Body 0 (floating base)
+            if (i == 0) {
+                std::cout << "\n[DEBUG] Body 0 (Floating Base) M_cup Analysis:\n";
+                std::cout << "  C++ M_cup:\n";
+                for (int row = 0; row < 6; row++) {
+                    std::cout << "    [";
+                    for (int col = 0; col < 6; col++) {
+                        std::cout << std::setw(12) << std::setprecision(4) << std::fixed << cluster_i->M_cup_(row, col);
+                        if (col < 5) std::cout << ", ";
+                    }
+                    std::cout << "]\n";
+                }
+                std::cout << "\n  MATLAB expected IC{1}:\n";
+                std::cout << "    [ 1.6972, -0.9437, -2.5452, -0.0000, -1.4635,  0.5622]\n";
+                std::cout << "    [-0.9437,  6.9044, -0.5035,  1.4641,  0.0000, -3.6315]\n";
+                std::cout << "    [-2.5452, -0.5035,  5.5872, -0.5622,  3.6315,  0.0000]\n";
+                std::cout << "    [ 0.0000,  1.4641, -0.5622,  3.0000,  0.0000, -0.0000]\n";
+                std::cout << "    [-1.4635,  0.0000,  3.6315,  0.0000,  3.0000, -0.0000]\n";
+                std::cout << "    [ 0.5622, -3.6315, -0.0000, -0.0000, -0.0000,  3.0000]\n";
+
+                std::cout << "\n  Ratios (C++/MATLAB) for key elements:\n";
+                std::cout << "    Upper-left 3x3 (rotational inertia):\n";
+                std::cout << "      [0,0]: " << cluster_i->M_cup_(0,0)/1.6972 << "\n";
+                std::cout << "      [0,1]: " << cluster_i->M_cup_(0,1)/(-0.9437) << "\n";
+                std::cout << "      [1,1]: " << cluster_i->M_cup_(1,1)/6.9044 << "\n";
+                std::cout << "    Lower-right 3x3 (mass):\n";
+                std::cout << "      [3,3]: " << cluster_i->M_cup_(3,3)/3.0 << " (should be 1.0)\n";
+                std::cout << "      [4,4]: " << cluster_i->M_cup_(4,4)/3.0 << " (should be 1.0)\n";
+            }
+#endif
+
             DMat<Scalar> t1 = cluster_i->M_cup_ * cluster_i->S();
             DMat<Scalar> t2 = DMat<Scalar>(cluster_i->B_cup_ * cluster_i->S()) + DMat<Scalar>(cluster_i->M_cup_ * cluster_i->Upsilon_dot_);
             DMat<Scalar> t3 = DMat<Scalar>(cluster_i->B_cup_ * cluster_i->Psi_dot_) + DMat<Scalar>(cluster_i->M_cup_ * cluster_i->Psi_ddot_)
             + DMat<Scalar>(spatial::generalSwappedForceCrossMatrix(cluster_i->F_)*cluster_i->S());
             DMat<Scalar> t4 = cluster_i->B_cup_.transpose() * cluster_i->S();
-            
+
+#ifdef GRBDA_DEBUG_DERIVATIVES
+            // Debug output for comparing with MATLAB
+            if (i == 0) { // Body 1 (floating base) - index 0
+                std::cout << "\n[DEBUG] Body 1 Backward Pass tmp matrices:\n";
+                std::cout << "tmp1 (IC*S) size: " << t1.rows() << "x" << t1.cols() << "\n";
+                std::cout << "First 3 columns:\n";
+                for (int row = 0; row < std::min(6, (int)t1.rows()); row++) {
+                    std::cout << "  ";
+                    for (int col = 0; col < std::min(3, (int)t1.cols()); col++) {
+                        std::cout << std::setw(18) << std::setprecision(10) << std::scientific << t1(row, col) << " ";
+                    }
+                    std::cout << "\n";
+                }
+
+                std::cout << "\ntmp2 (BC*S + IC*Upsilond) first 3 cols:\n";
+                for (int row = 0; row < std::min(6, (int)t2.rows()); row++) {
+                    std::cout << "  ";
+                    for (int col = 0; col < std::min(3, (int)t2.cols()); col++) {
+                        std::cout << std::setw(18) << std::setprecision(10) << std::scientific << t2(row, col) << " ";
+                    }
+                    std::cout << "\n";
+                }
+
+                std::cout << "\ntmp3 (BC*Psid + IC*Psidd + icrf(f)*S) first 3 cols:\n";
+                for (int row = 0; row < std::min(6, (int)t3.rows()); row++) {
+                    std::cout << "  ";
+                    for (int col = 0; col < std::min(3, (int)t3.cols()); col++) {
+                        std::cout << std::setw(18) << std::setprecision(10) << std::scientific << t3(row, col) << " ";
+                    }
+                    std::cout << "\n";
+                }
+
+                std::cout << "\ntmp4 (BC^T*S) first 3 cols:\n";
+                for (int row = 0; row < std::min(6, (int)t4.rows()); row++) {
+                    std::cout << "  ";
+                    for (int col = 0; col < std::min(3, (int)t4.cols()); col++) {
+                        std::cout << std::setw(18) << std::setprecision(10) << std::scientific << t4(row, col) << " ";
+                    }
+                    std::cout << "\n";
+                }
+                std::cout << std::endl;
+            }
+#endif
+
             int j = i;
 
             while (j >= 0)
@@ -533,9 +633,115 @@ namespace grbda
 
                 const auto X = cluster_i->Xup_.toMatrix();
 
-                parent_cluster->M_cup_.noalias() += X.transpose() * cluster_i->M_cup_ * X;
-                parent_cluster->B_cup_.noalias() += X.transpose() * cluster_i->B_cup_ * X;
-                parent_cluster->F_.noalias()     += X.transpose() * cluster_i->F_;
+#ifdef GRBDA_DEBUG_DERIVATIVES
+                std::cout << "\n[DEBUG] Accumulating from body " << i << " to parent " << cluster_i->parent_index_ << "\n";
+
+                // For body 2 (leaf), print M_cup to verify it's just the single-body inertia
+                if (i == 2) {
+                    std::cout << "  Body 2 M_cup (should be single-body, mass=1.0):\n";
+                    std::cout << "    Mass ([3,3]): " << cluster_i->M_cup_(3,3) << " (expect 1.0)\n";
+                    std::cout << "    Rotational inertia ([0,0]): " << cluster_i->M_cup_(0,0) << " (expect 0.0025)\n";
+
+                    std::cout << "\n  Xup matrix for body 2 (FULL 6x6):\n";
+                    for (int row = 0; row < 6; row++) {
+                        std::cout << "    [";
+                        for (int col = 0; col < 6; col++) {
+                            std::cout << std::setw(10) << std::setprecision(4) << std::scientific << X(row, col);
+                            if (col < 5) std::cout << ", ";
+                        }
+                        std::cout << "]\n";
+                    }
+
+                    std::cout << "\n  C++ Xup translation vector r:\n";
+                    auto r_vec = cluster_i->Xup_[0].getTranslation();
+                    std::cout << "    r = [" << r_vec(0) << ", " << r_vec(1) << ", " << r_vec(2) << "]\n";
+
+                    std::cout << "\n  C++ M_cup[2] BEFORE transform (FULL 6x6):\n";
+                    for (int row = 0; row < 6; row++) {
+                        std::cout << "    [";
+                        for (int col = 0; col < 6; col++) {
+                            std::cout << std::setw(10) << std::setprecision(4) << std::scientific << cluster_i->M_cup_(row, col);
+                            if (col < 5) std::cout << ", ";
+                        }
+                        std::cout << "]\n";
+                    }
+
+                    auto M_child_transformed_debug = (X.transpose() * cluster_i->M_cup_ * X).eval();
+                    std::cout << "\n  Transformed M_cup[2] (X^T * M * X) first 3 rows:\n";
+                    for (int row = 0; row < 3; row++) {
+                        std::cout << "    [";
+                        for (int col = 0; col < 6; col++) {
+                            std::cout << std::setw(12) << std::setprecision(6) << std::scientific << M_child_transformed_debug(row, col);
+                            if (col < 5) std::cout << ", ";
+                        }
+                        std::cout << "]\n";
+                    }
+                    std::cout << "  Expected MATLAB Xup{3}' * IC{3} * Xup{3} first row:\n";
+                    std::cout << "    [1.087e-01, -2.188e-01, -3.790e-01, 0, -2.449e-01, 1.414e-01]\n";
+                }
+
+                // For body 1, print full Xup and M_cup to compare with MATLAB
+                if (i == 1) {
+                    std::cout << "  Xup matrix for body " << i << " (first 3 rows):\n";
+                    for (int row = 0; row < 3; row++) {
+                        std::cout << "    [";
+                        for (int col = 0; col < 6; col++) {
+                            std::cout << std::setw(10) << std::setprecision(4) << std::scientific << X(row, col);
+                            if (col < 5) std::cout << ", ";
+                        }
+                        std::cout << "]\n";
+                    }
+                    std::cout << "\n  Child M_cup[1] (6x6) FULL MATRIX:\n";
+                    for (int row = 0; row < 6; row++) {
+                        std::cout << "    [";
+                        for (int col = 0; col < 6; col++) {
+                            std::cout << std::setw(12) << std::setprecision(6) << std::scientific << cluster_i->M_cup_(row, col);
+                            if (col < 5) std::cout << ", ";
+                        }
+                        std::cout << "]\n";
+                    }
+
+                    std::cout << "\n  Transformed M (X^T * M_cup[1] * X) FULL MATRIX:\n";
+                    auto M_trans_full = (X.transpose() * cluster_i->M_cup_ * X).eval();
+                    for (int row = 0; row < 6; row++) {
+                        std::cout << "    [";
+                        for (int col = 0; col < 6; col++) {
+                            std::cout << std::setw(12) << std::setprecision(6) << std::scientific << M_trans_full(row, col);
+                            if (col < 5) std::cout << ", ";
+                        }
+                        std::cout << "]\n";
+                    }
+                }
+
+                std::cout << "  Child M_cup[" << i << "][0,0] = " << cluster_i->M_cup_(0,0) << "\n";
+                std::cout << "  Parent M_cup[" << cluster_i->parent_index_ << "][0,0] (before) = " << parent_cluster->M_cup_(0,0) << "\n";
+
+                auto M_transformed = X.transpose() * cluster_i->M_cup_ * X;
+                std::cout << "  X^T * M_cup[" << i << "] * X [0,0] = " << M_transformed(0,0) << "\n";
+#endif
+
+                // Use X^T * M * X formula for spatial inertia (matching MATLAB)
+                auto M_child_transformed = (X.transpose() * cluster_i->M_cup_ * X).eval();
+                auto B_child_transformed = (X.transpose() * cluster_i->B_cup_ * X).eval();
+                auto F_child_transformed = cluster_i->Xup_.inverseTransformForceVector(cluster_i->F_);
+
+                parent_cluster->M_cup_ += M_child_transformed;
+                parent_cluster->B_cup_ += B_child_transformed;
+                parent_cluster->F_     += F_child_transformed;
+
+#ifdef GRBDA_DEBUG_DERIVATIVES
+                std::cout << "  Parent M_cup[" << cluster_i->parent_index_ << "][0,0] (after) = " << parent_cluster->M_cup_(0,0) << "\n";
+
+                // For floating base (parent index 0), print full M_cup after final accumulation
+                if (cluster_i->parent_index_ == 0 && i == 1) {
+                    std::cout << "\n[DEBUG] M_cup for Body 1 (floating base) AFTER full accumulation:\n";
+                    std::cout << "  First column: ";
+                    for (int row = 0; row < 6; row++) {
+                        std::cout << parent_cluster->M_cup_(row, 0) << " ";
+                    }
+                    std::cout << "\n  MATLAB expected IC{1} first column: 1.6972 -0.9437 -2.5452 0.0 -1.4635 0.5622\n";
+                }
+#endif
             }
         }
         return {dtau_dq, dtau_dq_dot};
