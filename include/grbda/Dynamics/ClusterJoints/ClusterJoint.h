@@ -62,6 +62,30 @@ namespace grbda
             const DVec<Scalar> &cJ() const { return cJ_; }
             const DMat<Scalar> &S_ring() const { return S_ring_; }
 
+            // Derivative interface for configuration-dependent motion subspaces
+            // Returns zero by default for cluster joints
+            // Override for joints with absolute coordinates or configuration-dependent kinematics
+
+            // Returns ∂S/∂q as a vector of nv matrices, each of size (6*num_bodies x nv)
+            virtual std::vector<DMat<Scalar>> getSq() const {
+                const int mss_dim = num_bodies_ * 6;
+                return std::vector<DMat<Scalar>>(num_velocities_,
+                                                 DMat<Scalar>::Zero(mss_dim, num_velocities_));
+            }
+
+            // Returns ∂(Ṡ·q̇)/∂q as a (6*num_bodies x nv) matrix
+            virtual DMat<Scalar> getSdotqd_q() const {
+                const int mss_dim = num_bodies_ * 6;
+                return DMat<Scalar>::Zero(mss_dim, num_velocities_);
+            }
+
+            // Returns ∂(Ṡ·q̇)/∂q̇ as a (6*num_bodies x nv) matrix
+            virtual DMat<Scalar> getSdotqd_qd() const {
+                const int mss_dim = num_bodies_ * 6;
+                return DMat<Scalar>::Zero(mss_dim, num_velocities_);
+            }
+
+
             std::shared_ptr<LoopConstraint::Base<Scalar>> cloneLoopConstraint() const
             {
                 return loop_constraint_->clone();

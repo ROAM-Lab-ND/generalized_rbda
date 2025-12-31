@@ -3,6 +3,7 @@
  */
 
 #include "grbda/Dynamics/ClusterTreeModel.h"
+#include "grbda/Utils/JointDerivatives.h"
 
 namespace grbda
 {
@@ -439,6 +440,7 @@ namespace grbda
     template <typename Scalar, typename OriTpl>
     std::pair<DMat<Scalar>, DMat<Scalar>> ClusterTreeModel<Scalar, OriTpl>::firstOrderInverseDynamicsDerivatives(const DVec<Scalar> &qdd)
     {   
+        const auto [q, qd] = this->getState();
         this->forwardAccelerationKinematics(qdd);
         updateArticulatedBodies();
         DMat<Scalar> dtau_dq = DMat<Scalar>::Zero(this->getNumDegreesOfFreedom(), this->getNumDegreesOfFreedom());
@@ -465,13 +467,25 @@ namespace grbda
             const auto v_parent_up = cluster->Xup_.transformMotionVector(v_parent);
             const auto a_parent_up = cluster->Xup_.transformMotionVector(a_parent);
 
+            // Compute alpha = contract(S_q, qd) - corresponds to MATLAB ID_derivatives.m line 32
+            const DVec<Scalar> cluster_qd = qd.segment(cluster->velocity_index_, cluster->num_velocities_);
+            const DMat<Scalar> alpha = contractSqWithVector(cluster->joint_->getSq(), cluster_qd, cluster->S().rows());
+
             cluster->Psi_dot_ =
-            spatial::generalMotionCrossMatrix(v_parent_up) * cluster->S(); // + gradient wrt q_i(S_i*q_dot_i)
+            spatial::generalMotionCrossMatrix(v_parent_up) * cluster->S() + alpha;
+
+            // Compute beta = contract(S_q, qdd) - corresponds to MATLAB ID_derivatives.m line 33
+            const DVec<Scalar> cluster_qdd = qdd.segment(cluster->velocity_index_, cluster->num_velocities_);
+            const DMat<Scalar> beta = contractSqWithVector(cluster->joint_->getSq(), cluster_qdd, cluster->S().rows());
+
+            // Compute new_part = Sdotqd_q + beta + crm(v)*alpha - corresponds to MATLAB ID_derivatives.m line 36
+            const DMat<Scalar> new_part = cluster->joint_->getSdotqd_q() + beta +
+                                          spatial::generalMotionCrossMatrix(cluster->v_) * alpha;
 
             cluster->Psi_ddot_ =
             (spatial::generalMotionCrossMatrix(a_parent_up) * cluster->S()).eval()
-            + spatial::generalMotionCrossMatrix(v_parent_up) * cluster->Psi_dot_; // + spatial::generalMotionCrossMatrix(cluster->v_)*(gradient wrt q_i(S_i*q_dot_i))+ gradient wrt q_i(S_i*q_ddot_i+S_ring_i*q_dot_i)
-
+            + spatial::generalMotionCrossMatrix(v_parent_up) * cluster->Psi_dot_
+            + new_part;
 
             cluster->Upsilon_dot_ = (spatial::generalMotionCrossMatrix(cluster->v_) * cluster->S()).eval()
             + cluster->Psi_dot_ + cluster->S_ring();
@@ -608,10 +622,12 @@ namespace grbda
                 {
                     dtau_dq.block(jj,ii,cluster_j->num_velocities_,cluster_i->num_velocities_) = cluster_j->S().transpose() * t3;
                 }
-                else
+                else // j == i, diagonal block
                 {
-                    //dtau_dq.block(ii,ii,cluster_i->num_velocities_,cluster_i->num_velocities_) = 
-                    //dtau_dq.block(ii,ii,cluster_i->num_velocities_,cluster_i->num_velocities_) + (gradient wrt q_i(S_i)).transpose()*cluster_i->F_;
+                    // Add the configuration-dependent term: contractT(S_q, F)
+                    // Corresponds to MATLAB ID_derivatives.m line 72
+                    dtau_dq.block(ii,ii,cluster_i->num_velocities_,cluster_i->num_velocities_) +=
+                        contractSqTransposeWithVector(cluster_i->joint_->getSq(), cluster_i->F_);
                 }
 
                 dtau_dq_dot.block(jj,ii,cluster_j->num_velocities_,cluster_i->num_velocities_) = cluster_j->S().transpose() * t2;

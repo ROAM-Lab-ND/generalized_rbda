@@ -30,6 +30,27 @@ namespace grbda
             const DMat<Scalar> &Psi() const { return Psi_; }
             const spatial::Transform<Scalar> &XJ() const { return XJ_; }
 
+            // Derivative interface for configuration-dependent motion subspaces
+            // Returns zero by default for most joint types (Revolute, Free, etc.)
+            // Override for joints with absolute coordinates or configuration-dependent kinematics
+
+            // Returns ∂S/∂q as a vector of nv matrices, each of size (6 x nv)
+            // S_q[i](j,k) = ∂S(j,k)/∂q(i)
+            virtual std::vector<DMat<Scalar>> getSq() const {
+                return std::vector<DMat<Scalar>>(num_velocities_,
+                                                 DMat<Scalar>::Zero(6, num_velocities_));
+            }
+
+            // Returns ∂(Ṡ·q̇)/∂q as a (6 x nv) matrix
+            virtual DMat<Scalar> getSdotqd_q() const {
+                return DMat<Scalar>::Zero(6, num_velocities_);
+            }
+
+            // Returns ∂(Ṡ·q̇)/∂q̇ as a (6 x nv) matrix
+            virtual DMat<Scalar> getSdotqd_qd() const {
+                return DMat<Scalar>::Zero(6, num_velocities_);
+            }
+
         protected:
             const std::string name_;             
             const int num_positions_;
