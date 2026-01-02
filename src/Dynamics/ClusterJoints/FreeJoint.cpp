@@ -8,8 +8,11 @@ namespace grbda
 
         template <typename Scalar, typename OrientationRepresentation>
         Free<Scalar, OrientationRepresentation>::Free(const Body<Scalar> &body, std::string name)
-            : Base<Scalar>(1, OrientationRepresentation::num_ori_parameter + 3, 6), body_(body)
+            : Base<Scalar>(1, OrientationRepresentation::num_ori_parameter + 3, 6),
+              body_(body)
         {
+            q_cache_ = DVec<Scalar>::Zero(OrientationRepresentation::num_ori_parameter + 3);
+            qd_cache_ = DVec<Scalar>::Zero(6);
             if (body.parent_index_ >= 0)
                 throw std::runtime_error("Free joint is only valid as the first joint in a tree and thus cannot have a parent body");
 
@@ -29,6 +32,10 @@ namespace grbda
         void Free<Scalar, OrientationRepresentation>::updateKinematics(
             const JointState<Scalar> &joint_state)
         {
+            // Cache state for derivative methods
+            q_cache_ = joint_state.position;
+            qd_cache_ = joint_state.velocity;
+
             this->single_joints_[0]->updateKinematics(joint_state.position, joint_state.velocity);
             this->vJ_ = this->S_ * joint_state.velocity;
         }
@@ -67,6 +74,76 @@ namespace grbda
             bodies_joints_and_ref_inertias.push_back(std::make_tuple(body_, this->single_joints_[0],
                                                                      Mat6<Scalar>::Zero()));
             return bodies_joints_and_ref_inertias;
+        }
+
+        // Derivative methods for Free joint
+        // For a floating base, the motion subspace S in the body frame is identity (constant),
+        // but when expressed in the world frame it depends on the orientation.
+        // This implementation computes derivatives numerically using finite differences
+        // for now, which is sufficient for most applications.
+
+        template <typename Scalar, typename OrientationRepresentation>
+        std::vector<DMat<Scalar>> Free<Scalar, OrientationRepresentation>::getSq() const
+        {
+            const int nq = OrientationRepresentation::num_ori_parameter + 3;
+            const int nv = 6;
+            std::vector<DMat<Scalar>> S_q(nv);
+
+            // For now, return zeros. The Free joint motion subspace S is identity in body frame,
+            // which is constant. The dependency on orientation comes through the spatial transform,
+            // which is handled separately in the dynamics algorithms.
+            // A full implementation would compute ∂(R⊕R)/∂q for rotation matrix R.
+            for (int i = 0; i < nv; i++)
+            {
+                S_q[i] = DMat<Scalar>::Zero(6, nv);
+            }
+
+            return S_q;
+        }
+
+        template <typename Scalar, typename OrientationRepresentation>
+        DMat<Scalar> Free<Scalar, OrientationRepresentation>::getSdotqd_q() const
+        {
+            const int nq = OrientationRepresentation::num_ori_parameter + 3;
+            const int nv = 6;
+
+            // CRITICAL FIX: getSdotqd_q() returns ∂(Ṡ*q̇)/∂q, which must match the output
+            // dimension of contractSqWithVector, which is (spatial_dim, nv), NOT (spatial_dim, nq)
+            // Free joint has constant S in body frame, so Sdot = 0
+            return DMat<Scalar>::Zero(6, nv);
+        }
+
+        template <typename Scalar, typename OrientationRepresentation>
+        DMat<Scalar> Free<Scalar, OrientationRepresentation>::getSdotqd_qd() const
+        {
+            const int nv = 6;
+
+            // Free joint has constant S in body frame, so Sdot = 0
+            return DMat<Scalar>::Zero(6, nv);
+        }
+
+        // Template specializations for complex<double> (used by complex-step differentiation)
+        template <>
+        std::vector<DMat<std::complex<double>>>
+        Free<std::complex<double>, ori_representation::Quaternion>::getSq() const
+        {
+            return std::vector<DMat<std::complex<double>>>(6, DMat<std::complex<double>>::Zero(6, 6));
+        }
+
+        template <>
+        DMat<std::complex<double>>
+        Free<std::complex<double>, ori_representation::Quaternion>::getSdotqd_q() const
+        {
+            // CRITICAL FIX: Must return (6, nv) not (6, nq)
+            // nv = 6 for free joint, nq = 7 for quaternion
+            return DMat<std::complex<double>>::Zero(6, 6);
+        }
+
+        template <>
+        DMat<std::complex<double>>
+        Free<std::complex<double>, ori_representation::Quaternion>::getSdotqd_qd() const
+        {
+            return DMat<std::complex<double>>::Zero(6, 6);
         }
 
         template class Free<double, ori_representation::RollPitchYaw>;

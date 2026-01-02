@@ -27,6 +27,11 @@ namespace grbda
             std::vector<std::tuple<Body<Scalar>, JointPtr<Scalar>, DMat<Scalar>>>
             bodiesJointsAndReflectedInertias() const override;
 
+            // Derivative methods: all return zeros since S is constant (doesn't depend on q)
+            std::vector<DMat<Scalar>> getSq() const override;
+            DMat<Scalar> getSdotqd_q() const override;
+            DMat<Scalar> getSdotqd_qd() const override;
+
         private:
             JointPtr<Scalar> link_joint_;
             JointPtr<Scalar> rotor_joint_;

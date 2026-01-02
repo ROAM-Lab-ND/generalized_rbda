@@ -46,23 +46,25 @@ inline casadi::SX rotationMatrix(char axis, const casadi::SX& angle)
     casadi::SX c = cos(angle);
     casadi::SX s = sin(angle);
     casadi::SX R = casadi::SX::eye(3);
-    
+
+    // NOTE: Using frame transformation convention (passive rotation) to match coordinateRotation
+    // This is the TRANSPOSE of the standard active rotation matrix
     if (axis == 'X' || axis == 'x')
     {
-        R(1, 1) =  c; R(1, 2) = -s;
-        R(2, 1) =  s; R(2, 2) =  c;
+        R(1, 1) =  c; R(1, 2) =  s;
+        R(2, 1) = -s; R(2, 2) =  c;
     }
     else if (axis == 'Y' || axis == 'y')
     {
-        R(0, 0) =  c; R(0, 2) =  s;
-        R(2, 0) = -s; R(2, 2) =  c;
+        R(0, 0) =  c; R(0, 2) = -s;
+        R(2, 0) =  s; R(2, 2) =  c;
     }
     else if (axis == 'Z' || axis == 'z')
     {
-        R(0, 0) =  c; R(0, 1) = -s;
-        R(1, 0) =  s; R(1, 1) =  c;
+        R(0, 0) =  c; R(0, 1) =  s;
+        R(1, 0) = -s; R(1, 1) =  c;
     }
-    
+
     return R;
 }
 

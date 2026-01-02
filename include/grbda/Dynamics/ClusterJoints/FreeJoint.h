@@ -73,8 +73,17 @@ namespace grbda
 
             JointState<double> randomJointState() const override;
 
+            // Derivative methods
+            std::vector<DMat<Scalar>> getSq() const override;
+            DMat<Scalar> getSdotqd_q() const override;
+            DMat<Scalar> getSdotqd_qd() const override;
+
         private:
             const Body<Scalar> body_;
+
+            // Cache for joint state (updated in updateKinematics)
+            mutable DVec<Scalar> q_cache_;
+            mutable DVec<Scalar> qd_cache_;
         };
 
     }
