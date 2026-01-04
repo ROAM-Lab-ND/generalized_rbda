@@ -36,7 +36,14 @@ namespace grbda
             std::vector<std::tuple<Body<Scalar>, JointPtr<Scalar>, DMat<Scalar>>>
             bodiesJointsAndReflectedInertias() const override;
 
+            // Derivative methods
+            std::vector<DMat<Scalar>> getSq() const override;
+            DMat<Scalar> getSdotqd_q() const override;
+            DMat<Scalar> getSdotqd_qd() const override;
+
         private:
+            char axisToChar(ori::CoordinateAxis axis) const;
+            void initializeCasadiFunctions() const;
             JointPtr<Scalar> link_1_joint_;
             JointPtr<Scalar> link_2_joint_;
             JointPtr<Scalar> link_3_joint_;
@@ -55,8 +62,26 @@ namespace grbda
             const Body<Scalar> rotor_2_;
             const Body<Scalar> rotor_3_;
 
+            ori::CoordinateAxis axis1_;
+            ori::CoordinateAxis axis2_;
+            ori::CoordinateAxis axis3_;
+
+            spatial::Transform<Scalar> X_tree_2_;
+            spatial::Transform<Scalar> X_tree_3_;
+
             DMat<Scalar> X_intra_S_span_;
             DMat<Scalar> X_intra_S_span_ring_;
+
+            // CasADi functions for derivatives
+            mutable bool casadi_functions_initialized_ = false;
+            mutable casadi::Function f_dS_link2_dq_;
+            mutable casadi::Function f_dS_link3_dq_;
+            mutable casadi::Function f_Sdotqd_q_;
+            mutable casadi::Function f_Sdotqd_qd_;
+
+            // Cache for current state
+            mutable DVec<Scalar> q_cache_;
+            mutable DVec<Scalar> qd_cache_;
         };
 
     }

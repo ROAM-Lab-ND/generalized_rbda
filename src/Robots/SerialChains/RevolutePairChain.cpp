@@ -110,4 +110,7 @@ namespace grbda
     template class RevolutePairChain<2ul>;
     template class RevolutePairChain<4ul>;
 
+    template class RevolutePairChain<2ul, std::complex<double>>;
+    template class RevolutePairChain<4ul, std::complex<double>>;
+
 } // namespace grbda

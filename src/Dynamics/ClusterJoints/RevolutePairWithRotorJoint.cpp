@@ -270,11 +270,15 @@ namespace grbda
             SX Sdot_col0 = dResult_dq1 * qd1 + dResult_dq2 * qd2;
             SX Sdotqd = Sdot_col0 * qd1;
 
+            // Compute ∂(Ṡqd)/∂q using CasADi's automatic differentiation
+            SX dSdotqd_dq1 = jacobian(Sdotqd, q1);
+            SX dSdotqd_dq2 = jacobian(Sdotqd, q2);
+
             // Compute ∂(Ṡqd)/∂qd using CasADi's automatic differentiation
             SX dSdotqd_dqd1 = jacobian(Sdotqd, qd1);
             SX dSdotqd_dqd2 = jacobian(Sdotqd, qd2);
 
-            f_Sdotqd_q_ = Function("Sdotqd_q", {q1, q2, qd1, qd2}, {SX::zeros(6, 2)});  // No q-dependence in second-order term
+            f_Sdotqd_q_ = Function("Sdotqd_q", {q1, q2, qd1, qd2}, {horzcat(dSdotqd_dq1, dSdotqd_dq2)});
             f_Sdotqd_qd_ = Function("Sdotqd_qd", {q1, q2, qd1, qd2}, {horzcat(dSdotqd_dqd1, dSdotqd_dqd2)});
 
             casadi_functions_initialized_ = true;
@@ -359,10 +363,27 @@ namespace grbda
             };
 
             std::vector<casadi::DM> result = f_Sdotqd_q_(input);
-            casadi::DM Sdotqd_q = result[0];  // 6x2 matrix (only link2 rows)
+            casadi::DM Sdotqd_q_link2 = result[0];  // 6x2 matrix (derivatives w.r.t. q1, q2)
 
+            // The CasADi function returns ∂(Ṡ[link2,:]*qd)/∂q for the X_intra_S_span part
+            // But we need ∂(S*qd)/∂q where S = X_intra_S_span * G
+            // Since Ṡ = (∂X_intra_S_span/∂q) * G, we have:
+            // ∂(Ṡ*qd)/∂q comes from second derivatives
+
+            // However, the CasADi function computes ∂(Ṡ[link2,:0]*qd[0])/∂q
+            // where Ṡ[link2,:0] is just the link2 rows of the first column
+            // This needs to be projected through G to get the full effect
+
+            // For now, place in the link2 spatial block and rely on the chain rule
             DMat<Scalar> output = DMat<Scalar>::Zero(24, 2);
-            // No q-dependence in second-order term, returns zeros
+
+            // Place the link2 contribution in rows corresponding to link2
+            for (int i = 0; i < 6; ++i) {
+                for (int j = 0; j < 2; ++j) {
+                    output(6 * link2_index_ + i, j) = static_cast<Scalar>(static_cast<double>(Sdotqd_q_link2(i, j)));
+                }
+            }
+
             return output;
         }
 

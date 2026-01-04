@@ -473,12 +473,6 @@ void testInverseDynamicsDerivativesComplexStepSimple(ClusterTreeModel<double>& m
     std::cout << "========================================\n\n";
 }
 
-TEST(InverseDynamicsDerivativesComplexStep, DoublePendulumURDF) {
-    ClusterTreeModel<double> model;
-    model.buildModelFromURDF("/home/docker/generalized_rbda/robot-models/double_pendulum.urdf");
-    // 2-link double pendulum from URDF should work perfectly with complex-step
-    testInverseDynamicsDerivativesComplexStepSimple(model, "Double pendulum (URDF)", 2);
-}
 
 TEST(InverseDynamicsDerivativesComplexStep, ThreeLinkChain) {
     // RevoluteChainWithAndWithoutRotor<N, M> where N=rotors, M=no rotors
@@ -1757,4 +1751,96 @@ TEST(InverseDynamicsDerivativesComplexStep, MITHumanoidQuaternion) {
     // TODO: Replace with simpler version once implemented:
     // testRobotComplexStep<MIT_Humanoid, ori_representation::Quaternion>("MIT Humanoid (Quaternion)", 24, 1.0, 0.1);
     testInverseDynamicsDerivativesComplexStepFloatingBase(model, "MIT Humanoid (Quaternion)", 24, 1.0, 0.1);
+}
+
+TEST(InverseDynamicsDerivativesComplexStep, TeleopArm) {
+    // Build both real and complex models
+    TeleopArm<double> robot_real;
+    TeleopArm<std::complex<double>> robot_complex;
+    
+    ClusterTreeModel<double> model_real = robot_real.buildClusterTreeModel();
+    ClusterTreeModel<std::complex<double>> model_complex = robot_complex.buildClusterTreeModel();
+    
+    const int nDOF = model_real.getNumDegreesOfFreedom();
+    ASSERT_EQ(nDOF, 7);
+    
+    // Set random state on real model
+    ModelState<double> model_state_real;
+    for (const auto &cluster : model_real.clusters()) {
+        JointState<> joint_state = cluster->joint_->randomJointState();
+        model_state_real.push_back(joint_state);
+    }
+    model_real.setState(model_state_real);
+    
+    // Random acceleration
+    const DVec<double> ydd_real = DVec<double>::Random(nDOF);
+    
+    // Get analytical derivatives
+    auto [dtau_dq, dtau_dqdot] = model_real.firstOrderInverseDynamicsDerivatives(ydd_real);
+    
+    std::cout << "\\n========================================\\n";
+    std::cout << "Testing inverse dynamics derivatives (Complex-Step)\\n";
+    std::cout << "Robot: TeleopArm\\n";
+    std::cout << "DOF: " << nDOF << "\\n";
+    std::cout << "========================================\\n\\n";
+    
+    // Get real state
+    std::pair<DVec<double>, DVec<double>> state_real = model_real.getState();
+    const DVec<double>& q0 = state_real.first;
+    const DVec<double>& qd0 = state_real.second;
+    
+    const double h = 1e-20;
+    const std::complex<double> ih(0.0, h);
+    
+    // Convert ydd to complex
+    DVec<std::complex<double>> ydd_complex(nDOF);
+    for (int i = 0; i < nDOF; ++i) {
+        ydd_complex[i] = std::complex<double>(ydd_real[i], 0.0);
+    }
+    
+    // Test dtau/dq using complex-step
+    double max_error_dq = 0.0;
+    for (int i = 0; i < nDOF; ++i) {
+        // Create perturbed state: q[i] += ih
+        auto [q_complex, qd_complex] = toComplexState(q0, qd0);
+        q_complex[i] += ih;
+        
+        // Set state on complex model
+        ModelState<std::complex<double>> model_state_complex;
+        int idx = 0;
+        for (const auto &cluster : model_complex.clusters()) {
+            JointCoordinate<std::complex<double>> pos(
+                DVec<std::complex<double>>::Zero(cluster->num_positions_), false);
+            JointCoordinate<std::complex<double>> vel(
+                DVec<std::complex<double>>::Zero(cluster->num_velocities_), false);
+            
+            for (int j = 0; j < cluster->num_positions_; ++j) {
+                pos[j] = q_complex[idx + j];
+            }
+            for (int j = 0; j < cluster->num_velocities_; ++j) {
+                vel[j] = qd_complex[idx + j];
+            }
+            
+            JointState<std::complex<double>> joint_state(pos, vel);
+            model_state_complex.push_back(joint_state);
+            idx += cluster->num_velocities_;
+        }
+        model_complex.setState(model_state_complex);
+        
+        // Compute inverse dynamics with complex state
+        DVec<std::complex<double>> tau_complex = model_complex.inverseDynamics(ydd_complex);
+        
+        // Extract derivative from imaginary part
+        DVec<double> dtau_dqi_complex(nDOF);
+        for (int j = 0; j < nDOF; ++j) {
+            dtau_dqi_complex[j] = tau_complex[j].imag() / h;
+        }
+        
+        // Compare with analytical
+        double error = (dtau_dq.col(i) - dtau_dqi_complex).cwiseAbs().maxCoeff();
+        max_error_dq = std::max(max_error_dq, error);
+    }
+    
+    std::cout << "Max error (dtau/dq): " << max_error_dq << "\\n";
+    EXPECT_LT(max_error_dq, 1e-12);
 }

@@ -27,7 +27,15 @@ namespace grbda
             std::vector<std::tuple<Body<Scalar>, JointPtr<Scalar>, DMat<Scalar>>>
             bodiesJointsAndReflectedInertias() const override;
 
+            // Derivative methods
+            std::vector<DMat<Scalar>> getSq() const override;
+            DMat<Scalar> getSdotqd_q() const override;
+            DMat<Scalar> getSdotqd_qd() const override;
+
         private:
+            char axisToChar(ori::CoordinateAxis axis) const;
+            void initializeCasadiFunctions() const;
+
             JointPtr<Scalar> link_1_joint_;
             JointPtr<Scalar> link_2_joint_;
 
@@ -36,8 +44,22 @@ namespace grbda
             const Body<Scalar> link_1_;
             const Body<Scalar> link_2_;
 
+            const ori::CoordinateAxis axis1_;
+            const ori::CoordinateAxis axis2_;
+
             DMat<Scalar> X_intra_S_span_;
             DMat<Scalar> X_intra_S_span_ring_;
+
+            // CasADi functions for derivatives
+            mutable bool casadi_functions_initialized_ = false;
+            mutable casadi::Function f_dS_dq1_;
+            mutable casadi::Function f_dS_dq2_;
+            mutable casadi::Function f_Sdotqd_q_;
+            mutable casadi::Function f_Sdotqd_qd_;
+
+            // Cache for current state
+            mutable DVec<Scalar> q_cache_;
+            mutable DVec<Scalar> qd_cache_;
         };
 
     }

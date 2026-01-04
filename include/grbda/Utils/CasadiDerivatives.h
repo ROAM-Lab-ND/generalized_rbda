@@ -91,6 +91,22 @@ inline casadi::SX revoluteMotionSubspace(char axis)
     return S;
 }
 
+/// @brief Transform a motion vector using spatial transform
+/// Formula: m_out = [E * m_angular, -E * [r]× * m_angular + E * m_linear]
+/// where E is rotation matrix and r is translation vector
+inline casadi::SX spatialTransformMotionVector(const casadi::SX& E, const casadi::SX& r, const casadi::SX& m_in)
+{
+    casadi::SX m_angular = m_in(casadi::Slice(0, 3));
+    casadi::SX m_linear = m_in(casadi::Slice(3, 6));
+
+    casadi::SX r_cross = crossMatrix(r);
+
+    casadi::SX m_out_angular = mtimes(E, m_angular);
+    casadi::SX m_out_linear = -mtimes(E, mtimes(r_cross, m_angular)) + mtimes(E, m_linear);
+
+    return vertcat(m_out_angular, m_out_linear);
+}
+
 } // namespace casadi_derivatives
 } // namespace grbda
 
