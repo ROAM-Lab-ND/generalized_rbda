@@ -568,21 +568,31 @@ namespace grbda
             auto symbolic_constraint = generic_constraint_->copyAsSymbolic();
 
             const int n_span_pos = this->loop_constraint_->numSpanningPos();
-            const int n_indep = this->loop_constraint_->numIndependentVel();
+            const int n_span_vel = this->loop_constraint_->numSpanningVel();
 
-            // Symbolic spanning positions
+            // Symbolic spanning positions and velocities
             SX q_span_sx = SX::sym("q_span", n_span_pos);
             DVec<SX> q_span_vec(n_span_pos);
             casadi::copy(q_span_sx, q_span_vec);
             JointCoordinate<SX> joint_pos_sx(q_span_vec, true);
 
-            // Update constraint Jacobians with symbolic positions
+            SX qd_span_sx = SX::sym("qd_span", n_span_vel);
+            DVec<SX> qd_span_vec(n_span_vel);
+            casadi::copy(qd_span_sx, qd_span_vec);
+            JointCoordinate<SX> vel_pos_sx(qd_span_vec, false);
+
+            // Update constraint Jacobians and biases with symbolic state
             symbolic_constraint.updateJacobians(joint_pos_sx);
             DMat<SX> G_sx = symbolic_constraint.G();
+            JointState<SX> joint_state_sx(joint_pos_sx, vel_pos_sx);
+            symbolic_constraint.updateBiases(joint_state_sx);
+            DMat<SX> g_sx = symbolic_constraint.g();
 
-            // Convert to CasADi matrix
+            // Convert to CasADi matrices
             SX G_casadi = SX::zeros(G_sx.rows(), G_sx.cols());
             casadi::copy(G_sx, G_casadi);
+            SX g_casadi = SX::zeros(g_sx.rows(), g_sx.cols());
+            casadi::copy(g_sx, g_casadi);
 
             // Compute dG/dq using CasADi automatic differentiation
             std::vector<SX> dG_dq_vec;
@@ -590,10 +600,16 @@ namespace grbda
                 SX dG_dqi = jacobian(G_casadi, q_span_sx(i));
                 dG_dq_vec.push_back(dG_dqi);
             }
-
-            // Stack all derivatives
             SX dG_dq_stacked = SX::vertcat(dG_dq_vec);
             dG_dq_fcn_ = casadi::Function("dG_dq", {q_span_sx}, {dG_dq_stacked});
+
+            // Compute jacobians of g with respect to q and qd
+            SX dg_dq_sx = jacobian(g_casadi, q_span_sx);
+            SX dg_dqd_sx = jacobian(g_casadi, qd_span_sx);
+
+            // Create functions
+            dSdotqd_dq_fcn_ = casadi::Function("dSdotqd_dq", {q_span_sx, qd_span_sx}, {dg_dq_sx});
+            dSdotqd_dqd_fcn_ = casadi::Function("dSdotqd_dqd", {q_span_sx, qd_span_sx}, {dg_dqd_sx});
         }
 
 
@@ -660,19 +676,19 @@ namespace grbda
         }
 
         template <typename Scalar>
+
         DMat<Scalar> Generic<Scalar>::getSdotqd_q() const
         {
-            const int mss_dim = this->num_bodies_ * 6;
-            const int nv = this->num_velocities_;
-            return DMat<Scalar>::Zero(mss_dim, nv);
+            // S_ring_ * qd_cache_ gives the configuration-dependent part of d/dq (S(q) * qd) * qd
+            // qd_cache_ must be up-to-date (set in updateKinematics)
+            return this->S_ring_ * this->qd_cache_;
         }
 
         template <typename Scalar>
         DMat<Scalar> Generic<Scalar>::getSdotqd_qd() const
         {
-            const int mss_dim = this->num_bodies_ * 6;
-            const int nv = this->num_velocities_;
-            return DMat<Scalar>::Zero(mss_dim, nv);
+            // The derivative of S(q) * qd w.r.t. qd is S(q)
+            return this->S_;
         }
         template class Generic<double>;
         template class Generic<std::complex<double>>;

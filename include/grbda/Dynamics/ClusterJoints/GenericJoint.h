@@ -109,8 +109,10 @@ namespace grbda
             mutable DVec<Scalar> q_cache_;
             mutable DVec<Scalar> qd_cache_;
             
-            // CasADi functions for computing dG/dq
+            // CasADi functions for computing dG/dq and Sdotqd derivatives
             mutable casadi::Function dG_dq_fcn_;
+            mutable casadi::Function dSdotqd_dq_fcn_;
+            mutable casadi::Function dSdotqd_dqd_fcn_;
             mutable bool derivative_functions_initialized_ = false;
         };
 

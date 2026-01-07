@@ -1,3 +1,35 @@
+
+// --- IMPLICIT CONSTRAINT COMPLEX-STEP TESTS ---
+#include "grbda/Robots/TelloWithArms.hpp"
+#include "grbda/Robots/Tello.hpp"
+#include "grbda/Robots/PlanarLegLinkage.hpp"
+
+
+// --- IMPLICIT CONSTRAINT COMPLEX-STEP TESTS (robust cluster-wise state mapping) ---
+#include "grbda/Robots/TelloWithArms.hpp"
+#include "grbda/Robots/Tello.hpp"
+#include "grbda/Robots/PlanarLegLinkage.hpp"
+
+
+namespace grbda {
+// Helper: set ModelState from flat q/qd vectors using cluster indices
+template <typename Scalar>
+void setModelStateFromVectors(grbda::ClusterTreeModel<Scalar>& model, const grbda::DVec<Scalar>& q, const grbda::DVec<Scalar>& qd) {
+    grbda::ModelState<Scalar> state;
+    for (const auto& cluster : model.clusters()) {
+        grbda::JointState<Scalar> js;
+        js.position = q.segment(cluster->position_index_, cluster->num_positions_);
+        js.velocity = qd.segment(cluster->velocity_index_, cluster->num_velocities_);
+        state.push_back(js);
+    }
+    model.setState(state);
+}
+} // namespace grbda
+
+
+
+
+
 #include <iostream>
 #include <iomanip>
 #include <complex>

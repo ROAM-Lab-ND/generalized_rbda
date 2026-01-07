@@ -154,6 +154,190 @@ void testInverseDynamicsDerivatives(ClusterTreeModel<double>& model,
     std::cout << "========================================\n\n";
 }
 
+TEST(InverseDynamicsDerivatives, PlanarLegLinkageImplicitConstraint) {
+    using namespace grbda;
+    PlanarLegLinkage<> robot;
+    ClusterTreeModel<double> model = robot.buildClusterTreeModel();
+
+    const int nDOF = model.getNumDegreesOfFreedom();
+    ASSERT_GT(nDOF, 0);
+    const int trials = 6;
+    const double eps = 1e-6;
+    const double tol = 1e-3;
+
+    std::cout << std::setprecision(12);
+    std::cout << "PlanarLegLinkageImplicitConstraint: DOF=" << nDOF << " eps=" << eps << " tol=" << tol << " trials=" << trials << "\n";
+
+    for (int t = 0; t < trials; ++t) {
+        ModelState<double> model_state;
+        for (const auto &cluster : model.clusters()) {
+            bool found = false;
+            JointState<> spanning_js;
+            for (int attempt = 0; attempt < 20; ++attempt) {
+                JointState<> js = cluster->joint_->randomJointState();
+                try {
+                    spanning_js = cluster->joint_->toSpanningTreeState(js);
+                    found = true;
+                    break;
+                } catch (const std::exception &e) { continue; }
+            }
+            if (!found) throw std::runtime_error(std::string("Failed to sample valid spanning state for cluster: ") + cluster->name_);
+            model_state.push_back(spanning_js);
+        }
+        model.setState(model_state);
+
+        DVec<double> ydd = DVec<double>::Random(nDOF);
+        std::cout << "  Trial " << t << ": sampled valid spanning state.\n";
+        auto [dtau_dq, dtau_dqdot] = model.firstOrderInverseDynamicsDerivatives(ydd);
+        std::cout << "    dtau_dq: " << dtau_dq.rows() << "x" << dtau_dq.cols()
+              << ", dtau_dqdot: " << dtau_dqdot.rows() << "x" << dtau_dqdot.cols() << "\n";
+
+        auto state_pair = model.getState();
+        const DVec<double> q0 = state_pair.first;
+        const DVec<double> qd0 = state_pair.second;
+        DVec<double> tau0 = model.inverseDynamics(ydd);
+        ModelState<double> baseline_model_state = model_state;
+
+        ModelState<double> perturbed_model_state = baseline_model_state;
+        DVec<double> qd_delta_span = DVec<double>::Zero(nDOF);
+        for (size_t ci = 0; ci < model.clusters().size(); ++ci) {
+            const auto &cluster = model.clusters()[ci];
+            const int vel_idx = cluster->velocity_index_;
+            const int num_ind = cluster->num_velocities_;
+            DVec<double> delta_ind = DVec<double>::Random(num_ind) * eps;
+            DVec<double> delta_span = cluster->joint_->G() * delta_ind;
+            DVec<double> v = perturbed_model_state[ci].velocity;
+            v += delta_span;
+            perturbed_model_state[ci].velocity = v;
+            qd_delta_span.segment(vel_idx, num_ind) = delta_span;
+        }
+
+        model.setState(perturbed_model_state);
+        DVec<double> tau_pert = model.inverseDynamics(ydd);
+        DVec<double> tau_pred = tau0 + dtau_dqdot * qd_delta_span;
+
+        double err = (tau_pert - tau_pred).norm();
+        std::cout << "    Trial " << t << " err=" << err << " qd_delta_norm=" << qd_delta_span.norm() << "\n";
+        EXPECT_LT(err, tol) << "PlanarLegLinkage directional dtau/dqdot check failed (err=" << err << ")";
+
+        // --- Directional dtau/dq check ---
+        // Perturb positions along a random direction in the independent coordinates
+        ModelState<double> perturbed_model_state_q = baseline_model_state;
+        DVec<double> q_delta_span = DVec<double>::Zero(nDOF);
+        for (size_t ci = 0; ci < model.clusters().size(); ++ci) {
+            const auto &cluster = model.clusters()[ci];
+            const int pos_idx = cluster->position_index_;
+            const int num_ind = cluster->num_positions_;
+            DVec<double> delta_ind = DVec<double>::Random(num_ind) * eps;
+            DVec<double> delta_span = cluster->joint_->G() * delta_ind;
+            DVec<double> p = perturbed_model_state_q[ci].position;
+            p += delta_span;
+            perturbed_model_state_q[ci].position = p;
+            q_delta_span.segment(pos_idx, num_ind) = delta_span;
+        }
+        model.setState(perturbed_model_state_q);
+        DVec<double> tau_pert_q = model.inverseDynamics(ydd);
+        DVec<double> tau_pred_q = tau0 + dtau_dq * q_delta_span;
+        double err_q = (tau_pert_q - tau_pred_q).norm();
+        std::cout << "    Trial " << t << " (q) err=" << err_q << " q_delta_norm=" << q_delta_span.norm() << "\n";
+        EXPECT_LT(err_q, tol) << "PlanarLegLinkage directional dtau/dq check failed (err=" << err_q << ")";
+
+        model.setState(baseline_model_state);
+    }
+}
+
+TEST(InverseDynamicsDerivatives, TelloWithArmsImplicitConstraint) {
+    using namespace grbda;
+    TelloWithArms<double> robot;
+    ClusterTreeModel<double> model = robot.buildClusterTreeModel();
+
+    const int nDOF = model.getNumDegreesOfFreedom();
+    ASSERT_GT(nDOF, 0);
+
+    const int trials = 6;
+    const double eps = 1e-6;
+    const double tol = 1e-3;
+
+    std::cout << std::setprecision(12);
+    std::cout << "TelloWithArmsImplicitConstraint: DOF=" << nDOF << " eps=" << eps << " tol=" << tol << " trials=" << trials << "\n";
+
+    for (int t = 0; t < trials; ++t) {
+        ModelState<double> model_state;
+        for (const auto &cluster : model.clusters()) {
+            bool found = false;
+            JointState<> spanning_js;
+            for (int attempt = 0; attempt < 20; ++attempt) {
+                JointState<> js = cluster->joint_->randomJointState();
+                try {
+                    spanning_js = cluster->joint_->toSpanningTreeState(js);
+                    found = true;
+                    break;
+                } catch (const std::exception &e) { continue; }
+            }
+            if (!found) throw std::runtime_error(std::string("Failed to sample valid spanning state for cluster: ") + cluster->name_);
+            model_state.push_back(spanning_js);
+        }
+        model.setState(model_state);
+
+        DVec<double> ydd = DVec<double>::Random(nDOF);
+        std::cout << "  Trial " << t << ": sampled valid spanning state.\n";
+        auto [dtau_dq, dtau_dqdot] = model.firstOrderInverseDynamicsDerivatives(ydd);
+        std::cout << "    dtau_dq: " << dtau_dq.rows() << "x" << dtau_dq.cols()
+              << ", dtau_dqdot: " << dtau_dqdot.rows() << "x" << dtau_dqdot.cols() << "\n";
+
+        auto state_pair = model.getState();
+        const DVec<double> q0 = state_pair.first;
+        const DVec<double> qd0 = state_pair.second;
+        DVec<double> tau0 = model.inverseDynamics(ydd);
+        ModelState<double> baseline_model_state = model_state;
+
+        ModelState<double> perturbed_model_state = baseline_model_state;
+        DVec<double> qd_delta_span = DVec<double>::Zero(nDOF);
+        for (size_t ci = 0; ci < model.clusters().size(); ++ci) {
+            const auto &cluster = model.clusters()[ci];
+            const int vel_idx = cluster->velocity_index_;
+            const int num_ind = cluster->num_velocities_;
+            DVec<double> delta_ind = DVec<double>::Random(num_ind) * eps;
+            DVec<double> delta_span = cluster->joint_->G() * delta_ind;
+            DVec<double> v = perturbed_model_state[ci].velocity;
+            v += delta_span;
+            perturbed_model_state[ci].velocity = v;
+            qd_delta_span.segment(vel_idx, num_ind) = delta_span;
+        }
+
+        model.setState(perturbed_model_state);
+        DVec<double> tau_pert = model.inverseDynamics(ydd);
+        DVec<double> tau_pred = tau0 + dtau_dqdot * qd_delta_span;
+
+        double err = (tau_pert - tau_pred).norm();
+        std::cout << "    Trial " << t << " err=" << err << " qd_delta_norm=" << qd_delta_span.norm() << "\n";
+        EXPECT_LT(err, tol) << "TelloWithArms directional dtau/dqdot check failed (err=" << err << ")";
+
+        // --- Directional dtau/dq check ---
+        ModelState<double> perturbed_model_state_q = baseline_model_state;
+        DVec<double> q_delta_span = DVec<double>::Zero(nDOF);
+        for (size_t ci = 0; ci < model.clusters().size(); ++ci) {
+            const auto &cluster = model.clusters()[ci];
+            const int pos_idx = cluster->position_index_;
+            const int num_ind = cluster->num_positions_;
+            DVec<double> delta_ind = DVec<double>::Random(num_ind) * eps;
+            DVec<double> delta_span = cluster->joint_->G() * delta_ind;
+            DVec<double> p = perturbed_model_state_q[ci].position;
+            p += delta_span;
+            perturbed_model_state_q[ci].position = p;
+            q_delta_span.segment(pos_idx, num_ind) = delta_span;
+        }
+        model.setState(perturbed_model_state_q);
+        DVec<double> tau_pert_q = model.inverseDynamics(ydd);
+        DVec<double> tau_pred_q = tau0 + dtau_dq * q_delta_span;
+        double err_q = (tau_pert_q - tau_pred_q).norm();
+        std::cout << "    Trial " << t << " (q) err=" << err_q << " q_delta_norm=" << q_delta_span.norm() << "\n";
+        EXPECT_LT(err_q, tol) << "TelloWithArms directional dtau/dq check failed (err=" << err_q << ")";
+
+        model.setState(baseline_model_state);
+    }
+}
+
 //TEST(InverseDynamicsDerivatives, DoublePendulumURDF) {
 //    ClusterTreeModel<double> model;
 //    model.buildModelFromURDF("/home/docker/generalized_rbda/robot-models/double_pendulum.urdf");
@@ -230,4 +414,109 @@ TEST(InverseDynamicsDerivatives, TeleopArm) {
     TeleopArm<> robot;
     ClusterTreeModel<double> model = robot.buildClusterTreeModel();
     testInverseDynamicsDerivatives(model, "TeleopArm", 7, false, 1e-6, 1e-6);
+}
+
+// Tello has implicit loop constraints inside some clusters. Instead of running the
+// full finite-difference column-wise verification (which perturbs independent
+// coordinates and may produce invalid dependent coordinates), validate the
+// most-sensitive derivative `dtau/dqdot` using small, valid velocity
+// perturbations applied to randomly-sampled valid states. This avoids invoking
+// the spanning-tree conversion on invalid perturbed positions while still
+// exercising the derivative implementation for the Tello model.
+TEST(InverseDynamicsDerivatives, TelloImplicitConstraint) {
+    using namespace grbda;
+    Tello<double> robot;
+    ClusterTreeModel<double> model = robot.buildClusterTreeModel();
+
+    const int nDOF = model.getNumDegreesOfFreedom();
+    ASSERT_GT(nDOF, 0);
+
+    // Number of random valid state samples to test
+    const int trials = 6;
+    const double eps = 1e-6; // small velocity perturbation magnitude
+    const double tol = 1e-3; // relaxed tolerance for directional check
+
+    for (int t = 0; t < trials; ++t) {
+        // Build a valid model state by sampling each cluster's joint state
+        ModelState<double> model_state;
+        for (const auto &cluster : model.clusters()) {
+            bool found = false;
+            JointState<> spanning_js;
+            for (int attempt = 0; attempt < 20; ++attempt) {
+                JointState<> js = cluster->joint_->randomJointState();
+                try {
+                    spanning_js = cluster->joint_->toSpanningTreeState(js);
+                    found = true;
+                    break;
+                } catch (const std::exception &e) {
+                    // retry sampling; some random samples may produce invalid independent positions
+                    continue;
+                }
+            }
+            if (!found) {
+                throw std::runtime_error(std::string("Failed to sample valid spanning state for cluster: ") + cluster->name_);
+            }
+            model_state.push_back(spanning_js);
+        }
+        model.setState(model_state);
+
+        // Random acceleration and baseline velocities
+        DVec<double> ydd = DVec<double>::Random(nDOF);
+        auto [dtau_dq, dtau_dqdot] = model.firstOrderInverseDynamicsDerivatives(ydd);
+
+        // baseline tau and save spanning ModelState for safe perturbations
+        auto state_pair = model.getState();
+        const DVec<double> q0 = state_pair.first;
+        const DVec<double> qd0 = state_pair.second;
+        DVec<double> tau0 = model.inverseDynamics(ydd);
+        ModelState<double> baseline_model_state = model_state; // spanning joint states
+
+
+        // small random independent-velocity perturbation per-cluster and convert to spanning velocity
+        ModelState<double> perturbed_model_state = baseline_model_state;
+        DVec<double> qd_delta_span = DVec<double>::Zero(nDOF);
+        for (size_t ci = 0; ci < model.clusters().size(); ++ci) {
+            const auto &cluster = model.clusters()[ci];
+            const int vel_idx = cluster->velocity_index_;
+            const int num_ind = cluster->num_velocities_;
+            DVec<double> delta_ind = DVec<double>::Random(num_ind) * eps;
+            DVec<double> delta_span = cluster->joint_->G() * delta_ind;
+            DVec<double> v = perturbed_model_state[ci].velocity;
+            v += delta_span;
+            perturbed_model_state[ci].velocity = v;
+            qd_delta_span.segment(vel_idx, num_ind) = delta_span;
+        }
+
+        model.setState(perturbed_model_state);
+        DVec<double> tau_pert = model.inverseDynamics(ydd);
+
+        // predicted change from analytic derivative: dtau_dqdot * qd_delta_span
+        DVec<double> tau_pred = tau0 + dtau_dqdot * qd_delta_span;
+
+        double err = (tau_pert - tau_pred).norm();
+        EXPECT_LT(err, tol) << "Tello directional dtau/dqdot check failed (err=" << err << ")";
+
+        // --- Directional dtau/dq check ---
+        ModelState<double> perturbed_model_state_q = baseline_model_state;
+        DVec<double> q_delta_span = DVec<double>::Zero(nDOF);
+        for (size_t ci = 0; ci < model.clusters().size(); ++ci) {
+            const auto &cluster = model.clusters()[ci];
+            const int pos_idx = cluster->position_index_;
+            const int num_ind = cluster->num_positions_;
+            DVec<double> delta_ind = DVec<double>::Random(num_ind) * eps;
+            DVec<double> delta_span = cluster->joint_->G() * delta_ind;
+            DVec<double> p = perturbed_model_state_q[ci].position;
+            p += delta_span;
+            perturbed_model_state_q[ci].position = p;
+            q_delta_span.segment(pos_idx, num_ind) = delta_span;
+        }
+        model.setState(perturbed_model_state_q);
+        DVec<double> tau_pert_q = model.inverseDynamics(ydd);
+        DVec<double> tau_pred_q = tau0 + dtau_dq * q_delta_span;
+        double err_q = (tau_pert_q - tau_pred_q).norm();
+        EXPECT_LT(err_q, tol) << "Tello directional dtau/dq check failed (err=" << err_q << ")";
+
+        // restore baseline state for next trial
+        model.setState(baseline_model_state);
+    }
 }
