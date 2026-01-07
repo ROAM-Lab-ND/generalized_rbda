@@ -9,16 +9,42 @@ using namespace grbda;
 
 // Finite difference Jacobian helper
 auto finiteDifferenceJacobian = [](auto func, const Eigen::VectorXd& point, double h) {
+    /*
     int n = point.size();
     Eigen::VectorXd f0 = func(point);
     int m = f0.size();
     Eigen::MatrixXd jacobian(m, n);
-
+    
     for (int i = 0; i < n; ++i) {
         Eigen::VectorXd pointPert = point;
         pointPert[i] += h;
         Eigen::VectorXd fPert = func(pointPert);
         jacobian.col(i) = (fPert - f0) / h;
+    }
+    return jacobian;
+    */
+   //Five-point stencil method for better accuracy
+   int n = point.size();
+    Eigen::VectorXd f0 = func(point);
+    int m = f0.size();
+    Eigen::MatrixXd jacobian(m, n);
+    
+    for (int i = 0; i < n; ++i) {
+        Eigen::VectorXd pointPert1 = point;
+        Eigen::VectorXd pointPert2 = point;
+        Eigen::VectorXd pointPert3 = point;
+        Eigen::VectorXd pointPert4 = point;
+
+
+        pointPert1[i] += 2*h;
+        pointPert2[i] += h;
+        pointPert3[i] -= h;
+        pointPert4[i] -= 2*h;
+        Eigen::VectorXd fPert1 = func(pointPert1);
+        Eigen::VectorXd fPert2 = func(pointPert2);
+        Eigen::VectorXd fPert3 = func(pointPert3);
+        Eigen::VectorXd fPert4 = func(pointPert4);
+        jacobian.col(i) = (-fPert1 + 8*fPert2 - 8*fPert3 + fPert4) / (12*h);
     }
     return jacobian;
 };
@@ -541,7 +567,7 @@ void testInverseDynamicsDerivativesLieGroupVariant(ClusterTreeModel<double>& mod
     std::pair<DVec<double>, DVec<double>> state = model.getState();
     const DVec<double>& q0 = state.first;
     const DVec<double>& qd0 = state.second;
-    const double h = 1e-8;
+    const double h = 1e-20;
 
     std::cout << "Finite difference verification (h = " << h << "):\n";
     std::cout << "  Tolerance: dtau/dq = " << tol_dq << ", dtau/dqdot = " << tol_dqdot << "\n\n";

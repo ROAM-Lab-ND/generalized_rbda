@@ -434,6 +434,10 @@ namespace grbda
             const DVec<Scalar> &q = spanning_joint_state.position;
             const DVec<Scalar> &qd = spanning_joint_state.velocity;
 
+            // Cache state for derivative computation
+            q_cache_ = q;
+            qd_cache_ = qd;
+
             int pos_idx = 0;
             int vel_idx = 0;
             for (int i = 0; i < this->num_bodies_; i++)
@@ -544,8 +548,132 @@ namespace grbda
                 if (body.index_ == body_index)
                     return body;
             throw std::runtime_error("Body is not in the current cluster");
+}
+
+        template <typename Scalar>
+        void Generic<Scalar>::initializeDerivativeFunctions() const
+        {
+            if (derivative_functions_initialized_ || !generic_constraint_) {
+                return;
+            }
+            derivative_functions_initialized_ = true;
+
+            // Only initialize for double type
+            if constexpr (!std::is_same_v<Scalar, double>) {
+                return;
+            }
+
+            // Create symbolic constraint to compute dG/dq
+            using SX = casadi::SX;
+            auto symbolic_constraint = generic_constraint_->copyAsSymbolic();
+
+            const int n_span_pos = this->loop_constraint_->numSpanningPos();
+            const int n_indep = this->loop_constraint_->numIndependentVel();
+
+            // Symbolic spanning positions
+            SX q_span_sx = SX::sym("q_span", n_span_pos);
+            DVec<SX> q_span_vec(n_span_pos);
+            casadi::copy(q_span_sx, q_span_vec);
+            JointCoordinate<SX> joint_pos_sx(q_span_vec, true);
+
+            // Update constraint Jacobians with symbolic positions
+            symbolic_constraint.updateJacobians(joint_pos_sx);
+            DMat<SX> G_sx = symbolic_constraint.G();
+
+            // Convert to CasADi matrix
+            SX G_casadi = SX::zeros(G_sx.rows(), G_sx.cols());
+            casadi::copy(G_sx, G_casadi);
+
+            // Compute dG/dq using CasADi automatic differentiation
+            std::vector<SX> dG_dq_vec;
+            for (int i = 0; i < n_span_pos; ++i) {
+                SX dG_dqi = jacobian(G_casadi, q_span_sx(i));
+                dG_dq_vec.push_back(dG_dqi);
+            }
+
+            // Stack all derivatives
+            SX dG_dq_stacked = SX::vertcat(dG_dq_vec);
+            dG_dq_fcn_ = casadi::Function("dG_dq", {q_span_sx}, {dG_dq_stacked});
         }
 
+
+        template <typename Scalar>
+        std::vector<DMat<Scalar>> Generic<Scalar>::getSq() const
+        {
+            const int mss_dim = this->num_bodies_ * 6;
+            const int nv = this->num_velocities_;
+            const int n_span_vel = this->loop_constraint_->numSpanningVel();
+
+            if constexpr (std::is_same_v<Scalar, double>) {
+                initializeDerivativeFunctions();
+
+                std::vector<DMat<Scalar>> S_q(nv);
+
+                if (!generic_constraint_) {
+                    for (int i = 0; i < nv; ++i) {
+                        S_q[i] = DMat<Scalar>::Zero(mss_dim, nv);
+                    }
+                    return S_q;
+                }
+
+                // Safety check: ensure state has been cached
+                if (q_cache_.size() == 0 || !derivative_functions_initialized_) {
+                    // Return zeros if not initialized
+                    for (int i = 0; i < nv; ++i) {
+                        S_q[i] = DMat<Scalar>::Zero(mss_dim, nv);
+                    }
+                    return S_q;
+                }
+
+
+                const DMat<Scalar> S_implicit = X_intra_ * S_spanning_;
+                const DMat<Scalar>& G = this->loop_constraint_->G();
+
+                casadi::DM q_dm(q_cache_.size());
+                casadi::copy(q_cache_, q_dm);
+
+                casadi::DMVector result = dG_dq_fcn_(casadi::DMVector{q_dm});
+                casadi::DM dG_dq_stacked_dm = result[0];
+
+                const int n_span = G.rows();
+                const int n_indep = G.cols();
+
+                for (int qi = 0; qi < nv; ++qi) {
+                    S_q[qi] = DMat<Scalar>::Zero(mss_dim, nv);
+
+                    if (qi < n_span_vel) {
+                        DMat<Scalar> dG_dqi(n_span, n_indep);
+                        for (int row = 0; row < n_span; ++row) {
+                            for (int col = 0; col < n_indep; ++col) {
+                                int idx = qi * n_span * n_indep + row * n_indep + col;
+                                dG_dqi(row, col) = static_cast<double>(dG_dq_stacked_dm(idx));
+                            }
+                        }
+                        S_q[qi] = S_implicit * dG_dqi;
+                    }
+                }
+
+                return S_q;
+            } else {
+                return std::vector<DMat<Scalar>>(nv, DMat<Scalar>::Zero(mss_dim, nv));
+            }
+        }
+
+        template <typename Scalar>
+        DMat<Scalar> Generic<Scalar>::getSdotqd_q() const
+        {
+            const int mss_dim = this->num_bodies_ * 6;
+            const int nv = this->num_velocities_;
+            return DMat<Scalar>::Zero(mss_dim, nv);
+        }
+
+        template <typename Scalar>
+        DMat<Scalar> Generic<Scalar>::getSdotqd_qd() const
+        {
+            const int mss_dim = this->num_bodies_ * 6;
+            const int nv = this->num_velocities_;
+            return DMat<Scalar>::Zero(mss_dim, nv);
+        }
         template class Generic<double>;
         template class Generic<std::complex<double>>;
         template class Generic<float>;
@@ -553,3 +681,4 @@ namespace grbda
     }
 
 } // namespace grbda
+

@@ -79,6 +79,11 @@ namespace grbda
             void computeSpatialTransformFromParentToCurrentCluster(
                 spatial::GeneralizedTransform<Scalar> &Xup) const override;
 
+            // Motion subspace derivatives for configuration-dependent kinematics
+            std::vector<DMat<Scalar>> getSq() const override;
+            DMat<Scalar> getSdotqd_q() const override;
+            DMat<Scalar> getSdotqd_qd() const override;
+
         private:
             void initialize(const std::vector<JointPtr<Scalar>> &joints,
                             std::shared_ptr<LoopConstraint::Base<Scalar>> loop_constraint);
@@ -97,6 +102,16 @@ namespace grbda
             DMat<Scalar> X_intra_;
             DMat<Scalar> X_intra_ring_;
             DMat<bool> connectivity_;
+
+            void initializeDerivativeFunctions() const;
+            
+            // Cached state for derivative computation
+            mutable DVec<Scalar> q_cache_;
+            mutable DVec<Scalar> qd_cache_;
+            
+            // CasADi functions for computing dG/dq
+            mutable casadi::Function dG_dq_fcn_;
+            mutable bool derivative_functions_initialized_ = false;
         };
 
     }
