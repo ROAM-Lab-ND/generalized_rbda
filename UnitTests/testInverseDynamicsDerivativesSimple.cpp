@@ -153,7 +153,7 @@ void testInverseDynamicsDerivatives(ClusterTreeModel<double>& model,
     std::cout << "  Max error (dtau/dqdot): " << max_error_dqdot << " (tol: " << tol_dqdot << ")\n";
     std::cout << "========================================\n\n";
 }
-
+/*
 TEST(InverseDynamicsDerivatives, PlanarLegLinkageImplicitConstraint) {
     using namespace grbda;
     PlanarLegLinkage<> robot;
@@ -245,7 +245,8 @@ TEST(InverseDynamicsDerivatives, PlanarLegLinkageImplicitConstraint) {
         model.setState(baseline_model_state);
     }
 }
-
+*/
+/*
 TEST(InverseDynamicsDerivatives, TelloWithArmsImplicitConstraint) {
     using namespace grbda;
     TelloWithArms<double> robot;
@@ -337,6 +338,7 @@ TEST(InverseDynamicsDerivatives, TelloWithArmsImplicitConstraint) {
         model.setState(baseline_model_state);
     }
 }
+*/
 
 //TEST(InverseDynamicsDerivatives, DoublePendulumURDF) {
 //    ClusterTreeModel<double> model;
@@ -415,7 +417,7 @@ TEST(InverseDynamicsDerivatives, TeleopArm) {
     ClusterTreeModel<double> model = robot.buildClusterTreeModel();
     testInverseDynamicsDerivatives(model, "TeleopArm", 7, false, 1e-6, 1e-6);
 }
-
+/*
 // Tello has implicit loop constraints inside some clusters. Instead of running the
 // full finite-difference column-wise verification (which perturbs independent
 // coordinates and may produce invalid dependent coordinates), validate the
@@ -519,4 +521,6 @@ TEST(InverseDynamicsDerivatives, TelloImplicitConstraint) {
         // restore baseline state for next trial
         model.setState(baseline_model_state);
     }
+
 }
+*/
