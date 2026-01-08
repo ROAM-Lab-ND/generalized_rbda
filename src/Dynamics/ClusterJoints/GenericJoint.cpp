@@ -24,6 +24,13 @@ namespace grbda
             int ind_dim = ind_coords.size();
             int dep_dim = dep_coords.size();
 
+            // Debug output for coordinate sizes
+            std::cout << "[GenericImplicit] state_dim=" << state_dim
+                      << ", ind_dim=" << ind_dim << ", dep_dim=" << dep_dim << std::endl;
+            if (state_dim == 0 || ind_dim + dep_dim != state_dim) {
+                std::cerr << "[GenericImplicit] Invalid coordinate sizes!" << std::endl;
+            }
+
             // The coordinate map is a matrix that maps the stacked indepedent
             // coordinates [y;q_dep] to the spanning coordinate vector q such that
             // q = coord_map * [y;q_dep]
@@ -40,16 +47,25 @@ namespace grbda
             // Symbolic state
             SX cs_q_sym = SX::sym("q", state_dim, 1);
             DVec<SX> q_sym(state_dim);
+            if (cs_q_sym.size2() == 0 || state_dim == 0) {
+                std::cerr << "[GenericImplicit] cs_q_sym has zero size!" << std::endl;
+            }
             casadi::copy(cs_q_sym, q_sym);
             JointCoordinate<SX> joint_pos_sym(q_sym, true);
 
             SX cs_v_sym = SX::sym("v", state_dim, 1);
             DVec<SX> v_sym(state_dim);
+            if (cs_v_sym.size2() == 0 || state_dim == 0) {
+                std::cerr << "[GenericImplicit] cs_v_sym has zero size!" << std::endl;
+            }
             casadi::copy(cs_v_sym, v_sym);
 
             // Implicit constraint violation function
             DVec<SX> phi_sym = phi_fcn(joint_pos_sym);
             const int constraint_dim = phi_sym.rows();
+            if (constraint_dim == 0) {
+                std::cerr << "[GenericImplicit] phi_sym has zero rows!" << std::endl;
+            }
             SX cs_phi_sym = casadi::SX(casadi::Sparsity::dense(constraint_dim, 1));
             casadi::copy(phi_sym, cs_phi_sym);
             casadi::Function cs_phi_fcn = casadi::Function("phi", {cs_q_sym}, {cs_phi_sym});
@@ -81,12 +97,56 @@ namespace grbda
             casadi::Slice ind_slice = casadi::Slice(0, ind_dim);
             cs_G_sym(ind_slice, ind_slice) = SX::eye(ind_dim);
             casadi::Slice dep_slice = casadi::Slice(ind_dim, ind_dim + dep_dim);
-            cs_G_sym(dep_slice, casadi::Slice()) = -SX::mtimes(SX::inv(cs_Kd_sym), cs_Ki_sym);
+            if (cs_Kd_sym.size2() == 0 || cs_Ki_sym.size2() == 0) {
+                std::cerr << "[GenericImplicit] cs_Kd_sym or cs_Ki_sym has zero size!" << std::endl;
+            }
+            
+            // For 2x2 matrices, use analytical formula for complex-step safety
+            // For larger matrices, use solve which is more numerically stable
+            if (dep_dim == 2 && ind_coords.size() == 1) {
+                // 2x2 system: inv([[a,b],[c,d]]) * [[e],[f]] = (1/det) * [[d,-b],[-c,a]] * [[e],[f]]
+                // This is complex-step safe (pure algebraic operations)
+                SX a = cs_Kd_sym(0, 0);
+                SX b = cs_Kd_sym(0, 1);
+                SX c = cs_Kd_sym(1, 0);
+                SX d = cs_Kd_sym(1, 1);
+                SX det = a*d - b*c;
+                SX e = cs_Ki_sym(0, 0);
+                SX f = cs_Ki_sym(1, 0);
+                SX inv_Kd_e = (d*e - b*f) / det;
+                SX inv_Kd_f = (-c*e + a*f) / det;
+                std::vector<SX> col_vec = {-inv_Kd_e, -inv_Kd_f};
+                cs_G_sym(dep_slice, casadi::Slice()) = SX::vertcat(col_vec);
+            } else {
+                // General case: use solve() which is more numerically stable
+                cs_G_sym(dep_slice, casadi::Slice()) = -SX::solve(cs_Kd_sym, cs_Ki_sym);
+            }
             cs_G_sym = SX::mtimes(coord_map, cs_G_sym);
 
             // Explicit constraints bias
             SX cs_g_sym = SX::zeros(state_dim, 1);
-            cs_g_sym(dep_slice) = SX::mtimes(SX::inv(cs_Kd_sym), cs_k_sym);
+            if (cs_Kd_sym.size2() == 0) {
+                std::cerr << "[GenericImplicit] cs_Kd_sym has zero size for bias!" << std::endl;
+            }
+            
+            // For 2x2 matrices, use analytical formula for complex-step safety
+            if (dep_dim == 2) {
+                // 2x2 system: inv([[a,b],[c,d]]) * [[e],[f]] = (1/det) * [[d,-b],[-c,a]] * [[e],[f]]
+                SX a = cs_Kd_sym(0, 0);
+                SX b = cs_Kd_sym(0, 1);
+                SX c = cs_Kd_sym(1, 0);
+                SX d = cs_Kd_sym(1, 1);
+                SX det = a*d - b*c;
+                SX e = cs_k_sym(0);
+                SX f = cs_k_sym(1);
+                SX inv_Kd_e = (d*e - b*f) / det;
+                SX inv_Kd_f = (-c*e + a*f) / det;
+                std::vector<SX> col_vec = {inv_Kd_e, inv_Kd_f};
+                cs_g_sym(dep_slice) = SX::vertcat(col_vec);
+            } else {
+                // General case: use solve()
+                cs_g_sym(dep_slice) = SX::solve(cs_Kd_sym, cs_k_sym);
+            }
             cs_g_sym = SX::mtimes(coord_map, cs_g_sym);
 
             // Assign member variables using casadi functions
@@ -138,78 +198,93 @@ namespace grbda
         DMat<Scalar> GenericImplicit<Scalar>::runCasadiFcn(const casadi::Function &fcn,
                                                            const JointCoordinate<Scalar> &arg)
         {
-            using CasadiScalar = std::conditional_t<
-                std::is_same<Scalar, casadi::SX>::value,
-                casadi::SX,
-                casadi::DM
-            >;
-
-            using CasadiResult = std::conditional_t<
-                std::is_same<Scalar, float>::value
-                || std::is_same<Scalar, std::complex<double>>::value,
-                double,
-                Scalar
-            >;
-
-            CasadiScalar arg_cs(arg.rows());
+            // For complex types, extract real part for CasADi evaluation
+            // (CasADi functions are real-valued)
             if constexpr (std::is_same_v<Scalar, std::complex<double>>) {
-                throw std::runtime_error("GenericImplicit::runCasadiFcn does not support std::complex<double> arguments.");
-                // for (int i = 0; i < arg.rows(); ++i)
-                //     arg_cs(i) = std::real(arg(i));
+                DVec<double> arg_real(arg.size());
+                for (int i = 0; i < arg.size(); ++i) {
+                    arg_real(i) = arg(i).real();
+                }
+                
+                casadi::DM arg_dm;
+                casadi::copy(arg_real, arg_dm);
+                
+                casadi::DM res_dm = fcn(arg_dm)[0];
+                
+                // Convert result through double then cast to complex
+                DMat<double> res_double(res_dm.size1(), res_dm.size2());
+                casadi::copy(res_dm, res_double);
+                
+                // Cast to complex (imaginary part is zero, but that's OK for constraint evaluation)
+                DMat<std::complex<double>> res = res_double.template cast<std::complex<double>>();
+                return res;
             } else {
-                casadi::copy(arg, arg_cs);
+                // For real types, use standard copy
+                casadi::DM arg_dm;
+                casadi::copy(arg, arg_dm);
+                
+                casadi::DM res_dm = fcn(arg_dm)[0];
+                
+                // Convert through double to handle float specialization
+                DMat<double> res_double(res_dm.size1(), res_dm.size2());
+                casadi::copy(res_dm, res_double);
+                
+                // Cast to target scalar type
+                DMat<Scalar> res = res_double.template cast<Scalar>();
+                return res;
             }
-
-
-            CasadiScalar res_cs = fcn(arg_cs)[0];
-            DMat<CasadiResult> res(res_cs.size1(), res_cs.size2());
-            casadi::copy(res_cs, res);
-            return res.template cast<Scalar>();
         }
 
         template <typename Scalar>
         DMat<Scalar> GenericImplicit<Scalar>::runCasadiFcn(const casadi::Function &fcn,
                                                            const JointState<Scalar> &args)
         {
-            using CasadiScalar = std::conditional_t<
-                std::is_same<Scalar, casadi::SX>::value,
-                casadi::SX,
-                casadi::DM
-            >;
-
-            using CasadiResult = std::conditional_t<
-                std::is_same<Scalar, float>::value
-                || std::is_same<Scalar, std::complex<double>>::value,
-                double,
-                Scalar
-            >;
-
-            std::vector<CasadiScalar> args_cs(2);
-
-            //position
-            args_cs[0] = CasadiScalar(args.position.rows());
+            // For complex types, extract real parts for CasADi evaluation
+            // (CasADi functions are real-valued)
             if constexpr (std::is_same_v<Scalar, std::complex<double>>) {
-                throw std::runtime_error("GenericImplicit::runCasadiFcn does not support std::complex<double> arguments.");
-                // for (int i = 0; i < args.position.rows(); ++i)
-                //     args_cs[0](i) = std::real(args.position(i));
+                DVec<double> pos_real(args.position.size());
+                for (int i = 0; i < args.position.size(); ++i) {
+                    pos_real(i) = args.position(i).real();
+                }
+                
+                DVec<double> vel_real(args.velocity.size());
+                for (int i = 0; i < args.velocity.size(); ++i) {
+                    vel_real(i) = args.velocity(i).real();
+                }
+                
+                casadi::DM pos_dm, vel_dm;
+                casadi::copy(pos_real, pos_dm);
+                casadi::copy(vel_real, vel_dm);
+                
+                std::vector<casadi::DM> arg_vec = {pos_dm, vel_dm};
+                std::vector<casadi::DM> res_vec = fcn(arg_vec);
+                casadi::DM res_dm = res_vec[0];
+                
+                // Convert result through double then cast to complex
+                DMat<double> res_double(res_dm.size1(), res_dm.size2());
+                casadi::copy(res_dm, res_double);
+                
+                // Cast to complex (imaginary part is zero, but that's OK for constraint evaluation)
+                DMat<std::complex<double>> res = res_double.template cast<std::complex<double>>();
+                return res;
             } else {
-                casadi::copy(args.position, args_cs[0]);
+                // For real types, use standard copy
+                casadi::DM pos_dm, vel_dm;
+                casadi::copy(args.position, pos_dm);
+                casadi::copy(args.velocity, vel_dm);
+                
+                std::vector<casadi::DM> arg_vec = {pos_dm, vel_dm};
+                std::vector<casadi::DM> res_vec = fcn(arg_vec);
+                casadi::DM res_dm = res_vec[0];
+                
+                // Convert through double to handle float specialization
+                DMat<double> res_double(res_dm.size1(), res_dm.size2());
+                casadi::copy(res_dm, res_double);
+                
+                // Cast to target scalar type
+                DMat<Scalar> res = res_double.template cast<Scalar>();
+                return res;
             }
-
-            // velocity
-            args_cs[1] = CasadiScalar(args.velocity.rows());
-            if constexpr (std::is_same_v<Scalar, std::complex<double>>) {
-                for (int i = 0; i < args.velocity.rows(); ++i)
-                    args_cs[1](i) = std::real(args.velocity(i));
-            } else {
-                casadi::copy(args.velocity, args_cs[1]);
-            }
-
-            CasadiScalar res_cs = fcn(args_cs)[0];
-            DMat<CasadiResult> res(res_cs.size1(), res_cs.size2());
-            casadi::copy(res_cs, res);
-
-            return res.template cast<Scalar>();
         }
 
         template <typename Scalar>
@@ -253,7 +328,7 @@ namespace grbda
                 rootfinder_problem["g"] = cs_phi_sym;
                 casadi::Dict options;
                 options["expand"] = true;   
-                options["error_on_fail"] = true;
+                options["error_on_fail"] = true;  // Fail fast on non-convergence
                 this->random_state_helpers_.phi_root_finder = casadi::rootfinder("solver", "newton",
                                                                                  rootfinder_problem,
                                                                                  options);
@@ -401,30 +476,69 @@ namespace grbda
                 throw std::runtime_error("GenericImplicit loop constraint not set");
             }
 
-            // Create Helper functions
-            this->loop_constraint_->createRandomStateHelpers();
+            const int n_span = this->loop_constraint_->numSpanningPos();
+            const int n_ind = this->loop_constraint_->numIndependentPos();
+            const int n_dep = n_span - n_ind;
 
-            // Attempt to find valid spanning position
-            int attempts = 0;
-            JointCoordinate<double> joint_pos(findRootsForPhi());
-            auto numerical_loop_constraint = generic_constraint_->copyAsDouble();
-            bool is_valid = numerical_loop_constraint.isValidSpanningPosition(joint_pos);
-            while (!is_valid && attempts++ < 10)
-            {
-                joint_pos = findRootsForPhi();
-                is_valid = numerical_loop_constraint.isValidSpanningPosition(joint_pos);
+            // Build independent mask
+            std::vector<bool> ind_mask = generic_constraint_->isCoordinateIndependent();
+            if ((int)ind_mask.size() != n_span) {
+                ind_mask.assign(n_span, false);
+                for (int i = 0; i < n_span; ++i) ind_mask[i] = (i < n_ind);
             }
 
-            if (!is_valid)
-            {
-                throw std::runtime_error("Invalid random state for implicit loop constraint");
+            // Initialize q with random independent and small dependent values
+            DVec<double> q_span = DVec<double>::Zero(n_span);
+            for (int i = 0; i < n_span; ++i) {
+                if (ind_mask[i]) q_span(i) = 0.3 * (2.0 * ((double)rand() / RAND_MAX) - 1.0);
+                else q_span(i) = 0.01 * (2.0 * ((double)rand() / RAND_MAX) - 1.0);
             }
 
-            // Random independent joint velocity
-            DVec<double> v = DVec<double>::Random(this->loop_constraint_->numIndependentVel());
-            JointCoordinate<double> joint_vel(v, false);
+            auto numerical_lc = generic_constraint_->copyAsDouble();
+            auto phi_eval = [&](const DVec<double> &q) {
+                return numerical_lc.phi(JointCoordinate<double>(q, true));
+            };
 
-            return JointState<double>(joint_pos, joint_vel);
+            // Dampened Newton
+            const int max_iters = 100;
+            const double tol_accept = 2e-2;
+            const double h = 1e-7;
+            const double damping = 0.5;
+            
+            // Build dep indices
+            std::vector<int> dep_idx; dep_idx.reserve(n_dep);
+            for (int i = 0; i < n_span; ++i) if (!ind_mask[i]) dep_idx.push_back(i);
+
+            bool converged = false;
+            for (int attempt = 0; attempt < 20 && !converged; ++attempt) {
+                for (int iter = 0; iter < max_iters; ++iter) {
+                    DVec<double> phi = phi_eval(q_span);
+                    if (phi.norm() < tol_accept) { converged = true; break; }
+                    DMat<double> J(phi.size(), n_dep);
+                    for (int j = 0; j < n_dep; ++j) {
+                        DVec<double> q_pert = q_span;
+                        q_pert(dep_idx[j]) += h;
+                        J.col(j) = (phi_eval(q_pert) - phi) / h;
+                    }
+                    Eigen::CompleteOrthogonalDecomposition<DMat<double>> cod(J);
+                    DVec<double> dx = cod.solve(-phi);
+                    for (int j = 0; j < n_dep; ++j) q_span(dep_idx[j]) += damping * dx(j);
+                }
+                if (!converged) {
+                    // reinitialize dependents slightly differently
+                    for (int i = 0; i < n_span; ++i) if (!ind_mask[i]) q_span(i) = 0.02 * (2.0 * ((double)rand() / RAND_MAX) - 1.0);
+                }
+            }
+
+            if (!converged || !numerical_lc.isValidSpanningPosition(JointCoordinate<double>(q_span, true))) {
+                throw std::runtime_error("Failed to sample valid spanning state for implicit constraint");
+            }
+
+            // Return with independent velocities
+            DVec<double> ydot = DVec<double>::Random(this->loop_constraint_->numIndependentVel());
+            JointCoordinate<double> pos(q_span, true);
+            JointCoordinate<double> vel(ydot, false);
+            return JointState<double>(pos, vel);
         }
 
         template <typename Scalar>

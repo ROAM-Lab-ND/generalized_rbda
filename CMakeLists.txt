@@ -24,13 +24,21 @@ option(ASAN "set compile options for Address Sanitizer" OFF)
 ################################################################################
 message(STATUS "======> Find Dependencies")
 
-find_package(Eigen3 REQUIRED)
-if(Eigen3_FOUND)
-  message(STATUS "Eigen3 found")
-  include_directories(${EIGEN3_INCLUDE_DIR})
-  include_directories(${EIGEN3_INCLUDE_DIR}/..)
+
+# Prefer local Eigen if available
+set(EIGEN_LOCAL_PATH "${PROJECT_SOURCE_DIR}/grbda-dependencies/eigen-3.4.0")
+if(EXISTS "${EIGEN_LOCAL_PATH}/Eigen/StdVector")
+  message(STATUS "Using local Eigen at ${EIGEN_LOCAL_PATH}")
+  include_directories(${EIGEN_LOCAL_PATH})
 else()
-  message(FATAL_ERROR "Eigen3 not found. Please install it or specify its location.")
+  find_package(Eigen3 REQUIRED)
+  if(Eigen3_FOUND)
+    message(STATUS "Eigen3 found via find_package")
+    include_directories(${EIGEN3_INCLUDE_DIR})
+    include_directories(${EIGEN3_INCLUDE_DIR}/..)
+  else()
+    message(FATAL_ERROR "Eigen3 not found. Please install it or specify its location.")
+  endif()
 endif()
 
 find_package(casadi REQUIRED)
