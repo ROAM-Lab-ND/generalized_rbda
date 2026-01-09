@@ -99,6 +99,16 @@ namespace grbda
             const DMat<Scalar> &K() const { return loop_constraint_->K(); }
             const DVec<Scalar> &k() const { return loop_constraint_->k(); }
 
+            bool isImplicit() const { return loop_constraint_->isImplicit(); }
+            DVec<Scalar> phi(const JointCoordinate<Scalar> &joint_pos) const
+            {
+                return loop_constraint_->phi(joint_pos);
+            }
+            void updateJacobians(const JointCoordinate<Scalar> &joint_pos)
+            {
+                loop_constraint_->updateJacobians(joint_pos);
+            }
+
             const DMat<int> &spanningTreeToIndependentCoordsConversion() const
             {
                 return spanning_tree_to_independent_coords_conversion_;

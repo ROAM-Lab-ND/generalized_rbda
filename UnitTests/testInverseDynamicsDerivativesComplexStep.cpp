@@ -2263,7 +2263,38 @@ TEST(InverseDynamicsDerivativesComplexStep, PlanarLegLinkageImplicitConstraint) 
     
     std::cout << "✓ Inverse dynamics computed successfully\n";
     std::cout << "  tau norm: " << tau_real.norm() << "\n";
-    
+
     EXPECT_GT(tau_real.norm(), 0.0);
 }
 
+// Complex-step derivative test for Tello with implicit differential constraints
+// NOTE: This test is skipped because GenericImplicit constraints use CasADi symbolic functions
+// which do not support complex numbers.
+TEST(InverseDynamicsDerivativesComplexStep, TelloImplicitConstraintDerivatives) {
+    std::cout << "\n========================================\n";
+    std::cout << "Tello ImplicitConstraint Complex-Step Test\n";
+    std::cout << "========================================\n";
+    std::cout << "SKIPPED: GenericImplicit constraints use CasADi symbolic functions\n";
+    std::cout << "which do not support complex<double> arithmetic.\n";
+    std::cout << "Complex-step differentiation is not applicable for implicit constraints.\n";
+    std::cout << "Use finite-difference tests (testInverseDynamicsDerivativesSimple) instead.\n";
+    std::cout << "========================================\n\n";
+
+    GTEST_SKIP() << "Complex-step differentiation not supported for GenericImplicit constraints (CasADi limitation)";
+}
+
+// Complex-step derivative test for PlanarLegLinkage with implicit FourBar constraints
+// NOTE: This test is skipped because GenericImplicit constraints use CasADi symbolic functions
+// which do not support complex numbers.
+TEST(InverseDynamicsDerivativesComplexStep, PlanarLegLinkageImplicitConstraintDerivatives) {
+    std::cout << "\n========================================\n";
+    std::cout << "PlanarLegLinkage ImplicitConstraint Complex-Step Test\n";
+    std::cout << "========================================\n";
+    std::cout << "SKIPPED: GenericImplicit constraints use CasADi symbolic functions\n";
+    std::cout << "which do not support complex<double> arithmetic.\n";
+    std::cout << "Complex-step differentiation is not applicable for implicit constraints.\n";
+    std::cout << "Use finite-difference tests (testInverseDynamicsDerivativesSimple) instead.\n";
+    std::cout << "========================================\n\n";
+
+    GTEST_SKIP() << "Complex-step differentiation not supported for GenericImplicit constraints (CasADi limitation)";
+}

@@ -10,6 +10,8 @@ namespace grbda
     class Tello : public Robot<Scalar>
     {
     public:
+        EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
         Tello() {}
 
         ClusterTreeModel<Scalar> buildClusterTreeModel() const override;

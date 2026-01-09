@@ -10,6 +10,8 @@ namespace grbda
     class TelloWithArms : public Tello<Scalar>
     {
     public:
+        EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
         TelloWithArms()
         {
             _shoulderRyRotInertia << 0.0013678, 0.0000266, 0.0000021,

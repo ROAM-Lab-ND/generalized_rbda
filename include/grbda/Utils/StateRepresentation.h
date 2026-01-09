@@ -16,11 +16,23 @@ namespace grbda
         JointCoordinate(const JointCoordinate<Scalar> &other)
             : DVec<Scalar>(other), _is_spanning(other._is_spanning) {}
 
-        const bool &isSpanning() const { return _is_spanning; }
+        // Move constructor
+        JointCoordinate(JointCoordinate<Scalar> &&other) noexcept
+            : DVec<Scalar>(std::move(other)), _is_spanning(other._is_spanning) {}
+
+        bool isSpanning() const { return _is_spanning; }
 
         JointCoordinate &operator=(const JointCoordinate<Scalar> &other)
         {
             this->DVec<Scalar>::operator=(other);
+            _is_spanning = other._is_spanning;
+            return *this;
+        }
+
+        // Move assignment operator
+        JointCoordinate &operator=(JointCoordinate<Scalar> &&other) noexcept
+        {
+            this->DVec<Scalar>::operator=(std::move(other));
             _is_spanning = other._is_spanning;
             return *this;
         }
@@ -49,6 +61,18 @@ namespace grbda
         JointState()
             : position(JointCoordinate<Scalar>(DVec<Scalar>::Zero(0), false)),
               velocity(JointCoordinate<Scalar>(DVec<Scalar>::Zero(0), false)) {}
+
+        // Copy constructor (explicitly defaulted for clarity)
+        JointState(const JointState<Scalar> &other) = default;
+
+        // Move constructor
+        JointState(JointState<Scalar> &&other) noexcept = default;
+
+        // Copy assignment operator
+        JointState &operator=(const JointState<Scalar> &other) = default;
+
+        // Move assignment operator
+        JointState &operator=(JointState<Scalar> &&other) noexcept = default;
 
         JointCoordinate<Scalar> position;
         JointCoordinate<Scalar> velocity;
