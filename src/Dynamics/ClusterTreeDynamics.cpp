@@ -479,13 +479,40 @@ namespace grbda
             const DMat<Scalar> beta = contractSqWithVector(cluster->joint_->getSq(), cluster_qdd, cluster->S().rows());
 
             // Compute new_part = Sdotqd_q + beta + crm(v)*alpha - corresponds to MATLAB ID_derivatives.m line 36
-            const DMat<Scalar> new_part = cluster->joint_->getSdotqd_q() + beta +
-                                          spatial::generalMotionCrossMatrix(cluster->v_) * alpha;
+            const DMat<Scalar> Sdotqd_q = cluster->joint_->getSdotqd_q();
+            const DMat<Scalar> crm_v_alpha = spatial::generalMotionCrossMatrix(cluster->v_) * alpha;
+            const DMat<Scalar> new_part = Sdotqd_q + beta + crm_v_alpha;
+
+            // Debug: Check intermediate values
+            if constexpr (std::is_same_v<Scalar, double>) {
+                if (!new_part.allFinite()) {
+                    std::cout << "[DEBUG new_part] Cluster " << cluster->velocity_index_ << std::endl;
+                    std::cout << "  Sdotqd_q: " << Sdotqd_q.rows() << "x" << Sdotqd_q.cols() << " finite=" << Sdotqd_q.allFinite() << std::endl;
+                    std::cout << "  beta: " << beta.rows() << "x" << beta.cols() << " finite=" << beta.allFinite() << std::endl;
+                    std::cout << "  crm_v_alpha: " << crm_v_alpha.rows() << "x" << crm_v_alpha.cols() << " finite=" << crm_v_alpha.allFinite() << std::endl;
+                    std::cout << "  Sdotqd_q+beta finite: " << (Sdotqd_q + beta).allFinite() << std::endl;
+                    std::cout << "  beta+crm_v_alpha finite: " << (beta + crm_v_alpha).allFinite() << std::endl;
+                }
+            }
 
             cluster->Psi_ddot_ =
             (spatial::generalMotionCrossMatrix(a_parent_up) * cluster->S()).eval()
             + spatial::generalMotionCrossMatrix(v_parent_up) * cluster->Psi_dot_
             + new_part;
+
+            // Debug: Check Psi_ddot_ for NaN in forward pass
+            if constexpr (std::is_same_v<Scalar, double>) {
+                if (!cluster->Psi_ddot_.allFinite()) {
+                    std::cout << "[DEBUG FORWARD] Cluster " << cluster->velocity_index_
+                              << " Psi_ddot_ contains NaN!" << std::endl;
+                    std::cout << "  alpha finite: " << alpha.allFinite() << std::endl;
+                    std::cout << "  beta finite: " << beta.allFinite() << std::endl;
+                    std::cout << "  Sdotqd_q finite: " << Sdotqd_q.allFinite() << std::endl;
+                    std::cout << "  new_part finite: " << new_part.allFinite() << std::endl;
+                    std::cout << "  crm(a_parent_up)*S finite: " << (spatial::generalMotionCrossMatrix(a_parent_up) * cluster->S()).allFinite() << std::endl;
+                    std::cout << "  crm(v_parent_up)*Psi_dot finite: " << (spatial::generalMotionCrossMatrix(v_parent_up) * cluster->Psi_dot_).allFinite() << std::endl;
+                }
+            }
 
             cluster->Upsilon_dot_ = (spatial::generalMotionCrossMatrix(cluster->v_) * cluster->S()).eval()
             + cluster->Psi_dot_ + cluster->S_ring();
@@ -565,6 +592,24 @@ namespace grbda
             + DMat<Scalar>(spatial::generalSwappedForceCrossMatrix(cluster_i->F_)*cluster_i->S());
             DMat<Scalar> t4 = cluster_i->B_cup_.transpose() * cluster_i->S();
 
+            // Debug: Check t1-t4 for NaN (only for double type)
+            if constexpr (std::is_same_v<Scalar, double>) {
+                if (!t1.allFinite() || !t2.allFinite() || !t3.allFinite() || !t4.allFinite()) {
+                    std::cout << "[DEBUG] Cluster " << i << " t-matrices contain NaN:" << std::endl;
+                    std::cout << "  t1 finite: " << t1.allFinite() << std::endl;
+                    std::cout << "  t2 finite: " << t2.allFinite() << std::endl;
+                    std::cout << "  t3 finite: " << t3.allFinite() << std::endl;
+                    std::cout << "  t4 finite: " << t4.allFinite() << std::endl;
+                    std::cout << "  M_cup_ finite: " << cluster_i->M_cup_.allFinite() << std::endl;
+                    std::cout << "  B_cup_ finite: " << cluster_i->B_cup_.allFinite() << std::endl;
+                    std::cout << "  S() finite: " << cluster_i->S().allFinite() << std::endl;
+                    std::cout << "  Upsilon_dot_ finite: " << cluster_i->Upsilon_dot_.allFinite() << std::endl;
+                    std::cout << "  Psi_dot_ finite: " << cluster_i->Psi_dot_.allFinite() << std::endl;
+                    std::cout << "  Psi_ddot_ finite: " << cluster_i->Psi_ddot_.allFinite() << std::endl;
+                    std::cout << "  F_ finite: " << cluster_i->F_.allFinite() << std::endl;
+                }
+            }
+
 #ifdef GRBDA_DEBUG_DERIVATIVES
             // Debug output for comparing with MATLAB
             if (i == 0) { // Body 1 (floating base) - index 0
@@ -615,8 +660,21 @@ namespace grbda
             {
                 auto &cluster_j = cluster_nodes_[j];
                 const int &jj = cluster_j->velocity_index_;
-                dtau_dq.block(ii,jj,cluster_i->num_velocities_,cluster_j->num_velocities_) = 
-                t1.transpose() * cluster_j->Psi_ddot_ + t4.transpose() * cluster_j->Psi_dot_;
+
+                DMat<Scalar> block_val = t1.transpose() * cluster_j->Psi_ddot_ + t4.transpose() * cluster_j->Psi_dot_;
+
+                // Debug: Check for NaN in block assignment
+                if constexpr (std::is_same_v<Scalar, double>) {
+                    if (!block_val.allFinite()) {
+                        std::cout << "[DEBUG] NaN in dtau_dq block(" << ii << "," << jj << ") for clusters i=" << i << ", j=" << j << std::endl;
+                        std::cout << "  t1.transpose() * Psi_ddot finite: " << (t1.transpose() * cluster_j->Psi_ddot_).allFinite() << std::endl;
+                        std::cout << "  t4.transpose() * Psi_dot finite: " << (t4.transpose() * cluster_j->Psi_dot_).allFinite() << std::endl;
+                        std::cout << "  cluster_j->Psi_ddot_ finite: " << cluster_j->Psi_ddot_.allFinite() << std::endl;
+                        std::cout << "  cluster_j->Psi_dot_ finite: " << cluster_j->Psi_dot_.allFinite() << std::endl;
+                    }
+                }
+
+                dtau_dq.block(ii,jj,cluster_i->num_velocities_,cluster_j->num_velocities_) = block_val;
                 
                 if (j < i)
                 {
@@ -626,8 +684,24 @@ namespace grbda
                 {
                     // Add the configuration-dependent term: contractT(S_q, F)
                     // Corresponds to MATLAB ID_derivatives.m line 72
-                    dtau_dq.block(ii,ii,cluster_i->num_velocities_,cluster_i->num_velocities_) +=
-                        contractSqTransposeWithVector(cluster_i->joint_->getSq(), cluster_i->F_);
+                    auto S_q_i = cluster_i->joint_->getSq();
+                    auto contract_result = contractSqTransposeWithVector(S_q_i, cluster_i->F_);
+
+                    // Debug: Check for NaN (only for double type)
+                    if constexpr (std::is_same_v<Scalar, double>) {
+                        if (!contract_result.allFinite()) {
+                            std::cout << "[DEBUG backward pass] contractSqTransposeWithVector returned NaN for cluster " << i << std::endl;
+                            std::cout << "  F_ finite: " << cluster_i->F_.allFinite() << std::endl;
+                            std::cout << "  S_q size: " << S_q_i.size() << std::endl;
+                            for (size_t k = 0; k < S_q_i.size(); ++k) {
+                                if (!S_q_i[k].allFinite()) {
+                                    std::cout << "  S_q[" << k << "] contains NaN/Inf!" << std::endl;
+                                }
+                            }
+                        }
+                    }
+
+                    dtau_dq.block(ii,ii,cluster_i->num_velocities_,cluster_i->num_velocities_) += contract_result;
                 }
 
                 dtau_dq_dot.block(jj,ii,cluster_j->num_velocities_,cluster_i->num_velocities_) = cluster_j->S().transpose() * t2;

@@ -759,6 +759,13 @@ namespace grbda
                 const DMat<Scalar> S_implicit = X_intra_ * S_spanning_;
                 const DMat<Scalar>& G = this->loop_constraint_->G();
 
+                // Debug: Check if S_implicit contains NaN
+                if (!S_implicit.allFinite()) {
+                    std::cout << "[DEBUG getSq] S_implicit contains NaN/Inf!" << std::endl;
+                    std::cout << "  X_intra_ finite: " << X_intra_.allFinite() << std::endl;
+                    std::cout << "  S_spanning_ finite: " << S_spanning_.allFinite() << std::endl;
+                }
+
                 casadi::DM q_dm(q_cache_.size());
                 casadi::copy(q_cache_, q_dm);
 
@@ -767,6 +774,21 @@ namespace grbda
 
                 const int n_span = G.rows();
                 const int n_indep = G.cols();
+
+                // Debug: Check if CasADi returned NaN/Inf
+                bool has_nan = false;
+                for (int i = 0; i < dG_dq_stacked_dm.size1(); ++i) {
+                    double val = static_cast<double>(dG_dq_stacked_dm(i));
+                    if (!std::isfinite(val)) {
+                        has_nan = true;
+                        std::cout << "[DEBUG getSq] CasADi element " << i << " = " << val << std::endl;
+                    }
+                }
+                if (has_nan) {
+                    std::cout << "[DEBUG getSq] CasADi dG_dq_fcn returned NaN/Inf!" << std::endl;
+                    std::cout << "  q_cache size=" << q_cache_.size() << ": " << q_cache_.transpose() << std::endl;
+                    std::cout << "  dG_dq size=" << dG_dq_stacked_dm.size1() << std::endl;
+                }
 
                 for (int qi = 0; qi < nv; ++qi) {
                     S_q[qi] = DMat<Scalar>::Zero(mss_dim, nv);
@@ -780,6 +802,12 @@ namespace grbda
                             }
                         }
                         S_q[qi] = S_implicit * dG_dqi;
+
+                        // Debug: Check if result contains NaN
+                        if (!S_q[qi].allFinite()) {
+                            std::cout << "[DEBUG getSq] S_q[" << qi << "] contains NaN/Inf after multiplication!" << std::endl;
+                            std::cout << "  dG_dqi finite: " << dG_dqi.allFinite() << std::endl;
+                        }
                     }
                 }
 
@@ -793,9 +821,10 @@ namespace grbda
 
         DMat<Scalar> Generic<Scalar>::getSdotqd_q() const
         {
-            // S_ring_ * qd_cache_ gives the configuration-dependent part of d/dq (S(q) * qd) * qd
-            // qd_cache_ must be up-to-date (set in updateKinematics)
-            return this->S_ring_ * this->qd_cache_;
+            // For implicit joints, S_ring_ encodes dS/dq * G
+            // We need to return the full matrix, not S_ring_ * qd
+            // The correct return is S_ring_ itself, which is (spatial_dim x nv)
+            return this->S_ring_;
         }
 
         template <typename Scalar>

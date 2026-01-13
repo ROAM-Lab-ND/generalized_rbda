@@ -264,6 +264,9 @@ namespace grbda
         }
 
         this->setExternalForces();
+        // CRITICAL: Invalidate cached kinematics when state changes
+        // This ensures q_cache_ in Generic joints is updated on next forwardKinematics() call
+        this->resetCache();
     }
 
     template <typename Scalar, typename OriTpl>
