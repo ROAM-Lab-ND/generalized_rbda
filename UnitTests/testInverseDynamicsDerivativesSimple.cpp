@@ -317,19 +317,35 @@ void projectPosition(const std::shared_ptr<ClusterJoints::Base<double>> &joint,
 }
 
 // NOTE: The tolerance is set to 1e-6 to account for numerical errors in finite
-// difference verification with step size h=1e-6. The step size must be >= 1e-6
-// because ori::so3ToQuat() returns the identity quaternion for ||omega|| < 1e-6.
+// Finite difference Jacobian using FIVE-POINT STENCIL (O(h⁴) error)
+// f'(x) ≈ [-f(x+2h) + 8f(x+h) - 8f(x-h) + f(x-2h)] / (12h)
+// The step size must be >= 1e-6 for quaternion-based joints because
+// ori::so3ToQuat() returns the identity quaternion for ||omega|| < 1e-6.
 auto finiteDifferenceJacobian = [](auto func, const Eigen::VectorXd& point, double h) {
     int n = point.size();
+    // Evaluate once to get output dimension
     Eigen::VectorXd f0 = func(point);
     int m = f0.size();
     Eigen::MatrixXd jacobian(m, n);
-    
+
     for (int i = 0; i < n; ++i) {
-        Eigen::VectorXd pointPert = point;
-        pointPert[i] += h;
-        Eigen::VectorXd fPert = func(pointPert);
-        jacobian.col(i) = (fPert - f0) / h;
+        Eigen::VectorXd point_plus = point;
+        Eigen::VectorXd point_minus = point;
+        Eigen::VectorXd point_plus2 = point;
+        Eigen::VectorXd point_minus2 = point;
+
+        point_plus[i] += h;
+        point_minus[i] -= h;
+        point_plus2[i] += 2.0 * h;
+        point_minus2[i] -= 2.0 * h;
+
+        Eigen::VectorXd f_plus = func(point_plus);
+        Eigen::VectorXd f_minus = func(point_minus);
+        Eigen::VectorXd f_plus2 = func(point_plus2);
+        Eigen::VectorXd f_minus2 = func(point_minus2);
+
+        // Five-point stencil: [-f(+2h) + 8f(+h) - 8f(-h) + f(-2h)] / (12h)
+        jacobian.col(i) = (-f_plus2 + 8.0*f_plus - 8.0*f_minus + f_minus2) / (12.0 * h);
     }
     return jacobian;
 };
@@ -675,15 +691,18 @@ TEST(InverseDynamicsDerivatives, TelloWithArmsImplicitConstraint) {
         // Now fixed with the two-vector approach (q_delta_ind + delta_span_per_cluster)
 
         // Two-vector approach: independent coords for Jacobian, spanning coords for perturbation
+        // Using five-point stencil with h=1e-10 (same as Tello test)
         DVec<double> q_delta_ind = DVec<double>::Zero(nDOF);
         std::vector<DVec<double>> delta_span_per_cluster(ms.size());
 
-        ModelState<double> ms_pos_plus, ms_pos_minus;
+        ModelState<double> ms_pos_plus, ms_pos_minus, ms_pos_plus2, ms_pos_minus2;
         ms_pos_plus.reserve(ms.size());
         ms_pos_minus.reserve(ms.size());
+        ms_pos_plus2.reserve(ms.size());
+        ms_pos_minus2.reserve(ms.size());
         bool all_perturbations_ok = true;
 
-        const double h_pos = 1e-7;
+        const double h_pos = 1e-10;  // Same as Tello for consistency
 
         for (size_t ci = 0; ci < ms.size(); ++ci) {
             const auto &cluster = model.clusters()[ci];
@@ -705,33 +724,41 @@ TEST(InverseDynamicsDerivatives, TelloWithArmsImplicitConstraint) {
             DVec<double> span_pos_orig = DVec<double>(ms[ci].position).eval();
             DVec<double> span_vel_orig = DVec<double>(ms[ci].velocity).eval();
 
+            // Four perturbations for five-point stencil: ±h and ±2h
             DVec<double> span_pos_plus = (span_pos_orig + delta_span).eval();
             DVec<double> span_pos_minus = (span_pos_orig - delta_span).eval();
+            DVec<double> span_pos_plus2 = (span_pos_orig + 2.0 * delta_span).eval();
+            DVec<double> span_pos_minus2 = (span_pos_orig - 2.0 * delta_span).eval();
 
-            // NOTE: Newton projection DISABLED for TelloWithArms
-            // - Causes heap corruption and constraint violations
-            // - Perturbing in independent coordinates is sufficient
-            // newtonProjection(cluster->joint_, span_pos_plus);
-            // newtonProjection(cluster->joint_, span_pos_minus);
+            // Project velocity onto velocity constraint manifold
+            // Use same projected velocity for all position perturbations
+            DVec<double> span_vel_projected = span_vel_orig;
+            projectVelocity(cluster->joint_, span_vel_projected);
 
-            // CRITICAL: Project velocity onto velocity constraint manifold
-            DVec<double> span_vel_plus = span_vel_orig;
-            DVec<double> span_vel_minus = span_vel_orig;
-            projectVelocity(cluster->joint_, span_vel_plus);
-            projectVelocity(cluster->joint_, span_vel_minus);
-
+            // Create JointStates for ±h perturbations
             ms_pos_plus.emplace_back(
                 JointCoordinate<double>(span_pos_plus, true),
-                JointCoordinate<double>(span_vel_plus, true)
+                JointCoordinate<double>(span_vel_projected, true)
             );
             ms_pos_minus.emplace_back(
                 JointCoordinate<double>(span_pos_minus, true),
-                JointCoordinate<double>(span_vel_minus, true)
+                JointCoordinate<double>(span_vel_projected, true)
+            );
+            // Create JointStates for ±2h perturbations
+            ms_pos_plus2.emplace_back(
+                JointCoordinate<double>(span_pos_plus2, true),
+                JointCoordinate<double>(span_vel_projected, true)
+            );
+            ms_pos_minus2.emplace_back(
+                JointCoordinate<double>(span_pos_minus2, true),
+                JointCoordinate<double>(span_vel_projected, true)
             );
         }
 
-        // Compute position derivatives
-        if (all_perturbations_ok && ms_pos_plus.size() == ms.size() && ms_pos_minus.size() == ms.size()) {
+        // Compute position derivatives using FIVE-POINT STENCIL (O(h⁴) error)
+        // f'(x)*δ ≈ [-f(x+2δ) + 8f(x+δ) - 8f(x-δ) + f(x-2δ)] / 12
+        if (all_perturbations_ok && ms_pos_plus.size() == ms.size() && ms_pos_minus.size() == ms.size() &&
+            ms_pos_plus2.size() == ms.size() && ms_pos_minus2.size() == ms.size()) {
             try {
                 model.setState(ms_pos_plus);
                 DVec<double> tau_plus_q = model.inverseDynamics(ydd);
@@ -739,7 +766,14 @@ TEST(InverseDynamicsDerivatives, TelloWithArmsImplicitConstraint) {
                 model.setState(ms_pos_minus);
                 DVec<double> tau_minus_q = model.inverseDynamics(ydd);
 
-                DVec<double> tau_fd_q = (tau_plus_q - tau_minus_q) / 2.0;
+                model.setState(ms_pos_plus2);
+                DVec<double> tau_plus2_q = model.inverseDynamics(ydd);
+
+                model.setState(ms_pos_minus2);
+                DVec<double> tau_minus2_q = model.inverseDynamics(ydd);
+
+                // Five-point stencil: [-f(+2h) + 8f(+h) - 8f(-h) + f(-2h)] / 12
+                DVec<double> tau_fd_q = (-tau_plus2_q + 8.0*tau_plus_q - 8.0*tau_minus_q + tau_minus2_q) / 12.0;
                 DVec<double> tau_pred_q = dtau_dq * q_delta_ind;  // Use independent coordinates
                 double err_q = (tau_fd_q - tau_pred_q).norm();
 
@@ -1062,14 +1096,16 @@ TEST(InverseDynamicsDerivatives, TelloImplicitConstraint) {
         // - q_delta_ind: independent coordinates (nDOF=16) for Jacobian multiplication
         // - q_delta_span_per_cluster: spanning coordinates per cluster for state perturbation
         DVec<double> q_delta_ind = DVec<double>::Zero(nDOF);
-        ModelState<double> ms_pos_plus, ms_pos_minus;
+        ModelState<double> ms_pos_plus, ms_pos_minus, ms_pos_plus2, ms_pos_minus2;
         ms_pos_plus.reserve(ms.size());
         ms_pos_minus.reserve(ms.size());
+        ms_pos_plus2.reserve(ms.size());
+        ms_pos_minus2.reserve(ms.size());
         bool all_perturbations_ok = true;
 
-        const double h_pos = 1e-10;  // Critical: Very small step to minimize constraint violations
-        const bool use_global_nullspace = false;  // Use global constraint Jacobian nullspace
-        const bool use_diff_eq_flow = false;  // Use differential equation flow with constraint stabilization
+        const double h_pos = 1e-10;  // BASELINE: Original step size
+        const bool use_global_nullspace = false;  // Disabled: doesn't help
+        const bool use_diff_eq_flow = false;  // Disabled: causes segfault
         const bool use_single_step_projection = false;  // Single step + aggressive Newton projection
 
         // Pre-declare delta_span_per_cluster for use across different approaches
@@ -1475,6 +1511,7 @@ TEST(InverseDynamicsDerivatives, TelloImplicitConstraint) {
         }
 
         // Distribute the perturbations to each cluster (skip if using diff eq flow)
+        // Creates ±h and ±2h perturbations for five-point stencil
         if (!use_diff_eq_flow) {
             for (size_t ci = 0; ci < ms.size() && all_perturbations_ok; ++ci) {
             const auto &cluster = model.clusters()[ci];
@@ -1486,56 +1523,48 @@ TEST(InverseDynamicsDerivatives, TelloImplicitConstraint) {
             DVec<double> span_pos_orig = DVec<double>(ms[ci].position).eval();
             DVec<double> span_vel_orig = DVec<double>(ms[ci].velocity).eval();
 
-            // Positive and negative perturbations
+            // Four perturbations for five-point stencil: ±h and ±2h
             DVec<double> span_pos_plus = (span_pos_orig + delta_span).eval();
             DVec<double> span_pos_minus = (span_pos_orig - delta_span).eval();
-
-            // Newton projection DISABLED - causes exceptions and large errors
-            // The two-vector approach with G-matrix perturbation keeps states on manifold
-            // WITHOUT Newton projection: 100% success, errors ~1e-9 to 3.7e-8
-            // WITH Newton projection: many exceptions, errors up to 289.745
-            // if (cluster->joint_->isImplicit()) {
-            //     projectPosition(cluster->joint_, span_pos_plus, 50, 1e-10);
-            //     projectPosition(cluster->joint_, span_pos_minus, 50, 1e-10);
-            //     cluster->joint_->updateJacobians(JointCoordinate<double>(span_pos_plus, true));
-            // }
+            DVec<double> span_pos_plus2 = (span_pos_orig + 2.0 * delta_span).eval();
+            DVec<double> span_pos_minus2 = (span_pos_orig - 2.0 * delta_span).eval();
 
             // Project velocity onto velocity constraint manifold
-            DVec<double> span_vel_plus = span_vel_orig;
-            DVec<double> span_vel_minus = span_vel_orig;
-            projectVelocity(cluster->joint_, span_vel_plus);
-            projectVelocity(cluster->joint_, span_vel_minus);
+            // Use same projected velocity for all position perturbations
+            DVec<double> span_vel_projected = span_vel_orig;
+            projectVelocity(cluster->joint_, span_vel_projected);
 
-            // if (cluster->joint_->isImplicit()) {
-            //     cluster->joint_->updateJacobians(JointCoordinate<double>(span_pos_minus, true));
-            // }
-
-            // Debug: Check final phi values for first trial only (minimal disruption)
-            // DISABLED: updateJacobians was corrupting state and causing trial 0 to fail
-            // if (cluster->joint_->isImplicit() && t == 0) {
-            //     cluster->joint_->updateJacobians(JointCoordinate<double>(span_pos_plus, true));
-            //     DVec<double> phi_check = cluster->joint_->phi(JointCoordinate<double>(span_pos_plus, true));
-            //     std::cout << "      Cluster " << ci << " phi_norm=" << phi_check.norm()
-            //               << " (" << (use_global_nullspace ? "global nullspace" : "independent coord") << ")" << std::endl;
-            // }
-
-            // Create JointStates
+            // Create JointStates for ±h perturbations
             JointState<double> js_plus(
                 JointCoordinate<double>(span_pos_plus, true),
-                JointCoordinate<double>(span_vel_plus, true)
+                JointCoordinate<double>(span_vel_projected, true)
             );
             JointState<double> js_minus(
                 JointCoordinate<double>(span_pos_minus, true),
-                JointCoordinate<double>(span_vel_minus, true)
+                JointCoordinate<double>(span_vel_projected, true)
+            );
+
+            // Create JointStates for ±2h perturbations
+            JointState<double> js_plus2(
+                JointCoordinate<double>(span_pos_plus2, true),
+                JointCoordinate<double>(span_vel_projected, true)
+            );
+            JointState<double> js_minus2(
+                JointCoordinate<double>(span_pos_minus2, true),
+                JointCoordinate<double>(span_vel_projected, true)
             );
 
             ms_pos_plus.push_back(js_plus);
             ms_pos_minus.push_back(js_minus);
+            ms_pos_plus2.push_back(js_plus2);
+            ms_pos_minus2.push_back(js_minus2);
             }  // end for loop over clusters
         }  // end if (!use_diff_eq_flow)
 
-        // Compute derivatives using central differences
-        if (all_perturbations_ok && ms_pos_plus.size() == ms.size() && ms_pos_minus.size() == ms.size()) {
+        // Compute derivatives using FIVE-POINT STENCIL (O(h⁴) error)
+        // f'(x)*δ ≈ [-f(x+2δ) + 8f(x+δ) - 8f(x-δ) + f(x-2δ)] / 12
+        if (all_perturbations_ok && ms_pos_plus.size() == ms.size() && ms_pos_minus.size() == ms.size() &&
+            ms_pos_plus2.size() == ms.size() && ms_pos_minus2.size() == ms.size()) {
             try {
                 model.setState(ms_pos_plus);
                 DVec<double> tau_plus_q = model.inverseDynamics(ydd);
@@ -1543,9 +1572,15 @@ TEST(InverseDynamicsDerivatives, TelloImplicitConstraint) {
                 model.setState(ms_pos_minus);
                 DVec<double> tau_minus_q = model.inverseDynamics(ydd);
 
-                // Central difference formula: df/dq ≈ (f(q+h) - f(q-h)) / (2h)
-                // Use independent coordinate perturbations for Jacobian multiplication
-                DVec<double> tau_fd_q = (tau_plus_q - tau_minus_q) / 2.0;
+                model.setState(ms_pos_plus2);
+                DVec<double> tau_plus2_q = model.inverseDynamics(ydd);
+
+                model.setState(ms_pos_minus2);
+                DVec<double> tau_minus2_q = model.inverseDynamics(ydd);
+
+                // Five-point stencil: [-f(+2h) + 8f(+h) - 8f(-h) + f(-2h)] / 12
+                // This gives O(h⁴) truncation error vs O(h²) for central differences
+                DVec<double> tau_fd_q = (-tau_plus2_q + 8.0*tau_plus_q - 8.0*tau_minus_q + tau_minus2_q) / 12.0;
                 DVec<double> tau_pred_q = dtau_dq * q_delta_ind;
                 double err_q = (tau_fd_q - tau_pred_q).norm();
 
