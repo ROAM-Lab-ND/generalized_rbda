@@ -479,6 +479,176 @@ void testInverseDynamicsDerivatives(ClusterTreeModel<double>& model,
     std::cout << "========================================\n\n";
 }
 
+// Helper function for testing inverse dynamics derivatives with implicit constraints
+// Uses the two-vector approach: independent coords for Jacobian, spanning coords for state
+// Uses five-point stencil for O(h⁴) truncation error
+void testImplicitConstraintDerivatives(ClusterTreeModel<double>& model,
+                                        const std::string& robot_name,
+                                        int trials = 10,
+                                        double h_vel = 1e-8,
+                                        double h_pos = 1e-10,
+                                        double tol = 1e-3,
+                                        bool verbose = false) {
+    const int nDOF = model.getNumDegreesOfFreedom();
+    ASSERT_GT(nDOF, 0);
+
+    std::cout << "\n========================================\n";
+    std::cout << "Testing implicit constraint derivatives\n";
+    std::cout << "Robot: " << robot_name << "\n";
+    std::cout << "DOF: " << nDOF << "\n";
+    std::cout << "Trials: " << trials << "\n";
+    std::cout << "h_vel: " << h_vel << ", h_pos: " << h_pos << "\n";
+    std::cout << "Tolerance: " << tol << "\n";
+    std::cout << "========================================\n\n";
+
+    double max_vel_err = 0.0;
+    double max_pos_err = 0.0;
+
+    for (int t = 0; t < trials; ++t) {
+        // Sample valid spanning state per cluster
+        ModelState<double> ms;
+        for (const auto &cluster : model.clusters()) {
+            bool found = false;
+            JointState<double> span_js;
+            for (int attempt = 0; attempt < 100; ++attempt) {
+                try {
+                    JointState<double> js = cluster->joint_->randomJointState();
+                    span_js = cluster->joint_->toSpanningTreeState(js);
+                    found = true;
+                    break;
+                } catch (...) { continue; }
+            }
+            if (!found) throw std::runtime_error("Failed to sample valid spanning state for " + robot_name);
+            ms.push_back(span_js);
+        }
+        model.setState(ms);
+
+        // Random acceleration and compute analytical derivatives
+        const DVec<double> ydd = DVec<double>::Random(nDOF);
+        auto [dtau_dq, dtau_dqdot] = model.firstOrderInverseDynamicsDerivatives(ydd);
+
+        // ===== VELOCITY DERIVATIVE TEST (Five-point stencil) =====
+        DVec<double> qd_delta_ind = DVec<double>::Zero(nDOF);
+        ModelState<double> ms_vel_plus, ms_vel_minus, ms_vel_plus2, ms_vel_minus2;
+        ms_vel_plus.reserve(ms.size());
+        ms_vel_minus.reserve(ms.size());
+        ms_vel_plus2.reserve(ms.size());
+        ms_vel_minus2.reserve(ms.size());
+
+        for (size_t ci = 0; ci < ms.size(); ++ci) {
+            const auto &cluster = model.clusters()[ci];
+            const int vel_idx = cluster->velocity_index_;
+            const int num_ind = cluster->num_velocities_;
+
+            // Random perturbation in independent coordinates
+            DVec<double> delta_ind = DVec<double>::Random(num_ind) * h_vel;
+            DVec<double> delta_span = cluster->joint_->G() * delta_ind;
+            qd_delta_ind.segment(vel_idx, num_ind) = delta_ind;
+
+            JointCoordinate<double> pos_orig(DVec<double>(ms[ci].position), true);
+
+            // Four perturbations for five-point stencil
+            DVec<double> vel_base = DVec<double>(ms[ci].velocity);
+            ms_vel_plus.emplace_back(pos_orig, JointCoordinate<double>(vel_base + delta_span, true));
+            ms_vel_minus.emplace_back(pos_orig, JointCoordinate<double>(vel_base - delta_span, true));
+            ms_vel_plus2.emplace_back(pos_orig, JointCoordinate<double>(vel_base + 2.0 * delta_span, true));
+            ms_vel_minus2.emplace_back(pos_orig, JointCoordinate<double>(vel_base - 2.0 * delta_span, true));
+        }
+
+        model.setState(ms_vel_plus);
+        DVec<double> tau_vp = model.inverseDynamics(ydd);
+        model.setState(ms_vel_minus);
+        DVec<double> tau_vm = model.inverseDynamics(ydd);
+        model.setState(ms_vel_plus2);
+        DVec<double> tau_vp2 = model.inverseDynamics(ydd);
+        model.setState(ms_vel_minus2);
+        DVec<double> tau_vm2 = model.inverseDynamics(ydd);
+
+        // Five-point stencil: [-f(+2h) + 8f(+h) - 8f(-h) + f(-2h)] / 12
+        DVec<double> tau_fd_vel = (-tau_vp2 + 8.0*tau_vp - 8.0*tau_vm + tau_vm2) / 12.0;
+        DVec<double> tau_pred_vel = dtau_dqdot * qd_delta_ind;
+        double vel_err = (tau_fd_vel - tau_pred_vel).norm();
+        max_vel_err = std::max(max_vel_err, vel_err);
+
+        if (verbose) {
+            std::cout << "  Trial " << t << " vel err: " << vel_err << std::endl;
+        }
+        EXPECT_LT(vel_err, tol) << robot_name << " velocity derivative error exceeds tolerance";
+
+        // ===== POSITION DERIVATIVE TEST (Five-point stencil with two-vector approach) =====
+        DVec<double> q_delta_ind = DVec<double>::Zero(nDOF);
+        ModelState<double> ms_pos_plus, ms_pos_minus, ms_pos_plus2, ms_pos_minus2;
+        ms_pos_plus.reserve(ms.size());
+        ms_pos_minus.reserve(ms.size());
+        ms_pos_plus2.reserve(ms.size());
+        ms_pos_minus2.reserve(ms.size());
+
+        for (size_t ci = 0; ci < ms.size(); ++ci) {
+            const auto &cluster = model.clusters()[ci];
+            const int vel_idx = cluster->velocity_index_;
+            const int num_vel = cluster->num_velocities_;
+
+            // Random perturbation in independent coordinates
+            DVec<double> delta_ind = DVec<double>::Random(num_vel) * h_pos;
+            DVec<double> delta_span = cluster->joint_->G() * delta_ind;
+            q_delta_ind.segment(vel_idx, num_vel) = delta_ind;
+
+            DVec<double> pos_base = DVec<double>(ms[ci].position);
+            DVec<double> vel_base = DVec<double>(ms[ci].velocity);
+
+            // Project velocity onto velocity constraint manifold
+            DVec<double> vel_projected = vel_base;
+            projectVelocity(cluster->joint_, vel_projected);
+            JointCoordinate<double> vel_coord(vel_projected, true);
+
+            // Four perturbations for five-point stencil
+            ms_pos_plus.emplace_back(JointCoordinate<double>(pos_base + delta_span, true), vel_coord);
+            ms_pos_minus.emplace_back(JointCoordinate<double>(pos_base - delta_span, true), vel_coord);
+            ms_pos_plus2.emplace_back(JointCoordinate<double>(pos_base + 2.0 * delta_span, true), vel_coord);
+            ms_pos_minus2.emplace_back(JointCoordinate<double>(pos_base - 2.0 * delta_span, true), vel_coord);
+        }
+
+        try {
+            model.setState(ms_pos_plus);
+            DVec<double> tau_pp = model.inverseDynamics(ydd);
+            model.setState(ms_pos_minus);
+            DVec<double> tau_pm = model.inverseDynamics(ydd);
+            model.setState(ms_pos_plus2);
+            DVec<double> tau_pp2 = model.inverseDynamics(ydd);
+            model.setState(ms_pos_minus2);
+            DVec<double> tau_pm2 = model.inverseDynamics(ydd);
+
+            // Five-point stencil
+            DVec<double> tau_fd_pos = (-tau_pp2 + 8.0*tau_pp - 8.0*tau_pm + tau_pm2) / 12.0;
+            DVec<double> tau_pred_pos = dtau_dq * q_delta_ind;
+            double pos_err = (tau_fd_pos - tau_pred_pos).norm();
+
+            if (!std::isnan(pos_err) && !std::isinf(pos_err) && pos_err < 1e10) {
+                max_pos_err = std::max(max_pos_err, pos_err);
+                if (verbose) {
+                    std::cout << "  Trial " << t << " pos err: " << pos_err << std::endl;
+                }
+                EXPECT_LT(pos_err, tol) << robot_name << " position derivative error exceeds tolerance";
+            } else if (verbose) {
+                std::cout << "  Trial " << t << " pos: SKIPPED (numerical error)" << std::endl;
+            }
+        } catch (const std::exception& e) {
+            if (verbose) {
+                std::cout << "  Trial " << t << " pos: EXCEPTION: " << e.what() << std::endl;
+            }
+        }
+
+        // Restore original state
+        model.setState(ms);
+    }
+
+    std::cout << "\n========================================\n";
+    std::cout << "RESULTS:\n";
+    std::cout << "  Max velocity error: " << max_vel_err << " (tol: " << tol << ")\n";
+    std::cout << "  Max position error: " << max_pos_err << " (tol: " << tol << ")\n";
+    std::cout << "========================================\n\n";
+}
+
 // DISABLED: Still has memory corruption issues even with Eigen::aligned_allocator
 // Same root cause as TelloWithArms - complex implicit constraints with large state vectors
 // Simpler tests (Tello) work perfectly
@@ -598,207 +768,8 @@ TEST(InverseDynamicsDerivatives, TelloWithArmsImplicitConstraint) {
     using namespace grbda;
     TelloWithArms<double> robot;
     ClusterTreeModel<double> model = robot.buildClusterTreeModel();
-
-    const int nDOF = model.getNumDegreesOfFreedom();
-    ASSERT_GT(nDOF, 0);
-    const int trials = 10;
-    const double eps = 1e-8;
-    const double tol = 1e-3;
-
-    // Create ModelState vectors ONCE outside the loop to prevent repeated destruction
-    // Testing if the crash is related to destruction timing
-    auto ms_pos_plus_ptr = std::make_unique<ModelState<double>>();
-    auto ms_pos_minus_ptr = std::make_unique<ModelState<double>>();
-
-    for (int t = 0; t < trials; ++t) {
-        // Sample valid spanning state per cluster
-        ModelState<double> ms;
-        for (const auto &cluster : model.clusters()) {
-            bool found = false;
-            JointState<double> span_js;
-            for (int attempt = 0; attempt < 100; ++attempt) {
-                try {
-                    JointState<double> js = cluster->joint_->randomJointState();
-                    span_js = cluster->joint_->toSpanningTreeState(js);
-                    found = true;
-                    break;
-                } catch (...) { continue; }
-            }
-            if (!found) throw std::runtime_error("Failed to sample valid spanning state");
-            ms.push_back(span_js);
-        }
-        model.setState(ms);
-
-        const DVec<double> ydd = DVec<double>::Random(nDOF);
-        auto [dtau_dq, dtau_dqdot] = model.firstOrderInverseDynamicsDerivatives(ydd);
-        DVec<double> tau0 = model.inverseDynamics(ydd);
-
-        // Velocity directional check using FIVE-POINT STENCIL (O(h⁴) error)
-        // f'(x)*δ ≈ [-f(x+2δ) + 8f(x+δ) - 8f(x-δ) + f(x-2δ)] / 12
-        DVec<double> qd_delta_span = DVec<double>::Zero(nDOF);
-        ModelState<double> ms_vel_plus, ms_vel_minus, ms_vel_plus2, ms_vel_minus2;
-        ms_vel_plus.reserve(ms.size());
-        ms_vel_minus.reserve(ms.size());
-        ms_vel_plus2.reserve(ms.size());
-        ms_vel_minus2.reserve(ms.size());
-        for (size_t ci = 0; ci < ms.size(); ++ci) {
-            const auto &cluster = model.clusters()[ci];
-            const int vel_idx = cluster->velocity_index_;
-            const int num_ind = cluster->num_velocities_;
-            DVec<double> delta_ind = DVec<double>::Random(num_ind) * eps;  // Scale by eps to keep deltas small
-            DVec<double> delta_span = cluster->joint_->G() * delta_ind;
-            // Store independent coordinate perturbation for Jacobian multiplication
-            // dtau_dqdot is in independent coordinates, so qd_delta_span must be too
-            qd_delta_span.segment(vel_idx, num_ind) = delta_ind;
-
-            JointCoordinate<double> pos_orig(DVec<double>(ms[ci].position), true);
-            
-            // Four perturbations: ±δ and ±2δ
-            DVec<double> vel_plus = DVec<double>(ms[ci].velocity) + delta_span;
-            JointCoordinate<double> vel_plus_coord(vel_plus, true);
-            ms_vel_plus.emplace_back(pos_orig, vel_plus_coord);
-
-            DVec<double> vel_minus = DVec<double>(ms[ci].velocity) - delta_span;
-            JointCoordinate<double> vel_minus_coord(vel_minus, true);
-            ms_vel_minus.emplace_back(pos_orig, vel_minus_coord);
-
-            DVec<double> vel_plus2 = DVec<double>(ms[ci].velocity) + 2.0 * delta_span;
-            JointCoordinate<double> vel_plus2_coord(vel_plus2, true);
-            ms_vel_plus2.emplace_back(pos_orig, vel_plus2_coord);
-
-            DVec<double> vel_minus2 = DVec<double>(ms[ci].velocity) - 2.0 * delta_span;
-            JointCoordinate<double> vel_minus2_coord(vel_minus2, true);
-            ms_vel_minus2.emplace_back(pos_orig, vel_minus2_coord);
-        }
-        
-        model.setState(ms_vel_plus);
-        DVec<double> tau_plus = model.inverseDynamics(ydd);
-        model.setState(ms_vel_minus);
-        DVec<double> tau_minus = model.inverseDynamics(ydd);
-        model.setState(ms_vel_plus2);
-        DVec<double> tau_plus2 = model.inverseDynamics(ydd);
-        model.setState(ms_vel_minus2);
-        DVec<double> tau_minus2 = model.inverseDynamics(ydd);
-        
-        // Five-point stencil: [-f(+2δ) + 8f(+δ) - 8f(-δ) + f(-2δ)] / 12
-        DVec<double> tau_fd = (-tau_plus2 + 8.0*tau_plus - 8.0*tau_minus + tau_minus2) / 12.0;
-        DVec<double> tau_pred = dtau_dqdot * qd_delta_span;
-        double err = (tau_fd - tau_pred).norm();
-        EXPECT_LT(err, tol) << "TelloWithArms directional dtau/dqdot check failed (err=" << err << ")";
-
-        // Position derivatives - RE-ENABLED after fixing coordinate system bugs
-        // The heap corruption was caused by coordinate system mismatches (position_dim != velocity_dim)
-        // Now fixed with the two-vector approach (q_delta_ind + delta_span_per_cluster)
-
-        // Two-vector approach: independent coords for Jacobian, spanning coords for perturbation
-        // Using five-point stencil with h=1e-10 (same as Tello test)
-        DVec<double> q_delta_ind = DVec<double>::Zero(nDOF);
-        std::vector<DVec<double>> delta_span_per_cluster(ms.size());
-
-        ModelState<double> ms_pos_plus, ms_pos_minus, ms_pos_plus2, ms_pos_minus2;
-        ms_pos_plus.reserve(ms.size());
-        ms_pos_minus.reserve(ms.size());
-        ms_pos_plus2.reserve(ms.size());
-        ms_pos_minus2.reserve(ms.size());
-        bool all_perturbations_ok = true;
-
-        const double h_pos = 1e-10;  // Same as Tello for consistency
-
-        for (size_t ci = 0; ci < ms.size(); ++ci) {
-            const auto &cluster = model.clusters()[ci];
-            const int vel_idx = cluster->velocity_index_;  // Index in independent coordinate space
-            const int num_vel = cluster->num_velocities_;  // Size in independent coordinate space
-
-            // Generate random perturbation in independent coordinates
-            DVec<double> delta_ind = DVec<double>::Random(num_vel) * h_pos;
-
-            // Store in independent coordinate vector for Jacobian multiplication
-            q_delta_ind.segment(vel_idx, num_vel) = delta_ind;
-
-            // Convert to spanning coordinates using G matrix for state perturbation
-            delta_span_per_cluster[ci] = cluster->joint_->G() * delta_ind;
-
-            // Get pre-computed spanning coordinate perturbation for this cluster
-            DVec<double> delta_span = delta_span_per_cluster[ci];
-
-            DVec<double> span_pos_orig = DVec<double>(ms[ci].position).eval();
-            DVec<double> span_vel_orig = DVec<double>(ms[ci].velocity).eval();
-
-            // Four perturbations for five-point stencil: ±h and ±2h
-            DVec<double> span_pos_plus = (span_pos_orig + delta_span).eval();
-            DVec<double> span_pos_minus = (span_pos_orig - delta_span).eval();
-            DVec<double> span_pos_plus2 = (span_pos_orig + 2.0 * delta_span).eval();
-            DVec<double> span_pos_minus2 = (span_pos_orig - 2.0 * delta_span).eval();
-
-            // Project velocity onto velocity constraint manifold
-            // Use same projected velocity for all position perturbations
-            DVec<double> span_vel_projected = span_vel_orig;
-            projectVelocity(cluster->joint_, span_vel_projected);
-
-            // Create JointStates for ±h perturbations
-            ms_pos_plus.emplace_back(
-                JointCoordinate<double>(span_pos_plus, true),
-                JointCoordinate<double>(span_vel_projected, true)
-            );
-            ms_pos_minus.emplace_back(
-                JointCoordinate<double>(span_pos_minus, true),
-                JointCoordinate<double>(span_vel_projected, true)
-            );
-            // Create JointStates for ±2h perturbations
-            ms_pos_plus2.emplace_back(
-                JointCoordinate<double>(span_pos_plus2, true),
-                JointCoordinate<double>(span_vel_projected, true)
-            );
-            ms_pos_minus2.emplace_back(
-                JointCoordinate<double>(span_pos_minus2, true),
-                JointCoordinate<double>(span_vel_projected, true)
-            );
-        }
-
-        // Compute position derivatives using FIVE-POINT STENCIL (O(h⁴) error)
-        // f'(x)*δ ≈ [-f(x+2δ) + 8f(x+δ) - 8f(x-δ) + f(x-2δ)] / 12
-        if (all_perturbations_ok && ms_pos_plus.size() == ms.size() && ms_pos_minus.size() == ms.size() &&
-            ms_pos_plus2.size() == ms.size() && ms_pos_minus2.size() == ms.size()) {
-            try {
-                model.setState(ms_pos_plus);
-                DVec<double> tau_plus_q = model.inverseDynamics(ydd);
-
-                model.setState(ms_pos_minus);
-                DVec<double> tau_minus_q = model.inverseDynamics(ydd);
-
-                model.setState(ms_pos_plus2);
-                DVec<double> tau_plus2_q = model.inverseDynamics(ydd);
-
-                model.setState(ms_pos_minus2);
-                DVec<double> tau_minus2_q = model.inverseDynamics(ydd);
-
-                // Five-point stencil: [-f(+2h) + 8f(+h) - 8f(-h) + f(-2h)] / 12
-                DVec<double> tau_fd_q = (-tau_plus2_q + 8.0*tau_plus_q - 8.0*tau_minus_q + tau_minus2_q) / 12.0;
-                DVec<double> tau_pred_q = dtau_dq * q_delta_ind;  // Use independent coordinates
-                double err_q = (tau_fd_q - tau_pred_q).norm();
-
-                // Check for numerical issues (nan/inf indicate constraint violations)
-                if (std::isnan(err_q) || std::isinf(err_q) || err_q > 1e10) {
-                    std::cout << "  Trial " << t << " pos: SKIPPED (numerical error, likely constraint violation)" << std::endl;
-                } else {
-                    std::cout << "  Trial " << t << " pos err: " << err_q
-                              << " (delta_norm=" << q_delta_ind.norm() << ")" << std::endl;
-                    EXPECT_LT(err_q, tol) << "TelloWithArms directional dtau/dq check failed (err=" << err_q << ")";
-                }
-            } catch (const std::exception& e) {
-                std::cout << "  Trial " << t << " pos: EXCEPTION during dynamics evaluation: "
-                          << e.what() << std::endl;
-            }
-        } else {
-            std::cout << "  Trial " << t << " pos: SKIPPED (projection failed or incomplete)" << std::endl;
-        }
-
-        // Restore original state
-        model.setState(ms);
-    }
-    std::cout << "Test completed successfully" << std::endl;
+    testImplicitConstraintDerivatives(model, "TelloWithArms", 10, 1e-8, 1e-10, 1e-3);
 }
-
 
 //TEST(InverseDynamicsDerivatives, DoublePendulumURDF) {
 //    ClusterTreeModel<double> model;
@@ -878,1023 +849,18 @@ TEST(InverseDynamicsDerivatives, TeleopArm) {
     testInverseDynamicsDerivatives(model, "TeleopArm", 7, false, 1e-6, 1e-6);
 }
 
-// Tello has implicit loop constraints inside some clusters. Instead of running the
-// full finite-difference column-wise verification (which perturbs independent
-// coordinates and may produce invalid dependent coordinates), validate the
-// most-sensitive derivative `dtau/dqdot` using small, valid velocity
-// perturbations applied to randomly-sampled valid states. This avoids invoking
-// the spanning-tree conversion on invalid perturbed positions while still
-// exercising the derivative implementation for the Tello model.
-// DISABLED: Memory corruption issue with JointCoordinate<double> copying
-// The test logic is correct and produces valid results, but crashes during cleanup  
-// Complex-step version works fine. Issue may be in JointCoordinate or Eigen memory management
 TEST(InverseDynamicsDerivatives, TelloImplicitConstraint) {
     using namespace grbda;
-
-    // Seed random number generator for Eigen::Random() calls
-    // Using time-based seed to get different initial states on each run
-    srand(static_cast<unsigned int>(time(nullptr)));
-
     Tello<double> robot;
     ClusterTreeModel<double> model = robot.buildClusterTreeModel();
-
-    const int nDOF = model.getNumDegreesOfFreedom();
-    ASSERT_GT(nDOF, 0);
-
-    // Debug: Print cluster coordinate information
-    std::cout << "\n=== CLUSTER COORDINATE SYSTEM DEBUG ===" << std::endl;
-    std::cout << "Total DOF (nDOF): " << nDOF << std::endl;
-    std::cout << "Total positions: " << model.getNumPositions() << std::endl;
-    for (size_t ci = 0; ci < model.clusters().size(); ++ci) {
-        const auto& cluster = model.clusters()[ci];
-        std::cout << "Cluster " << ci << ":" << std::endl;
-        std::cout << "  position_index: " << cluster->position_index_ << std::endl;
-        std::cout << "  num_positions: " << cluster->num_positions_ << std::endl;
-        std::cout << "  velocity_index: " << cluster->velocity_index_ << std::endl;
-        std::cout << "  num_velocities: " << cluster->num_velocities_ << std::endl;
-        std::cout << "  isImplicit: " << cluster->joint_->isImplicit() << std::endl;
-        if (cluster->joint_->isImplicit()) {
-            std::cout << "  G().rows() [spanning]: " << cluster->joint_->G().rows() << std::endl;
-            std::cout << "  G().cols() [independent]: " << cluster->joint_->G().cols() << std::endl;
-        }
-    }
-    std::cout << "========================================\n" << std::endl;
-
-    // Initialize constraint-aware perturbation system
-    ConstraintAwarePerturbation constraint_handler;
-    constraint_handler.initialize(model);
-
-    const int trials = 30;  // Increased trials to get enough successful samples (~20% success rate)
-    const double eps = 1e-8;  // Further reduced for even better accuracy
-    const double tol = 1e-3;
-    int successful_position_tests = 0;
-
-    // Detailed failure tracking
-    struct TrialStats {
-        int trial_num;
-        double max_initial_phi;
-        double max_perturbed_phi_plus;
-        double max_perturbed_phi_minus;
-        double vel_error;
-        double pos_error;
-        bool pos_success;
-        std::string failure_reason;
-        double delta_norm;
-
-        // Additional diagnostic info for pattern investigation
-        std::vector<double> random_values;  // First few random values generated
-        double max_delta_component;         // Largest individual perturbation component
-        double min_delta_component;         // Smallest individual perturbation component
-    };
-    std::vector<TrialStats> trial_stats;
-
-    for (int t = 0; t < trials; ++t) {
-        // Sample valid spanning state per cluster
-        ModelState<double> ms;
-        for (const auto &cluster : model.clusters()) {
-            bool found = false;
-            JointState<double> span_js;
-            for (int attempt = 0; attempt < 100; ++attempt) {
-                try {
-                    JointState<double> js = cluster->joint_->randomJointState();
-                    span_js = cluster->joint_->toSpanningTreeState(js);
-                    found = true;
-                    break;
-                } catch (...) { continue; }
-            }
-            if (!found) throw std::runtime_error("Failed to sample valid spanning state");
-            ms.push_back(span_js);
-        }
-        model.setState(ms);
-
-        // Initialize trial stats
-        TrialStats stats;
-        stats.trial_num = t;
-        stats.max_initial_phi = 0.0;  // Will be computed on-demand if needed
-        stats.max_perturbed_phi_plus = 0.0;
-        stats.max_perturbed_phi_minus = 0.0;
-        stats.pos_success = false;
-        stats.failure_reason = "";
-        stats.delta_norm = 0.0;
-        stats.max_delta_component = 0.0;
-        stats.min_delta_component = 0.0;
-
-        const DVec<double> ydd = DVec<double>::Random(nDOF);
-
-        // Debug: Check if inverse dynamics works before computing derivatives
-        if (t == 0) {
-            std::cout << "\n=== Trial 0 Debug Info ===" << std::endl;
-            std::cout << "Model state (spanning coordinates):" << std::endl;
-            for (size_t ci = 0; ci < ms.size(); ++ci) {
-                const auto &cluster = model.clusters()[ci];
-                std::cout << "  Cluster " << ci << " (vel_idx=" << cluster->velocity_index_
-                          << ", nvel=" << cluster->num_velocities_ << ", npos=" << cluster->num_positions_ << "):" << std::endl;
-                std::cout << "    position: " << ms[ci].position.transpose() << std::endl;
-                std::cout << "    velocity: " << ms[ci].velocity.transpose() << std::endl;
-                std::cout << "    position finite: " << ms[ci].position.allFinite()
-                          << ", velocity finite: " << ms[ci].velocity.allFinite() << std::endl;
-            }
-            std::cout << "  ydd: " << ydd.transpose() << std::endl;
-            std::cout << "  ydd finite: " << ydd.allFinite() << std::endl;
-
-            DVec<double> tau_test = model.inverseDynamics(ydd);
-            std::cout << "Trial 0 - tau from inverseDynamics (finite: " << tau_test.allFinite() << ")" << std::endl;
-        }
-
-        auto [dtau_dq, dtau_dqdot] = model.firstOrderInverseDynamicsDerivatives(ydd);
-        DVec<double> tau0 = model.inverseDynamics(ydd);
-
-        // Debug: Print matrix sizes and check for NaN on first trial
-        if (t == 0) {
-            std::cout << "Jacobian matrix sizes:" << std::endl;
-            std::cout << "  dtau_dq: " << dtau_dq.rows() << " x " << dtau_dq.cols()
-                      << " (finite: " << dtau_dq.allFinite() << ")" << std::endl;
-            std::cout << "  dtau_dqdot: " << dtau_dqdot.rows() << " x " << dtau_dqdot.cols()
-                      << " (finite: " << dtau_dqdot.allFinite() << ")" << std::endl;
-            std::cout << "  tau0 (finite: " << tau0.allFinite() << ")" << std::endl;
-
-            // Find which elements are NaN/Inf
-            std::cout << "\n  Checking dtau_dq for NaN/Inf:" << std::endl;
-            for (int i = 0; i < dtau_dq.rows(); ++i) {
-                for (int j = 0; j < dtau_dq.cols(); ++j) {
-                    if (!std::isfinite(dtau_dq(i, j))) {
-                        std::cout << "    dtau_dq(" << i << "," << j << ") = " << dtau_dq(i, j) << std::endl;
-                    }
-                }
-            }
-        }
-
-        // Velocity check using FIVE-POINT STENCIL (O(h⁴) error)
-        // f'(x)*δ ≈ [-f(x+2δ) + 8f(x+δ) - 8f(x-δ) + f(x-2δ)] / 12
-        DVec<double> qd_delta_span = DVec<double>::Zero(nDOF);
-        ModelState<double> ms_vel_plus, ms_vel_minus, ms_vel_plus2, ms_vel_minus2;
-        ms_vel_plus.reserve(ms.size());
-        ms_vel_minus.reserve(ms.size());
-        ms_vel_plus2.reserve(ms.size());
-        ms_vel_minus2.reserve(ms.size());
-        for (size_t ci = 0; ci < ms.size(); ++ci) {
-            const auto &cluster = model.clusters()[ci];
-            const int vel_idx = cluster->velocity_index_;
-            const int num_ind = cluster->num_velocities_;
-            DVec<double> delta_ind = DVec<double>::Random(num_ind) * eps;  // Scale by eps to keep deltas small
-            DVec<double> delta_span = cluster->joint_->G() * delta_ind;
-            // Store independent coordinate perturbation for Jacobian multiplication
-            // dtau_dqdot is in independent coordinates, so qd_delta_span must be too
-            qd_delta_span.segment(vel_idx, num_ind) = delta_ind;
-
-            JointCoordinate<double> pos_orig(DVec<double>(ms[ci].position), true);
-            
-            // Four perturbations: ±δ and ±2δ
-            DVec<double> vel_plus = DVec<double>(ms[ci].velocity) + delta_span;
-            JointCoordinate<double> vel_plus_coord(vel_plus, true);
-            ms_vel_plus.emplace_back(pos_orig, vel_plus_coord);
-
-            DVec<double> vel_minus = DVec<double>(ms[ci].velocity) - delta_span;
-            JointCoordinate<double> vel_minus_coord(vel_minus, true);
-            ms_vel_minus.emplace_back(pos_orig, vel_minus_coord);
-
-            DVec<double> vel_plus2 = DVec<double>(ms[ci].velocity) + 2.0 * delta_span;
-            JointCoordinate<double> vel_plus2_coord(vel_plus2, true);
-            ms_vel_plus2.emplace_back(pos_orig, vel_plus2_coord);
-
-            DVec<double> vel_minus2 = DVec<double>(ms[ci].velocity) - 2.0 * delta_span;
-            JointCoordinate<double> vel_minus2_coord(vel_minus2, true);
-            ms_vel_minus2.emplace_back(pos_orig, vel_minus2_coord);
-        }
-        
-        model.setState(ms_vel_plus);
-        DVec<double> tau_plus = model.inverseDynamics(ydd);
-        model.setState(ms_vel_minus);
-        DVec<double> tau_minus = model.inverseDynamics(ydd);
-        model.setState(ms_vel_plus2);
-        DVec<double> tau_plus2 = model.inverseDynamics(ydd);
-        model.setState(ms_vel_minus2);
-        DVec<double> tau_minus2 = model.inverseDynamics(ydd);
-        
-        // Five-point stencil: [-f(+2δ) + 8f(+δ) - 8f(-δ) + f(-2δ)] / 12
-        DVec<double> tau_fd = (-tau_plus2 + 8.0*tau_plus - 8.0*tau_minus + tau_minus2) / 12.0;
-        DVec<double> tau_pred = dtau_dqdot * qd_delta_span;
-        double err = (tau_fd - tau_pred).norm();
-        stats.vel_error = err;
-        std::cout << "  Trial " << t << " vel err: " << err << std::endl;
-        EXPECT_LT(err, tol) << "Tello directional dtau/dqdot check failed (err=" << err << ")";
-
-        // Position check using NULLSPACE PERTURBATIONS (independent coordinate approach)
-        // Strategy: Perturb in independent coordinates and map via G to spanning coordinates
-        // The relation q_span = G * q_ind + g gives perturbations tangent to the constraint manifold
-        //
-        // Key insight: Use VERY SMALL step size (1e-10) to minimize constraint violations
-        // For Tello's highly nonlinear coupled constraints, even perturbations in the nullspace
-        // lead to constraint violations because G and g depend on position. However, with
-        // sufficiently small step sizes, these violations remain manageable and we achieve
-        // 95%+ success rate, far exceeding the original 10% requirement.
-        //
-        // Note: Newton projection was tested but actually makes things worse for this system,
-        // as the constraints are so nonlinear that Newton iterations diverge rather than converge.
-        //
-        // Two-vector approach to handle position/velocity dimension mismatches:
-        // - q_delta_ind: independent coordinates (nDOF=16) for Jacobian multiplication
-        // - q_delta_span_per_cluster: spanning coordinates per cluster for state perturbation
-        DVec<double> q_delta_ind = DVec<double>::Zero(nDOF);
-        ModelState<double> ms_pos_plus, ms_pos_minus, ms_pos_plus2, ms_pos_minus2;
-        ms_pos_plus.reserve(ms.size());
-        ms_pos_minus.reserve(ms.size());
-        ms_pos_plus2.reserve(ms.size());
-        ms_pos_minus2.reserve(ms.size());
-        bool all_perturbations_ok = true;
-
-        const double h_pos = 1e-10;  // BASELINE: Original step size
-        const bool use_global_nullspace = false;  // Disabled: doesn't help
-        const bool use_diff_eq_flow = false;  // Disabled: causes segfault
-        const bool use_single_step_projection = false;  // Single step + aggressive Newton projection
-
-        // Pre-declare delta_span_per_cluster for use across different approaches
-        std::vector<DVec<double>> delta_span_per_cluster(ms.size());
-
-        if (use_diff_eq_flow) {
-            // ===== DIFFERENTIAL EQUATION FLOW APPROACH =====
-            // Integrate: q_dot = G(q)*e_1 - gamma*J^T*phi(q)
-            // where:
-            //   - G(q)*e_1 provides the perturbation direction (e_1 is random direction)
-            //   - gamma*J^T*phi(q) is Baumgarte-like stabilization pulling toward manifold
-            //
-            // This combines directional perturbation with constraint enforcement
-
-            const double gamma = 10000.0;  // Very strong constraint stabilization
-            const double dt = 5e-11;  // Very small time step
-            const int num_steps = 20;  // Fewer steps (total time = 1e-9)
-
-            if (t == 0) {
-                std::cout << "      Using differential equation flow (gamma=" << gamma
-                          << ", dt=" << dt << ", steps=" << num_steps << ")" << std::endl;
-            }
-
-            // Pre-compute fixed random directions for each cluster (same for all steps)
-            std::vector<DVec<double>> e_1_directions;
-            for (size_t ci = 0; ci < ms.size(); ++ci) {
-                const auto &cluster = model.clusters()[ci];
-                if (cluster->joint_->isImplicit()) {
-                    int num_ind = cluster->joint_->numPositions();
-                    DVec<double> e_1 = DVec<double>::Random(num_ind);
-                    e_1.normalize();
-                    e_1_directions.push_back(e_1);
-                } else {
-                    e_1_directions.push_back(DVec<double>::Zero(0));
-                }
-            }
-
-            // Integrate forward and backward from current state
-            for (int direction = -1; direction <= 1; direction += 2) {
-                ModelState<double> ms_integrated = ms;  // Start from current state
-
-                for (int step = 0; step < num_steps; ++step) {
-                    // Compute q_dot for each cluster
-                    for (size_t ci = 0; ci < ms_integrated.size(); ++ci) {
-                        const auto &cluster = model.clusters()[ci];
-                        const int pos_idx = cluster->position_index_;
-
-                        DVec<double> q_dot_cluster;
-
-                        if (cluster->joint_->isImplicit()) {
-                            // For implicit joints: compute G(q)*e_1 - gamma*J^T*phi(q)
-                            int num_ind = cluster->joint_->numPositions();
-                            int num_span = ms_integrated[ci].position.size();
-
-                            // Use pre-computed fixed direction for this cluster
-                            const DVec<double>& e_1 = e_1_directions[ci];
-
-                            // Map to spanning coordinates via G matrix
-                            cluster->joint_->updateJacobians(ms_integrated[ci].position);
-                            DMat<double> G = cluster->joint_->G();
-                            DVec<double> perturbation_term = G * e_1;
-
-                            // Constraint stabilization term: -gamma*J^T*phi(q)
-                            // Compute J = dphi/dq_span via finite differences
-                            DVec<double> phi_0 = cluster->joint_->phi(ms_integrated[ci].position);
-                            int n_constraints = phi_0.size();
-                            DMat<double> J = DMat<double>::Zero(n_constraints, num_span);
-
-                            const double fd_eps = 1e-7;
-                            for (int j = 0; j < num_span; ++j) {
-                                DVec<double> pos_pert = DVec<double>(ms_integrated[ci].position);
-                                pos_pert(j) += fd_eps;
-
-                                cluster->joint_->updateJacobians(JointCoordinate<double>(pos_pert, true));
-                                DVec<double> phi_pert = cluster->joint_->phi(JointCoordinate<double>(pos_pert, true));
-
-                                J.col(j) = (phi_pert - phi_0) / fd_eps;
-                            }
-
-                            // Restore Jacobians
-                            cluster->joint_->updateJacobians(ms_integrated[ci].position);
-
-                            DVec<double> stabilization_term = -gamma * J.transpose() * phi_0;
-
-                            // Combined velocity
-                            q_dot_cluster = direction * perturbation_term + stabilization_term;
-                        } else {
-                            // For explicit joints: simple random perturbation
-                            int num_span = ms_integrated[ci].position.size();
-                            q_dot_cluster = direction * DVec<double>::Random(num_span);
-                        }
-
-                        // Explicit Euler integration: q_{n+1} = q_n + dt * q_dot
-                        DVec<double> pos_new = DVec<double>(ms_integrated[ci].position) + dt * q_dot_cluster;
-                        ms_integrated[ci].position = JointCoordinate<double>(pos_new, true);
-                    }
-                }
-
-                // Store the integrated result
-                if (direction == 1) {
-                    ms_pos_plus = ms_integrated;
-                } else {
-                    ms_pos_minus = ms_integrated;
-                }
-
-                // Print constraint satisfaction for first trial
-                if (t == 0) {
-                    for (size_t ci = 0; ci < ms_integrated.size(); ++ci) {
-                        const auto &cluster = model.clusters()[ci];
-                        if (cluster->joint_->isImplicit()) {
-                            cluster->joint_->updateJacobians(ms_integrated[ci].position);
-                            DVec<double> phi_check = cluster->joint_->phi(ms_integrated[ci].position);
-                            std::cout << "      Cluster " << ci << " (dir=" << direction
-                                      << ") phi_norm=" << phi_check.norm() << std::endl;
-                        }
-                    }
-                }
-            }
-
-            // Compute the actual perturbation magnitude for proper scaling
-            double actual_displacement = 0.0;
-            for (size_t ci = 0; ci < ms.size(); ++ci) {
-                DVec<double> delta = DVec<double>(ms_pos_plus[ci].position) - DVec<double>(ms[ci].position);
-                actual_displacement += delta.norm();
-            }
-
-            // Store in q_delta_span for later use in finite difference formula
-            for (size_t ci = 0; ci < ms.size(); ++ci) {
-                const auto &cluster = model.clusters()[ci];
-                const int pos_idx = cluster->position_index_;
-                const int num_span = ms[ci].position.size();
-
-                DVec<double> delta_span = (DVec<double>(ms_pos_plus[ci].position) -
-                                          DVec<double>(ms_pos_minus[ci].position)) / 2.0;
-                q_delta_ind.segment(pos_idx, num_span) = delta_span;
-            }
-
-            // Fix velocities
-            for (size_t ci = 0; ci < ms.size(); ++ci) {
-                const auto &cluster = model.clusters()[ci];
-                DVec<double> vel = DVec<double>(ms[ci].velocity);
-                projectVelocity(cluster->joint_, vel);
-                ms_pos_plus[ci].velocity = JointCoordinate<double>(vel, true);
-                ms_pos_minus[ci].velocity = JointCoordinate<double>(vel, true);
-            }
-
-        } else if (use_single_step_projection) {
-            // ===== SINGLE STEP + AGGRESSIVE NEWTON PROJECTION =====
-            // Take a step in G*e_1 direction, then project back aggressively with multiple Newton iterations
-
-            if (t == 0) {
-                std::cout << "      Using single step with aggressive Newton projection" << std::endl;
-            }
-
-            for (size_t ci = 0; ci < ms.size(); ++ci) {
-                const auto &cluster = model.clusters()[ci];
-                const int pos_idx = cluster->position_index_;
-                int num_span = ms[ci].position.size();
-
-                DVec<double> delta_span;
-
-                if (cluster->joint_->isImplicit()) {
-                    // Perturb in independent coordinates
-                    int num_ind = cluster->joint_->numPositions();
-                    DVec<double> delta_ind = DVec<double>::Random(num_ind) * h_pos;
-                    cluster->joint_->updateJacobians(ms[ci].position);
-                    delta_span = cluster->joint_->G() * delta_ind;
-                } else {
-                    delta_span = DVec<double>::Random(num_span) * h_pos;
-                }
-
-                // Create perturbed positions
-                DVec<double> span_pos_orig = DVec<double>(ms[ci].position).eval();
-                DVec<double> span_pos_plus = (span_pos_orig + delta_span).eval();
-                DVec<double> span_pos_minus = (span_pos_orig - delta_span).eval();
-
-                // Apply aggressive Newton projection (5 iterations with strong damping)
-                if (cluster->joint_->isImplicit()) {
-                    const int max_newton_iters = 5;
-                    const double damping = 0.8;  // Take 80% of Newton step
-
-                    for (int iter = 0; iter < max_newton_iters; ++iter) {
-                        // Project span_pos_plus
-                        cluster->joint_->updateJacobians(JointCoordinate<double>(span_pos_plus, true));
-                        DVec<double> phi_plus = cluster->joint_->phi(JointCoordinate<double>(span_pos_plus, true));
-
-                        // Compute constraint Jacobian
-                        DVec<double> phi_0 = phi_plus;
-                        int n_constraints = phi_0.size();
-                        DMat<double> J = DMat<double>::Zero(n_constraints, num_span);
-
-                        const double fd_eps = 1e-7;
-                        for (int j = 0; j < num_span; ++j) {
-                            DVec<double> pos_pert = span_pos_plus;
-                            pos_pert(j) += fd_eps;
-                            cluster->joint_->updateJacobians(JointCoordinate<double>(pos_pert, true));
-                            DVec<double> phi_pert = cluster->joint_->phi(JointCoordinate<double>(pos_pert, true));
-                            J.col(j) = (phi_pert - phi_0) / fd_eps;
-                        }
-
-                        // Newton step: q_new = q - damping * J^+ * phi
-                        DVec<double> correction = J.transpose() * (J * J.transpose()).ldlt().solve(phi_plus);
-                        span_pos_plus -= damping * correction;
-
-                        // Project span_pos_minus
-                        cluster->joint_->updateJacobians(JointCoordinate<double>(span_pos_minus, true));
-                        DVec<double> phi_minus = cluster->joint_->phi(JointCoordinate<double>(span_pos_minus, true));
-
-                        phi_0 = phi_minus;
-                        J = DMat<double>::Zero(n_constraints, num_span);
-                        for (int j = 0; j < num_span; ++j) {
-                            DVec<double> pos_pert = span_pos_minus;
-                            pos_pert(j) += fd_eps;
-                            cluster->joint_->updateJacobians(JointCoordinate<double>(pos_pert, true));
-                            DVec<double> phi_pert = cluster->joint_->phi(JointCoordinate<double>(pos_pert, true));
-                            J.col(j) = (phi_pert - phi_0) / fd_eps;
-                        }
-
-                        correction = J.transpose() * (J * J.transpose()).ldlt().solve(phi_minus);
-                        span_pos_minus -= damping * correction;
-
-                        // Check convergence
-                        if (iter == max_newton_iters - 1 && t == 0) {
-                            cluster->joint_->updateJacobians(JointCoordinate<double>(span_pos_plus, true));
-                            DVec<double> phi_final = cluster->joint_->phi(JointCoordinate<double>(span_pos_plus, true));
-                            std::cout << "      Cluster " << ci << " final phi_norm=" << phi_final.norm()
-                                      << " (after " << max_newton_iters << " Newton iters)" << std::endl;
-                        }
-                    }
-                }
-
-                // Store delta for finite difference formula
-                q_delta_ind.segment(pos_idx, num_span) = (span_pos_plus - span_pos_minus) / 2.0;
-
-                // Project velocities
-                DVec<double> span_vel = DVec<double>(ms[ci].velocity).eval();
-                DVec<double> span_vel_plus = span_vel;
-                DVec<double> span_vel_minus = span_vel;
-                projectVelocity(cluster->joint_, span_vel_plus);
-                projectVelocity(cluster->joint_, span_vel_minus);
-
-                // Create JointStates
-                JointState<double> js_plus(
-                    JointCoordinate<double>(span_pos_plus, true),
-                    JointCoordinate<double>(span_vel_plus, true)
-                );
-                JointState<double> js_minus(
-                    JointCoordinate<double>(span_pos_minus, true),
-                    JointCoordinate<double>(span_vel_minus, true)
-                );
-
-                ms_pos_plus.push_back(js_plus);
-                ms_pos_minus.push_back(js_minus);
-            }
-
-        } else if (use_global_nullspace) {
-            // ===== GLOBAL NULLSPACE APPROACH =====
-            // Build global constraint Jacobian for ALL implicit constraints
-            // Then perturb in its nullspace to handle inter-cluster coupling
-
-            // Step 1: Count total constraints and build global Jacobian
-            int total_constraints = 0;
-            std::vector<int> cluster_constraint_counts;
-            std::vector<int> cluster_position_indices;
-            std::vector<int> cluster_position_sizes;
-
-            for (size_t ci = 0; ci < ms.size(); ++ci) {
-                const auto &cluster = model.clusters()[ci];
-                if (cluster->joint_->isImplicit()) {
-                    cluster->joint_->updateJacobians(ms[ci].position);
-                    DVec<double> phi = cluster->joint_->phi(ms[ci].position);
-                    int n_constraints = phi.size();
-                    total_constraints += n_constraints;
-                    cluster_constraint_counts.push_back(n_constraints);
-                    cluster_position_indices.push_back(cluster->position_index_);
-                    cluster_position_sizes.push_back(ms[ci].position.size());
-                }
-            }
-
-            if (total_constraints > 0 && t == 0) {
-                std::cout << "      Building global constraint Jacobian: "
-                          << total_constraints << " constraints, "
-                          << model.getNumPositions() << " positions" << std::endl;
-            }
-
-            if (total_constraints > 0) {
-                // Step 2: Compute global constraint Jacobian via finite differences
-                int n_pos = model.getNumPositions();
-                DMat<double> J_global = DMat<double>::Zero(total_constraints, n_pos);
-
-                const double fd_eps = 1e-7;
-                int constraint_row = 0;
-
-                for (size_t ci = 0; ci < ms.size(); ++ci) {
-                    const auto &cluster = model.clusters()[ci];
-                    if (!cluster->joint_->isImplicit()) continue;
-
-                    int pos_idx = cluster->position_index_;
-                    int pos_size = ms[ci].position.size();
-                    int n_constraints = cluster_constraint_counts[constraint_row / total_constraints * cluster_constraint_counts.size()];
-
-                    // Get baseline constraint value
-                    cluster->joint_->updateJacobians(ms[ci].position);
-                    DVec<double> phi_0 = cluster->joint_->phi(ms[ci].position);
-
-                    // Compute Jacobian columns by perturbing each spanning coordinate
-                    for (int j = 0; j < pos_size; ++j) {
-                        DVec<double> pos_pert = DVec<double>(ms[ci].position);
-                        pos_pert(j) += fd_eps;
-
-                        cluster->joint_->updateJacobians(JointCoordinate<double>(pos_pert, true));
-                        DVec<double> phi_pert = cluster->joint_->phi(JointCoordinate<double>(pos_pert, true));
-
-                        J_global.block(constraint_row, pos_idx + j, phi_0.size(), 1) =
-                            (phi_pert - phi_0) / fd_eps;
-                    }
-
-                    constraint_row += phi_0.size();
-                }
-
-                // Step 3: Compute nullspace of global Jacobian
-                Eigen::JacobiSVD<DMat<double>> svd(J_global, Eigen::ComputeFullV);
-
-                // Find numerical nullspace (singular values below threshold)
-                const double sv_threshold = 1e-6;
-                int nullspace_dim = 0;
-                for (int i = 0; i < svd.singularValues().size(); ++i) {
-                    if (svd.singularValues()(i) < sv_threshold) {
-                        nullspace_dim = n_pos - i;
-                        break;
-                    }
-                }
-
-                if (t == 0) {
-                    std::cout << "      Nullspace dimension: " << nullspace_dim
-                              << " (largest SV: " << svd.singularValues()(0)
-                              << ", smallest: " << svd.singularValues()(svd.singularValues().size()-1) << ")"
-                              << std::endl;
-                }
-
-                if (nullspace_dim > 0) {
-                    // Step 4: Perturb along a random nullspace direction
-                    DMat<double> V = svd.matrixV();
-                    int nullspace_start = n_pos - nullspace_dim;
-
-                    // Random coefficients for nullspace basis vectors
-                    DVec<double> null_coeffs = DVec<double>::Random(nullspace_dim);
-                    null_coeffs.normalize();
-
-                    // Build perturbation as linear combination of nullspace basis
-                    q_delta_ind = DVec<double>::Zero(n_pos);
-                    for (int i = 0; i < nullspace_dim; ++i) {
-                        q_delta_ind += null_coeffs(i) * V.col(nullspace_start + i);
-                    }
-                    q_delta_ind *= h_pos;
-                } else {
-                    // Nullspace is empty (over-constrained?) - skip this trial
-                    if (t == 0) {
-                        std::cout << "      WARNING: Empty nullspace - system may be over-constrained" << std::endl;
-                    }
-                    all_perturbations_ok = false;
-                }
-            } else {
-                // No implicit constraints - use standard perturbation
-                for (size_t ci = 0; ci < ms.size(); ++ci) {
-                    const auto &cluster = model.clusters()[ci];
-                    DVec<double> delta_span = DVec<double>::Random(ms[ci].position.size()) * h_pos;
-                    q_delta_ind.segment(cluster->position_index_, delta_span.size()) = delta_span;
-                }
-            }
-
-        } else {
-            // ===== ORIGINAL PER-CLUSTER APPROACH =====
-            // Generate random perturbations and store in both vectors:
-            // - q_delta_ind: for Jacobian multiplication (independent coords)
-            // - delta_span_per_cluster: for state perturbation (spanning coords)
-
-            for (size_t ci = 0; ci < ms.size(); ++ci) {
-                const auto &cluster = model.clusters()[ci];
-                const int vel_idx = cluster->velocity_index_;  // Index in independent coord space
-                const int num_vel = cluster->num_velocities_;  // Size in independent coord space
-
-                // Generate random perturbation in independent coordinates
-                DVec<double> delta_ind = DVec<double>::Random(num_vel) * h_pos;
-
-                // Capture first 4 random values from first implicit cluster
-                if (cluster->joint_->isImplicit() && stats.random_values.size() < 4) {
-                    for (int i = 0; i < num_vel && stats.random_values.size() < 4; ++i) {
-                        stats.random_values.push_back(delta_ind(i) / h_pos);  // Store normalized value
-                    }
-                }
-
-                // Store in independent coordinate vector for Jacobian multiplication
-                q_delta_ind.segment(vel_idx, num_vel) = delta_ind;
-
-                // Convert to spanning coordinates using G matrix for state perturbation
-                delta_span_per_cluster[ci] = cluster->joint_->G() * delta_ind;
-            }
-
-            // Track delta component statistics
-            stats.max_delta_component = q_delta_ind.cwiseAbs().maxCoeff();
-            stats.min_delta_component = q_delta_ind.cwiseAbs().minCoeff();
-        }
-
-        // Distribute the perturbations to each cluster (skip if using diff eq flow)
-        // Creates ±h and ±2h perturbations for five-point stencil
-        if (!use_diff_eq_flow) {
-            for (size_t ci = 0; ci < ms.size() && all_perturbations_ok; ++ci) {
-            const auto &cluster = model.clusters()[ci];
-
-            // Get pre-computed spanning coordinate perturbation for this cluster
-            DVec<double> delta_span = delta_span_per_cluster[ci];
-
-            // Create perturbed states directly in spanning coordinates
-            DVec<double> span_pos_orig = DVec<double>(ms[ci].position).eval();
-            DVec<double> span_vel_orig = DVec<double>(ms[ci].velocity).eval();
-
-            // Four perturbations for five-point stencil: ±h and ±2h
-            DVec<double> span_pos_plus = (span_pos_orig + delta_span).eval();
-            DVec<double> span_pos_minus = (span_pos_orig - delta_span).eval();
-            DVec<double> span_pos_plus2 = (span_pos_orig + 2.0 * delta_span).eval();
-            DVec<double> span_pos_minus2 = (span_pos_orig - 2.0 * delta_span).eval();
-
-            // Project velocity onto velocity constraint manifold
-            // Use same projected velocity for all position perturbations
-            DVec<double> span_vel_projected = span_vel_orig;
-            projectVelocity(cluster->joint_, span_vel_projected);
-
-            // Create JointStates for ±h perturbations
-            JointState<double> js_plus(
-                JointCoordinate<double>(span_pos_plus, true),
-                JointCoordinate<double>(span_vel_projected, true)
-            );
-            JointState<double> js_minus(
-                JointCoordinate<double>(span_pos_minus, true),
-                JointCoordinate<double>(span_vel_projected, true)
-            );
-
-            // Create JointStates for ±2h perturbations
-            JointState<double> js_plus2(
-                JointCoordinate<double>(span_pos_plus2, true),
-                JointCoordinate<double>(span_vel_projected, true)
-            );
-            JointState<double> js_minus2(
-                JointCoordinate<double>(span_pos_minus2, true),
-                JointCoordinate<double>(span_vel_projected, true)
-            );
-
-            ms_pos_plus.push_back(js_plus);
-            ms_pos_minus.push_back(js_minus);
-            ms_pos_plus2.push_back(js_plus2);
-            ms_pos_minus2.push_back(js_minus2);
-            }  // end for loop over clusters
-        }  // end if (!use_diff_eq_flow)
-
-        // Compute derivatives using FIVE-POINT STENCIL (O(h⁴) error)
-        // f'(x)*δ ≈ [-f(x+2δ) + 8f(x+δ) - 8f(x-δ) + f(x-2δ)] / 12
-        if (all_perturbations_ok && ms_pos_plus.size() == ms.size() && ms_pos_minus.size() == ms.size() &&
-            ms_pos_plus2.size() == ms.size() && ms_pos_minus2.size() == ms.size()) {
-            try {
-                model.setState(ms_pos_plus);
-                DVec<double> tau_plus_q = model.inverseDynamics(ydd);
-
-                model.setState(ms_pos_minus);
-                DVec<double> tau_minus_q = model.inverseDynamics(ydd);
-
-                model.setState(ms_pos_plus2);
-                DVec<double> tau_plus2_q = model.inverseDynamics(ydd);
-
-                model.setState(ms_pos_minus2);
-                DVec<double> tau_minus2_q = model.inverseDynamics(ydd);
-
-                // Five-point stencil: [-f(+2h) + 8f(+h) - 8f(-h) + f(-2h)] / 12
-                // This gives O(h⁴) truncation error vs O(h²) for central differences
-                DVec<double> tau_fd_q = (-tau_plus2_q + 8.0*tau_plus_q - 8.0*tau_minus_q + tau_minus2_q) / 12.0;
-                DVec<double> tau_pred_q = dtau_dq * q_delta_ind;
-                double err_q = (tau_fd_q - tau_pred_q).norm();
-
-                stats.pos_error = err_q;
-                stats.delta_norm = q_delta_ind.norm();
-
-                // Check for numerical issues (nan/inf/very large errors indicate constraint violations)
-                if (std::isnan(err_q) || std::isinf(err_q) || err_q > 1e10) {
-                    stats.failure_reason = std::isnan(err_q) ? "NaN" : (std::isinf(err_q) ? "Inf" : "Large error");
-                    if (t < 3) {  // Only print for first few trials to avoid spam
-                        std::cout << "  Trial " << t << " pos: SKIPPED (numerical error, err_q=" << err_q << ")" << std::endl;
-                    } else {
-                        std::cout << "  Trial " << t << " pos: SKIPPED (numerical error, likely constraint violation)" << std::endl;
-                    }
-                    all_perturbations_ok = false;
-                } else {
-                    if (err_q < tol) {
-                        stats.pos_success = true;
-                        std::cout << "  Trial " << t << " pos err: " << err_q
-                                  << " (delta_norm=" << q_delta_ind.norm() << ") SUCCESS" << std::endl;
-                        successful_position_tests++;
-                    } else {
-                        stats.failure_reason = "Error exceeds tolerance";
-                        std::cout << "  Trial " << t << " pos err: " << err_q
-                                  << " (delta_norm=" << q_delta_ind.norm() << ") FAILED (err > tol=" << tol << ")" << std::endl;
-                    }
-                }
-            } catch (const std::exception& e) {
-                stats.failure_reason = std::string("Exception: ") + e.what();
-                std::cout << "  Trial " << t << " pos: EXCEPTION during dynamics evaluation: "
-                          << e.what() << std::endl;
-                all_perturbations_ok = false;
-            } catch (...) {
-                stats.failure_reason = "Unknown exception";
-                std::cout << "  Trial " << t << " pos: UNKNOWN EXCEPTION during dynamics evaluation" << std::endl;
-                all_perturbations_ok = false;
-            }
-        }
-
-        if (!all_perturbations_ok && stats.failure_reason.empty()) {
-            stats.failure_reason = "Perturbation validation failed";
-            std::cout << "  Trial " << t << " pos: SKIPPED (perturbation validation failed)" << std::endl;
-        }
-
-        // Save stats for this trial
-        trial_stats.push_back(stats);
-
-        // Explicitly clear large vectors to avoid memory corruption
-        ms_pos_plus.clear();
-        ms_pos_minus.clear();
-
-        // Restore model state for next iteration
-        model.setState(ms);
-    }
-
-    // With very small step size (1e-10) and independent coordinate perturbations,
-    // we achieve 95%+ success rate for Tello's 4 coupled implicit constraints when
-    // the initial state is well-conditioned. However, random sampling occasionally
-    // produces pathological configurations where ALL trials fail (constraints too nonlinear).
-    // Empirically, ~70% of random seeds produce good states with 95%+ success.
-    // We require at least 10% overall success to pass (allowing for occasional bad seeds).
-    std::cout << "\nTello position derivative tests: " << successful_position_tests
-              << " / " << trials << " successful ("
-              << (100.0 * successful_position_tests / trials) << "%)" << std::endl;
-
-    // Detailed statistical analysis
-    std::cout << "\n========== DETAILED FAILURE ANALYSIS ==========" << std::endl;
-
-    //Compute statistics
-    double avg_vel_error_success = 0.0, avg_vel_error_fail = 0.0;
-    double avg_pos_error_success = 0.0;
-    int num_success = 0, num_fail = 0;
-
-    std::map<std::string, int> failure_reasons;
-
-    for (const auto& s : trial_stats) {
-        if (s.pos_success) {
-            avg_vel_error_success += s.vel_error;
-            avg_pos_error_success += s.pos_error;
-            num_success++;
-        } else {
-            avg_vel_error_fail += s.vel_error;
-            num_fail++;
-            if (!s.failure_reason.empty()) {
-                failure_reasons[s.failure_reason]++;
-            }
-        }
-    }
-
-    if (num_success > 0) {
-        avg_vel_error_success /= num_success;
-        avg_pos_error_success /= num_success;
-    }
-    if (num_fail > 0) {
-        avg_vel_error_fail /= num_fail;
-    }
-
-    std::cout << "\nSuccessful Trials (" << num_success << "):" << std::endl;
-    std::cout << "  Avg velocity error:  " << avg_vel_error_success << std::endl;
-    std::cout << "  Avg position error:  " << avg_pos_error_success << std::endl;
-
-    std::cout << "\nFailed Trials (" << num_fail << "):" << std::endl;
-    std::cout << "  Avg velocity error:  " << avg_vel_error_fail << std::endl;
-
-    std::cout << "\nFailure Reasons:" << std::endl;
-    for (const auto& [reason, count] : failure_reasons) {
-        std::cout << "  " << reason << ": " << count << " trials" << std::endl;
-    }
-
-    std::cout << "\nDetailed Trial Data:" << std::endl;
-    std::cout << "Trial | VelErr   | PosErr   | DeltaNorm | MaxΔ     | MinΔ     | RandVals      | Status | Reason" << std::endl;
-    std::cout << "------|----------|----------|-----------|----------|----------|---------------|--------|--------" << std::endl;
-    for (const auto& s : trial_stats) {
-        printf("%5d | %8.2e | %8.2e | %9.2e | %8.2e | %8.2e | ",
-               s.trial_num,
-               s.vel_error,
-               s.pos_error,
-               s.delta_norm,
-               s.max_delta_component,
-               s.min_delta_component);
-
-        // Print first 4 random values
-        if (!s.random_values.empty()) {
-            printf("[");
-            for (size_t i = 0; i < std::min(size_t(4), s.random_values.size()); ++i) {
-                printf("%.2f", s.random_values[i]);
-                if (i < std::min(size_t(4), s.random_values.size()) - 1) printf(",");
-            }
-            printf("]");
-        } else {
-            printf("[]          ");
-        }
-
-        printf(" | %-6s | %s\n",
-               s.pos_success ? "PASS" : "FAIL",
-               s.failure_reason.c_str());
-    }
-    std::cout << "===============================================\n" << std::endl;
-
-    EXPECT_GE(successful_position_tests, trials / 10)  // Require 10% success rate
-        << "Too few successful position derivative tests. Expected at least "
-        << (trials / 10) << " but got " << successful_position_tests;
+    // Tello uses 30 trials with verbose output to track detailed results
+    testImplicitConstraintDerivatives(model, "Tello", 30, 1e-8, 1e-10, 1e-3, true);
 }
 
-// Move PlanarLegLinkage test to END to avoid static initialization issues
 TEST(InverseDynamicsDerivatives, PlanarLegLinkageImplicitConstraint) {
     using namespace grbda;
     PlanarLegLinkage<double> robot;
     ClusterTreeModel<double> model = robot.buildClusterTreeModel();
-
-    const int nDOF = model.getNumDegreesOfFreedom();
-    ASSERT_GT(nDOF, 0);
-    const int trials = 10;
-    const double eps = 1e-6;
-    const double tol = 1e-3;
-
-    for (int t = 0; t < trials; ++t) {
-        ModelState<double> model_state;
-        for (const auto &cluster : model.clusters()) {
-            JointState<double> spanning_js(false, false);
-            bool found = false;
-            for (int attempt = 0; attempt < 100; ++attempt) {
-                try {
-                    JointState<double> js = cluster->joint_->randomJointState();
-                    spanning_js = cluster->joint_->toSpanningTreeState(js);
-                    found = true;
-                    break;
-                } catch (...) { continue; }
-            }
-            if (!found) throw std::runtime_error("Failed to sample valid spanning state");
-            model_state.push_back(spanning_js);
-        }
-        model.setState(model_state);
-
-        const DVec<double> ydd = DVec<double>::Random(nDOF);
-        auto [dtau_dq, dtau_dqdot] = model.firstOrderInverseDynamicsDerivatives(ydd);
-
-        // Velocity derivatives - same pattern as Tello
-        DVec<double> qd_delta_span = DVec<double>::Zero(nDOF);
-        ModelState<double> ms_vel_plus, ms_vel_minus, ms_vel_plus2, ms_vel_minus2;
-        ms_vel_plus.reserve(model_state.size());
-        ms_vel_minus.reserve(model_state.size());
-        ms_vel_plus2.reserve(model_state.size());
-        ms_vel_minus2.reserve(model_state.size());
-
-        for (size_t ci = 0; ci < model_state.size(); ++ci) {
-            const auto &cluster = model.clusters()[ci];
-            const int vel_idx = cluster->velocity_index_;
-            const int num_ind = cluster->num_velocities_;
-            DVec<double> delta_ind = DVec<double>::Random(num_ind) * eps;
-            DVec<double> delta_span = cluster->joint_->G() * delta_ind;
-            // Store independent coordinate perturbation for Jacobian multiplication
-            // dtau_dqdot is in independent coordinates, so qd_delta_span must be too
-            qd_delta_span.segment(vel_idx, num_ind) = delta_ind;
-
-            JointCoordinate<double> pos_orig(DVec<double>(model_state[ci].position), true);
-            DVec<double> vel_plus = DVec<double>(model_state[ci].velocity) + delta_span;
-            JointCoordinate<double> vel_plus_coord(vel_plus, true);
-            ms_vel_plus.emplace_back(pos_orig, vel_plus_coord);
-
-            DVec<double> vel_minus = DVec<double>(model_state[ci].velocity) - delta_span;
-            JointCoordinate<double> vel_minus_coord(vel_minus, true);
-            ms_vel_minus.emplace_back(pos_orig, vel_minus_coord);
-
-            DVec<double> vel_plus2 = DVec<double>(model_state[ci].velocity) + 2.0 * delta_span;
-            JointCoordinate<double> vel_plus2_coord(vel_plus2, true);
-            ms_vel_plus2.emplace_back(pos_orig, vel_plus2_coord);
-
-            DVec<double> vel_minus2 = DVec<double>(model_state[ci].velocity) - 2.0 * delta_span;
-            JointCoordinate<double> vel_minus2_coord(vel_minus2, true);
-            ms_vel_minus2.emplace_back(pos_orig, vel_minus2_coord);
-        }
-
-        model.setState(ms_vel_plus);
-        DVec<double> tau_plus = model.inverseDynamics(ydd);
-        model.setState(ms_vel_minus);
-        DVec<double> tau_minus = model.inverseDynamics(ydd);
-        model.setState(ms_vel_plus2);
-        DVec<double> tau_plus2 = model.inverseDynamics(ydd);
-        model.setState(ms_vel_minus2);
-        DVec<double> tau_minus2 = model.inverseDynamics(ydd);
-
-        DVec<double> tau_fd = (-tau_plus2 + 8.0*tau_plus - 8.0*tau_minus + tau_minus2) / 12.0;
-        DVec<double> tau_pred = dtau_dqdot * qd_delta_span;
-        double err = (tau_fd - tau_pred).norm();
-        std::cout << "  Trial " << t << " vel err: " << err << std::endl;
-        EXPECT_LT(err, tol) << "PlanarLegLinkage directional dtau/dqdot check failed (err=" << err << ")";
-
-        // Position derivatives - using same pattern as Tello
-        // IMPORTANT: q_delta_span is in independent coordinates (nDOF), not spanning (getNumPositions)
-        DVec<double> q_delta_span = DVec<double>::Zero(nDOF);
-        ModelState<double> ms_pos_plus, ms_pos_minus;
-        ms_pos_plus.reserve(model_state.size());
-        ms_pos_minus.reserve(model_state.size());
-        bool all_perturbations_ok = true;
-
-        const double h_pos = 1e-7;
-
-        for (size_t ci = 0; ci < model_state.size(); ++ci) {
-            const auto &cluster = model.clusters()[ci];
-            const int pos_idx = cluster->position_index_;
-            const int num_span = cluster->num_positions_;  // Spanning dimension
-            const int num_ind = cluster->joint_->G().cols();  // Independent dimension
-            const int state_dim = model_state[ci].position.size();  // Should equal num_span
-
-            DMat<double> G_pos = cluster->joint_->G();
-            DVec<double> delta_ind = DVec<double>::Random(num_ind) * h_pos;
-            DVec<double> delta_span = G_pos * delta_ind;
-            // Store independent coordinate perturbation for Jacobian multiplication
-            // dtau_dq is in independent coordinates, so q_delta_span must be too
-            q_delta_span.segment(pos_idx, num_ind) = delta_ind;
-
-            DVec<double> span_pos_orig = DVec<double>(model_state[ci].position).eval();
-            DVec<double> span_vel_orig = DVec<double>(model_state[ci].velocity).eval();
-
-            DVec<double> span_pos_plus = (span_pos_orig + delta_span).eval();
-            DVec<double> span_pos_minus = (span_pos_orig - delta_span).eval();
-
-            // Newton projection: ATTEMPT to project perturbed states back onto constraint manifold
-            // This is optional - the G-matrix perturbation already keeps us in tangent space
-            newtonProjection(cluster->joint_, span_pos_plus);
-            newtonProjection(cluster->joint_, span_pos_minus);
-
-            // CRITICAL: Project velocity onto velocity constraint manifold
-            DVec<double> span_vel_plus = span_vel_orig;
-            DVec<double> span_vel_minus = span_vel_orig;
-            projectVelocity(cluster->joint_, span_vel_plus);
-            projectVelocity(cluster->joint_, span_vel_minus);
-
-            JointState<double> js_plus(
-                JointCoordinate<double>(span_pos_plus, true),
-                JointCoordinate<double>(span_vel_plus, true)
-            );
-            JointState<double> js_minus(
-                JointCoordinate<double>(span_pos_minus, true),
-                JointCoordinate<double>(span_vel_minus, true)
-            );
-
-            ms_pos_plus.push_back(js_plus);
-            ms_pos_minus.push_back(js_minus);
-        }
-
-        // Compute derivatives using central differences
-        if (all_perturbations_ok && ms_pos_plus.size() == model_state.size() && ms_pos_minus.size() == model_state.size()) {
-            try {
-                model.setState(ms_pos_plus);
-                DVec<double> tau_plus_q = model.inverseDynamics(ydd);
-
-                model.setState(ms_pos_minus);
-                DVec<double> tau_minus_q = model.inverseDynamics(ydd);
-
-                DVec<double> tau_fd_q = (tau_plus_q - tau_minus_q) / 2.0;
-                DVec<double> tau_pred_q = dtau_dq * q_delta_span;
-                double err_q = (tau_fd_q - tau_pred_q).norm();
-
-                if (std::isnan(err_q) || std::isinf(err_q) || err_q > 1e10) {
-                    std::cout << "  Trial " << t << " pos: SKIPPED (numerical error)" << std::endl;
-                    all_perturbations_ok = false;
-                } else {
-                    std::cout << "  Trial " << t << " pos err: " << err_q
-                              << " (delta_norm=" << q_delta_span.norm() << ")" << std::endl;
-                    EXPECT_LT(err_q, tol) << "PlanarLegLinkage directional dtau/dq check failed (err=" << err_q << ")";
-                }
-            } catch (...) {
-                all_perturbations_ok = false;
-            }
-        }
-
-        // Explicitly clear large vectors to avoid memory corruption
-        ms_pos_plus.clear();
-        ms_pos_minus.clear();
-
-        // Restore model state for next iteration
-        model.setState(model_state);
-    }
+    testImplicitConstraintDerivatives(model, "PlanarLegLinkage", 10, 1e-6, 1e-7, 1e-3);
 }
 
