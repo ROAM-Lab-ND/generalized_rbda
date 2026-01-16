@@ -439,408 +439,217 @@ namespace grbda
 
     template <typename Scalar, typename OriTpl>
     std::pair<DMat<Scalar>, DMat<Scalar>> ClusterTreeModel<Scalar, OriTpl>::firstOrderInverseDynamicsDerivatives(const DVec<Scalar> &qdd)
-    {   
+    {
         const auto [q, qd] = this->getState();
         this->forwardAccelerationKinematics(qdd);
         updateArticulatedBodies();
-        DMat<Scalar> dtau_dq = DMat<Scalar>::Zero(this->getNumDegreesOfFreedom(), this->getNumDegreesOfFreedom());
-        DMat<Scalar> dtau_dq_dot = DMat<Scalar>::Zero(this->getNumDegreesOfFreedom(), this->getNumDegreesOfFreedom());
-        //Forward Pass
+
+        const int nDOF = this->getNumDegreesOfFreedom();
+        const int nClusters = static_cast<int>(cluster_nodes_.size());
+        DMat<Scalar> dtau_dq = DMat<Scalar>::Zero(nDOF, nDOF);
+        DMat<Scalar> dtau_dq_dot = DMat<Scalar>::Zero(nDOF, nDOF);
+
+        // Forward Pass - compute Psi_dot, Psi_ddot, Upsilon_dot, M_cup, B_cup, F for each cluster
         for (auto &cluster : cluster_nodes_)
         {
+            const int mss_dim = cluster->motion_subspace_dimension_;
+            const int num_vel = cluster->num_velocities_;
+            const DMat<Scalar> &S = cluster->S();
+            const DMat<Scalar> &I = cluster->I_;
+            const DVec<Scalar> &v = cluster->v_;
+
             // Get parent velocity and acceleration
-            // For root cluster (parent_index_ == -1): parent is ground with v=0, a=-gravity
-            // For other clusters: parent is the actual parent cluster
-            DVec<Scalar> v_parent, a_parent;
+            DVec<Scalar> v_parent_up, a_parent_up;
             if (cluster->parent_index_ >= 0)
             {
-                auto &parent_cluster = cluster_nodes_[cluster->parent_index_];
-                v_parent = parent_cluster->v_;
-                a_parent = parent_cluster->a_;
+                const auto &parent_cluster = cluster_nodes_[cluster->parent_index_];
+                v_parent_up = cluster->Xup_.transformMotionVector(parent_cluster->v_);
+                a_parent_up = cluster->Xup_.transformMotionVector(parent_cluster->a_);
             }
             else
             {
-                v_parent = DVec<Scalar>::Zero(6);
-                a_parent = -this->getGravity();
+                v_parent_up = DVec<Scalar>::Zero(mss_dim);
+                a_parent_up = cluster->Xup_.transformMotionVector(-this->getGravity());
             }
 
-            const auto v_parent_up = cluster->Xup_.transformMotionVector(v_parent);
-            const auto a_parent_up = cluster->Xup_.transformMotionVector(a_parent);
+            // Compute alpha = contract(S_q, qd) and beta = contract(S_q, qdd)
+            const DVec<Scalar> cluster_qd = qd.segment(cluster->velocity_index_, num_vel);
+            const DVec<Scalar> cluster_qdd = qdd.segment(cluster->velocity_index_, num_vel);
+            const auto &S_q = cluster->joint_->getSq();
+            const DMat<Scalar> alpha = contractSqWithVector(S_q, cluster_qd, mss_dim);
+            const DMat<Scalar> beta = contractSqWithVector(S_q, cluster_qdd, mss_dim);
+            const DMat<Scalar> &Sdotqd_q = cluster->joint_->getSdotqd_q();
 
-            // Compute alpha = contract(S_q, qd) - corresponds to MATLAB ID_derivatives.m line 32
-            const DVec<Scalar> cluster_qd = qd.segment(cluster->velocity_index_, cluster->num_velocities_);
-            const DMat<Scalar> alpha = contractSqWithVector(cluster->joint_->getSq(), cluster_qd, cluster->S().rows());
+            // Psi_dot = crm(v_parent_up) * S + alpha
+            // Use optimized motionCrossTimesMatrix to avoid building full cross-product matrix
+            cluster->Psi_dot_ = spatial::motionCrossTimesMatrix(v_parent_up, S);
+            cluster->Psi_dot_ += alpha;
 
-            cluster->Psi_dot_ =
-            spatial::generalMotionCrossMatrix(v_parent_up) * cluster->S() + alpha;
+            // Psi_ddot = crm(a_parent_up)*S + crm(v_parent_up)*Psi_dot + Sdotqd_q + beta + crm(v)*alpha
+            cluster->Psi_ddot_ = spatial::motionCrossTimesMatrix(a_parent_up, S);
+            cluster->Psi_ddot_ += spatial::motionCrossTimesMatrix(v_parent_up, cluster->Psi_dot_);
+            cluster->Psi_ddot_ += Sdotqd_q + beta;
+            cluster->Psi_ddot_ += spatial::motionCrossTimesMatrix(v, alpha);
 
-            // Compute beta = contract(S_q, qdd) - corresponds to MATLAB ID_derivatives.m line 33
-            const DVec<Scalar> cluster_qdd = qdd.segment(cluster->velocity_index_, cluster->num_velocities_);
-            const DMat<Scalar> beta = contractSqWithVector(cluster->joint_->getSq(), cluster_qdd, cluster->S().rows());
+            // Upsilon_dot = crm(v)*S + Psi_dot + S_ring
+            cluster->Upsilon_dot_ = spatial::motionCrossTimesMatrix(v, S);
+            cluster->Upsilon_dot_ += cluster->Psi_dot_ + cluster->S_ring();
 
-            // Compute new_part = Sdotqd_q + beta + crm(v)*alpha - corresponds to MATLAB ID_derivatives.m line 36
-            const DMat<Scalar> Sdotqd_q = cluster->joint_->getSdotqd_q();
-            const DMat<Scalar> crm_v_alpha = spatial::generalMotionCrossMatrix(cluster->v_) * alpha;
-            const DMat<Scalar> new_part = Sdotqd_q + beta + crm_v_alpha;
+            // M_cup = I (will accumulate children's contributions)
+            cluster->M_cup_ = I;
 
-            // Debug: Check intermediate values
-            if constexpr (std::is_same_v<Scalar, double>) {
-                if (!new_part.allFinite()) {
-                    std::cout << "[DEBUG new_part] Cluster " << cluster->velocity_index_ << std::endl;
-                    std::cout << "  Sdotqd_q: " << Sdotqd_q.rows() << "x" << Sdotqd_q.cols() << " finite=" << Sdotqd_q.allFinite() << std::endl;
-                    std::cout << "  beta: " << beta.rows() << "x" << beta.cols() << " finite=" << beta.allFinite() << std::endl;
-                    std::cout << "  crm_v_alpha: " << crm_v_alpha.rows() << "x" << crm_v_alpha.cols() << " finite=" << crm_v_alpha.allFinite() << std::endl;
-                    std::cout << "  Sdotqd_q+beta finite: " << (Sdotqd_q + beta).allFinite() << std::endl;
-                    std::cout << "  beta+crm_v_alpha finite: " << (beta + crm_v_alpha).allFinite() << std::endl;
-                }
-            }
+            // B_cup = crf(v)*I - I*crm(v) + icrf(I*v)
+            // Use optimized functions to avoid building full cross-product matrices
+            const DVec<Scalar> Iv = I * v;
+            cluster->B_cup_ = spatial::forceCrossTimesMatrix(v, I);
+            cluster->B_cup_ -= spatial::matrixTimesMotionCross(I, v);
+            spatial::addSwappedForceCrossMatrixInPlace(cluster->B_cup_, Iv);
 
-            cluster->Psi_ddot_ =
-            (spatial::generalMotionCrossMatrix(a_parent_up) * cluster->S()).eval()
-            + spatial::generalMotionCrossMatrix(v_parent_up) * cluster->Psi_dot_
-            + new_part;
-
-            // Debug: Check Psi_ddot_ for NaN in forward pass
-            if constexpr (std::is_same_v<Scalar, double>) {
-                if (!cluster->Psi_ddot_.allFinite()) {
-                    std::cout << "[DEBUG FORWARD] Cluster " << cluster->velocity_index_
-                              << " Psi_ddot_ contains NaN!" << std::endl;
-                    std::cout << "  alpha finite: " << alpha.allFinite() << std::endl;
-                    std::cout << "  beta finite: " << beta.allFinite() << std::endl;
-                    std::cout << "  Sdotqd_q finite: " << Sdotqd_q.allFinite() << std::endl;
-                    std::cout << "  new_part finite: " << new_part.allFinite() << std::endl;
-                    std::cout << "  crm(a_parent_up)*S finite: " << (spatial::generalMotionCrossMatrix(a_parent_up) * cluster->S()).allFinite() << std::endl;
-                    std::cout << "  crm(v_parent_up)*Psi_dot finite: " << (spatial::generalMotionCrossMatrix(v_parent_up) * cluster->Psi_dot_).allFinite() << std::endl;
-                }
-            }
-
-            cluster->Upsilon_dot_ = (spatial::generalMotionCrossMatrix(cluster->v_) * cluster->S()).eval()
-            + cluster->Psi_dot_ + cluster->S_ring();
-
-            cluster->M_cup_ = cluster->I_;
-
-#ifdef GRBDA_DEBUG_DERIVATIVES
-            // Print body mass from inertia matrix
-            if (cluster->I_.rows() >= 6 && cluster->I_.cols() >= 6) {
-                std::cout << "[DEBUG] Forward pass - Body mass from I_[3,3] = " << cluster->I_(3,3) << "\n";
-            }
-#endif
-
-            cluster->B_cup_ = spatial::generalForceCrossMatrix(cluster->v_) * cluster->I_
-            - cluster->I_ * spatial::generalMotionCrossMatrix(cluster->v_)
-            + spatial::generalSwappedForceCrossMatrix(DVec<Scalar>(cluster->I_ * cluster->v_));
-
-#ifdef GRBDA_DEBUG_DERIVATIVES
-            // Debug BC computation for Body 1 (floating base - parent_index == -1)
-            if (cluster->parent_index_ == -1) {
-                std::cout << "\n[DEBUG] Body 1 B_cup FRESH (recomputed, before accumulation):\n";
-                for (int row = 0; row < std::min(3, (int)cluster->B_cup_.rows()); row++) {
-                    std::cout << "   ";
-                    for (int col = 0; col < std::min(6, (int)cluster->B_cup_.cols()); col++) {
-                        std::cout << " " << std::setw(12) << std::setprecision(6) << std::scientific << cluster->B_cup_(row, col);
-                    }
-                    std::cout << "\n";
-                }
-            }
-#endif
-
-            cluster->F_ = cluster->I_ * cluster->a_ + spatial::generalForceCrossMatrix(cluster->v_) * cluster->I_ * cluster->v_;
-            cluster->F_ = cluster->I_ * cluster->a_ + spatial::generalForceCrossMatrix(cluster->v_) * cluster->I_ * cluster->v_;
-            
+            // F = I*a + crf(v)*I*v
+            cluster->F_.noalias() = I * cluster->a_;
+            cluster->F_ += spatial::generalForceCrossProduct(v, Iv);
         }
-        //Backward Pass
-        for (int i = (int)cluster_nodes_.size() - 1; i >= 0; i--)
+
+        // Backward Pass - compute derivatives and propagate M_cup, B_cup, F to parents
+        for (int i = nClusters - 1; i >= 0; i--)
         {
             auto &cluster_i = cluster_nodes_[i];
-            const int &ii = cluster_i->velocity_index_;
+            const int ii = cluster_i->velocity_index_;
+            const int num_vel_i = cluster_i->num_velocities_;
+            const int mss_dim_i = cluster_i->motion_subspace_dimension_;
 
-#ifdef GRBDA_DEBUG_DERIVATIVES
-            // Print detailed M_cup comparison for Body 0 (floating base)
-            if (i == 0) {
-                std::cout << "\n[DEBUG] Body 0 (Floating Base) M_cup Analysis:\n";
-                std::cout << "  C++ M_cup:\n";
-                for (int row = 0; row < 6; row++) {
-                    std::cout << "    [";
-                    for (int col = 0; col < 6; col++) {
-                        std::cout << std::setw(12) << std::setprecision(4) << std::fixed << cluster_i->M_cup_(row, col);
-                        if (col < 5) std::cout << ", ";
-                    }
-                    std::cout << "]\n";
-                }
-                std::cout << "\n  MATLAB expected IC{1}:\n";
-                std::cout << "    [ 1.6972, -0.9437, -2.5452, -0.0000, -1.4635,  0.5622]\n";
-                std::cout << "    [-0.9437,  6.9044, -0.5035,  1.4641,  0.0000, -3.6315]\n";
-                std::cout << "    [-2.5452, -0.5035,  5.5872, -0.5622,  3.6315,  0.0000]\n";
-                std::cout << "    [ 0.0000,  1.4641, -0.5622,  3.0000,  0.0000, -0.0000]\n";
-                std::cout << "    [-1.4635,  0.0000,  3.6315,  0.0000,  3.0000, -0.0000]\n";
-                std::cout << "    [ 0.5622, -3.6315, -0.0000, -0.0000, -0.0000,  3.0000]\n";
+            // Cache references
+            const DMat<Scalar> &M_cup = cluster_i->M_cup_;
+            const DMat<Scalar> &B_cup = cluster_i->B_cup_;
+            const DVec<Scalar> &F = cluster_i->F_;
+            const DMat<Scalar> &S_i = cluster_i->S();
 
-                std::cout << "\n  Ratios (C++/MATLAB) for key elements:\n";
-                std::cout << "    Upper-left 3x3 (rotational inertia):\n";
-                std::cout << "      [0,0]: " << cluster_i->M_cup_(0,0)/1.6972 << "\n";
-                std::cout << "      [0,1]: " << cluster_i->M_cup_(0,1)/(-0.9437) << "\n";
-                std::cout << "      [1,1]: " << cluster_i->M_cup_(1,1)/6.9044 << "\n";
-                std::cout << "    Lower-right 3x3 (mass):\n";
-                std::cout << "      [3,3]: " << cluster_i->M_cup_(3,3)/3.0 << " (should be 1.0)\n";
-                std::cout << "      [4,4]: " << cluster_i->M_cup_(4,4)/3.0 << " (should be 1.0)\n";
-            }
-#endif
+            // Compute t1, t2, t3, t4 once
+            DMat<Scalar> t1 = M_cup * S_i;
+            DMat<Scalar> t2 = B_cup * S_i;
+            t2.noalias() += M_cup * cluster_i->Upsilon_dot_;
+            DMat<Scalar> t3 = B_cup * cluster_i->Psi_dot_;
+            t3.noalias() += M_cup * cluster_i->Psi_ddot_;
+            // Use optimized swappedForceCrossTimesMatrix - avoids building full 6x6 matrix
+            t3 += spatial::swappedForceCrossTimesMatrix(F, S_i);
+            DMat<Scalar> t4 = B_cup.transpose() * S_i;
 
-            DMat<Scalar> t1 = cluster_i->M_cup_ * cluster_i->S();
-            DMat<Scalar> t2 = DMat<Scalar>(cluster_i->B_cup_ * cluster_i->S()) + DMat<Scalar>(cluster_i->M_cup_ * cluster_i->Upsilon_dot_);
-            DMat<Scalar> t3 = DMat<Scalar>(cluster_i->B_cup_ * cluster_i->Psi_dot_) + DMat<Scalar>(cluster_i->M_cup_ * cluster_i->Psi_ddot_)
-            + DMat<Scalar>(spatial::generalSwappedForceCrossMatrix(cluster_i->F_)*cluster_i->S());
-            DMat<Scalar> t4 = cluster_i->B_cup_.transpose() * cluster_i->S();
-
-            // Debug: Check t1-t4 for NaN (only for double type)
-            if constexpr (std::is_same_v<Scalar, double>) {
-                if (!t1.allFinite() || !t2.allFinite() || !t3.allFinite() || !t4.allFinite()) {
-                    std::cout << "[DEBUG] Cluster " << i << " t-matrices contain NaN:" << std::endl;
-                    std::cout << "  t1 finite: " << t1.allFinite() << std::endl;
-                    std::cout << "  t2 finite: " << t2.allFinite() << std::endl;
-                    std::cout << "  t3 finite: " << t3.allFinite() << std::endl;
-                    std::cout << "  t4 finite: " << t4.allFinite() << std::endl;
-                    std::cout << "  M_cup_ finite: " << cluster_i->M_cup_.allFinite() << std::endl;
-                    std::cout << "  B_cup_ finite: " << cluster_i->B_cup_.allFinite() << std::endl;
-                    std::cout << "  S() finite: " << cluster_i->S().allFinite() << std::endl;
-                    std::cout << "  Upsilon_dot_ finite: " << cluster_i->Upsilon_dot_.allFinite() << std::endl;
-                    std::cout << "  Psi_dot_ finite: " << cluster_i->Psi_dot_.allFinite() << std::endl;
-                    std::cout << "  Psi_ddot_ finite: " << cluster_i->Psi_ddot_.allFinite() << std::endl;
-                    std::cout << "  F_ finite: " << cluster_i->F_.allFinite() << std::endl;
-                }
-            }
-
-#ifdef GRBDA_DEBUG_DERIVATIVES
-            // Debug output for comparing with MATLAB
-            if (i == 0) { // Body 1 (floating base) - index 0
-                std::cout << "\n[DEBUG] Body 1 Backward Pass tmp matrices:\n";
-                std::cout << "tmp1 (IC*S) size: " << t1.rows() << "x" << t1.cols() << "\n";
-                std::cout << "First 3 columns:\n";
-                for (int row = 0; row < std::min(6, (int)t1.rows()); row++) {
-                    std::cout << "  ";
-                    for (int col = 0; col < std::min(3, (int)t1.cols()); col++) {
-                        std::cout << std::setw(18) << std::setprecision(10) << std::scientific << t1(row, col) << " ";
-                    }
-                    std::cout << "\n";
-                }
-
-                std::cout << "\ntmp2 (BC*S + IC*Upsilond) first 3 cols:\n";
-                for (int row = 0; row < std::min(6, (int)t2.rows()); row++) {
-                    std::cout << "  ";
-                    for (int col = 0; col < std::min(3, (int)t2.cols()); col++) {
-                        std::cout << std::setw(18) << std::setprecision(10) << std::scientific << t2(row, col) << " ";
-                    }
-                    std::cout << "\n";
-                }
-
-                std::cout << "\ntmp3 (BC*Psid + IC*Psidd + icrf(f)*S) first 3 cols:\n";
-                for (int row = 0; row < std::min(6, (int)t3.rows()); row++) {
-                    std::cout << "  ";
-                    for (int col = 0; col < std::min(3, (int)t3.cols()); col++) {
-                        std::cout << std::setw(18) << std::setprecision(10) << std::scientific << t3(row, col) << " ";
-                    }
-                    std::cout << "\n";
-                }
-
-                std::cout << "\ntmp4 (BC^T*S) first 3 cols:\n";
-                for (int row = 0; row < std::min(6, (int)t4.rows()); row++) {
-                    std::cout << "  ";
-                    for (int col = 0; col < std::min(3, (int)t4.cols()); col++) {
-                        std::cout << std::setw(18) << std::setprecision(10) << std::scientific << t4(row, col) << " ";
-                    }
-                    std::cout << "\n";
-                }
-                std::cout << std::endl;
-            }
-#endif
-
-            int j = i;
-
-            while (j >= 0)
+            // Walk from cluster i to root
+            // Use optimized path for single-body clusters (most common case)
+            if (mss_dim_i == 6)
             {
-                auto &cluster_j = cluster_nodes_[j];
-                const int &jj = cluster_j->velocity_index_;
+                // Single-body cluster: use Transform directly for efficiency
+                int j = i;
+                while (j >= 0)
+                {
+                    auto &cluster_j = cluster_nodes_[j];
+                    const int jj = cluster_j->velocity_index_;
+                    const int num_vel_j = cluster_j->num_velocities_;
+                    const DMat<Scalar> &S_j = cluster_j->S();
 
-                DMat<Scalar> block_val = t1.transpose() * cluster_j->Psi_ddot_ + t4.transpose() * cluster_j->Psi_dot_;
+                    // dtau_dq(ii, jj) = t1^T * Psi_ddot_j + t4^T * Psi_dot_j
+                    dtau_dq.block(ii, jj, num_vel_i, num_vel_j).noalias() =
+                        t1.transpose() * cluster_j->Psi_ddot_ + t4.transpose() * cluster_j->Psi_dot_;
 
-                // Debug: Check for NaN in block assignment
-                if constexpr (std::is_same_v<Scalar, double>) {
-                    if (!block_val.allFinite()) {
-                        std::cout << "[DEBUG] NaN in dtau_dq block(" << ii << "," << jj << ") for clusters i=" << i << ", j=" << j << std::endl;
-                        std::cout << "  t1.transpose() * Psi_ddot finite: " << (t1.transpose() * cluster_j->Psi_ddot_).allFinite() << std::endl;
-                        std::cout << "  t4.transpose() * Psi_dot finite: " << (t4.transpose() * cluster_j->Psi_dot_).allFinite() << std::endl;
-                        std::cout << "  cluster_j->Psi_ddot_ finite: " << cluster_j->Psi_ddot_.allFinite() << std::endl;
-                        std::cout << "  cluster_j->Psi_dot_ finite: " << cluster_j->Psi_dot_.allFinite() << std::endl;
+                    if (j < i)
+                    {
+                        dtau_dq.block(jj, ii, num_vel_j, num_vel_i).noalias() = S_j.transpose() * t3;
                     }
-                }
-
-                dtau_dq.block(ii,jj,cluster_i->num_velocities_,cluster_j->num_velocities_) = block_val;
-                
-                if (j < i)
-                {
-                    dtau_dq.block(jj,ii,cluster_j->num_velocities_,cluster_i->num_velocities_) = cluster_j->S().transpose() * t3;
-                }
-                else // j == i, diagonal block
-                {
-                    // Add the configuration-dependent term: contractT(S_q, F)
-                    // Corresponds to MATLAB ID_derivatives.m line 72
-                    auto S_q_i = cluster_i->joint_->getSq();
-                    auto contract_result = contractSqTransposeWithVector(S_q_i, cluster_i->F_);
-
-                    // Debug: Check for NaN (only for double type)
-                    if constexpr (std::is_same_v<Scalar, double>) {
-                        if (!contract_result.allFinite()) {
-                            std::cout << "[DEBUG backward pass] contractSqTransposeWithVector returned NaN for cluster " << i << std::endl;
-                            std::cout << "  F_ finite: " << cluster_i->F_.allFinite() << std::endl;
-                            std::cout << "  S_q size: " << S_q_i.size() << std::endl;
-                            for (size_t k = 0; k < S_q_i.size(); ++k) {
-                                if (!S_q_i[k].allFinite()) {
-                                    std::cout << "  S_q[" << k << "] contains NaN/Inf!" << std::endl;
-                                }
-                            }
-                        }
+                    else  // j == i (diagonal block)
+                    {
+                        const auto &S_q_i = cluster_i->joint_->getSq();
+                        dtau_dq.block(ii, ii, num_vel_i, num_vel_i) +=
+                            contractSqTransposeWithVector(S_q_i, F);
                     }
 
-                    dtau_dq.block(ii,ii,cluster_i->num_velocities_,cluster_i->num_velocities_) += contract_result;
-                }
+                    dtau_dq_dot.block(jj, ii, num_vel_j, num_vel_i).noalias() = S_j.transpose() * t2;
+                    dtau_dq_dot.block(ii, jj, num_vel_i, num_vel_j).noalias() =
+                        t1.transpose() * cluster_j->Upsilon_dot_ + t4.transpose() * S_j;
 
-                dtau_dq_dot.block(jj,ii,cluster_j->num_velocities_,cluster_i->num_velocities_) = cluster_j->S().transpose() * t2;
-                dtau_dq_dot.block(ii,jj,cluster_i->num_velocities_,cluster_j->num_velocities_) =
-                t1.transpose() * cluster_j->Upsilon_dot_ + t4.transpose() * cluster_j->S();
-
-                if (cluster_j->parent_index_ >= 0)
-                {
-                    t1 = cluster_j->Xup_.inverseTransformForceSubspace(t1);
-                    t2 = cluster_j->Xup_.inverseTransformForceSubspace(t2);
-                    t3 = cluster_j->Xup_.inverseTransformForceSubspace(t3);
-                    t4 = cluster_j->Xup_.inverseTransformForceSubspace(t4);
+                    // Transform t1, t2, t3, t4 to parent frame using single-body Transform
+                    if (cluster_j->parent_index_ >= 0)
+                    {
+                        const auto &X = cluster_j->Xup_[0];
+                        // Use optimized block-based transform
+                        t1 = X.inverseTransformForceSubspace(t1);
+                        t2 = X.inverseTransformForceSubspace(t2);
+                        t3 = X.inverseTransformForceSubspace(t3);
+                        t4 = X.inverseTransformForceSubspace(t4);
+                    }
+                    j = cluster_j->parent_index_;
                 }
-                j = cluster_j->parent_index_;
             }
+            else
+            {
+                // Multi-body cluster: use GeneralizedTransform
+                int j = i;
+                while (j >= 0)
+                {
+                    auto &cluster_j = cluster_nodes_[j];
+                    const int jj = cluster_j->velocity_index_;
+                    const int num_vel_j = cluster_j->num_velocities_;
+                    const DMat<Scalar> &S_j = cluster_j->S();
+
+                    dtau_dq.block(ii, jj, num_vel_i, num_vel_j).noalias() =
+                        t1.transpose() * cluster_j->Psi_ddot_ + t4.transpose() * cluster_j->Psi_dot_;
+
+                    if (j < i)
+                    {
+                        dtau_dq.block(jj, ii, num_vel_j, num_vel_i).noalias() = S_j.transpose() * t3;
+                    }
+                    else
+                    {
+                        const auto &S_q_i = cluster_i->joint_->getSq();
+                        dtau_dq.block(ii, ii, num_vel_i, num_vel_i) +=
+                            contractSqTransposeWithVector(S_q_i, F);
+                    }
+
+                    dtau_dq_dot.block(jj, ii, num_vel_j, num_vel_i).noalias() = S_j.transpose() * t2;
+                    dtau_dq_dot.block(ii, jj, num_vel_i, num_vel_j).noalias() =
+                        t1.transpose() * cluster_j->Upsilon_dot_ + t4.transpose() * S_j;
+
+                    if (cluster_j->parent_index_ >= 0)
+                    {
+                        t1 = cluster_j->Xup_.inverseTransformForceSubspace(t1);
+                        t2 = cluster_j->Xup_.inverseTransformForceSubspace(t2);
+                        t3 = cluster_j->Xup_.inverseTransformForceSubspace(t3);
+                        t4 = cluster_j->Xup_.inverseTransformForceSubspace(t4);
+                    }
+                    j = cluster_j->parent_index_;
+                }
+            }
+
+            // Propagate M_cup, B_cup, F to parent
             if (cluster_i->parent_index_ >= 0)
             {
                 auto &parent_cluster = cluster_nodes_[cluster_i->parent_index_];
 
-                const auto X = cluster_i->Xup_.toMatrix();
-
-#ifdef GRBDA_DEBUG_DERIVATIVES
-                std::cout << "\n[DEBUG] Accumulating from body " << i << " to parent " << cluster_i->parent_index_ << "\n";
-
-                // For body 2 (leaf), print M_cup to verify it's just the single-body inertia
-                if (i == 2) {
-                    std::cout << "  Body 2 M_cup (should be single-body, mass=1.0):\n";
-                    std::cout << "    Mass ([3,3]): " << cluster_i->M_cup_(3,3) << " (expect 1.0)\n";
-                    std::cout << "    Rotational inertia ([0,0]): " << cluster_i->M_cup_(0,0) << " (expect 0.0025)\n";
-
-                    std::cout << "\n  Xup matrix for body 2 (FULL 6x6):\n";
-                    for (int row = 0; row < 6; row++) {
-                        std::cout << "    [";
-                        for (int col = 0; col < 6; col++) {
-                            std::cout << std::setw(10) << std::setprecision(4) << std::scientific << X(row, col);
-                            if (col < 5) std::cout << ", ";
-                        }
-                        std::cout << "]\n";
-                    }
-
-                    std::cout << "\n  C++ Xup translation vector r:\n";
-                    auto r_vec = cluster_i->Xup_[0].getTranslation();
-                    std::cout << "    r = [" << r_vec(0) << ", " << r_vec(1) << ", " << r_vec(2) << "]\n";
-
-                    std::cout << "\n  C++ M_cup[2] BEFORE transform (FULL 6x6):\n";
-                    for (int row = 0; row < 6; row++) {
-                        std::cout << "    [";
-                        for (int col = 0; col < 6; col++) {
-                            std::cout << std::setw(10) << std::setprecision(4) << std::scientific << cluster_i->M_cup_(row, col);
-                            if (col < 5) std::cout << ", ";
-                        }
-                        std::cout << "]\n";
-                    }
-
-                    auto M_child_transformed_debug = (X.transpose() * cluster_i->M_cup_ * X).eval();
-                    std::cout << "\n  Transformed M_cup[2] (X^T * M * X) first 3 rows:\n";
-                    for (int row = 0; row < 3; row++) {
-                        std::cout << "    [";
-                        for (int col = 0; col < 6; col++) {
-                            std::cout << std::setw(12) << std::setprecision(6) << std::scientific << M_child_transformed_debug(row, col);
-                            if (col < 5) std::cout << ", ";
-                        }
-                        std::cout << "]\n";
-                    }
-                    std::cout << "  Expected MATLAB Xup{3}' * IC{3} * Xup{3} first row:\n";
-                    std::cout << "    [1.087e-01, -2.188e-01, -3.790e-01, 0, -2.449e-01, 1.414e-01]\n";
+                // For single-body to single-body, use optimized transform
+                if (mss_dim_i == 6 && parent_cluster->motion_subspace_dimension_ == 6)
+                {
+                    parent_cluster->M_cup_ += cluster_i->Xup_[0].inverseTransformSpatialInertia(
+                        M_cup.template block<6, 6>(0, 0));
+                    parent_cluster->B_cup_ += cluster_i->Xup_[0].inverseTransformSpatialInertia(
+                        B_cup.template block<6, 6>(0, 0));
+                    parent_cluster->F_ += cluster_i->Xup_.inverseTransformForceVector(F);
                 }
-
-                // For body 1, print full Xup and M_cup to compare with MATLAB
-                if (i == 1) {
-                    std::cout << "  Xup matrix for body " << i << " (first 3 rows):\n";
-                    for (int row = 0; row < 3; row++) {
-                        std::cout << "    [";
-                        for (int col = 0; col < 6; col++) {
-                            std::cout << std::setw(10) << std::setprecision(4) << std::scientific << X(row, col);
-                            if (col < 5) std::cout << ", ";
-                        }
-                        std::cout << "]\n";
-                    }
-                    std::cout << "\n  Child M_cup[1] (6x6) FULL MATRIX:\n";
-                    for (int row = 0; row < 6; row++) {
-                        std::cout << "    [";
-                        for (int col = 0; col < 6; col++) {
-                            std::cout << std::setw(12) << std::setprecision(6) << std::scientific << cluster_i->M_cup_(row, col);
-                            if (col < 5) std::cout << ", ";
-                        }
-                        std::cout << "]\n";
-                    }
-
-                    std::cout << "\n  Transformed M (X^T * M_cup[1] * X) FULL MATRIX:\n";
-                    auto M_trans_full = (X.transpose() * cluster_i->M_cup_ * X).eval();
-                    for (int row = 0; row < 6; row++) {
-                        std::cout << "    [";
-                        for (int col = 0; col < 6; col++) {
-                            std::cout << std::setw(12) << std::setprecision(6) << std::scientific << M_trans_full(row, col);
-                            if (col < 5) std::cout << ", ";
-                        }
-                        std::cout << "]\n";
-                    }
+                else
+                {
+                    const DMat<Scalar> X = cluster_i->Xup_.toMatrix();
+                    parent_cluster->M_cup_.noalias() += X.transpose() * M_cup * X;
+                    parent_cluster->B_cup_.noalias() += X.transpose() * B_cup * X;
+                    parent_cluster->F_ += cluster_i->Xup_.inverseTransformForceVector(F);
                 }
-
-                std::cout << "  Child M_cup[" << i << "][0,0] = " << cluster_i->M_cup_(0,0) << "\n";
-                std::cout << "  Parent M_cup[" << cluster_i->parent_index_ << "][0,0] (before) = " << parent_cluster->M_cup_(0,0) << "\n";
-
-                auto M_transformed = X.transpose() * cluster_i->M_cup_ * X;
-                std::cout << "  X^T * M_cup[" << i << "] * X [0,0] = " << M_transformed(0,0) << "\n";
-#endif
-
-                // Use X^T * M * X formula for spatial inertia (matching MATLAB)
-                auto M_child_transformed = (X.transpose() * cluster_i->M_cup_ * X).eval();
-                auto B_child_transformed = (X.transpose() * cluster_i->B_cup_ * X).eval();
-                auto F_child_transformed = cluster_i->Xup_.inverseTransformForceVector(cluster_i->F_);
-
-                parent_cluster->M_cup_ += M_child_transformed;
-                parent_cluster->B_cup_ += B_child_transformed;
-                parent_cluster->F_     += F_child_transformed;
-
-#ifdef GRBDA_DEBUG_DERIVATIVES
-                std::cout << "  Parent M_cup[" << cluster_i->parent_index_ << "][0,0] (after) = " << parent_cluster->M_cup_(0,0) << "\n";
-
-                // For floating base (parent index 0), print full M_cup after final accumulation
-                if (cluster_i->parent_index_ == 0 && i == 1) {
-                    std::cout << "\n[DEBUG] M_cup for Body 1 (floating base) AFTER full accumulation:\n";
-                    std::cout << "  First column: ";
-                    for (int row = 0; row < 6; row++) {
-                        std::cout << parent_cluster->M_cup_(row, 0) << " ";
-                    }
-                    std::cout << "\n  MATLAB expected IC{1} first column: 1.6972 -0.9437 -2.5452 0.0 -1.4635 0.5622\n";
-                }
-#endif
             }
         }
+
         return {dtau_dq, dtau_dq_dot};
     }
-    
+
 
     template class ClusterTreeModel<double>;
     template class ClusterTreeModel<std::complex<double>>;
-    template class ClusterTreeModel<float>;     
+    template class ClusterTreeModel<float>;
     template class ClusterTreeModel<casadi::SX>;
 
 } // namespace grbda

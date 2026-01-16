@@ -85,6 +85,7 @@ namespace grbda
             // Cache INDEPENDENT coordinates for derivative methods (not spanning tree!)
             q_cache_ = joint_state.position;
             qd_cache_ = joint_state.velocity;
+            S_q_cache_valid_ = false;  // state changed, invalidate derivative cache
 
             link1_joint_->updateKinematics(q.template segment<1>(link1_index_),
                                            qd.template segment<1>(link1_index_));
@@ -287,14 +288,20 @@ namespace grbda
         template <typename Scalar>
         std::vector<DMat<Scalar>> RevolutePairWithRotor<Scalar>::getSq() const
         {
+            const int nv = 2;
+            const int spatial_dim = 24; // 4 bodies * 6 DOF
+
+            // Return cached result if available and state unchanged
+            if (S_q_cache_valid_ && (int)S_q_cache_.size() == nv) {
+                return S_q_cache_;
+            }
+
             if (!casadi_functions_initialized_)
             {
                 initializeCasadiFunctions();
             }
 
-            const int nv = 2;
-            const int spatial_dim = 24; // 4 bodies * 6 DOF
-            std::vector<DMat<Scalar>> S_q(nv);
+            S_q_cache_.assign(nv, DMat<Scalar>::Zero(spatial_dim, nv));
 
             // Get q from cache (set by updateKinematics)
             const DVec<Scalar> &q = q_cache_;
@@ -311,11 +318,6 @@ namespace grbda
             // The functions now return the full derivative vectors directly (6x1)
             casadi::DM dS_link2_col0_dq1 = dS_dq1_result[0];  // 6x1 vector
             casadi::DM dS_link2_col0_dq2 = dS_dq2_result[0];  // 6x1 vector
-
-            // Convert to Eigen matrices
-            S_q[0] = DMat<Scalar>::Zero(spatial_dim, nv);
-            S_q[1] = DMat<Scalar>::Zero(spatial_dim, nv);
-
 
             // CRITICAL FIX: S = X_intra_S_span * G, so ∂S/∂qi = (∂X_intra_S_span/∂qi) * G
             // The CasADi function returns ∂(X_intra_S_span[link2, link1])/∂qi (a 6x1 vector)
@@ -337,11 +339,11 @@ namespace grbda
             // Now compute ∂S/∂qi = (∂X_intra_S_span/∂qi) * G
             // This gives us derivatives for BOTH columns of S, not just column 0
             const DMat<Scalar> &G = this->loop_constraint_->G();
-            S_q[0] = dX_intra_dq1 * G;  // 24x2 matrix
-            S_q[1] = dX_intra_dq2 * G;  // 24x2 matrix
+            S_q_cache_[0] = dX_intra_dq1 * G;  // 24x2 matrix
+            S_q_cache_[1] = dX_intra_dq2 * G;  // 24x2 matrix
 
-
-            return S_q;
+            S_q_cache_valid_ = true;
+            return S_q_cache_;
         }
 
         template <typename Scalar>

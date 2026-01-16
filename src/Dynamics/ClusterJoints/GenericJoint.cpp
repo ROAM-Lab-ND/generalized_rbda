@@ -551,6 +551,7 @@ namespace grbda
             // Cache state for derivative computation
             q_cache_ = q;
             qd_cache_ = qd;
+            S_q_cache_valid_ = false; // state changed, invalidate derivative cache
 
             int pos_idx = 0;
             int vel_idx = 0;
@@ -584,9 +585,9 @@ namespace grbda
                 vel_idx += num_vel;
             }
 
-            const DMat<Scalar> S_implicit = X_intra_ * S_spanning_;
-            this->S_ = S_implicit * this->loop_constraint_->G();
-            this->vJ_ = S_implicit * qd;
+            S_implicit_ = X_intra_ * S_spanning_;
+            this->S_ = S_implicit_ * this->loop_constraint_->G();
+            this->vJ_ = S_implicit_ * qd;
 
             for (int i = 0; i < this->num_bodies_; i++)
             {
@@ -608,7 +609,7 @@ namespace grbda
             }
 
             this->cJ_ = X_intra_ring_ * this->S_spanning_ * qd +
-                        S_implicit * this->loop_constraint_->g();
+                        S_implicit_ * this->loop_constraint_->g();
             this->S_ring_ = X_intra_ring_ * this->S_spanning_ * this->loop_constraint_->G(); //+X_intra*S_panning_*G_dot_;
         }
 
@@ -737,26 +738,26 @@ namespace grbda
             if constexpr (std::is_same_v<Scalar, double>) {
                 initializeDerivativeFunctions();
 
-                std::vector<DMat<Scalar>> S_q(nv);
+                // Reuse cached result when possible to avoid repeated CasADi evaluation
+                if (S_q_cache_valid_ && (int)S_q_cache_.size() == nv) {
+                    return S_q_cache_;
+                }
+
+                S_q_cache_.assign(nv, DMat<Scalar>::Zero(mss_dim, nv));
 
                 if (!generic_constraint_) {
-                    for (int i = 0; i < nv; ++i) {
-                        S_q[i] = DMat<Scalar>::Zero(mss_dim, nv);
-                    }
-                    return S_q;
+                    S_q_cache_valid_ = true;
+                    return S_q_cache_;
                 }
 
                 // Safety check: ensure state has been cached
-                if (q_cache_.size() == 0 || !derivative_functions_initialized_) {
-                    // Return zeros if not initialized
-                    for (int i = 0; i < nv; ++i) {
-                        S_q[i] = DMat<Scalar>::Zero(mss_dim, nv);
-                    }
-                    return S_q;
+                if (q_cache_.size() == 0 || !derivative_functions_initialized_ || S_implicit_.size() == 0) {
+                    S_q_cache_valid_ = true;
+                    return S_q_cache_;
                 }
 
 
-                const DMat<Scalar> S_implicit = X_intra_ * S_spanning_;
+                const DMat<Scalar>& S_implicit = S_implicit_;
                 const DMat<Scalar>& G = this->loop_constraint_->G();
 
                 // Debug: Check if S_implicit contains NaN
@@ -791,8 +792,6 @@ namespace grbda
                 }
 
                 for (int qi = 0; qi < nv; ++qi) {
-                    S_q[qi] = DMat<Scalar>::Zero(mss_dim, nv);
-
                     if (qi < n_span_vel) {
                         DMat<Scalar> dG_dqi(n_span, n_indep);
                         for (int row = 0; row < n_span; ++row) {
@@ -801,17 +800,18 @@ namespace grbda
                                 dG_dqi(row, col) = static_cast<double>(dG_dq_stacked_dm(idx));
                             }
                         }
-                        S_q[qi] = S_implicit * dG_dqi;
+                        S_q_cache_[qi] = S_implicit * dG_dqi;
 
                         // Debug: Check if result contains NaN
-                        if (!S_q[qi].allFinite()) {
+                        if (!S_q_cache_[qi].allFinite()) {
                             std::cout << "[DEBUG getSq] S_q[" << qi << "] contains NaN/Inf after multiplication!" << std::endl;
                             std::cout << "  dG_dqi finite: " << dG_dqi.allFinite() << std::endl;
                         }
                     }
                 }
 
-                return S_q;
+                S_q_cache_valid_ = true;
+                return S_q_cache_;
             } else {
                 return std::vector<DMat<Scalar>>(nv, DMat<Scalar>::Zero(mss_dim, nv));
             }

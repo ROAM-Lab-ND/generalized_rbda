@@ -60,6 +60,8 @@ namespace grbda
             // Cache for current state
             mutable DVec<Scalar> q_cache_;
             mutable DVec<Scalar> qd_cache_;
+            mutable std::vector<DMat<Scalar>> S_q_cache_;
+            mutable bool S_q_cache_valid_ = false;
         };
 
     }

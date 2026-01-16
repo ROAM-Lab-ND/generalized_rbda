@@ -45,6 +45,7 @@ namespace grbda
             // Cache INDEPENDENT coordinates for derivative methods (not spanning tree!)
             q_cache_ = joint_state.position;
             qd_cache_ = joint_state.velocity;
+            S_q_cache_valid_ = false;  // state changed, invalidate derivative cache
 
             link_1_joint_->updateKinematics(q.template segment<1>(0), qd.template segment<1>(0));
             link_2_joint_->updateKinematics(q.template segment<1>(1), qd.template segment<1>(1));
@@ -169,9 +170,17 @@ namespace grbda
         template <typename Scalar>
         std::vector<DMat<Scalar>> RevolutePair<Scalar>::getSq() const
         {
-            initializeCasadiFunctions();
             const int nv = 2;
             const int spatial_dim = 12;
+
+            // Return cached result if available and state unchanged
+            if (S_q_cache_valid_ && (int)S_q_cache_.size() == nv) {
+                return S_q_cache_;
+            }
+
+            initializeCasadiFunctions();
+
+            S_q_cache_.assign(nv, DMat<Scalar>::Zero(spatial_dim, nv));
 
             std::vector<casadi::DM> input = {
                 casadi::DM(static_cast<double>(q_cache_(0))),
@@ -192,11 +201,11 @@ namespace grbda
 
             // Compute ∂S/∂qi = (∂X_intra_S_span/∂qi) * G
             const DMat<Scalar> &G = this->loop_constraint_->G();
-            std::vector<DMat<Scalar>> S_q(nv);
-            S_q[0] = dX_intra_dq1 * G;  // 12x2 matrix
-            S_q[1] = dX_intra_dq2 * G;  // 12x2 matrix
+            S_q_cache_[0] = dX_intra_dq1 * G;  // 12x2 matrix
+            S_q_cache_[1] = dX_intra_dq2 * G;  // 12x2 matrix
 
-            return S_q;
+            S_q_cache_valid_ = true;
+            return S_q_cache_;
         }
 
         template <typename Scalar>

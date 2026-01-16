@@ -103,6 +103,11 @@ namespace grbda
             DMat<Scalar> X_intra_ring_;
             DMat<bool> connectivity_;
 
+            // Cached intermediates for derivative evaluation
+            mutable DMat<Scalar> S_implicit_;
+            mutable std::vector<DMat<Scalar>> S_q_cache_;
+            mutable bool S_q_cache_valid_ = false;
+
             void initializeDerivativeFunctions() const;
             
             // Cached state for derivative computation

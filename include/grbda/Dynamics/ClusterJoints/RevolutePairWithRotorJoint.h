@@ -65,6 +65,8 @@ namespace grbda
 
             mutable DVec<Scalar> q_cache_;
             mutable DVec<Scalar> qd_cache_;
+            mutable std::vector<DMat<Scalar>> S_q_cache_;
+            mutable bool S_q_cache_valid_ = false;
             mutable casadi::Function f_dS_dq1_;
             mutable casadi::Function f_dS_dq2_;
             mutable casadi::Function f_Sdotqd_q_;

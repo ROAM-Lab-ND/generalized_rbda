@@ -102,9 +102,20 @@ namespace grbda
         template <typename Scalar>
         D6Mat<Scalar> Transform<Scalar>::inverseTransformForceSubspace(const D6Mat<Scalar> &F_in) const
         {
-            D6Mat<Scalar> F_out = D6Mat<Scalar>::Zero(6, F_in.cols());
-            for (int i = 0; i < F_in.cols(); i++)
-                F_out.col(i) = inverseTransformForceVector(F_in.col(i));
+            // Optimized version using block operations instead of per-column loop
+            // X^{-T} * F where X^{-T} = [E^T, r_hat * E^T; 0, E^T]
+            const int num_cols = F_in.cols();
+            D6Mat<Scalar> F_out(6, num_cols);
+            const Mat3<Scalar> ET = E_.transpose();
+            const Mat3<Scalar> r_hat_ET = ori::vectorToSkewMat(r_) * ET;
+
+            // Top 3 rows: E^T * F_top + r_hat * E^T * F_bottom
+            F_out.template topRows<3>().noalias() = ET * F_in.template topRows<3>();
+            F_out.template topRows<3>().noalias() += r_hat_ET * F_in.template bottomRows<3>();
+
+            // Bottom 3 rows: E^T * F_bottom
+            F_out.template bottomRows<3>().noalias() = ET * F_in.template bottomRows<3>();
+
             return F_out;
         }
 
