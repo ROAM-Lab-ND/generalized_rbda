@@ -38,6 +38,10 @@ namespace grbda
             D6Mat<Scalar> inverseTransformMotionSubspace(const D6Mat<Scalar> &S_in) const;
             D6Mat<Scalar> inverseTransformForceSubspace(const D6Mat<Scalar> &F_in) const;
 
+            // Batched version: transforms 4 force subspaces with a single computation of E^T and r_hat*E^T
+            void inverseTransformForceSubspace4(
+                DMat<Scalar> &F1, DMat<Scalar> &F2, DMat<Scalar> &F3, DMat<Scalar> &F4) const;
+
             Transform<Scalar> operator*(const Transform<Scalar> &X_in) const;
 
             const Mat3<Scalar> &getRotation() const { return E_; }
@@ -102,12 +106,29 @@ namespace grbda
             DMat<Scalar> inverseTransformSpatialInertia(const DMat<Scalar> &I_in) const;
 
             Transform<Scalar> &operator[](int output_body_index);
+            const Transform<Scalar> &operator[](int output_body_index) const;
             GeneralizedTransform<Scalar> operator*(const GeneralizedTransform<Scalar> &X_in) const;
             GeneralizedAbsoluteTransform<Scalar> operator*(
                 const GeneralizedAbsoluteTransform<Scalar> &X_in) const;
 
             DMat<Scalar> rightMultiplyMotionTransform(const DMat<Scalar> &M_in) const;
             DMat<Scalar> leftMultiplyForceTransform(const DMat<Scalar> &M_in) const;
+
+            // Accumulates child's block-diagonal composite inertia to parent's block-diagonal
+            // composite inertia. Each 6x6 block of I_child is transformed and added to the
+            // corresponding parent body's 6x6 block in I_parent based on connectivity.
+            void accumulateBlockDiagonalInertia(const DMat<Scalar> &I_child,
+                                                DMat<Scalar> &I_parent) const;
+
+            // Computes F = Ic * S exploiting block-diagonal structure of Ic.
+            // Returns F with dimensions (6 * num_output_bodies) x (num_cols of S)
+            DMat<Scalar> blockDiagonalInertiaTimesMotionSubspace(
+                const DMat<Scalar> &Ic_block_diag, const DMat<Scalar> &S) const;
+
+            // Transforms F from child frame to parent frame, accumulating to connected parent bodies.
+            // This is similar to inverseTransformForceSubspace but optimized for the CRBA pattern
+            // where we know the structure comes from block-diagonal Ic * S.
+            DMat<Scalar> transformForceSubspaceToParent(const DMat<Scalar> &F_in) const;
 
         private:
             int num_output_bodies_ = 0;

@@ -1,4 +1,5 @@
 #include "grbda/Utils/SpatialTransforms.h"
+#include "grbda/Utils/Spatial.h"
 
 namespace grbda
 {
@@ -117,6 +118,36 @@ namespace grbda
             F_out.template bottomRows<3>().noalias() = ET * F_in.template bottomRows<3>();
 
             return F_out;
+        }
+
+        template <typename Scalar>
+        void Transform<Scalar>::inverseTransformForceSubspace4(
+            DMat<Scalar> &F1, DMat<Scalar> &F2, DMat<Scalar> &F3, DMat<Scalar> &F4) const
+        {
+            // Batched version: transforms 4 force subspaces with shared E^T and r_hat*E^T computation
+            // This is used in the ID derivatives walk-to-root loop where t1, t2, t3, t4 are all transformed
+            const Mat3<Scalar> ET = E_.transpose();
+            const Mat3<Scalar> r_hat_ET = ori::vectorToSkewMat(r_) * ET;
+
+            // Helper lambda to transform a single matrix in-place
+            auto transformInPlace = [&ET, &r_hat_ET](DMat<Scalar> &F) {
+                const int num_cols = F.cols();
+                DMat<Scalar> F_out(6, num_cols);
+
+                // Top 3 rows: E^T * F_top + r_hat * E^T * F_bottom
+                F_out.template topRows<3>().noalias() = ET * F.template topRows<3>();
+                F_out.template topRows<3>().noalias() += r_hat_ET * F.template bottomRows<3>();
+
+                // Bottom 3 rows: E^T * F_bottom
+                F_out.template bottomRows<3>().noalias() = ET * F.template bottomRows<3>();
+
+                F = std::move(F_out);
+            };
+
+            transformInPlace(F1);
+            transformInPlace(F2);
+            transformInPlace(F3);
+            transformInPlace(F4);
         }
 
         template <typename Scalar>
@@ -388,6 +419,12 @@ namespace grbda
         }
 
         template <typename Scalar>
+        const Transform<Scalar> &GeneralizedTransform<Scalar>::operator[](int output_body_index) const
+        {
+            return transforms_and_parent_subindices_[output_body_index].first;
+        }
+
+        template <typename Scalar>
         GeneralizedTransform<Scalar>
         GeneralizedTransform<Scalar>::operator*(const GeneralizedTransform &X_in) const
         {
@@ -487,6 +524,112 @@ namespace grbda
             }
 
             return M_out;
+        }
+
+        template <typename Scalar>
+        void GeneralizedTransform<Scalar>::accumulateBlockDiagonalInertia(
+            const DMat<Scalar> &I_child, DMat<Scalar> &I_parent) const
+        {
+            // I_child is block-diagonal: diag(I_1, I_2, ..., I_n) where n = num_output_bodies_
+            // Each body i in the child connects to parent body parent_subindex[i]
+            // We transform each I_i and add it to the corresponding parent block
+
+            // Fast path for single-body clusters (most common case)
+            if (num_output_bodies_ == 1)
+            {
+                const Transform<Scalar> &X = transforms_and_parent_subindices_[0].first;
+                const int parent_subindex = transforms_and_parent_subindices_[0].second;
+                I_parent.template block<6, 6>(6 * parent_subindex, 6 * parent_subindex) +=
+                    X.inverseTransformSpatialInertia(I_child.template block<6, 6>(0, 0));
+                return;
+            }
+
+            int output_body = 0;
+            for (const auto &transform_and_parent_subindex : transforms_and_parent_subindices_)
+            {
+                const Transform<Scalar> &X = transform_and_parent_subindex.first;
+                const int parent_subindex = transform_and_parent_subindex.second;
+
+                // Extract the 6x6 inertia block for this child body
+                const Mat6<Scalar> I_child_block =
+                    I_child.template block<6, 6>(6 * output_body, 6 * output_body);
+
+                // Transform to parent frame and accumulate to the parent body's block
+                I_parent.template block<6, 6>(6 * parent_subindex, 6 * parent_subindex) +=
+                    X.inverseTransformSpatialInertia(I_child_block);
+
+                output_body++;
+            }
+        }
+
+        template <typename Scalar>
+        DMat<Scalar> GeneralizedTransform<Scalar>::blockDiagonalInertiaTimesMotionSubspace(
+            const DMat<Scalar> &Ic_block_diag, const DMat<Scalar> &S) const
+        {
+            // Ic is block-diagonal: diag(Ic_1, Ic_2, ..., Ic_n)
+            // S has rows corresponding to each body's motion subspace contribution
+            // F = Ic * S, but we only need to multiply each 6x6 block by its corresponding rows of S
+
+            const int num_cols = S.cols();
+
+            // Fast path for single-body clusters (most common case)
+            // Avoids loop overhead and dynamic indexing
+            if (num_output_bodies_ == 1)
+            {
+                DMat<Scalar> F(6, num_cols);
+                F.noalias() = Ic_block_diag.template block<6, 6>(0, 0) * S;
+                return F;
+            }
+
+            DMat<Scalar> F = DMat<Scalar>::Zero(6 * num_output_bodies_, num_cols);
+
+            for (int body = 0; body < num_output_bodies_; body++)
+            {
+                // Extract the 6x6 inertia block for this body
+                const auto Ic_block = Ic_block_diag.template block<6, 6>(6 * body, 6 * body);
+
+                // Extract the corresponding rows of S for this body
+                const auto S_block = S.template middleRows<6>(6 * body);
+
+                // Compute F_block = Ic_block * S_block
+                F.template middleRows<6>(6 * body).noalias() = Ic_block * S_block;
+            }
+
+            return F;
+        }
+
+        template <typename Scalar>
+        DMat<Scalar> GeneralizedTransform<Scalar>::transformForceSubspaceToParent(
+            const DMat<Scalar> &F_in) const
+        {
+            // This is essentially the same as inverseTransformForceSubspace
+            // but we're being explicit about its role in the CRBA
+            const int num_cols = F_in.cols();
+
+            // Fast path for single-body clusters (most common case)
+            // Single body connecting to single parent body - avoid loop and dynamic indexing
+            if (num_output_bodies_ == 1 && num_parent_bodies_ == 1)
+            {
+                const Transform<Scalar> &X = transforms_and_parent_subindices_[0].first;
+                return X.inverseTransformForceSubspace(F_in);
+            }
+
+            DMat<Scalar> F_out = DMat<Scalar>::Zero(6 * num_parent_bodies_, num_cols);
+
+            int output_body = 0;
+            for (const auto &transform_and_parent_subindex : transforms_and_parent_subindices_)
+            {
+                const Transform<Scalar> &X = transform_and_parent_subindex.first;
+                const int parent_subindex = transform_and_parent_subindex.second;
+
+                // Transform force from child body frame to parent body frame and accumulate
+                F_out.template middleRows<6>(6 * parent_subindex).noalias() +=
+                    X.inverseTransformForceSubspace(F_in.template middleRows<6>(6 * output_body));
+
+                output_body++;
+            }
+
+            return F_out;
         }
 
         template class GeneralizedTransform<double>;

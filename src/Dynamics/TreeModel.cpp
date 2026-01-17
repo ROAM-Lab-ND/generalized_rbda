@@ -120,7 +120,7 @@ namespace grbda
 
         forwardKinematics();
 
-        // Forward Pass
+        // Forward Pass: Initialize composite inertias to local inertias
         for (auto &node : nodes_)
             node->Ic_ = node->I_;
 
@@ -131,24 +131,35 @@ namespace grbda
             const int vel_idx_i = node_i->velocity_index_;
             const int num_vel_i = node_i->num_velocities_;
 
+            // Accumulate composite inertia to parent using block-diagonal structure
+            // For cluster B connected to cluster A at body k, we add:
+            // I_A[k,k] += sum over all bodies j in B of: X_j^{-T} * I_B[j,j] * X_j^{-1}
+            // where X_j is the transform from body j in B to body k in A
             if (node_i->parent_index_ >= 0)
             {
                 auto parent_node = nodes_[node_i->parent_index_];
-                parent_node->Ic_ += node_i->Xup_.inverseTransformSpatialInertia(node_i->Ic_);
+                node_i->Xup_.accumulateBlockDiagonalInertia(node_i->Ic_, parent_node->Ic_);
             }
 
-            DMat<Scalar> F = node_i->Ic_ * node_i->S();
+            // Diagonal block: H_ii = S_i^T * Ic_i * S_i
+            // Compute F = Ic * S exploiting block-diagonal structure of Ic
+            DMat<Scalar> F = node_i->Xup_.blockDiagonalInertiaTimesMotionSubspace(
+                node_i->Ic_, node_i->S());
             H_.block(vel_idx_i, vel_idx_i, num_vel_i, num_vel_i) = node_i->S().transpose() * F;
 
+            // Off-diagonal blocks: H_ij = S_j^T * X_ij^{-T} * Ic_i * S_i
+            // F is transformed through the chain from node i to ancestor j
             int j = i;
             while (nodes_[j]->parent_index_ > -1)
             {
-                F = nodes_[j]->Xup_.inverseTransformForceSubspace(F);
+                // Transform F from current frame to parent frame using block-wise transform
+                F = nodes_[j]->Xup_.transformForceSubspaceToParent(F);
 
                 j = nodes_[j]->parent_index_;
                 const int vel_idx_j = nodes_[j]->velocity_index_;
                 const int num_vel_j = nodes_[j]->num_velocities_;
 
+                // H_ij = F^T * S_j
                 H_.block(vel_idx_i, vel_idx_j, num_vel_i, num_vel_j) =
                     F.transpose() * nodes_[j]->S();
                 H_.block(vel_idx_j, vel_idx_i, num_vel_j, num_vel_i) =

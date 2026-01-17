@@ -62,6 +62,13 @@ namespace grbda
         DMat<Scalar> M_cup_;
         DMat<Scalar> B_cup_;
         DVec<Scalar> F_;
+
+        // Workspace matrices for firstOrderInverseDynamicsDerivatives
+        // Pre-allocated to avoid dynamic allocation in hot loop
+        DMat<Scalar> t1_workspace_;
+        DMat<Scalar> t2_workspace_;
+        DMat<Scalar> t3_workspace_;
+        DMat<Scalar> t4_workspace_;
     };
 
 } // namespace grbda

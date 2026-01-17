@@ -485,24 +485,26 @@ namespace grbda
             cluster->Psi_dot_ = spatial::motionCrossTimesMatrix(v_parent_up, S);
             cluster->Psi_dot_ += alpha;
 
+            // Cache crm(v)*S since it's used in both Psi_ddot and Upsilon_dot
+            const DMat<Scalar> crm_v_S = spatial::motionCrossTimesMatrix(v, S);
+
             // Psi_ddot = crm(a_parent_up)*S + crm(v_parent_up)*Psi_dot + Sdotqd_q + beta + crm(v)*alpha
             cluster->Psi_ddot_ = spatial::motionCrossTimesMatrix(a_parent_up, S);
             cluster->Psi_ddot_ += spatial::motionCrossTimesMatrix(v_parent_up, cluster->Psi_dot_);
             cluster->Psi_ddot_ += Sdotqd_q + beta;
             cluster->Psi_ddot_ += spatial::motionCrossTimesMatrix(v, alpha);
 
-            // Upsilon_dot = crm(v)*S + Psi_dot + S_ring
-            cluster->Upsilon_dot_ = spatial::motionCrossTimesMatrix(v, S);
+            // Upsilon_dot = crm(v)*S + Psi_dot + S_ring (reuse cached crm_v_S)
+            cluster->Upsilon_dot_ = crm_v_S;
             cluster->Upsilon_dot_ += cluster->Psi_dot_ + cluster->S_ring();
 
             // M_cup = I (will accumulate children's contributions)
             cluster->M_cup_ = I;
 
             // B_cup = crf(v)*I - I*crm(v) + icrf(I*v)
-            // Use optimized functions to avoid building full cross-product matrices
+            // Use fused spatialInertiaCrossTerms to compute crf(v)*I - I*crm(v) in one pass
             const DVec<Scalar> Iv = I * v;
-            cluster->B_cup_ = spatial::forceCrossTimesMatrix(v, I);
-            cluster->B_cup_ -= spatial::matrixTimesMotionCross(I, v);
+            cluster->B_cup_ = spatial::spatialInertiaCrossTerms(I, v);
             spatial::addSwappedForceCrossMatrixInPlace(cluster->B_cup_, Iv);
 
             // F = I*a + crf(v)*I*v
@@ -525,14 +527,15 @@ namespace grbda
             const DMat<Scalar> &S_i = cluster_i->S();
 
             // Compute t1, t2, t3, t4 once
-            DMat<Scalar> t1 = M_cup * S_i;
-            DMat<Scalar> t2 = B_cup * S_i;
-            t2.noalias() += M_cup * cluster_i->Upsilon_dot_;
-            DMat<Scalar> t3 = B_cup * cluster_i->Psi_dot_;
-            t3.noalias() += M_cup * cluster_i->Psi_ddot_;
-            // Use optimized swappedForceCrossTimesMatrix - avoids building full 6x6 matrix
+            // M_cup and B_cup are block-diagonal, use optimized block-diagonal multiplication
+            // The blockDiagonalInertiaTimesMotionSubspace method has a fast path for single-body clusters
+            DMat<Scalar> t1 = cluster_i->Xup_.blockDiagonalInertiaTimesMotionSubspace(M_cup, S_i);
+            DMat<Scalar> t2 = cluster_i->Xup_.blockDiagonalInertiaTimesMotionSubspace(B_cup, S_i);
+            t2.noalias() += cluster_i->Xup_.blockDiagonalInertiaTimesMotionSubspace(M_cup, cluster_i->Upsilon_dot_);
+            DMat<Scalar> t3 = cluster_i->Xup_.blockDiagonalInertiaTimesMotionSubspace(B_cup, cluster_i->Psi_dot_);
+            t3.noalias() += cluster_i->Xup_.blockDiagonalInertiaTimesMotionSubspace(M_cup, cluster_i->Psi_ddot_);
             t3 += spatial::swappedForceCrossTimesMatrix(F, S_i);
-            DMat<Scalar> t4 = B_cup.transpose() * S_i;
+            DMat<Scalar> t4 = cluster_i->Xup_.blockDiagonalInertiaTimesMotionSubspace(B_cup.transpose(), S_i);
 
             // Walk from cluster i to root
             // Use optimized path for single-body clusters (most common case)
@@ -566,15 +569,12 @@ namespace grbda
                     dtau_dq_dot.block(ii, jj, num_vel_i, num_vel_j).noalias() =
                         t1.transpose() * cluster_j->Upsilon_dot_ + t4.transpose() * S_j;
 
-                    // Transform t1, t2, t3, t4 to parent frame using single-body Transform
+                    // Transform t1, t2, t3, t4 to parent frame using batched transform
+                    // This computes E^T and r_hat*E^T only once for all 4 matrices
                     if (cluster_j->parent_index_ >= 0)
                     {
                         const auto &X = cluster_j->Xup_[0];
-                        // Use optimized block-based transform
-                        t1 = X.inverseTransformForceSubspace(t1);
-                        t2 = X.inverseTransformForceSubspace(t2);
-                        t3 = X.inverseTransformForceSubspace(t3);
-                        t4 = X.inverseTransformForceSubspace(t4);
+                        X.inverseTransformForceSubspace4(t1, t2, t3, t4);
                     }
                     j = cluster_j->parent_index_;
                 }
@@ -624,20 +624,21 @@ namespace grbda
             {
                 auto &parent_cluster = cluster_nodes_[cluster_i->parent_index_];
 
-                // For single-body to single-body, use optimized transform
+                // For single-body to single-body, use direct Transform (fastest path)
                 if (mss_dim_i == 6 && parent_cluster->motion_subspace_dimension_ == 6)
                 {
-                    parent_cluster->M_cup_ += cluster_i->Xup_[0].inverseTransformSpatialInertia(
-                        M_cup.template block<6, 6>(0, 0));
-                    parent_cluster->B_cup_ += cluster_i->Xup_[0].inverseTransformSpatialInertia(
-                        B_cup.template block<6, 6>(0, 0));
+                    const spatial::Transform<Scalar> &X = cluster_i->Xup_[0];
+                    parent_cluster->M_cup_.template block<6, 6>(0, 0) +=
+                        X.inverseTransformSpatialInertia(M_cup.template block<6, 6>(0, 0));
+                    parent_cluster->B_cup_.template block<6, 6>(0, 0) +=
+                        X.inverseTransformSpatialInertia(B_cup.template block<6, 6>(0, 0));
                     parent_cluster->F_ += cluster_i->Xup_.inverseTransformForceVector(F);
                 }
                 else
                 {
-                    const DMat<Scalar> X = cluster_i->Xup_.toMatrix();
-                    parent_cluster->M_cup_.noalias() += X.transpose() * M_cup * X;
-                    parent_cluster->B_cup_.noalias() += X.transpose() * B_cup * X;
+                    // Multi-body: use block-diagonal accumulation
+                    cluster_i->Xup_.accumulateBlockDiagonalInertia(M_cup, parent_cluster->M_cup_);
+                    cluster_i->Xup_.accumulateBlockDiagonalInertia(B_cup, parent_cluster->B_cup_);
                     parent_cluster->F_ += cluster_i->Xup_.inverseTransformForceVector(F);
                 }
             }
