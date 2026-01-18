@@ -169,19 +169,6 @@ namespace grbda
         throw std::runtime_error("Invalid number of rows provided to General Motion Cross Product");
     }
 
-    // Helper to check if a type is a standard numeric type (double, float, complex)
-    // For which we can use runtime sparsity checks
-    template <typename T>
-    struct is_numeric_type : std::false_type {};
-    template <>
-    struct is_numeric_type<double> : std::true_type {};
-    template <>
-    struct is_numeric_type<float> : std::true_type {};
-    template <>
-    struct is_numeric_type<std::complex<double>> : std::true_type {};
-    template <>
-    struct is_numeric_type<std::complex<float>> : std::true_type {};
-
     /*!
      * Compute motion cross matrix times a matrix: crm(v) * M
      * This avoids building the full 6x6 cross-product matrix.
@@ -202,63 +189,6 @@ namespace grbda
         // [ v5   0   -v3  v2    0   -v0 ]
         // [-v4  v3    0  -v1   v0    0  ]
 
-        // Fast path: for revolute joints, M is a sparse unit vector
-        // crm(v) * [1,0,0,0,0,0]^T = column 0 of crm(v), etc.
-        // Only applies to numeric types (not casadi::SX) where we can do runtime checks
-        if constexpr (is_numeric_type<Scalar>::value)
-        {
-          if (cols == 1)
-          {
-            const Scalar m0 = M(0, 0);
-            const Scalar m1 = M(1, 0);
-            const Scalar m2 = M(2, 0);
-            const Scalar m3 = M(3, 0);
-            const Scalar m4 = M(4, 0);
-            const Scalar m5 = M(5, 0);
-
-            // Check for standard basis vector pattern (revolute joint)
-            const bool bottom_zero = (m3 == Scalar(0)) && (m4 == Scalar(0)) && (m5 == Scalar(0));
-            if (bottom_zero)
-            {
-              DMat<Scalar> result(6, 1);
-              // X-axis: crm(v) * [1,0,0,0,0,0]^T = column 0 = [0, v2, -v1, 0, v5, -v4]^T
-              if (m0 == Scalar(1) && m1 == Scalar(0) && m2 == Scalar(0))
-              {
-                result(0, 0) = Scalar(0);
-                result(1, 0) = v(2);
-                result(2, 0) = -v(1);
-                result(3, 0) = Scalar(0);
-                result(4, 0) = v(5);
-                result(5, 0) = -v(4);
-                return result;
-              }
-              // Y-axis: crm(v) * [0,1,0,0,0,0]^T = column 1 = [-v2, 0, v0, -v5, 0, v3]^T
-              if (m0 == Scalar(0) && m1 == Scalar(1) && m2 == Scalar(0))
-              {
-                result(0, 0) = -v(2);
-                result(1, 0) = Scalar(0);
-                result(2, 0) = v(0);
-                result(3, 0) = -v(5);
-                result(4, 0) = Scalar(0);
-                result(5, 0) = v(3);
-                return result;
-              }
-              // Z-axis: crm(v) * [0,0,1,0,0,0]^T = column 2 = [v1, -v0, 0, v4, -v3, 0]^T
-              if (m0 == Scalar(0) && m1 == Scalar(0) && m2 == Scalar(1))
-              {
-                result(0, 0) = v(1);
-                result(1, 0) = -v(0);
-                result(2, 0) = Scalar(0);
-                result(3, 0) = v(4);
-                result(4, 0) = -v(3);
-                result(5, 0) = Scalar(0);
-                return result;
-              }
-            }
-          }
-        }
-
-        // General path
         // Row i of result = dot product of row i of crm(v) with column c of M
         DMat<Scalar> result(6, cols);
         for (int c = 0; c < cols; ++c)
@@ -712,62 +642,6 @@ namespace grbda
 
       if (n == 6)
       {
-        // Further optimization: for revolute joints, M is a sparse unit vector
-        // icrf(f) * [1,0,0,0,0,0]^T = column 0 of icrf(f), etc.
-        // Only applies to numeric types (not casadi::SX) where we can do runtime checks
-        if constexpr (is_numeric_type<Scalar>::value)
-        {
-          if (cols == 1)
-          {
-            const Scalar m0 = M(0, 0);
-            const Scalar m1 = M(1, 0);
-            const Scalar m2 = M(2, 0);
-            const Scalar m3 = M(3, 0);
-            const Scalar m4 = M(4, 0);
-            const Scalar m5 = M(5, 0);
-
-            // Check for standard basis vector pattern (revolute joint)
-            const bool bottom_zero = (m3 == Scalar(0)) && (m4 == Scalar(0)) && (m5 == Scalar(0));
-            if (bottom_zero)
-            {
-              DMat<Scalar> result(6, 1);
-              // X-axis: icrf(f) * [1,0,0,0,0,0]^T = column 0 = [0, -f2, f1, 0, -f5, f4]^T
-              if (m0 == Scalar(1) && m1 == Scalar(0) && m2 == Scalar(0))
-              {
-                result(0, 0) = Scalar(0);
-                result(1, 0) = -f(2);
-                result(2, 0) = f(1);
-                result(3, 0) = Scalar(0);
-                result(4, 0) = -f(5);
-                result(5, 0) = f(4);
-                return result;
-              }
-              // Y-axis: icrf(f) * [0,1,0,0,0,0]^T = column 1 = [f2, 0, -f0, f5, 0, -f3]^T
-              if (m0 == Scalar(0) && m1 == Scalar(1) && m2 == Scalar(0))
-              {
-                result(0, 0) = f(2);
-                result(1, 0) = Scalar(0);
-                result(2, 0) = -f(0);
-                result(3, 0) = f(5);
-                result(4, 0) = Scalar(0);
-                result(5, 0) = -f(3);
-                return result;
-              }
-              // Z-axis: icrf(f) * [0,0,1,0,0,0]^T = column 2 = [-f1, f0, 0, -f4, f3, 0]^T
-              if (m0 == Scalar(0) && m1 == Scalar(0) && m2 == Scalar(1))
-              {
-                result(0, 0) = -f(1);
-                result(1, 0) = f(0);
-                result(2, 0) = Scalar(0);
-                result(3, 0) = -f(4);
-                result(4, 0) = f(3);
-                result(5, 0) = Scalar(0);
-                return result;
-              }
-            }
-          }
-        }
-
         // General path for single 6D force vector
         DMat<Scalar> result(6, cols);
         for (int c = 0; c < cols; ++c)
@@ -812,103 +686,21 @@ namespace grbda
 
     /*!
      * Compute S^T * M where S is a motion subspace matrix.
-     * For revolute joints where S is a sparse unit vector, this extracts a single row.
      * S: 6 x nv, M: 6 x cols -> result: nv x cols
      */
     template <typename Scalar>
     DMat<Scalar> motionSubspaceTransposeTimesMatrix(const DMat<Scalar> &S, const DMat<Scalar> &M)
     {
-      const int nv = S.cols();
-      const int cols = M.cols();
-
-      // Fast path for revolute joints (single DOF, sparse S)
-      if constexpr (is_numeric_type<Scalar>::value)
-      {
-        if (nv == 1 && S.rows() == 6)
-        {
-          const Scalar s0 = S(0, 0);
-          const Scalar s1 = S(1, 0);
-          const Scalar s2 = S(2, 0);
-          const Scalar s3 = S(3, 0);
-          const Scalar s4 = S(4, 0);
-          const Scalar s5 = S(5, 0);
-
-          // Check for standard basis vector pattern (revolute joint)
-          const bool bottom_zero = (s3 == Scalar(0)) && (s4 == Scalar(0)) && (s5 == Scalar(0));
-          if (bottom_zero)
-          {
-            // X-axis: S^T = [1,0,0,0,0,0] -> extract row 0
-            if (s0 == Scalar(1) && s1 == Scalar(0) && s2 == Scalar(0))
-            {
-              return M.row(0);
-            }
-            // Y-axis: S^T = [0,1,0,0,0,0] -> extract row 1
-            if (s0 == Scalar(0) && s1 == Scalar(1) && s2 == Scalar(0))
-            {
-              return M.row(1);
-            }
-            // Z-axis: S^T = [0,0,1,0,0,0] -> extract row 2
-            if (s0 == Scalar(0) && s1 == Scalar(0) && s2 == Scalar(1))
-            {
-              return M.row(2);
-            }
-          }
-        }
-      }
-
-      // General path
       return S.transpose() * M;
     }
 
     /*!
      * Compute M^T * S where S is a motion subspace matrix.
-     * For revolute joints where S is a sparse unit vector, this extracts a row of M (as a column).
      * M: 6 x N, S: 6 x nv -> M^T: N x 6, result: N x nv
-     * For S = e_k (unit vector), M^T * S = column k of M^T = row k of M (transposed)
      */
     template <typename Scalar>
     DMat<Scalar> matrixTransposeTimesMotionSubspace(const DMat<Scalar> &M, const DMat<Scalar> &S)
     {
-      const int nv = S.cols();
-
-      // Fast path for revolute joints (single DOF, sparse S)
-      if constexpr (is_numeric_type<Scalar>::value)
-      {
-        if (nv == 1 && S.rows() == 6 && M.rows() == 6)
-        {
-          const Scalar s0 = S(0, 0);
-          const Scalar s1 = S(1, 0);
-          const Scalar s2 = S(2, 0);
-          const Scalar s3 = S(3, 0);
-          const Scalar s4 = S(4, 0);
-          const Scalar s5 = S(5, 0);
-
-          // Check for standard basis vector pattern (revolute joint)
-          const bool bottom_zero = (s3 == Scalar(0)) && (s4 == Scalar(0)) && (s5 == Scalar(0));
-          if (bottom_zero)
-          {
-            // M is 6 x N, M^T is N x 6
-            // M^T * e_k = column k of M^T = (row k of M)^T
-            // X-axis: S = e_0 -> extract row 0 of M, return as column vector
-            if (s0 == Scalar(1) && s1 == Scalar(0) && s2 == Scalar(0))
-            {
-              return M.row(0).transpose();
-            }
-            // Y-axis: S = e_1 -> extract row 1 of M
-            if (s0 == Scalar(0) && s1 == Scalar(1) && s2 == Scalar(0))
-            {
-              return M.row(1).transpose();
-            }
-            // Z-axis: S = e_2 -> extract row 2 of M
-            if (s0 == Scalar(0) && s1 == Scalar(0) && s2 == Scalar(1))
-            {
-              return M.row(2).transpose();
-            }
-          }
-        }
-      }
-
-      // General path
       return M.transpose() * S;
     }
 

@@ -34,6 +34,11 @@ namespace grbda
 
             Mat6<Scalar> inverseTransformSpatialInertia(const Mat6<Scalar> &I_in) const;
 
+            // Transform spatial inertia from body frame to world frame
+            // I_world = X^{-T} * I_body * X^{-1}  where X transforms world -> body
+            // This is the inverse operation of inverseTransformSpatialInertia
+            Mat6<Scalar> transformSpatialInertiaToWorld(const Mat6<Scalar> &I_in) const;
+
             D6Mat<Scalar> transformMotionSubspace(const D6Mat<Scalar> &S_in) const;
             D6Mat<Scalar> inverseTransformMotionSubspace(const D6Mat<Scalar> &S_in) const;
             D6Mat<Scalar> inverseTransformForceSubspace(const D6Mat<Scalar> &F_in) const;
@@ -73,6 +78,17 @@ namespace grbda
             DVec<Scalar> transformExternalForceVector(const DVec<Scalar> &f_in) const;
 
             Transform<Scalar> &operator[](int output_body_index);
+
+            // World-frame CRBA support methods
+            // Transforms block-diagonal inertia from local body frames to world frame
+            // I_local is block-diagonal with each 6x6 block in its body's local frame
+            // Returns block-diagonal I_world with each block in world frame
+            DMat<Scalar> transformBlockDiagonalInertiaToWorld(const DMat<Scalar> &I_local) const;
+
+            // Transforms motion subspace from local body frames to world frame
+            // S_local has rows grouped by body, each group in that body's local frame
+            // Returns S_world with all rows in world frame
+            DMat<Scalar> transformMotionSubspaceToWorld(const DMat<Scalar> &S_local) const;
 
         private:
             int num_output_bodies_ = 0;
@@ -120,6 +136,13 @@ namespace grbda
             void accumulateBlockDiagonalInertia(const DMat<Scalar> &I_child,
                                                 DMat<Scalar> &I_parent) const;
 
+            // Batched version: accumulates two child inertias to two parent inertias.
+            // Shares E^T and r_hat computation across both inertias per body.
+            // Used in ID derivatives for M_cup and B_cup propagation.
+            void accumulateBlockDiagonalInertia2(
+                const DMat<Scalar> &I1_child, DMat<Scalar> &I1_parent,
+                const DMat<Scalar> &I2_child, DMat<Scalar> &I2_parent) const;
+
             // Computes F = Ic * S exploiting block-diagonal structure of Ic.
             // Returns F with dimensions (6 * num_output_bodies) x (num_cols of S)
             DMat<Scalar> blockDiagonalInertiaTimesMotionSubspace(
@@ -129,6 +152,12 @@ namespace grbda
             // This is similar to inverseTransformForceSubspace but optimized for the CRBA pattern
             // where we know the structure comes from block-diagonal Ic * S.
             DMat<Scalar> transformForceSubspaceToParent(const DMat<Scalar> &F_in) const;
+
+            // Batched version: transforms 4 force subspaces in one call.
+            // For single-body to single-body, delegates to Transform::inverseTransformForceSubspace4.
+            // For multi-body clusters, shares rotation computation across bodies and matrices.
+            void inverseTransformForceSubspace4(
+                DMat<Scalar> &F1, DMat<Scalar> &F2, DMat<Scalar> &F3, DMat<Scalar> &F4) const;
 
         private:
             int num_output_bodies_ = 0;

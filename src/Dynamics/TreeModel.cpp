@@ -171,6 +171,81 @@ namespace grbda
     }
 
     template <typename Scalar>
+    void TreeModel<Scalar>::compositeRigidBodyAlgorithmWorldFrame()
+    {
+        if (mass_matrix_updated_)
+            return;
+
+        forwardKinematics();
+
+        const int n = (int)nodes_.size();
+
+        // Storage for world-frame quantities
+        // Ic_world[i] stores the composite inertia for node i in world frame
+        std::vector<DMat<Scalar>> Ic_world(n);
+        // S_world[i] stores the motion subspace for node i in world frame
+        std::vector<DMat<Scalar>> S_world(n);
+
+        // Forward Pass: Transform inertias and motion subspaces to world frame
+        for (int i = 0; i < n; i++)
+        {
+            auto &node = nodes_[i];
+            // Transform local inertia to world frame
+            Ic_world[i] = node->Xa_.transformBlockDiagonalInertiaToWorld(node->I_);
+            // Transform motion subspace to world frame
+            S_world[i] = node->Xa_.transformMotionSubspaceToWorld(node->S());
+        }
+
+        // Backward Pass: Accumulate composite inertias and compute H
+        for (int i = n - 1; i >= 0; i--)
+        {
+            auto &node_i = nodes_[i];
+            const int vel_idx_i = node_i->velocity_index_;
+            const int num_vel_i = node_i->num_velocities_;
+
+            // Accumulate composite inertia to parent - direct addition in world frame!
+            if (node_i->parent_index_ >= 0)
+            {
+                Ic_world[node_i->parent_index_] += Ic_world[i];
+            }
+
+            // Compute F = Ic_world * S_world (both in world frame, compatible!)
+            // For block-diagonal Ic, we can exploit the structure
+            const int num_bodies = node_i->Xa_.getNumOutputBodies();
+            DMat<Scalar> F = DMat<Scalar>::Zero(6 * num_bodies, num_vel_i);
+            for (int body = 0; body < num_bodies; body++)
+            {
+                F.template middleRows<6>(6 * body).noalias() =
+                    Ic_world[i].template block<6, 6>(6 * body, 6 * body) *
+                    S_world[i].template middleRows<6>(6 * body);
+            }
+
+            // Diagonal block: H_ii = S_world^T * F
+            H_.block(vel_idx_i, vel_idx_i, num_vel_i, num_vel_i) =
+                S_world[i].transpose() * F;
+
+            // Off-diagonal blocks: walk to ancestors
+            // F stays in world frame - no transformation needed!
+            int j = node_i->parent_index_;
+            while (j >= 0)
+            {
+                const int vel_idx_j = nodes_[j]->velocity_index_;
+                const int num_vel_j = nodes_[j]->num_velocities_;
+
+                // H_ij = F^T * S_j_world (both in world frame!)
+                H_.block(vel_idx_i, vel_idx_j, num_vel_i, num_vel_j) =
+                    F.transpose() * S_world[j];
+                H_.block(vel_idx_j, vel_idx_i, num_vel_j, num_vel_i) =
+                    H_.block(vel_idx_i, vel_idx_j, num_vel_i, num_vel_j).transpose();
+
+                j = nodes_[j]->parent_index_;
+            }
+        }
+
+        mass_matrix_updated_ = true;
+    }
+
+    template <typename Scalar>
     void TreeModel<Scalar>::updateBiasForceVector()
     {
         if (bias_force_updated_)

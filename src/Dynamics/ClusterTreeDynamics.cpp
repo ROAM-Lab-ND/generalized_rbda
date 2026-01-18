@@ -608,39 +608,25 @@ namespace grbda
                     dtau_dq_dot.block(ii, jj, num_vel_i, num_vel_j).noalias() =
                         t1.transpose() * cluster_j->Upsilon_dot_ + t4.transpose() * S_j;
 
+                    // Transform t1, t2, t3, t4 to parent frame using batched transform
+                    // This shares E^T and r_hat*E^T computation across all 4 matrices per body
                     if (cluster_j->parent_index_ >= 0)
                     {
-                        t1 = cluster_j->Xup_.inverseTransformForceSubspace(t1);
-                        t2 = cluster_j->Xup_.inverseTransformForceSubspace(t2);
-                        t3 = cluster_j->Xup_.inverseTransformForceSubspace(t3);
-                        t4 = cluster_j->Xup_.inverseTransformForceSubspace(t4);
+                        cluster_j->Xup_.inverseTransformForceSubspace4(t1, t2, t3, t4);
                     }
                     j = cluster_j->parent_index_;
                 }
             }
 
             // Propagate M_cup, B_cup, F to parent
+            // Use batched inertia accumulation to share E^T and r_hat computation
             if (cluster_i->parent_index_ >= 0)
             {
                 auto &parent_cluster = cluster_nodes_[cluster_i->parent_index_];
-
-                // For single-body to single-body, use direct Transform (fastest path)
-                if (mss_dim_i == 6 && parent_cluster->motion_subspace_dimension_ == 6)
-                {
-                    const spatial::Transform<Scalar> &X = cluster_i->Xup_[0];
-                    parent_cluster->M_cup_.template block<6, 6>(0, 0) +=
-                        X.inverseTransformSpatialInertia(M_cup.template block<6, 6>(0, 0));
-                    parent_cluster->B_cup_.template block<6, 6>(0, 0) +=
-                        X.inverseTransformSpatialInertia(B_cup.template block<6, 6>(0, 0));
-                    parent_cluster->F_ += cluster_i->Xup_.inverseTransformForceVector(F);
-                }
-                else
-                {
-                    // Multi-body: use block-diagonal accumulation
-                    cluster_i->Xup_.accumulateBlockDiagonalInertia(M_cup, parent_cluster->M_cup_);
-                    cluster_i->Xup_.accumulateBlockDiagonalInertia(B_cup, parent_cluster->B_cup_);
-                    parent_cluster->F_ += cluster_i->Xup_.inverseTransformForceVector(F);
-                }
+                cluster_i->Xup_.accumulateBlockDiagonalInertia2(
+                    M_cup, parent_cluster->M_cup_,
+                    B_cup, parent_cluster->B_cup_);
+                parent_cluster->F_ += cluster_i->Xup_.inverseTransformForceVector(F);
             }
         }
 

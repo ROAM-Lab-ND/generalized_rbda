@@ -108,6 +108,7 @@ namespace grbda
         void contactPointForwardKinematics();
         void contactPointForwardAccelerationKinematics(const DVec<Scalar> &qdd);
         void compositeRigidBodyAlgorithm();
+        void compositeRigidBodyAlgorithmWorldFrame();
         void updateBiasForceVector();
 
         // Takes as input independent (non-spanning) joint accelerations

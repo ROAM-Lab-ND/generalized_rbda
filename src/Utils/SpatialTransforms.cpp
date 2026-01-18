@@ -177,6 +177,56 @@ namespace grbda
         }
 
         template <typename Scalar>
+        Mat6<Scalar>
+        Transform<Scalar>::transformSpatialInertiaToWorld(const Mat6<Scalar> &I_in) const
+        {
+            // Transform inertia from body frame to world frame
+            // If X transforms world -> body (X * v_world = v_body), then
+            // I_world = X^{-T} * I_body * X^{-1}
+            //
+            // X = [E, 0; -E*r_hat, E]  (transforms world -> body)
+            // X^{-1} = [E^T, 0; r_hat*E^T, E^T]  (transforms body -> world)
+            // X^{-T} = [E, -E*r_hat^T; 0, E]
+            //
+            // Note: r_hat^T = -r_hat, so X^{-T} = [E, E*r_hat; 0, E]
+
+            Mat6<Scalar> I_out;
+            Mat3<Scalar> E_trans = E_.transpose();
+            Mat3<Scalar> r_hat = ori::vectorToSkewMat(r_);
+
+            const Mat3<Scalar> &I_TL = I_in.template topLeftCorner<3, 3>();
+            const Mat3<Scalar> &I_TR = I_in.template topRightCorner<3, 3>();
+            const Mat3<Scalar> &I_BL = I_in.template bottomLeftCorner<3, 3>();
+            const Mat3<Scalar> &I_BR = I_in.template bottomRightCorner<3, 3>();
+
+            // Compute X^{-T} * I * X^{-1}
+            // X^{-T} = [E, E*r_hat; 0, E]
+            // X^{-1} = [E^T, 0; r_hat*E^T, E^T]
+
+            // First compute I * X^{-1}:
+            // [I_TL, I_TR]   [E^T,       0  ]   [I_TL*E^T + I_TR*r_hat*E^T,  I_TR*E^T]
+            // [I_BL, I_BR] * [r_hat*E^T, E^T] = [I_BL*E^T + I_BR*r_hat*E^T,  I_BR*E^T]
+
+            Mat3<Scalar> r_hat_ET = r_hat * E_trans;
+            Mat3<Scalar> temp_TL = I_TL * E_trans + I_TR * r_hat_ET;
+            Mat3<Scalar> temp_TR = I_TR * E_trans;
+            Mat3<Scalar> temp_BL = I_BL * E_trans + I_BR * r_hat_ET;
+            Mat3<Scalar> temp_BR = I_BR * E_trans;
+
+            // Now compute X^{-T} * (I * X^{-1}):
+            // [E,  E*r_hat]   [temp_TL, temp_TR]
+            // [0,  E      ] * [temp_BL, temp_BR]
+
+            Mat3<Scalar> E_r_hat = E_ * r_hat;
+            I_out.template topLeftCorner<3, 3>() = E_ * temp_TL + E_r_hat * temp_BL;
+            I_out.template topRightCorner<3, 3>() = E_ * temp_TR + E_r_hat * temp_BR;
+            I_out.template bottomLeftCorner<3, 3>() = E_ * temp_BL;
+            I_out.template bottomRightCorner<3, 3>() = E_ * temp_BR;
+
+            return I_out;
+        }
+
+        template <typename Scalar>
         Vec3<Scalar> Transform<Scalar>::transformPoint(const Vec3<Scalar> &local_offset) const
         {
             return E_ * (local_offset - r_);
@@ -296,6 +346,46 @@ namespace grbda
         Transform<Scalar> &GeneralizedAbsoluteTransform<Scalar>::operator[](int output_body_index)
         {
             return transforms_[output_body_index];
+        }
+
+        template <typename Scalar>
+        DMat<Scalar> GeneralizedAbsoluteTransform<Scalar>::transformBlockDiagonalInertiaToWorld(
+            const DMat<Scalar> &I_local) const
+        {
+            // Transform block-diagonal inertia from local body frames to world frame
+            // Each 6x6 diagonal block is transformed independently
+            DMat<Scalar> I_world = DMat<Scalar>::Zero(6 * num_output_bodies_, 6 * num_output_bodies_);
+
+            for (int body = 0; body < num_output_bodies_; body++)
+            {
+                const Transform<Scalar> &Xa = transforms_[body];
+                const Mat6<Scalar> I_body = I_local.template block<6, 6>(6 * body, 6 * body);
+                I_world.template block<6, 6>(6 * body, 6 * body) =
+                    Xa.transformSpatialInertiaToWorld(I_body);
+            }
+
+            return I_world;
+        }
+
+        template <typename Scalar>
+        DMat<Scalar> GeneralizedAbsoluteTransform<Scalar>::transformMotionSubspaceToWorld(
+            const DMat<Scalar> &S_local) const
+        {
+            // Transform motion subspace from local body frames to world frame
+            // Each 6-row block is transformed by the inverse of the corresponding Xa
+            const int num_cols = S_local.cols();
+            DMat<Scalar> S_world = DMat<Scalar>::Zero(6 * num_output_bodies_, num_cols);
+
+            for (int body = 0; body < num_output_bodies_; body++)
+            {
+                const Transform<Scalar> &Xa = transforms_[body];
+                // S_world = X^{-1} * S_local (body -> world)
+                // inverseTransformMotionSubspace does X^{-1} * S
+                S_world.template middleRows<6>(6 * body) =
+                    Xa.inverseTransformMotionSubspace(S_local.template middleRows<6>(6 * body));
+            }
+
+            return S_world;
         }
 
         template class GeneralizedAbsoluteTransform<double>;
@@ -563,6 +653,91 @@ namespace grbda
         }
 
         template <typename Scalar>
+        void GeneralizedTransform<Scalar>::accumulateBlockDiagonalInertia2(
+            const DMat<Scalar> &I1_child, DMat<Scalar> &I1_parent,
+            const DMat<Scalar> &I2_child, DMat<Scalar> &I2_parent) const
+        {
+            // Batched version: transform and accumulate two inertias with shared E^T and r_hat
+
+            // Fast path for single-body clusters (most common case)
+            if (num_output_bodies_ == 1)
+            {
+                const Transform<Scalar> &X = transforms_and_parent_subindices_[0].first;
+                const int parent_subindex = transforms_and_parent_subindices_[0].second;
+
+                // Compute E^T and r_hat once
+                const Mat3<Scalar> E_trans = X.getRotation().transpose();
+                const Mat3<Scalar> r_hat = ori::vectorToSkewMat(X.getTranslation());
+                const Mat3<Scalar> &E = X.getRotation();
+
+                // Helper lambda to transform a 6x6 inertia
+                auto transformInertia = [&](const Mat6<Scalar> &I_in) -> Mat6<Scalar> {
+                    Mat6<Scalar> I_out;
+                    const Mat3<Scalar> &I_TL = I_in.template topLeftCorner<3, 3>();
+                    const Mat3<Scalar> &I_TR = I_in.template topRightCorner<3, 3>();
+                    const Mat3<Scalar> &I_BL = I_in.template bottomLeftCorner<3, 3>();
+                    const Mat3<Scalar> &I_BR = I_in.template bottomRightCorner<3, 3>();
+
+                    I_out.template topLeftCorner<3, 3>() = E_trans * I_TL * E +
+                                                           r_hat * E_trans * I_BL * E -
+                                                           E_trans * I_TR * E * r_hat -
+                                                           r_hat * E_trans * I_BR * E * r_hat;
+                    I_out.template topRightCorner<3, 3>() = E_trans * I_TR * E +
+                                                            r_hat * E_trans * I_BR * E;
+                    I_out.template bottomLeftCorner<3, 3>() = E_trans * I_BL * E -
+                                                              E_trans * I_BR * E * r_hat;
+                    I_out.template bottomRightCorner<3, 3>() = E_trans * I_BR * E;
+                    return I_out;
+                };
+
+                I1_parent.template block<6, 6>(6 * parent_subindex, 6 * parent_subindex) +=
+                    transformInertia(I1_child.template block<6, 6>(0, 0));
+                I2_parent.template block<6, 6>(6 * parent_subindex, 6 * parent_subindex) +=
+                    transformInertia(I2_child.template block<6, 6>(0, 0));
+                return;
+            }
+
+            // Multi-body case
+            int output_body = 0;
+            for (const auto &transform_and_parent_subindex : transforms_and_parent_subindices_)
+            {
+                const Transform<Scalar> &X = transform_and_parent_subindex.first;
+                const int parent_subindex = transform_and_parent_subindex.second;
+
+                // Compute E^T and r_hat once for this body
+                const Mat3<Scalar> E_trans = X.getRotation().transpose();
+                const Mat3<Scalar> r_hat = ori::vectorToSkewMat(X.getTranslation());
+                const Mat3<Scalar> &E = X.getRotation();
+
+                auto transformInertia = [&](const Mat6<Scalar> &I_in) -> Mat6<Scalar> {
+                    Mat6<Scalar> I_out;
+                    const Mat3<Scalar> &I_TL = I_in.template topLeftCorner<3, 3>();
+                    const Mat3<Scalar> &I_TR = I_in.template topRightCorner<3, 3>();
+                    const Mat3<Scalar> &I_BL = I_in.template bottomLeftCorner<3, 3>();
+                    const Mat3<Scalar> &I_BR = I_in.template bottomRightCorner<3, 3>();
+
+                    I_out.template topLeftCorner<3, 3>() = E_trans * I_TL * E +
+                                                           r_hat * E_trans * I_BL * E -
+                                                           E_trans * I_TR * E * r_hat -
+                                                           r_hat * E_trans * I_BR * E * r_hat;
+                    I_out.template topRightCorner<3, 3>() = E_trans * I_TR * E +
+                                                            r_hat * E_trans * I_BR * E;
+                    I_out.template bottomLeftCorner<3, 3>() = E_trans * I_BL * E -
+                                                              E_trans * I_BR * E * r_hat;
+                    I_out.template bottomRightCorner<3, 3>() = E_trans * I_BR * E;
+                    return I_out;
+                };
+
+                I1_parent.template block<6, 6>(6 * parent_subindex, 6 * parent_subindex) +=
+                    transformInertia(I1_child.template block<6, 6>(6 * output_body, 6 * output_body));
+                I2_parent.template block<6, 6>(6 * parent_subindex, 6 * parent_subindex) +=
+                    transformInertia(I2_child.template block<6, 6>(6 * output_body, 6 * output_body));
+
+                output_body++;
+            }
+        }
+
+        template <typename Scalar>
         DMat<Scalar> GeneralizedTransform<Scalar>::blockDiagonalInertiaTimesMotionSubspace(
             const DMat<Scalar> &Ic_block_diag, const DMat<Scalar> &S) const
         {
@@ -630,6 +805,70 @@ namespace grbda
             }
 
             return F_out;
+        }
+
+        template <typename Scalar>
+        void GeneralizedTransform<Scalar>::inverseTransformForceSubspace4(
+            DMat<Scalar> &F1, DMat<Scalar> &F2, DMat<Scalar> &F3, DMat<Scalar> &F4) const
+        {
+            // Fast path for single-body to single-body (most common case)
+            // Delegates to Transform::inverseTransformForceSubspace4 which batches the computation
+            if (num_output_bodies_ == 1 && num_parent_bodies_ == 1)
+            {
+                const Transform<Scalar> &X = transforms_and_parent_subindices_[0].first;
+                X.inverseTransformForceSubspace4(F1, F2, F3, F4);
+                return;
+            }
+
+            // Multi-body case: transform each body's portion and accumulate to parent bodies
+            // We batch the rotation computation across all 4 matrices for each body
+            const int num_cols_1 = F1.cols();
+            const int num_cols_2 = F2.cols();
+            const int num_cols_3 = F3.cols();
+            const int num_cols_4 = F4.cols();
+
+            DMat<Scalar> F1_out = DMat<Scalar>::Zero(6 * num_parent_bodies_, num_cols_1);
+            DMat<Scalar> F2_out = DMat<Scalar>::Zero(6 * num_parent_bodies_, num_cols_2);
+            DMat<Scalar> F3_out = DMat<Scalar>::Zero(6 * num_parent_bodies_, num_cols_3);
+            DMat<Scalar> F4_out = DMat<Scalar>::Zero(6 * num_parent_bodies_, num_cols_4);
+
+            int output_body = 0;
+            for (const auto &transform_and_parent_subindex : transforms_and_parent_subindices_)
+            {
+                const Transform<Scalar> &X = transform_and_parent_subindex.first;
+                const int parent_subindex = transform_and_parent_subindex.second;
+
+                // Compute E^T and r_hat*E^T once for this body
+                const Mat3<Scalar> ET = X.getRotation().transpose();
+                const Mat3<Scalar> r_hat_ET = ori::vectorToSkewMat(X.getTranslation()) * ET;
+
+                // Helper to transform a single body's portion of F and accumulate
+                auto transformAndAccumulate = [&](const DMat<Scalar> &F_in, DMat<Scalar> &F_out, int num_cols) {
+                    // Extract this body's 6 rows from input
+                    const auto F_top = F_in.template block<3, Eigen::Dynamic>(6 * output_body, 0, 3, num_cols);
+                    const auto F_bot = F_in.template block<3, Eigen::Dynamic>(6 * output_body + 3, 0, 3, num_cols);
+
+                    // Transform and accumulate to parent body's rows
+                    // Top: E^T * F_top + r_hat * E^T * F_bot
+                    F_out.template block<3, Eigen::Dynamic>(6 * parent_subindex, 0, 3, num_cols).noalias() +=
+                        ET * F_top + r_hat_ET * F_bot;
+                    // Bottom: E^T * F_bot
+                    F_out.template block<3, Eigen::Dynamic>(6 * parent_subindex + 3, 0, 3, num_cols).noalias() +=
+                        ET * F_bot;
+                };
+
+                transformAndAccumulate(F1, F1_out, num_cols_1);
+                transformAndAccumulate(F2, F2_out, num_cols_2);
+                transformAndAccumulate(F3, F3_out, num_cols_3);
+                transformAndAccumulate(F4, F4_out, num_cols_4);
+
+                output_body++;
+            }
+
+            F1 = std::move(F1_out);
+            F2 = std::move(F2_out);
+            F3 = std::move(F3_out);
+            F4 = std::move(F4_out);
         }
 
         template class GeneralizedTransform<double>;
