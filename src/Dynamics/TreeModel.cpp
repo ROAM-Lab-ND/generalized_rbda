@@ -173,8 +173,8 @@ namespace grbda
     template <typename Scalar>
     void TreeModel<Scalar>::compositeRigidBodyAlgorithmWorldFrame()
     {
-        if (mass_matrix_updated_)
-            return;
+        // if (mass_matrix_updated_)
+        //     return;
 
         forwardKinematics();
 
@@ -248,10 +248,10 @@ namespace grbda
             }
             int j = i;
             // Off-diagonal blocks: H_ij = S_world_j^T * Ic_world
-            while (nodes_[j]->parent_index_ > -1)
+            while (j > -1)
             {
-                j = nodes_[j]->parent_index_;
                 nodes_[j]->num_subtree_velocities_ += num_vel_i;
+                j = nodes_[j]->parent_index_;
             }
         }
         
@@ -262,8 +262,19 @@ namespace grbda
             const int vel_idx_i = node_i->velocity_index_;
             const int num_vel_i = node_i->num_velocities_;
 
-            const auto F_subtree = F_tmp.middleCols(vel_idx_i+num_vel_i, node_i->num_subtree_velocities_);
-            H_.block(vel_idx_i, vel_idx_i+num_vel_i, num_vel_i, node_i->num_subtree_velocities_) = S_world[i].transpose() * F_subtree;
+            const auto F_subtree = F_tmp.middleCols(vel_idx_i, node_i->num_subtree_velocities_);
+
+            const int parent_idx = node_i->parent_index_;
+            if (parent_idx < 0)
+                continue;
+        
+            const auto [_, parent_subindex] = node_i->X_up_.transform_and_parent_subindex(0);
+            const auto parent_S  = S_world[parent_idx].template middleRows<6>(6 * parent_subindex);
+
+            const int parent_vel_idx = nodes_[parent_idx]->velocity_index_;
+            const int parent_num_vel = nodes_[parent_idx]->num_velocities_;
+
+            H_.block(parent_vel_idx, vel_idx_i, parent_num_vel, node_i->num_subtree_velocities_) = parent_S.transpose() * F_subtree;
         }
 
         H_.template triangularView<Eigen::StrictlyLower>() =

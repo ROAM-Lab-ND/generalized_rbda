@@ -222,7 +222,29 @@ namespace grbda
     DMat<Scalar> RigidBodyTreeModel<Scalar>::getMassMatrix()
     {
         updateLoopConstraints();
+        
         this->compositeRigidBodyAlgorithm();
+
+        if constexpr (!std::is_same_v<Scalar, casadi::SX> && !std::is_same_v<Scalar, std::complex<double>>)
+        {
+            DMat<Scalar> H_tmp = this->H_; 
+            this->H_.setZero(); 
+            this->compositeRigidBodyAlgorithmWorldFrame();
+
+            DMat<Scalar> err = H_tmp - this->H_;
+            Scalar max_err = err.cwiseAbs().maxCoeff();
+            if (max_err > 1e-8)
+            {
+                std::cout << "Err = " << std::endl << err << std::endl;
+                std::cout << "Max error:" << max_err << std::endl;
+                throw std::runtime_error("Inconsistent mass matrix computation between body-frame and world-frame CRBAs.");
+            }
+            else
+            {
+                std::cout << "   YAY! Max error:" << max_err << std::endl;
+            }
+        }
+
         return loop_constraints_.G_transpose() * this->H_ * loop_constraints_.G();
     }
 
