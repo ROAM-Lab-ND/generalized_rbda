@@ -4,7 +4,6 @@
 #include "grbda/Robots/Tello.hpp"
 #include "grbda/Dynamics/ClusterJoints/GenericJoint.h"
 #include "grbda/Robots/PlanarLegLinkage.hpp"
-#include "TelloValidStates.h"
 
 
 // --- IMPLICIT CONSTRAINT COMPLEX-STEP TESTS (robust cluster-wise state mapping) ---

@@ -215,7 +215,7 @@ namespace grbda
             // Accumulate composite inertia to parent - direct addition in world frame!
             if (node_i->parent_index_ >= 0)
             {
-                for(int j = 0 ; j < node_i->Xup_->getNumOutputBodies(); j++)
+                for(int j = 0 ; j < node_i->Xup_.getNumOutputBodies(); j++)
                 {
                     const int output_body = j;
                     const int parent_subindex = node_i->Xup_.transform_and_parent_subindex(j).second;
@@ -266,8 +266,8 @@ namespace grbda
             H_.block(vel_idx_i, vel_idx_i+num_vel_i, num_vel_i, node_i->num_subtree_velocities_) = S_world[i].transpose() * F_subtree;
         }
 
-        H_.triangularView<Eigen::StrictlyLower>() =
-            H_.triangularView<Eigen::StrictlyUpper>().transpose();
+        H_.template triangularView<Eigen::StrictlyLower>() =
+            H_.template triangularView<Eigen::StrictlyUpper>().transpose();
 
         mass_matrix_updated_ = true;
     }
