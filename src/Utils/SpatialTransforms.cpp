@@ -641,7 +641,7 @@ namespace grbda
                 const int parent_subindex = transform_and_parent_subindex.second;
 
                 // Extract the 6x6 inertia block for this child body
-                const Mat6<Scalar> I_child_block =
+                const auto I_child_block =
                     I_child.template block<6, 6>(6 * output_body, 6 * output_body);
 
                 // Transform to parent frame and accumulate to the parent body's block

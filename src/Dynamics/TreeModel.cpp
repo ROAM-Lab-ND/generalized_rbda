@@ -196,17 +196,32 @@ namespace grbda
             S_world[i] = node->Xa_.transformMotionSubspaceToWorld(node->S());
         }
 
+        int N_total = getNumDegreesOfFreedom();
+        DMat<Scalar> F_tmp = DMat<Scalar>::Zero(6, N_total);
+
+        for( auto & node : nodes_)
+        {
+            node->num_subtree_velocities_ = 0;
+        }
+
         // Backward Pass: Accumulate composite inertias and compute H
         for (int i = n - 1; i >= 0; i--)
         {
             auto &node_i = nodes_[i];
+
             const int vel_idx_i = node_i->velocity_index_;
             const int num_vel_i = node_i->num_velocities_;
 
             // Accumulate composite inertia to parent - direct addition in world frame!
             if (node_i->parent_index_ >= 0)
             {
-                Ic_world[node_i->parent_index_] += Ic_world[i];
+                for(int j = 0 ; j < node_i->Xup_->getNumOutputBodies(); j++)
+                {
+                    const int output_body = j;
+                    const int parent_subindex = node_i->Xup_.transform_and_parent_subindex(j).second;
+                    Ic_world[node_i->parent_index_].template block<6, 6>(6 * parent_subindex, 6 * parent_subindex).noalias() +=
+                        Ic_world[i].template block<6, 6>(6 * output_body, 6 * output_body);
+                }
             }
 
             // Compute F = Ic_world * S_world (both in world frame, compatible!)
@@ -223,24 +238,36 @@ namespace grbda
             // Diagonal block: H_ii = S_world^T * F
             H_.block(vel_idx_i, vel_idx_i, num_vel_i, num_vel_i) =
                 S_world[i].transpose() * F;
-
-            // Off-diagonal blocks: walk to ancestors
-            // F stays in world frame - no transformation needed!
-            int j = node_i->parent_index_;
-            while (j >= 0)
+            
+            int idx = 0;
+            F_tmp.middleCols(vel_idx_i, num_vel_i).setZero();
+            while(idx < F.rows())
             {
-                const int vel_idx_j = nodes_[j]->velocity_index_;
-                const int num_vel_j = nodes_[j]->num_velocities_;
-
-                // H_ij = F^T * S_j_world (both in world frame!)
-                H_.block(vel_idx_i, vel_idx_j, num_vel_i, num_vel_j) =
-                    F.transpose() * S_world[j];
-                H_.block(vel_idx_j, vel_idx_i, num_vel_j, num_vel_i) =
-                    H_.block(vel_idx_i, vel_idx_j, num_vel_i, num_vel_j).transpose();
-
+                F_tmp.middleCols(vel_idx_i, num_vel_i) += F.template middleRows<6>(idx);
+                idx += 6;
+            }
+            int j = i;
+            // Off-diagonal blocks: H_ij = S_world_j^T * Ic_world
+            while (nodes_[j]->parent_index_ > -1)
+            {
                 j = nodes_[j]->parent_index_;
+                nodes_[j]->num_subtree_velocities_ += num_vel_i;
             }
         }
+        
+        for (int i = n - 1; i >= 0; i--)
+        {
+            auto &node_i = nodes_[i];
+
+            const int vel_idx_i = node_i->velocity_index_;
+            const int num_vel_i = node_i->num_velocities_;
+
+            const auto F_subtree = F_tmp.middleCols(vel_idx_i+num_vel_i, node_i->num_subtree_velocities_);
+            H_.block(vel_idx_i, vel_idx_i+num_vel_i, num_vel_i, node_i->num_subtree_velocities_) = S_world[i].transpose() * F_subtree;
+        }
+
+        H_.triangularView<Eigen::StrictlyLower>() =
+            H_.triangularView<Eigen::StrictlyUpper>().transpose();
 
         mass_matrix_updated_ = true;
     }

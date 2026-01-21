@@ -51,6 +51,7 @@ namespace grbda
         const int num_positions_;
         const int velocity_index_;
         const int num_velocities_;
+        int num_subtree_velocities_ = 0;
         const int motion_subspace_index_;
         const int motion_subspace_dimension_;
 
