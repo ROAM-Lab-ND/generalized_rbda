@@ -177,6 +177,7 @@ namespace grbda
         //     return;
 
         forwardKinematics();
+        H_.setZero();
 
         const int n = (int)nodes_.size();
 
@@ -207,18 +208,24 @@ namespace grbda
         // Backward Pass: Accumulate composite inertias and compute H
         for (int i = n - 1; i >= 0; i--)
         {
+            std::cout << "Processing node " << i << std::endl;
             auto &node_i = nodes_[i];
 
             const int vel_idx_i = node_i->velocity_index_;
             const int num_vel_i = node_i->num_velocities_;
+            std::cout << "  vel_idx_i: " << vel_idx_i << ", num_vel_i: " << num_vel_i << std::endl;
 
             // Accumulate composite inertia to parent - direct addition in world frame!
             if (node_i->parent_index_ >= 0)
             {
+                std::cout << "   Parent index: " << node_i->parent_index_ << std::endl;
+                std::cout << "   Parent vel_idx: " << nodes_[node_i->parent_index_]->velocity_index_ << std::endl;
+                std::cout << "   Parent num_vel: " << nodes_[node_i->parent_index_]->num_velocities_ << std::endl;
                 for(int j = 0 ; j < node_i->Xup_.getNumOutputBodies(); j++)
                 {
                     const int output_body = j;
                     const int parent_subindex = node_i->Xup_.transform_and_parent_subindex(j).second;
+                    std::cout << "      Processing body " << j << " of node " << i << " parent subindex" << parent_subindex <<  std::endl;
                     Ic_world[node_i->parent_index_].template block<6, 6>(6 * parent_subindex, 6 * parent_subindex).noalias() +=
                         Ic_world[i].template block<6, 6>(6 * output_body, 6 * output_body);
                 }
@@ -234,6 +241,8 @@ namespace grbda
                     Ic_world[i].template block<6, 6>(6 * body, 6 * body) *
                     S_world[i].template middleRows<6>(6 * body);
             }
+
+            std::cout << "   F matrix err:\n" << (F - Ic_world[i]*S_world[i]).cwiseAbs().maxCoeff() << std::endl;
 
             // Diagonal block: H_ii = S_world^T * F
             H_.block(vel_idx_i, vel_idx_i, num_vel_i, num_vel_i) =
@@ -257,7 +266,10 @@ namespace grbda
         
         for (int i = n - 1; i >= 0; i--)
         {
-            auto &node_i = nodes_[i];
+            std::cout << "Backward pass node " << i << std::endl;
+            std::cout << "   num_subtree_velocities_: " << nodes_[i]->num_subtree_velocities_ << std::endl;
+
+            const auto &node_i = nodes_[i];
 
             const int vel_idx_i = node_i->velocity_index_;
             const int num_vel_i = node_i->num_velocities_;
@@ -268,7 +280,13 @@ namespace grbda
             if (parent_idx < 0)
                 continue;
         
-            const auto [_, parent_subindex] = node_i->X_up_.transform_and_parent_subindex(0);
+            const auto [_, parent_subindex] = node_i->Xup_.transform_and_parent_subindex(0);
+
+            std::cout << "   Parent index: " << parent_idx << std::endl;
+            std::cout << "   Parent vel_idx: " << nodes_[parent_idx]->velocity_index_ << std::endl;
+            std::cout << "   Parent num_vel: " << nodes_[parent_idx]->num_velocities_ << std::endl;
+            std::cout << "   Parent subindex: " << parent_subindex << std::endl;
+
             const auto parent_S  = S_world[parent_idx].template middleRows<6>(6 * parent_subindex);
 
             const int parent_vel_idx = nodes_[parent_idx]->velocity_index_;
@@ -277,9 +295,13 @@ namespace grbda
             H_.block(parent_vel_idx, vel_idx_i, parent_num_vel, node_i->num_subtree_velocities_) = parent_S.transpose() * F_subtree;
         }
 
+        std::cout << "Before symmetrization, World-frame CRBA Mass Matrix:\n" << H_ << std::endl;
+
         H_.template triangularView<Eigen::StrictlyLower>() =
             H_.template triangularView<Eigen::StrictlyUpper>().transpose();
 
+        
+        std::cout << "World-frame CRBA Mass Matrix:\n" << H_ << std::endl;
         mass_matrix_updated_ = true;
     }
 

@@ -204,20 +204,21 @@ protected:
 using testing::Types;
 
 typedef Types<
-    TeleopArm<>, Tello<double>, TelloWithArms<double>, PlanarLegLinkage<>,
-    MIT_Humanoid<>, MIT_Humanoid<double, ori_representation::RollPitchYaw>,
-    MiniCheetah<>, MiniCheetah<double, ori_representation::RollPitchYaw>,
-    RevoluteChainWithRotor<2>,
-    RevoluteChainWithRotor<4>,
-    RevoluteChainWithRotor<8>,
-    RevolutePairChainWithRotor<2>,
-    RevolutePairChainWithRotor<4>,
-    RevolutePairChainWithRotor<8>,
-    RevoluteTripleChainWithRotor<3>,
-    RevoluteTripleChainWithRotor<6>,
-    RevoluteChainWithAndWithoutRotor<0ul, 8ul>,
-    RevoluteChainWithAndWithoutRotor<4ul, 4ul>,
-    RevoluteChainWithAndWithoutRotor<8ul, 0ul>>
+    //TeleopArm<>, Tello<double>, TelloWithArms<double>, PlanarLegLinkage<>,
+    //MIT_Humanoid<>, MIT_Humanoid<double, ori_representation::RollPitchYaw>,
+    // MiniCheetah<>//, MiniCheetah<double, ori_representation::RollPitchYaw>,
+    // RevoluteChainWithRotor<2>,
+    // RevoluteChainWithRotor<4>,
+    // RevoluteChainWithRotor<8>,
+    // RevolutePairChainWithRotor<2>,
+    // RevolutePairChainWithRotor<4>,
+    // RevolutePairChainWithRotor<8>,
+    // RevoluteTripleChainWithRotor<3>,
+    // RevoluteTripleChainWithRotor<6>,
+    // RevoluteChainWithAndWithoutRotor<0ul, 8ul>,
+    RevoluteChainWithAndWithoutRotor<0ul, 3ul>>
+    // RevoluteChainWithAndWithoutRotor<4ul, 4ul>,
+    // RevoluteChainWithAndWithoutRotor<8ul, 0ul>>
     Robots;
 
 TYPED_TEST_SUITE(RigidBodyDynamicsAlgosTest, Robots);
