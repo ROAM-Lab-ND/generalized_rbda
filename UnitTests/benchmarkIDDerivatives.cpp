@@ -94,15 +94,40 @@ int main() {
         "MIT_Humanoid (no rotors)", ITERATIONS));
     std::cout << " done\n";
 
-    // Tello with mechanisms
-    std::cout << "  Benchmarking Tello (with mechanisms)..." << std::flush;
-    results.push_back(benchmarkRobot<Tello<double>>("Tello (with mechanisms)", ITERATIONS));
+    // ========== Tello Factorial Design: Isolating Rotor Dynamics & Constraint Overhead ==========
+    // Factorial design for computation time analysis:
+    //   - Factor 1: Rotors (real inertia vs. none)
+    //   - Factor 2: Constraints (GenericImplicit/CasADi vs. linear vs. none)
+    // This decomposition enables isolation of computational costs.
+
+    // Baseline: no rotors, no constraints (plain tree structure)
+    std::cout << "  Benchmarking Tello (-R,-M) [BASELINE]..." << std::flush;
+    results.push_back(benchmarkRobot<TelloNoRotors<double>>("Tello (-R,-M) [base]", ITERATIONS));
     std::cout << " done\n";
 
-    // Tello without mechanisms (URDF)
-    std::cout << "  Benchmarking Tello (no mechanisms)..." << std::flush;
-    results.push_back(benchmarkURDF(urdf_path + "/tello_humanoid_approximate.urdf",
-                                    "Tello (no mechanisms)", ITERATIONS));
+    // With rotors only (real inertia, no constraint coupling)
+    std::cout << "  Benchmarking Tello (+R,-M) [rotor cost]..." << std::flush;
+    results.push_back(benchmarkRobot<TelloRotorsNoConstraints<double>>("Tello (+R,-M) [rotors]", ITERATIONS));
+    std::cout << " done\n";
+
+    // With linear constraints only (virtual rotors 1e-9 kg, static constraints)
+    std::cout << "  Benchmarking Tello (-R,+M-Static) [linear cost]..." << std::flush;
+    results.push_back(benchmarkRobot<TelloMechanismsNoRotorsStatic<double>>("Tello (-R/+M-Static) [linear]", ITERATIONS));
+    std::cout << " done\n";
+
+    // With CasADi/GenericImplicit constraints only (virtual rotors 1e-9 kg, symbolic differentiation)
+    std::cout << "  Benchmarking Tello (-R,+M-Generic) [CasADi cost]..." << std::flush;
+    results.push_back(benchmarkRobot<TelloMechanismsNoRotors<double>>("Tello (-R/+M-Generic) [CasADi]", ITERATIONS));
+    std::cout << " done\n";
+
+    // Full model: rotors + CasADi constraints (realistic robot)
+    std::cout << "  Benchmarking Tello (+R,+M) [FULL MODEL]..." << std::flush;
+    results.push_back(benchmarkRobot<Tello<double>>("Tello (+R,+M) [full]", ITERATIONS));
+    std::cout << " done\n";
+
+    // Legacy variant for reference (rotors with independent clusters, no constraint coupling)
+    std::cout << "  Benchmarking Tello (+R,-M-old) [legacy]..." << std::flush;
+    results.push_back(benchmarkRobot<TelloNoMechanisms<double>>("Tello (+R,-M-old) [legacy]", ITERATIONS));
     std::cout << " done\n";
 
     // Tello with Arms
@@ -160,13 +185,27 @@ int main() {
                   << speedup << "x\n";
     }
 
-    // Tello comparison
-    if (results.size() >= 6) {
-        double speedup = results[4].avg_time_us / results[5].avg_time_us;
-        std::cout << "Tello: " << std::fixed << std::setprecision(2)
-                  << results[4].avg_time_us << " us (mechanisms) vs "
-                  << results[5].avg_time_us << " us (no mechanisms) -> "
-                  << speedup << "x\n";
+    // Tello comparison (4 variants at indices 4, 5, 6, 7)
+    // 4: +R,+M (full Tello)
+    // 5: +R,-M (TelloNoMechanisms)
+    // 6: -R,-M (TelloNoRotors)
+    // 7: -R,+M (TelloMechanismsNoRotors)
+    if (results.size() >= 8) {
+        std::cout << "Tello:\n";
+        std::cout << "  +R,+M: " << std::fixed << std::setprecision(2) << results[4].avg_time_us << " us\n";
+        std::cout << "  +R,-M: " << std::fixed << std::setprecision(2) << results[5].avg_time_us << " us\n";
+        std::cout << "  -R,-M: " << std::fixed << std::setprecision(2) << results[6].avg_time_us << " us\n";
+        std::cout << "  -R,+M: " << std::fixed << std::setprecision(2) << results[7].avg_time_us << " us\n";
+        std::cout << "  Mechanisms overhead (with rotors): " << std::fixed << std::setprecision(2)
+                  << results[4].avg_time_us / results[5].avg_time_us << "x (+R,+M vs +R,-M)\n";
+        std::cout << "  Mechanisms overhead (no rotors):   " << std::fixed << std::setprecision(2)
+                  << results[7].avg_time_us / results[6].avg_time_us << "x (-R,+M vs -R,-M)\n";
+        std::cout << "  Rotors overhead (with mechanisms): " << std::fixed << std::setprecision(2)
+                  << results[4].avg_time_us / results[7].avg_time_us << "x (+R,+M vs -R,+M)\n";
+        std::cout << "  Rotors overhead (no mechanisms):   " << std::fixed << std::setprecision(2)
+                  << results[5].avg_time_us / results[6].avg_time_us << "x (+R,-M vs -R,-M)\n";
+        std::cout << "  Total overhead: " << std::fixed << std::setprecision(2)
+                  << results[4].avg_time_us / results[6].avg_time_us << "x (+R,+M vs -R,-M)\n";
     }
 
     std::cout << "\n";

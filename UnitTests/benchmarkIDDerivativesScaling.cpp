@@ -1,6 +1,7 @@
 #include <chrono>
 #include <iostream>
 #include <iomanip>
+#include <fstream>
 #include <vector>
 #include <string>
 #include <cmath>
@@ -343,17 +344,33 @@ int main() {
     serial_results.push_back(r2);
     printResult(r2);
 
+    auto r3 = testScaling<RevoluteChainWithRotor<3, double>>("SerialChain", "RevWithRotor", 3);
+    serial_results.push_back(r3);
+    printResult(r3);
+
     auto r4 = testScaling<RevoluteChainWithRotor<4, double>>("SerialChain", "RevWithRotor", 4);
     serial_results.push_back(r4);
     printResult(r4);
+
+    auto r5 = testScaling<RevoluteChainWithRotor<5, double>>("SerialChain", "RevWithRotor", 5);
+    serial_results.push_back(r5);
+    printResult(r5);
 
     auto r6 = testScaling<RevoluteChainWithRotor<6, double>>("SerialChain", "RevWithRotor", 6);
     serial_results.push_back(r6);
     printResult(r6);
 
+    auto r7 = testScaling<RevoluteChainWithRotor<7, double>>("SerialChain", "RevWithRotor", 7);
+    serial_results.push_back(r7);
+    printResult(r7);
+
     auto r8 = testScaling<RevoluteChainWithRotor<8, double>>("SerialChain", "RevWithRotor", 8);
     serial_results.push_back(r8);
     printResult(r8);
+
+    auto r9 = testScaling<RevoluteChainWithRotor<9, double>>("SerialChain", "RevWithRotor", 9);
+    serial_results.push_back(r9);
+    printResult(r9);
 
     auto r10 = testScaling<RevoluteChainWithRotor<10, double>>("SerialChain", "RevWithRotor", 10);
     serial_results.push_back(r10);
@@ -363,13 +380,61 @@ int main() {
     serial_results.push_back(r12);
     printResult(r12);
 
+    auto r14 = testScaling<RevoluteChainWithRotor<14, double>>("SerialChain", "RevWithRotor", 14);
+    serial_results.push_back(r14);
+    printResult(r14);
+
     auto r16 = testScaling<RevoluteChainWithRotor<16, double>>("SerialChain", "RevWithRotor", 16);
     serial_results.push_back(r16);
     printResult(r16);
 
+    auto r18 = testScaling<RevoluteChainWithRotor<18, double>>("SerialChain", "RevWithRotor", 18);
+    serial_results.push_back(r18);
+    printResult(r18);
+
     auto r20 = testScaling<RevoluteChainWithRotor<20, double>>("SerialChain", "RevWithRotor", 20);
     serial_results.push_back(r20);
     printResult(r20);
+
+    auto r25 = testScaling<RevoluteChainWithRotor<25, double>>("SerialChain", "RevWithRotor", 25);
+    serial_results.push_back(r25);
+    printResult(r25);
+
+    auto r30 = testScaling<RevoluteChainWithRotor<30, double>>("SerialChain", "RevWithRotor", 30);
+    serial_results.push_back(r30);
+    printResult(r30);
+
+    auto r35 = testScaling<RevoluteChainWithRotor<35, double>>("SerialChain", "RevWithRotor", 35);
+    serial_results.push_back(r35);
+    printResult(r35);
+
+    auto r40 = testScaling<RevoluteChainWithRotor<40, double>>("SerialChain", "RevWithRotor", 40);
+    serial_results.push_back(r40);
+    printResult(r40);
+
+    auto r50 = testScaling<RevoluteChainWithRotor<50, double>>("SerialChain", "RevWithRotor", 50);
+    serial_results.push_back(r50);
+    printResult(r50);
+
+    auto r60 = testScaling<RevoluteChainWithRotor<60, double>>("SerialChain", "RevWithRotor", 60);
+    serial_results.push_back(r60);
+    printResult(r60);
+
+    auto r70 = testScaling<RevoluteChainWithRotor<70, double>>("SerialChain", "RevWithRotor", 70);
+    serial_results.push_back(r70);
+    printResult(r70);
+
+    auto r80 = testScaling<RevoluteChainWithRotor<80, double>>("SerialChain", "RevWithRotor", 80);
+    serial_results.push_back(r80);
+    printResult(r80);
+
+    auto r90 = testScaling<RevoluteChainWithRotor<90, double>>("SerialChain", "RevWithRotor", 90);
+    serial_results.push_back(r90);
+    printResult(r90);
+
+    auto r100 = testScaling<RevoluteChainWithRotor<100, double>>("SerialChain", "RevWithRotor", 100);
+    serial_results.push_back(r100);
+    printResult(r100);
 
     std::cout << std::string(86, '-') << "\n\n";
     analyzeScaling(serial_results, "Serial Chain");
@@ -382,8 +447,8 @@ int main() {
 
     std::vector<ScalingResult> tree_results;
 
-    // 2 levels = 3 links, 3 levels = 7 links, 4 levels = 15 links, 5 levels = 31 links
-    for (int levels = 2; levels <= 5; ++levels) {
+    // 2 levels = 3 links, 3 levels = 7 links, 4 levels = 15 links, 5 levels = 31 links, 6 levels = 63 links, 7 levels = 127 links
+    for (int levels = 2; levels <= 7; ++levels) {
         auto result = testBinaryTreeScaling(levels);
         tree_results.push_back(result);
         printResult(result);
@@ -416,6 +481,62 @@ int main() {
     pair_results.push_back(p8);
     printResult(p8);
 
+    auto p10 = testScaling<RevolutePairChainWithRotor<10, double>>("SerialChain", "RevPairWithRotor", 10);
+    pair_results.push_back(p10);
+    printResult(p10);
+
+    auto p12 = testScaling<RevolutePairChainWithRotor<12, double>>("SerialChain", "RevPairWithRotor", 12);
+    pair_results.push_back(p12);
+    printResult(p12);
+
+    auto p16 = testScaling<RevolutePairChainWithRotor<16, double>>("SerialChain", "RevPairWithRotor", 16);
+    pair_results.push_back(p16);
+    printResult(p16);
+
+    auto p20 = testScaling<RevolutePairChainWithRotor<20, double>>("SerialChain", "RevPairWithRotor", 20);
+    pair_results.push_back(p20);
+    printResult(p20);
+
+    auto p24 = testScaling<RevolutePairChainWithRotor<24, double>>("SerialChain", "RevPairWithRotor", 24);
+    pair_results.push_back(p24);
+    printResult(p24);
+
+    auto p28 = testScaling<RevolutePairChainWithRotor<28, double>>("SerialChain", "RevPairWithRotor", 28);
+    pair_results.push_back(p28);
+    printResult(p28);
+
+    auto p32 = testScaling<RevolutePairChainWithRotor<32, double>>("SerialChain", "RevPairWithRotor", 32);
+    pair_results.push_back(p32);
+    printResult(p32);
+
+    auto p40 = testScaling<RevolutePairChainWithRotor<40, double>>("SerialChain", "RevPairWithRotor", 40);
+    pair_results.push_back(p40);
+    printResult(p40);
+
+    auto p50 = testScaling<RevolutePairChainWithRotor<50, double>>("SerialChain", "RevPairWithRotor", 50);
+    pair_results.push_back(p50);
+    printResult(p50);
+
+    auto p60 = testScaling<RevolutePairChainWithRotor<60, double>>("SerialChain", "RevPairWithRotor", 60);
+    pair_results.push_back(p60);
+    printResult(p60);
+
+    auto p70 = testScaling<RevolutePairChainWithRotor<70, double>>("SerialChain", "RevPairWithRotor", 70);
+    pair_results.push_back(p70);
+    printResult(p70);
+
+    auto p80 = testScaling<RevolutePairChainWithRotor<80, double>>("SerialChain", "RevPairWithRotor", 80);
+    pair_results.push_back(p80);
+    printResult(p80);
+
+    auto p90 = testScaling<RevolutePairChainWithRotor<90, double>>("SerialChain", "RevPairWithRotor", 90);
+    pair_results.push_back(p90);
+    printResult(p90);
+
+    auto p100 = testScaling<RevolutePairChainWithRotor<100, double>>("SerialChain", "RevPairWithRotor", 100);
+    pair_results.push_back(p100);
+    printResult(p100);
+
     std::cout << std::string(86, '-') << "\n\n";
     analyzeScaling(pair_results, "RevolutePair Chain");
 
@@ -442,6 +563,78 @@ int main() {
     auto t12 = testScaling<RevoluteTripleChainWithRotor<12, double>>("SerialChain", "RevTripleWithRotor", 12);
     triple_results.push_back(t12);
     printResult(t12);
+
+    auto t15 = testScaling<RevoluteTripleChainWithRotor<15, double>>("SerialChain", "RevTripleWithRotor", 15);
+    triple_results.push_back(t15);
+    printResult(t15);
+
+    auto t18 = testScaling<RevoluteTripleChainWithRotor<18, double>>("SerialChain", "RevTripleWithRotor", 18);
+    triple_results.push_back(t18);
+    printResult(t18);
+
+    auto t21 = testScaling<RevoluteTripleChainWithRotor<21, double>>("SerialChain", "RevTripleWithRotor", 21);
+    triple_results.push_back(t21);
+    printResult(t21);
+
+    auto t24 = testScaling<RevoluteTripleChainWithRotor<24, double>>("SerialChain", "RevTripleWithRotor", 24);
+    triple_results.push_back(t24);
+    printResult(t24);
+
+    auto t27 = testScaling<RevoluteTripleChainWithRotor<27, double>>("SerialChain", "RevTripleWithRotor", 27);
+    triple_results.push_back(t27);
+    printResult(t27);
+
+    auto t30 = testScaling<RevoluteTripleChainWithRotor<30, double>>("SerialChain", "RevTripleWithRotor", 30);
+    triple_results.push_back(t30);
+    printResult(t30);
+
+    auto t36 = testScaling<RevoluteTripleChainWithRotor<36, double>>("SerialChain", "RevTripleWithRotor", 36);
+    triple_results.push_back(t36);
+    printResult(t36);
+
+    auto t42 = testScaling<RevoluteTripleChainWithRotor<42, double>>("SerialChain", "RevTripleWithRotor", 42);
+    triple_results.push_back(t42);
+    printResult(t42);
+
+    auto t48 = testScaling<RevoluteTripleChainWithRotor<48, double>>("SerialChain", "RevTripleWithRotor", 48);
+    triple_results.push_back(t48);
+    printResult(t48);
+
+    auto t54 = testScaling<RevoluteTripleChainWithRotor<54, double>>("SerialChain", "RevTripleWithRotor", 54);
+    triple_results.push_back(t54);
+    printResult(t54);
+
+    auto t60 = testScaling<RevoluteTripleChainWithRotor<60, double>>("SerialChain", "RevTripleWithRotor", 60);
+    triple_results.push_back(t60);
+    printResult(t60);
+
+    auto t66 = testScaling<RevoluteTripleChainWithRotor<66, double>>("SerialChain", "RevTripleWithRotor", 66);
+    triple_results.push_back(t66);
+    printResult(t66);
+
+    auto t72 = testScaling<RevoluteTripleChainWithRotor<72, double>>("SerialChain", "RevTripleWithRotor", 72);
+    triple_results.push_back(t72);
+    printResult(t72);
+
+    auto t78 = testScaling<RevoluteTripleChainWithRotor<78, double>>("SerialChain", "RevTripleWithRotor", 78);
+    triple_results.push_back(t78);
+    printResult(t78);
+
+    auto t84 = testScaling<RevoluteTripleChainWithRotor<84, double>>("SerialChain", "RevTripleWithRotor", 84);
+    triple_results.push_back(t84);
+    printResult(t84);
+
+    auto t90 = testScaling<RevoluteTripleChainWithRotor<90, double>>("SerialChain", "RevTripleWithRotor", 90);
+    triple_results.push_back(t90);
+    printResult(t90);
+
+    auto t96 = testScaling<RevoluteTripleChainWithRotor<96, double>>("SerialChain", "RevTripleWithRotor", 96);
+    triple_results.push_back(t96);
+    printResult(t96);
+
+    auto t99 = testScaling<RevoluteTripleChainWithRotor<99, double>>("SerialChain", "RevTripleWithRotor", 99);
+    triple_results.push_back(t99);
+    printResult(t99);
 
     std::cout << std::string(86, '-') << "\n\n";
     analyzeScaling(triple_results, "RevoluteTriple Chain");
@@ -472,6 +665,62 @@ int main() {
     std::cout << "===========================================================================\n";
     std::cout << "Benchmark Complete\n";
     std::cout << "===========================================================================\n";
+
+    // =========================================================================
+    // Export results to CSV files
+    // =========================================================================
+    std::string output_dir = std::string(SOURCE_DIRECTORY) + "/../benchmark_figures/data/";
+
+    // Export serial chain scaling
+    {
+        std::ofstream csv(output_dir + "serial_chain_scaling.csv");
+        csv << "topology,joint_type,num_links,dof,time_us,max_err_dq,max_err_dqd\n";
+        for (const auto& r : serial_results) {
+            csv << r.topology << "," << r.joint_type << "," << r.num_links << ","
+                << r.dof << "," << std::fixed << std::setprecision(2) << r.avg_time_us << ","
+                << std::scientific << std::setprecision(2) << r.max_error_dq << ","
+                << r.max_error_dqdot << "\n";
+        }
+        std::cout << "Exported: " << output_dir << "serial_chain_scaling.csv\n";
+    }
+
+    // Export binary tree scaling
+    {
+        std::ofstream csv(output_dir + "binary_tree_scaling.csv");
+        csv << "topology,joint_type,num_links,dof,time_us,max_err_dq,max_err_dqd\n";
+        for (const auto& r : tree_results) {
+            csv << r.topology << "," << r.joint_type << "," << r.num_links << ","
+                << r.dof << "," << std::fixed << std::setprecision(2) << r.avg_time_us << ","
+                << std::scientific << std::setprecision(2) << r.max_error_dq << ","
+                << r.max_error_dqdot << "\n";
+        }
+        std::cout << "Exported: " << output_dir << "binary_tree_scaling.csv\n";
+    }
+
+    // Export complex joint scaling (combine all joint types)
+    {
+        std::ofstream csv(output_dir + "complex_joint_scaling.csv");
+        csv << "topology,joint_type,num_links,dof,time_us,max_err_dq,max_err_dqd\n";
+        for (const auto& r : serial_results) {
+            csv << r.topology << "," << r.joint_type << "," << r.num_links << ","
+                << r.dof << "," << std::fixed << std::setprecision(2) << r.avg_time_us << ","
+                << std::scientific << std::setprecision(2) << r.max_error_dq << ","
+                << r.max_error_dqdot << "\n";
+        }
+        for (const auto& r : pair_results) {
+            csv << r.topology << "," << r.joint_type << "," << r.num_links << ","
+                << r.dof << "," << std::fixed << std::setprecision(2) << r.avg_time_us << ","
+                << std::scientific << std::setprecision(2) << r.max_error_dq << ","
+                << r.max_error_dqdot << "\n";
+        }
+        for (const auto& r : triple_results) {
+            csv << r.topology << "," << r.joint_type << "," << r.num_links << ","
+                << r.dof << "," << std::fixed << std::setprecision(2) << r.avg_time_us << ","
+                << std::scientific << std::setprecision(2) << r.max_error_dq << ","
+                << r.max_error_dqdot << "\n";
+        }
+        std::cout << "Exported: " << output_dir << "complex_joint_scaling.csv\n";
+    }
 
     return 0;
 }

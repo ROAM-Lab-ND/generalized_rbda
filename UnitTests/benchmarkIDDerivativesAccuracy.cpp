@@ -1,12 +1,14 @@
 #include <chrono>
 #include <iostream>
 #include <iomanip>
+#include <fstream>
 #include <complex>
 #include <vector>
 #include <string>
 #include <cmath>
 #include "grbda/Dynamics/ClusterTreeModel.h"
 #include "grbda/Robots/RobotTypes.h"
+#include "grbda/Robots/TwoLinkChain.hpp"
 #include "config.h"
 
 using namespace grbda;
@@ -544,28 +546,27 @@ int main() {
     std::cout << "\n" << std::string(80, '=') << "\n";
     std::cout << "Inverse Dynamics Derivatives Accuracy Benchmark\n";
     std::cout << "Comparing analytical firstOrderInverseDynamicsDerivatives() vs numerical\n";
-    std::cout << "- Complex-step (h=1e-20) for templated robots: machine precision\n";
-    std::cout << "- Finite difference (h=1e-8) for URDF models: ~1e-6 precision\n";
+    std::cout << "All robots use complex-step differentiation (h=1e-20) for machine precision\n";
     std::cout << std::string(80, '=') << "\n";
 
     const std::string urdf_path = std::string(SOURCE_DIRECTORY) + "/robot-models";
     std::vector<AccuracyResult> results;
 
     // ========================================================================
-    // Fixed-base serial chains (URDF) - using finite difference
+    // Fixed-base serial chains (templated) - using complex-step
     // ========================================================================
 
-    // Test 1: KUKA LWR 4+ (7-DOF serial chain)
+    // Test 1: KUKA LWR 4+ (7-DOF serial chain) - templated version
     {
-        std::cout << "\nTesting KUKA LWR 4+ (7-DOF serial chain, finite-diff)..." << std::flush;
-        results.push_back(testAccuracyURDF(urdf_path + "/kuka_lwr_4plus.urdf", "KUKA LWR 4+ (FD)"));
+        std::cout << "\nTesting KUKA LWR 4+ (7-DOF serial chain, complex-step)..." << std::flush;
+        results.push_back(testAccuracyDirectScalarOnly<KukaLWR>("KUKA LWR 4+ (CS)"));
         std::cout << " done\n";
     }
 
-    // Test 2: Double Pendulum (2-DOF serial chain)
+    // Test 2: Two-Link Chain (2-DOF serial chain) - templated version
     {
-        std::cout << "Testing Double Pendulum (2-DOF serial chain, finite-diff)..." << std::flush;
-        results.push_back(testAccuracyURDF(urdf_path + "/double_pendulum.urdf", "Double Pendulum (FD)"));
+        std::cout << "Testing Two-Link Chain (2-DOF serial chain, complex-step)..." << std::flush;
+        results.push_back(testAccuracyDirectScalarOnly<TwoLinkChain>("Two-Link Chain (CS)"));
         std::cout << " done\n";
     }
 
@@ -629,10 +630,10 @@ int main() {
     std::cout << "\n";
 
     // Check if all errors are within tolerance
-    // Note: Different tolerances for different methods
+    // All tests now use complex-step with machine precision tolerance
     bool all_pass = true;
     for (const auto& r : results) {
-        double tol = r.name.find("FD") != std::string::npos ? 1e-4 : 1e-8;
+        double tol = 1e-8;  // Complex-step should achieve near machine precision
         // Relaxed tolerance for MIT Humanoid due to RevolutePairWithRotor numerical issues
         if (r.name.find("MIT Humanoid (CS)") != std::string::npos) {
             tol = 1.0;  // Known issue with rotor joints in complex-step
@@ -648,13 +649,31 @@ int main() {
     }
 
     std::cout << "\nNotes:\n";
-    std::cout << "- FD = Finite Difference (h=1e-8), expected accuracy ~1e-6\n";
     std::cout << "- CS = Complex-Step (h=1e-20), expected accuracy ~1e-14\n";
     std::cout << "- MIT Humanoid with rotors has relaxed tolerance due to known\n";
     std::cout << "  numerical issues with RevolutePairWithRotor in complex-step.\n";
     std::cout << "  Analytical derivatives validated via CasADi symbolic differentiation.\n";
 
     std::cout << "\n";
+
+    // =========================================================================
+    // Export results to CSV file (disabled - GRBDA_SOURCE_DIR not defined)
+    // =========================================================================
+    // std::string output_dir = std::string(GRBDA_SOURCE_DIR) + "/../benchmark_figures/data/";
+    // {
+    //     std::ofstream csv(output_dir + "robot_accuracy.csv");
+    //     csv << "robot_name,dof,max_err_dq,max_err_dqd,mean_err_dq,mean_err_dqd,floating_base,method\n";
+    //     for (const auto& r : results) {
+    //         csv << r.name << "," << r.dof << ","
+    //             << std::scientific << std::setprecision(3) << r.max_error_dq << ","
+    //             << r.max_error_dqdot << ","
+    //             << r.mean_error_dq << ","
+    //             << r.mean_error_dqdot << ","
+    //             << (r.floating_base ? "true" : "false") << ","
+    //             << "complex_step\n";
+    //     }
+    //     std::cout << "Exported: " << output_dir << "robot_accuracy.csv\n";
+    // }
 
     return all_pass ? 0 : 1;
 }

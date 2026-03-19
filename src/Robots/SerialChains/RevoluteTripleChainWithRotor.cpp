@@ -194,6 +194,23 @@ namespace grbda
     template class RevoluteTripleChainWithRotor<9ul>;
     template class RevoluteTripleChainWithRotor<12ul>;
     template class RevoluteTripleChainWithRotor<15ul>;
+    template class RevoluteTripleChainWithRotor<18ul>;
+    template class RevoluteTripleChainWithRotor<21ul>;
+    template class RevoluteTripleChainWithRotor<24ul>;
+    template class RevoluteTripleChainWithRotor<27ul>;
+    template class RevoluteTripleChainWithRotor<30ul>;
+    template class RevoluteTripleChainWithRotor<36ul>;
+    template class RevoluteTripleChainWithRotor<42ul>;
+    template class RevoluteTripleChainWithRotor<48ul>;
+    template class RevoluteTripleChainWithRotor<54ul>;
+    template class RevoluteTripleChainWithRotor<60ul>;
+    template class RevoluteTripleChainWithRotor<66ul>;
+    template class RevoluteTripleChainWithRotor<72ul>;
+    template class RevoluteTripleChainWithRotor<78ul>;
+    template class RevoluteTripleChainWithRotor<84ul>;
+    template class RevoluteTripleChainWithRotor<90ul>;
+    template class RevoluteTripleChainWithRotor<96ul>;
+    template class RevoluteTripleChainWithRotor<99ul>;
 
     template class RevoluteTripleChainWithRotor<3ul, std::complex<double>>;
     template class RevoluteTripleChainWithRotor<6ul, std::complex<double>>;
