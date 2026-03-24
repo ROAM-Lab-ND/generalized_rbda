@@ -1751,16 +1751,16 @@ namespace grbda
             // For implicit joints, compute d(cJ)/dy directly via finite differences,
             // where cJ = X_intra_ring * S_spanning * qd_span + S_implicit * g(q_span, qd_span).
             // This captures all chain-rule paths through X_intra, X_intra_ring, and g.
-            if constexpr (std::is_same_v<Scalar, double>) {
+            if constexpr (std::is_same_v<Scalar, double> || std::is_same_v<Scalar, std::complex<double>>) {
                 const DMat<Scalar>& G_base = this->loop_constraint_->G();
                 const DVec<Scalar> ydot_independent =
                     G_base.colPivHouseholderQr().solve(qd_cache_);
 
                 auto evaluate_cJ_term = [&](const DVec<Scalar>& q_span) -> DVec<Scalar> {
-                    auto lc_local = generic_constraint_->copyAsDouble();
+                    auto lc_local = generic_constraint_->clone();
                     JointCoordinate<Scalar> pos_coord(q_span, true);
-                    lc_local.updateJacobians(pos_coord);
-                    const DMat<Scalar> G_local = lc_local.G();
+                    lc_local->updateJacobians(pos_coord);
+                    const DMat<Scalar> G_local = lc_local->G();
                     const DVec<Scalar> qd_span_local = G_local * ydot_independent;
 
                     // Local joint copies so we can evaluate at perturbed states safely.
@@ -1824,10 +1824,10 @@ namespace grbda
 
                     JointCoordinate<Scalar> vel_coord(qd_span_local, true);
                     JointState<Scalar> js(pos_coord, vel_coord);
-                    lc_local.updateBiases(js);
+                    lc_local->updateBiases(js);
 
                     DVec<Scalar> cJ_term = X_intra_ring_local * S_spanning_local * qd_span_local;
-                    cJ_term.noalias() += S_implicit_local * lc_local.g();
+                    cJ_term.noalias() += S_implicit_local * lc_local->g();
                     return cJ_term;
                 };
 
