@@ -30,9 +30,21 @@ namespace grbda
             void updateJacobians(const JointCoordinate<Scalar> &joint_pos) override;
             void updateBiases(const JointState<Scalar> &joint_state) override;
 
+            // Override to use tighter tolerance - FourBar phi uses standard C++ trig functions
+            // which work correctly with complex types and can achieve machine precision
+            bool isValidSpanningPosition(const JointCoordinate<Scalar> &joint_pos) const;
+
             void createRandomStateHelpers() override;
 
             const int& independent_coordinate() const { return independent_coordinate_; }
+
+            // Accessors for computing dG/dq analytically
+            const std::vector<Scalar>& path1LinkLengths() const { return path1_link_lengths_; }
+            const std::vector<Scalar>& path2LinkLengths() const { return path2_link_lengths_; }
+            size_t linksInPath1() const { return links_in_path1_; }
+            size_t linksInPath2() const { return links_in_path2_; }
+            const Mat3<Scalar>& independentCoordinateMap() const { return indepenent_coordinate_map_; }
+            const InverseType& KdInverse() const { return Kd_inv_; }
 
         private:
             void updateImplicitJacobian(const JointCoordinate<Scalar> &joint_pos);
@@ -71,6 +83,10 @@ namespace grbda
             ClusterJointTypes type() const override { return ClusterJointTypes::FourBar; }
 
             JointState<double> randomJointState() const override;
+
+            // Override getSq to compute dS/dq analytically for FourBar
+            // This is required for correct analytical derivative computation
+            std::vector<DMat<Scalar>> getSq() const override;
 
         private:
             std::shared_ptr<LoopConstraint::FourBar<Scalar>> four_bar_constraint_;

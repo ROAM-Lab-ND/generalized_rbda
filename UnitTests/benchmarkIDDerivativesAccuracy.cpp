@@ -638,6 +638,10 @@ int main() {
         if (r.name.find("MIT Humanoid (CS)") != std::string::npos) {
             tol = 1.0;  // Known issue with rotor joints in complex-step
         }
+        // Relaxed tolerance for finite-difference (FD) tests - FD has limited accuracy
+        if (r.name.find("(FD)") != std::string::npos) {
+            tol = 1e-5;  // Finite difference accuracy is ~1e-6
+        }
         if (r.max_error_dq > tol || r.max_error_dqdot > tol) {
             all_pass = false;
             std::cout << "WARNING: " << r.name << " exceeds tolerance " << tol << "\n";

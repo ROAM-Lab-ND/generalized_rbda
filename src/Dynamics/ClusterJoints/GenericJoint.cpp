@@ -166,6 +166,54 @@ namespace grbda
 
             this->g_ = DVec<Scalar>::Zero(state_dim);
             g_fcn_ = casadi::Function("g", {cs_q_sym, cs_v_sym}, {cs_g_sym});
+
+            // Create derivative functions for complex-step support
+            // dK/dq: Jacobian of each element of K w.r.t. q
+            SX dK_dq_sym = jacobian(SX::vec(cs_K_sym), cs_q_sym);
+            dK_dq_fcn_ = casadi::Function("dK_dq", {cs_q_sym}, {dK_dq_sym});
+
+            // dG/dq: Jacobian of each element of G w.r.t. q
+            SX dG_dq_sym = jacobian(SX::vec(cs_G_sym), cs_q_sym);
+            dG_dq_fcn_ = casadi::Function("dG_dq", {cs_q_sym}, {dG_dq_sym});
+
+            // d²G/dq²: Hessian of vec(G) w.r.t. q (for Taylor series in complex-step)
+            // Shape: (n_G_elements * n_q, n_q) - Jacobian of dG/dq w.r.t. q
+            SX d2G_dq2_sym = jacobian(SX::vec(dG_dq_sym), cs_q_sym);
+            d2G_dq2_fcn_ = casadi::Function("d2G_dq2", {cs_q_sym}, {d2G_dq2_sym});
+
+            // dk/dq and dk/dv: Jacobians of k w.r.t. position and velocity
+            SX dk_dq_sym = jacobian(cs_k_sym, cs_q_sym);
+            SX dk_dv_sym = jacobian(cs_k_sym, cs_v_sym);
+            dk_dq_fcn_ = casadi::Function("dk_dq", {cs_q_sym, cs_v_sym}, {dk_dq_sym});
+            dk_dv_fcn_ = casadi::Function("dk_dv", {cs_q_sym, cs_v_sym}, {dk_dv_sym});
+
+            // dg/dq and dg/dv: Jacobians of g w.r.t. position and velocity
+            SX dg_dq_sym = jacobian(cs_g_sym, cs_q_sym);
+            SX dg_dv_sym = jacobian(cs_g_sym, cs_v_sym);
+            dg_dq_fcn_ = casadi::Function("dg_dq", {cs_q_sym, cs_v_sym}, {dg_dq_sym});
+            dg_dv_fcn_ = casadi::Function("dg_dv", {cs_q_sym, cs_v_sym}, {dg_dv_sym});
+        }
+
+        // Constructor with both symbolic and native phi functions
+        // The native phi enables machine-precision complex-step differentiation
+        template <typename Scalar>
+        GenericImplicit<Scalar>::GenericImplicit(std::vector<bool> is_coordinate_independent,
+                                                 SymPhiFcn phi_sym, NativePhiFcn phi_native)
+            : GenericImplicit(is_coordinate_independent, phi_sym)
+        {
+            phi_native_ = phi_native;
+            has_native_phi_ = true;
+
+            // Override phi_ to use native phi for complex types (CasADi doesn't support complex)
+            // Also use native phi for double types when available for better numerical accuracy
+            // The native C++ implementation using std::sin/std::cos is more precise than
+            // CasADi's symbolic evaluation, which may have truncation in constant terms
+            if constexpr (std::is_same_v<Scalar, std::complex<double>> || std::is_same_v<Scalar, double>) {
+                this->phi_ = [this](const JointCoordinate<Scalar> &joint_pos) -> DVec<Scalar>
+                {
+                    return phi_native_(joint_pos);
+                };
+            }
         }
 
         template <typename Scalar>
@@ -177,21 +225,47 @@ namespace grbda
         template <typename Scalar>
         void GenericImplicit<Scalar>::updateJacobians(const JointCoordinate<Scalar> &joint_pos)
         {
-            this->K_ = runCasadiFcn(K_fcn_, joint_pos);
-            this->G_ = runCasadiFcn(G_fcn_, joint_pos);
+            this->K_ = evalK(joint_pos);
+            this->G_ = evalG(joint_pos);
         }
 
         template <typename Scalar>
         void GenericImplicit<Scalar>::updateBiases(const JointState<Scalar> &joint_state)
         {
-            this->k_ = runCasadiFcn(k_fcn_, joint_state);
-            this->g_ = runCasadiFcn(g_fcn_, joint_state);
+            this->k_ = evalk(joint_state);
+            this->g_ = evalg(joint_state);
         }
 
         template <typename Scalar>
         const std::vector<bool> &GenericImplicit<Scalar>::isCoordinateIndependent() const
         {
             return is_coordinate_independent_;
+        }
+
+        // Override isValidSpanningPosition to use native phi when available
+        // This ensures consistency with the Newton solver that uses native phi
+        template <typename Scalar>
+        bool GenericImplicit<Scalar>::isValidSpanningPosition(const JointCoordinate<Scalar> &joint_pos) const
+        {
+            if (!joint_pos.isSpanning()) {
+                return false;
+            }
+
+            DVec<Scalar> violation;
+
+            // Use native phi when available for machine-precision validation
+            // This is critical for complex-step differentiation where Newton solver
+            // converges to machine precision using native phi
+            if (has_native_phi_) {
+                violation = phi_native_(joint_pos);
+            } else {
+                violation = this->phi_(joint_pos);
+            }
+
+            // Tolerance for constraint validation - Newton solver can achieve machine precision
+            // when properly converged with native phi, but CasADi phi may have small offsets
+            const double tol = has_native_phi_ ? 1e-8 : 2e-2;
+            return nearZeroDefaultTrue(violation, static_cast<Scalar>(tol));
         }
 
         template <typename Scalar>
@@ -287,6 +361,234 @@ namespace grbda
             }
         }
 
+        // Helper function to evaluate CasADi function with real-valued inputs (single arg)
+        template <typename Scalar>
+        DMat<double> GenericImplicit<Scalar>::runCasadiFcnReal(const casadi::Function &fcn,
+                                                               const DVec<double> &arg)
+        {
+            casadi::DM arg_dm;
+            casadi::copy(arg, arg_dm);
+            casadi::DM res_dm = fcn(arg_dm)[0];
+            DMat<double> res(res_dm.size1(), res_dm.size2());
+            casadi::copy(res_dm, res);
+            return res;
+        }
+
+        // Helper function to evaluate CasADi function with real-valued inputs (two args)
+        template <typename Scalar>
+        DMat<double> GenericImplicit<Scalar>::runCasadiFcnReal(const casadi::Function &fcn,
+                                                               const DVec<double> &pos,
+                                                               const DVec<double> &vel)
+        {
+            casadi::DM pos_dm, vel_dm;
+            casadi::copy(pos, pos_dm);
+            casadi::copy(vel, vel_dm);
+            std::vector<casadi::DM> arg_vec = {pos_dm, vel_dm};
+            std::vector<casadi::DM> res_vec = fcn(arg_vec);
+            casadi::DM res_dm = res_vec[0];
+            DMat<double> res(res_dm.size1(), res_dm.size2());
+            casadi::copy(res_dm, res);
+            return res;
+        }
+
+        // Complex-step aware evaluation of K
+        // Uses TAYLOR SERIES EXPANSION to avoid finite-difference errors:
+        //   K(q + i*δq) = K(q) + i * (dK/dq @ δq)
+        //
+        // This achieves machine precision for complex-step differentiation by using
+        // CasADi's analytical derivatives instead of numerical finite differences.
+        template <typename Scalar>
+        DMat<Scalar> GenericImplicit<Scalar>::evalK(const JointCoordinate<Scalar> &joint_pos) const
+        {
+            if constexpr (std::is_same_v<Scalar, std::complex<double>>) {
+                const int n = joint_pos.size();
+
+                // TAYLOR SERIES EXPANSION using CasADi symbolic derivatives
+                // K(q + i*δq) = K(q_real) + i * (dK/dq @ q_imag)
+                // This avoids finite-difference errors that limit accuracy to ~1e-4
+                DVec<double> q_real(n), q_imag(n);
+                for (int i = 0; i < n; ++i) {
+                    q_real(i) = joint_pos(i).real();
+                    q_imag(i) = joint_pos(i).imag();
+                }
+
+                // Evaluate K at real part
+                DMat<double> K_real = runCasadiFcnReal(K_fcn_, q_real);
+                const int rows = K_real.rows();
+                const int cols = K_real.cols();
+
+                // Evaluate dK/dq at real part (vectorized K, so output is (rows*cols) x n)
+                DMat<double> dK_dq = runCasadiFcnReal(dK_dq_fcn_, q_real);
+
+                // Compute imaginary part: dK/dq @ q_imag
+                // dK_dq is (rows*cols) x n, q_imag is n x 1
+                // Result is (rows*cols) x 1, reshape to rows x cols
+                DVec<double> K_imag_vec = dK_dq * q_imag;
+
+                // Build complex result
+                // CasADi vec() uses column-major: element K[i,j] is at index j*rows + i
+                DMat<std::complex<double>> K_complex(rows, cols);
+                for (int i = 0; i < rows; ++i) {
+                    for (int j = 0; j < cols; ++j) {
+                        int idx = j * rows + i;  // Column-major indexing
+                        K_complex(i, j) = std::complex<double>(K_real(i, j), K_imag_vec(idx));
+                    }
+                }
+                return K_complex;
+            } else {
+                // For real types, use standard evaluation
+                return runCasadiFcn(K_fcn_, joint_pos);
+            }
+        }
+
+        // Complex-step aware evaluation of G
+        // G is computed from K via implicit function theorem: G = [I; -Kd^{-1} * Ki]
+        //
+        // Uses TAYLOR SERIES EXPANSION to avoid finite-difference errors:
+        //   G(q + i*δq) = G(q) + i * (dG/dq @ δq)
+        //
+        // This achieves machine precision for complex-step differentiation by using
+        // CasADi's analytical derivatives instead of numerical finite differences.
+        template <typename Scalar>
+        DMat<Scalar> GenericImplicit<Scalar>::evalG(const JointCoordinate<Scalar> &joint_pos) const
+        {
+            if constexpr (std::is_same_v<Scalar, std::complex<double>>) {
+                const int n = joint_pos.size();
+
+                // TAYLOR SERIES EXPANSION using CasADi symbolic derivatives
+                // G(q + i*δq) = G(q_real) + i * (dG/dq @ q_imag)
+                // This avoids finite-difference errors that limit accuracy to ~1e-4
+                DVec<double> q_real(n), q_imag(n);
+                for (int i = 0; i < n; ++i) {
+                    q_real(i) = joint_pos(i).real();
+                    q_imag(i) = joint_pos(i).imag();
+                }
+
+                DMat<double> G_real = runCasadiFcnReal(G_fcn_, q_real);
+                const int rows = G_real.rows();
+                const int cols = G_real.cols();
+
+                DMat<double> dG_dq = runCasadiFcnReal(dG_dq_fcn_, q_real);
+                // dG_dq has shape (n_G_elements, n_q) where n_G_elements = rows * cols
+                // dG_dq @ q_imag gives the change in vec(G) for imaginary perturbation
+                DVec<double> G_imag_vec = dG_dq * q_imag;
+
+                DMat<std::complex<double>> G_complex(rows, cols);
+                for (int i = 0; i < rows; ++i) {
+                    for (int j = 0; j < cols; ++j) {
+                        // CasADi vec() uses column-major: element G[i,j] is at index j*rows + i
+                        int idx = j * rows + i;
+                        G_complex(i, j) = std::complex<double>(G_real(i, j), G_imag_vec(idx));
+                    }
+                }
+
+                // Debug: check if G has non-zero imaginary parts
+                double max_G_imag = 0.0;
+                for (int i = 0; i < rows; ++i) {
+                    for (int j = 0; j < cols; ++j) {
+                        max_G_imag = std::max(max_G_imag, std::abs(G_complex(i,j).imag()));
+                    }
+                }
+                if (max_G_imag > 1e-25) {
+                    std::cout << "[DEBUG evalG Taylor] G has imag, max|G_imag|=" << max_G_imag << std::endl;
+                    std::cout << "  q_imag norm=" << q_imag.norm() << std::endl;
+                }
+
+                return G_complex;
+            } else {
+                // For real types, use standard CasADi evaluation
+                return runCasadiFcn(G_fcn_, joint_pos);
+            }
+        }
+
+        // Complex-step aware evaluation of k (constraint bias)
+        // k = -K̇ · v where K̇ = dK/dt = sum_j (dK/dq_j * qd_j)
+        //
+        // Uses Taylor expansion: k(q + i*dq, v + i*dv) ≈ k(q,v) + i * (dk/dq * dq + dk/dv * dv)
+        //
+        // For velocity derivatives (dtau/dqdot), position has no imaginary part (dq=0),
+        // so the expansion becomes: k(q, v + i*dv) = k(q,v) + i * (dk/dv * dv)
+        // This is EXACT (not approximate) since k is linear in v.
+        template <typename Scalar>
+        DMat<Scalar> GenericImplicit<Scalar>::evalk(const JointState<Scalar> &joint_state) const
+        {
+            if constexpr (std::is_same_v<Scalar, std::complex<double>>) {
+                const int n_pos = joint_state.position.size();
+                const int n_vel = joint_state.velocity.size();
+
+                // Taylor expansion approach using CasADi symbolic derivatives
+                DVec<double> q_real(n_pos), q_imag(n_pos);
+                for (int i = 0; i < n_pos; ++i) {
+                    q_real(i) = joint_state.position(i).real();
+                    q_imag(i) = joint_state.position(i).imag();
+                }
+                DVec<double> v_real(n_vel), v_imag(n_vel);
+                for (int i = 0; i < n_vel; ++i) {
+                    v_real(i) = joint_state.velocity(i).real();
+                    v_imag(i) = joint_state.velocity(i).imag();
+                }
+
+                DMat<double> k_real = runCasadiFcnReal(k_fcn_, q_real, v_real);
+                DMat<double> dk_dq = runCasadiFcnReal(dk_dq_fcn_, q_real, v_real);
+                DMat<double> dk_dv = runCasadiFcnReal(dk_dv_fcn_, q_real, v_real);
+
+                DVec<double> k_imag = dk_dq * q_imag + dk_dv * v_imag;
+
+                const int rows = k_real.rows();
+                DMat<std::complex<double>> k_complex(rows, 1);
+                for (int i = 0; i < rows; ++i) {
+                    k_complex(i, 0) = std::complex<double>(k_real(i, 0), k_imag(i));
+                }
+                return k_complex;
+            } else {
+                return runCasadiFcn(k_fcn_, joint_state);
+            }
+        }
+
+        // Complex-step aware evaluation of g (explicit constraint bias)
+        // g = [0; Kd^{-1} · k] mapped to spanning coordinates
+        //
+        // Uses Taylor expansion: g(q + i*dq, v + i*dv) ≈ g(q,v) + i * (dg/dq * dq + dg/dv * dv)
+        //
+        // For velocity derivatives (dtau/dqdot), position has no imaginary part (dq=0),
+        // so the expansion becomes: g(q, v + i*dv) = g(q,v) + i * (dg/dv * dv)
+        // This is EXACT since g depends linearly on v (through k which is linear in v).
+        template <typename Scalar>
+        DMat<Scalar> GenericImplicit<Scalar>::evalg(const JointState<Scalar> &joint_state) const
+        {
+            if constexpr (std::is_same_v<Scalar, std::complex<double>>) {
+                const int n_pos = joint_state.position.size();
+                const int n_vel = joint_state.velocity.size();
+
+                // Taylor expansion approach using CasADi symbolic derivatives
+                DVec<double> q_real(n_pos), q_imag(n_pos);
+                for (int i = 0; i < n_pos; ++i) {
+                    q_real(i) = joint_state.position(i).real();
+                    q_imag(i) = joint_state.position(i).imag();
+                }
+                DVec<double> v_real(n_vel), v_imag(n_vel);
+                for (int i = 0; i < n_vel; ++i) {
+                    v_real(i) = joint_state.velocity(i).real();
+                    v_imag(i) = joint_state.velocity(i).imag();
+                }
+
+                DMat<double> g_real = runCasadiFcnReal(g_fcn_, q_real, v_real);
+                DMat<double> dg_dq = runCasadiFcnReal(dg_dq_fcn_, q_real, v_real);
+                DMat<double> dg_dv = runCasadiFcnReal(dg_dv_fcn_, q_real, v_real);
+
+                DVec<double> g_imag = dg_dq * q_imag + dg_dv * v_imag;
+
+                const int rows = g_real.rows();
+                DMat<std::complex<double>> g_complex(rows, 1);
+                for (int i = 0; i < rows; ++i) {
+                    g_complex(i, 0) = std::complex<double>(g_real(i, 0), g_imag(i));
+                }
+                return g_complex;
+            } else {
+                return runCasadiFcn(g_fcn_, joint_state);
+            }
+        }
+
         template <typename Scalar>
         void GenericImplicit<Scalar>::createRandomStateHelpers()
         {
@@ -345,6 +647,190 @@ namespace grbda
                 SX G_sym = casadi::SX(casadi::Sparsity::dense(G.rows(), G.cols()));
                 casadi::copy(G, G_sym);
                 this->random_state_helpers_.G = casadi::Function("G", {cs_q_sym}, {G_sym}, {"q"}, {"G"});
+            }
+        }
+
+        // Solve constraints phi(y, q_dep) = 0 for q_dep given (possibly complex) independent coords y
+        // Uses Newton iteration with native phi for machine-precision complex-step differentiation
+        // Returns the full spanning coordinates q = [q_ind, q_dep] in proper order
+        template <typename Scalar>
+        DVec<Scalar> GenericImplicit<Scalar>::solveConstraintsComplex(
+            const DVec<Scalar>& y_independent,
+            const DVec<Scalar>& q_dep_init,
+            int max_iters,
+            double tol) const
+        {
+            // This function only makes sense for complex types - used for complex-step differentiation
+            if constexpr (std::is_same_v<Scalar, std::complex<double>>) {
+                if (!has_native_phi_) {
+                    throw std::runtime_error(
+                        "solveConstraintsComplex requires native phi function for complex-step support");
+                }
+
+                const int n = is_coordinate_independent_.size();
+
+                // Identify independent and dependent coordinate indices
+                std::vector<int> ind_coords, dep_coords;
+                for (int i = 0; i < n; i++) {
+                    if (is_coordinate_independent_[i])
+                        ind_coords.push_back(i);
+                    else
+                        dep_coords.push_back(i);
+                }
+                const int ind_dim = ind_coords.size();
+                const int dep_dim = dep_coords.size();
+
+                if (y_independent.size() != ind_dim) {
+                    throw std::runtime_error("y_independent size mismatch");
+                }
+                if (q_dep_init.size() != dep_dim) {
+                    throw std::runtime_error("q_dep_init size mismatch");
+                }
+
+                // Initialize dependent coordinates
+                DVec<Scalar> q_dep = q_dep_init;
+
+                // For complex-step differentiation, we need to find q_dep such that:
+                //   phi(y_independent, q_dep) = 0
+                //
+                // When y_independent = y_real + i*h*e_j (perturbing the j-th independent coord),
+                // and assuming phi(y_real, q_dep_real) = 0, the solution has form:
+                //   q_dep = q_dep_real + i * q_dep_imag
+                //
+                // To first order (which is exact for analytic functions):
+                //   phi(y_real + i*h*e_j, q_dep_real + i*q_dep_imag)
+                //     ≈ phi(y_real, q_dep_real) + i * (dPhi/dy * h * e_j + dPhi/dq_dep * q_dep_imag)
+                //     = 0 + i * (Ki * h * e_j + Kd * q_dep_imag) = 0
+                //
+                // So: q_dep_imag = -Kd^{-1} * Ki * h * e_j
+                //
+                // This is exactly the first-order formula using G = -Kd^{-1}*Ki, but we compute it
+                // via Newton iteration to handle the general case correctly.
+
+                const int m = (int)phi_native_(JointCoordinate<Scalar>(DVec<Scalar>::Zero(n), true)).size();
+
+                // Helper lambda to compute K using CasADi K_fcn_ (analytically, no finite differences)
+                auto computeK = [this, n, m](const DVec<double>& q_spanning_real) -> DMat<double> {
+                    std::vector<double> q_vec(n);
+                    for (int j = 0; j < n; ++j) {
+                        q_vec[j] = q_spanning_real(j);
+                    }
+                    casadi::DM q_dm(q_vec);
+                    casadi::DM K_dm = K_fcn_(casadi::DMVector{q_dm})[0];
+
+                    DMat<double> K_real(m, n);
+                    for (int i = 0; i < m; ++i) {
+                        for (int j = 0; j < n; ++j) {
+                            K_real(i, j) = static_cast<double>(K_dm(i, j));
+                        }
+                    }
+                    return K_real;
+                };
+
+                // Extract real parts of the input
+                DVec<double> y_ind_real(ind_dim), q_dep_real(dep_dim);
+                DVec<double> y_ind_imag(ind_dim), q_dep_imag(dep_dim);
+                for (int i = 0; i < ind_dim; ++i) {
+                    y_ind_real(i) = y_independent(i).real();
+                    y_ind_imag(i) = y_independent(i).imag();
+                }
+                for (int i = 0; i < dep_dim; ++i) {
+                    q_dep_real(i) = q_dep_init(i).real();
+                    q_dep_imag(i) = 0.0;  // Start with zero imaginary part
+                }
+
+                // Build full spanning coordinate vector (real)
+                DVec<double> q_spanning_real(n);
+                for (int i = 0; i < ind_dim; ++i) {
+                    q_spanning_real(ind_coords[i]) = y_ind_real(i);
+                }
+                for (int i = 0; i < dep_dim; ++i) {
+                    q_spanning_real(dep_coords[i]) = q_dep_real(i);
+                }
+
+                // First, do Newton iteration on real parts if needed
+                for (int iter = 0; iter < max_iters; ++iter) {
+                    // Evaluate phi at real point
+                    DVec<Scalar> q_spanning_c(n);
+                    for (int j = 0; j < n; ++j) {
+                        q_spanning_c(j) = Scalar(q_spanning_real(j), 0.0);
+                    }
+                    JointCoordinate<Scalar> jc(q_spanning_c, true);
+                    DVec<Scalar> phi_c = phi_native_(jc);
+
+                    double phi_norm = 0.0;
+                    for (int i = 0; i < m; ++i) {
+                        phi_norm += phi_c(i).real() * phi_c(i).real();
+                    }
+                    phi_norm = std::sqrt(phi_norm);
+
+                    if (phi_norm < tol) {
+                        break;
+                    }
+
+                    // Compute K using CasADi (analytically)
+                    DMat<double> K_real = computeK(q_spanning_real);
+
+                    // Extract Kd
+                    DMat<double> Kd_real(m, dep_dim);
+                    for (int i = 0; i < dep_dim; ++i) {
+                        Kd_real.col(i) = K_real.col(dep_coords[i]);
+                    }
+
+                    // Newton step for real part
+                    Eigen::PartialPivLU<DMat<double>> lu(Kd_real);
+                    DVec<double> phi_real_vec(m);
+                    for (int i = 0; i < m; ++i) {
+                        phi_real_vec(i) = phi_c(i).real();
+                    }
+                    DVec<double> delta = -lu.solve(phi_real_vec);
+
+                    for (int i = 0; i < dep_dim; ++i) {
+                        q_dep_real(i) += delta(i);
+                        q_spanning_real(dep_coords[i]) = q_dep_real(i);
+                    }
+                }
+
+                // Now compute the imaginary part of q_dep using the implicit function theorem
+                // q_dep_imag = -Kd^{-1} * Ki * y_ind_imag
+                // where Ki is the Jacobian of phi w.r.t. independent coords
+
+                // Compute K at the converged real point using CasADi (analytically)
+                DMat<double> K_real = computeK(q_spanning_real);
+
+                // Extract Ki (columns for independent coords) and Kd (columns for dependent coords)
+                DMat<double> Ki_real(m, ind_dim), Kd_real(m, dep_dim);
+                for (int i = 0; i < ind_dim; ++i) {
+                    Ki_real.col(i) = K_real.col(ind_coords[i]);
+                }
+                for (int i = 0; i < dep_dim; ++i) {
+                    Kd_real.col(i) = K_real.col(dep_coords[i]);
+                }
+
+                // Compute q_dep_imag = -Kd^{-1} * Ki * y_ind_imag
+                Eigen::PartialPivLU<DMat<double>> lu(Kd_real);
+                DVec<double> rhs = Ki_real * y_ind_imag;
+                q_dep_imag = -lu.solve(rhs);
+
+                // Build final complex spanning coordinates
+                for (int i = 0; i < dep_dim; ++i) {
+                    q_dep(i) = Scalar(q_dep_real(i), q_dep_imag(i));
+                }
+
+                // Build final spanning coordinates
+                DVec<Scalar> q_spanning(n);
+                for (int i = 0; i < ind_dim; ++i) {
+                    q_spanning(ind_coords[i]) = y_independent(i);
+                }
+                for (int i = 0; i < dep_dim; ++i) {
+                    q_spanning(dep_coords[i]) = q_dep(i);
+                }
+
+                return q_spanning;
+            } else {
+                // For non-complex types, this function should not be called
+                throw std::runtime_error(
+                    "solveConstraintsComplex is only implemented for std::complex<double>");
             }
         }
 
@@ -494,26 +980,62 @@ namespace grbda
                 else q_span(i) = 0.01 * (2.0 * ((double)rand() / RAND_MAX) - 1.0);
             }
 
+            // Use native phi if available for better accuracy
+            // Only works when Scalar=double because the native phi function is templated on Scalar
+            bool use_native = false;
+            std::function<DVec<double>(const DVec<double>&)> phi_native_double;
+            if constexpr (std::is_same_v<Scalar, double>) {
+                use_native = generic_constraint_->hasNativePhi();
+                if (use_native) {
+                    phi_native_double = [this](const DVec<double>& q) -> DVec<double> {
+                        JointCoordinate<double> jc(q, true);
+                        return generic_constraint_->nativePhi()(jc);
+                    };
+                }
+            }
             auto numerical_lc = generic_constraint_->copyAsDouble();
-            auto phi_eval = [&](const DVec<double> &q) {
-                return numerical_lc.phi(JointCoordinate<double>(q, true));
+            auto phi_eval = [&numerical_lc, use_native, &phi_native_double](const DVec<double> &q) -> DVec<double> {
+                if (use_native) {
+                    return phi_native_double(q);
+                }
+                JointCoordinate<double> jc(q, true);
+                return numerical_lc.phi(jc);
             };
 
-            // Dampened Newton
-            const int max_iters = 100;
-            const double tol_accept = 2e-2;
-            const double h = 1e-7;
-            const double damping = 0.5;
-            
+            // Newton solver with adaptive damping for robust convergence to machine precision
+            // Uses undamped Newton when close to solution, damped when far
+            const int max_iters = 200;
+            const double tol_tight = 1e-12;  // Target machine precision
+            const double tol_accept = 1e-10; // Acceptance tolerance
+            const double h = 1e-8;           // FD step for Jacobian
+
             // Build dep indices
             std::vector<int> dep_idx; dep_idx.reserve(n_dep);
             for (int i = 0; i < n_span; ++i) if (!ind_mask[i]) dep_idx.push_back(i);
 
             bool converged = false;
-            for (int attempt = 0; attempt < 20 && !converged; ++attempt) {
+            double best_phi_norm = 1e10;
+            DVec<double> best_q_span = q_span;
+
+            for (int attempt = 0; attempt < 30 && !converged; ++attempt) {
+                double damping = 0.5;  // Start with damping for stability
                 for (int iter = 0; iter < max_iters; ++iter) {
                     DVec<double> phi = phi_eval(q_span);
-                    if (phi.norm() < tol_accept) { converged = true; break; }
+                    double phi_norm = phi.norm();
+
+                    // Track best solution found
+                    if (phi_norm < best_phi_norm) {
+                        best_phi_norm = phi_norm;
+                        best_q_span = q_span;
+                    }
+
+                    if (phi_norm < tol_tight) { converged = true; break; }
+
+                    // Use undamped Newton when close to solution
+                    if (phi_norm < 1e-3) damping = 1.0;
+                    else if (phi_norm < 1e-2) damping = 0.8;
+                    else damping = 0.5;
+
                     DMat<double> J(phi.size(), n_dep);
                     for (int j = 0; j < n_dep; ++j) {
                         DVec<double> q_pert = q_span;
@@ -525,12 +1047,31 @@ namespace grbda
                     for (int j = 0; j < n_dep; ++j) q_span(dep_idx[j]) += damping * dx(j);
                 }
                 if (!converged) {
-                    // reinitialize dependents slightly differently
-                    for (int i = 0; i < n_span; ++i) if (!ind_mask[i]) q_span(i) = 0.02 * (2.0 * ((double)rand() / RAND_MAX) - 1.0);
+                    // reinitialize dependents with wider range
+                    for (int i = 0; i < n_span; ++i) if (!ind_mask[i]) q_span(i) = 0.3 * (2.0 * ((double)rand() / RAND_MAX) - 1.0);
                 }
             }
 
-            if (!converged || !numerical_lc.isValidSpanningPosition(JointCoordinate<double>(q_span, true))) {
+            // Use best solution found if not converged
+            if (!converged) {
+                q_span = best_q_span;
+                converged = (best_phi_norm < tol_accept);
+            }
+
+            // Final phi check - use native phi for validation too when available
+            DVec<double> phi_final = phi_eval(q_span);
+            double final_phi_norm = phi_final.norm();
+
+            // Validate using the same phi function that Newton used (native if available)
+            // This ensures consistency between Newton convergence and validation
+            bool is_valid = (final_phi_norm < 1e-8);  // Use our own tolerance since we know phi
+
+            if (!converged || !is_valid) {
+                std::cerr << "[Newton debug] converged=" << converged
+                          << ", best_phi_norm=" << best_phi_norm
+                          << ", final_phi_norm=" << final_phi_norm
+                          << ", is_valid=" << is_valid
+                          << ", use_native=" << use_native << std::endl;
                 throw std::runtime_error("Failed to sample valid spanning state for implicit constraint");
             }
 
@@ -610,7 +1151,64 @@ namespace grbda
 
             this->cJ_ = X_intra_ring_ * this->S_spanning_ * qd +
                         S_implicit_ * this->loop_constraint_->g();
-            this->S_ring_ = X_intra_ring_ * this->S_spanning_ * this->loop_constraint_->G(); //+X_intra*S_panning_*G_dot_;
+
+            // S_ring = dS/dt = d(X_intra * S_spanning * G)/dt
+            //        = dX_intra/dt * S_spanning * G + X_intra * S_spanning * dG/dt
+            // where dG/dt = sum_j (dG/dq_j * qd_j)
+            //
+            // For GenericImplicit constraints, we compute dG/dt using the constraint's
+            // dG/dq CasADi function which is properly initialized in the constructor.
+            DMat<Scalar> S_ring_term1 = X_intra_ring_ * this->S_spanning_ * this->loop_constraint_->G();
+            DMat<Scalar> S_ring_term2 = DMat<Scalar>::Zero(S_ring_term1.rows(), S_ring_term1.cols());
+
+            // Compute G_dot for both double and complex types
+            // For complex types, use the real part of q to evaluate dG/dq (valid for small imaginary parts)
+            if constexpr (std::is_same_v<Scalar, double> || std::is_same_v<Scalar, std::complex<double>>) {
+                if (generic_constraint_ && q_cache_.size() > 0) {
+                    // Get the constraint's dG/dq function (initialized in constructor)
+                    const casadi::Function& dG_dq_fcn = generic_constraint_->getdGdqFcn();
+
+                    // Evaluate dG/dq at current position (real part only for complex types)
+                    std::vector<double> q_vec(q_cache_.size());
+                    for (int i = 0; i < q_cache_.size(); ++i) {
+                        if constexpr (std::is_same_v<Scalar, std::complex<double>>) {
+                            q_vec[i] = std::real(q_cache_(i));
+                        } else {
+                            q_vec[i] = q_cache_(i);
+                        }
+                    }
+                    casadi::DM q_dm(q_vec);
+                    casadi::DM dG_dq_dm = dG_dq_fcn(casadi::DMVector{q_dm})[0];
+
+                    // dG_dq_dm has shape (n_G_elements, n_q) where n_G_elements = G.rows() * G.cols()
+                    // G_dot = sum_j (dG/dq_j * qd_j) = dG_dq * qd (matrix-vector product)
+                    const int n_q = q_cache_.size();
+                    const int n_G_rows = this->loop_constraint_->G().rows();
+                    const int n_G_cols = this->loop_constraint_->G().cols();
+                    const int n_G_elements = n_G_rows * n_G_cols;
+
+                    // Compute G_dot_vec = dG_dq * qd
+                    DVec<Scalar> G_dot_vec = DVec<Scalar>::Zero(n_G_elements);
+                    for (int i = 0; i < n_G_elements; ++i) {
+                        for (int j = 0; j < n_q; ++j) {
+                            G_dot_vec(i) += Scalar(static_cast<double>(dG_dq_dm(i, j))) * qd(j);
+                        }
+                    }
+
+                    // Reshape G_dot_vec to G_dot matrix (column-major order)
+                    DMat<Scalar> G_dot(n_G_rows, n_G_cols);
+                    for (int col = 0; col < n_G_cols; ++col) {
+                        for (int row = 0; row < n_G_rows; ++row) {
+                            G_dot(row, col) = G_dot_vec(col * n_G_rows + row);
+                        }
+                    }
+
+                    // Second term: X_intra * S_spanning * G_dot
+                    S_ring_term2 = S_implicit_ * G_dot;
+                }
+            }
+
+            this->S_ring_ = S_ring_term1 + S_ring_term2;
         }
 
         template <typename Scalar>
@@ -756,7 +1354,6 @@ namespace grbda
                     return S_q_cache_;
                 }
 
-
                 const DMat<Scalar>& S_implicit = S_implicit_;
                 const DMat<Scalar>& G = this->loop_constraint_->G();
 
@@ -770,48 +1367,364 @@ namespace grbda
                 casadi::DM q_dm(q_cache_.size());
                 casadi::copy(q_cache_, q_dm);
 
-                casadi::DMVector result = dG_dq_fcn_(casadi::DMVector{q_dm});
+                // Use the constraint's dG/dq function (properly initialized in constructor)
+                // instead of the joint's dG_dq_fcn_ which has issues with symbolic propagation
+                const casadi::Function& dG_dq_constraint = generic_constraint_->getdGdqFcn();
+                casadi::DMVector result = dG_dq_constraint(casadi::DMVector{q_dm});
                 casadi::DM dG_dq_stacked_dm = result[0];
 
                 const int n_span = G.rows();
                 const int n_indep = G.cols();
 
-                // Debug: Check if CasADi returned NaN/Inf
-                bool has_nan = false;
-                for (int i = 0; i < dG_dq_stacked_dm.size1(); ++i) {
-                    double val = static_cast<double>(dG_dq_stacked_dm(i));
-                    if (!std::isfinite(val)) {
-                        has_nan = true;
-                        std::cout << "[DEBUG getSq] CasADi element " << i << " = " << val << std::endl;
+                // The full derivative is: dS/dy_j = sum_k (dS/dq_k * G_kj)
+                // where dS/dq_k = dX_intra/dq_k * S_spanning * G + X_intra * S_spanning * dG/dq_k
+                //
+                // First, compute dS/dq_k for each spanning coordinate k
+                // Then contract with G to get dS/dy_j
+
+                // Extract dG/dq matrices for all spanning coordinates
+                // dG_dq_stacked_dm has shape (n_span * n_indep, n_span_pos) from CasADi jacobian
+                // CasADi stores column-major, so column k contains dG/dq_k flattened
+                const int n_span_pos = q_cache_.size();
+                std::vector<DMat<Scalar>> dG_dq_k(n_span_pos);
+                for (int k = 0; k < n_span_pos; ++k) {
+                    dG_dq_k[k].resize(n_span, n_indep);
+                    for (int row = 0; row < n_span; ++row) {
+                        for (int col = 0; col < n_indep; ++col) {
+                            // CasADi jacobian(vec(G), q) has shape (n_G_elements, n_q)
+                            // vec(G) is column-major, so element G[row,col] is at index col*n_span + row
+                            // dG[row,col]/dq[k] is at dG_dq_stacked_dm(col*n_span + row, k)
+                            int vec_idx = col * n_span + row;
+                            dG_dq_k[k](row, col) = static_cast<double>(dG_dq_stacked_dm(vec_idx, k));
+                        }
                     }
                 }
-                if (has_nan) {
-                    std::cout << "[DEBUG getSq] CasADi dG_dq_fcn returned NaN/Inf!" << std::endl;
-                    std::cout << "  q_cache size=" << q_cache_.size() << ": " << q_cache_.transpose() << std::endl;
-                    std::cout << "  dG_dq size=" << dG_dq_stacked_dm.size1() << std::endl;
-                }
 
-                for (int qi = 0; qi < nv; ++qi) {
-                    if (qi < n_span_vel) {
-                        DMat<Scalar> dG_dqi(n_span, n_indep);
-                        for (int row = 0; row < n_span; ++row) {
-                            for (int col = 0; col < n_indep; ++col) {
-                                int idx = qi * n_span * n_indep + row * n_indep + col;
-                                dG_dqi(row, col) = static_cast<double>(dG_dq_stacked_dm(idx));
+                // Compute dX_intra/dq_k * S_spanning for each spanning coordinate k
+                //
+                // Key insight: X_intra[i,j] is built from joint transforms along the path from j to i.
+                // When we perturb q_m (the joint angle of body m), it affects X_intra[i,j] only if:
+                //   1. m is in the path from j to i (m is between j and i in the kinematic chain)
+                //   2. m != j (the joint at j doesn't affect the transform FROM j)
+                //
+                // The derivative formula is:
+                //   dX_intra[i,j]/dq_m = X_intra[i,parent_m] * (-crm(s_m)) * XJ(q_m) * Xtree_m * X_intra[m,j]
+                //                      = X_intra[i,parent_m] * (-crm(s_m)) * X_intra[parent_m,j]
+                //
+                // where parent_m is the parent of body m in the cluster (or j if m is directly connected to j)
+                //
+                // For simplicity, we use the relationship:
+                //   dX_intra[i,j]/dq_m = -crm(X_intra[i,m] * s_m / G(m,ind)) * X_intra[m,j] (scaled by G contribution)
+                //
+                // Actually, a simpler approach:
+                // The derivative of the total S = X_intra * S_spanning * G with respect to independent coord y_j
+                // can be computed using the chain rule through spanning coords.
+                //
+                // For now, compute the contribution from X_intra derivative using connectivity:
+
+                std::vector<DMat<Scalar>> dXintra_Sspan_dq(n_span_pos, DMat<Scalar>::Zero(mss_dim, n_span_vel));
+
+                // Iterate over spanning coordinates (each corresponds to a body's joint)
+                int pos_idx = 0;
+                for (int m = 0; m < this->num_bodies_; ++m) {
+                    const auto& joint_m = this->single_joints_[m];
+                    const int num_pos_m = joint_m->numPositions();
+
+                    // Get the joint axis/motion subspace for body m
+                    const DMat<Scalar>& S_m = joint_m->S();  // 6 x num_vel_m
+
+                    // For each position DOF of this joint (usually 1 for revolute)
+                    for (int local_k = 0; local_k < num_pos_m; ++local_k) {
+                        int k = pos_idx + local_k;  // Global spanning coordinate index
+
+                        // For revolute joints, the axis is the motion subspace
+                        SVec<Scalar> axis_m = S_m.col(std::min(local_k, (int)S_m.cols() - 1));
+
+                        // The joint at body m affects X_intra[i,j] if:
+                        //   - connectivity_(i, m) is true (m is an ancestor of i)
+                        //   - connectivity_(m, j) is true (j is an ancestor of m), OR m == j doesn't make sense
+                        //   - Actually: m is in the path from j to i means connectivity(i,m) && (j == m-1's ancestor || j < m)
+                        //
+                        // Simpler: iterate over all (i,j) pairs and check if the path includes m
+                        for (int i = 0; i < this->num_bodies_; ++i) {
+                            // Body m affects X_intra[i,*] only if m is an ancestor of i (or m == i for self-transform)
+                            if (i != m && !connectivity_(i, m)) continue;  // m not in path to i
+
+                            for (int j = 0; j < this->num_bodies_; ++j) {
+                                if (i == j) continue;  // No non-trivial self-transform
+
+                                // Check if m is strictly in the path from j to i
+                                // m is in path if: connectivity(i,m) && (m == j || connectivity(m,j) doesn't apply as m > j)
+                                // Actually for the path j -> ... -> m -> ... -> i:
+                                //   - i must be a descendant of m (connectivity(i,m) = true)
+                                //   - m must be a descendant of j (connectivity(m,j) = true), unless m == j
+
+                                // The joint at m affects X_intra[i,j] if m is on the path and m != j
+                                bool m_in_path = false;
+
+                                if (i == m) {
+                                    // X_intra[m,j] - the joint at m is at the START of this transform (body m side)
+                                    // The transform is from j to m, so q_m affects it
+                                    // X_intra[m,j] = XJ(q_m) * Xtree_m * X_intra[parent_m, j]
+                                    // So dX_intra[m,j]/dq_m = -crm(s_m) * X_intra[m,j]
+                                    if (j != m && (j < m || connectivity_(m, j))) {
+                                        m_in_path = true;
+                                    }
+                                } else if (connectivity_(i, m)) {
+                                    // m is an ancestor of i
+                                    // Check if j is an ancestor of m (or j == m)
+                                    if (j == m) {
+                                        // X_intra[i,m] - dX/dq_m at the end of transform, no effect
+                                        m_in_path = false;
+                                    } else if (j < m && connectivity_(m, j)) {
+                                        // j is ancestor of m, so path is j -> ... -> m -> ... -> i
+                                        m_in_path = true;
+                                    } else if (j < m) {
+                                        // j might be ancestor via different path check
+                                        // Check X_intra[m,j] is non-zero
+                                        Mat6<Scalar> X_mj = X_intra_.template block<6,6>(6*m, 6*j);
+                                        if (X_mj.norm() > 1e-10) {
+                                            m_in_path = true;
+                                        }
+                                    }
+                                }
+
+                                if (m_in_path) {
+                                    // dX_intra[i,j]/dq_m = X_intra[i,m] * (-crm(s_m)) * X_intra[m,j]
+                                    // Using adjoint property: A * crm(v) = crm(A*v) * A
+                                    // So: X_im * (-crm(s_m)) * X_mj = -crm(X_im * s_m) * X_im * X_mj
+                                    Mat6<Scalar> X_im;
+                                    if (i == m) {
+                                        X_im = Mat6<Scalar>::Identity();
+                                    } else {
+                                        X_im = X_intra_.template block<6,6>(6*i, 6*m);
+                                    }
+                                    Mat6<Scalar> X_mj = X_intra_.template block<6,6>(6*m, 6*j);
+
+                                    SVec<Scalar> X_im_s = X_im * axis_m;
+                                    // Full product: -crm(X_im * s_m) * X_im * X_mj = -crm(X_im_s) * X_ij
+                                    Mat6<Scalar> X_ij = X_im * X_mj;
+                                    Mat6<Scalar> dX_ij_dqm = -spatial::motionCrossMatrix(X_im_s) * X_ij;
+
+                                    // Multiply by S_spanning block for body j
+                                    int vel_idx_j = 0;
+                                    for (int b = 0; b < j; ++b) {
+                                        vel_idx_j += this->single_joints_[b]->numVelocities();
+                                    }
+                                    int num_vel_j = this->single_joints_[j]->numVelocities();
+
+                                    DMat<Scalar> S_span_j = S_spanning_.block(6*j, vel_idx_j, 6, num_vel_j);
+                                    DMat<Scalar> contrib = dX_ij_dqm * S_span_j;
+
+                                    dXintra_Sspan_dq[k].block(6*i, vel_idx_j, 6, num_vel_j) += contrib;
+                                }
                             }
                         }
-                        S_q_cache_[qi] = S_implicit * dG_dqi;
-
-                        // Debug: Check if result contains NaN
-                        if (!S_q_cache_[qi].allFinite()) {
-                            std::cout << "[DEBUG getSq] S_q[" << qi << "] contains NaN/Inf after multiplication!" << std::endl;
-                            std::cout << "  dG_dqi finite: " << dG_dqi.allFinite() << std::endl;
-                        }
                     }
+                    pos_idx += num_pos_m;
+                }
+
+                // Now compute dS/dy_j = sum_k (dS/dq_k * G_kj)
+                // where dS/dq_k = dXintra_Sspan_dq[k] * G + S_implicit * dG_dq_k[k]
+
+                for (int j = 0; j < nv; ++j) {
+                    DMat<Scalar> dS_dyj = DMat<Scalar>::Zero(mss_dim, nv);
+
+                    for (int k = 0; k < n_span_pos; ++k) {
+                        // Term 1: dX_intra/dq_k * S_spanning * G * G_kj
+                        DMat<Scalar> term1 = dXintra_Sspan_dq[k] * G * G(k, j);
+
+                        // Term 2: X_intra * S_spanning * dG/dq_k * G_kj = S_implicit * dG/dq_k * G_kj
+                        DMat<Scalar> term2 = S_implicit * dG_dq_k[k] * G(k, j);
+
+                        dS_dyj += term1 + term2;
+                    }
+
+                    S_q_cache_[j] = dS_dyj;
                 }
 
                 S_q_cache_valid_ = true;
                 return S_q_cache_;
+            } else if constexpr (std::is_same_v<Scalar, std::complex<double>>) {
+                // Complex-type implementation for complex-step differentiation
+                // Uses TAYLOR SERIES EXPANSION to avoid finite-difference errors:
+                //   f(q + i*δq) ≈ f(q) + i*(df/dq @ δq)
+                //
+                // For dG/dq, we use:
+                //   dG/dq(q + i*δq) ≈ dG/dq(q) + i*(d²G/dq² @ δq)
+
+                if (!generic_constraint_) {
+                    return std::vector<DMat<Scalar>>(nv, DMat<Scalar>::Zero(mss_dim, nv));
+                }
+
+                // Safety check: ensure state has been cached
+                if (q_cache_.size() == 0 || S_implicit_.size() == 0) {
+                    return std::vector<DMat<Scalar>>(nv, DMat<Scalar>::Zero(mss_dim, nv));
+                }
+
+                std::vector<DMat<Scalar>> S_q_result(nv, DMat<Scalar>::Zero(mss_dim, nv));
+
+                const DMat<Scalar>& S_implicit = S_implicit_;
+                const DMat<Scalar>& G = this->loop_constraint_->G();
+                const int n_span = G.rows();
+                const int n_indep = G.cols();
+                const int n_span_pos = q_cache_.size();
+
+                // Extract real and imaginary parts of q_cache_
+                DVec<double> q_real(n_span_pos), q_imag(n_span_pos);
+                for (int i = 0; i < n_span_pos; ++i) {
+                    q_real(i) = q_cache_(i).real();
+                    q_imag(i) = q_cache_(i).imag();
+                }
+
+                // Get CasADi derivative functions from constraint
+                const casadi::Function& dG_dq_fcn = generic_constraint_->getdGdqFcn();
+                const casadi::Function& d2G_dq2_fcn = generic_constraint_->getd2Gdq2Fcn();
+
+                // Evaluate dG/dq at real part using CasADi
+                casadi::DM q_dm(n_span_pos);
+                casadi::copy(q_real, q_dm);
+
+                casadi::DMVector dG_dq_result = dG_dq_fcn(casadi::DMVector{q_dm});
+                casadi::DM dG_dq_stacked_dm = dG_dq_result[0];
+
+                // Evaluate d²G/dq² at real part using CasADi
+                casadi::DMVector d2G_dq2_result = d2G_dq2_fcn(casadi::DMVector{q_dm});
+                casadi::DM d2G_dq2_stacked_dm = d2G_dq2_result[0];
+
+                // Build complex dG/dq_k matrices using Taylor series:
+                // dG/dq(q + i*δq) ≈ dG/dq(q) + i*(d²G/dq² @ δq)
+                //
+                // d²G/dq² has shape (n_G_elements * n_span_pos, n_span_pos)
+                // It's the Jacobian of vec(dG/dq) w.r.t. q
+                // dG_dq has shape (n_G_elements, n_span_pos)
+                // So d²G/dq² @ δq gives the change in dG/dq for imaginary perturbation δq
+
+                const int n_G_elements = n_span * n_indep;
+
+                // Extract dG/dq_k for each k (real part)
+                std::vector<DMat<Scalar>> dG_dq_k(n_span_pos);
+                for (int k = 0; k < n_span_pos; ++k) {
+                    dG_dq_k[k].resize(n_span, n_indep);
+                    for (int row = 0; row < n_span; ++row) {
+                        for (int col = 0; col < n_indep; ++col) {
+                            // CasADi jacobian(vec(G), q) has shape (n_G_elements, n_q)
+                            // vec(G) is column-major: element G[row,col] at index col*n_span + row
+                            int vec_idx = col * n_span + row;
+                            double dG_real = static_cast<double>(dG_dq_stacked_dm(vec_idx, k));
+
+                            // Compute imaginary part from d²G/dq²
+                            // d²G/dq² has shape (n_G_elements * n_q, n_q)
+                            // d(dG[row,col]/dq_k)/dq_j is at d2G_dq2(vec_idx * n_q + k, j)
+                            // We need sum_j d(dG[row,col]/dq_k)/dq_j * q_imag(j)
+                            double dG_imag = 0.0;
+                            for (int j = 0; j < n_span_pos; ++j) {
+                                // Index into d²G/dq²: row index is (element of dG/dq), col is q_j
+                                // dG/dq has shape (n_G_elements, n_q), so dG/dq[vec_idx, k]
+                                // is at linear index vec_idx * n_span_pos + k in vec(dG/dq)
+                                // d(vec(dG/dq))/dq has shape (n_G_elements * n_q, n_q)
+                                int d2_row_idx = vec_idx * n_span_pos + k;
+                                dG_imag += static_cast<double>(d2G_dq2_stacked_dm(d2_row_idx, j)) * q_imag(j);
+                            }
+
+                            dG_dq_k[k](row, col) = Scalar(dG_real, dG_imag);
+                        }
+                    }
+                }
+
+                // Compute dX_intra/dq_k * S_spanning for each spanning coordinate k
+                // This uses the existing complex-valued X_intra_ and S_spanning_
+                std::vector<DMat<Scalar>> dXintra_Sspan_dq(n_span_pos, DMat<Scalar>::Zero(mss_dim, n_span_vel));
+
+                // Iterate over spanning coordinates (each corresponds to a body's joint)
+                int pos_idx = 0;
+                for (int m = 0; m < this->num_bodies_; ++m) {
+                    const auto& joint_m = this->single_joints_[m];
+                    const int num_pos_m = joint_m->numPositions();
+
+                    // Get the joint axis/motion subspace for body m
+                    const DMat<Scalar>& S_m = joint_m->S();  // 6 x num_vel_m
+
+                    // For each position DOF of this joint (usually 1 for revolute)
+                    for (int local_k = 0; local_k < num_pos_m; ++local_k) {
+                        int k = pos_idx + local_k;  // Global spanning coordinate index
+
+                        // For revolute joints, the axis is the motion subspace
+                        SVec<Scalar> axis_m = S_m.col(std::min(local_k, (int)S_m.cols() - 1));
+
+                        for (int i = 0; i < this->num_bodies_; ++i) {
+                            if (i != m && !connectivity_(i, m)) continue;
+
+                            for (int j = 0; j < this->num_bodies_; ++j) {
+                                if (i == j) continue;
+
+                                bool m_in_path = false;
+
+                                if (i == m) {
+                                    if (j != m && (j < m || connectivity_(m, j))) {
+                                        m_in_path = true;
+                                    }
+                                } else if (connectivity_(i, m)) {
+                                    if (j == m) {
+                                        m_in_path = false;
+                                    } else if (j < m && connectivity_(m, j)) {
+                                        m_in_path = true;
+                                    } else if (j < m) {
+                                        Mat6<Scalar> X_mj = X_intra_.template block<6,6>(6*m, 6*j);
+                                        if (std::abs(X_mj.norm()) > 1e-10) {
+                                            m_in_path = true;
+                                        }
+                                    }
+                                }
+
+                                if (m_in_path) {
+                                    Mat6<Scalar> X_im;
+                                    if (i == m) {
+                                        X_im = Mat6<Scalar>::Identity();
+                                    } else {
+                                        X_im = X_intra_.template block<6,6>(6*i, 6*m);
+                                    }
+                                    Mat6<Scalar> X_mj = X_intra_.template block<6,6>(6*m, 6*j);
+
+                                    SVec<Scalar> X_im_s = X_im * axis_m;
+                                    Mat6<Scalar> X_ij = X_im * X_mj;
+                                    Mat6<Scalar> dX_ij_dqm = -spatial::motionCrossMatrix(X_im_s) * X_ij;
+
+                                    int vel_idx_j = 0;
+                                    for (int b = 0; b < j; ++b) {
+                                        vel_idx_j += this->single_joints_[b]->numVelocities();
+                                    }
+                                    int num_vel_j = this->single_joints_[j]->numVelocities();
+
+                                    DMat<Scalar> S_span_j = S_spanning_.block(6*j, vel_idx_j, 6, num_vel_j);
+                                    DMat<Scalar> contrib = dX_ij_dqm * S_span_j;
+
+                                    dXintra_Sspan_dq[k].block(6*i, vel_idx_j, 6, num_vel_j) += contrib;
+                                }
+                            }
+                        }
+                    }
+                    pos_idx += num_pos_m;
+                }
+
+                // Now compute dS/dy_j = sum_k (dS/dq_k * G_kj)
+                for (int j = 0; j < nv; ++j) {
+                    DMat<Scalar> dS_dyj = DMat<Scalar>::Zero(mss_dim, nv);
+
+                    for (int k = 0; k < n_span_pos; ++k) {
+                        // Term 1: dX_intra/dq_k * S_spanning * G * G_kj
+                        DMat<Scalar> term1 = dXintra_Sspan_dq[k] * G * G(k, j);
+
+                        // Term 2: S_implicit * dG/dq_k * G_kj
+                        DMat<Scalar> term2 = S_implicit * dG_dq_k[k] * G(k, j);
+
+                        dS_dyj += term1 + term2;
+                    }
+
+                    S_q_result[j] = dS_dyj;
+                }
+
+                return S_q_result;
             } else {
                 return std::vector<DMat<Scalar>>(nv, DMat<Scalar>::Zero(mss_dim, nv));
             }
@@ -821,10 +1734,119 @@ namespace grbda
 
         DMat<Scalar> Generic<Scalar>::getSdotqd_q() const
         {
-            // For implicit joints, S_ring_ encodes dS/dq * G
-            // We need to return the full matrix, not S_ring_ * qd
-            // The correct return is S_ring_ itself, which is (spatial_dim x nv)
-            return this->S_ring_;
+            const int mss_dim = this->num_bodies_ * 6;
+            const int nv = this->num_velocities_;
+
+            // Explicit constraints (or missing implicit constraint handle) have no extra
+            // configuration-dependent bias term beyond the standard explicit-joint path.
+            if (!generic_constraint_) {
+                return DMat<Scalar>::Zero(mss_dim, nv);
+            }
+
+            // Need a valid cached state from updateKinematics.
+            if (q_cache_.size() == 0 || S_implicit_.size() == 0) {
+                return DMat<Scalar>::Zero(mss_dim, nv);
+            }
+
+            // For implicit joints, compute d(cJ)/dy directly via finite differences,
+            // where cJ = X_intra_ring * S_spanning * qd_span + S_implicit * g(q_span, qd_span).
+            // This captures all chain-rule paths through X_intra, X_intra_ring, and g.
+            if constexpr (std::is_same_v<Scalar, double>) {
+                const DMat<Scalar>& G_base = this->loop_constraint_->G();
+                const DVec<Scalar> ydot_independent =
+                    G_base.colPivHouseholderQr().solve(qd_cache_);
+
+                auto evaluate_cJ_term = [&](const DVec<Scalar>& q_span) -> DVec<Scalar> {
+                    auto lc_local = generic_constraint_->copyAsDouble();
+                    JointCoordinate<Scalar> pos_coord(q_span, true);
+                    lc_local.updateJacobians(pos_coord);
+                    const DMat<Scalar> G_local = lc_local.G();
+                    const DVec<Scalar> qd_span_local = G_local * ydot_independent;
+
+                    // Local joint copies so we can evaluate at perturbed states safely.
+                    std::vector<JointPtr<Scalar>> joints_local;
+                    joints_local.reserve(this->num_bodies_);
+                    for (const auto& joint : this->single_joints_) {
+                        joints_local.push_back(joint->clone());
+                    }
+
+                    DMat<Scalar> S_spanning_local = DMat<Scalar>::Zero(0, 0);
+                    for (const auto& joint : joints_local) {
+                        S_spanning_local = appendEigenMatrix(S_spanning_local, joint->S());
+                    }
+
+                    DMat<Scalar> X_intra_local = DMat<Scalar>::Identity(mss_dim, mss_dim);
+
+                    int pos_idx = 0;
+                    int vel_idx = 0;
+                    for (int i = 0; i < this->num_bodies_; ++i) {
+                        auto joint_i = joints_local[i];
+                        const int num_pos_i = joint_i->numPositions();
+                        const int num_vel_i = joint_i->numVelocities();
+
+                        joint_i->updateKinematics(q_span.segment(pos_idx, num_pos_i),
+                                                  qd_span_local.segment(vel_idx, num_vel_i));
+
+                        int k = i;
+                        for (int j = i - 1; j >= 0; --j) {
+                            if (connectivity_(i, j)) {
+                                const auto& body_k = bodies_[k];
+                                const auto joint_k = joints_local[k];
+
+                                const Mat6<Scalar> Xup_prev = X_intra_local.template block<6, 6>(6 * i, 6 * k);
+                                const Mat6<Scalar> Xint = (joint_k->XJ() * body_k.Xtree_).toMatrix();
+                                X_intra_local.template block<6, 6>(6 * i, 6 * j) = Xup_prev * Xint;
+                                k = j;
+                            }
+                        }
+
+                        pos_idx += num_pos_i;
+                        vel_idx += num_vel_i;
+                    }
+
+                    DMat<Scalar> S_implicit_local = X_intra_local * S_spanning_local;
+                    DVec<Scalar> vJ_local = S_implicit_local * qd_span_local;
+
+                    DMat<Scalar> X_intra_ring_local = DMat<Scalar>::Zero(mss_dim, mss_dim);
+                    for (int i = 0; i < this->num_bodies_; ++i) {
+                        SVec<Scalar> v_relative = SVec<Scalar>::Zero();
+                        for (int j = i - 1; j >= 0; --j) {
+                            if (connectivity_(i, j)) {
+                                const Mat6<Scalar> Xup = X_intra_local.template block<6, 6>(6 * i, 6 * j);
+                                const SVec<Scalar> v_parent = Xup * vJ_local.template segment<6>(6 * j);
+                                const SVec<Scalar> v_child = vJ_local.template segment<6>(6 * i);
+                                v_relative = v_child - v_parent;
+                                X_intra_ring_local.template block<6, 6>(6 * i, 6 * j) =
+                                    -spatial::motionCrossMatrix(v_relative) * Xup;
+                            }
+                        }
+                    }
+
+                    JointCoordinate<Scalar> vel_coord(qd_span_local, true);
+                    JointState<Scalar> js(pos_coord, vel_coord);
+                    lc_local.updateBiases(js);
+
+                    DVec<Scalar> cJ_term = X_intra_ring_local * S_spanning_local * qd_span_local;
+                    cJ_term.noalias() += S_implicit_local * lc_local.g();
+                    return cJ_term;
+                };
+
+                DMat<Scalar> out = DMat<Scalar>::Zero(mss_dim, nv);
+                const DMat<Scalar>& G = this->loop_constraint_->G();
+                const Scalar h = 1e-6;
+
+                for (int j = 0; j < nv; ++j) {
+                    const DVec<Scalar> direction = G.col(j);
+
+                    const DVec<Scalar> c_plus = evaluate_cJ_term(q_cache_ + h * direction);
+                    const DVec<Scalar> c_minus = evaluate_cJ_term(q_cache_ - h * direction);
+                    out.col(j) = (c_plus - c_minus) / (2.0 * h);
+                }
+
+                return out;
+            }
+
+            return DMat<Scalar>::Zero(mss_dim, nv);
         }
 
         template <typename Scalar>
