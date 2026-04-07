@@ -1093,6 +1093,7 @@ namespace grbda
             q_cache_ = q;
             qd_cache_ = qd;
             S_q_cache_valid_ = false; // state changed, invalidate derivative cache
+            Sdotqd_q_cache_valid_ = false;
 
             int pos_idx = 0;
             int vel_idx = 0;
@@ -1748,6 +1749,11 @@ namespace grbda
                 return DMat<Scalar>::Zero(mss_dim, nv);
             }
 
+            // Use cache if available (state hasn't changed since last computation)
+            if (Sdotqd_q_cache_valid_ && Sdotqd_q_cache_.rows() == mss_dim && Sdotqd_q_cache_.cols() == nv) {
+                return Sdotqd_q_cache_;
+            }
+
             // For implicit joints, compute d(cJ)/dy directly via finite differences,
             // where cJ = X_intra_ring * S_spanning * qd_span + S_implicit * g(q_span, qd_span).
             // This captures all chain-rule paths through X_intra, X_intra_ring, and g.
@@ -1843,7 +1849,10 @@ namespace grbda
                     out.col(j) = (c_plus - c_minus) / (2.0 * h);
                 }
 
-                return out;
+                // Cache the result
+                Sdotqd_q_cache_ = out;
+                Sdotqd_q_cache_valid_ = true;
+                return Sdotqd_q_cache_;
             }
 
             return DMat<Scalar>::Zero(mss_dim, nv);
