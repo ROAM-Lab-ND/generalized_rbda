@@ -138,7 +138,7 @@ namespace grbda
 
         DMat<Scalar> H_;
         DVec<Scalar> C_;
-        DMat<Scalar> F_;
+        D6Mat<Scalar> F_;
         
 
         int position_index_ = 0;
