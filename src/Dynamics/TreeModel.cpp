@@ -137,7 +137,7 @@ namespace grbda
             // where X_j is the transform from body j in B to body k in A
             if (node_i->parent_index_ >= 0)
             {
-                auto parent_node = nodes_[node_i->parent_index_];
+                auto & parent_node = nodes_[node_i->parent_index_];
                 node_i->Xup_.accumulateBlockDiagonalInertia(node_i->Ic_, parent_node->Ic_);
             }
 
@@ -145,7 +145,7 @@ namespace grbda
             // Compute F = Ic * S exploiting block-diagonal structure of Ic
             DMat<Scalar> F = node_i->Xup_.blockDiagonalInertiaTimesMotionSubspace(
                 node_i->Ic_, node_i->S());
-            H_.block(vel_idx_i, vel_idx_i, num_vel_i, num_vel_i) = node_i->S().transpose() * F;
+            H_.block(vel_idx_i, vel_idx_i, num_vel_i, num_vel_i).noalias() = node_i->S().transpose() * F;
 
             // Off-diagonal blocks: H_ij = S_j^T * X_ij^{-T} * Ic_i * S_i
             // F is transformed through the chain from node i to ancestor j
@@ -160,9 +160,9 @@ namespace grbda
                 const int num_vel_j = nodes_[j]->num_velocities_;
 
                 // H_ij = F^T * S_j
-                H_.block(vel_idx_i, vel_idx_j, num_vel_i, num_vel_j) =
+                H_.block(vel_idx_i, vel_idx_j, num_vel_i, num_vel_j).noalias() =
                     F.transpose() * nodes_[j]->S();
-                H_.block(vel_idx_j, vel_idx_i, num_vel_j, num_vel_i) =
+                H_.block(vel_idx_j, vel_idx_i, num_vel_j, num_vel_i).noalias() =
                     H_.block(vel_idx_i, vel_idx_j, num_vel_i, num_vel_j).transpose();
             }
         }
@@ -211,7 +211,7 @@ namespace grbda
         }
 
         // F is 6 x NV, summing over all blocks (the ancestors see the sum of forces)
-        F_.resize(6, this->velocity_index_);
+        F_.setZero(6, this->velocity_index_);
 
         // Backward Pass: Accumulate composite inertias and compute H
         // Following Hworld_v2.m structure
@@ -223,7 +223,7 @@ namespace grbda
             const int num_bodies = node_i->Xa_.getNumOutputBodies();
 
             // Compute Ftmp = IC0{i} * S0{i} (block-diagonal multiplication)
-            node_i->Ftmp_.resize(6 * num_bodies, num_vel_i);
+            node_i->Ftmp_ .resize(6 * num_bodies, num_vel_i);
             for (int body = 0; body < num_bodies; body++)
             {
                 node_i->Ftmp_.template middleRows<6>(6 * body).noalias() =
