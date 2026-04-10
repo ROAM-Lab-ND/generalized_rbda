@@ -181,12 +181,6 @@ namespace grbda
         const int n = (int)nodes_.size();
         H_.setZero();
 
-        // Storage for world-frame quantities
-        // IC0[i] stores the composite inertia for node i in world frame (block-diagonal)
-        std::vector<DMat<Scalar>> IC0(n);
-        // S0[i] stores the motion subspace for node i in world frame
-        std::vector<DMat<Scalar>> S0(n);
-
         // Forward Pass: Transform inertias and motion subspaces to world frame
         // Following Hworld_v2.m: transform block-by-block to frame {0}
         for (int i = 0; i < n; i++)
@@ -195,8 +189,8 @@ namespace grbda
             const int num_bodies = node->Xa_.getNumOutputBodies();
 
             // Initialize composite inertia (block-diagonal) with each inertia in world frame
-            IC0[i] = DMat<Scalar>::Zero(6 * num_bodies, 6 * num_bodies);
-            S0[i] = DMat<Scalar>::Zero(6 * num_bodies, node->num_velocities_);
+            node->Ic0_.resize(6 * num_bodies, 6 * num_bodies);
+            node->S0_.resize(6 * num_bodies, node->num_velocities_);
 
             // Transform down to frame {0}, block by block
             for (int body = 0; body < num_bodies; body++)
@@ -205,19 +199,19 @@ namespace grbda
                 // IC0{i}(inds, inds) = Xj.'*model.I{i}(inds,inds)*Xj
                 // where Xj = X0{i}(inds, :) and X0 maps world->body
                 // So IC0 = X^{-T} * I_body * X^{-1}
-                IC0[i].template block<6, 6>(6 * body, 6 * body) =
+                node->Ic0_.template block<6, 6>(6 * body, 6 * body) =
                     Xa_body.inverseTransformSpatialInertia(
                         node->I_.template block<6, 6>(6 * body, 6 * body));
 
                 // S0{i}(inds, :) = Xj\S{i}(inds,:)  =>  S0 = X^{-1} * S_body
-                const D6Mat<Scalar> S_body_block = node->S().template middleRows<6>(6 * body);
-                S0[i].template middleRows<6>(6 * body) =
+                const auto S_body_block = node->S().template middleRows<6>(6 * body);
+                node->S0_.template middleRows<6>(6 * body) =
                     Xa_body.inverseTransformMotionSubspace(S_body_block);
             }
         }
 
         // F is 6 x NV, summing over all blocks (the ancestors see the sum of forces)
-        DMat<Scalar> F = DMat<Scalar>::Zero(6, this->velocity_index_);
+        F_.resize(6, this->velocity_index_);
 
         // Backward Pass: Accumulate composite inertias and compute H
         // Following Hworld_v2.m structure
@@ -229,23 +223,23 @@ namespace grbda
             const int num_bodies = node_i->Xa_.getNumOutputBodies();
 
             // Compute Ftmp = IC0{i} * S0{i} (block-diagonal multiplication)
-            DMat<Scalar> Ftmp = DMat<Scalar>::Zero(6 * num_bodies, num_vel_i);
+            node_i->Ftmp_.resize(6 * num_bodies, num_vel_i);
             for (int body = 0; body < num_bodies; body++)
             {
-                Ftmp.template middleRows<6>(6 * body).noalias() =
-                    IC0[i].template block<6, 6>(6 * body, 6 * body) *
-                    S0[i].template middleRows<6>(6 * body);
+                node_i->Ftmp_.template middleRows<6>(6 * body).noalias() =
+                    node_i->Ic0_.template block<6, 6>(6 * body, 6 * body) *
+                    node_i->S0_.template middleRows<6>(6 * body);
             }
 
             // Diagonal block: H(ii,ii) = S0{i}'*Ftmp
             H_.block(vel_idx_i, vel_idx_i, num_vel_i, num_vel_i).noalias() =
-                S0[i].transpose() * Ftmp;
+                node_i->S0_.transpose() * node_i->Ftmp_;
 
             // F(:, ii) = blockRowSum(Ftmp) - ancestors only see the sum of forces from the cluster
             for (int body = 0; body < num_bodies; body++)
             {
-                F.middleCols(vel_idx_i, num_vel_i) +=
-                    Ftmp.template middleRows<6>(6 * body);
+                F_.middleCols(vel_idx_i, num_vel_i).noalias() +=
+                    node_i->Ftmp_.template middleRows<6>(6 * body);
             }
 
             if (node_i->parent_index_ >= 0)
@@ -266,21 +260,21 @@ namespace grbda
                 const int parent_subindex = node_i->Xup_.transform_and_parent_subindex(0).second;
 
                 // Sblock = S0{p(i)}(inds, :) - the parent's motion subspace for the connecting body
-                const auto Sblock = S0[parent].template middleRows<6>(6 * parent_subindex);
+                const auto Sblock = nodes_[parent]->S0_.template middleRows<6>(6 * parent_subindex);
 
                 // H(pp, vi) = Sblock'*F(:, vi)
                 H_.block(vel_idx_parent, subtree_start, num_vel_parent, subtree_size).noalias() =
-                    Sblock.transpose() * F.middleCols(subtree_start, subtree_size);
+                    Sblock.transpose() * F_.middleCols(subtree_start, subtree_size);
                 // Symmetry: H(vi, pp) = H(pp, vi)'
                 H_.block(subtree_start, vel_idx_parent, subtree_size, num_vel_parent).noalias() =
                     H_.block(vel_idx_parent, subtree_start, num_vel_parent, subtree_size).transpose();
 
                 // Accumulate composite inertia to parent: IC0{p(i)}(inds, inds) += blockDiagSum(IC0{i})
                 // blockDiagSum sums all 6x6 diagonal blocks into one 6x6 matrix
-                auto parent_IC0_block = IC0[parent].template block<6, 6>(6 * parent_subindex, 6 * parent_subindex);
+                auto parent_IC0_block = nodes_[parent]->Ic0_.template block<6, 6>(6 * parent_subindex, 6 * parent_subindex);
                 for (int body = 0; body < num_bodies; body++)
                 {
-                    parent_IC0_block += IC0[i].template block<6, 6>(6 * body, 6 * body);
+                    parent_IC0_block.noalias() += node_i->Ic0_.template block<6, 6>(6 * body, 6 * body);
                 }
             }
         }

@@ -138,6 +138,8 @@ namespace grbda
 
         DMat<Scalar> H_;
         DVec<Scalar> C_;
+        DMat<Scalar> F_;
+        
 
         int position_index_ = 0;
         int velocity_index_ = 0;
