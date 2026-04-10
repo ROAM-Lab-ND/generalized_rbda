@@ -238,7 +238,7 @@ namespace grbda
             }
 
             // Diagonal block: H(ii,ii) = S0{i}'*Ftmp
-            H_.block(vel_idx_i, vel_idx_i, num_vel_i, num_vel_i) =
+            H_.block(vel_idx_i, vel_idx_i, num_vel_i, num_vel_i).noalias() =
                 S0[i].transpose() * Ftmp;
 
             // F(:, ii) = blockRowSum(Ftmp) - ancestors only see the sum of forces from the cluster
@@ -266,23 +266,22 @@ namespace grbda
                 const int parent_subindex = node_i->Xup_.transform_and_parent_subindex(0).second;
 
                 // Sblock = S0{p(i)}(inds, :) - the parent's motion subspace for the connecting body
-                const D6Mat<Scalar> Sblock = S0[parent].template middleRows<6>(6 * parent_subindex);
+                const auto Sblock = S0[parent].template middleRows<6>(6 * parent_subindex);
 
                 // H(pp, vi) = Sblock'*F(:, vi)
-                H_.block(vel_idx_parent, subtree_start, num_vel_parent, subtree_size) =
+                H_.block(vel_idx_parent, subtree_start, num_vel_parent, subtree_size).noalias() =
                     Sblock.transpose() * F.middleCols(subtree_start, subtree_size);
                 // Symmetry: H(vi, pp) = H(pp, vi)'
-                H_.block(subtree_start, vel_idx_parent, subtree_size, num_vel_parent) =
+                H_.block(subtree_start, vel_idx_parent, subtree_size, num_vel_parent).noalias() =
                     H_.block(vel_idx_parent, subtree_start, num_vel_parent, subtree_size).transpose();
 
                 // Accumulate composite inertia to parent: IC0{p(i)}(inds, inds) += blockDiagSum(IC0{i})
                 // blockDiagSum sums all 6x6 diagonal blocks into one 6x6 matrix
-                Mat6<Scalar> blockDiagSum = Mat6<Scalar>::Zero();
+                auto parent_IC0_block = IC0[parent].template block<6, 6>(6 * parent_subindex, 6 * parent_subindex);
                 for (int body = 0; body < num_bodies; body++)
                 {
-                    blockDiagSum += IC0[i].template block<6, 6>(6 * body, 6 * body);
+                    parent_IC0_block += IC0[i].template block<6, 6>(6 * body, 6 * body);
                 }
-                IC0[parent].template block<6, 6>(6 * parent_subindex, 6 * parent_subindex) += blockDiagSum;
             }
         }
 
