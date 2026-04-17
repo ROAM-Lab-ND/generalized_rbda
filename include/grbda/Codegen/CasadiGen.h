@@ -33,6 +33,8 @@
 #include "rev_pair_w_rotor_4dof_ID_ref_inertia.h"
 #include "rev_pair_w_rotor_4dof_ID_ref_inertia_diag.h"
 
+#include "tello_kg_dgdq.h"
+
 namespace grbda
 {
 
@@ -43,13 +45,53 @@ namespace grbda
     typedef const long long int *(*sparsity_out_fn)(long long int);
     typedef int (*work_fn)(long long int *, long long int *, long long int *, long long int *);
 
-    CasadiHelperFunctions() {}
+    CasadiHelperFunctions() : main_(nullptr), sparsity_(nullptr), work_(nullptr) {}
     CasadiHelperFunctions(casadi_fn main, sparsity_out_fn sparsity, work_fn work)
         : main_(main), sparsity_(sparsity), work_(work) {}
 
     casadi_fn main_;
     sparsity_out_fn sparsity_;
     work_fn work_;
+  };
+
+  // Extended version for full GenericImplicit pre-compilation
+  // Includes all functions needed to bypass symbolic graph construction
+  template <typename Scalar>
+  struct GenericImplicitPrecompiled
+  {
+    typedef int (*casadi_fn)(const Scalar **, Scalar **, long long int *, Scalar *, int);
+    typedef const long long int *(*sparsity_out_fn)(long long int);
+    typedef int (*work_fn)(long long int *, long long int *, long long int *, long long int *);
+
+    // Core constraint functions
+    CasadiHelperFunctions<Scalar> phi;   // Constraint violation
+    CasadiHelperFunctions<Scalar> K;     // Constraint Jacobian dphi/dq
+    CasadiHelperFunctions<Scalar> G;     // Explicit Jacobian matrix
+    CasadiHelperFunctions<Scalar> k;     // Implicit bias
+    CasadiHelperFunctions<Scalar> g;     // Explicit bias
+
+    // Derivative functions for complex-step support
+    CasadiHelperFunctions<Scalar> dG_dq;   // Jacobian of vec(G) w.r.t. q
+    CasadiHelperFunctions<Scalar> d2G_dq2; // Hessian of vec(G) w.r.t. q
+
+    // Combined functions (reduce CasADi call overhead)
+    CasadiHelperFunctions<Scalar> Gg;           // Combined G and g
+    CasadiHelperFunctions<Scalar> KG;           // Combined K and G
+    CasadiHelperFunctions<Scalar> kg;           // Combined k and g
+    CasadiHelperFunctions<Scalar> G_dG_dq;      // Combined G and dG/dq
+
+    GenericImplicitPrecompiled() {}
+
+    // Check if all essential functions are available
+    bool hasAllFunctions() const {
+      return (K.main_ != nullptr && G.main_ != nullptr &&
+              k.main_ != nullptr && g.main_ != nullptr);
+    }
+
+    // Check if has basic functions (minimal set)
+    bool hasBasicFunctions() const {
+      return (G.main_ != nullptr && g.main_ != nullptr);
+    }
   };
 
   /*

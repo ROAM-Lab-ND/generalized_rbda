@@ -36,8 +36,8 @@ namespace grbda
             res[idx_res] = new T[max_sz_res];
         }
 
-        iw = new grbda_int_T[0];
-        w = new T[0];
+        iw = sz_iw > 0 ? new grbda_int_T[sz_iw] : nullptr;
+        w = sz_w > 0 ? new T[sz_w] : nullptr;
 
         // get function output
         f((const T **)arg, res, iw, w, 1);
@@ -47,7 +47,7 @@ namespace grbda
         const grbda_int_T *rowinfo, *colinfo;
 
         int nrow, ncol;
-        for (size_t idx_res = 0; idx_res < sz_res; idx_res++)
+        for (size_t idx_res = 0; idx_res < RES.size(); idx_res++)
         {
             sppattern = f_sparse_out(idx_res); // get the sparsity pattern (pointer to const array) for the ith output
             nrow = sppattern[0];

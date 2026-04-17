@@ -4,6 +4,8 @@
 
 #include "grbda/Dynamics/ClusterTreeModel.h"
 #include "grbda/Utils/JointDerivatives.h"
+#include "grbda/Utils/IDDerivProfile.h"
+#include <chrono>
 
 namespace grbda
 {
@@ -440,6 +442,8 @@ namespace grbda
     template <typename Scalar, typename OriTpl>
     std::pair<DMat<Scalar>, DMat<Scalar>> ClusterTreeModel<Scalar, OriTpl>::firstOrderInverseDynamicsDerivatives(const DVec<Scalar> &qdd)
     {
+        profiling::resetCurrentCall();
+
         const auto [q, qd] = this->getState();
         this->forwardAccelerationKinematics(qdd);
         updateArticulatedBodies();
@@ -448,6 +452,8 @@ namespace grbda
         const int nClusters = static_cast<int>(cluster_nodes_.size());
         DMat<Scalar> dtau_dq = DMat<Scalar>::Zero(nDOF, nDOF);
         DMat<Scalar> dtau_dq_dot = DMat<Scalar>::Zero(nDOF, nDOF);
+
+        const auto t_forward_start = std::chrono::high_resolution_clock::now();
 
         // Forward Pass - compute Psi_dot, Psi_ddot, Upsilon_dot, M_cup, B_cup, F for each cluster
         for (auto &cluster : cluster_nodes_)
@@ -511,6 +517,9 @@ namespace grbda
             cluster->F_.noalias() = I * cluster->a_;
             cluster->F_ += spatial::generalForceCrossProduct(v, Iv);
         }
+        const auto t_backward_start = std::chrono::high_resolution_clock::now();
+        profiling::setForwardUs(std::chrono::duration<double, std::micro>(t_backward_start - t_forward_start).count());
+
 
         // Backward Pass - compute derivatives and propagate M_cup, B_cup, F to parents
         for (int i = nClusters - 1; i >= 0; i--)
@@ -629,6 +638,10 @@ namespace grbda
                 parent_cluster->F_ += cluster_i->Xup_.inverseTransformForceVector(F);
             }
         }
+        const auto t_end = std::chrono::high_resolution_clock::now();
+        profiling::setBackwardUs(std::chrono::duration<double, std::micro>(t_end - t_backward_start).count());
+        profiling::printCurrentCallIfEnabled();
+
 
         return {dtau_dq, dtau_dq_dot};
     }
