@@ -1281,20 +1281,15 @@ namespace grbda
             // Build symbolic cJ = X_intra_ring * S_spanning * qd_span + X_intra * S_spanning * g
             // by constructing SX-typed joint clones and running the same logic as updateKinematics_vJ.
 
-            // Collect SX-typed revolute joints via dynamic cast.
-            // If any joint is not a Joints::Revolute, fall back gracefully.
-            // Must be guarded with if constexpr: bodies_[].Xtree_ and S_spanning_ are DMat<Scalar>,
+            // Build symbolic cJ using cloneAsSymbolic() on each sub-joint.
+            // Guarded with if constexpr: bodies_[].Xtree_ and S_spanning_ are DMat<Scalar>,
             // so .cast<SX>() inside would fail to instantiate for Scalar=complex<double>.
             if constexpr (std::is_same_v<Scalar, double>) {
             std::vector<std::shared_ptr<Joints::Base<SX>>> joints_sx;
-            bool all_revolute = true;
-            for (int i = 0; i < this->num_bodies_; ++i) {
-                auto* rev = dynamic_cast<Joints::Revolute<double>*>(this->single_joints_[i].get());
-                if (!rev) { all_revolute = false; break; }
-                joints_sx.push_back(std::make_shared<Joints::Revolute<SX>>(rev->getAxis()));
-            }
+            for (int i = 0; i < this->num_bodies_; ++i)
+                joints_sx.push_back(this->single_joints_[i]->cloneAsSymbolic());
 
-            if (all_revolute) {
+            {
                 // Drive symbolic joints with q_span_vec / qd_span_vec (already Eigen<SX>)
                 int pos_idx2 = 0, vel_idx2 = 0;
                 for (int i = 0; i < this->num_bodies_; ++i) {
@@ -1356,6 +1351,7 @@ namespace grbda
                 dSdotqd_dq_fcn_ = casadi::Function("dSdotqd_dq",
                     {q_span_sx, qd_span_sx}, {dcJ_dy_sx});
             }
+
             } // if constexpr (std::is_same_v<Scalar, double>)
         }
 
