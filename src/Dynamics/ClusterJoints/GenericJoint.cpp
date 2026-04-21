@@ -1560,6 +1560,9 @@ namespace grbda
                 S_q_cache_valid_ = true;
                 return S_q_cache_;
             } else if constexpr (std::is_same_v<Scalar, std::complex<double>>) {
+
+                std::cout << "Calling unexpected funciton" << std::endl;
+                std::cin.get();
                 // Complex-type implementation for complex-step differentiation
                 // Uses TAYLOR SERIES EXPANSION to avoid finite-difference errors:
                 //   f(q + i*δq) ≈ f(q) + i*(df/dq @ δq)
