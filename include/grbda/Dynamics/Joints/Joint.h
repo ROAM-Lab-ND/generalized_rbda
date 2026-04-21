@@ -139,6 +139,8 @@ namespace grbda
                 this->XJ_ = spatial::rotation<Scalar>(axis_, q[0]);
             }
 
+            ori::CoordinateAxis getAxis() const { return axis_; }
+
         private:
             const ori::CoordinateAxis axis_;
         };

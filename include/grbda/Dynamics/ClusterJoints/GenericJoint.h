@@ -74,10 +74,6 @@ namespace grbda
             // Returns the Jacobian of vec(G) w.r.t. q, shape (n_G_elements, n_q)
             const casadi::Function& getdGdqFcn() const { return dG_dq_fcn_; }
 
-            // d²G/dq² CasADi function accessor (for Taylor series expansion in complex-step)
-            // Returns the Hessian of vec(G) w.r.t. q, shape (n_G_elements * n_q, n_q)
-            const casadi::Function& getd2Gdq2Fcn() const { return d2G_dq2_fcn_; }
-
             // G CasADi function accessor (for evaluating G matrix)
             // Returns G matrix, shape (n_spanning, n_independent)
             const casadi::Function& getGFcn() const { return G_fcn_; }
@@ -121,8 +117,7 @@ namespace grbda
             casadi::Function dK_dq_fcn_;
             // dG/dq: for each q_i, gives the Jacobian of G w.r.t. q_i
             casadi::Function dG_dq_fcn_;
-            // d²G/dq²: Hessian of vec(G) w.r.t. q (for Taylor series in complex-step)
-            casadi::Function d2G_dq2_fcn_;
+
             // dk/dq and dk/dv: Jacobians of k w.r.t. position and velocity
             casadi::Function dk_dq_fcn_;
             casadi::Function dk_dv_fcn_;
@@ -200,7 +195,6 @@ namespace grbda
             // CasADi functions for computing dG/dq and Sdotqd derivatives
             mutable casadi::Function dG_dq_fcn_;
             mutable casadi::Function dSdotqd_dq_fcn_;
-            mutable casadi::Function dSdotqd_dqd_fcn_;
             mutable bool derivative_functions_initialized_ = false;
         };
 
