@@ -1,5 +1,3 @@
-#include "grbda/Robots/Cassie.hpp"
-#include "grbda/Robots/Kangaroo.hpp"
 #include "grbda/Robots/TeleopArm.hpp"
 #include "grbda/Robots/Tello.hpp"
 #include "grbda/Robots/TelloNoMechanisms.hpp"
@@ -11,7 +9,6 @@
 #include "grbda/Robots/TelloWithArms.hpp"
 #include "grbda/Robots/MIT_Humanoid.hpp"
 #include "grbda/Robots/MIT_Humanoid_no_rotors.hpp"
-#include "grbda/Robots/MiniCheetah_no_rotors.hpp"
 #include "grbda/Robots/MIT_Humanoid_Leg.hpp"
 #include "grbda/Robots/MiniCheetah.hpp"
 #include "grbda/Robots/JVRC1_Humanoid.hpp"

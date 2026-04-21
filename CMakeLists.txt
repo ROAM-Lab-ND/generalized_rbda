@@ -134,7 +134,7 @@ message(STATUS "======>  Setup Build  ")
 
 include_directories(include)
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
-file(GLOB_RECURSE GRBDA_SRCS "src/*.cpp" "src/*.c")
+file(GLOB_RECURSE GRBDA_SRCS "src/*.cpp")
 
 ################################################################################
 # Setup Build

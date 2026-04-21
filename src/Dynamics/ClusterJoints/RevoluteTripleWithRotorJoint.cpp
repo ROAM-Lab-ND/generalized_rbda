@@ -1,5 +1,8 @@
 #include "grbda/Dynamics/ClusterJoints/RevoluteTripleWithRotorJoint.h"
 #include "grbda/Utils/CasadiDerivatives.h"
+#include "grbda/Utils/IDDerivProfile.h"
+
+#include <chrono>
 
 namespace grbda
 {
@@ -323,8 +326,12 @@ namespace grbda
                 casadi::DM(static_cast<double>(q_cache_(2)))
             };
 
+            const auto t_casadi_s_start = std::chrono::high_resolution_clock::now();
             auto res_link2 = f_dS_link2_dq_(input);
             auto res_link3 = f_dS_link3_dq_(input);
+            const double casadi_s_us = std::chrono::duration<double, std::micro>(
+                std::chrono::high_resolution_clock::now() - t_casadi_s_start).count();
+            profiling::addCasadiSUs(casadi_s_us);
 
             casadi::DM dS_link2 = res_link2[0];  // 6x3 matrix
             casadi::DM dS_link3_col0 = res_link3[0];  // 6x3 matrix
@@ -384,7 +391,11 @@ namespace grbda
                 casadi::DM(static_cast<double>(qd_cache_(2)))
             };
 
+            const auto t_casadi_sdotq_start = std::chrono::high_resolution_clock::now();
             std::vector<casadi::DM> result = f_Sdotqd_q_(input);
+            const double casadi_sdotq_us = std::chrono::duration<double, std::micro>(
+                std::chrono::high_resolution_clock::now() - t_casadi_sdotq_start).count();
+            profiling::addCasadiSdotqdQUs(casadi_sdotq_us);
             casadi::DM Sdotqd_q_link2 = result[0];  // 6x3 matrix for link2
             casadi::DM Sdotqd_q_link3 = result[1];  // 6x3 matrix for link3
 
@@ -423,7 +434,11 @@ namespace grbda
                 casadi::DM(static_cast<double>(qd_cache_(2)))
             };
 
+            const auto t_casadi_sdotqd_start = std::chrono::high_resolution_clock::now();
             std::vector<casadi::DM> result = f_Sdotqd_qd_(input);
+            const double casadi_sdotqd_us = std::chrono::duration<double, std::micro>(
+                std::chrono::high_resolution_clock::now() - t_casadi_sdotqd_start).count();
+            profiling::addCasadiSdotqdQdUs(casadi_sdotqd_us);
             casadi::DM Sdotqd_qd_link2 = result[0];  // 6x3 matrix for link2
             casadi::DM Sdotqd_qd_link3 = result[1];  // 6x3 matrix for link3
 

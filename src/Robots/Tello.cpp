@@ -1,5 +1,4 @@
 #include "grbda/Robots/Tello.hpp"
-#include "grbda/Dynamics/ClusterJoints/LazyGenericJoint.h"
 
 namespace grbda
 {
@@ -11,7 +10,7 @@ namespace grbda
 
         using RevJoint = Joints::Revolute<Scalar>;
         using CoordAxis = ori::CoordinateAxis;
-        using LoopConstraintType = LoopConstraint::LazyGenericImplicit<Scalar>;
+        using LoopConstraintType = LoopConstraint::GenericImplicit<Scalar>;
 
         ClusterTreeModel<Scalar> model{};
 
@@ -180,20 +179,10 @@ namespace grbda
             std::vector<bool> hip_diff_independent_coordinates = {true, true, false, false};
 
             std::shared_ptr<LoopConstraintType> hip_diff_loop_constraint;
-            if constexpr (std::is_same_v<Scalar, double>) {
-                CasadiHelperFunctions<double> hip_codegen_helpers{
-                    tello_hip_kg_dgdq,
-                    tello_hip_kg_dgdq_sparsity_out,
-                    tello_hip_kg_dgdq_work};
-                hip_diff_loop_constraint = std::make_shared<LoopConstraintType>(
-                    hip_diff_independent_coordinates, hip_diff_phi, hip_diff_phi_native,
-                    hip_codegen_helpers);
-            } else {
-                hip_diff_loop_constraint = std::make_shared<LoopConstraintType>(
-                    hip_diff_independent_coordinates, hip_diff_phi, hip_diff_phi_native);
-            }
+            hip_diff_loop_constraint = std::make_shared<LoopConstraintType>(
+                hip_diff_independent_coordinates, hip_diff_phi, hip_diff_phi_native);
 
-            model.template appendRegisteredBodiesAsCluster<ClusterJoints::TelloHipDifferential<Scalar>>(
+            model.template appendRegisteredBodiesAsCluster<ClusterJoints::Generic<Scalar>>(
                 hip_differential_cluster_name, bodies_in_hip_diff_cluster,
                 joints_in_hip_diff_cluster, hip_diff_loop_constraint);
 
@@ -313,21 +302,10 @@ namespace grbda
             std::vector<bool> knee_ankle_diff_independent_coordinates = {true, true, false, false};
 
             std::shared_ptr<LoopConstraintType> knee_ankle_diff_loop_constraint;
-            if constexpr (std::is_same_v<Scalar, double>) {
-                CasadiHelperFunctions<double> knee_codegen_helpers{
-                    tello_knee_kg_dgdq,
-                    tello_knee_kg_dgdq_sparsity_out,
-                    tello_knee_kg_dgdq_work};
-                knee_ankle_diff_loop_constraint = std::make_shared<LoopConstraintType>(
-                    knee_ankle_diff_independent_coordinates, knee_ankle_diff_phi,
-                    knee_ankle_diff_phi_native, knee_codegen_helpers);
-            } else {
-                knee_ankle_diff_loop_constraint = std::make_shared<LoopConstraintType>(
-                    knee_ankle_diff_independent_coordinates, knee_ankle_diff_phi,
-                    knee_ankle_diff_phi_native);
-            }
+            knee_ankle_diff_loop_constraint = std::make_shared<LoopConstraintType>(
+                knee_ankle_diff_independent_coordinates, knee_ankle_diff_phi, knee_ankle_diff_phi_native);
 
-            model.template appendRegisteredBodiesAsCluster<ClusterJoints::TelloKneeAnkleDifferential<Scalar>>(
+            model.template appendRegisteredBodiesAsCluster<ClusterJoints::Generic<Scalar>>(
                 knee_ankle_differential_cluster_name, bodies_in_knee_ankle_diff_cluster,
                 joints_in_knee_ankle_diff_cluster, knee_ankle_diff_loop_constraint);
 

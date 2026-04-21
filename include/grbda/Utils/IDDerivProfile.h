@@ -15,12 +15,20 @@ struct IDDerivCallProfile
     double casadi_us = 0.0;
     double getsq_us = 0.0;
     double getsq_internal_us = 0.0;
+    double casadi_s_us = 0.0;
+    double casadi_s_ring_us = 0.0;
+    double casadi_sdotqd_q_us = 0.0;
+    double casadi_sdotqd_qd_us = 0.0;
     std::uint64_t calls = 0;
 };
 
 bool isEnabled();
 void resetCurrentCall();
 void addCasadiUs(double us);
+void addCasadiSUs(double us);
+void addCasadiSRingUs(double us);
+void addCasadiSdotqdQUs(double us);
+void addCasadiSdotqdQdUs(double us);
 void addGetSqUs(double us);
 void addGetSqInternalUs(double us);
 void setForwardUs(double us);

@@ -5,7 +5,6 @@
 #include "grbda/Dynamics/ClusterTreeModel.h"
 #include "grbda/Utils/JointDerivatives.h"
 #include "grbda/Utils/IDDerivProfile.h"
-#include <chrono>
 
 namespace grbda
 {
@@ -452,6 +451,7 @@ namespace grbda
         const int nClusters = static_cast<int>(cluster_nodes_.size());
         DMat<Scalar> dtau_dq = DMat<Scalar>::Zero(nDOF, nDOF);
         DMat<Scalar> dtau_dq_dot = DMat<Scalar>::Zero(nDOF, nDOF);
+        double getsq_internal_us = 0.0;
 
         const auto t_forward_start = std::chrono::high_resolution_clock::now();
 
@@ -481,7 +481,12 @@ namespace grbda
             // Compute alpha = contract(S_q, qd) and beta = contract(S_q, qdd)
             const DVec<Scalar> cluster_qd = qd.segment(cluster->velocity_index_, num_vel);
             const DVec<Scalar> cluster_qdd = qdd.segment(cluster->velocity_index_, num_vel);
+
+            const auto t_getsq_fwd_start = std::chrono::high_resolution_clock::now();
             const auto &S_q = cluster->joint_->getSq();
+            getsq_internal_us += std::chrono::duration<double, std::micro>(
+                std::chrono::high_resolution_clock::now() - t_getsq_fwd_start).count();
+
             const DMat<Scalar> alpha = contractSqWithVector(S_q, cluster_qd, mss_dim);
             const DMat<Scalar> beta = contractSqWithVector(S_q, cluster_qdd, mss_dim);
             const DMat<Scalar> &Sdotqd_q = cluster->joint_->getSdotqd_q();
@@ -517,9 +522,11 @@ namespace grbda
             cluster->F_.noalias() = I * cluster->a_;
             cluster->F_ += spatial::generalForceCrossProduct(v, Iv);
         }
-        const auto t_backward_start = std::chrono::high_resolution_clock::now();
-        profiling::setForwardUs(std::chrono::duration<double, std::micro>(t_backward_start - t_forward_start).count());
 
+        const double forward_us = std::chrono::duration<double, std::micro>(
+            std::chrono::high_resolution_clock::now() - t_forward_start).count();
+
+        const auto t_backward_start = std::chrono::high_resolution_clock::now();
 
         // Backward Pass - compute derivatives and propagate M_cup, B_cup, F to parents
         for (int i = nClusters - 1; i >= 0; i--)
@@ -569,7 +576,11 @@ namespace grbda
                     }
                     else  // j == i (diagonal block)
                     {
+                        const auto t_getsq_bwd_start = std::chrono::high_resolution_clock::now();
                         const auto &S_q_i = cluster_i->joint_->getSq();
+                        getsq_internal_us += std::chrono::duration<double, std::micro>(
+                            std::chrono::high_resolution_clock::now() - t_getsq_bwd_start).count();
+
                         dtau_dq.block(ii, ii, num_vel_i, num_vel_i) +=
                             contractSqTransposeWithVector(S_q_i, F);
                     }
@@ -608,7 +619,11 @@ namespace grbda
                     }
                     else
                     {
+                        const auto t_getsq_bwd_start = std::chrono::high_resolution_clock::now();
                         const auto &S_q_i = cluster_i->joint_->getSq();
+                        getsq_internal_us += std::chrono::duration<double, std::micro>(
+                            std::chrono::high_resolution_clock::now() - t_getsq_bwd_start).count();
+
                         dtau_dq.block(ii, ii, num_vel_i, num_vel_i) +=
                             contractSqTransposeWithVector(S_q_i, F);
                     }
@@ -638,389 +653,15 @@ namespace grbda
                 parent_cluster->F_ += cluster_i->Xup_.inverseTransformForceVector(F);
             }
         }
-        const auto t_end = std::chrono::high_resolution_clock::now();
-        profiling::setBackwardUs(std::chrono::duration<double, std::micro>(t_end - t_backward_start).count());
+
+        const double backward_us = std::chrono::duration<double, std::micro>(
+            std::chrono::high_resolution_clock::now() - t_backward_start).count();
+
+        profiling::setForwardUs(forward_us);
+        profiling::setBackwardUs(backward_us);
+        profiling::addGetSqInternalUs(getsq_internal_us);
+        profiling::addGetSqUs(getsq_internal_us);
         profiling::printCurrentCallIfEnabled();
-
-
-        return {dtau_dq, dtau_dq_dot};
-    }
-
-    template <typename Scalar, typename OriTpl>
-    std::pair<DMat<Scalar>, DMat<Scalar>> ClusterTreeModel<Scalar, OriTpl>::firstOrderInverseDynamicsDerivativesWorldFrame(const DVec<Scalar> &qdd)
-    {
-        // World-frame algorithm for ID derivatives following ID_derivatives_world.m
-        // Transforms quantities to world frame and uses subtree velocity indices for off-diagonal blocks.
-
-        const auto [q, qd] = this->getState();
-        this->forwardAccelerationKinematics(qdd);
-
-        const int nDOF = this->getNumDegreesOfFreedom();
-        const int nClusters = static_cast<int>(cluster_nodes_.size());
-        DMat<Scalar> dtau_dq = DMat<Scalar>::Zero(nDOF, nDOF);
-        DMat<Scalar> dtau_dq_dot = DMat<Scalar>::Zero(nDOF, nDOF);
-
-        // Compute subtree velocity indices for each cluster
-        // subtree_vinds[i] contains all velocity indices in the subtree rooted at cluster i
-        std::vector<std::vector<int>> subtree_vinds(nClusters);
-        for (int i = nClusters - 1; i >= 0; i--)
-        {
-            auto &cluster = cluster_nodes_[i];
-            const int vel_idx = cluster->velocity_index_;
-            const int num_vel = cluster->num_velocities_;
-
-            // Add this cluster's velocity indices
-            for (int v = 0; v < num_vel; v++)
-            {
-                subtree_vinds[i].push_back(vel_idx + v);
-            }
-
-            // Propagate to parent (parent's subtree includes children's subtrees)
-            if (cluster->parent_index_ >= 0)
-            {
-                auto &parent_vinds = subtree_vinds[cluster->parent_index_];
-                parent_vinds.insert(parent_vinds.end(),
-                                    subtree_vinds[i].begin(),
-                                    subtree_vinds[i].end());
-            }
-        }
-
-        // Storage for world-frame quantities
-        std::vector<DMat<Scalar>> IC0(nClusters);   // Composite inertia in world frame
-        std::vector<DMat<Scalar>> BC0(nClusters);   // B factor in world frame
-        std::vector<DMat<Scalar>> S0(nClusters);    // Motion subspace in world frame
-        std::vector<DMat<Scalar>> Psid0(nClusters); // Psi_dot in world frame
-        std::vector<DMat<Scalar>> Psidd0(nClusters);// Psi_ddot in world frame
-        std::vector<DMat<Scalar>> Upsilond0(nClusters); // Upsilon_dot in world frame
-        std::vector<DVec<Scalar>> f0(nClusters);    // Force in world frame
-
-        // Forward Pass - compute quantities and transform to world frame
-        for (int i = 0; i < nClusters; i++)
-        {
-            auto &cluster = cluster_nodes_[i];
-            const int mss_dim = cluster->motion_subspace_dimension_;
-            const int num_vel = cluster->num_velocities_;
-            const int num_bodies = cluster->Xa_.getNumOutputBodies();
-            const DMat<Scalar> &S = cluster->S();
-            const DMat<Scalar> &I = cluster->I_;
-            const DVec<Scalar> &v = cluster->v_;
-
-            // Get parent velocity and acceleration in cluster i's frame
-            DVec<Scalar> v_parent_up, a_parent_up;
-            if (cluster->parent_index_ >= 0)
-            {
-                const auto &parent_cluster = cluster_nodes_[cluster->parent_index_];
-                v_parent_up = cluster->Xup_.transformMotionVector(parent_cluster->v_);
-                a_parent_up = cluster->Xup_.transformMotionVector(parent_cluster->a_);
-            }
-            else
-            {
-                v_parent_up = DVec<Scalar>::Zero(mss_dim);
-                a_parent_up = cluster->Xup_.transformMotionVector(-this->getGravity());
-            }
-
-            // Compute alpha = contract(S_q, qd) and beta = contract(S_q, qdd)
-            const DVec<Scalar> cluster_qd = qd.segment(cluster->velocity_index_, num_vel);
-            const DVec<Scalar> cluster_qdd = qdd.segment(cluster->velocity_index_, num_vel);
-            const auto &S_q = cluster->joint_->getSq();
-            const DMat<Scalar> alpha = contractSqWithVector(S_q, cluster_qd, mss_dim);
-            const DMat<Scalar> beta = contractSqWithVector(S_q, cluster_qdd, mss_dim);
-            const DMat<Scalar> &Sdotqd_q = cluster->joint_->getSdotqd_q();
-
-            // Psi_dot = crm(v_parent_up) * S + alpha
-            cluster->Psi_dot_ = spatial::motionCrossTimesMatrix(v_parent_up, S);
-            cluster->Psi_dot_ += alpha;
-
-            // Psi_ddot = crm(a_parent_up)*S + crm(v_parent_up)*Psi_dot + Sdotqd_q + beta + crm(v)*alpha
-            cluster->Psi_ddot_ = spatial::motionCrossTimesMatrix(a_parent_up, S);
-            cluster->Psi_ddot_ += spatial::motionCrossTimesMatrix(v_parent_up, cluster->Psi_dot_);
-            cluster->Psi_ddot_ += Sdotqd_q + beta;
-            cluster->Psi_ddot_ += spatial::motionCrossTimesMatrix(v, alpha);
-
-            // Upsilon_dot = crm(v)*S + Psi_dot + S_ring (matching standard C++ implementation)
-            cluster->Upsilon_dot_ = spatial::motionCrossTimesMatrix(v, S);
-            cluster->Upsilon_dot_ += cluster->Psi_dot_ + cluster->S_ring();
-
-            // F = I*a + crf(v)*I*v
-            const DVec<Scalar> Iv = I * v;
-            cluster->F_.noalias() = I * cluster->a_;
-            cluster->F_ += spatial::generalForceCrossProduct(v, Iv);
-
-            // Transform quantities to world frame
-            // Fast path for single-body clusters (most common case)
-            if (num_bodies == 1)
-            {
-                const auto &Xa_body = cluster->Xa_.getTransformForOutputBody(0);
-
-                // IC0 = X^{-T} * I * X^{-1}
-                IC0[i] = Xa_body.inverseTransformSpatialInertia(I.template block<6, 6>(0, 0));
-
-                // v0 = X^{-1} * v
-                const SVec<Scalar> v0_body = Xa_body.inverseTransformMotionVector(v);
-
-                // BC0 = crf(v0)*IC0 + icrf(IC0*v0) - IC0*crm(v0)
-                const SVec<Scalar> I0v0 = IC0[i] * v0_body;
-                BC0[i] = spatial::forceCrossMatrix(v0_body) * IC0[i] +
-                         spatial::swappedForceCrossMatrix(I0v0) -
-                         IC0[i] * spatial::motionCrossMatrix(v0_body);
-
-                // Transform motion subspaces
-                S0[i] = Xa_body.inverseTransformMotionSubspace(S);
-                Psid0[i] = Xa_body.inverseTransformMotionSubspace(cluster->Psi_dot_);
-                Psidd0[i] = Xa_body.inverseTransformMotionSubspace(cluster->Psi_ddot_);
-                Upsilond0[i] = Xa_body.inverseTransformMotionSubspace(cluster->Upsilon_dot_);
-
-                // f0 = X^T * f
-                f0[i] = Xa_body.inverseTransformForceVector(cluster->F_);
-            }
-            else
-            {
-                // Multi-body cluster: block by block
-                IC0[i] = DMat<Scalar>::Zero(6 * num_bodies, 6 * num_bodies);
-                BC0[i] = DMat<Scalar>::Zero(6 * num_bodies, 6 * num_bodies);
-                S0[i] = DMat<Scalar>::Zero(6 * num_bodies, num_vel);
-                Psid0[i] = DMat<Scalar>::Zero(6 * num_bodies, num_vel);
-                Psidd0[i] = DMat<Scalar>::Zero(6 * num_bodies, num_vel);
-                Upsilond0[i] = DMat<Scalar>::Zero(6 * num_bodies, num_vel);
-                f0[i] = DVec<Scalar>::Zero(6 * num_bodies);
-
-                for (int body = 0; body < num_bodies; body++)
-                {
-                    const auto &Xa_body = cluster->Xa_.getTransformForOutputBody(body);
-                    const int start = 6 * body;
-
-                    IC0[i].template block<6, 6>(start, start) =
-                        Xa_body.inverseTransformSpatialInertia(I.template block<6, 6>(start, start));
-
-                    const SVec<Scalar> v_body = v.template segment<6>(start);
-                    const SVec<Scalar> v0_body = Xa_body.inverseTransformMotionVector(v_body);
-
-                    const Mat6<Scalar> &I0_block = IC0[i].template block<6, 6>(start, start);
-                    const SVec<Scalar> I0v0 = I0_block * v0_body;
-                    BC0[i].template block<6, 6>(start, start) =
-                        spatial::forceCrossMatrix(v0_body) * I0_block +
-                        spatial::swappedForceCrossMatrix(I0v0) -
-                        I0_block * spatial::motionCrossMatrix(v0_body);
-
-                    S0[i].template middleRows<6>(start) =
-                        Xa_body.inverseTransformMotionSubspace(S.template middleRows<6>(start));
-                    Psid0[i].template middleRows<6>(start) =
-                        Xa_body.inverseTransformMotionSubspace(cluster->Psi_dot_.template middleRows<6>(start));
-                    Psidd0[i].template middleRows<6>(start) =
-                        Xa_body.inverseTransformMotionSubspace(cluster->Psi_ddot_.template middleRows<6>(start));
-                    Upsilond0[i].template middleRows<6>(start) =
-                        Xa_body.inverseTransformMotionSubspace(cluster->Upsilon_dot_.template middleRows<6>(start));
-                    f0[i].template segment<6>(start) =
-                        Xa_body.inverseTransformForceVector(cluster->F_.template segment<6>(start));
-                }
-            }
-        }
-
-        // F matrices for accumulating forces (6 x nDOF)
-        DMat<Scalar> F1 = DMat<Scalar>::Zero(6, nDOF);
-        DMat<Scalar> F2 = DMat<Scalar>::Zero(6, nDOF);
-        DMat<Scalar> F3 = DMat<Scalar>::Zero(6, nDOF);
-        DMat<Scalar> F4 = DMat<Scalar>::Zero(6, nDOF);
-
-        // Backward Pass
-        for (int i = nClusters - 1; i >= 0; i--)
-        {
-            auto &cluster_i = cluster_nodes_[i];
-            const int ii = cluster_i->velocity_index_;
-            const int num_vel_i = cluster_i->num_velocities_;
-            const int num_bodies_i = cluster_i->Xa_.getNumOutputBodies();
-
-            // Compute F1_tmp, F2_tmp, F3_tmp, F4_tmp using block-diagonal multiplication
-            D6Mat<Scalar> F1_sum, F2_sum, F3_sum, F4_sum;
-
-            if (num_bodies_i == 1)
-            {
-                // Fast path for single-body clusters (most common case)
-                const Mat6<Scalar> &IC0_block = IC0[i];
-                const Mat6<Scalar> &BC0_block = BC0[i];
-
-                // F_tmp = direct computation (no loop needed)
-                F1_sum.noalias() = IC0_block * S0[i];
-                F2_sum.noalias() = BC0_block * S0[i] + IC0_block * Upsilond0[i];
-                F3_sum.noalias() = BC0_block * Psid0[i] + IC0_block * Psidd0[i];
-                F3_sum += spatial::swappedForceCrossMatrix(f0[i]) * S0[i];
-                F4_sum.noalias() = BC0_block.transpose() * S0[i];
-
-                // Diagonal blocks (F_tmp and world-frame quantities are the same for single body)
-                dtau_dq_dot.block(ii, ii, num_vel_i, num_vel_i) =
-                    F1_sum.transpose() * Upsilond0[i] + F4_sum.transpose() * S0[i];
-                dtau_dq.block(ii, ii, num_vel_i, num_vel_i) =
-                    F1_sum.transpose() * Psidd0[i] + F4_sum.transpose() * Psid0[i];
-
-                // F(:,ii) = F_tmp (no blockRowSum needed)
-                F1.middleCols(ii, num_vel_i) = F1_sum;
-                F2.middleCols(ii, num_vel_i) = F2_sum;
-                F3.middleCols(ii, num_vel_i) = F3_sum;
-                F4.middleCols(ii, num_vel_i) = F4_sum;
-            }
-            else
-            {
-                // General path for multi-body clusters
-                DMat<Scalar> F1_tmp = DMat<Scalar>::Zero(6 * num_bodies_i, num_vel_i);
-                DMat<Scalar> F2_tmp = DMat<Scalar>::Zero(6 * num_bodies_i, num_vel_i);
-                DMat<Scalar> F3_tmp = DMat<Scalar>::Zero(6 * num_bodies_i, num_vel_i);
-                DMat<Scalar> F4_tmp = DMat<Scalar>::Zero(6 * num_bodies_i, num_vel_i);
-
-                for (int body = 0; body < num_bodies_i; body++)
-                {
-                    const int start = 6 * body;
-                    const Mat6<Scalar> &IC0_block = IC0[i].template block<6, 6>(start, start);
-                    const Mat6<Scalar> &BC0_block = BC0[i].template block<6, 6>(start, start);
-                    const D6Mat<Scalar> S0_block = S0[i].template middleRows<6>(start);
-                    const D6Mat<Scalar> Psid0_block = Psid0[i].template middleRows<6>(start);
-                    const D6Mat<Scalar> Psidd0_block = Psidd0[i].template middleRows<6>(start);
-                    const D6Mat<Scalar> Upsilond0_block = Upsilond0[i].template middleRows<6>(start);
-                    const SVec<Scalar> f0_block = f0[i].template segment<6>(start);
-
-                    // F1_tmp = IC0 * S0
-                    F1_tmp.template middleRows<6>(start).noalias() = IC0_block * S0_block;
-
-                    // F2_tmp = BC0 * S0 + IC0 * Upsilond0
-                    F2_tmp.template middleRows<6>(start).noalias() = BC0_block * S0_block + IC0_block * Upsilond0_block;
-
-                    // F3_tmp = BC0 * Psid0 + IC0 * Psidd0 + icrf(f0) * S0
-                    F3_tmp.template middleRows<6>(start).noalias() = BC0_block * Psid0_block + IC0_block * Psidd0_block;
-                    F3_tmp.template middleRows<6>(start) += spatial::swappedForceCrossMatrix(f0_block) * S0_block;
-
-                    // F4_tmp = BC0^T * S0
-                    F4_tmp.template middleRows<6>(start).noalias() = BC0_block.transpose() * S0_block;
-                }
-
-                // Diagonal blocks
-                // dtau_dqd(ii,ii) = F1_tmp^T * Upsilond0 + F4_tmp^T * S0
-                dtau_dq_dot.block(ii, ii, num_vel_i, num_vel_i) =
-                    F1_tmp.transpose() * Upsilond0[i] + F4_tmp.transpose() * S0[i];
-
-                // dtau_dq(ii,ii) = F1_tmp^T * Psidd0 + F4_tmp^T * Psid0
-                dtau_dq.block(ii, ii, num_vel_i, num_vel_i) =
-                    F1_tmp.transpose() * Psidd0[i] + F4_tmp.transpose() * Psid0[i];
-
-                // F(:,ii) = blockRowSum(F_tmp) - sum over all bodies
-                F1_sum = D6Mat<Scalar>::Zero(6, num_vel_i);
-                F2_sum = D6Mat<Scalar>::Zero(6, num_vel_i);
-                F3_sum = D6Mat<Scalar>::Zero(6, num_vel_i);
-                F4_sum = D6Mat<Scalar>::Zero(6, num_vel_i);
-                for (int body = 0; body < num_bodies_i; body++)
-                {
-                    const int start = 6 * body;
-                    F1_sum += F1_tmp.template middleRows<6>(start);
-                    F2_sum += F2_tmp.template middleRows<6>(start);
-                    F3_sum += F3_tmp.template middleRows<6>(start);
-                    F4_sum += F4_tmp.template middleRows<6>(start);
-                }
-                F1.middleCols(ii, num_vel_i) = F1_sum;
-                F2.middleCols(ii, num_vel_i) = F2_sum;
-                F3.middleCols(ii, num_vel_i) = F3_sum;
-                F4.middleCols(ii, num_vel_i) = F4_sum;
-            }
-
-            // contractT(S_q, f) - same for both paths
-            const auto &S_q_i = cluster_i->joint_->getSq();
-            dtau_dq.block(ii, ii, num_vel_i, num_vel_i) +=
-                contractSqTransposeWithVector(S_q_i, cluster_i->F_);
-
-            if (cluster_i->parent_index_ >= 0)
-            {
-                const int parent = cluster_i->parent_index_;
-                const int pp = cluster_nodes_[parent]->velocity_index_;
-                const int num_vel_parent = cluster_nodes_[parent]->num_velocities_;
-
-                // Get actual subtree velocity indices for cluster i
-                const std::vector<int> &vi = subtree_vinds[i];
-                const int vi_size = static_cast<int>(vi.size());
-
-                // Parent body subindex
-                const int parent_subindex = cluster_i->Xup_.transform_and_parent_subindex(0).second;
-                const int parent_start = 6 * parent_subindex;
-
-                // Get parent's motion subspaces at the connecting body
-                const D6Mat<Scalar> Sblock = S0[parent].template middleRows<6>(parent_start);
-                const D6Mat<Scalar> Upblock = Upsilond0[parent].template middleRows<6>(parent_start);
-                const D6Mat<Scalar> Psidblock = Psid0[parent].template middleRows<6>(parent_start);
-                const D6Mat<Scalar> Psiddblock = Psidd0[parent].template middleRows<6>(parent_start);
-
-                // Check if subtree indices are contiguous (serial chain case)
-                const bool is_contiguous = (vi_size > 0) && (vi[vi_size - 1] - vi[0] == vi_size - 1);
-
-                if (is_contiguous)
-                {
-                    // Fast path: use block operations directly
-                    const int vi_start = vi[0];
-
-                    // dtau_dq(vi, pp) = F1(:,vi)^T * Psiddblock + F4(:,vi)^T * Psidblock
-                    dtau_dq.block(vi_start, pp, vi_size, num_vel_parent).noalias() =
-                        F1.middleCols(vi_start, vi_size).transpose() * Psiddblock +
-                        F4.middleCols(vi_start, vi_size).transpose() * Psidblock;
-
-                    // dtau_dq(pp, vi) = Sblock^T * F3(:,vi)
-                    dtau_dq.block(pp, vi_start, num_vel_parent, vi_size).noalias() =
-                        Sblock.transpose() * F3.middleCols(vi_start, vi_size);
-
-                    // dtau_dqd(pp, vi) = Sblock^T * F2(:,vi)
-                    dtau_dq_dot.block(pp, vi_start, num_vel_parent, vi_size).noalias() =
-                        Sblock.transpose() * F2.middleCols(vi_start, vi_size);
-
-                    // dtau_dqd(vi, pp) = F1(:,vi)^T * Upblock + F4(:,vi)^T * Sblock
-                    dtau_dq_dot.block(vi_start, pp, vi_size, num_vel_parent).noalias() =
-                        F1.middleCols(vi_start, vi_size).transpose() * Upblock +
-                        F4.middleCols(vi_start, vi_size).transpose() * Sblock;
-                }
-                else
-                {
-                    // Slow path: gather/scatter for non-contiguous indices (branching robots)
-                    DMat<Scalar> F1_vi(6, vi_size), F2_vi(6, vi_size), F3_vi(6, vi_size), F4_vi(6, vi_size);
-                    for (int k = 0; k < vi_size; k++)
-                    {
-                        F1_vi.col(k) = F1.col(vi[k]);
-                        F2_vi.col(k) = F2.col(vi[k]);
-                        F3_vi.col(k) = F3.col(vi[k]);
-                        F4_vi.col(k) = F4.col(vi[k]);
-                    }
-
-                    DMat<Scalar> dq_vi_pp = F1_vi.transpose() * Psiddblock + F4_vi.transpose() * Psidblock;
-                    DMat<Scalar> dq_pp_vi = Sblock.transpose() * F3_vi;
-                    DMat<Scalar> dqd_pp_vi = Sblock.transpose() * F2_vi;
-                    DMat<Scalar> dqd_vi_pp = F1_vi.transpose() * Upblock + F4_vi.transpose() * Sblock;
-
-                    for (int k = 0; k < vi_size; k++)
-                    {
-                        for (int j = 0; j < num_vel_parent; j++)
-                        {
-                            dtau_dq(vi[k], pp + j) = dq_vi_pp(k, j);
-                            dtau_dq(pp + j, vi[k]) = dq_pp_vi(j, k);
-                            dtau_dq_dot(pp + j, vi[k]) = dqd_pp_vi(j, k);
-                            dtau_dq_dot(vi[k], pp + j) = dqd_vi_pp(k, j);
-                        }
-                    }
-                }
-
-                // Accumulate composite quantities to parent
-                // IC0{p}(inds, inds) += blockDiagSum(IC0{i})
-                // BC0{p}(inds, inds) += blockDiagSum(BC0{i})
-                // f0{p}(inds) += blockRowSum(f0{i})
-                Mat6<Scalar> IC0_sum = Mat6<Scalar>::Zero();
-                Mat6<Scalar> BC0_sum = Mat6<Scalar>::Zero();
-                SVec<Scalar> f0_sum = SVec<Scalar>::Zero();
-                for (int body = 0; body < num_bodies_i; body++)
-                {
-                    const int start = 6 * body;
-                    IC0_sum += IC0[i].template block<6, 6>(start, start);
-                    BC0_sum += BC0[i].template block<6, 6>(start, start);
-                    f0_sum += f0[i].template segment<6>(start);
-                }
-                IC0[parent].template block<6, 6>(parent_start, parent_start) += IC0_sum;
-                BC0[parent].template block<6, 6>(parent_start, parent_start) += BC0_sum;
-                f0[parent].template segment<6>(parent_start) += f0_sum;
-
-                // Also propagate f in body frame for parent's RNE
-                cluster_nodes_[parent]->F_ += cluster_i->Xup_.inverseTransformForceVector(cluster_i->F_);
-            }
-        }
 
         return {dtau_dq, dtau_dq_dot};
     }

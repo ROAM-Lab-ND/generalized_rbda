@@ -1,6 +1,5 @@
 #include "grbda/Dynamics/ClusterJoints/GenericJoint.h"
-#include "grbda/Dynamics/ClusterJoints/LazyGenericJoint.h"
-#include "grbda/Dynamics/ClusterJoints/PrecompiledGenericJoint.h"
+#include "grbda/Utils/JointDerivatives.h"
 #include "grbda/Utils/IDDerivProfile.h"
 #include "grbda/Utils/Utilities.h"
 
@@ -9,13 +8,11 @@
 namespace grbda
 {
 
-#include <iomanip>
     namespace LoopConstraint
     {
         template <typename Scalar>
         GenericImplicit<Scalar>::GenericImplicit(std::vector<bool> is_coordinate_independent,
-                                                 SymPhiFcn phi_fcn,
-                                                 const CasadiHelperFunctions<double> &kg_dGdq_codegen)
+                                                 SymPhiFcn phi_fcn)
             : is_coordinate_independent_(is_coordinate_independent), phi_sym_(phi_fcn)
         {
             // Separate coordinates into independent and dependent
@@ -205,21 +202,17 @@ namespace grbda
         // The native phi enables machine-precision complex-step differentiation
         template <typename Scalar>
         GenericImplicit<Scalar>::GenericImplicit(std::vector<bool> is_coordinate_independent,
-                                                 SymPhiFcn phi_sym, NativePhiFcn phi_native,
-                                                 const CasadiHelperFunctions<double> &kg_dGdq_codegen)
-            : GenericImplicit(is_coordinate_independent, phi_sym, kg_dGdq_codegen)
+                                                 SymPhiFcn phi_sym, NativePhiFcn phi_native)
+            : GenericImplicit(is_coordinate_independent, phi_sym)
         {
             phi_native_ = phi_native;
-            has_native_phi_ = static_cast<bool>(phi_native_);
+            has_native_phi_ = true;
 
             // Override phi_ to use native phi for complex types (CasADi doesn't support complex)
             // Also use native phi for double types when available for better numerical accuracy
             // The native C++ implementation using std::sin/std::cos is more precise than
             // CasADi's symbolic evaluation, which may have truncation in constant terms
             if constexpr (std::is_same_v<Scalar, std::complex<double>> || std::is_same_v<Scalar, double>) {
-                if (!has_native_phi_) {
-                    return;
-                }
                 this->phi_ = [this](const JointCoordinate<Scalar> &joint_pos) -> DVec<Scalar>
                 {
                     return phi_native_(joint_pos);
@@ -237,43 +230,17 @@ namespace grbda
         void GenericImplicit<Scalar>::updateJacobians(const JointCoordinate<Scalar> &joint_pos)
         {
             this->K_ = evalK(joint_pos);
+            const auto t_eval_g_start = std::chrono::high_resolution_clock::now();
             this->G_ = evalG(joint_pos);
+            const double casadi_s_us = std::chrono::duration<double, std::micro>(
+                std::chrono::high_resolution_clock::now() - t_eval_g_start).count();
+            profiling::addCasadiSUs(casadi_s_us);
         }
 
         template <typename Scalar>
         void GenericImplicit<Scalar>::updateBiases(const JointState<Scalar> &joint_state)
         {
             this->k_ = evalk(joint_state);
-            this->g_ = evalg(joint_state);
-        }
-
-        template <typename Scalar>
-        void GenericImplicit<Scalar>::updateBiasGOnly(const JointState<Scalar> &joint_state)
-        {
-            // Only update g (explicit bias), not k (implicit bias)
-            this->g_ = evalg(joint_state);
-        }
-
-        template <typename Scalar>
-        void GenericImplicit<Scalar>::updateGAndg(const JointState<Scalar> &joint_state)
-        {
-            // Update both G (Jacobian) and g (bias)
-            updateJacobians(joint_state.position);
-            this->g_ = evalg(joint_state);
-        }
-
-        template <typename Scalar>
-        void GenericImplicit<Scalar>::updateGAndgFromIndependentVelocity(
-            const JointCoordinate<Scalar> &joint_pos,
-            const JointCoordinate<Scalar> &independent_vel)
-        {
-            // G is defined at spanning configuration and maps independent velocity
-            // to spanning velocity. g(q, qd_span) must be evaluated with spanning qd.
-            updateJacobians(joint_pos);
-
-            DVec<Scalar> spanning_vel_data = this->G_ * independent_vel;
-            JointCoordinate<Scalar> spanning_vel(spanning_vel_data, true);
-            JointState<Scalar> joint_state(joint_pos, spanning_vel);
             this->g_ = evalg(joint_state);
         }
 
@@ -324,10 +291,7 @@ namespace grbda
                 casadi::DM arg_dm;
                 casadi::copy(arg_real, arg_dm);
                 
-                const auto t0 = std::chrono::high_resolution_clock::now();
                 casadi::DM res_dm = fcn(arg_dm)[0];
-                const auto t1 = std::chrono::high_resolution_clock::now();
-                profiling::addCasadiUs(std::chrono::duration<double, std::micro>(t1 - t0).count());
                 
                 // Convert result through double then cast to complex
                 DMat<double> res_double(res_dm.size1(), res_dm.size2());
@@ -341,10 +305,7 @@ namespace grbda
                 casadi::DM arg_dm;
                 casadi::copy(arg, arg_dm);
                 
-                const auto t0 = std::chrono::high_resolution_clock::now();
                 casadi::DM res_dm = fcn(arg_dm)[0];
-                const auto t1 = std::chrono::high_resolution_clock::now();
-                profiling::addCasadiUs(std::chrono::duration<double, std::micro>(t1 - t0).count());
                 
                 // Convert through double to handle float specialization
                 DMat<double> res_double(res_dm.size1(), res_dm.size2());
@@ -378,10 +339,7 @@ namespace grbda
                 casadi::copy(vel_real, vel_dm);
                 
                 std::vector<casadi::DM> arg_vec = {pos_dm, vel_dm};
-                const auto t0 = std::chrono::high_resolution_clock::now();
                 std::vector<casadi::DM> res_vec = fcn(arg_vec);
-                const auto t1 = std::chrono::high_resolution_clock::now();
-                profiling::addCasadiUs(std::chrono::duration<double, std::micro>(t1 - t0).count());
                 casadi::DM res_dm = res_vec[0];
                 
                 // Convert result through double then cast to complex
@@ -398,10 +356,7 @@ namespace grbda
                 casadi::copy(args.velocity, vel_dm);
                 
                 std::vector<casadi::DM> arg_vec = {pos_dm, vel_dm};
-                const auto t0 = std::chrono::high_resolution_clock::now();
                 std::vector<casadi::DM> res_vec = fcn(arg_vec);
-                const auto t1 = std::chrono::high_resolution_clock::now();
-                profiling::addCasadiUs(std::chrono::duration<double, std::micro>(t1 - t0).count());
                 casadi::DM res_dm = res_vec[0];
                 
                 // Convert through double to handle float specialization
@@ -421,10 +376,7 @@ namespace grbda
         {
             casadi::DM arg_dm;
             casadi::copy(arg, arg_dm);
-            const auto t0 = std::chrono::high_resolution_clock::now();
             casadi::DM res_dm = fcn(arg_dm)[0];
-            const auto t1 = std::chrono::high_resolution_clock::now();
-            profiling::addCasadiUs(std::chrono::duration<double, std::micro>(t1 - t0).count());
             DMat<double> res(res_dm.size1(), res_dm.size2());
             casadi::copy(res_dm, res);
             return res;
@@ -440,10 +392,7 @@ namespace grbda
             casadi::copy(pos, pos_dm);
             casadi::copy(vel, vel_dm);
             std::vector<casadi::DM> arg_vec = {pos_dm, vel_dm};
-            const auto t0 = std::chrono::high_resolution_clock::now();
             std::vector<casadi::DM> res_vec = fcn(arg_vec);
-            const auto t1 = std::chrono::high_resolution_clock::now();
-            profiling::addCasadiUs(std::chrono::duration<double, std::micro>(t1 - t0).count());
             casadi::DM res_dm = res_vec[0];
             DMat<double> res(res_dm.size1(), res_dm.size2());
             casadi::copy(res_dm, res);
@@ -935,18 +884,6 @@ namespace grbda
                                     std::shared_ptr<LoopConstraint::Base<Scalar>> loop_constraint)
         {
             this->loop_constraint_ = loop_constraint;
-            // Preserve GenericImplicit access even when this class is constructed
-            // through the Base<Scalar> loop-constraint overload.
-            generic_constraint_ = std::dynamic_pointer_cast<LoopConstraint::GenericImplicit<Scalar>>(loop_constraint);
-            if (!generic_constraint_) {
-                if constexpr (std::is_same_v<Scalar, double>) {
-                    if (auto lazy_constraint = std::dynamic_pointer_cast<LoopConstraint::LazyGenericImplicit<Scalar>>(loop_constraint)) {
-                        generic_constraint_ = std::make_shared<LoopConstraint::GenericImplicit<Scalar>>(lazy_constraint->copyAsDouble());
-                    } else if (auto precompiled_constraint = std::dynamic_pointer_cast<LoopConstraint::PrecompiledGenericImplicit<Scalar>>(loop_constraint)) {
-                        generic_constraint_ = std::make_shared<LoopConstraint::GenericImplicit<Scalar>>(precompiled_constraint->copyAsDouble());
-                    }
-                }
-            }
 
             for (auto &joint : joints)
                 this->single_joints_.push_back(joint);
@@ -1026,13 +963,9 @@ namespace grbda
         JointState<double> Generic<Scalar>::randomJointState() const
         {
             if (this->loop_constraint_->isExplicit())
-               return Base<Scalar>::randomJointState();
+               return Base<Scalar>::randomJointState(); 
 
-            // Try to get constraint pointer (works for GenericImplicit, LazyGenericImplicit, and PrecompiledGenericImplicit)
-            auto lazy_constraint = std::dynamic_pointer_cast<LoopConstraint::LazyGenericImplicit<Scalar>>(this->loop_constraint_);
-            auto precompiled_constraint = std::dynamic_pointer_cast<LoopConstraint::PrecompiledGenericImplicit<Scalar>>(this->loop_constraint_);
-
-            if (!generic_constraint_ && !lazy_constraint && !precompiled_constraint)
+            if (!generic_constraint_)
             {
                 throw std::runtime_error("GenericImplicit loop constraint not set");
             }
@@ -1041,15 +974,8 @@ namespace grbda
             const int n_ind = this->loop_constraint_->numIndependentPos();
             const int n_dep = n_span - n_ind;
 
-            // Build independent mask (works for all constraint types)
-            std::vector<bool> ind_mask;
-            if (generic_constraint_) {
-                ind_mask = generic_constraint_->isCoordinateIndependent();
-            } else if (lazy_constraint) {
-                ind_mask = lazy_constraint->isCoordinateIndependent();
-            } else if (precompiled_constraint) {
-                ind_mask = precompiled_constraint->isCoordinateIndependent();
-            }
+            // Build independent mask
+            std::vector<bool> ind_mask = generic_constraint_->isCoordinateIndependent();
             if ((int)ind_mask.size() != n_span) {
                 ind_mask.assign(n_span, false);
                 for (int i = 0; i < n_span; ++i) ind_mask[i] = (i < n_ind);
@@ -1067,34 +993,15 @@ namespace grbda
             bool use_native = false;
             std::function<DVec<double>(const DVec<double>&)> phi_native_double;
             if constexpr (std::is_same_v<Scalar, double>) {
-                if (generic_constraint_) {
-                    use_native = generic_constraint_->hasNativePhi();
-                    if (use_native) {
-                        phi_native_double = [this](const DVec<double>& q) -> DVec<double> {
-                            JointCoordinate<double> jc(q, true);
-                            return generic_constraint_->nativePhi()(jc);
-                        };
-                    }
-                } else if (lazy_constraint) {
-                    use_native = lazy_constraint->hasNativePhi();
-                    if (use_native) {
-                        phi_native_double = [&lazy_constraint](const DVec<double>& q) -> DVec<double> {
-                            JointCoordinate<double> jc(q, true);
-                            return lazy_constraint->nativePhi()(jc);
-                        };
-                    }
-                } else if (precompiled_constraint) {
-                    use_native = precompiled_constraint->hasNativePhi();
-                    if (use_native) {
-                        phi_native_double = [&precompiled_constraint](const DVec<double>& q) -> DVec<double> {
-                            JointCoordinate<double> jc(q, true);
-                            return precompiled_constraint->nativePhi()(jc);
-                        };
-                    }
+                use_native = generic_constraint_->hasNativePhi();
+                if (use_native) {
+                    phi_native_double = [this](const DVec<double>& q) -> DVec<double> {
+                        JointCoordinate<double> jc(q, true);
+                        return generic_constraint_->nativePhi()(jc);
+                    };
                 }
             }
-            auto numerical_lc = generic_constraint_ ? generic_constraint_->copyAsDouble() :
-                                (lazy_constraint ? lazy_constraint->copyAsDouble() : precompiled_constraint->copyAsDouble());
+            auto numerical_lc = generic_constraint_->copyAsDouble();
             auto phi_eval = [&numerical_lc, use_native, &phi_native_double](const DVec<double> &q) -> DVec<double> {
                 if (use_native) {
                     return phi_native_double(q);
@@ -1194,7 +1101,6 @@ namespace grbda
             q_cache_ = q;
             qd_cache_ = qd;
             S_q_cache_valid_ = false; // state changed, invalidate derivative cache
-            Sdotqd_q_cache_valid_ = false;
 
             int pos_idx = 0;
             int vel_idx = 0;
@@ -1229,7 +1135,8 @@ namespace grbda
             }
 
             S_implicit_ = X_intra_ * S_spanning_;
-            this->S_ = S_implicit_ * this->loop_constraint_->G();
+            DMat<Scalar> G_for_s = this->loop_constraint_->G();
+            this->S_ = S_implicit_ * G_for_s;
             this->vJ_ = S_implicit_ * qd;
 
             for (int i = 0; i < this->num_bodies_; i++)
@@ -1260,7 +1167,8 @@ namespace grbda
             //
             // For GenericImplicit constraints, we compute dG/dt using the constraint's
             // dG/dq CasADi function which is properly initialized in the constructor.
-            DMat<Scalar> S_ring_term1 = X_intra_ring_ * this->S_spanning_ * this->loop_constraint_->G();
+            DMat<Scalar> G_for_s_ring = this->loop_constraint_->G();
+            DMat<Scalar> S_ring_term1 = X_intra_ring_ * this->S_spanning_ * G_for_s_ring;
             DMat<Scalar> S_ring_term2 = DMat<Scalar>::Zero(S_ring_term1.rows(), S_ring_term1.cols());
 
             // Compute G_dot for both double and complex types
@@ -1280,7 +1188,11 @@ namespace grbda
                         }
                     }
                     casadi::DM q_dm(q_vec);
+                    const auto t_dg_start = std::chrono::high_resolution_clock::now();
                     casadi::DM dG_dq_dm = dG_dq_fcn(casadi::DMVector{q_dm})[0];
+                    const double casadi_dg_us = std::chrono::duration<double, std::micro>(
+                        std::chrono::high_resolution_clock::now() - t_dg_start).count();
+                    profiling::addCasadiSRingUs(casadi_dg_us);
 
                     // dG_dq_dm has shape (n_G_elements, n_q) where n_G_elements = G.rows() * G.cols()
                     // G_dot = sum_j (dG/dq_j * qd_j) = dG_dq * qd (matrix-vector product)
@@ -1431,30 +1343,15 @@ namespace grbda
         template <typename Scalar>
         std::vector<DMat<Scalar>> Generic<Scalar>::getSq() const
         {
-            struct ScopedGetSqTimer {
-                bool enabled;
-                std::chrono::high_resolution_clock::time_point start;
-                ~ScopedGetSqTimer() {
-                    if (enabled) {
-                        const auto end = std::chrono::high_resolution_clock::now();
-                        profiling::addGetSqInternalUs(
-                            std::chrono::duration<double, std::micro>(end - start).count());
-                    }
-                }
-            } timer{profiling::isEnabled() && std::is_same_v<Scalar, double>,
-                    std::chrono::high_resolution_clock::now()};
-
             const int mss_dim = this->num_bodies_ * 6;
             const int nv = this->num_velocities_;
             const int n_span_vel = this->loop_constraint_->numSpanningVel();
-            static const bool force_uncached_getsq = []() {
-                const char *env = std::getenv("GRBDA_ID_DERIV_FORCE_GETSQ_UNCACHED");
-                return env != nullptr && env[0] != '0';
-            }();
 
             if constexpr (std::is_same_v<Scalar, double>) {
+                initializeDerivativeFunctions();
+
                 // Reuse cached result when possible to avoid repeated CasADi evaluation
-                if (!force_uncached_getsq && S_q_cache_valid_ && (int)S_q_cache_.size() == nv) {
+                if (S_q_cache_valid_ && (int)S_q_cache_.size() == nv) {
                     return S_q_cache_;
                 }
 
@@ -1466,7 +1363,7 @@ namespace grbda
                 }
 
                 // Safety check: ensure state has been cached
-                if (q_cache_.size() == 0 || S_implicit_.size() == 0) {
+                if (q_cache_.size() == 0 || !derivative_functions_initialized_ || S_implicit_.size() == 0) {
                     S_q_cache_valid_ = true;
                     return S_q_cache_;
                 }
@@ -1517,76 +1414,128 @@ namespace grbda
                     }
                 }
 
-                // Compute d(X_intra * S_spanning)/dq_k with finite differences.
-                // This is slower than the handcrafted path logic but substantially more robust
-                // for complex implicit clusters such as Tello's differential mechanisms.
+                // Compute dX_intra/dq_k * S_spanning for each spanning coordinate k
+                //
+                // Key insight: X_intra[i,j] is built from joint transforms along the path from j to i.
+                // When we perturb q_m (the joint angle of body m), it affects X_intra[i,j] only if:
+                //   1. m is in the path from j to i (m is between j and i in the kinematic chain)
+                //   2. m != j (the joint at j doesn't affect the transform FROM j)
+                //
+                // The derivative formula is:
+                //   dX_intra[i,j]/dq_m = X_intra[i,parent_m] * (-crm(s_m)) * XJ(q_m) * Xtree_m * X_intra[m,j]
+                //                      = X_intra[i,parent_m] * (-crm(s_m)) * X_intra[parent_m,j]
+                //
+                // where parent_m is the parent of body m in the cluster (or j if m is directly connected to j)
+                //
+                // For simplicity, we use the relationship:
+                //   dX_intra[i,j]/dq_m = -crm(X_intra[i,m] * s_m / G(m,ind)) * X_intra[m,j] (scaled by G contribution)
+                //
+                // Actually, a simpler approach:
+                // The derivative of the total S = X_intra * S_spanning * G with respect to independent coord y_j
+                // can be computed using the chain rule through spanning coords.
+                //
+                // For now, compute the contribution from X_intra derivative using connectivity:
+
                 std::vector<DMat<Scalar>> dXintra_Sspan_dq(n_span_pos, DMat<Scalar>::Zero(mss_dim, n_span_vel));
 
-                std::vector<JointPtr<Scalar>> joints_local;
-                joints_local.reserve(this->num_bodies_);
-                std::vector<int> pos_offsets(this->num_bodies_);
-                std::vector<int> vel_offsets(this->num_bodies_);
-                std::vector<int> num_pos_per_joint(this->num_bodies_);
-                std::vector<int> num_vel_per_joint(this->num_bodies_);
+                // Iterate over spanning coordinates (each corresponds to a body's joint)
+                int pos_idx = 0;
+                for (int m = 0; m < this->num_bodies_; ++m) {
+                    const auto& joint_m = this->single_joints_[m];
+                    const int num_pos_m = joint_m->numPositions();
 
-                int pos_cursor = 0;
-                int vel_cursor = 0;
-                for (int b = 0; b < this->num_bodies_; ++b) {
-                    auto joint_clone = this->single_joints_[b]->clone();
-                    const int num_pos_b = joint_clone->numPositions();
-                    const int num_vel_b = joint_clone->numVelocities();
-                    joints_local.push_back(joint_clone);
-                    pos_offsets[b] = pos_cursor;
-                    vel_offsets[b] = vel_cursor;
-                    num_pos_per_joint[b] = num_pos_b;
-                    num_vel_per_joint[b] = num_vel_b;
-                    pos_cursor += num_pos_b;
-                    vel_cursor += num_vel_b;
-                }
+                    // Get the joint axis/motion subspace for body m
+                    const DMat<Scalar>& S_m = joint_m->S();  // 6 x num_vel_m
 
-                DMat<Scalar> S_spanning_local = DMat<Scalar>::Zero(mss_dim, n_span_vel);
-                DMat<Scalar> X_intra_local = DMat<Scalar>::Identity(mss_dim, mss_dim);
+                    // For each position DOF of this joint (usually 1 for revolute)
+                    for (int local_k = 0; local_k < num_pos_m; ++local_k) {
+                        int k = pos_idx + local_k;  // Global spanning coordinate index
 
-                auto evalXintraSspanning = [&](const DVec<Scalar>& q_span_eval) -> DMat<Scalar> {
-                    S_spanning_local.setZero();
-                    X_intra_local.setIdentity();
+                        // For revolute joints, the axis is the motion subspace
+                        SVec<Scalar> axis_m = S_m.col(std::min(local_k, (int)S_m.cols() - 1));
 
-                    for (int b = 0; b < this->num_bodies_; ++b) {
-                        auto joint_b = joints_local[b];
-                        const int num_pos_b = num_pos_per_joint[b];
-                        const int num_vel_b = num_vel_per_joint[b];
-                        const int pos_idx_b = pos_offsets[b];
-                        const int vel_idx_b = vel_offsets[b];
+                        // The joint at body m affects X_intra[i,j] if:
+                        //   - connectivity_(i, m) is true (m is an ancestor of i)
+                        //   - connectivity_(m, j) is true (j is an ancestor of m), OR m == j doesn't make sense
+                        //   - Actually: m is in the path from j to i means connectivity(i,m) && (j == m-1's ancestor || j < m)
+                        //
+                        // Simpler: iterate over all (i,j) pairs and check if the path includes m
+                        for (int i = 0; i < this->num_bodies_; ++i) {
+                            // Body m affects X_intra[i,*] only if m is an ancestor of i (or m == i for self-transform)
+                            if (i != m && !connectivity_(i, m)) continue;  // m not in path to i
 
-                        DVec<Scalar> qd_zero = DVec<Scalar>::Zero(num_vel_b);
-                        joint_b->updateKinematics(q_span_eval.segment(pos_idx_b, num_pos_b), qd_zero);
-                        S_spanning_local.block(6 * b, vel_idx_b, 6, num_vel_b) = joint_b->S();
+                            for (int j = 0; j < this->num_bodies_; ++j) {
+                                if (i == j) continue;  // No non-trivial self-transform
 
-                        int k = b;
-                        for (int j = b - 1; j >= 0; --j) {
-                            if (connectivity_(b, j)) {
-                                const auto& body_k = bodies_[k];
-                                const auto joint_k = joints_local[k];
-                                const Mat6<Scalar> Xup_prev = X_intra_local.template block<6, 6>(6 * b, 6 * k);
-                                const Mat6<Scalar> Xint = (joint_k->XJ() * body_k.Xtree_).toMatrix();
-                                X_intra_local.template block<6, 6>(6 * b, 6 * j) = Xup_prev * Xint;
-                                k = j;
+                                // Check if m is strictly in the path from j to i
+                                // m is in path if: connectivity(i,m) && (m == j || connectivity(m,j) doesn't apply as m > j)
+                                // Actually for the path j -> ... -> m -> ... -> i:
+                                //   - i must be a descendant of m (connectivity(i,m) = true)
+                                //   - m must be a descendant of j (connectivity(m,j) = true), unless m == j
+
+                                // The joint at m affects X_intra[i,j] if m is on the path and m != j
+                                bool m_in_path = false;
+
+                                if (i == m) {
+                                    // X_intra[m,j] - the joint at m is at the START of this transform (body m side)
+                                    // The transform is from j to m, so q_m affects it
+                                    // X_intra[m,j] = XJ(q_m) * Xtree_m * X_intra[parent_m, j]
+                                    // So dX_intra[m,j]/dq_m = -crm(s_m) * X_intra[m,j]
+                                    if (j != m && (j < m || connectivity_(m, j))) {
+                                        m_in_path = true;
+                                    }
+                                } else if (connectivity_(i, m)) {
+                                    // m is an ancestor of i
+                                    // Check if j is an ancestor of m (or j == m)
+                                    if (j == m) {
+                                        // X_intra[i,m] - dX/dq_m at the end of transform, no effect
+                                        m_in_path = false;
+                                    } else if (j < m && connectivity_(m, j)) {
+                                        // j is ancestor of m, so path is j -> ... -> m -> ... -> i
+                                        m_in_path = true;
+                                    } else if (j < m) {
+                                        // j might be ancestor via different path check
+                                        // Check X_intra[m,j] is non-zero
+                                        Mat6<Scalar> X_mj = X_intra_.template block<6,6>(6*m, 6*j);
+                                        if (X_mj.norm() > 1e-10) {
+                                            m_in_path = true;
+                                        }
+                                    }
+                                }
+
+                                if (m_in_path) {
+                                    // dX_intra[i,j]/dq_m = X_intra[i,m] * (-crm(s_m)) * X_intra[m,j]
+                                    // Using adjoint property: A * crm(v) = crm(A*v) * A
+                                    // So: X_im * (-crm(s_m)) * X_mj = -crm(X_im * s_m) * X_im * X_mj
+                                    Mat6<Scalar> X_im;
+                                    if (i == m) {
+                                        X_im = Mat6<Scalar>::Identity();
+                                    } else {
+                                        X_im = X_intra_.template block<6,6>(6*i, 6*m);
+                                    }
+                                    Mat6<Scalar> X_mj = X_intra_.template block<6,6>(6*m, 6*j);
+
+                                    SVec<Scalar> X_im_s = X_im * axis_m;
+                                    // Full product: -crm(X_im * s_m) * X_im * X_mj = -crm(X_im_s) * X_ij
+                                    Mat6<Scalar> X_ij = X_im * X_mj;
+                                    Mat6<Scalar> dX_ij_dqm = -spatial::motionCrossMatrix(X_im_s) * X_ij;
+
+                                    // Multiply by S_spanning block for body j
+                                    int vel_idx_j = 0;
+                                    for (int b = 0; b < j; ++b) {
+                                        vel_idx_j += this->single_joints_[b]->numVelocities();
+                                    }
+                                    int num_vel_j = this->single_joints_[j]->numVelocities();
+
+                                    DMat<Scalar> S_span_j = S_spanning_.block(6*j, vel_idx_j, 6, num_vel_j);
+                                    DMat<Scalar> contrib = dX_ij_dqm * S_span_j;
+
+                                    dXintra_Sspan_dq[k].block(6*i, vel_idx_j, 6, num_vel_j) += contrib;
+                                }
                             }
                         }
                     }
-
-                    return X_intra_local * S_spanning_local;
-                };
-
-                const Scalar h = Scalar(1e-8);
-                for (int k = 0; k < n_span_pos; ++k) {
-                    DVec<Scalar> q_plus = q_cache_;
-                    DVec<Scalar> q_minus = q_cache_;
-                    q_plus(k) += h;
-                    q_minus(k) -= h;
-                    const DMat<Scalar> xs_plus = evalXintraSspanning(q_plus);
-                    const DMat<Scalar> xs_minus = evalXintraSspanning(q_minus);
-                    dXintra_Sspan_dq[k] = (xs_plus - xs_minus) / (Scalar(2) * h);
+                    pos_idx += num_pos_m;
                 }
 
                 // Now compute dS/dy_j = sum_k (dS/dq_k * G_kj)
@@ -1634,17 +1583,6 @@ namespace grbda
                 const int n_span = G.rows();
                 const int n_indep = G.cols();
                 const int n_span_pos = q_cache_.size();
-
-                // Precompute per-body velocity offsets once to avoid repeated O(n)
-                // scans inside the dX/dq assembly loops.
-                std::vector<int> body_vel_offset(this->num_bodies_, 0);
-                std::vector<int> body_num_vel(this->num_bodies_, 0);
-                int vel_cursor_pre = 0;
-                for (int b = 0; b < this->num_bodies_; ++b) {
-                    body_vel_offset[b] = vel_cursor_pre;
-                    body_num_vel[b] = this->single_joints_[b]->numVelocities();
-                    vel_cursor_pre += body_num_vel[b];
-                }
 
                 // Extract real and imaginary parts of q_cache_
                 DVec<double> q_real(n_span_pos), q_imag(n_span_pos);
@@ -1766,8 +1704,11 @@ namespace grbda
                                     Mat6<Scalar> X_ij = X_im * X_mj;
                                     Mat6<Scalar> dX_ij_dqm = -spatial::motionCrossMatrix(X_im_s) * X_ij;
 
-                                    const int vel_idx_j = body_vel_offset[j];
-                                    const int num_vel_j = body_num_vel[j];
+                                    int vel_idx_j = 0;
+                                    for (int b = 0; b < j; ++b) {
+                                        vel_idx_j += this->single_joints_[b]->numVelocities();
+                                    }
+                                    int num_vel_j = this->single_joints_[j]->numVelocities();
 
                                     DMat<Scalar> S_span_j = S_spanning_.block(6*j, vel_idx_j, 6, num_vel_j);
                                     DMat<Scalar> contrib = dX_ij_dqm * S_span_j;
@@ -1809,133 +1750,65 @@ namespace grbda
         {
             const int mss_dim = this->num_bodies_ * 6;
             const int nv = this->num_velocities_;
-            const char *profile_fd_env = std::getenv("GRBDA_PROFILE_SDOTQD_FD");
-            const bool enable_profiling = (profile_fd_env != nullptr && profile_fd_env[0] != '0');
 
-            // Fast production path: S_ring stores dS/dq contracted with generalized velocity.
-            // Keep this as default for throughput-sensitive workloads.
-            if constexpr (std::is_same_v<Scalar, double> || std::is_same_v<Scalar, float>) {
-                const char *disable_fast = std::getenv("GRBDA_DISABLE_FAST_SDOTQD_Q");
-                const bool fast_path_enabled = (disable_fast == nullptr || disable_fast[0] == '0');
-                if (fast_path_enabled) {
-                    // For implicit joints, S_ring_ can introduce a measurable bias in d(tau)/dq.
-                    // Default to the accurate FD path unless explicitly overridden.
-                    if (!generic_constraint_) {
-                        return this->S_ring_;
-                    }
-
-                    const char *enable_fast_implicit = std::getenv("GRBDA_ENABLE_FAST_SDOTQD_Q_IMPLICIT");
-                    if (enable_fast_implicit != nullptr && enable_fast_implicit[0] != '0') {
-                        return this->S_ring_;
-                    }
-                }
+            // Fast production path: use S_ring_ directly.
+            // The legacy finite-difference implicit path below is retained for validation and
+            // can be enabled explicitly via GRBDA_ENABLE_SDOTQD_Q_FD=1.
+            const char *force_fd_env = std::getenv("GRBDA_ENABLE_SDOTQD_Q_FD");
+            const bool force_fd = (force_fd_env != nullptr && force_fd_env[0] != '0');
+            if (!force_fd) {
+                return this->S_ring_;
             }
 
             // Explicit constraints (or missing implicit constraint handle) have no extra
             // configuration-dependent bias term beyond the standard explicit-joint path.
             if (!generic_constraint_) {
-                if (enable_profiling) {
-                    std::cerr << "[SDotqdQFD] No generic_constraint. Is it explicit? " 
-                              << (this->loop_constraint_ ? (this->loop_constraint_->isExplicit() ? "yes" : "no") : "null")
-                              << " nv=" << nv << std::endl;
-                }
                 return DMat<Scalar>::Zero(mss_dim, nv);
             }
 
             // Need a valid cached state from updateKinematics.
             if (q_cache_.size() == 0 || S_implicit_.size() == 0) {
-                if (enable_profiling) {
-                    std::cerr << "[SDotqdQFD] Invalid cache state (q_size=" << q_cache_.size() 
-                              << ", S_size=" << S_implicit_.size() << ")" << std::endl;
-                }
                 return DMat<Scalar>::Zero(mss_dim, nv);
-            }
-
-            // Use cache if available (state hasn't changed since last computation)
-            if (Sdotqd_q_cache_valid_ && Sdotqd_q_cache_.rows() == mss_dim && Sdotqd_q_cache_.cols() == nv) {
-                if (enable_profiling) {
-                    std::cerr << "[SDotqdQFD] Using cached result" << std::endl;
-                }
-                return Sdotqd_q_cache_;
-            }
-
-            if (enable_profiling) {
-                std::cerr << "[SDotqdQFD] Computing FD for nv=" << nv << " mss_dim=" << mss_dim << std::endl;
             }
 
             // For implicit joints, compute d(cJ)/dy directly via finite differences,
             // where cJ = X_intra_ring * S_spanning * qd_span + S_implicit * g(q_span, qd_span).
             // This captures all chain-rule paths through X_intra, X_intra_ring, and g.
             if constexpr (std::is_same_v<Scalar, double> || std::is_same_v<Scalar, std::complex<double>>) {
-                const auto t_fd_start = std::chrono::high_resolution_clock::now();
                 const DMat<Scalar>& G_base = this->loop_constraint_->G();
-                const int n_span_vel = this->loop_constraint_->numSpanningVel();
                 const DVec<Scalar> ydot_independent =
                     G_base.colPivHouseholderQr().solve(qd_cache_);
 
-                double time_clone_us = 0.0;
-                double time_constraint_us = 0.0;
-                double time_kin_us = 0.0;
-                double time_xring_us = 0.0;
-                double time_bias_us = 0.0;
-
-                // Hoist reusable state outside perturbation loop to avoid repeated
-                // heap churn in cold FD calls.
-                const auto t_clone_start = std::chrono::high_resolution_clock::now();
-                auto lc_local = generic_constraint_->clone();
-                std::vector<JointPtr<Scalar>> joints_local;
-                joints_local.reserve(this->num_bodies_);
-                std::vector<int> pos_offsets(this->num_bodies_);
-                std::vector<int> vel_offsets(this->num_bodies_);
-                std::vector<int> num_pos_per_joint(this->num_bodies_);
-                std::vector<int> num_vel_per_joint(this->num_bodies_);
-
-                int pos_cursor = 0;
-                int vel_cursor = 0;
-                for (int i = 0; i < this->num_bodies_; ++i) {
-                    auto joint_clone = this->single_joints_[i]->clone();
-                    const int num_pos_i = joint_clone->numPositions();
-                    const int num_vel_i = joint_clone->numVelocities();
-                    joints_local.push_back(joint_clone);
-                    pos_offsets[i] = pos_cursor;
-                    vel_offsets[i] = vel_cursor;
-                    num_pos_per_joint[i] = num_pos_i;
-                    num_vel_per_joint[i] = num_vel_i;
-                    pos_cursor += num_pos_i;
-                    vel_cursor += num_vel_i;
-                }
-                const auto t_clone_end = std::chrono::high_resolution_clock::now();
-                time_clone_us += std::chrono::duration<double, std::micro>(t_clone_end - t_clone_start).count();
-
-                DMat<Scalar> S_spanning_local = DMat<Scalar>::Zero(mss_dim, n_span_vel);
-                DMat<Scalar> X_intra_local = DMat<Scalar>::Identity(mss_dim, mss_dim);
-                DMat<Scalar> X_intra_ring_local = DMat<Scalar>::Zero(mss_dim, mss_dim);
-                DMat<Scalar> S_implicit_local(mss_dim, n_span_vel);
-                DVec<Scalar> qd_span_local(n_span_vel);
-                DVec<Scalar> vJ_local(mss_dim);
-
                 auto evaluate_cJ_term = [&](const DVec<Scalar>& q_span) -> DVec<Scalar> {
-                    const auto t_constraint_start = std::chrono::high_resolution_clock::now();
+                    auto lc_local = generic_constraint_->clone();
                     JointCoordinate<Scalar> pos_coord(q_span, true);
                     lc_local->updateJacobians(pos_coord);
                     const DMat<Scalar> G_local = lc_local->G();
-                    qd_span_local.noalias() = G_local * ydot_independent;
-                    const auto t_kin_start = std::chrono::high_resolution_clock::now();
-                    time_constraint_us += std::chrono::duration<double, std::micro>(t_kin_start - t_constraint_start).count();
+                    const DVec<Scalar> qd_span_local = G_local * ydot_independent;
 
-                    S_spanning_local.setZero();
-                    X_intra_local.setIdentity();
+                    // Local joint copies so we can evaluate at perturbed states safely.
+                    std::vector<JointPtr<Scalar>> joints_local;
+                    joints_local.reserve(this->num_bodies_);
+                    for (const auto& joint : this->single_joints_) {
+                        joints_local.push_back(joint->clone());
+                    }
+
+                    DMat<Scalar> S_spanning_local = DMat<Scalar>::Zero(0, 0);
+                    for (const auto& joint : joints_local) {
+                        S_spanning_local = appendEigenMatrix(S_spanning_local, joint->S());
+                    }
+
+                    DMat<Scalar> X_intra_local = DMat<Scalar>::Identity(mss_dim, mss_dim);
+
+                    int pos_idx = 0;
+                    int vel_idx = 0;
                     for (int i = 0; i < this->num_bodies_; ++i) {
                         auto joint_i = joints_local[i];
-                        const int num_pos_i = num_pos_per_joint[i];
-                        const int num_vel_i = num_vel_per_joint[i];
-                        const int pos_idx = pos_offsets[i];
-                        const int vel_idx = vel_offsets[i];
+                        const int num_pos_i = joint_i->numPositions();
+                        const int num_vel_i = joint_i->numVelocities();
 
                         joint_i->updateKinematics(q_span.segment(pos_idx, num_pos_i),
                                                   qd_span_local.segment(vel_idx, num_vel_i));
-
-                        S_spanning_local.block(6 * i, vel_idx, 6, num_vel_i) = joint_i->S();
 
                         int k = i;
                         for (int j = i - 1; j >= 0; --j) {
@@ -1949,14 +1822,15 @@ namespace grbda
                                 k = j;
                             }
                         }
+
+                        pos_idx += num_pos_i;
+                        vel_idx += num_vel_i;
                     }
-                    const auto t_xring_start = std::chrono::high_resolution_clock::now();
-                    time_kin_us += std::chrono::duration<double, std::micro>(t_xring_start - t_kin_start).count();
 
-                    S_implicit_local.noalias() = X_intra_local * S_spanning_local;
-                    vJ_local.noalias() = S_implicit_local * qd_span_local;
+                    DMat<Scalar> S_implicit_local = X_intra_local * S_spanning_local;
+                    DVec<Scalar> vJ_local = S_implicit_local * qd_span_local;
 
-                    X_intra_ring_local.setZero();
+                    DMat<Scalar> X_intra_ring_local = DMat<Scalar>::Zero(mss_dim, mss_dim);
                     for (int i = 0; i < this->num_bodies_; ++i) {
                         SVec<Scalar> v_relative = SVec<Scalar>::Zero();
                         for (int j = i - 1; j >= 0; --j) {
@@ -1973,12 +1847,7 @@ namespace grbda
 
                     JointCoordinate<Scalar> vel_coord(qd_span_local, true);
                     JointState<Scalar> js(pos_coord, vel_coord);
-                    const auto t_bias_start = std::chrono::high_resolution_clock::now();
-                    time_xring_us += std::chrono::duration<double, std::micro>(t_bias_start - t_xring_start).count();
-
                     lc_local->updateBiases(js);
-                    const auto t_bias_end = std::chrono::high_resolution_clock::now();
-                    time_bias_us += std::chrono::duration<double, std::micro>(t_bias_end - t_bias_start).count();
 
                     DVec<Scalar> cJ_term = X_intra_ring_local * S_spanning_local * qd_span_local;
                     cJ_term.noalias() += S_implicit_local * lc_local->g();
@@ -1989,7 +1858,6 @@ namespace grbda
                 const DMat<Scalar>& G = this->loop_constraint_->G();
                 const Scalar h = 1e-6;
 
-                const auto t_loop_start = std::chrono::high_resolution_clock::now();
                 for (int j = 0; j < nv; ++j) {
                     const DVec<Scalar> direction = G.col(j);
 
@@ -1997,27 +1865,8 @@ namespace grbda
                     const DVec<Scalar> c_minus = evaluate_cJ_term(q_cache_ - h * direction);
                     out.col(j) = (c_plus - c_minus) / (2.0 * h);
                 }
-                const auto t_loop_end = std::chrono::high_resolution_clock::now();
 
-                // Cache the result
-                Sdotqd_q_cache_ = out;
-                Sdotqd_q_cache_valid_ = true;
-
-                // Print profiling breakdown if enabled (using stderr for unbuffered output)
-                if (enable_profiling) {
-                    const double total_loop_us = std::chrono::duration<double, std::micro>(t_loop_end - t_loop_start).count();
-                    const double per_pert_us = total_loop_us / (2 * nv);
-                    std::cerr << "[SDotqdQFDProfile] clone_us=" << std::fixed << std::setprecision(2) 
-                              << (time_clone_us / (2 * nv))
-                              << " constraint_us=" << (time_constraint_us / (2 * nv))
-                              << " kin_us=" << (time_kin_us / (2 * nv))
-                              << " xring_us=" << (time_xring_us / (2 * nv))
-                              << " bias_us=" << (time_bias_us / (2 * nv))
-                              << " per_pert_us=" << per_pert_us
-                              << std::defaultfloat << std::endl;
-                }
-
-                return Sdotqd_q_cache_;
+                return out;
             }
 
             return DMat<Scalar>::Zero(mss_dim, nv);
@@ -2026,8 +1875,19 @@ namespace grbda
         template <typename Scalar>
         DMat<Scalar> Generic<Scalar>::getSdotqd_qd() const
         {
-            // The derivative of S(q) * qd w.r.t. qd is S(q)
-            return this->S_;
+            const int mss_dim = this->num_bodies_ * 6;
+            const int nv = this->num_velocities_;
+
+            if (qd_cache_.size() == 0) {
+                return DMat<Scalar>::Zero(mss_dim, nv);
+            }
+
+            // Chain rule for f(q, qd) = Sdot(q, qd) * qd:
+            // df/dqd = Sdot + (dSdot/dqd) * qd, with Sdot = S_ring and
+            // (dSdot/dqd) contraction given by contractSqWithVector(getSq(), qd).
+            const DMat<Scalar> Sdot = this->S_ring_;
+            const DMat<Scalar> dSdot_dqd_times_qd = contractSqWithVector(getSq(), qd_cache_, mss_dim);
+            return Sdot + dSdot_dqd_times_qd;
         }
         template class Generic<double>;
         template class Generic<std::complex<double>>;

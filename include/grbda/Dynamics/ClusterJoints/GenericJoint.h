@@ -1,7 +1,6 @@
 #ifndef GRBDA_GENERALIZED_JOINT_GENERIC_H
 #define GRBDA_GENERALIZED_JOINT_GENERIC_H
 
-#include "grbda/Codegen/CasadiGen.h"
 #include "grbda/Dynamics/ClusterJoints/ClusterJoint.h"
 
 namespace grbda
@@ -20,13 +19,11 @@ namespace grbda
             using NativePhiFcn = std::function<DVec<Scalar>(const JointCoordinate<Scalar> &)>;
 
             // Constructor with symbolic phi only (legacy, uses Taylor expansion for complex)
-            GenericImplicit(std::vector<bool> is_coordinate_independent, SymPhiFcn phi_fcn,
-                           const CasadiHelperFunctions<double> &kg_dGdq_codegen = {});
+            GenericImplicit(std::vector<bool> is_coordinate_independent, SymPhiFcn phi_fcn);
 
             // Constructor with both symbolic and native phi (enables exact complex evaluation)
             GenericImplicit(std::vector<bool> is_coordinate_independent, SymPhiFcn phi_sym,
-                           NativePhiFcn phi_native,
-                           const CasadiHelperFunctions<double> &kg_dGdq_codegen = {});
+                           NativePhiFcn phi_native);
 
             std::shared_ptr<Base<Scalar>> clone() const override
             {
@@ -46,10 +43,6 @@ namespace grbda
             DVec<Scalar> gamma(const JointCoordinate<Scalar> &joint_pos) const override;
             void updateJacobians(const JointCoordinate<Scalar> &joint_pos) override;
             void updateBiases(const JointState<Scalar> &joint_state) override;
-            void updateBiasGOnly(const JointState<Scalar> &joint_state);
-            void updateGAndg(const JointState<Scalar> &joint_state);
-            void updateGAndgFromIndependentVelocity(const JointCoordinate<Scalar> &joint_pos,
-                                                    const JointCoordinate<Scalar> &independent_vel);
 
             // Override to use native phi when available for machine-precision validation
             bool isValidSpanningPosition(const JointCoordinate<Scalar> &joint_pos) const;
@@ -81,36 +74,17 @@ namespace grbda
             // Returns the Jacobian of vec(G) w.r.t. q, shape (n_G_elements, n_q)
             const casadi::Function& getdGdqFcn() const { return dG_dq_fcn_; }
 
-            // Combined G and dG/dq evaluator to reduce CasADi call boundary overhead.
-            // Returns [G, dG_dq] with shapes (n_spanning, n_independent) and (n_G_elements, n_q).
-            const casadi::Function& getGAnddGdqFcn() const { return G_dG_dq_fcn_; }
-
             // d²G/dq² CasADi function accessor (for Taylor series expansion in complex-step)
             // Returns the Hessian of vec(G) w.r.t. q, shape (n_G_elements * n_q, n_q)
             const casadi::Function& getd2Gdq2Fcn() const { return d2G_dq2_fcn_; }
-
-            // Combined dG/dq and d²G/dq² evaluator to reduce repeated calls at identical q.
-            // Returns [dG_dq, d2G_dq2] with shapes (n_G_elements, n_q) and (n_G_elements*n_q, n_q).
-            const casadi::Function& getdGdqAndd2Gdq2Fcn() const { return dG_dq_d2G_dq2_fcn_; }
 
             // G CasADi function accessor (for evaluating G matrix)
             // Returns G matrix, shape (n_spanning, n_independent)
             const casadi::Function& getGFcn() const { return G_fcn_; }
 
-            // g CasADi function accessor (for evaluating constraint bias)
-            // Returns g vector/matrix in spanning coordinates, shape (n_spanning, 1)
-            const casadi::Function& getgFcn() const { return g_fcn_; }
-
             // K CasADi function accessor (for computing constraint Jacobian analytically)
             // Returns K = dphi/dq, shape (n_constraints, n_spanning)
             const casadi::Function& getKFcn() const { return K_fcn_; }
-
-            // Cached dG/dq from the last double-valued updateJacobians() call.
-            bool hasCacheddGdq() const { return dG_dq_cache_valid_; }
-            const DMat<double>& getCacheddGdq() const { return dG_dq_cache_; }
-
-            // Evaluate dG/dq via optional AOT codegen helper. Returns true if used.
-            bool evalDGdqCodegen(const DVec<double> &q, DMat<double> &dG_dq) const;
 
         private:
             // Basic CasADi function evaluation (real-valued)
@@ -139,46 +113,22 @@ namespace grbda
 
             casadi::Function K_fcn_;
             casadi::Function G_fcn_;
-            casadi::Function Gg_fcn_;
-            casadi::Function Gg_from_independent_vel_fcn_;
-            casadi::Function Gg_dGdq_from_independent_vel_fcn_;
-            casadi::Function KG_fcn_;
             casadi::Function k_fcn_;
             casadi::Function g_fcn_;
-            casadi::Function kg_fcn_;
 
             // Derivative functions for complex-step support
             // dK/dq: for each q_i, gives the Jacobian of K w.r.t. q_i
             casadi::Function dK_dq_fcn_;
             // dG/dq: for each q_i, gives the Jacobian of G w.r.t. q_i
             casadi::Function dG_dq_fcn_;
-            // Combined evaluator for [G, dG/dq] at the same q.
-            casadi::Function G_dG_dq_fcn_;
-            // Combined evaluator for [K, G, dG/dq] at the same q (double hot path).
-            casadi::Function KG_dG_dq_fcn_;
             // d²G/dq²: Hessian of vec(G) w.r.t. q (for Taylor series in complex-step)
             casadi::Function d2G_dq2_fcn_;
-            // Combined evaluator for [dG/dq, d²G/dq²] at the same q.
-            casadi::Function dG_dq_d2G_dq2_fcn_;
             // dk/dq and dk/dv: Jacobians of k w.r.t. position and velocity
             casadi::Function dk_dq_fcn_;
             casadi::Function dk_dv_fcn_;
             // dg/dq and dg/dv: Jacobians of g w.r.t. position and velocity
             casadi::Function dg_dq_fcn_;
             casadi::Function dg_dv_fcn_;
-            // Optional ahead-of-time generated code for [K, G, dG/dq] on Tello Generic constraints.
-            CasadiHelperFunctions<double> kg_dGdq_codegen_;
-            mutable std::vector<double> kg_dGdq_codegen_k_buf_;
-            mutable std::vector<double> kg_dGdq_codegen_g_buf_;
-            mutable std::vector<double> kg_dGdq_codegen_dG_buf_;
-            mutable std::vector<grbda_int_T> kg_dGdq_codegen_iw_;
-            mutable std::vector<double> kg_dGdq_codegen_w_;
-
-            // Cache populated in updateJacobians(double): d(vec(G))/dq at the current q.
-            mutable DMat<double> dG_dq_cache_;
-            mutable bool dG_dq_cache_valid_ = false;
-            mutable DVec<double> dG_dq_cache_key_;
-            mutable bool dG_dq_cache_key_valid_ = false;
         };
     }
 
@@ -239,37 +189,16 @@ namespace grbda
             std::shared_ptr<LoopConstraint::GenericImplicit<Scalar>> generic_constraint_;
 
             DMat<bool> connectivity_;
-            mutable std::vector<int> body_vel_offsets_;
-            mutable std::vector<int> body_num_vel_;
-            mutable std::vector<int> body_num_pos_;
-            mutable std::vector<DMat<Scalar>> body_S_cache_;
-            mutable std::vector<std::vector<std::pair<int, int>>> body_affected_pairs_;
 
             // Cached intermediates for derivative evaluation
             mutable DMat<Scalar> S_implicit_;
             mutable std::vector<DMat<Scalar>> S_q_cache_;
             mutable bool S_q_cache_valid_ = false;
-            mutable DMat<Scalar> Sdotqd_q_cache_;
-            mutable bool Sdotqd_q_cache_valid_ = false;
-            mutable DVec<Scalar> Sdotqd_q_key_q_cache_;
-            mutable DVec<Scalar> Sdotqd_q_key_qd_cache_;
-            mutable DMat<Scalar> dG_dq_cache_;
-            mutable bool dG_dq_cache_valid_ = false;
-            mutable DVec<Scalar> ydot_independent_cache_;
-            mutable bool ydot_independent_cache_valid_ = false;
-            mutable DVec<Scalar> raw_q_input_cache_;
-            mutable DVec<Scalar> raw_qd_input_cache_;
-            mutable bool raw_input_cache_valid_ = false;
-            mutable bool raw_pos_input_spanning_ = false;
-            mutable bool raw_vel_input_spanning_ = false;
 
             void initializeDerivativeFunctions() const;
 
-            Generic<casadi::SX> copyAsSymbolic() const;
-
             // CasADi functions for computing dG/dq and Sdotqd derivatives
             mutable casadi::Function dG_dq_fcn_;
-            mutable casadi::Function dSdotqd_q_analytic_fcn_;
             mutable casadi::Function dSdotqd_dq_fcn_;
             mutable casadi::Function dSdotqd_dqd_fcn_;
             mutable bool derivative_functions_initialized_ = false;

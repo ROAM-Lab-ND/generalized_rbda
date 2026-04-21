@@ -69,12 +69,6 @@ namespace grbda
         DMat<Scalar> I_;  // spatial inertia
         DMat<Scalar> Ic_; // compisite rigid body inertia
 
-        DMat<Scalar> Ic0_; // compisite rigid body inertia in World frame
-        DMat<Scalar> S0_;  // motion subspace in World frame
-        DMat<Scalar> Ftmp_; // temporary variable used in CRBA 
-
-
-
         spatial::GeneralizedTransform<Scalar> Xup_;        // spatial xform from parent to child
         spatial::GeneralizedAbsoluteTransform<Scalar> Xa_; // spatial xform from world to current
 

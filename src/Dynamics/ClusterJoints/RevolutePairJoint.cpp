@@ -1,5 +1,8 @@
 #include "grbda/Dynamics/ClusterJoints/RevolutePairJoint.h"
 #include "grbda/Utils/CasadiDerivatives.h"
+#include "grbda/Utils/IDDerivProfile.h"
+
+#include <chrono>
 
 namespace grbda
 {
@@ -186,8 +189,12 @@ namespace grbda
                 casadi::DM(static_cast<double>(q_cache_(0))),
                 casadi::DM(static_cast<double>(q_cache_(1)))
             };
+            const auto t_casadi_s_start = std::chrono::high_resolution_clock::now();
             auto res_dq1 = f_dS_dq1_(input);
             auto res_dq2 = f_dS_dq2_(input);
+            const double casadi_s_us = std::chrono::duration<double, std::micro>(
+                std::chrono::high_resolution_clock::now() - t_casadi_s_start).count();
+            profiling::addCasadiSUs(casadi_s_us);
 
             // Create ∂X_intra_S_span/∂qi (12x2 matrix, mostly zero)
             DMat<Scalar> dX_intra_dq1 = DMat<Scalar>::Zero(spatial_dim, 2);
@@ -222,7 +229,11 @@ namespace grbda
                 casadi::DM(static_cast<double>(qd_cache_(1)))
             };
 
+            const auto t_casadi_sdotq_start = std::chrono::high_resolution_clock::now();
             std::vector<casadi::DM> result = f_Sdotqd_q_(input);
+            const double casadi_sdotq_us = std::chrono::duration<double, std::micro>(
+                std::chrono::high_resolution_clock::now() - t_casadi_sdotq_start).count();
+            profiling::addCasadiSdotqdQUs(casadi_sdotq_us);
             casadi::DM Sdotqd_q_result = result[0];  // 6x2 matrix
 
             DMat<Scalar> output = DMat<Scalar>::Zero(spatial_dim, nv);
@@ -249,7 +260,11 @@ namespace grbda
                 casadi::DM(static_cast<double>(qd_cache_(0))),
                 casadi::DM(static_cast<double>(qd_cache_(1)))
             };
+            const auto t_casadi_sdotqd_start = std::chrono::high_resolution_clock::now();
             auto res = f_Sdotqd_qd_(input);
+            const double casadi_sdotqd_us = std::chrono::duration<double, std::micro>(
+                std::chrono::high_resolution_clock::now() - t_casadi_sdotqd_start).count();
+            profiling::addCasadiSdotqdQdUs(casadi_sdotqd_us);
             DMat<Scalar> result = DMat<Scalar>::Zero(spatial_dim, nv);
             for (int i = 0; i < 6; ++i) {
                 result(6 + i, 0) = static_cast<Scalar>(static_cast<double>(res[0](i, 0)));

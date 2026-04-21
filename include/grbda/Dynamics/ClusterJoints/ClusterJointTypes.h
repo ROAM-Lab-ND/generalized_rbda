@@ -7,4 +7,3 @@
 #include "grbda/Dynamics/ClusterJoints/RevolutePairJoint.h"
 #include "grbda/Dynamics/ClusterJoints/RevolutePairWithRotorJoint.h"
 #include "grbda/Dynamics/ClusterJoints/RevoluteTripleWithRotorJoint.h"
-#include "grbda/Dynamics/ClusterJoints/TelloDifferentialJoints.h"

@@ -137,7 +137,7 @@ namespace grbda
             // where X_j is the transform from body j in B to body k in A
             if (node_i->parent_index_ >= 0)
             {
-                auto & parent_node = nodes_[node_i->parent_index_];
+                auto parent_node = nodes_[node_i->parent_index_];
                 node_i->Xup_.accumulateBlockDiagonalInertia(node_i->Ic_, parent_node->Ic_);
             }
 
@@ -145,7 +145,7 @@ namespace grbda
             // Compute F = Ic * S exploiting block-diagonal structure of Ic
             DMat<Scalar> F = node_i->Xup_.blockDiagonalInertiaTimesMotionSubspace(
                 node_i->Ic_, node_i->S());
-            H_.block(vel_idx_i, vel_idx_i, num_vel_i, num_vel_i).noalias() = node_i->S().transpose() * F;
+            H_.block(vel_idx_i, vel_idx_i, num_vel_i, num_vel_i) = node_i->S().transpose() * F;
 
             // Off-diagonal blocks: H_ij = S_j^T * X_ij^{-T} * Ic_i * S_i
             // F is transformed through the chain from node i to ancestor j
@@ -160,9 +160,9 @@ namespace grbda
                 const int num_vel_j = nodes_[j]->num_velocities_;
 
                 // H_ij = F^T * S_j
-                H_.block(vel_idx_i, vel_idx_j, num_vel_i, num_vel_j).noalias() =
+                H_.block(vel_idx_i, vel_idx_j, num_vel_i, num_vel_j) =
                     F.transpose() * nodes_[j]->S();
-                H_.block(vel_idx_j, vel_idx_i, num_vel_j, num_vel_i).noalias() =
+                H_.block(vel_idx_j, vel_idx_i, num_vel_j, num_vel_i) =
                     H_.block(vel_idx_i, vel_idx_j, num_vel_i, num_vel_j).transpose();
             }
         }
@@ -179,103 +179,66 @@ namespace grbda
         forwardKinematics();
 
         const int n = (int)nodes_.size();
-        H_.setZero();
+
+        // Storage for world-frame quantities
+        // Ic_world[i] stores the composite inertia for node i in world frame
+        std::vector<DMat<Scalar>> Ic_world(n);
+        // S_world[i] stores the motion subspace for node i in world frame
+        std::vector<DMat<Scalar>> S_world(n);
 
         // Forward Pass: Transform inertias and motion subspaces to world frame
-        // Following Hworld_v2.m: transform block-by-block to frame {0}
         for (int i = 0; i < n; i++)
         {
             auto &node = nodes_[i];
-            const int num_bodies = node->Xa_.getNumOutputBodies();
-
-            // Initialize composite inertia (block-diagonal) with each inertia in world frame
-            node->Ic0_.resize(6 * num_bodies, 6 * num_bodies);
-            node->S0_.resize(6 * num_bodies, node->num_velocities_);
-
-            // Transform down to frame {0}, block by block
-            for (int body = 0; body < num_bodies; body++)
-            {
-                const auto &Xa_body = node->Xa_.getTransformForOutputBody(body);
-                // IC0{i}(inds, inds) = Xj.'*model.I{i}(inds,inds)*Xj
-                // where Xj = X0{i}(inds, :) and X0 maps world->body
-                // So IC0 = X^{-T} * I_body * X^{-1}
-                node->Ic0_.template block<6, 6>(6 * body, 6 * body) =
-                    Xa_body.inverseTransformSpatialInertia(
-                        node->I_.template block<6, 6>(6 * body, 6 * body));
-
-                // S0{i}(inds, :) = Xj\S{i}(inds,:)  =>  S0 = X^{-1} * S_body
-                const auto S_body_block = node->S().template middleRows<6>(6 * body);
-                node->S0_.template middleRows<6>(6 * body) =
-                    Xa_body.inverseTransformMotionSubspace(S_body_block);
-            }
+            // Transform local inertia to world frame
+            Ic_world[i] = node->Xa_.transformBlockDiagonalInertiaToWorld(node->I_);
+            // Transform motion subspace to world frame
+            S_world[i] = node->Xa_.transformMotionSubspaceToWorld(node->S());
         }
 
-        // F is 6 x NV, summing over all blocks (the ancestors see the sum of forces)
-        F_.setZero(6, this->velocity_index_);
-
         // Backward Pass: Accumulate composite inertias and compute H
-        // Following Hworld_v2.m structure
         for (int i = n - 1; i >= 0; i--)
         {
             auto &node_i = nodes_[i];
             const int vel_idx_i = node_i->velocity_index_;
             const int num_vel_i = node_i->num_velocities_;
-            const int num_bodies = node_i->Xa_.getNumOutputBodies();
 
-            // Compute Ftmp = IC0{i} * S0{i} (block-diagonal multiplication)
-            node_i->Ftmp_ .resize(6 * num_bodies, num_vel_i);
-            for (int body = 0; body < num_bodies; body++)
-            {
-                node_i->Ftmp_.template middleRows<6>(6 * body).noalias() =
-                    node_i->Ic0_.template block<6, 6>(6 * body, 6 * body) *
-                    node_i->S0_.template middleRows<6>(6 * body);
-            }
-
-            // Diagonal block: H(ii,ii) = S0{i}'*Ftmp
-            H_.block(vel_idx_i, vel_idx_i, num_vel_i, num_vel_i).noalias() =
-                node_i->S0_.transpose() * node_i->Ftmp_;
-
-            // F(:, ii) = blockRowSum(Ftmp) - ancestors only see the sum of forces from the cluster
-            for (int body = 0; body < num_bodies; body++)
-            {
-                F_.middleCols(vel_idx_i, num_vel_i).noalias() +=
-                    node_i->Ftmp_.template middleRows<6>(6 * body);
-            }
-
+            // Accumulate composite inertia to parent - direct addition in world frame!
             if (node_i->parent_index_ >= 0)
             {
-                const int parent = node_i->parent_index_;
-                const int vel_idx_parent = nodes_[parent]->velocity_index_;
-                const int num_vel_parent = nodes_[parent]->num_velocities_;
+                Ic_world[node_i->parent_index_] += Ic_world[i];
+            }
 
-                // Get subtree velocity indices (all velocities from node i and its descendants)
-                // vi = model.subtree_vinds{i} in MATLAB
-                // For now, use indices from vel_idx_i to the end of node i's subtree
-                // The subtree includes vel_idx_i to vel_idx_i + num_vel_i, but also all descendants
-                // We'll use all velocity indices starting from vel_idx_i
-                const int subtree_start = vel_idx_i;
-                const int subtree_size = this->velocity_index_ - vel_idx_i;
+            // Compute F = Ic_world * S_world (both in world frame, compatible!)
+            // For block-diagonal Ic, we can exploit the structure
+            const int num_bodies = node_i->Xa_.getNumOutputBodies();
+            DMat<Scalar> F = DMat<Scalar>::Zero(6 * num_bodies, num_vel_i);
+            for (int body = 0; body < num_bodies; body++)
+            {
+                F.template middleRows<6>(6 * body).noalias() =
+                    Ic_world[i].template block<6, 6>(6 * body, 6 * body) *
+                    S_world[i].template middleRows<6>(6 * body);
+            }
 
-                // parent_body_subindex: which body in the parent cluster does this cluster attach to
-                const int parent_subindex = node_i->Xup_.transform_and_parent_subindex(0).second;
+            // Diagonal block: H_ii = S_world^T * F
+            H_.block(vel_idx_i, vel_idx_i, num_vel_i, num_vel_i) =
+                S_world[i].transpose() * F;
 
-                // Sblock = S0{p(i)}(inds, :) - the parent's motion subspace for the connecting body
-                const auto Sblock = nodes_[parent]->S0_.template middleRows<6>(6 * parent_subindex);
+            // Off-diagonal blocks: walk to ancestors
+            // F stays in world frame - no transformation needed!
+            int j = node_i->parent_index_;
+            while (j >= 0)
+            {
+                const int vel_idx_j = nodes_[j]->velocity_index_;
+                const int num_vel_j = nodes_[j]->num_velocities_;
 
-                // H(pp, vi) = Sblock'*F(:, vi)
-                H_.block(vel_idx_parent, subtree_start, num_vel_parent, subtree_size).noalias() =
-                    Sblock.transpose() * F_.middleCols(subtree_start, subtree_size);
-                // Symmetry: H(vi, pp) = H(pp, vi)'
-                H_.block(subtree_start, vel_idx_parent, subtree_size, num_vel_parent).noalias() =
-                    H_.block(vel_idx_parent, subtree_start, num_vel_parent, subtree_size).transpose();
+                // H_ij = F^T * S_j_world (both in world frame!)
+                H_.block(vel_idx_i, vel_idx_j, num_vel_i, num_vel_j) =
+                    F.transpose() * S_world[j];
+                H_.block(vel_idx_j, vel_idx_i, num_vel_j, num_vel_i) =
+                    H_.block(vel_idx_i, vel_idx_j, num_vel_i, num_vel_j).transpose();
 
-                // Accumulate composite inertia to parent: IC0{p(i)}(inds, inds) += blockDiagSum(IC0{i})
-                // blockDiagSum sums all 6x6 diagonal blocks into one 6x6 matrix
-                auto parent_IC0_block = nodes_[parent]->Ic0_.template block<6, 6>(6 * parent_subindex, 6 * parent_subindex);
-                for (int body = 0; body < num_bodies; body++)
-                {
-                    parent_IC0_block.noalias() += node_i->Ic0_.template block<6, 6>(6 * body, 6 * body);
-                }
+                j = nodes_[j]->parent_index_;
             }
         }
 

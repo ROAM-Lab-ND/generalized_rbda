@@ -104,21 +104,6 @@ namespace grbda
             return contact_points_[contact_name_to_contact_index_.at(name)];
         }
 
-        // Benchmark/testing methods - run CRBA variants directly
-        void runStandardCRBA()
-        {
-            mass_matrix_updated_ = false;
-            compositeRigidBodyAlgorithm();
-        }
-
-        void runWorldFrameCRBA()
-        {
-            mass_matrix_updated_ = false;
-            compositeRigidBodyAlgorithmWorldFrame();
-        }
-
-        const DMat<Scalar>& getH() const { return H_; }
-
     protected:
         void contactPointForwardKinematics();
         void contactPointForwardAccelerationKinematics(const DVec<Scalar> &qdd);
@@ -138,8 +123,6 @@ namespace grbda
 
         DMat<Scalar> H_;
         DVec<Scalar> C_;
-        D6Mat<Scalar> F_;
-        
 
         int position_index_ = 0;
         int velocity_index_ = 0;

@@ -1,5 +1,4 @@
 #include "grbda/Dynamics/ClusterJoints/ClusterJoint.h"
-#include "grbda/Dynamics/ClusterJoints/GenericJoint.h"
 
 namespace grbda
 {
@@ -25,11 +24,6 @@ namespace grbda
         JointState<Scalar> Base<Scalar>::toSpanningTreeState(const JointState<Scalar> &joint_state)
         {
             JointState<Scalar> spanning_joint_state(true, true);
-            std::shared_ptr<LoopConstraint::GenericImplicit<Scalar>> generic_implicit;
-            if (loop_constraint_->isImplicit())
-            {
-                generic_implicit = std::dynamic_pointer_cast<LoopConstraint::GenericImplicit<Scalar>>(loop_constraint_);
-            }
 
             // Spanning positions
             if (!joint_state.position.isSpanning() && loop_constraint_->isExplicit())
@@ -47,6 +41,10 @@ namespace grbda
             }
             else if (joint_state.position.isSpanning() && loop_constraint_->isImplicit())
             {
+                if (!loop_constraint_->isValidSpanningPosition(joint_state.position))
+                {
+                    throw std::runtime_error("Spanning position is not valid");
+                }
                 spanning_joint_state.position = joint_state.position;
             }
             else
@@ -54,57 +52,21 @@ namespace grbda
                 throw std::runtime_error("Unhandled case");
             }
 
-            bool used_fused_implicit_generic = false;
-
-            // Implicit Generic constraints can compute G and g directly from independent velocity.
-            // This removes one CasADi boundary crossing in the common independent-velocity path.
-            if (generic_implicit && !joint_state.velocity.isSpanning())
+            // Spanning velocities
+            loop_constraint_->updateJacobians(spanning_joint_state.position);
+            if (!joint_state.velocity.isSpanning())
             {
-                generic_implicit->updateGAndgFromIndependentVelocity(spanning_joint_state.position,
-                                                                     joint_state.velocity);
-                spanning_joint_state.velocity = generic_implicit->G() * joint_state.velocity;
-                used_fused_implicit_generic = true;
+                spanning_joint_state.velocity = G() * joint_state.velocity;
             }
             else
             {
-                // Spanning velocities
-                loop_constraint_->updateJacobians(spanning_joint_state.position);
-                if (!joint_state.velocity.isSpanning())
+                if (!loop_constraint_->isValidSpanningVelocity(joint_state.velocity))
                 {
-                    spanning_joint_state.velocity = G() * joint_state.velocity;
+                    throw std::runtime_error("Spanning velocity is not valid");
                 }
-                else
-                {
-                    if (!loop_constraint_->isValidSpanningVelocity(joint_state.velocity))
-                    {
-                        throw std::runtime_error("Spanning velocity is not valid");
-                    }
-                    spanning_joint_state.velocity = joint_state.velocity;
-                }
-
-                // For implicit Generic constraints, only g is required here for kinematics updates.
-                // Avoid evaluating k to reduce CasADi boundary cost on cold/random-state calls.
-                if (loop_constraint_->isImplicit())
-                {
-                    if (generic_implicit)
-                    {
-                        generic_implicit->updateBiasGOnly(spanning_joint_state);
-                    }
-                    else
-                    {
-                        loop_constraint_->updateBiases(spanning_joint_state);
-                    }
-                }
-                else
-                {
-                    loop_constraint_->updateBiases(spanning_joint_state);
-                }
+                spanning_joint_state.velocity = joint_state.velocity;
             }
-
-            if (used_fused_implicit_generic)
-            {
-                // Biases were already updated by updateGAndgFromIndependentVelocity.
-            }
+            loop_constraint_->updateBiases(spanning_joint_state);
 
             return spanning_joint_state;
         }

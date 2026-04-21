@@ -1,7 +1,6 @@
 #include "grbda/Utils/IDDerivProfile.h"
 
 #include <atomic>
-#include <chrono>
 #include <cstdlib>
 #include <iomanip>
 #include <iostream>
@@ -47,6 +46,30 @@ void addCasadiUs(double us)
     g_current_call.casadi_us += us;
 }
 
+void addCasadiSUs(double us)
+{
+    g_current_call.casadi_s_us += us;
+    g_current_call.casadi_us += us;
+}
+
+void addCasadiSRingUs(double us)
+{
+    g_current_call.casadi_s_ring_us += us;
+    g_current_call.casadi_us += us;
+}
+
+void addCasadiSdotqdQUs(double us)
+{
+    g_current_call.casadi_sdotqd_q_us += us;
+    g_current_call.casadi_us += us;
+}
+
+void addCasadiSdotqdQdUs(double us)
+{
+    g_current_call.casadi_sdotqd_qd_us += us;
+    g_current_call.casadi_us += us;
+}
+
 void addGetSqUs(double us)
 {
     g_current_call.getsq_us += us;
@@ -89,6 +112,10 @@ void printCurrentCallIfEnabled()
               << " forward_us=" << std::fixed << std::setprecision(2) << g_current_call.forward_us
               << " backward_us=" << std::fixed << std::setprecision(2) << g_current_call.backward_us
               << " casadi_us=" << std::fixed << std::setprecision(2) << g_current_call.casadi_us
+              << " casadi_s_us=" << std::fixed << std::setprecision(2) << g_current_call.casadi_s_us
+              << " casadi_s_ring_us=" << std::fixed << std::setprecision(2) << g_current_call.casadi_s_ring_us
+              << " casadi_sdotqd_q_us=" << std::fixed << std::setprecision(2) << g_current_call.casadi_sdotqd_q_us
+              << " casadi_sdotqd_qd_us=" << std::fixed << std::setprecision(2) << g_current_call.casadi_sdotqd_qd_us
               << " getsq_us=" << std::fixed << std::setprecision(2) << g_current_call.getsq_us
               << " getsq_internal_us=" << std::fixed << std::setprecision(2) << g_current_call.getsq_internal_us
               << " other_us=" << std::fixed << std::setprecision(2) << other_us
