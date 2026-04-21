@@ -621,6 +621,7 @@ void testImplicitConstraintDerivatives(ClusterTreeModel<double>& model,
             // Five-point stencil
             DVec<double> tau_fd_pos = (-tau_pp2 + 8.0*tau_pp - 8.0*tau_pm + tau_pm2) / 12.0;
             DVec<double> tau_pred_pos = dtau_dq * q_delta_ind;
+            std::cout << "  Trial " << t << " q_delta_ind: " << q_delta_ind.transpose() << "\n";
             double pos_err = (tau_fd_pos - tau_pred_pos).norm();
 
             if (!std::isnan(pos_err) && !std::isinf(pos_err) && pos_err < 1e10) {

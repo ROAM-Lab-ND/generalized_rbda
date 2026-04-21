@@ -1760,8 +1760,26 @@ namespace grbda
             const char *force_fd_env = std::getenv("GRBDA_ENABLE_SDOTQD_Q_FD");
             const bool force_fd = (force_fd_env != nullptr && force_fd_env[0] != '0');
             if (!force_fd) {
+                static bool printed_already = false;
+                if (! printed_already)
+                {
+                    std::cout << "Using direct S_ring_ for getSdotqd_q()" << std::endl;
+                    std::cout << this->S_ring_ << std::endl;
+                    std::cin.get();
+                    printed_already = true;
+                }
                 return this->S_ring_;
             }
+            else
+            {
+                static bool printed_already = false;
+                if (! printed_already)
+                {
+                    std::cout << "Using finite-difference getSdotqd_q()" << std::endl;
+                    std::cin.get();
+                    printed_already = true;
+                }
+             }
 
             // Explicit constraints (or missing implicit constraint handle) have no extra
             // configuration-dependent bias term beyond the standard explicit-joint path.

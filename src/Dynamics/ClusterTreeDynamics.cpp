@@ -445,7 +445,6 @@ namespace grbda
 
         const auto [q, qd] = this->getState();
         this->forwardAccelerationKinematics(qdd);
-        updateArticulatedBodies();
 
         const int nDOF = this->getNumDegreesOfFreedom();
         const int nClusters = static_cast<int>(cluster_nodes_.size());
@@ -505,6 +504,9 @@ namespace grbda
             cluster->Psi_ddot_ += Sdotqd_q + beta;
             cluster->Psi_ddot_ += spatial::motionCrossTimesMatrix(v, alpha);
 
+            std::cout << "Cluster " << cluster->name_ << " Psi_ddot_ norm: " << cluster->Psi_ddot_.norm() << std::endl;
+
+
             // Upsilon_dot = crm(v)*S + Psi_dot + S_ring (reuse cached crm_v_S)
             cluster->Upsilon_dot_ = crm_v_S;
             cluster->Upsilon_dot_ += cluster->Psi_dot_ + cluster->S_ring();
@@ -552,6 +554,8 @@ namespace grbda
             t3.noalias() += cluster_i->Xup_.blockDiagonalInertiaTimesMotionSubspace(M_cup, cluster_i->Psi_ddot_);
             t3 += spatial::swappedForceCrossTimesMatrix(F, S_i);
             DMat<Scalar> t4 = cluster_i->Xup_.blockDiagonalInertiaTimesMotionSubspace(B_cup.transpose(), S_i);
+
+            std::cout << "t3 norm for cluster " << cluster_i->name_ << ": " << t3.norm() << std::endl;
 
             // Walk from cluster i to root
             // Use optimized path for single-body clusters (most common case)
@@ -652,10 +656,13 @@ namespace grbda
                     B_cup, parent_cluster->B_cup_);
                 parent_cluster->F_ += cluster_i->Xup_.inverseTransformForceVector(F);
             }
+
         }
 
         const double backward_us = std::chrono::duration<double, std::micro>(
             std::chrono::high_resolution_clock::now() - t_backward_start).count();
+
+        std::cout << "dtau_dq norm: " << dtau_dq.norm() << ", dtau_dq_dot norm: " << dtau_dq_dot.norm() << std::endl;   
 
         profiling::setForwardUs(forward_us);
         profiling::setBackwardUs(backward_us);
