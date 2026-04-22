@@ -70,6 +70,10 @@ namespace grbda
             // Symbolic phi function accessor (for creating complex-typed constraints)
             const SymPhiFcn& getSymbolicPhi() const { return phi_sym_; }
 
+            // Coordinate permutation matrix: q_span = coord_map * [y; q_dep]
+            // coord_map^T extracts [y; q_dep] from q_span, so ydot = (coord_map^T * qd_span).head(nv)
+            const DMat<double>& getCoordMap() const { return coord_map_; }
+
             // dG/dq CasADi function accessor (for computing G_dot = dG/dt in S_ring)
             // Returns the Jacobian of vec(G) w.r.t. q, shape (n_G_elements, n_q)
             const casadi::Function& getdGdqFcn() const { return dG_dq_fcn_; }
@@ -107,6 +111,7 @@ namespace grbda
                                              const JointState<Scalar> &args);
 
             const std::vector<bool> is_coordinate_independent_;
+            DMat<double> coord_map_;   // permutation: q_span = coord_map * [y; q_dep]
             SymPhiFcn phi_sym_;
             NativePhiFcn phi_native_;  // Optional native phi for complex-step support
             bool has_native_phi_ = false;
