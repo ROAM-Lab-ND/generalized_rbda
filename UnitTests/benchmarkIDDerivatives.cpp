@@ -141,6 +141,24 @@ int main() {
                                     "KUKA LWR 4+", ITERATIONS));
     std::cout << " done\n";
 
+    // ========== Closed-Loop Humanoid Robots ==========
+
+    // Kangaroo (open chain version)
+    std::cout << "  Benchmarking Kangaroo (open chain)..." << std::flush;
+    results.push_back(benchmarkRobot<Kangaroo<double>>("Kangaroo (open chain)", ITERATIONS));
+    std::cout << " done\n";
+
+    // Kangaroo with 4-bar knee constraint
+    // Note: Currently disabled - FourBar constraint has Newton convergence issues with random states
+    // std::cout << "  Benchmarking Kangaroo (4-bar knee)..." << std::flush;
+    // results.push_back(benchmarkRobot<KangarooWithConstraints<double>>("Kangaroo (4-bar knee)", ITERATIONS));
+    // std::cout << " done\n";
+
+    // Cassie (closed-loop leg)
+    std::cout << "  Benchmarking Cassie (closed-loop)..." << std::flush;
+    results.push_back(benchmarkRobot<Cassie<double>>("Cassie (closed-loop)", ITERATIONS));
+    std::cout << " done\n";
+
     // Print results table
     std::cout << "\n" << std::string(75, '=') << "\n";
     std::cout << "First Order ID Derivatives Benchmark Results\n";

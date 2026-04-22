@@ -90,6 +90,13 @@ namespace grbda
             // Returns K = dphi/dq, shape (n_constraints, n_spanning)
             const casadi::Function& getKFcn() const { return K_fcn_; }
 
+            // --- NEW: Jacobian-based product derivatives ---
+            // Computes jacobian(S*b, q) symbolically using CasADi
+            DMat<SX> jacobian_S_times_b(const DVec<SX>& b) const;
+
+            // Computes jacobian(S^T*F, q) symbolically using CasADi
+            DMat<SX> jacobian_ST_times_F(const DVec<SX>& F) const;
+
         private:
             // Basic CasADi function evaluation (real-valued)
             static DMat<double> runCasadiFcnReal(const casadi::Function &fcn,

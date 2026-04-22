@@ -1,3 +1,6 @@
+#include "grbda/Robots/Cassie.hpp"
+#include "grbda/Robots/Kangaroo.hpp"
+#include "grbda/Robots/KangarooWithConstraints.hpp"
 #include "grbda/Robots/TeleopArm.hpp"
 #include "grbda/Robots/Tello.hpp"
 #include "grbda/Robots/TelloNoMechanisms.hpp"
