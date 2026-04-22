@@ -1,3 +1,44 @@
+        // Evaluate d(S*b)/d(independent coords) using CasADi function object
+        template <typename Scalar>
+        DMat<Scalar> Generic<Scalar>::evalSvec_deriv(const DVec<Scalar>& b) const {
+            if constexpr (std::is_same_v<Scalar, double>) {
+                initializeDerivativeFunctions();
+                if (!derivative_functions_initialized_ || jacobian_S_times_b_fcn_.is_null() || q_cache_.size() == 0) {
+                    return DMat<Scalar>::Zero(this->num_bodies_ * 6, this->num_velocities_);
+                }
+                casadi::DM q_dm(q_cache_.size());
+                casadi::DM b_dm(b.size());
+                casadi::copy(q_cache_, q_dm);
+                casadi::copy(b, b_dm);
+                casadi::DM result_dm = jacobian_S_times_b_fcn_(casadi::DMVector{q_dm, b_dm})[0];
+                DMat<Scalar> out(result_dm.size1(), result_dm.size2());
+                casadi::copy(result_dm, out);
+                return out;
+            } else {
+                return DMat<Scalar>::Zero(this->num_bodies_ * 6, this->num_velocities_);
+            }
+        }
+
+        // Evaluate d(S^T*F)/d(independent coords) using CasADi function object
+        template <typename Scalar>
+        DMat<Scalar> Generic<Scalar>::evalSTvec_deriv(const DVec<Scalar>& F) const {
+            if constexpr (std::is_same_v<Scalar, double>) {
+                initializeDerivativeFunctions();
+                if (!derivative_functions_initialized_ || jacobian_ST_times_F_fcn_.is_null() || q_cache_.size() == 0) {
+                    return DMat<Scalar>::Zero(this->num_velocities_, this->num_velocities_);
+                }
+                casadi::DM q_dm(q_cache_.size());
+                casadi::DM F_dm(F.size());
+                casadi::copy(q_cache_, q_dm);
+                casadi::copy(F, F_dm);
+                casadi::DM result_dm = jacobian_ST_times_F_fcn_(casadi::DMVector{q_dm, F_dm})[0];
+                DMat<Scalar> out(result_dm.size1(), result_dm.size2());
+                casadi::copy(result_dm, out);
+                return out;
+            } else {
+                return DMat<Scalar>::Zero(this->num_velocities_, this->num_velocities_);
+            }
+        }
 #include "grbda/Dynamics/ClusterJoints/GenericJoint.h"
 #include "grbda/Utils/Utilities.h"
 
@@ -156,36 +197,6 @@ namespace grbda
             SX dg_dv_sym = jacobian(cs_g_sym, cs_v_sym);
             dg_dq_fcn_ = casadi::Function("dg_dq", {cs_q_sym, cs_v_sym}, {dg_dq_sym});
             dg_dv_fcn_ = casadi::Function("dg_dv", {cs_q_sym, cs_v_sym}, {dg_dv_sym});
-        }
-
-        // --- Jacobian-based product derivatives ---
-        template <typename Scalar>
-        DMat<typename GenericImplicit<Scalar>::SX> GenericImplicit<Scalar>::jacobian_S_times_b(const DVec<SX>& b) const
-        {
-            // S(q) is G(q) (motion subspace in spanning coordinates)
-            // S*b is a vector-valued function of q
-            SX cs_q_sym = SX::sym("q", b.rows(), 1); // q symbolic
-            // Evaluate S(q) at symbolic q
-            SX S_sym = G_fcn_(cs_q_sym)[0]; // S = G(q)
-            SX prod = SX::mtimes(S_sym, b); // S*b
-            SX jac = jacobian(prod, cs_q_sym); // d(S*b)/dq
-            // Convert to DMat<SX>
-            DMat<SX> jac_mat(jac.size1(), jac.size2());
-            casadi::copy(jac, jac_mat);
-            return jac_mat;
-        }
-
-        template <typename Scalar>
-        DMat<typename GenericImplicit<Scalar>::SX> GenericImplicit<Scalar>::jacobian_ST_times_F(const DVec<SX>& F) const
-        {
-            // S(q)^T*F is a vector-valued function of q
-            SX cs_q_sym = SX::sym("q", F.rows(), 1); // q symbolic
-            SX S_sym = G_fcn_(cs_q_sym)[0]; // S = G(q)
-            SX prod = SX::mtimes(S_sym.T(), F); // S^T*F
-            SX jac = jacobian(prod, cs_q_sym); // d(S^T*F)/dq
-            DMat<SX> jac_mat(jac.size1(), jac.size2());
-            casadi::copy(jac, jac_mat);
-            return jac_mat;
         }
         
 
@@ -1321,11 +1332,10 @@ namespace grbda
             // Guarded with if constexpr: bodies_[].Xtree_ and S_spanning_ are DMat<Scalar>,
             // so .cast<SX>() inside would fail to instantiate for Scalar=complex<double>.
             if constexpr (std::is_same_v<Scalar, double>) {
-            std::vector<std::shared_ptr<Joints::Base<SX>>> joints_sx;
-            for (int i = 0; i < this->num_bodies_; ++i)
-                joints_sx.push_back(this->single_joints_[i]->cloneAsSymbolic());
+                std::vector<std::shared_ptr<Joints::Base<SX>>> joints_sx;
+                for (int i = 0; i < this->num_bodies_; ++i)
+                    joints_sx.push_back(this->single_joints_[i]->cloneAsSymbolic());
 
-            {
                 // Drive symbolic joints with q_span_vec / qd_span_vec (already Eigen<SX>)
                 int pos_idx2 = 0, vel_idx2 = 0;
                 for (int i = 0; i < this->num_bodies_; ++i) {
@@ -1357,6 +1367,8 @@ namespace grbda
                 DMat<SX> S_implicit_sx = X_intra_sx * S_spanning_sx;
                 DVec<SX> vJ_sx = S_implicit_sx * qd_span_vec;
 
+                // --- Jacobian-based product derivatives ---
+
                 // Build X_intra_ring_sx
                 DMat<SX> X_intra_ring_sx = DMat<SX>::Zero(mss_dim, mss_dim);
                 for (int i = 0; i < this->num_bodies_; ++i) {
@@ -1374,10 +1386,27 @@ namespace grbda
                 DVec<SX> g_sx_vec(g_casadi.size1());
                 for (int r = 0; r < (int)g_casadi.size1(); ++r) g_sx_vec(r) = g_casadi(r, 0);
 
+                DMat<SX> S_full_sx = S_implicit_sx * G_casadi; // S = X_intra * S_spanning * G
+
+                // --- jacobian_S_times_b: d(S*b)/dq_span, then contract with G to get d(S*b)/d(independent coords) ---
+                SX b_sx = SX::sym("b", nv, 1);
+                SX S_times_b = SX::mtimes(S_full_sx, b_sx); // mss_dim x 1
+                SX dS_times_b_dq = jacobian(S_times_b, q_span_sx); // mss_dim x n_span_pos
+                SX dS_times_b_dy = SX::mtimes(dS_times_b_dq, G_casadi); // mss_dim x nv
+                jacobian_S_times_b_fcn_ = casadi::Function("jacobian_S_times_b", {q_span_sx, b_sx}, {dS_times_b_dy});
+
+                // --- jacobian_ST_times_F: d(S^T*F)/dq_span, then contract with G to get d(S^T*F)/d(independent coords) ---
+                SX F_sx = SX::sym("F", mss_dim, 1);
+                SX S_T = SX::transpose(S_full_sx); // nv x mss_dim
+                SX S_T_times_F = SX::mtimes(S_T, F_sx); // nv x 1
+                SX dST_times_F_dq = jacobian(S_T_times_F, q_span_sx); // nv x n_span_pos
+                SX dST_times_F_dy = SX::mtimes(dST_times_F_dq, G_casadi); // nv x nv
+                jacobian_ST_times_F_fcn_ = casadi::Function("jacobian_ST_times_F", {q_span_sx, F_sx}, {dST_times_F_dy});
+
+                // --- cJ and Sdotqd derivatives (unchanged) ---
                 DVec<SX> cJ_sx = X_intra_ring_sx * S_spanning_sx * qd_span_vec
                                 + S_implicit_sx * g_sx_vec;
 
-                // d(cJ)/dq_span, then contract with G to get d(cJ)/d(independent coords)
                 SX cJ_casadi = SX::zeros(mss_dim, 1);
                 casadi::copy(cJ_sx, cJ_casadi);
                 SX dcJ_dq_sx = jacobian(cJ_casadi, q_span_sx);        // mss_dim x n_span_pos
@@ -1386,8 +1415,7 @@ namespace grbda
                 dSdotqd_dq_fcn_ = casadi::Function("dSdotqd_dq",
                     {q_span_sx, ydot_sx}, {dcJ_dy_sx});
             }
-
-            } // if constexpr (std::is_same_v<Scalar, double>)
+            // end if constexpr (std::is_same_v<Scalar, double>)
         }
 
 
@@ -1398,38 +1426,35 @@ namespace grbda
             const int nv = this->num_velocities_;
             const int n_span_vel = this->loop_constraint_->numSpanningVel();
 
-            if constexpr (std::is_same_v<Scalar, casadi::SX>) {
-                // Symbolic/CasADi: use jacobian_S_times_b for each basis vector
-                std::vector<DMat<Scalar>> S_q(nv);
+            if constexpr (std::is_same_v<Scalar, double>) {
+                initializeDerivativeFunctions();
+                if (S_q_cache_valid_ && (int)S_q_cache_.size() == nv) {
+                    return S_q_cache_;
+                }
+                S_q_cache_.assign(nv, DMat<Scalar>::Zero(mss_dim, nv));
+                if (!generic_constraint_) {
+                    S_q_cache_valid_ = true;
+                    return S_q_cache_;
+                }
+                if (q_cache_.size() == 0 || !derivative_functions_initialized_ || S_implicit_.size() == 0) {
+                    S_q_cache_valid_ = true;
+                    return S_q_cache_;
+                }
+                // Use new contraction function for each basis vector
                 for (int j = 0; j < nv; ++j) {
                     DVec<Scalar> b = DVec<Scalar>::Zero(nv);
                     b(j) = Scalar(1);
-                    S_q[j] = generic_constraint_->jacobian_S_times_b(b);
+                    S_q_cache_[j] = evalSvec_deriv(b);
                 }
-                return S_q;
+                S_q_cache_valid_ = true;
+                return S_q_cache_;
+            } else if constexpr (std::is_same_v<Scalar, casadi::SX>) {
+                // Symbolic: return zeros (or throw if needed)
+                return std::vector<DMat<Scalar>>(nv, DMat<Scalar>::Zero(mss_dim, nv));
+            } else if constexpr (std::is_same_v<Scalar, std::complex<double>>) {
+                throw std::runtime_error("getSq is not implemented for complex types due to CasADi limitations with symbolic derivatives in complex mode.");
             } else {
-                // Fallback to original implementation for double/other types
-                // ...existing code...
-                if constexpr (std::is_same_v<Scalar, double>) {
-                    initializeDerivativeFunctions();
-                    if (S_q_cache_valid_ && (int)S_q_cache_.size() == nv) {
-                        return S_q_cache_;
-                    }
-                    S_q_cache_.assign(nv, DMat<Scalar>::Zero(mss_dim, nv));
-                    if (!generic_constraint_) {
-                        S_q_cache_valid_ = true;
-                        return S_q_cache_;
-                    }
-                    if (q_cache_.size() == 0 || !derivative_functions_initialized_ || S_implicit_.size() == 0) {
-                        S_q_cache_valid_ = true;
-                        return S_q_cache_;
-                    }
-                    // ...existing code for double...
-                } else if constexpr (std::is_same_v<Scalar, std::complex<double>>) {
-                    throw std::runtime_error("getSq is not implemented for complex types due to CasADi limitations with symbolic derivatives in complex mode.");
-                } else {
-                    return std::vector<DMat<Scalar>>(nv, DMat<Scalar>::Zero(mss_dim, nv));
-                }
+                return std::vector<DMat<Scalar>>(nv, DMat<Scalar>::Zero(mss_dim, nv));
             }
         }
 

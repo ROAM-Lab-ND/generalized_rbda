@@ -92,10 +92,16 @@ namespace grbda
 
             // --- NEW: Jacobian-based product derivatives ---
             // Computes jacobian(S*b, q) symbolically using CasADi
-            DMat<SX> jacobian_S_times_b(const DVec<SX>& b) const;
 
             // Computes jacobian(S^T*F, q) symbolically using CasADi
-            DMat<SX> jacobian_ST_times_F(const DVec<SX>& F) const;
+            // New virtual contraction derivative evaluation methods
+            // Default: return zeros of correct size
+            virtual DMat<Scalar> evalSvec_deriv(const DVec<Scalar>& b) const {
+                return DMat<Scalar>::Zero(this->num_bodies_ * 6, this->num_velocities_);
+            }
+            virtual DMat<Scalar> evalSTvec_deriv(const DVec<Scalar>& F) const {
+                return DMat<Scalar>::Zero(this->num_velocities_, this->num_velocities_);
+            }
 
         private:
             // Basic CasADi function evaluation (real-valued)
