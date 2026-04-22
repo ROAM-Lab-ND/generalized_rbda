@@ -24,35 +24,6 @@ namespace grbda
             int ind_dim = ind_coords.size();
             int dep_dim = dep_coords.size();
 
-        // --- Jacobian-based product derivatives ---
-        template <typename Scalar>
-        DMat<typename GenericImplicit<Scalar>::SX> GenericImplicit<Scalar>::jacobian_S_times_b(const DVec<SX>& b) const
-        {
-            // S(q) is G(q) (motion subspace in spanning coordinates)
-            // S*b is a vector-valued function of q
-            SX cs_q_sym = SX::sym("q", b.rows(), 1); // q symbolic
-            // Evaluate S(q) at symbolic q
-            SX S_sym = G_fcn_(cs_q_sym)[0]; // S = G(q)
-            SX prod = SX::mtimes(S_sym, b); // S*b
-            SX jac = jacobian(prod, cs_q_sym); // d(S*b)/dq
-            // Convert to DMat<SX>
-            DMat<SX> jac_mat(jac.size1(), jac.size2());
-            casadi::copy(jac, jac_mat);
-            return jac_mat;
-        }
-
-        template <typename Scalar>
-        DMat<typename GenericImplicit<Scalar>::SX> GenericImplicit<Scalar>::jacobian_ST_times_F(const DVec<SX>& F) const
-        {
-            // S(q)^T*F is a vector-valued function of q
-            SX cs_q_sym = SX::sym("q", F.rows(), 1); // q symbolic
-            SX S_sym = G_fcn_(cs_q_sym)[0]; // S = G(q)
-            SX prod = SX::mtimes(S_sym.T(), F); // S^T*F
-            SX jac = jacobian(prod, cs_q_sym); // d(S^T*F)/dq
-            DMat<SX> jac_mat(jac.size1(), jac.size2());
-            casadi::copy(jac, jac_mat);
-            return jac_mat;
-        }
             // Debug output for coordinate sizes
             std::cout << "[GenericImplicit] state_dim=" << state_dim
                       << ", ind_dim=" << ind_dim << ", dep_dim=" << dep_dim << std::endl;
@@ -186,6 +157,37 @@ namespace grbda
             dg_dq_fcn_ = casadi::Function("dg_dq", {cs_q_sym, cs_v_sym}, {dg_dq_sym});
             dg_dv_fcn_ = casadi::Function("dg_dv", {cs_q_sym, cs_v_sym}, {dg_dv_sym});
         }
+
+        // --- Jacobian-based product derivatives ---
+        template <typename Scalar>
+        DMat<typename GenericImplicit<Scalar>::SX> GenericImplicit<Scalar>::jacobian_S_times_b(const DVec<SX>& b) const
+        {
+            // S(q) is G(q) (motion subspace in spanning coordinates)
+            // S*b is a vector-valued function of q
+            SX cs_q_sym = SX::sym("q", b.rows(), 1); // q symbolic
+            // Evaluate S(q) at symbolic q
+            SX S_sym = G_fcn_(cs_q_sym)[0]; // S = G(q)
+            SX prod = SX::mtimes(S_sym, b); // S*b
+            SX jac = jacobian(prod, cs_q_sym); // d(S*b)/dq
+            // Convert to DMat<SX>
+            DMat<SX> jac_mat(jac.size1(), jac.size2());
+            casadi::copy(jac, jac_mat);
+            return jac_mat;
+        }
+
+        template <typename Scalar>
+        DMat<typename GenericImplicit<Scalar>::SX> GenericImplicit<Scalar>::jacobian_ST_times_F(const DVec<SX>& F) const
+        {
+            // S(q)^T*F is a vector-valued function of q
+            SX cs_q_sym = SX::sym("q", F.rows(), 1); // q symbolic
+            SX S_sym = G_fcn_(cs_q_sym)[0]; // S = G(q)
+            SX prod = SX::mtimes(S_sym.T(), F); // S^T*F
+            SX jac = jacobian(prod, cs_q_sym); // d(S^T*F)/dq
+            DMat<SX> jac_mat(jac.size1(), jac.size2());
+            casadi::copy(jac, jac_mat);
+            return jac_mat;
+        }
+        
 
         // Constructor with both symbolic and native phi functions
         // The native phi enables machine-precision complex-step differentiation
