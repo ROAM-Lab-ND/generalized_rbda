@@ -450,10 +450,10 @@ namespace grbda
                         max_G_imag = std::max(max_G_imag, std::abs(G_complex(i,j).imag()));
                     }
                 }
-                if (max_G_imag > 1e-25) {
-                    std::cout << "[DEBUG evalG Taylor] G has imag, max|G_imag|=" << max_G_imag << std::endl;
-                    std::cout << "  q_imag norm=" << q_imag.norm() << std::endl;
-                }
+                // if (max_G_imag > 1e-25) {
+                //     std::cout << "[DEBUG evalG Taylor] G has imag, max|G_imag|=" << max_G_imag << std::endl;
+                //     std::cout << "  q_imag norm=" << q_imag.norm() << std::endl;
+                // }
 
                 return G_complex;
             } else {
@@ -1237,9 +1237,7 @@ namespace grbda
                 return;
             }
 
-            // Create symbolic constraint to compute dG/dq
             using SX = casadi::SX;
-            auto symbolic_constraint = generic_constraint_->copyAsSymbolic();
 
             const int mss_dim = this->num_bodies_ * 6;
             const int n_span_pos = this->loop_constraint_->numSpanningPos();
@@ -1249,25 +1247,18 @@ namespace grbda
             SX q_span_sx = SX::sym("q_span", n_span_pos);
             DVec<SX> q_span_vec(n_span_pos);
             casadi::copy(q_span_sx, q_span_vec);
-            JointCoordinate<SX> joint_pos_sx(q_span_vec, true);
 
             SX qd_span_sx = SX::sym("qd_span", n_span_vel);
             DVec<SX> qd_span_vec(n_span_vel);
             casadi::copy(qd_span_sx, qd_span_vec);
-            JointCoordinate<SX> vel_pos_sx(qd_span_vec, false);
 
-            // Update constraint Jacobians and biases with symbolic state
-            symbolic_constraint.updateJacobians(joint_pos_sx);
-            DMat<SX> G_sx = symbolic_constraint.G();
-            JointState<SX> joint_state_sx(joint_pos_sx, vel_pos_sx);
-            symbolic_constraint.updateBiases(joint_state_sx);
-            DMat<SX> g_sx = symbolic_constraint.g();
-
-            // Convert to CasADi matrices
-            SX G_casadi = SX::zeros(G_sx.rows(), G_sx.cols());
-            casadi::copy(G_sx, G_casadi);
-            SX g_casadi = SX::zeros(g_sx.rows(), g_sx.cols());
-            casadi::copy(g_sx, g_casadi);
+            // Get G and g symbolically by calling CasADi functions with SX inputs.
+            // Calling symbolic_constraint.updateJacobians/updateBiases with SX inputs
+            // fails because runCasadiFcn converts symbolic variables to NaN via DM cast.
+            // Instead, call the underlying CasADi functions directly with SX arguments,
+            // which performs symbolic substitution and returns correct SX expressions.
+            SX G_casadi = generic_constraint_->getGFcn()(casadi::SXVector{q_span_sx})[0];
+            SX g_casadi = generic_constraint_->getgFcn()(casadi::SXVector{q_span_sx, qd_span_sx})[0];
 
             // Compute dG/dq using CasADi automatic differentiation
             std::vector<SX> dG_dq_vec;
@@ -1335,9 +1326,8 @@ namespace grbda
                     }
                 }
 
-                // g_sx is already a DVec<SX> (column of g_casadi) — re-extract from Eigen form
-                DVec<SX> g_sx_vec(g_sx.rows());
-                for (int r = 0; r < g_sx.rows(); ++r) g_sx_vec(r) = g_sx(r, 0);
+                DVec<SX> g_sx_vec(g_casadi.size1());
+                for (int r = 0; r < (int)g_casadi.size1(); ++r) g_sx_vec(r) = g_casadi(r, 0);
 
                 DVec<SX> cJ_sx = X_intra_ring_sx * S_spanning_sx * qd_span_vec
                                 + S_implicit_sx * g_sx_vec;
@@ -1601,18 +1591,102 @@ namespace grbda
                     !derivative_functions_initialized_ || dSdotqd_dq_fcn_.is_null())
                     return DMat<Scalar>::Zero(mss_dim, nv);
 
+                // --- CasADi symbolic derivative ---
                 casadi::DM q_dm(q_cache_.size());
                 casadi::DM qd_dm(qd_cache_.size());
                 casadi::copy(q_cache_, q_dm);
                 casadi::copy(qd_cache_, qd_dm);
 
-                casadi::DM result_dm =
-                    dSdotqd_dq_fcn_(casadi::DMVector{q_dm, qd_dm})[0];
+                casadi::DM result_dm = dSdotqd_dq_fcn_(casadi::DMVector{q_dm, qd_dm})[0];
 
                 DMat<double> out(mss_dim, nv);
                 casadi::copy(result_dm, out);
+
+                // --- Finite difference derivative (five-point central difference) ---
+                const DMat<double>& G_base = this->loop_constraint_->G();
+                const DVec<double> ydot_independent =
+                    G_base.colPivHouseholderQr().solve(qd_cache_);
+
+                auto evaluate_cJ_term = [&](const DVec<double>& q_span) -> DVec<double> {
+                    auto lc_local = generic_constraint_->clone();
+                    JointCoordinate<double> pos_coord(q_span, true);
+                    lc_local->updateJacobians(pos_coord);
+                    const DMat<double> G_local = lc_local->G();
+                    const DVec<double> qd_span_local = G_local * ydot_independent;
+
+                    std::vector<JointPtr<double>> joints_local;
+                    joints_local.reserve(this->num_bodies_);
+                    for (const auto& joint : this->single_joints_)
+                        joints_local.push_back(joint->clone());
+
+                    DMat<double> S_spanning_local = DMat<double>::Zero(0, 0);
+                    for (const auto& joint : joints_local)
+                        S_spanning_local = appendEigenMatrix(S_spanning_local, joint->S());
+
+                    DMat<double> X_intra_local = DMat<double>::Identity(mss_dim, mss_dim);
+                    int pos_idx = 0, vel_idx = 0;
+                    for (int i = 0; i < this->num_bodies_; ++i) {
+                        auto joint_i = joints_local[i];
+                        const int npos = joint_i->numPositions();
+                        const int nvel = joint_i->numVelocities();
+                        joint_i->updateKinematics(q_span.segment(pos_idx, npos),
+                                                  qd_span_local.segment(vel_idx, nvel));
+                        int k = i;
+                        for (int j = i - 1; j >= 0; --j) {
+                            if (connectivity_(i, j)) {
+                                const Mat6<double> Xup_prev = X_intra_local.template block<6,6>(6*i, 6*k);
+                                const Mat6<double> Xint = (joints_local[k]->XJ() * bodies_[k].Xtree_).toMatrix();
+                                X_intra_local.template block<6,6>(6*i, 6*j) = Xup_prev * Xint;
+                                k = j;
+                            }
+                        }
+                        pos_idx += npos;
+                        vel_idx += nvel;
+                    }
+
+                    DMat<double> S_implicit_local = X_intra_local * S_spanning_local;
+                    DVec<double> vJ_local = S_implicit_local * qd_span_local;
+
+                    DMat<double> X_intra_ring_local = DMat<double>::Zero(mss_dim, mss_dim);
+                    for (int i = 0; i < this->num_bodies_; ++i) {
+                        for (int j = i - 1; j >= 0; --j) {
+                            if (connectivity_(i, j)) {
+                                const Mat6<double> Xup = X_intra_local.template block<6,6>(6*i, 6*j);
+                                const SVec<double> v_parent = Xup * vJ_local.template segment<6>(6*j);
+                                const SVec<double> v_child  = vJ_local.template segment<6>(6*i);
+                                X_intra_ring_local.template block<6,6>(6*i, 6*j) =
+                                    -spatial::motionCrossMatrix(v_child - v_parent) * Xup;
+                            }
+                        }
+                    }
+
+                    JointCoordinate<double> vel_coord(qd_span_local, true);
+                    JointState<double> js(pos_coord, vel_coord);
+                    lc_local->updateBiases(js);
+
+                    DVec<double> cJ = X_intra_ring_local * S_spanning_local * qd_span_local;
+                    cJ.noalias() += S_implicit_local * lc_local->g();
+                    return cJ;
+                };
+
+                DMat<double> out_fd = DMat<double>::Zero(mss_dim, nv);
+                const double h_fd = 1e-6;
+                for (int j = 0; j < nv; ++j) {
+                    const DVec<double> dir = G_base.col(j);
+                    // Five-point central difference
+                    out_fd.col(j) = (evaluate_cJ_term(q_cache_ + 2*h_fd*dir)
+                                   - 8*evaluate_cJ_term(q_cache_ + h_fd*dir)
+                                   + 8*evaluate_cJ_term(q_cache_ - h_fd*dir)
+                                   - evaluate_cJ_term(q_cache_ - 2*h_fd*dir)) / (12.0*h_fd);
+                }
+
+                std::cout << "[DEBUG getSdotqd_q] CasADi:\n" << out << std::endl;
+                std::cout << "[DEBUG getSdotqd_q] FiniteDiff:\n" << out_fd << std::endl;
+                std::cout << "[DEBUG getSdotqd_q] Difference:\n" << (out - out_fd) << std::endl;
+
                 return out;
             }
+            throw std::runtime_error("getSdotqd_q is not implemented for non-double types");
 
             return DMat<Scalar>::Zero(mss_dim, nv);
         }

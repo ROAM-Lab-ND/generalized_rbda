@@ -78,6 +78,10 @@ namespace grbda
             // Returns G matrix, shape (n_spanning, n_independent)
             const casadi::Function& getGFcn() const { return G_fcn_; }
 
+            // g CasADi function accessor (for evaluating explicit constraint bias)
+            // Returns g vector, shape (n_spanning, 1), takes {q, v} as inputs
+            const casadi::Function& getgFcn() const { return g_fcn_; }
+
             // K CasADi function accessor (for computing constraint Jacobian analytically)
             // Returns K = dphi/dq, shape (n_constraints, n_spanning)
             const casadi::Function& getKFcn() const { return K_fcn_; }
