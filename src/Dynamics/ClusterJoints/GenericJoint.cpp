@@ -1631,9 +1631,6 @@ namespace grbda
                 casadi::DM result_dm = dSdotqd_dq_fcn_(casadi::DMVector{q_dm, ydot_dm})[0];
 
                 casadi::copy(result_dm, out);
-
-                std::cout << "[DEBUG getSdotqd_q] Finite difference result:\n" << out_debug << std::endl;
-                std::cout << "[DEBUG getSdotqd_q] CasADi symbolic result:\n" << out << std::endl;
                 
                 return out;
             }
