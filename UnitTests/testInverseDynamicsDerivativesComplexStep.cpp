@@ -719,724 +719,72 @@ TEST(InverseDynamicsDerivativesComplexStep, TwoLinkChain) {
 }
 
 // Helper function for complex-step differentiation with floating base robots
-void testInverseDynamicsDerivativesComplexStepFloatingBase(ClusterTreeModel<double>& model_real,
-                                                            const std::string& robot_name,
-                                                            int expected_dof,
-                                                            double tol_dq = 1e-12,
-                                                            double tol_dqdot = 1e-12) {
-    std::cout << "[FUNC ENTRY] testInverseDynamicsDerivativesComplexStepFloatingBase entered\n";
-    std::cout.flush();
+// Generic complex-step derivative test. Caller is responsible for:
+//   - building both model_real and model_complex with matching structure
+//   - setting a valid state on model_real before calling
+// Uses makeModelState / applyMinimalPerturbation so isSpanning() flags are always correct.
+void testInverseDynamicsDerivativesComplexStepFloatingBase(
+    ClusterTreeModel<double>& model_real,
+    ClusterTreeModel<std::complex<double>>& model_complex,
+    const std::string& robot_name,
+    double tol_dq = 1e-12,
+    double tol_dqdot = 1e-12) {
     std::cout << std::setprecision(16);
-
-    std::cout << "[DEBUG] About to call getNumDegreesOfFreedom\n";
-    std::cout.flush();
     const int nDOF = model_real.getNumDegreesOfFreedom();
-    std::cout << "[DEBUG] nDOF = " << nDOF << "\n";
-    std::cout.flush();
     std::cout << "\n========================================\n";
-    std::cout << "Testing inverse dynamics derivatives (Complex-Step)\n";
-    std::cout << "Robot: " << robot_name << "\n";
-    std::cout << "DOF: " << nDOF << "\n";
+    std::cout << "Complex-Step Derivative Test: " << robot_name << " (DOF=" << nDOF << ")\n";
     std::cout << "========================================\n\n";
 
-    std::cout << "[DEBUG] About to ASSERT_EQ\n";
-    std::cout.flush();
-    ASSERT_EQ(nDOF, expected_dof);
-    std::cout << "[DEBUG] ASSERT_EQ passed\n";
-    std::cout.flush();
-
-    // Set random state on real model
-    std::cout << "[DEBUG] About to create random state\n";
-    std::cout.flush();
-    ModelState<double> model_state_real;
-    std::cout << "[DEBUG] model_state_real created, about to iterate clusters\n";
-    std::cout.flush();
-    for (size_t i = 0; i < model_real.clusters().size(); i++) {
-        std::cout << "[DEBUG] Getting random state for cluster " << i << "\n";
-        std::cout.flush();
-        const auto &cluster = model_real.clusters()[i];
-        JointState<> joint_state = cluster->joint_->randomJointState();
-        std::cout << "[DEBUG] Random state obtained, pushing to model_state_real\n";
-        std::cout.flush();
-        model_state_real.push_back(joint_state);
-    }
-    std::cout << "[DEBUG] All states generated, about to setState\n";
-    std::cout.flush();
-    model_real.setState(model_state_real);
-    std::cout << "[DEBUG] setState completed\n";
-    std::cout.flush();
-
-    // Random acceleration
-    std::cout << "[DEBUG] About to create random acceleration\n";
-    std::cout.flush();
     const DVec<double> ydd_real = DVec<double>::Random(nDOF);
-    std::cout << "[DEBUG] Random acceleration created\n";
-    std::cout.flush();
 
-    // Get analytical derivatives
-    std::cout << "[DEBUG] About to call firstOrderInverseDynamicsDerivatives\n";
-    std::cout.flush();
     auto [dtau_dq, dtau_dqdot] = model_real.firstOrderInverseDynamicsDerivatives(ydd_real);
-    std::cout << "[DEBUG] firstOrderInverseDynamicsDerivatives returned\n";
-    std::cout.flush();
-
-    std::cout << "Analytical derivatives computed successfully.\n";
-    std::cout << "  dtau_dq:    " << dtau_dq.rows() << " x " << dtau_dq.cols() << "\n";
-    std::cout << "  dtau_dqdot: " << dtau_dqdot.rows() << " x " << dtau_dqdot.cols() << "\n\n";
-
-    // Get real state
-    std::pair<DVec<double>, DVec<double>> state_real = model_real.getState();
-    DVec<double> q0 = state_real.first;  // Make a copy so we can modify it
-    const DVec<double>& qd0 = state_real.second;
-
-    // Ensure quaternion is normalized (should already be, but make sure)
-    // Configuration ordering is [pos(3), quat(4)], so quaternion is at indices 3-6
-    q0.segment<4>(3).normalize();
-
-    // Create complex model (same structure as real model)
-    std::cout << "[DEBUG] About to create complex model\n";
-    std::cout.flush();
-    ClusterTreeModel<std::complex<double>> model_complex;
-    std::cout << "[DEBUG] Complex model created\n";
-    std::cout.flush();
-
-    // Build complex model from the real model
-    using namespace ClusterJoints;
-
-    // Iterate over clusters and create each cluster inline (register bodies then create cluster)
-    std::cout << "[DEBUG] About to iterate over " << model_real.clusters().size() << " clusters\n";
-    std::cout.flush();
-    for (size_t cluster_idx = 0; cluster_idx < model_real.clusters().size(); ++cluster_idx) {
-        std::cout << "[DEBUG] Processing cluster " << cluster_idx << "\n";
-        std::cout.flush();
-        auto cluster = model_real.cluster(cluster_idx);
-        const auto& bodies_in_cluster = cluster->bodies();
-
-        // Check if this is a free joint (floating base)
-        if (cluster->num_velocities_ == 6 && cluster->num_positions_ == 7) {
-            // Free joint (floating base with quaternion) - 1 body
-            const auto& body_real = bodies_in_cluster[0];
-
-            SpatialInertia<std::complex<double>> inertia_c(
-                std::complex<double>(body_real.inertia_.getMass(), 0.0),
-                body_real.inertia_.getCOM().template cast<std::complex<double>>(),
-                body_real.inertia_.getInertiaTensor().template cast<std::complex<double>>()
-            );
-
-            spatial::Transform<std::complex<double>> Xtree_c(
-                body_real.Xtree_.getRotation().template cast<std::complex<double>>(),
-                body_real.Xtree_.getTranslation().template cast<std::complex<double>>()
-            );
-
-            std::string parent_name = "ground";
-            if (body_real.parent_index_ >= 0 && body_real.parent_index_ < model_real.bodies().size()) {
-                parent_name = model_real.bodies()[body_real.parent_index_].name_;
-            }
-
-            Body<std::complex<double>> body_c = model_complex.registerBody(
-                body_real.name_, inertia_c, parent_name, Xtree_c
-            );
-
-            model_complex.appendRegisteredBodiesAsCluster<Free<std::complex<double>, ori_representation::Quaternion>>(
-                body_real.name_, body_c, body_real.name_ + "_joint"
-            );
-
-        } else if (cluster->joint_->type() == ClusterJointTypes::RevoluteWithRotor) {
-            // RevoluteWithRotor joint: 2 bodies (link and rotor)
-            if (bodies_in_cluster.size() != 2) {
-                throw std::runtime_error("RevoluteWithRotor cluster should have exactly 2 bodies");
-            }
-
-            const auto& link_body_real = bodies_in_cluster[0];
-            const auto& rotor_body_real = bodies_in_cluster[1];
-
-            // Convert link body to complex
-            SpatialInertia<std::complex<double>> link_inertia_c(
-                std::complex<double>(link_body_real.inertia_.getMass(), 0.0),
-                link_body_real.inertia_.getCOM().template cast<std::complex<double>>(),
-                link_body_real.inertia_.getInertiaTensor().template cast<std::complex<double>>()
-            );
-
-            spatial::Transform<std::complex<double>> link_Xtree_c(
-                link_body_real.Xtree_.getRotation().template cast<std::complex<double>>(),
-                link_body_real.Xtree_.getTranslation().template cast<std::complex<double>>()
-            );
-
-            std::string link_parent_name = "ground";
-            if (link_body_real.parent_index_ >= 0 && link_body_real.parent_index_ < model_real.bodies().size()) {
-                link_parent_name = model_real.bodies()[link_body_real.parent_index_].name_;
-            }
-
-            Body<std::complex<double>> link_body_c = model_complex.registerBody(
-                link_body_real.name_, link_inertia_c, link_parent_name, link_Xtree_c
-            );
-
-            // Convert rotor body to complex
-            SpatialInertia<std::complex<double>> rotor_inertia_c(
-                std::complex<double>(rotor_body_real.inertia_.getMass(), 0.0),
-                rotor_body_real.inertia_.getCOM().template cast<std::complex<double>>(),
-                rotor_body_real.inertia_.getInertiaTensor().template cast<std::complex<double>>()
-            );
-
-            spatial::Transform<std::complex<double>> rotor_Xtree_c(
-                rotor_body_real.Xtree_.getRotation().template cast<std::complex<double>>(),
-                rotor_body_real.Xtree_.getTranslation().template cast<std::complex<double>>()
-            );
-
-            std::string rotor_parent_name = "ground";
-            if (rotor_body_real.parent_index_ >= 0 && rotor_body_real.parent_index_ < model_real.bodies().size()) {
-                rotor_parent_name = model_real.bodies()[rotor_body_real.parent_index_].name_;
-            }
-
-            Body<std::complex<double>> rotor_body_c = model_complex.registerBody(
-                rotor_body_real.name_, rotor_inertia_c, rotor_parent_name, rotor_Xtree_c
-            );
-
-            // Extract gear ratio from loop constraint: G = [1; gear_ratio]
-            const DMat<double>& G = cluster->joint_->G();
-            double gear_ratio = G(1, 0);
-
-            // Extract axes from motion subspace
-            const DMat<double>& S_cluster = cluster->S();
-
-            // Link joint axis (first 6 rows, angular component in rows 0-2)
-            ori::CoordinateAxis link_axis;
-            if (std::abs(S_cluster(0, 0)) > 0.9) {
-                link_axis = ori::CoordinateAxis::X;
-            } else if (std::abs(S_cluster(1, 0)) > 0.9) {
-                link_axis = ori::CoordinateAxis::Y;
-            } else if (std::abs(S_cluster(2, 0)) > 0.9) {
-                link_axis = ori::CoordinateAxis::Z;
-            } else {
-                throw std::runtime_error("Complex-step test only supports axis-aligned revolute joints");
-            }
-
-            // Rotor joint axis (next 6 rows, angular component in rows 6-8)
-            ori::CoordinateAxis rotor_axis;
-            if (std::abs(S_cluster(6, 0)) > 0.9) {
-                rotor_axis = ori::CoordinateAxis::X;
-            } else if (std::abs(S_cluster(7, 0)) > 0.9) {
-                rotor_axis = ori::CoordinateAxis::Y;
-            } else if (std::abs(S_cluster(8, 0)) > 0.9) {
-                rotor_axis = ori::CoordinateAxis::Z;
-            } else {
-                throw std::runtime_error("Complex-step test only supports axis-aligned revolute joints");
-            }
-
-            // Create geared transmission module
-            GearedTransmissionModule<std::complex<double>> module{
-                link_body_c,
-                rotor_body_c,
-                link_body_real.name_ + "_joint",
-                rotor_body_real.name_ + "_joint",
-                link_axis,
-                rotor_axis,
-                std::complex<double>(gear_ratio, 0.0)
-            };
-
-            model_complex.appendRegisteredBodiesAsCluster<RevoluteWithRotor<std::complex<double>>>(
-                link_body_real.name_, module
-            );
-
-        } else if (cluster->num_velocities_ == 1 && cluster->num_positions_ == 1) {
-            // Simple Revolute joint: 1 body
-            const auto& body_real = bodies_in_cluster[0];
-
-            SpatialInertia<std::complex<double>> inertia_c(
-                std::complex<double>(body_real.inertia_.getMass(), 0.0),
-                body_real.inertia_.getCOM().template cast<std::complex<double>>(),
-                body_real.inertia_.getInertiaTensor().template cast<std::complex<double>>()
-            );
-
-            spatial::Transform<std::complex<double>> Xtree_c(
-                body_real.Xtree_.getRotation().template cast<std::complex<double>>(),
-                body_real.Xtree_.getTranslation().template cast<std::complex<double>>()
-            );
-
-            std::string parent_name = "ground";
-            if (body_real.parent_index_ >= 0 && body_real.parent_index_ < model_real.bodies().size()) {
-                parent_name = model_real.bodies()[body_real.parent_index_].name_;
-            }
-
-            Body<std::complex<double>> body_c = model_complex.registerBody(
-                body_real.name_, inertia_c, parent_name, Xtree_c
-            );
-
-            const DMat<double>& S = cluster->S();
-            ori::CoordinateAxis axis;
-            if (std::abs(S(0)) > 0.9) {
-                axis = ori::CoordinateAxis::X;
-            } else if (std::abs(S(1)) > 0.9) {
-                axis = ori::CoordinateAxis::Y;
-            } else if (std::abs(S(2)) > 0.9) {
-                axis = ori::CoordinateAxis::Z;
-            } else {
-                throw std::runtime_error("Complex-step test only supports axis-aligned revolute joints");
-            }
-
-            model_complex.appendRegisteredBodiesAsCluster<Revolute<std::complex<double>>>(
-                body_real.name_, body_c, axis, body_real.name_ + "_joint"
-            );
-
-        } else if (cluster->joint_->type() == ClusterJointTypes::RevolutePairWithRotor) {
-            // RevolutePairWithRotor joint: 4 bodies (link1, rotor1, rotor2, link2)
-            if (bodies_in_cluster.size() != 4) {
-                throw std::runtime_error("RevolutePairWithRotor cluster should have exactly 4 bodies");
-            }
-
-            // The bodies are ordered by sub_index_within_cluster_. We need to find which body is which.
-            // From the constructor, we know:
-            // - link1_index_ = link1_.sub_index_within_cluster_
-            // - rotor1_index_ = rotor1_.sub_index_within_cluster_
-            // - rotor2_index_ = rotor2_.sub_index_within_cluster_
-            // - link2_index_ = link2_.sub_index_within_cluster_
-
-            std::array<const Body<double>*, 4> ordered_bodies = {nullptr, nullptr, nullptr, nullptr};
-            for (const auto& body_real : bodies_in_cluster) {
-                int idx = body_real.sub_index_within_cluster_;
-                if (idx >= 0 && idx < 4) {
-                    ordered_bodies[idx] = &body_real;
-                }
-            }
-
-            // Verify we found all 4
-            for (int i = 0; i < 4; i++) {
-                if (ordered_bodies[i] == nullptr) {
-                    throw std::runtime_error("RevolutePairWithRotor: Could not find body with sub_index " + std::to_string(i));
-                }
-            }
-
-            // Now we need to identify which is link1, rotor1, rotor2, link2
-            // Strategy: link2 has a non-trivial Xtree (relative to link1), rotor1 and rotor2 are rotors (usually small mass)
-            // From MIT_Humanoid: link1=thigh, rotor1=knee_rotor, rotor2=ankle_rotor, link2=shank
-            // From loop constraint G matrix structure:
-            // G(link1_index, 0) = 1
-            // G(rotor1_index, 0) = gear1 * belt1
-            // G(rotor2_index, 0) = gear2 * belt2[0]
-            // G(rotor2_index, 1) = gear2 * belt2[1]
-            // G(link2_index, 1) = 1
-
-            const DMat<double>& G = cluster->joint_->G();
-
-            // Find link1_index (G(i,0) == 1 and G(i,1) == 0)
-            int link1_idx = -1, link2_idx = -1, rotor1_idx = -1, rotor2_idx = -1;
-            for (int i = 0; i < 4; i++) {
-                if (std::abs(G(i, 0) - 1.0) < 1e-6 && std::abs(G(i, 1)) < 1e-6) {
-                    link1_idx = i;
-                } else if (std::abs(G(i, 1) - 1.0) < 1e-6 && std::abs(G(i, 0)) < 1e-6) {
-                    link2_idx = i;
-                }
-            }
-
-            // Find rotor indices (the remaining two bodies)
-            for (int i = 0; i < 4; i++) {
-                if (i != link1_idx && i != link2_idx) {
-                    if (rotor1_idx == -1) {
-                        rotor1_idx = i;
-                    } else {
-                        rotor2_idx = i;
-                    }
-                }
-            }
-
-            if (link1_idx == -1 || link2_idx == -1 || rotor1_idx == -1 || rotor2_idx == -1) {
-                throw std::runtime_error("RevolutePairWithRotor: Could not identify bodies from G matrix");
-            }
-
-            // Determine which rotor is rotor1 vs rotor2:
-            // rotor1 should have G(rotor1_idx, 1) == 0
-            // rotor2 should have G(rotor2_idx, 1) != 0
-            if (std::abs(G(rotor1_idx, 1)) > 1e-6 && std::abs(G(rotor2_idx, 1)) < 1e-6) {
-                // Swap them
-                std::swap(rotor1_idx, rotor2_idx);
-            }
-
-            const auto& link1_body_real = *ordered_bodies[link1_idx];
-            const auto& rotor1_body_real = *ordered_bodies[rotor1_idx];
-            const auto& rotor2_body_real = *ordered_bodies[rotor2_idx];
-            const auto& link2_body_real = *ordered_bodies[link2_idx];
-
-            // Extract parameters from G matrix
-            // From RevolutePairWithRotorJoint.cpp lines 38-50:
-            // gear_ratio = [gear1, gear2]
-            // belt_matrix = [[belt1[0], 0], [0, belt2[0]*belt2[1]]]  (after beltMatrixRowFromBeltRatios)
-            // ratio_product = gear_ratio * belt_matrix
-            // G(link1_idx, 0) = 1
-            // G(rotor1_idx, 0) = ratio_product(0, 0) = gear1 * belt1[0]
-            // G(rotor2_idx, 0) = ratio_product(1, 0) = gear2 * 0 = 0  WAIT, this is wrong!
-
-            // Let me re-read the code more carefully...
-            // belt_matrix << beltMatrixRowFromBeltRatios(module_1.belt_ratios_), 0,
-            //                beltMatrixRowFromBeltRatios(module_2.belt_ratios_);
-            // This creates:
-            // [[belt1[0], 0],
-            //  [belt2[0]*belt2[1], belt2[1]]]
-            //
-            // ratio_product = [[gear1, 0], [0, gear2]] * [[belt1[0], 0], [belt2[0]*belt2[1], belt2[1]]]
-            //               = [[gear1*belt1[0], 0], [gear2*belt2[0]*belt2[1], gear2*belt2[1]]]
-            //
-            // G(rotor1_idx, 0) = ratio_product(0, 0) = gear1 * belt1[0]
-            // G(rotor2_idx, 0) = ratio_product(1, 0) = gear2 * belt2[0] * belt2[1]
-            // G(rotor2_idx, 1) = ratio_product(1, 1) = gear2 * belt2[1]
-
-            double gear_ratio1_belt1 = G(rotor1_idx, 0);
-            double gear_ratio2_belt2_product = G(rotor2_idx, 0);
-            double gear_ratio2_belt2_1 = G(rotor2_idx, 1);
-
-            // For MIT Humanoid: gear1 = gear2 = 6.0, belt1 = {2.0}, belt2 = {2.0, 1.0}
-            // beltMatrixRowFromBeltRatios({2.0}) = [2.0]
-            // beltMatrixRowFromBeltRatios({2.0, 1.0}) applies cumulative product: {2.0, 2.0*1.0} = {2.0, 2.0}
-            // belt_matrix = [[2.0, 0], [2.0, 2.0]]
-            // ratio_product = [[6, 0], [0, 6]] * [[2.0, 0], [2.0, 2.0]] = [[12, 0], [12, 12]]
-            // So: G(rotor1, 0) = 12.0
-            //     G(rotor2, 0) = 12.0
-            //     G(rotor2, 1) = 12.0
-
-            // Strategy: Reconstruct gear and belt ratios from G matrix
-            //
-            // beltMatrixRowFromBeltRatios computes cumulative products:
-            // Input: {r0, r1, r2, ...}
-            // Output row: {r0, r0*r1, r0*r1*r2, ...}
-            //
-            // For module1 (1 belt): belt_row = [belt[0]]
-            // For module2 (2 belts): belt_row = [belt[0], belt[0]*belt[1]]
-            //
-            // From RevolutePairWithRotorJoint.cpp:
-            // belt_matrix = [[belt1_row[0], 0],
-            //                [belt2_row[0], belt2_row[1]]]
-            //             = [[belt1[0], 0],
-            //                [belt2[0], belt2[0]*belt2[1]]]
-            //
-            // ratio_product = diag(gear1, gear2) * belt_matrix
-            //               = [[gear1*belt1[0], 0],
-            //                  [gear2*belt2[0], gear2*belt2[0]*belt2[1]]]
-            //
-            // G values:
-            //   G(rotor1, 0) = gear1 * belt1[0]
-            //   G(rotor2, 0) = gear2 * belt2[0]
-            //   G(rotor2, 1) = gear2 * belt2[0] * belt2[1]
-            //
-            // We can extract:
-            //   belt2[1] = G(rotor2, 1) / G(rotor2, 0) = (gear2*belt2[0]*belt2[1]) / (gear2*belt2[0])
-            //   Then we can choose gear1 = gear2 = 1.0 and set:
-            //     belt1[0] = G(rotor1, 0)
-            //     belt2[0] = G(rotor2, 0)
-
-            double belt2_val1 = gear_ratio2_belt2_1 / gear_ratio2_belt2_product;
-
-            // Set gear ratios to 1 for simplicity (the G matrix already contains the full transmission ratio)
-            double gear1 = 1.0;
-            double gear2 = 1.0;
-            double belt1_val0 = gear_ratio1_belt1 / gear1;
-            double belt2_val0 = gear_ratio2_belt2_product / gear2;
-
-            // Extract axes from motion subspace
-            const DMat<double>& S_cluster = cluster->S();
-
-            // Motion subspace is 24x2 (4 bodies * 6 DOF, 2 independent velocities)
-            // link1 motion (rows 6*link1_idx to 6*link1_idx+5, column 0)
-            ori::CoordinateAxis link1_axis;
-            if (std::abs(S_cluster(6 * link1_idx + 0, 0)) > 0.9) {
-                link1_axis = ori::CoordinateAxis::X;
-            } else if (std::abs(S_cluster(6 * link1_idx + 1, 0)) > 0.9) {
-                link1_axis = ori::CoordinateAxis::Y;
-            } else if (std::abs(S_cluster(6 * link1_idx + 2, 0)) > 0.9) {
-                link1_axis = ori::CoordinateAxis::Z;
-            } else {
-                throw std::runtime_error("Complex-step test only supports axis-aligned revolute joints");
-            }
-
-            // rotor1 motion (rows 6*rotor1_idx to 6*rotor1_idx+5, column 0)
-            ori::CoordinateAxis rotor1_axis;
-            if (std::abs(S_cluster(6 * rotor1_idx + 0, 0)) > 0.9) {
-                rotor1_axis = ori::CoordinateAxis::X;
-            } else if (std::abs(S_cluster(6 * rotor1_idx + 1, 0)) > 0.9) {
-                rotor1_axis = ori::CoordinateAxis::Y;
-            } else if (std::abs(S_cluster(6 * rotor1_idx + 2, 0)) > 0.9) {
-                rotor1_axis = ori::CoordinateAxis::Z;
-            } else {
-                throw std::runtime_error("Complex-step test only supports axis-aligned revolute joints");
-            }
-
-            // link2 motion (rows 6*link2_idx to 6*link2_idx+5, column 1)
-            ori::CoordinateAxis link2_axis;
-            if (std::abs(S_cluster(6 * link2_idx + 0, 1)) > 0.9) {
-                link2_axis = ori::CoordinateAxis::X;
-            } else if (std::abs(S_cluster(6 * link2_idx + 1, 1)) > 0.9) {
-                link2_axis = ori::CoordinateAxis::Y;
-            } else if (std::abs(S_cluster(6 * link2_idx + 2, 1)) > 0.9) {
-                link2_axis = ori::CoordinateAxis::Z;
-            } else {
-                throw std::runtime_error("Complex-step test only supports axis-aligned revolute joints");
-            }
-
-            // rotor2 motion - check both columns since rotor2 is coupled to both q1 and q2
-            ori::CoordinateAxis rotor2_axis;
-            bool found_rotor2_axis = false;
-            for (int col = 0; col < 2; col++) {
-                if (std::abs(S_cluster(6 * rotor2_idx + 0, col)) > 0.9) {
-                    rotor2_axis = ori::CoordinateAxis::X;
-                    found_rotor2_axis = true;
-                    break;
-                } else if (std::abs(S_cluster(6 * rotor2_idx + 1, col)) > 0.9) {
-                    rotor2_axis = ori::CoordinateAxis::Y;
-                    found_rotor2_axis = true;
-                    break;
-                } else if (std::abs(S_cluster(6 * rotor2_idx + 2, col)) > 0.9) {
-                    rotor2_axis = ori::CoordinateAxis::Z;
-                    found_rotor2_axis = true;
-                    break;
-                }
-            }
-            if (!found_rotor2_axis) {
-                throw std::runtime_error("Complex-step test only supports axis-aligned revolute joints");
-            }
-
-            // Convert bodies to complex
-            auto convertBody = [&](const Body<double>& body_real) {
-                SpatialInertia<std::complex<double>> inertia_c(
-                    std::complex<double>(body_real.inertia_.getMass(), 0.0),
-                    body_real.inertia_.getCOM().template cast<std::complex<double>>(),
-                    body_real.inertia_.getInertiaTensor().template cast<std::complex<double>>()
-                );
-
-                spatial::Transform<std::complex<double>> Xtree_c(
-                    body_real.Xtree_.getRotation().template cast<std::complex<double>>(),
-                    body_real.Xtree_.getTranslation().template cast<std::complex<double>>()
-                );
-
-                std::string parent_name = "ground";
-                if (body_real.parent_index_ >= 0 && body_real.parent_index_ < model_real.bodies().size()) {
-                    parent_name = model_real.bodies()[body_real.parent_index_].name_;
-                }
-
-                return model_complex.registerBody(
-                    body_real.name_, inertia_c, parent_name, Xtree_c
-                );
-            };
-
-            // CRITICAL: Register bodies in the correct order determined by sub_index_within_cluster_
-            // This ensures the G matrix has the same row ordering as the real model
-
-            // Reorder body pointers based on actual sub_index
-            std::array<const Body<double>*, 4> ordered_body_ptrs;
-            for (int i = 0; i < 4; i++) {
-                ordered_body_ptrs[ordered_bodies[i]->sub_index_within_cluster_] = ordered_bodies[i];
-            }
-
-            // Register bodies in sub_index order (0, 1, 2, 3) and store in vector
-            std::vector<Body<std::complex<double>>> bodies_c_vec;
-            for (int i = 0; i < 4; i++) {
-                bodies_c_vec.push_back(convertBody(*ordered_body_ptrs[i]));
-            }
-
-            Body<std::complex<double>>& link1_body_c = bodies_c_vec[link1_idx];
-            Body<std::complex<double>>& rotor1_body_c = bodies_c_vec[rotor1_idx];
-            Body<std::complex<double>>& rotor2_body_c = bodies_c_vec[rotor2_idx];
-            Body<std::complex<double>>& link2_body_c = bodies_c_vec[link2_idx];
-
-            // Create transmission modules
-            typedef ClusterJoints::ParallelBeltTransmissionModule<1, std::complex<double>> KneeModule;
-            typedef ClusterJoints::ParallelBeltTransmissionModule<2, std::complex<double>> AnkleModule;
-
-            Eigen::Matrix<std::complex<double>, 1, 1> belt_ratios1;
-            belt_ratios1 << std::complex<double>(belt1_val0, 0.0);
-
-            Eigen::Matrix<std::complex<double>, 2, 1> belt_ratios2;
-            belt_ratios2 << std::complex<double>(belt2_val0, 0.0), std::complex<double>(belt2_val1, 0.0);
-
-            KneeModule knee_module{
-                link1_body_c,
-                rotor1_body_c,
-                link1_axis,
-                rotor1_axis,
-                std::complex<double>(gear1, 0.0),
-                belt_ratios1
-            };
-
-            AnkleModule ankle_module{
-                link2_body_c,
-                rotor2_body_c,
-                link2_axis,
-                rotor2_axis,
-                std::complex<double>(gear2, 0.0),
-                belt_ratios2
-            };
-
-            model_complex.appendRegisteredBodiesAsCluster<RevolutePairWithRotor<std::complex<double>>>(
-                link1_body_real.name_, knee_module, ankle_module
-            );
-
-        } else {
-            throw std::runtime_error("Complex-step test encountered unsupported joint type");
-        }
-    }
-
-
-    const double h = 1e-20;  // Step size for complex-step (can be very small)
-    const std::complex<double> ih(0.0, h);
-
-    std::cout << "Complex-step verification (h = " << h << "):\n";
-    std::cout << "  Tolerance: dtau/dq = " << tol_dq << ", dtau/dqdot = " << tol_dqdot << "\n\n";
-
-    // Convert ydd to complex
-    DVec<std::complex<double>> ydd_complex(nDOF);
-    for (int i = 0; i < nDOF; ++i) {
-        ydd_complex[i] = std::complex<double>(ydd_real[i], 0.0);
-    }
-
-    // Test dtau/dq using complex-step with Lie group retraction
-    // NOTE: The analytical derivatives dtau/dq are with respect to VELOCITY SPACE perturbations.
-    //       We perturb in velocity space and use Lie group retraction to map to configuration space.
-    double max_error_dq = 0.0;
-
-    for (int i = 0; i < nDOF; ++i) {
-        // Create perturbation in velocity/tangent space
-        DVec<std::complex<double>> dq_complex = DVec<std::complex<double>>::Zero(nDOF);
-        dq_complex[i] = ih;
-
-        // Apply Lie group retraction: q_perturbed = q0 ⊞ dq
-        auto [q_complex, qd_complex] = toComplexState(q0, qd0);
-
-        // DEBUG: Print sizes and first perturbation
-        if (i == 0) {
-            std::cout << "\nDEBUG first iteration (i=0):\n";
-            std::cout << "  q_complex.size() = " << q_complex.size() << "\n";
-            std::cout << "  dq_complex.size() = " << dq_complex.size() << "\n";
-            std::cout << "  dq_complex[0] = " << dq_complex[0] << "\n";
-            std::cout << "  q0.head(7) (FB config) = " << q0.head(7).transpose() << "\n";
-        }
-
-        DVec<std::complex<double>> q_perturbed = lieGroupConfigurationAddition(q_complex, dq_complex, true);
-
-        if (i == 0) {
-            std::cout << "  q_perturbed.size() = " << q_perturbed.size() << "\n";
-            std::cout << "  real(q_perturbed.head(7)) = " << q_perturbed.head(7).real().transpose() << "\n";
-            std::cout << "  imag(q_perturbed.head(7)) = " << q_perturbed.head(7).imag().transpose() << "\n\n";
-        }
-
-        // Convert to ModelState
-        ModelState<std::complex<double>> model_state_complex;
-        int idx_q = 0;  // Index into configuration space (size = n_q)
-        int idx_v = 0;  // Index into velocity space (size = n_v)
-        for (const auto &cluster : model_complex.clusters()) {
-            JointCoordinate<std::complex<double>> pos(
-                DVec<std::complex<double>>::Zero(cluster->num_positions_), false);
-            JointCoordinate<std::complex<double>> vel(
-                DVec<std::complex<double>>::Zero(cluster->num_velocities_), false);
-
-            for (int j = 0; j < cluster->num_positions_; ++j) {
-                pos[j] = q_perturbed[idx_q++];
-            }
-            for (int j = 0; j < cluster->num_velocities_; ++j) {
-                vel[j] = qd_complex[idx_v++];
-            }
-
-            JointState<std::complex<double>> joint_state(pos, vel);
-            model_state_complex.push_back(joint_state);
-        }
-
-        model_complex.setState(model_state_complex);
-        DVec<std::complex<double>> tau_complex = model_complex.inverseDynamics(ydd_complex);
-
-        // Extract derivative from imaginary part
-        // tau is in velocity space (nDOF), derivatives are with respect to velocity space coord i
-        DVec<double> dtau_dqi_cs(nDOF);
-        for (int j = 0; j < nDOF; ++j) {
-            dtau_dqi_cs[j] = tau_complex[j].imag() / h;
-        }
-
-        // DEBUG: Print first derivatives AND compare to finite differences
-        if (i == 0) {
-            // Compute finite difference for comparison
-            double h_fd = 1e-6;
-            DVec<double> dq_fd = DVec<double>::Zero(nDOF);
-            dq_fd(0) = h_fd;
-
-            DVec<double> q_fd = lieGroupConfigurationAddition(q0, dq_fd, true);
-            ClusterTreeModel<double>::StatePair state_fd = {q_fd, qd0};
-            model_real.setState(state_fd);
-            DVec<double> tau_fd = model_real.inverseDynamics(ydd_real);
-            ClusterTreeModel<double>::StatePair state0_pair = {q0, qd0};
-            model_real.setState(state0_pair);
-            DVec<double> tau0_real = model_real.inverseDynamics(ydd_real);
-            DVec<double> dtau_dq0_fd = (tau_fd - tau0_real) / h_fd;
-
-            std::cout << "  dtau_dq0 (complex-step, first 6): " << dtau_dqi_cs.head(6).transpose() << "\n";
-            std::cout << "  dtau_dq0 (finite-diff,  first 6): " << dtau_dq0_fd.head(6).transpose() << "\n";
-            std::cout << "  dtau_dq.col(0) (analytical, first 6): " << dtau_dq.col(0).head(6).transpose() << "\n";
-            std::cout << "  Difference (CS vs FD): " << (dtau_dqi_cs - dtau_dq0_fd).head(6).transpose() << "\n";
-            std::cout << "  Difference (CS vs Analytical): " << (dtau_dqi_cs - dtau_dq.col(0)).head(6).transpose() << "\n";
-            std::cout << "  Error (CS vs FD): " << (dtau_dqi_cs - dtau_dq0_fd).norm() << "\n\n";
-        }
-
-        // dtau_dq has shape (nDOF, nDOF) - both rows and columns are velocity space
-        double error = (dtau_dqi_cs - dtau_dq.col(i)).norm();
-        max_error_dq = std::max(max_error_dq, error);
-
-        std::cout << "  dtau/dq" << i << " error: " << error;
-        if (error < tol_dq) std::cout << " [PASS]";
-        else std::cout << " [FAIL]";
-        std::cout << "\n";
-
-        EXPECT_LT(error, tol_dq);
-    }
-
-    std::cout << "\n";
-
-    // Test dtau/dqdot using complex-step
-    double max_error_dqdot = 0.0;
-    for (int i = 0; i < nDOF; ++i) {
-        // Create perturbed state: qd[i] += ih
-        auto [q_complex, qd_complex] = toComplexState(q0, qd0);
-        qd_complex[i] += ih;
-
-        // Convert to ModelState
-        ModelState<std::complex<double>> model_state_complex;
-        int idx_q = 0;  // Index into configuration space (size = n_q)
-        int idx_v = 0;  // Index into velocity space (size = n_v)
-        for (const auto &cluster : model_complex.clusters()) {
-            JointCoordinate<std::complex<double>> pos(
-                DVec<std::complex<double>>::Zero(cluster->num_positions_), false);
-            JointCoordinate<std::complex<double>> vel(
-                DVec<std::complex<double>>::Zero(cluster->num_velocities_), false);
-
-            for (int j = 0; j < cluster->num_positions_; ++j) {
-                pos[j] = q_complex[idx_q++];
-            }
-            for (int j = 0; j < cluster->num_velocities_; ++j) {
-                vel[j] = qd_complex[idx_v++];
-            }
-
-            JointState<std::complex<double>> joint_state(pos, vel);
-            model_state_complex.push_back(joint_state);
-        }
-
-        model_complex.setState(model_state_complex);
-        DVec<std::complex<double>> tau_complex = model_complex.inverseDynamics(ydd_complex);
-
-        // Extract derivative from imaginary part
-        DVec<double> dtau_dqdoti_cs(nDOF);
-        for (int j = 0; j < nDOF; ++j) {
-            dtau_dqdoti_cs[j] = tau_complex[j].imag() / h;
-        }
-
-        double error = (dtau_dqdoti_cs - dtau_dqdot.col(i)).norm();
-        max_error_dqdot = std::max(max_error_dqdot, error);
-
-        std::cout << "  dtau/dqd" << i << " error: " << error;
-        if (error < tol_dqdot) std::cout << " [PASS]";
-        else std::cout << " [FAIL]";
-        std::cout << "\n";
-
-        EXPECT_LT(error, tol_dqdot);
-    }
-
-    std::cout << "\n========================================\n";
-    std::cout << "RESULTS:\n";
-    std::cout << "  Max error (dtau/dq):    " << max_error_dq << " (tol: " << tol_dq << ")\n";
-    std::cout << "  Max error (dtau/dqdot): " << max_error_dqdot << " (tol: " << tol_dqdot << ")\n";
-    std::cout << "========================================\n\n";
+    auto [q0, qd0] = model_real.getState();
+
+    const ModelState<std::complex<double>> state_complex0 = makeModelState<std::complex<double>>(model_real, q0, qd0);
+    const ModelState<double>               state_real_base = makeModelState<double>(model_real, q0, qd0);
+    const DVec<std::complex<double>> zero_dq  = DVec<std::complex<double>>::Zero(nDOF);
+    const DVec<double>               zero_dqr = DVec<double>::Zero(nDOF);
+    const DVec<std::complex<double>> ydd_complex = ydd_real.cast<std::complex<double>>();
+
+    auto ID_of_dq_cs = [&](const DVec<double>& dq) -> DVec<double> {
+        DVec<std::complex<double>> dq_c = dq.cast<std::complex<double>>() * std::complex<double>(0.0, 1.0);
+        model_complex.setState(applyMinimalPerturbation(model_real, state_complex0, dq_c, zero_dq), false);
+        return model_complex.inverseDynamics(ydd_complex).imag();
+    };
+    auto ID_of_dqdot_cs = [&](const DVec<double>& dqdot) -> DVec<double> {
+        DVec<std::complex<double>> dqdot_c = dqdot.cast<std::complex<double>>() * std::complex<double>(0.0, 1.0);
+        model_complex.setState(applyMinimalPerturbation(model_real, state_complex0, zero_dq, dqdot_c), false);
+        return model_complex.inverseDynamics(ydd_complex).imag();
+    };
+    auto ID_of_dq_fd = [&](const DVec<double>& dq) -> DVec<double> {
+        model_real.setState(applyMinimalPerturbation(model_real, state_real_base, dq, zero_dqr), false);
+        return model_real.inverseDynamics(ydd_real);
+    };
+    auto ID_of_dqdot_fd = [&](const DVec<double>& dqdot) -> DVec<double> {
+        model_real.setState(applyMinimalPerturbation(model_real, state_real_base, zero_dqr, dqdot), false);
+        return model_real.inverseDynamics(ydd_real);
+    };
+
+    const double h_cs = 1e-20, h_fd = 1e-7;
+    DMat<double> dtau_dq_cs    = finiteDifferenceJacobian(ID_of_dq_cs,    zero_dqr, h_cs);
+    DMat<double> dtau_dqdot_cs = finiteDifferenceJacobian(ID_of_dqdot_cs, zero_dqr, h_cs);
+    DMat<double> dtau_dq_fd    = finiteDifferenceJacobian(ID_of_dq_fd,    zero_dqr, h_fd);
+    DMat<double> dtau_dqdot_fd = finiteDifferenceJacobian(ID_of_dqdot_fd, zero_dqr, h_fd);
+
+    double max_error_dq    = (dtau_dq    - dtau_dq_cs).cwiseAbs().maxCoeff();
+    double max_error_dqdot = (dtau_dqdot - dtau_dqdot_cs).cwiseAbs().maxCoeff();
+    double max_cs_fd_dq    = (dtau_dq_cs - dtau_dq_fd).cwiseAbs().maxCoeff();
+    double max_cs_fd_dqdot = (dtau_dqdot_cs - dtau_dqdot_fd).cwiseAbs().maxCoeff();
+
+    std::cout << "Max CS vs analytical error (dtau/dq):    " << max_error_dq    << "\n";
+    std::cout << "Max CS vs analytical error (dtau/dqdot): " << max_error_dqdot << "\n";
+    std::cout << "Max CS vs FD error         (dtau/dq):    " << max_cs_fd_dq    << "\n";
+    std::cout << "Max CS vs FD error         (dtau/dqdot): " << max_cs_fd_dqdot << "\n";
+
+    EXPECT_LT(max_cs_fd_dq,    5e-5) << "CS vs FD mismatch (dtau/dq)";
+    EXPECT_LT(max_cs_fd_dqdot, 5e-5) << "CS vs FD mismatch (dtau/dqdot)";
+    EXPECT_LT(max_error_dq,    tol_dq)    << "dtau/dq error exceeds tolerance";
+    EXPECT_LT(max_error_dqdot, tol_dqdot) << "dtau/dqdot error exceeds tolerance";
 }
 
 // NOTE: Complex-step differentiation CAN work with Lie group manifolds like quaternions!
@@ -1454,82 +802,81 @@ void testInverseDynamicsDerivativesComplexStepFloatingBase(ClusterTreeModel<doub
 //       By using the linearized exponential for complex perturbations, we get
 //       machine-precision derivatives while maintaining geometric correctness!
 
-TEST(InverseDynamicsDerivativesComplexStep, SimpleFloatingBaseWithRotor) {
-    // Create a very simple floating base + 1 revolute with rotor joint model
+template<typename S>
+ClusterTreeModel<S> buildSimpleFBWithRotorModel() {
     using namespace ClusterJoints;
-    ClusterTreeModel<double> model;
+    ClusterTreeModel<S> m;
+    SpatialInertia<S> fb_in(1.0, Vec3<S>(0,0,0), Mat3<S>::Identity()*0.01);
+    Body<S> fb = m.registerBody("floating_base", fb_in, "ground", spatial::Transform<S>());
+    m.template appendRegisteredBodiesAsCluster<Free<S,ori_representation::Quaternion>>("floating_base",fb,"fb_joint");
+    SpatialInertia<S> lk_in(0.5, Vec3<S>(0.1,0,0), Mat3<S>::Identity()*0.005);
+    SpatialInertia<S> rt_in(0.05,Vec3<S>(0,0,0),   Mat3<S>::Identity()*0.0001);
+    spatial::Transform<S> Xl(Mat3<S>::Identity(), Vec3<S>(0,0,0.5));
+    Body<S> lk = m.registerBody("link1",  lk_in, "floating_base", Xl);
+    Body<S> rt = m.registerBody("rotor1", rt_in, "floating_base", Xl);
+    GearedTransmissionModule<S> mod{lk, rt, "link1_joint","rotor1_joint",
+                                    ori::CoordinateAxis::Z, ori::CoordinateAxis::Z, S(6.0)};
+    m.template appendRegisteredBodiesAsCluster<RevoluteWithRotor<S>>("joint1", mod);
+    return m;
+}
 
-    // Create floating base body
-    SpatialInertia<double> fb_inertia(1.0, Vec3<double>(0, 0, 0), Mat3<double>::Identity() * 0.01);
-    Body<double> fb_body = model.registerBody("floating_base", fb_inertia, "ground", spatial::Transform<double>());
-    model.appendRegisteredBodiesAsCluster<Free<double, ori_representation::Quaternion>>(
-        "floating_base", fb_body, "fb_joint");
+TEST(InverseDynamicsDerivativesComplexStep, SimpleFloatingBaseWithRotor) {
+    typedef std::complex<double> CD;
 
-    // Create one revolute joint WITH ROTOR attached to floating base
-    SpatialInertia<double> link_inertia(0.5, Vec3<double>(0.1, 0, 0), Mat3<double>::Identity() * 0.005);
-    SpatialInertia<double> rotor_inertia(0.05, Vec3<double>(0, 0, 0), Mat3<double>::Identity() * 0.0001);
-    spatial::Transform<double> Xtree_link(Mat3<double>::Identity(), Vec3<double>(0, 0, 0.5));
-    spatial::Transform<double> Xtree_rotor(Mat3<double>::Identity(), Vec3<double>(0, 0, 0.5));
+    ClusterTreeModel<double> model_real    = buildSimpleFBWithRotorModel<double>();
+    ClusterTreeModel<CD>     model_complex = buildSimpleFBWithRotorModel<CD>();
 
-    Body<double> link_body = model.registerBody("link1", link_inertia, "floating_base", Xtree_link);
-    Body<double> rotor_body = model.registerBody("rotor1", rotor_inertia, "floating_base", Xtree_rotor);
+    ModelState<double> state;
+    for (const auto& c : model_real.clusters())
+        state.push_back(c->joint_->randomJointState());
+    model_real.setState(state);
 
-    GearedTransmissionModule<double> module{link_body, rotor_body,
-                                            "link1_joint", "rotor1_joint",
-                                            ori::CoordinateAxis::Z, ori::CoordinateAxis::Z,
-                                            6.0};  // gear ratio
-    model.appendRegisteredBodiesAsCluster<RevoluteWithRotor<double>>("joint1", module);
+    testInverseDynamicsDerivativesComplexStepFloatingBase(
+        model_real, model_complex, "Simple Floating Base + 1 Revolute With Rotor");
+}
 
-    testInverseDynamicsDerivativesComplexStepFloatingBase(model, "Simple Floating Base + 1 Revolute With Rotor", 7);
+template<typename S>
+ClusterTreeModel<S> buildSimpleFBModel() {
+    using namespace ClusterJoints;
+    ClusterTreeModel<S> m;
+    SpatialInertia<S> fb_in(1.0, Vec3<S>(0,0,0), Mat3<S>::Identity()*0.01);
+    Body<S> fb = m.registerBody("floating_base", fb_in, "ground", spatial::Transform<S>());
+    m.template appendRegisteredBodiesAsCluster<Free<S,ori_representation::Quaternion>>("floating_base",fb,"fb_joint");
+    SpatialInertia<S> lk_in(0.5, Vec3<S>(0.1,0,0), Mat3<S>::Identity()*0.005);
+    spatial::Transform<S> Xl(Mat3<S>::Identity(), Vec3<S>(0,0,0.5));
+    Body<S> lk = m.registerBody("link1", lk_in, "floating_base", Xl);
+    m.template appendRegisteredBodiesAsCluster<Revolute<S>>("link1", lk, ori::CoordinateAxis::Z, "link1_joint");
+    return m;
 }
 
 TEST(InverseDynamicsDerivativesComplexStep, SimpleFloatingBase) {
-    std::cout << "[TEST ENTRY] SimpleFloatingBase test starting...\n";
-    std::cout.flush();
-    // Create a very simple floating base + 1 revolute joint model
-    using namespace ClusterJoints;
-    ClusterTreeModel<double> model;
-    std::cout << "[TEST] Model created\n";
-    std::cout.flush();
+    typedef std::complex<double> CD;
 
-    // Create floating base body
-    std::cout << "[TEST] About to create fb_inertia\n";
-    std::cout.flush();
-    SpatialInertia<double> fb_inertia(1.0, Vec3<double>(0, 0, 0), Mat3<double>::Identity() * 0.01);
-    std::cout << "[TEST] fb_inertia created, about to registerBody\n";
-    std::cout.flush();
-    Body<double> fb_body = model.registerBody("floating_base", fb_inertia, "ground", spatial::Transform<double>());
-    std::cout << "[TEST] Body registered, about to appendAsCluster\n";
-    std::cout.flush();
-    model.appendRegisteredBodiesAsCluster<Free<double, ori_representation::Quaternion>>(
-        "floating_base", fb_body, "fb_joint");
-    std::cout << "[TEST] Free joint appended successfully\n";
-    std::cout.flush();
+    ClusterTreeModel<double> model_real    = buildSimpleFBModel<double>();
+    ClusterTreeModel<CD>     model_complex = buildSimpleFBModel<CD>();
 
-    // Create one revolute joint attached to floating base
-    std::cout << "[TEST] About to create link_inertia\n";
-    std::cout.flush();
-    SpatialInertia<double> link_inertia(0.5, Vec3<double>(0.1, 0, 0), Mat3<double>::Identity() * 0.005);
-    std::cout << "[TEST] link_inertia created, about to create Xtree\n";
-    std::cout.flush();
-    spatial::Transform<double> Xtree(Mat3<double>::Identity(), Vec3<double>(0, 0, 0.5));
-    std::cout << "[TEST] Xtree created, about to registerBody link1\n";
-    std::cout.flush();
-    Body<double> link_body = model.registerBody("link1", link_inertia, "floating_base", Xtree);
-    std::cout << "[TEST] link1 registered, about to appendAsCluster Revolute\n";
-    std::cout.flush();
-    model.appendRegisteredBodiesAsCluster<Revolute<double>>(
-        "link1", link_body, ori::CoordinateAxis::Z, "link1_joint");
-    std::cout << "[TEST] Revolute joint appended, about to call test function\n";
-    std::cout.flush();
+    ModelState<double> state;
+    for (const auto& c : model_real.clusters())
+        state.push_back(c->joint_->randomJointState());
+    model_real.setState(state);
 
-    testInverseDynamicsDerivativesComplexStepFloatingBase(model, "Simple Floating Base + 1 Revolute", 7);
+    testInverseDynamicsDerivativesComplexStepFloatingBase(
+        model_real, model_complex, "Simple Floating Base + 1 Revolute");
 }
 
 TEST(InverseDynamicsDerivativesComplexStep, MiniCheetahQuaternion) {
-    MiniCheetah<double, ori_representation::Quaternion> robot;
-    ClusterTreeModel<double> model = robot.buildClusterTreeModel();
-    testInverseDynamicsDerivativesComplexStepFloatingBase(model, "MiniCheetah (Quaternion)", 18);
+    MiniCheetah<double,               ori_representation::Quaternion> robot_real;
+    MiniCheetah<std::complex<double>, ori_representation::Quaternion> robot_complex;
+    ClusterTreeModel<double>               model_real    = robot_real.buildClusterTreeModel();
+    ClusterTreeModel<std::complex<double>> model_complex = robot_complex.buildClusterTreeModel();
+
+    ModelState<double> state;
+    for (const auto& c : model_real.clusters())
+        state.push_back(c->joint_->randomJointState());
+    model_real.setState(state);
+
+    testInverseDynamicsDerivativesComplexStepFloatingBase(
+        model_real, model_complex, "MiniCheetah (Quaternion)");
 }
 
 // Simpler version: Build complex model directly from templated robot class
@@ -1812,16 +1159,18 @@ TEST(InverseDynamicsDerivativesComplexStep, MITHumanoidQuaternionDirect) {
 }
 
 TEST(InverseDynamicsDerivativesComplexStep, MITHumanoidQuaternion) {
-    MIT_Humanoid<double, ori_representation::Quaternion> robot;
-    ClusterTreeModel<double> model = robot.buildClusterTreeModel();
-    // Note: Using relaxed tolerance due to numerical issues with complex-step differentiation
-    // for RevolutePairWithRotor joints. The analytical derivatives are validated through:
-    // 1. Finite difference tests (testInverseDynamicsDerivativesSimple)
-    // 2. CasADi symbolic differentiation tests (testRigidBodyDynamicsAlgosDerivatives)
-    //
-    // TODO: Replace with simpler version once implemented:
-    // testRobotComplexStep<MIT_Humanoid, ori_representation::Quaternion>("MIT Humanoid (Quaternion)", 24, 1.0, 0.1);
-    testInverseDynamicsDerivativesComplexStepFloatingBase(model, "MIT Humanoid (Quaternion)", 24, 1.0, 0.1);
+    MIT_Humanoid<double,               ori_representation::Quaternion> robot_real;
+    MIT_Humanoid<std::complex<double>, ori_representation::Quaternion> robot_complex;
+    ClusterTreeModel<double>               model_real    = robot_real.buildClusterTreeModel();
+    ClusterTreeModel<std::complex<double>> model_complex = robot_complex.buildClusterTreeModel();
+
+    ModelState<double> state;
+    for (const auto& c : model_real.clusters())
+        state.push_back(c->joint_->randomJointState());
+    model_real.setState(state);
+
+    testInverseDynamicsDerivativesComplexStepFloatingBase(
+        model_real, model_complex, "MIT Humanoid (Quaternion)", 1.0, 0.1);
 }
 
 TEST(InverseDynamicsDerivativesComplexStep, TeleopArm) {
@@ -2356,105 +1705,11 @@ TEST(InverseDynamicsDerivativesComplexStep, TelloImplicitConstraintDerivatives) 
         return;
     }
 
-    ModelState<double> state_real0 = state_real;
     model_real.setState(state_real, enforce_constraints_flag);
     std::cout << "✓ Found valid constrained state (max ||phi|| = " << max_phi_residual << ")\n";
 
-    // Random acceleration
-    const DVec<double> ydd_real = DVec<double>::Random(nDOF);
-
-    // Get analytical derivatives
-    auto [dtau_dq, dtau_dqdot] = model_real.firstOrderInverseDynamicsDerivatives(ydd_real);
-
-    std::cout << "Analytical derivatives computed.\n";
-    std::cout << "  dtau_dq:    " << dtau_dq.rows() << " x " << dtau_dq.cols() << "\n";
-    std::cout << "  dtau_dqdot: " << dtau_dqdot.rows() << " x " << dtau_dqdot.cols() << "\n";
-    std::cout << "  dtau_dq norm:    " << dtau_dq.norm() << "\n";
-    std::cout << "  dtau_dqdot norm: " << dtau_dqdot.norm() << "\n\n";
-
-    // Get real state
-    auto [q0, qd0] = model_real.getState();
-
-    // Complex-step parameters
-    const double h = 1e-20;
-    const std::complex<double> ih(0.0, h);
-
-    DVec<std::complex<double>> ydd_complex = ydd_real.cast<std::complex<double>>();
-
-    const ModelState<std::complex<double>> state_complex0 = makeModelState<std::complex<double>>(model_real, q0, qd0);
-    const ModelState<double> state_real_base = makeModelState<double>(model_real, q0, qd0);
-    const DVec<std::complex<double>> zero_dq = DVec<std::complex<double>>::Zero(nDOF);
-    const DVec<double> zero_dq_real = DVec<double>::Zero(nDOF);
-
-    // Complex Step helpers
-    auto ID_of_dq_cs = [&](const DVec<double>& dq) -> DVec<double> {
-        std::complex<double> i(0.0,1.0);
-        DVec<std::complex<double>> dq_complex = dq.cast<std::complex<double>>()*i;
-        ModelState<std::complex<double>> perturbed_state = applyMinimalPerturbation(model_real, state_complex0, dq_complex, zero_dq);
-        model_complex.setState(perturbed_state, false);
-        return model_complex.inverseDynamics(ydd_complex).imag();
-    };
-
-    auto ID_of_dqdot_cs = [&](const DVec<double>& dqdot) -> DVec<double> {
-        std::complex<double> i(0.0,1.0);
-        DVec<std::complex<double>> dqdot_complex = dqdot.cast<std::complex<double>>()*i;
-        ModelState<std::complex<double>> perturbed_state = applyMinimalPerturbation(model_real, state_complex0, zero_dq, dqdot_complex);
-        model_complex.setState(perturbed_state, false);
-        return model_complex.inverseDynamics(ydd_complex).imag();
-    };
-
-    // Finite difference helpers (for comparison)
-    auto ID_of_dq_fd = [&](const DVec<double>& dq) -> DVec<double> {
-        ModelState<double> perturbed_state = applyMinimalPerturbation(model_real, state_real_base, dq, zero_dq_real);
-        model_real.setState(perturbed_state, false);
-        return model_real.inverseDynamics(ydd_real);
-    };
-
-    auto ID_of_dqdot_fd = [&](const DVec<double>& dqdot) -> DVec<double> {
-        ModelState<double> perturbed_state = applyMinimalPerturbation(model_real, state_real_base, zero_dq_real, dqdot);
-        model_real.setState(perturbed_state, false);
-        return model_real.inverseDynamics(ydd_real);
-    };
-
-    // Test dtau/dq using complex-step
-    std::cout << "Testing dtau/dq...\n";
-    DMat<double> dtau_dq_cs    = forwardDifferenceJacobian(ID_of_dq_cs   , zero_dq_real, h);
-    DMat<double> dtau_dqdot_cs = forwardDifferenceJacobian(ID_of_dqdot_cs, zero_dq_real, h);
-    
-    double max_error_dq = (dtau_dq-dtau_dq_cs).cwiseAbs().maxCoeff();
-    double max_error_dqdot = (dtau_dqdot-dtau_dqdot_cs).cwiseAbs().maxCoeff();
-
-    std::cout << "Max error (dtau/dq): " << max_error_dq << "\n";
-    std::cout << "Max error (dtau/dqdot): " << max_error_dqdot << "\n";
-    std::cout << "========================================\n\n";
-
-    // Compare complex step to finite diff
-    DMat<double> dtau_dq_fd    = forwardDifferenceJacobian(ID_of_dq_fd   , zero_dq_real, 1e-7);
-    DMat<double> dtau_dqdot_fd = forwardDifferenceJacobian(ID_of_dqdot_fd, zero_dq_real, 1e-7);
-
-    double max_cs_vs_fd_error_dq    = (dtau_dq_cs    - dtau_dq_fd).cwiseAbs().maxCoeff();
-    double max_cs_vs_fd_error_dqdot = (dtau_dqdot_cs - dtau_dqdot_fd).cwiseAbs().maxCoeff();
-
-    std::cout << "Max complex-step vs finite-diff error (dtau/dq):    " << max_cs_vs_fd_error_dq    << "\n";    
-    std::cout << "Max complex-step vs finite-diff error (dtau/dqdot): " << max_cs_vs_fd_error_dqdot << "\n";
-
-    // Complex-step vs finite-difference should match to FD precision (~1e-7 for h=1e-7)
-    // Using 5e-5 tolerance to account for accumulated FD errors in complex constraint evaluation
-    EXPECT_LT(max_cs_vs_fd_error_dqdot, 5e-5) << "Complex-step dtau/dqdot should match finite-difference";
-    EXPECT_LT(max_cs_vs_fd_error_dq, 5e-5) << "Complex-step dtau/dq should match finite-difference";
-
-    // Print summary for analytical derivative accuracy
-    std::cout << "\n============================================================================\n";
-    std::cout << "ANALYTICAL vs COMPLEX-STEP (ground truth) COMPARISON:\n";
-    std::cout << "  Max error dtau/dq:    " << max_error_dq << "\n";
-    std::cout << "  Max error dtau/dqdot: " << max_error_dqdot << "\n";
-    std::cout << "============================================================================\n";
-
-    // Tolerances for comparison with analytical derivatives
-    const double dq_tolerance = 1e-13;     // Current: ~0.002-0.003 for dtau/dq
-    const double dqdot_tolerance = 1e-14;  // Current: ~0.0006-0.001 for dtau/dqdot
-    EXPECT_LT(max_error_dq, dq_tolerance) << "dtau/dq error exceeds tolerance";
-    EXPECT_LT(max_error_dqdot, dqdot_tolerance) << "dtau/dqdot error exceeds tolerance";
+    testInverseDynamicsDerivativesComplexStepFloatingBase(
+        model_real, model_complex, "Tello (ImplicitConstraint)", 1e-13, 1e-14);
 }
 
 // Complex-step derivative test for PlanarLegLinkage with implicit FourBar constraints
@@ -2510,325 +1765,8 @@ TEST(InverseDynamicsDerivativesComplexStep, PlanarLegLinkageImplicitConstraintDe
     model_real.setState(state_real);
     std::cout << "✓ Found valid constrained state (max ||phi|| = " << max_phi_residual << ")\n";
 
-    // Random acceleration
-    const DVec<double> ydd_real = DVec<double>::Random(nDOF);
-
-    // Get analytical derivatives
-    auto [dtau_dq, dtau_dqdot] = model_real.firstOrderInverseDynamicsDerivatives(ydd_real);
-
-    std::cout << "Analytical derivatives computed.\n";
-    std::cout << "  dtau_dq:    " << dtau_dq.rows() << " x " << dtau_dq.cols() << "\n";
-    std::cout << "  dtau_dqdot: " << dtau_dqdot.rows() << " x " << dtau_dqdot.cols() << "\n";
-    std::cout << "  dtau_dq norm:    " << dtau_dq.norm() << "\n";
-    std::cout << "  dtau_dqdot norm: " << dtau_dqdot.norm() << "\n\n";
-
-    // Get real state
-    auto [q0, qd0] = model_real.getState();
-
-    // Print state structure for debugging
-    std::cout << "State structure:\n";
-    std::cout << "  q0 size:  " << q0.size() << "\n";
-    std::cout << "  qd0 size: " << qd0.size() << "\n";
-    int total_pos = 0, total_vel = 0;
-    for (size_t c = 0; c < model_real.clusters().size(); ++c) {
-        const auto& cluster = model_real.clusters()[c];
-        std::cout << "  Cluster " << c << ": np=" << cluster->num_positions_
-                  << ", nv=" << cluster->num_velocities_ << "\n";
-        total_pos += cluster->num_positions_;
-        total_vel += cluster->num_velocities_;
-    }
-    std::cout << "  Total positions:  " << total_pos << "\n";
-    std::cout << "  Total velocities: " << total_vel << "\n\n";
-
-    // Complex-step parameters
-    const double h = 1e-20;
-    const std::complex<double> ih(0.0, h);
-
-    // Convert ydd to complex
-    DVec<std::complex<double>> ydd_complex(nDOF);
-    for (int i = 0; i < nDOF; ++i) {
-        ydd_complex[i] = std::complex<double>(ydd_real[i], 0.0);
-    }
-
-    // Helper lambda to set complex state from global q and qd vectors
-    auto setComplexState = [&model_complex](const DVec<std::complex<double>>& q,
-                                            const DVec<std::complex<double>>& qd) {
-        ModelState<std::complex<double>> model_state_complex;
-        int pos_idx = 0, vel_idx = 0;
-        for (const auto& cluster : model_complex.clusters()) {
-            int np = cluster->num_positions_;
-            int nv = cluster->num_velocities_;
-
-            // For implicit constraints (np > nv), positions are spanning coordinates
-            bool is_spanning = (np > nv);
-
-            JointCoordinate<std::complex<double>> pos(
-                q.segment(pos_idx, np), is_spanning);
-            JointCoordinate<std::complex<double>> vel(
-                qd.segment(vel_idx, nv), false);
-
-            model_state_complex.push_back(JointState<std::complex<double>>(pos, vel));
-            pos_idx += np;
-            vel_idx += nv;
-        }
-        model_complex.setState(model_state_complex);
-    };
-
-
-    // Build cluster info for perturbation
-    struct ClusterPerturbInfo {
-        int cluster_idx;
-        int q0_start;
-        int np;
-        int nv;
-        bool is_implicit;
-    };
-    std::vector<ClusterPerturbInfo> cluster_info;
-    {
-        int q0_offset = 0;
-        for (size_t c = 0; c < model_real.clusters().size(); ++c) {
-            const auto& cluster = model_real.clusters()[c];
-            int np = cluster->num_positions_;
-            int nv = cluster->num_velocities_;
-            bool is_implicit = (np > nv);
-            cluster_info.push_back({(int)c, q0_offset, np, nv, is_implicit});
-
-            // Debug: print G matrix and constraint residual for implicit clusters
-            if (is_implicit) {
-                const auto& G = cluster->joint_->G();
-                auto lc = cluster->joint_->cloneLoopConstraint();
-                DVec<double> q_cluster = q0.segment(q0_offset, np);
-                DVec<double> phi = lc->phi(JointCoordinate<double>(q_cluster, true));
-                std::cout << "Cluster " << c << ": ||phi|| = " << phi.norm() << "\n";
-                std::cout << "  G matrix:\n" << G << "\n";
-            }
-            q0_offset += np;
-        }
-    }
-
-    // Helper to find which cluster a DOF belongs to
-    auto findClusterForDOF = [&cluster_info](int dof_idx) -> std::pair<int, int> {
-        int dof_offset = 0;
-        for (const auto& ci : cluster_info) {
-            if (dof_idx < dof_offset + ci.nv) {
-                return {ci.cluster_idx, dof_idx - dof_offset};
-            }
-            dof_offset += ci.nv;
-        }
-        return {-1, -1};
-    };
-
-    // Test dtau/dq using complex-step
-    // For implicit constraints, the G matrix gives the EXACT first-order relationship:
-    //   dq_spanning = G * dy_independent
-    // This is derived from the implicit function theorem and is exact to first order.
-    std::cout << "Testing dtau/dq...\n";
-    double max_error_dq = 0.0;
-    for (int i = 0; i < nDOF; ++i) {
-        // Convert state to complex
-        auto [q_complex, qd_complex] = toComplexState(q0, qd0);
-
-        // Find which cluster this DOF belongs to
-        auto [cidx, local_dof] = findClusterForDOF(i);
-        const auto& ci = cluster_info[cidx];
-
-        DVec<std::complex<double>> q_perturbed = q_complex;
-        if (ci.is_implicit) {
-            // Implicit constraint: use G matrix (exact first-order from implicit function theorem)
-            const auto& G = model_real.clusters()[cidx]->joint_->G();
-            for (int k = 0; k < ci.np; ++k) {
-                q_perturbed[ci.q0_start + k] += std::complex<double>(0, h * G(k, local_dof));
-            }
-        } else {
-            // Simple joint: perturb position directly
-            q_perturbed[ci.q0_start + local_dof] += ih;
-        }
-
-        // Set state on complex model
-        setComplexState(q_perturbed, qd_complex);
-
-        // Compute inverse dynamics with complex state
-        DVec<std::complex<double>> tau_complex = model_complex.inverseDynamics(ydd_complex);
-
-        // Extract derivative from imaginary part
-        DVec<double> dtau_dqi_complex(nDOF);
-        for (int j = 0; j < nDOF; ++j) {
-            dtau_dqi_complex[j] = tau_complex[j].imag() / h;
-        }
-
-        // Compare with analytical
-        double error = (dtau_dq.col(i) - dtau_dqi_complex).cwiseAbs().maxCoeff();
-        max_error_dq = std::max(max_error_dq, error);
-
-        std::cout << "  Column " << i << " error: " << error << "\n";
-        if (error > 1e-8) {
-            std::cout << "    Analytical:    [" << dtau_dq(0,i) << ", " << dtau_dq(1,i) << "]\n";
-            std::cout << "    Complex-step:  [" << dtau_dqi_complex[0] << ", " << dtau_dqi_complex[1] << "]\n";
-        }
-    }
-    std::cout << "Max error (dtau/dq): " << max_error_dq << "\n";
-
-    // Test dtau/dqdot using complex-step
-    std::cout << "Testing dtau/dqdot...\n";
-    double max_error_dqdot = 0.0;
-    for (int i = 0; i < nDOF; ++i) {
-        // Convert state to complex
-        auto [q_complex, qd_complex] = toComplexState(q0, qd0);
-        qd_complex[i] += ih;  // Perturb qd[i]
-
-        // Set state on complex model
-        setComplexState(q_complex, qd_complex);
-
-        // Compute inverse dynamics with complex state
-        DVec<std::complex<double>> tau_complex = model_complex.inverseDynamics(ydd_complex);
-
-        // Extract derivative from imaginary part
-        DVec<double> dtau_dqdoti_complex(nDOF);
-        for (int j = 0; j < nDOF; ++j) {
-            dtau_dqdoti_complex[j] = tau_complex[j].imag() / h;
-        }
-
-        // Compare with analytical
-        double error = (dtau_dqdot.col(i) - dtau_dqdoti_complex).cwiseAbs().maxCoeff();
-        max_error_dqdot = std::max(max_error_dqdot, error);
-
-        std::cout << "  Column " << i << " error: " << error << "\n";
-        if (error > 1e-8) {
-            std::cout << "    Analytical:    [" << dtau_dqdot(0,i) << ", " << dtau_dqdot(1,i) << "]\n";
-            std::cout << "    Complex-step:  [" << dtau_dqdoti_complex[0] << ", " << dtau_dqdoti_complex[1] << "]\n";
-        }
-    }
-    std::cout << "Max error (dtau/dqdot): " << max_error_dqdot << "\n";
-
-    std::cout << "========================================\n\n";
-
-    // Compare complex-step vs finite-difference
-    std::cout << "Comparing complex-step vs finite-difference for dtau/dq...\n";
-    double max_cs_vs_fd_error_dq = 0.0;
-    const double fd_h = 1e-7;
-    for (int i = 0; i < nDOF; ++i) {
-        // Complex-step derivative
-        auto [q_complex_i, qd_complex_i] = toComplexState(q0, qd0);
-        auto [cidx, local_dof] = findClusterForDOF(i);
-        const auto& ci = cluster_info[cidx];
-
-        DVec<std::complex<double>> q_perturbed_i = q_complex_i;
-        if (ci.is_implicit) {
-            const auto& G_i = model_real.clusters()[cidx]->joint_->G();
-            for (int k = 0; k < ci.np; ++k) {
-                q_perturbed_i[ci.q0_start + k] += std::complex<double>(0, h * G_i(k, local_dof));
-            }
-        } else {
-            q_perturbed_i[ci.q0_start + local_dof] += ih;
-        }
-        setComplexState(q_perturbed_i, qd_complex_i);
-        DVec<std::complex<double>> tau_complex_i = model_complex.inverseDynamics(ydd_complex);
-        DVec<double> dtau_dqi_cs(nDOF);
-        for (int j = 0; j < nDOF; ++j) {
-            dtau_dqi_cs[j] = tau_complex_i[j].imag() / h;
-        }
-
-        // Finite-difference derivative (using real model)
-        model_real.setState(state_real);
-        DVec<double> q_perturbed_real = q0;
-        if (ci.is_implicit) {
-            const auto& G_i = model_real.clusters()[cidx]->joint_->G();
-            for (int k = 0; k < ci.np; ++k) {
-                q_perturbed_real[ci.q0_start + k] += fd_h * G_i(k, local_dof);
-            }
-        } else {
-            q_perturbed_real[ci.q0_start + local_dof] += fd_h;
-        }
-        // Set perturbed state
-        ModelState<double> state_plus_q;
-        int pos_idx = 0, vel_idx = 0;
-        for (const auto& cluster : model_real.clusters()) {
-            int np = cluster->num_positions_;
-            int nv = cluster->num_velocities_;
-            JointCoordinate<double> pos(q_perturbed_real.segment(pos_idx, np), (np > nv));
-            JointCoordinate<double> vel(qd0.segment(vel_idx, nv), false);
-            state_plus_q.push_back(JointState<double>(pos, vel));
-            pos_idx += np;
-            vel_idx += nv;
-        }
-        model_real.setState(state_plus_q);
-        DVec<double> tau_plus_q = model_real.inverseDynamics(ydd_real);
-
-        model_real.setState(state_real);
-        DVec<double> tau_base_q = model_real.inverseDynamics(ydd_real);
-
-        DVec<double> dtau_dqi_fd = (tau_plus_q - tau_base_q) / fd_h;
-
-        double error = (dtau_dqi_cs - dtau_dqi_fd).cwiseAbs().maxCoeff();
-        max_cs_vs_fd_error_dq = std::max(max_cs_vs_fd_error_dq, error);
-
-        std::cout << "  Column " << i << " CS vs FD error: " << error << "\n";
-    }
-    std::cout << "Max complex-step vs finite-diff error (dtau/dq): " << max_cs_vs_fd_error_dq << "\n";
-
-    // Compare complex-step vs finite-difference for velocity derivatives
-    std::cout << "\nComparing complex-step vs finite-difference for dtau/dqdot...\n";
-    double max_cs_vs_fd_error_dqdot = 0.0;
-    for (int i = 0; i < nDOF; ++i) {
-        // Complex-step derivative
-        auto [q_complex, qd_complex] = toComplexState(q0, qd0);
-        qd_complex[i] += ih;
-        setComplexState(q_complex, qd_complex);
-        DVec<std::complex<double>> tau_complex = model_complex.inverseDynamics(ydd_complex);
-        DVec<double> dtau_dqdoti_cs(nDOF);
-        for (int j = 0; j < nDOF; ++j) {
-            dtau_dqdoti_cs[j] = tau_complex[j].imag() / h;
-        }
-
-        // Finite-difference derivative
-        model_real.setState(state_real);
-        DVec<double> tau_base = model_real.inverseDynamics(ydd_real);
-
-        DVec<double> qd_plus = qd0;
-        qd_plus[i] += fd_h;
-        ModelState<double> state_plus_qd;
-        int pos_idx = 0, vel_idx = 0;
-        for (const auto& cluster : model_real.clusters()) {
-            int np = cluster->num_positions_;
-            int nv = cluster->num_velocities_;
-            JointCoordinate<double> pos(q0.segment(pos_idx, np), (np > nv));
-            JointCoordinate<double> vel(qd_plus.segment(vel_idx, nv), false);
-            state_plus_qd.push_back(JointState<double>(pos, vel));
-            pos_idx += np;
-            vel_idx += nv;
-        }
-        model_real.setState(state_plus_qd);
-        DVec<double> tau_plus_qd = model_real.inverseDynamics(ydd_real);
-
-        DVec<double> dtau_dqdoti_fd = (tau_plus_qd - tau_base) / fd_h;
-
-        double error = (dtau_dqdoti_cs - dtau_dqdoti_fd).cwiseAbs().maxCoeff();
-        max_cs_vs_fd_error_dqdot = std::max(max_cs_vs_fd_error_dqdot, error);
-
-        std::cout << "  Column " << i << " CS vs FD error: " << error << "\n";
-    }
-    std::cout << "Max complex-step vs finite-diff error (dtau/dqdot): " << max_cs_vs_fd_error_dqdot << "\n";
-
-    // Tolerance checks
-    // 1. Complex-step should match finite-diff to ~1e-7 (FD accuracy limit)
-    EXPECT_LT(max_cs_vs_fd_error_dq, 1e-5) << "Complex-step dtau/dq differs significantly from finite-diff";
-    EXPECT_LT(max_cs_vs_fd_error_dqdot, 1e-5) << "Complex-step dtau/dqdot differs significantly from finite-diff";
-
-    // 2. Complex-step should match analytical derivatives
-    // For implicit constraints, error scales with constraint residual due to G-matrix linearization
-    // PlanarLegLinkage achieves machine-precision constraints, so we can use tight tolerances
-    const double expected_error = 6.0 * max_phi_residual + 1e-3;  // Linear in constraint residual
-    EXPECT_LT(max_error_dq, expected_error) << "Complex-step dtau/dq differs significantly from analytical";
-    EXPECT_LT(max_error_dqdot, expected_error) << "Complex-step dtau/dqdot differs significantly from analytical";
-
-    std::cout << "\n========================================\n";
-    std::cout << "SUMMARY:\n";
-    std::cout << "  Max ||phi|| residual:           " << max_phi_residual << "\n";
-    std::cout << "  Max error vs analytical (dq):   " << max_error_dq << " (tol: " << expected_error << ")\n";
-    std::cout << "  Max error vs analytical (dqdot):" << max_error_dqdot << " (tol: " << expected_error << ")\n";
-    std::cout << "  Max CS vs FD error (dq):        " << max_cs_vs_fd_error_dq << " (tol: 1e-5)\n";
-    std::cout << "  Max CS vs FD error (dqdot):     " << max_cs_vs_fd_error_dqdot << " (tol: 1e-5)\n";
-    std::cout << "========================================\n";
+    testInverseDynamicsDerivativesComplexStepFloatingBase(
+        model_real, model_complex, "PlanarLegLinkage (ImplicitConstraint)");
 }
 
 // // Test for Kangaroo (open chain) - simple test without loop constraints
