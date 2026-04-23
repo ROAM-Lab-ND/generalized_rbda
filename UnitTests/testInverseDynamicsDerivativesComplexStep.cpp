@@ -1043,319 +1043,33 @@ TEST(InverseDynamicsDerivativesComplexStep, TeleopArm) {
     testInverseDynamicsDerivativesComplexStepFloatingBase(
         model_real, model_complex, "TeleopArm");
 }
-namespace {
-
-// Newton iteration constraint solver for implicit loop constraints
-// Solves φ(q_ind, q_dep) = 0 for q_dep given q_ind using Newton-Raphson
-class ConstraintSolver {
-public:
-    static constexpr int MAX_ITERATIONS = 100;  // Increased from 50 for better convergence
-    static constexpr double TOLERANCE = 1e-12;  // Very tight for machine-precision capable clusters
-    static constexpr double DAMPING = 0.5;  // Damping factor for stability
-    
-    // Solve constraint for a single cluster with GenericImplicit constraints
-    // Returns true if converged to a solution
-    static bool solveClusterConstraint(
-        const std::function<grbda::DVec<double>(const grbda::DVec<double>&)>& phi_func,
-        const std::vector<bool>& independent_mask,
-        grbda::DVec<double>& q_full) 
-    {
-        const int n_total = q_full.size();
-        const int n_ind = std::count(independent_mask.begin(), independent_mask.end(), true);
-        const int n_dep = n_total - n_ind;
-        const int n_constraints = n_dep;  // Number of constraint equations
-        
-        if (n_constraints == 0) return true;  // No constraints
-        
-        // Extract independent and dependent coordinates
-        grbda::DVec<double> q_ind(n_ind);
-        grbda::DVec<double> q_dep(n_dep);
-        
-        int ind_idx = 0, dep_idx = 0;
-        for (int i = 0; i < n_total; i++) {
-            if (independent_mask[i]) {
-                q_ind(ind_idx++) = q_full(i);
-            } else {
-                q_dep(dep_idx++) = q_full(i);
-            }
-        }
-        
-        // Newton iteration
-        for (int iter = 0; iter < MAX_ITERATIONS; iter++) {
-            // Reconstruct full q
-            ind_idx = 0; dep_idx = 0;
-            for (int i = 0; i < n_total; i++) {
-                if (independent_mask[i]) {
-                    q_full(i) = q_ind(ind_idx++);
-                } else {
-                    q_full(i) = q_dep(dep_idx++);
-                }
-            }
-            
-            // Evaluate constraint
-            grbda::DVec<double> phi_val = phi_func(q_full);
-            double residual = phi_val.norm();
-            
-            if (residual < TOLERANCE) {
-                return true;  // Converged!
-            }
-            
-            // Compute Jacobian w.r.t. dependent coordinates using FIVE-POINT STENCIL
-            // Five-point formula: J*δ ≈ [-f(+2h) + 8f(+h) - 8f(-h) + f(-2h)] / (12h)
-            // This provides O(h⁴) accuracy for the Jacobian
-            const double h = 1e-8;
-            grbda::DMat<double> J_dep(n_constraints, n_dep);
-            
-            dep_idx = 0;
-            int dep_global_idx = 0;
-            for (int i = 0; i < n_total; i++) {
-                if (!independent_mask[i]) {
-                    // Evaluate at 4 points: ±h and ±2h
-                    grbda::DVec<double> q_plus_h = q_full;
-                    q_plus_h(i) += h;
-                    grbda::DVec<double> phi_plus_h = phi_func(q_plus_h);
-                    
-                    grbda::DVec<double> q_minus_h = q_full;
-                    q_minus_h(i) -= h;
-                    grbda::DVec<double> phi_minus_h = phi_func(q_minus_h);
-                    
-                    grbda::DVec<double> q_plus_2h = q_full;
-                    q_plus_2h(i) += 2.0 * h;
-                    grbda::DVec<double> phi_plus_2h = phi_func(q_plus_2h);
-                    
-                    grbda::DVec<double> q_minus_2h = q_full;
-                    q_minus_2h(i) -= 2.0 * h;
-                    grbda::DVec<double> phi_minus_2h = phi_func(q_minus_2h);
-                    
-                    // Five-point stencil formula
-                    J_dep.col(dep_idx) = (-phi_plus_2h + 8.0*phi_plus_h - 8.0*phi_minus_h + phi_minus_2h) / (12.0 * h);
-                    dep_idx++;
-                }
-            }
-            
-            // Solve for update: J * delta_q_dep = -phi
-            grbda::DVec<double> delta_q_dep = J_dep.completeOrthogonalDecomposition().solve(-phi_val);
-            
-            // Apply damped update
-            q_dep += DAMPING * delta_q_dep;
-            
-            // Check if update is too small
-            if (delta_q_dep.norm() < TOLERANCE * 0.01) {
-                // Converged or stuck
-                break;
-            }
-        }
-        
-        // Final reconstruction
-        ind_idx = 0; dep_idx = 0;
-        for (int i = 0; i < n_total; i++) {
-            if (independent_mask[i]) {
-                q_full(i) = q_ind(ind_idx++);
-            } else {
-                q_full(i) = q_dep(dep_idx++);
-            }
-        }
-        
-        // Check final residual: hybrid acceptance
-        // Machine-precision capable clusters will hit ~1e-15
-        // Ill-conditioned clusters plateau at ~1e-2-1e-3
-        grbda::DVec<double> phi_final = phi_func(q_full);
-        double final_residual = phi_final.norm();
-        
-        // Accept if:
-        // - Converged to machine precision (< 1e-10), OR
-        // - Reasonably small (< 5e-2) and didn't improve much in last iteration
-        if (final_residual < 1e-10) return true;  // Machine precision achieved
-        if (final_residual < 5e-2) return true;   // Pragmatic acceptance for ill-conditioned
-        return false;
-    }
-};
-
-// Helper function to find valid constrained state for Tello robots
-// Uses Newton iteration to solve constraints on the manifold
-bool findValidTelloState(grbda::ModelState<double>& state_out, 
-                        grbda::ClusterTreeModel<double>& model,
-                        double& max_phi_residual_out) {
-    using namespace grbda;
-    
-    // Try multiple random seeds for independent coordinates
-    for (int attempt = 0; attempt < 10; attempt++) {
-        try {
-            ModelState<double> test_state;
-            bool all_constraints_satisfied = true;
-            double max_phi_residual = 0.0;
-            
-            // Iterate through clusters
-            int cluster_idx = 0;
-            for (const auto& cluster : model.clusters()) {
-                int np = cluster->num_positions_;
-                int nv = cluster->num_velocities_;
-                
-                DVec<double> pos = DVec<double>::Zero(np);
-                DVec<double> vel = DVec<double>::Zero(nv);
-                
-                // Cluster 0: Base (floating) - set to identity
-                if (cluster_idx == 0 && np == 7) {
-                    pos << 0, 0, 0, 1, 0, 0, 0;  // quat (w,x,y,z) + position
-                    test_state.push_back(JointState<double>(
-                        JointCoordinate<double>(pos, false),
-                        JointCoordinate<double>(vel, false)));
-                }
-                // Constrained clusters (4 pos, 2 vel = differential mechanism)
-                else if (np == 4 && nv == 2) {
-                    // Initialize independent coordinates with small random values
-                    double ind_range = (attempt == 0) ? 0.0 : 0.1;
-                    pos(0) = (attempt == 0) ? 0.0 : (DVec<double>::Random(1)(0) * ind_range);
-                    pos(1) = (attempt == 0) ? 0.0 : (DVec<double>::Random(1)(0) * ind_range);
-                    pos(2) = 0.0;  // Dependent (to be solved)
-                    pos(3) = 0.0;
-
-                    // Clone the loop constraint to access it
-                    auto loop_constraint = cluster->joint_->cloneLoopConstraint();
-
-                    // Independent coordinate mask
-                    std::vector<bool> ind_mask;
-                    if (auto generic_constraint = std::dynamic_pointer_cast<LoopConstraint::GenericImplicit<double>>(loop_constraint)) {
-                        const auto& is_independent = generic_constraint->isCoordinateIndependent();
-                        ind_mask.assign(is_independent.begin(), is_independent.end());
-                    } else {
-                        int n_ind = loop_constraint->numIndependentPos();
-                        ind_mask.assign(cluster->num_positions_, false);
-                        for (int i = 0; i < std::min(n_ind, cluster->num_positions_); ++i) ind_mask[i] = true;
-                    }
-
-                    // Constraint function
-                    auto phi_func = [&loop_constraint](const DVec<double>& q) -> DVec<double> {
-                        JointCoordinate<double> jc(q, true);
-                        return loop_constraint->phi(jc);
-                    };
-
-                    // Perform a few Newton passes for robustness
-                    bool solved = false;
-                    for (int pass = 0; pass < 5; ++pass) {
-                        auto phi_init = phi_func(pos);
-                        std::cout << "[DEBUG] Cluster " << cluster_idx << " attempt " << attempt
-                                  << " pass " << pass << " init ||phi||=" << phi_init.norm() << std::endl;
-                        solved = ConstraintSolver::solveClusterConstraint(phi_func, ind_mask, pos);
-                        if (solved) break;
-                        // Slightly perturb independent coords if stuck
-                        pos(0) += 0.01 * (DVec<double>::Random(1)(0));
-                        pos(1) += 0.01 * (DVec<double>::Random(1)(0));
-                    }
-
-                    if (!solved) {
-                        auto phi_final = phi_func(pos);
-                        std::cout << "[DEBUG] Cluster " << cluster_idx << " attempt " << attempt
-                                  << " failed, final ||phi||=" << phi_final.norm() << std::endl;
-                        all_constraints_satisfied = false;
-                        break;
-                    }
-                    auto phi_final = phi_func(pos);
-                    std::cout << "[DEBUG] Cluster " << cluster_idx << " attempt " << attempt
-                              << " success, final ||phi||=" << phi_final.norm() << std::endl;
-                    max_phi_residual = std::max(max_phi_residual, phi_final.norm());
-
-                    test_state.push_back(JointState<double>(
-                        JointCoordinate<double>(pos, true),
-                        JointCoordinate<double>(vel, false)));
-                }
-                // Simple clusters
-                else {
-                    test_state.push_back(JointState<double>(
-                        JointCoordinate<double>(pos, false),
-                        JointCoordinate<double>(vel, false)));
-                }
-                
-                cluster_idx++;
-            }
-            
-            if (!all_constraints_satisfied) continue;
-            
-            // Try to set the state
-            model.setState(test_state);
-            
-            // Success! Return this state and max residual
-            state_out = test_state;
-            max_phi_residual_out = max_phi_residual;
-            return true;
-            
-        } catch (...) {
-            // This attempt didn't work, try next seed
-            continue;
-        }
-    }
-    
-    max_phi_residual_out = std::numeric_limits<double>::infinity();
-    return false;
-}
-
-}  // namespace
-
-
-// NOTE: Tello requires Newton iteration on constraint manifold to find valid states.
-// This test validates that constraint checking works correctly and the system properly
-// rejects invalid configurations.
 TEST(InverseDynamicsDerivativesComplexStep, TelloImplicitConstraint) {
     using namespace grbda;
     Tello<double> robot_real;
-    auto model_real = robot_real.buildClusterTreeModel();
+    ClusterTreeModel<double> model_real = robot_real.buildClusterTreeModel();
 
-    std::cout << "\n========================================\n";
-    std::cout << "Testing Tello with implicit differential constraints\n";
-    std::cout << "Robot: Tello (16-DOF with hip/knee-ankle differentials)\n";
-    std::cout << "========================================\n\n";
+    ModelState<double> state;
+    for (const auto& c : model_real.clusters())
+        state.push_back(c->joint_->randomJointState(true));
+    model_real.setState(state, true);
 
-    // Use constraint solver to find valid state
-    ModelState<double> state_real;
-    double max_phi_residual = 0.0;
-    bool found_valid_state = findValidTelloState(state_real, model_real, max_phi_residual);
-    
-    if (!found_valid_state) {
-        std::cout << "✗ Constraint solver could not find valid state\n";
-        throw::std::runtime_error("Constraint solver failed for Tello");
-        GTEST_SKIP() << "Newton iteration did not converge for Tello constraints";
-        return;
-    }
-    
-    std::cout << "✓ Constraint solver found valid state\n";
-    std::cout << "Max constraint residual (||phi||): " << max_phi_residual << "\n";
-    
-    // Compute inverse dynamics
-    DVec<double> tau = model_real.inverseDynamics(DVec<double>::Zero(16));
-    std::cout << "✓ Inverse dynamics computed: tau_norm = " << tau.norm() << "\n";
-    
+    const int nDOF = model_real.getNumDegreesOfFreedom();
+    DVec<double> tau = model_real.inverseDynamics(DVec<double>::Zero(nDOF));
     EXPECT_GE(tau.norm(), 0.0);
 }
 
-// Test for TelloWithArms - also has implicit differential constraints
 TEST(InverseDynamicsDerivativesComplexStep, TelloWithArmsImplicitConstraint) {
     using namespace grbda;
     TelloWithArms<double> robot_real;
-    auto model_real = robot_real.buildClusterTreeModel();
+    ClusterTreeModel<double> model_real = robot_real.buildClusterTreeModel();
 
-    std::cout << "\n========================================\n";
-    std::cout << "Testing TelloWithArms with implicit differential constraints\n";
-    std::cout << "Robot: TelloWithArms (24-DOF with differentials + arms)\n";
-    std::cout << "========================================\n\n";
+    ModelState<double> state;
+    for (const auto& c : model_real.clusters())
+        state.push_back(c->joint_->randomJointState(true));
+    model_real.setState(state, true);
 
-    // Use constraint solver to find valid state
-    ModelState<double> state_real;
-    double max_phi_residual = 0.0;
-    bool found_valid_state = findValidTelloState(state_real, model_real, max_phi_residual);
-    
-    if (!found_valid_state) {
-        std::cout << "✗ Constraint solver could not find valid state\n";
-        GTEST_SKIP() << "Newton iteration did not converge for TelloWithArms constraints";
-        return;
-    }
-    
-    std::cout << "✓ Constraint solver found valid state\n";
-    std::cout << "Max constraint residual (||phi||): " << max_phi_residual << "\n";
-    
-    // Compute inverse dynamics
-    DVec<double> tau = model_real.inverseDynamics(DVec<double>::Zero(24));
-    std::cout << "✓ Inverse dynamics computed: tau_norm = " << tau.norm() << "\n";
-    
+    const int nDOF = model_real.getNumDegreesOfFreedom();
+    DVec<double> tau = model_real.inverseDynamics(DVec<double>::Zero(nDOF));
     EXPECT_GE(tau.norm(), 0.0);
 }
 
