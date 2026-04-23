@@ -2393,30 +2393,6 @@ TEST(InverseDynamicsDerivativesComplexStep, TelloImplicitConstraintDerivatives) 
         ydd_complex[i] = std::complex<double>(ydd_real[i], 0.0);
     }
 
-    // Helper lambda to set complex state from global q and qd vectors
-    // Note: For implicit constraints, positions must be marked as spanning (is_spanning=true)
-    auto setComplexState = [&model_complex, enforce_constraints_flag](const DVec<std::complex<double>>& q,
-                                            const DVec<std::complex<double>>& qd) {
-        ModelState<std::complex<double>> model_state_complex;
-        int pos_idx = 0, vel_idx = 0;
-        for (const auto& cluster : model_complex.clusters()) {
-            int np = cluster->num_positions_;
-            int nv = cluster->num_velocities_;
-
-            // For implicit constraints (np > nv), positions are spanning coordinates
-            bool is_spanning = (np > nv);
-
-            JointCoordinate<std::complex<double>> pos(
-                q.segment(pos_idx, np), is_spanning);
-            JointCoordinate<std::complex<double>> vel(
-                qd.segment(vel_idx, nv), false);
-
-            model_state_complex.push_back(JointState<std::complex<double>>(pos, vel));
-            pos_idx += np;
-            vel_idx += nv;
-        }
-        model_complex.setState(model_state_complex, enforce_constraints_flag);
-    };
 
     // Build mapping from DOF index to (cluster, local_pos_idx) for position perturbation
     // For implicit constraints, we need to perturb the independent positions,
@@ -2498,18 +2474,6 @@ TEST(InverseDynamicsDerivativesComplexStep, TelloImplicitConstraintDerivatives) 
             q0_offset += np;
         }
     }
-
-    // Helper to find which cluster a DOF belongs to
-    auto findClusterForDOF = [&cluster_info](int dof_idx) -> std::pair<int, int> {
-        int dof_offset = 0;
-        for (const auto& ci : cluster_info) {
-            if (dof_idx < dof_offset + ci.nv) {
-                return {ci.cluster_idx, dof_idx - dof_offset};  // (cluster_idx, local_dof)
-            }
-            dof_offset += ci.nv;
-        }
-        return {-1, -1};  // Should never happen
-    };
 
     const ModelState<std::complex<double>> state_complex0 = makeModelState<std::complex<double>>(model_real, q0, qd0);
     const ModelState<double> state_real_base = makeModelState<double>(model_real, q0, qd0);
@@ -2809,6 +2773,7 @@ TEST(InverseDynamicsDerivativesComplexStep, PlanarLegLinkageImplicitConstraintDe
         }
         model_complex.setState(model_state_complex);
     };
+
 
     // Build cluster info for perturbation
     struct ClusterPerturbInfo {
