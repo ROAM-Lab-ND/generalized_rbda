@@ -743,16 +743,6 @@ void testDirectTemplateApproach(const std::string& robot_name) {
     ClusterTreeModel<double> model_real = robot_real.buildClusterTreeModel();
     ClusterTreeModel<std::complex<double>> model_complex = robot_complex.buildClusterTreeModel();
 
-    // Verify models have the same structure
-    std::cout << "Real model:\n";
-    std::cout << "  Clusters: " << model_real.clusters().size() << "\n";
-    std::cout << "  Bodies:   " << model_real.bodies().size() << "\n";
-    std::cout << "  DOF:      " << model_real.getNumDegreesOfFreedom() << "\n";
-
-    std::cout << "Complex model:\n";
-    std::cout << "  Clusters: " << model_complex.clusters().size() << "\n";
-    std::cout << "  Bodies:   " << model_complex.bodies().size() << "\n";
-    std::cout << "  DOF:      " << model_complex.getNumDegreesOfFreedom() << "\n";
 
     // Verify they match
     EXPECT_EQ(model_real.clusters().size(), model_complex.clusters().size());
@@ -781,18 +771,8 @@ void testDirectTemplateApproach(const std::string& robot_name) {
                 max_diff = std::max(max_diff, diff);
             }
         }
-
-        if (max_diff > 1e-10) {
-            all_g_matrices_match = false;
-            std::cout << "  Cluster " << i << ": G matrix max diff = " << max_diff << "\n";
-        }
     }
 
-    if (all_g_matrices_match) {
-        std::cout << "\n✓ All G matrices match perfectly!\n";
-    } else {
-        std::cout << "\n✗ Some G matrices differ\n";
-    }
 
     std::cout << "========================================\n";
     EXPECT_TRUE(all_g_matrices_match);
