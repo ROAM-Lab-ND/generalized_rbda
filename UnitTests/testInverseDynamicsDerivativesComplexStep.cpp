@@ -565,152 +565,6 @@ TEST(InverseDynamicsDerivativesComplexStep, FourLinkChain) {
     testInverseDynamicsDerivativesComplexStepSimple(model, "4-link revolute chain (random geometry)", 4);
 }
 
-// Helper function for testing with different Lie group configuration variants
-// Parameters:
-//   quat_order: 0 = [w,x,y,z] (default), 1 = [x,y,z,w]
-//   use_R_transpose: true = use R^T, false = use R
-void testInverseDynamicsDerivativesLieGroupVariant(ClusterTreeModel<double>& model,
-                                                     const std::string& robot_name,
-                                                     int expected_dof,
-                                                     bool floating_base = false,
-                                                     int quat_order = 0,
-                                                     bool use_R_transpose = true,
-                                                     double tol_dq = 1e-6,
-                                                     double tol_dqdot = 1e-6) {
-    std::cout << std::setprecision(12);
-
-    const int nDOF = model.getNumDegreesOfFreedom();
-    std::cout << "\n========================================\n";
-    std::cout << "Testing inverse dynamics derivatives (Lie Group FD)\n";
-    std::cout << "Robot: " << robot_name << "\n";
-    std::cout << "DOF: " << nDOF << "\n";
-    std::cout << "Quat order: " << (quat_order == 0 ? "[w,x,y,z]" : "[x,y,z,w]") << "\n";
-    std::cout << "Position update: " << (use_R_transpose ? "R^T" : "R") << "\n";
-    std::cout << "========================================\n\n";
-
-    ASSERT_EQ(nDOF, expected_dof);
-
-    // Set random state
-    ModelState<double> model_state;
-    for (const auto &cluster : model.clusters()) {
-        JointState<> joint_state = cluster->joint_->randomJointState();
-        model_state.push_back(joint_state);
-    }
-    model.setState(model_state);
-
-    // Random acceleration
-    const DVec<double> ydd = DVec<double>::Random(nDOF);
-
-    // Get analytical derivatives
-    auto [dtau_dq, dtau_dqdot] = model.firstOrderInverseDynamicsDerivatives(ydd);
-
-    std::cout << "Analytical derivatives computed successfully.\n";
-    std::cout << "  dtau_dq:    " << dtau_dq.rows() << " x " << dtau_dq.cols() << "\n";
-    std::cout << "  dtau_dqdot: " << dtau_dqdot.rows() << " x " << dtau_dqdot.cols() << "\n\n";
-
-    // Verify with finite differences using Lie group retraction
-    std::pair<DVec<double>, DVec<double>> state = model.getState();
-    const DVec<double>& q0 = state.first;
-    const DVec<double>& qd0 = state.second;
-    const double h = 1e-20;
-
-    std::cout << "Finite difference verification (h = " << h << "):\n";
-    std::cout << "  Tolerance: dtau/dq = " << tol_dq << ", dtau/dqdot = " << tol_dqdot << "\n\n";
-
-    // Configuration addition with variants
-    auto conf_add = [&](const DVec<double> &dq) -> DVec<double>
-    {
-        if(!floating_base) {
-            return q0 + dq;
-        }
-        else {
-            const int n_q = q0.size();
-            const int n_v = dq.size();
-            const int nj = n_v - 6;
-            DVec<double> q_new = q0;
-            q_new.tail(nj) += dq.tail(nj);
-
-            // Extract configuration with [pos(3), quat(4)] ordering
-            Vec3<double> p = q0.head(3);  // Position in world frame
-            Quat<double> quat;
-            if (quat_order == 0) {
-                quat = q0.segment(3, 4);  // [w,x,y,z]
-            } else {
-                quat[0] = q0[6];  // w
-                quat[1] = q0[3];  // x
-                quat[2] = q0[4];  // y
-                quat[3] = q0[5];  // z
-            }
-
-            Vec3<double> omega_body = dq.head(3);
-            Quat<double> delta_quat = ori::so3ToQuat(omega_body);
-            Quat<double> quat_new = ori::quatProduct(quat, delta_quat);
-            quat_new.normalize();
-
-            Mat3<double> R = ori::quaternionToRotationMatrix(quat);
-            Vec3<double> v_body = dq.segment(3, 3);
-            Vec3<double> p_new;
-            if (use_R_transpose) {
-                p_new = p + R.transpose() * v_body;
-            } else {
-                p_new = p + R * v_body;
-            }
-
-            // Assemble configuration with [pos(3), quat(4)] ordering
-            q_new.head(3) = p_new;
-            if (quat_order == 0) {
-                q_new.segment(3, 4) = quat_new;
-            } else {
-                q_new[3] = quat_new[1];  // x
-                q_new[4] = quat_new[2];  // y
-                q_new[5] = quat_new[3];  // z
-                q_new[6] = quat_new[0];  // w
-            }
-
-            return q_new;
-        }
-    };
-
-    auto tau_func_q = [&](const DVec<double>& dq) {
-        auto q = conf_add(dq);
-        std::pair<DVec<double>, DVec<double>> state_q = {q, qd0};
-        model.setState(state_q);
-        return model.inverseDynamics(ydd);
-    };
-
-    auto tau_func_qd = [&](const DVec<double>& qd) {
-        std::pair<DVec<double>, DVec<double>> state_qd = {q0, qd};
-        model.setState(state_qd);
-        return model.inverseDynamics(ydd);
-    };
-
-    auto dtau_dq_fd = finiteDifferenceJacobian(tau_func_q, qd0*0, h);
-    auto dtau_dqdot_fd = finiteDifferenceJacobian(tau_func_qd, qd0, h);
-
-    double max_error_dq = (dtau_dq - dtau_dq_fd).cwiseAbs().maxCoeff();
-    double max_error_dqdot = (dtau_dqdot - dtau_dqdot_fd).cwiseAbs().maxCoeff();
-
-    std::cout << "\n========================================\n";
-    std::cout << "RESULTS:\n";
-    std::cout << "  Max error (dtau/dq):    " << max_error_dq << " (tol: " << tol_dq << ")\n";
-    std::cout << "  Max error (dtau/dqdot): " << max_error_dqdot << " (tol: " << tol_dqdot << ")\n";
-
-    if (max_error_dq < tol_dq) {
-        std::cout << "  dtau/dq: PASS ✓\n";
-    } else {
-        std::cout << "  dtau/dq: FAIL ✗\n";
-    }
-
-    if (max_error_dqdot < tol_dqdot) {
-        std::cout << "  dtau/dqdot: PASS ✓\n";
-    } else {
-        std::cout << "  dtau/dqdot: FAIL ✗\n";
-    }
-    std::cout << "========================================\n\n";
-
-    EXPECT_LT(max_error_dq, tol_dq);
-    EXPECT_LT(max_error_dqdot, tol_dqdot);
-}
 
 TEST(InverseDynamicsDerivativesComplexStep, TwoLinkChain) {
     RevoluteChainWithAndWithoutRotor<0, 2> robot(true);
@@ -1174,95 +1028,20 @@ TEST(InverseDynamicsDerivativesComplexStep, MITHumanoidQuaternion) {
 }
 
 TEST(InverseDynamicsDerivativesComplexStep, TeleopArm) {
-    // Build both real and complex models
-    TeleopArm<double> robot_real;
+    TeleopArm<double>               robot_real;
     TeleopArm<std::complex<double>> robot_complex;
-    
-    ClusterTreeModel<double> model_real = robot_real.buildClusterTreeModel();
+    ClusterTreeModel<double>               model_real    = robot_real.buildClusterTreeModel();
     ClusterTreeModel<std::complex<double>> model_complex = robot_complex.buildClusterTreeModel();
-    
-    const int nDOF = model_real.getNumDegreesOfFreedom();
-    ASSERT_EQ(nDOF, 7);
-    
-    // Set random state on real model
-    ModelState<double> model_state_real;
-    for (const auto &cluster : model_real.clusters()) {
-        JointState<> joint_state = cluster->joint_->randomJointState();
-        model_state_real.push_back(joint_state);
-    }
-    model_real.setState(model_state_real);
-    
-    // Random acceleration
-    const DVec<double> ydd_real = DVec<double>::Random(nDOF);
-    
-    // Get analytical derivatives
-    auto [dtau_dq, dtau_dqdot] = model_real.firstOrderInverseDynamicsDerivatives(ydd_real);
-    
-    std::cout << "\\n========================================\\n";
-    std::cout << "Testing inverse dynamics derivatives (Complex-Step)\\n";
-    std::cout << "Robot: TeleopArm\\n";
-    std::cout << "DOF: " << nDOF << "\\n";
-    std::cout << "========================================\\n\\n";
-    
-    // Get real state
-    std::pair<DVec<double>, DVec<double>> state_real = model_real.getState();
-    const DVec<double>& q0 = state_real.first;
-    const DVec<double>& qd0 = state_real.second;
-    
-    const double h = 1e-20;
-    const std::complex<double> ih(0.0, h);
-    
-    // Convert ydd to complex
-    DVec<std::complex<double>> ydd_complex(nDOF);
-    for (int i = 0; i < nDOF; ++i) {
-        ydd_complex[i] = std::complex<double>(ydd_real[i], 0.0);
-    }
-    
-    // Test dtau/dq using complex-step
-    double max_error_dq = 0.0;
-    for (int i = 0; i < nDOF; ++i) {
-        // Create perturbed state: q[i] += ih
-        auto [q_complex, qd_complex] = toComplexState(q0, qd0);
-        q_complex[i] += ih;
-        
-        // Set state on complex model
-        ModelState<std::complex<double>> model_state_complex;
-        int idx = 0;
-        for (const auto &cluster : model_complex.clusters()) {
-            JointCoordinate<std::complex<double>> pos(
-                DVec<std::complex<double>>::Zero(cluster->num_positions_), false);
-            JointCoordinate<std::complex<double>> vel(
-                DVec<std::complex<double>>::Zero(cluster->num_velocities_), false);
-            
-            for (int j = 0; j < cluster->num_positions_; ++j) {
-                pos[j] = q_complex[idx + j];
-            }
-            for (int j = 0; j < cluster->num_velocities_; ++j) {
-                vel[j] = qd_complex[idx + j];
-            }
-            
-            JointState<std::complex<double>> joint_state(pos, vel);
-            model_state_complex.push_back(joint_state);
-            idx += cluster->num_velocities_;
-        }
-        model_complex.setState(model_state_complex);
-        
-        // Compute inverse dynamics with complex state
-        DVec<std::complex<double>> tau_complex = model_complex.inverseDynamics(ydd_complex);
-        
-        // Extract derivative from imaginary part
-        DVec<double> dtau_dqi_complex(nDOF);
-        for (int j = 0; j < nDOF; ++j) {
-            dtau_dqi_complex[j] = tau_complex[j].imag() / h;
-        }
-        
-        // Compare with analytical
-        double error = (dtau_dq.col(i) - dtau_dqi_complex).cwiseAbs().maxCoeff();
-        max_error_dq = std::max(max_error_dq, error);
-    }
-    
-    std::cout << "Max error (dtau/dq): " << max_error_dq << "\\n";
-    EXPECT_LT(max_error_dq, 1e-12);
+
+    ASSERT_EQ(model_real.getNumDegreesOfFreedom(), 7);
+
+    ModelState<double> state;
+    for (const auto& c : model_real.clusters())
+        state.push_back(c->joint_->randomJointState());
+    model_real.setState(state);
+
+    testInverseDynamicsDerivativesComplexStepFloatingBase(
+        model_real, model_complex, "TeleopArm");
 }
 namespace {
 
