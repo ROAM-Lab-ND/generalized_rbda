@@ -1,44 +1,3 @@
-        // Evaluate d(S*b)/d(independent coords) using CasADi function object
-        template <typename Scalar>
-        DMat<Scalar> Generic<Scalar>::evalSvec_deriv(const DVec<Scalar>& b) const {
-            if constexpr (std::is_same_v<Scalar, double>) {
-                initializeDerivativeFunctions();
-                if (!derivative_functions_initialized_ || jacobian_S_times_b_fcn_.is_null() || q_cache_.size() == 0) {
-                    return DMat<Scalar>::Zero(this->num_bodies_ * 6, this->num_velocities_);
-                }
-                casadi::DM q_dm(q_cache_.size());
-                casadi::DM b_dm(b.size());
-                casadi::copy(q_cache_, q_dm);
-                casadi::copy(b, b_dm);
-                casadi::DM result_dm = jacobian_S_times_b_fcn_(casadi::DMVector{q_dm, b_dm})[0];
-                DMat<Scalar> out(result_dm.size1(), result_dm.size2());
-                casadi::copy(result_dm, out);
-                return out;
-            } else {
-                return DMat<Scalar>::Zero(this->num_bodies_ * 6, this->num_velocities_);
-            }
-        }
-
-        // Evaluate d(S^T*F)/d(independent coords) using CasADi function object
-        template <typename Scalar>
-        DMat<Scalar> Generic<Scalar>::evalSTvec_deriv(const DVec<Scalar>& F) const {
-            if constexpr (std::is_same_v<Scalar, double>) {
-                initializeDerivativeFunctions();
-                if (!derivative_functions_initialized_ || jacobian_ST_times_F_fcn_.is_null() || q_cache_.size() == 0) {
-                    return DMat<Scalar>::Zero(this->num_velocities_, this->num_velocities_);
-                }
-                casadi::DM q_dm(q_cache_.size());
-                casadi::DM F_dm(F.size());
-                casadi::copy(q_cache_, q_dm);
-                casadi::copy(F, F_dm);
-                casadi::DM result_dm = jacobian_ST_times_F_fcn_(casadi::DMVector{q_dm, F_dm})[0];
-                DMat<Scalar> out(result_dm.size1(), result_dm.size2());
-                casadi::copy(result_dm, out);
-                return out;
-            } else {
-                return DMat<Scalar>::Zero(this->num_velocities_, this->num_velocities_);
-            }
-        }
 #include "grbda/Dynamics/ClusterJoints/GenericJoint.h"
 #include "grbda/Utils/Utilities.h"
 
@@ -198,7 +157,6 @@ namespace grbda
             dg_dq_fcn_ = casadi::Function("dg_dq", {cs_q_sym, cs_v_sym}, {dg_dq_sym});
             dg_dv_fcn_ = casadi::Function("dg_dv", {cs_q_sym, cs_v_sym}, {dg_dv_sym});
         }
-        
 
         // Constructor with both symbolic and native phi functions
         // The native phi enables machine-precision complex-step differentiation
@@ -1332,10 +1290,11 @@ namespace grbda
             // Guarded with if constexpr: bodies_[].Xtree_ and S_spanning_ are DMat<Scalar>,
             // so .cast<SX>() inside would fail to instantiate for Scalar=complex<double>.
             if constexpr (std::is_same_v<Scalar, double>) {
-                std::vector<std::shared_ptr<Joints::Base<SX>>> joints_sx;
-                for (int i = 0; i < this->num_bodies_; ++i)
-                    joints_sx.push_back(this->single_joints_[i]->cloneAsSymbolic());
+            std::vector<std::shared_ptr<Joints::Base<SX>>> joints_sx;
+            for (int i = 0; i < this->num_bodies_; ++i)
+                joints_sx.push_back(this->single_joints_[i]->cloneAsSymbolic());
 
+            {
                 // Drive symbolic joints with q_span_vec / qd_span_vec (already Eigen<SX>)
                 int pos_idx2 = 0, vel_idx2 = 0;
                 for (int i = 0; i < this->num_bodies_; ++i) {
@@ -1367,8 +1326,6 @@ namespace grbda
                 DMat<SX> S_implicit_sx = X_intra_sx * S_spanning_sx;
                 DVec<SX> vJ_sx = S_implicit_sx * qd_span_vec;
 
-                // --- Jacobian-based product derivatives ---
-
                 // Build X_intra_ring_sx
                 DMat<SX> X_intra_ring_sx = DMat<SX>::Zero(mss_dim, mss_dim);
                 for (int i = 0; i < this->num_bodies_; ++i) {
@@ -1386,27 +1343,10 @@ namespace grbda
                 DVec<SX> g_sx_vec(g_casadi.size1());
                 for (int r = 0; r < (int)g_casadi.size1(); ++r) g_sx_vec(r) = g_casadi(r, 0);
 
-                DMat<SX> S_full_sx = S_implicit_sx * G_casadi; // S = X_intra * S_spanning * G
-
-                // --- jacobian_S_times_b: d(S*b)/dq_span, then contract with G to get d(S*b)/d(independent coords) ---
-                SX b_sx = SX::sym("b", nv, 1);
-                SX S_times_b = SX::mtimes(S_full_sx, b_sx); // mss_dim x 1
-                SX dS_times_b_dq = jacobian(S_times_b, q_span_sx); // mss_dim x n_span_pos
-                SX dS_times_b_dy = SX::mtimes(dS_times_b_dq, G_casadi); // mss_dim x nv
-                jacobian_S_times_b_fcn_ = casadi::Function("jacobian_S_times_b", {q_span_sx, b_sx}, {dS_times_b_dy});
-
-                // --- jacobian_ST_times_F: d(S^T*F)/dq_span, then contract with G to get d(S^T*F)/d(independent coords) ---
-                SX F_sx = SX::sym("F", mss_dim, 1);
-                SX S_T = SX::transpose(S_full_sx); // nv x mss_dim
-                SX S_T_times_F = SX::mtimes(S_T, F_sx); // nv x 1
-                SX dST_times_F_dq = jacobian(S_T_times_F, q_span_sx); // nv x n_span_pos
-                SX dST_times_F_dy = SX::mtimes(dST_times_F_dq, G_casadi); // nv x nv
-                jacobian_ST_times_F_fcn_ = casadi::Function("jacobian_ST_times_F", {q_span_sx, F_sx}, {dST_times_F_dy});
-
-                // --- cJ and Sdotqd derivatives (unchanged) ---
                 DVec<SX> cJ_sx = X_intra_ring_sx * S_spanning_sx * qd_span_vec
                                 + S_implicit_sx * g_sx_vec;
 
+                // d(cJ)/dq_span, then contract with G to get d(cJ)/d(independent coords)
                 SX cJ_casadi = SX::zeros(mss_dim, 1);
                 casadi::copy(cJ_sx, cJ_casadi);
                 SX dcJ_dq_sx = jacobian(cJ_casadi, q_span_sx);        // mss_dim x n_span_pos
@@ -1415,7 +1355,8 @@ namespace grbda
                 dSdotqd_dq_fcn_ = casadi::Function("dSdotqd_dq",
                     {q_span_sx, ydot_sx}, {dcJ_dy_sx});
             }
-            // end if constexpr (std::is_same_v<Scalar, double>)
+
+            } // if constexpr (std::is_same_v<Scalar, double>)
         }
 
 
@@ -1428,29 +1369,216 @@ namespace grbda
 
             if constexpr (std::is_same_v<Scalar, double>) {
                 initializeDerivativeFunctions();
+
+                // Reuse cached result when possible to avoid repeated CasADi evaluation
                 if (S_q_cache_valid_ && (int)S_q_cache_.size() == nv) {
                     return S_q_cache_;
                 }
+
                 S_q_cache_.assign(nv, DMat<Scalar>::Zero(mss_dim, nv));
+
                 if (!generic_constraint_) {
                     S_q_cache_valid_ = true;
                     return S_q_cache_;
                 }
+
+                // Safety check: ensure state has been cached
                 if (q_cache_.size() == 0 || !derivative_functions_initialized_ || S_implicit_.size() == 0) {
                     S_q_cache_valid_ = true;
                     return S_q_cache_;
                 }
-                // Use new contraction function for each basis vector
-                for (int j = 0; j < nv; ++j) {
-                    DVec<Scalar> b = DVec<Scalar>::Zero(nv);
-                    b(j) = Scalar(1);
-                    S_q_cache_[j] = evalSvec_deriv(b);
+
+                const DMat<Scalar>& S_implicit = S_implicit_;
+                const DMat<Scalar>& G = this->loop_constraint_->G();
+
+                // Debug: Check if S_implicit contains NaN
+                if (!S_implicit.allFinite()) {
+                    std::cout << "[DEBUG getSq] S_implicit contains NaN/Inf!" << std::endl;
+                    std::cout << "  X_intra_ finite: " << X_intra_.allFinite() << std::endl;
+                    std::cout << "  S_spanning_ finite: " << S_spanning_.allFinite() << std::endl;
                 }
+
+                casadi::DM q_dm(q_cache_.size());
+                casadi::copy(q_cache_, q_dm);
+
+                // Use the constraint's dG/dq function (properly initialized in constructor)
+                // instead of the joint's dG_dq_fcn_ which has issues with symbolic propagation
+                const casadi::Function& dG_dq_constraint = generic_constraint_->getdGdqFcn();
+                casadi::DMVector result = dG_dq_constraint(casadi::DMVector{q_dm});
+                casadi::DM dG_dq_stacked_dm = result[0];
+
+                const int n_span = G.rows();
+                const int n_indep = G.cols();
+
+                // The full derivative is: dS/dy_j = sum_k (dS/dq_k * G_kj)
+                // where dS/dq_k = dX_intra/dq_k * S_spanning * G + X_intra * S_spanning * dG/dq_k
+                //
+                // First, compute dS/dq_k for each spanning coordinate k
+                // Then contract with G to get dS/dy_j
+
+                // Extract dG/dq matrices for all spanning coordinates
+                // dG_dq_stacked_dm has shape (n_span * n_indep, n_span_pos) from CasADi jacobian
+                // CasADi stores column-major, so column k contains dG/dq_k flattened
+                const int n_span_pos = q_cache_.size();
+                std::vector<DMat<Scalar>> dG_dq_k(n_span_pos);
+                for (int k = 0; k < n_span_pos; ++k) {
+                    dG_dq_k[k].resize(n_span, n_indep);
+                    for (int row = 0; row < n_span; ++row) {
+                        for (int col = 0; col < n_indep; ++col) {
+                            // CasADi jacobian(vec(G), q) has shape (n_G_elements, n_q)
+                            // vec(G) is column-major, so element G[row,col] is at index col*n_span + row
+                            // dG[row,col]/dq[k] is at dG_dq_stacked_dm(col*n_span + row, k)
+                            int vec_idx = col * n_span + row;
+                            dG_dq_k[k](row, col) = static_cast<double>(dG_dq_stacked_dm(vec_idx, k));
+                        }
+                    }
+                }
+
+                // Compute dX_intra/dq_k * S_spanning for each spanning coordinate k
+                //
+                // Key insight: X_intra[i,j] is built from joint transforms along the path from j to i.
+                // When we perturb q_m (the joint angle of body m), it affects X_intra[i,j] only if:
+                //   1. m is in the path from j to i (m is between j and i in the kinematic chain)
+                //   2. m != j (the joint at j doesn't affect the transform FROM j)
+                //
+                // The derivative formula is:
+                //   dX_intra[i,j]/dq_m = X_intra[i,parent_m] * (-crm(s_m)) * XJ(q_m) * Xtree_m * X_intra[m,j]
+                //                      = X_intra[i,parent_m] * (-crm(s_m)) * X_intra[parent_m,j]
+                //
+                // where parent_m is the parent of body m in the cluster (or j if m is directly connected to j)
+                //
+                // For simplicity, we use the relationship:
+                //   dX_intra[i,j]/dq_m = -crm(X_intra[i,m] * s_m / G(m,ind)) * X_intra[m,j] (scaled by G contribution)
+                //
+                // Actually, a simpler approach:
+                // The derivative of the total S = X_intra * S_spanning * G with respect to independent coord y_j
+                // can be computed using the chain rule through spanning coords.
+                //
+                // For now, compute the contribution from X_intra derivative using connectivity:
+
+                std::vector<DMat<Scalar>> dXintra_Sspan_dq(n_span_pos, DMat<Scalar>::Zero(mss_dim, n_span_vel));
+
+                // Iterate over spanning coordinates (each corresponds to a body's joint)
+                int pos_idx = 0;
+                for (int m = 0; m < this->num_bodies_; ++m) {
+                    const auto& joint_m = this->single_joints_[m];
+                    const int num_pos_m = joint_m->numPositions();
+
+                    // Get the joint axis/motion subspace for body m
+                    const DMat<Scalar>& S_m = joint_m->S();  // 6 x num_vel_m
+
+                    // For each position DOF of this joint (usually 1 for revolute)
+                    for (int local_k = 0; local_k < num_pos_m; ++local_k) {
+                        int k = pos_idx + local_k;  // Global spanning coordinate index
+
+                        // For revolute joints, the axis is the motion subspace
+                        SVec<Scalar> axis_m = S_m.col(std::min(local_k, (int)S_m.cols() - 1));
+
+                        // The joint at body m affects X_intra[i,j] if:
+                        //   - connectivity_(i, m) is true (m is an ancestor of i)
+                        //   - connectivity_(m, j) is true (j is an ancestor of m), OR m == j doesn't make sense
+                        //   - Actually: m is in the path from j to i means connectivity(i,m) && (j == m-1's ancestor || j < m)
+                        //
+                        // Simpler: iterate over all (i,j) pairs and check if the path includes m
+                        for (int i = 0; i < this->num_bodies_; ++i) {
+                            // Body m affects X_intra[i,*] only if m is an ancestor of i (or m == i for self-transform)
+                            if (i != m && !connectivity_(i, m)) continue;  // m not in path to i
+
+                            for (int j = 0; j < this->num_bodies_; ++j) {
+                                if (i == j) continue;  // No non-trivial self-transform
+
+                                // Check if m is strictly in the path from j to i
+                                // m is in path if: connectivity(i,m) && (m == j || connectivity(m,j) doesn't apply as m > j)
+                                // Actually for the path j -> ... -> m -> ... -> i:
+                                //   - i must be a descendant of m (connectivity(i,m) = true)
+                                //   - m must be a descendant of j (connectivity(m,j) = true), unless m == j
+
+                                // The joint at m affects X_intra[i,j] if m is on the path and m != j
+                                bool m_in_path = false;
+
+                                if (i == m) {
+                                    // X_intra[m,j] - the joint at m is at the START of this transform (body m side)
+                                    // The transform is from j to m, so q_m affects it
+                                    // X_intra[m,j] = XJ(q_m) * Xtree_m * X_intra[parent_m, j]
+                                    // So dX_intra[m,j]/dq_m = -crm(s_m) * X_intra[m,j]
+                                    if (j != m && (j < m || connectivity_(m, j))) {
+                                        m_in_path = true;
+                                    }
+                                } else if (connectivity_(i, m)) {
+                                    // m is an ancestor of i
+                                    // Check if j is an ancestor of m (or j == m)
+                                    if (j == m) {
+                                        // X_intra[i,m] - dX/dq_m at the end of transform, no effect
+                                        m_in_path = false;
+                                    } else if (j < m && connectivity_(m, j)) {
+                                        // j is ancestor of m, so path is j -> ... -> m -> ... -> i
+                                        m_in_path = true;
+                                    } else if (j < m) {
+                                        // j might be ancestor via different path check
+                                        // Check X_intra[m,j] is non-zero
+                                        Mat6<Scalar> X_mj = X_intra_.template block<6,6>(6*m, 6*j);
+                                        if (X_mj.norm() > 1e-10) {
+                                            m_in_path = true;
+                                        }
+                                    }
+                                }
+
+                                if (m_in_path) {
+                                    // dX_intra[i,j]/dq_m = X_intra[i,m] * (-crm(s_m)) * X_intra[m,j]
+                                    // Using adjoint property: A * crm(v) = crm(A*v) * A
+                                    // So: X_im * (-crm(s_m)) * X_mj = -crm(X_im * s_m) * X_im * X_mj
+                                    Mat6<Scalar> X_im;
+                                    if (i == m) {
+                                        X_im = Mat6<Scalar>::Identity();
+                                    } else {
+                                        X_im = X_intra_.template block<6,6>(6*i, 6*m);
+                                    }
+                                    Mat6<Scalar> X_mj = X_intra_.template block<6,6>(6*m, 6*j);
+
+                                    SVec<Scalar> X_im_s = X_im * axis_m;
+                                    // Full product: -crm(X_im * s_m) * X_im * X_mj = -crm(X_im_s) * X_ij
+                                    Mat6<Scalar> X_ij = X_im * X_mj;
+                                    Mat6<Scalar> dX_ij_dqm = -spatial::motionCrossMatrix(X_im_s) * X_ij;
+
+                                    // Multiply by S_spanning block for body j
+                                    int vel_idx_j = 0;
+                                    for (int b = 0; b < j; ++b) {
+                                        vel_idx_j += this->single_joints_[b]->numVelocities();
+                                    }
+                                    int num_vel_j = this->single_joints_[j]->numVelocities();
+
+                                    DMat<Scalar> S_span_j = S_spanning_.block(6*j, vel_idx_j, 6, num_vel_j);
+                                    DMat<Scalar> contrib = dX_ij_dqm * S_span_j;
+
+                                    dXintra_Sspan_dq[k].block(6*i, vel_idx_j, 6, num_vel_j) += contrib;
+                                }
+                            }
+                        }
+                    }
+                    pos_idx += num_pos_m;
+                }
+
+                // Now compute dS/dy_j = sum_k (dS/dq_k * G_kj)
+                // where dS/dq_k = dXintra_Sspan_dq[k] * G + S_implicit * dG_dq_k[k]
+
+                for (int j = 0; j < nv; ++j) {
+                    DMat<Scalar> dS_dyj = DMat<Scalar>::Zero(mss_dim, nv);
+
+                    for (int k = 0; k < n_span_pos; ++k) {
+                        // Term 1: dX_intra/dq_k * S_spanning * G * G_kj
+                        DMat<Scalar> term1 = dXintra_Sspan_dq[k] * G * G(k, j);
+
+                        // Term 2: X_intra * S_spanning * dG/dq_k * G_kj = S_implicit * dG/dq_k * G_kj
+                        DMat<Scalar> term2 = S_implicit * dG_dq_k[k] * G(k, j);
+
+                        dS_dyj += term1 + term2;
+                    }
+
+                    S_q_cache_[j] = dS_dyj;
+                }
+
                 S_q_cache_valid_ = true;
                 return S_q_cache_;
-            } else if constexpr (std::is_same_v<Scalar, casadi::SX>) {
-                // Symbolic: return zeros (or throw if needed)
-                return std::vector<DMat<Scalar>>(nv, DMat<Scalar>::Zero(mss_dim, nv));
             } else if constexpr (std::is_same_v<Scalar, std::complex<double>>) {
                 throw std::runtime_error("getSq is not implemented for complex types due to CasADi limitations with symbolic derivatives in complex mode.");
             } else {
