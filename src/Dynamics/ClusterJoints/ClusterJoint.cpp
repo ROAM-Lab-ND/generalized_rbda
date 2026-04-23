@@ -25,7 +25,6 @@ namespace grbda
                                                               bool enforce_constraints)
         {
             JointState<Scalar> spanning_joint_state(true, true);
-            std::cout << "converting and encording " << enforce_constraints << std::endl;
 
             // Spanning positions
             if (!joint_state.position.isSpanning() && loop_constraint_->isExplicit())

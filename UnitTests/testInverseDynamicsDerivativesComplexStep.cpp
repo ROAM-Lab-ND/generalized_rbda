@@ -2459,74 +2459,21 @@ TEST(InverseDynamicsDerivativesComplexStep, TelloImplicitConstraintDerivatives) 
 
             q_perturbed = q_complex;
             if (ci.is_implicit) {
-                // Implicit constraint: use exact Newton iteration for machine precision
-                // Get the Generic joint from the COMPLEX model (has complex-typed constraint)
-                auto* generic_joint_complex = dynamic_cast<ClusterJoints::Generic<std::complex<double>>*>(
-                    model_complex.clusters()[cidx]->joint_.get());
-                // Debug: check if we have the necessary components
-                static bool debug_once = true;
-                if (debug_once && generic_joint_complex) {
-                    auto gc = generic_joint_complex->getGenericConstraint();
-                    std::cout << "[DEBUG] Cluster " << cidx << ": generic_joint_complex=" << (generic_joint_complex != nullptr)
-                              << ", constraint=" << (gc != nullptr)
-                              << ", hasNativePhi=" << (gc ? gc->hasNativePhi() : false) << "\n";
-                    debug_once = false;
-                }
+                // G-based perturbation: dq_span = G(q_real) * (ih * e_local_dof)
+                // K*G = 0 by construction, so this perturbation is tangent to the constraint
+                // manifold to first order — sufficient for complex-step differentiation.
+                auto lc = model_real.clusters()[cidx]->joint_->cloneLoopConstraint();
+                DVec<double> q_cluster_real = q0.segment(ci.q0_start, ci.np);
+                JointCoordinate<double> jc(q_cluster_real, true);
+                lc->updateJacobians(jc);
+                const DMat<double> G = lc->G();
 
-                if (generic_joint_complex && generic_joint_complex->getGenericConstraint() &&
-                    generic_joint_complex->getGenericConstraint()->hasNativePhi()) {
-                    // Get the complex constraint and coordinate mapping
-                    auto constraint_complex = generic_joint_complex->getGenericConstraint();
-                    const auto& is_ind = constraint_complex->isCoordinateIndependent();
+                DVec<std::complex<double>> dq_ind = DVec<std::complex<double>>::Zero(G.cols());
+                dq_ind(local_dof) = ih;
 
-                    // Extract current real spanning positions for this cluster
-                    DVec<double> q_cluster_real = q0.segment(ci.q0_start, ci.np);
-
-                    // Separate into independent and dependent coordinates
-                    std::vector<int> ind_indices, dep_indices;
-                    for (int k = 0; k < ci.np; ++k) {
-                        if (is_ind[k]) ind_indices.push_back(k);
-                        else dep_indices.push_back(k);
-                    }
-
-                    // Build complex independent coordinates with perturbation
-                    DVec<std::complex<double>> y_ind(ind_indices.size());
-                    for (size_t k = 0; k < ind_indices.size(); ++k) {
-                        y_ind(k) = std::complex<double>(q_cluster_real(ind_indices[k]), 0.0);
-                    }
-                    // Perturb the local_dof-th independent coordinate
-                    y_ind(local_dof) += ih;
-
-                    // Get initial guess for dependent coordinates (real values)
-                    DVec<std::complex<double>> q_dep_init(dep_indices.size());
-                    for (size_t k = 0; k < dep_indices.size(); ++k) {
-                        q_dep_init(k) = std::complex<double>(q_cluster_real(dep_indices[k]), 0.0);
-                    }
-
-                    // Solve constraints exactly using Newton iteration with complex arithmetic
-                    DVec<std::complex<double>> q_spanning_complex =
-                        constraint_complex->solveConstraintsComplex(y_ind, q_dep_init);
-
-                    // Debug: verify constraint is satisfied
-                    static bool debug_constraint = true;
-                    if (debug_constraint && i == 7) {  // First implicit DOF
-                        JointCoordinate<std::complex<double>> jc_check(q_spanning_complex, true);
-                        DVec<std::complex<double>> phi_check = constraint_complex->nativePhi()(jc_check);
-                        std::cout << "[DEBUG Newton] y_ind perturbed: " << y_ind.transpose() << "\n";
-                        std::cout << "[DEBUG Newton] q_spanning result: " << q_spanning_complex.transpose() << "\n";
-                        std::cout << "[DEBUG Newton] phi after solve: " << phi_check.transpose() << "\n";
-                        std::cout << "[DEBUG Newton] |phi|: " << phi_check.norm() << "\n";
-                        debug_constraint = false;
-                    }
-
-                    // Copy result to q_perturbed
-                    for (int k = 0; k < ci.np; ++k) {
-                        q_perturbed[ci.q0_start + k] = q_spanning_complex(k);
-                    }
-                } else {
-                    GTEST_FAIL() << "Implicit cluster perturbation requires native phi + solveConstraintsComplex";
-                    return;
-                }
+                DVec<std::complex<double>> dq_span = G.cast<std::complex<double>>() * dq_ind;
+                for (int k = 0; k < ci.np; ++k)
+                    q_perturbed[ci.q0_start + k] += dq_span(k);
             } else {
                 // Simple joint: perturb position directly
                 int perturb_idx = dof_to_perturb[i].q0_offset;
