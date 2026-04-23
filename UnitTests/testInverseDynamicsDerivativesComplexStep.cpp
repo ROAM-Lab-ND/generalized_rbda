@@ -4,6 +4,7 @@
 #include "grbda/Robots/Tello.hpp"
 #include "grbda/Dynamics/ClusterJoints/GenericJoint.h"
 #include "grbda/Robots/PlanarLegLinkage.hpp"
+#include "grbda/Utils/OrientationTools.h"
 #include "TelloValidStates.h"
 
 
@@ -204,10 +205,7 @@ DVec<T> lieGroupConfigurationAddition(const DVec<T>& q0, const DVec<T>& dq, bool
                                           cross_vec_q;
         } else {
             // REAL: Use standard quaternion multiplication
-            quat_new[0] = quat_vec[0] * delta_quat[0] - quat_vec.template tail<3>().dot(delta_quat.template tail<3>());
-            quat_new.template tail<3>() = quat_vec[0] * delta_quat.template tail<3>() +
-                                           delta_quat[0] * quat_vec.template tail<3>() +
-                                           quat_vec.template tail<3>().cross(delta_quat.template tail<3>());
+            quat_new = ori::quatProduct(quat_vec, delta_quat);
 
             // Normalize quaternion for real types only
             normalizeQuaternionIfReal(quat_new);
@@ -219,18 +217,8 @@ DVec<T> lieGroupConfigurationAddition(const DVec<T>& q0, const DVec<T>& dq, bool
         // We must match this exactly: normalize quat_vec before computing rotation matrix
         Eigen::Matrix<T, 4, 1> quat_normalized = quat_vec / quat_vec.norm();
 
-        // Quaternion to rotation matrix (world-to-body)
-        T qw = quat_normalized[0], qx = quat_normalized[1], qy = quat_normalized[2], qz = quat_normalized[3];
-        Eigen::Matrix<T, 3, 3> R;  // world-to-body
-        R(0,0) = T(1) - T(2)*(qy*qy + qz*qz);
-        R(0,1) = T(2)*(qx*qy + qw*qz);
-        R(0,2) = T(2)*(qx*qz - qw*qy);
-        R(1,0) = T(2)*(qx*qy - qw*qz);
-        R(1,1) = T(1) - T(2)*(qx*qx + qz*qz);
-        R(1,2) = T(2)*(qy*qz + qw*qx);
-        R(2,0) = T(2)*(qx*qz + qw*qy);
-        R(2,1) = T(2)*(qy*qz - qw*qx);
-        R(2,2) = T(1) - T(2)*(qx*qx + qy*qy);
+        // Convert quaternion to rotation matrix using library utility
+        Eigen::Matrix<T, 3, 3> R = ori::quaternionToRotationMatrix(quat_normalized);  // world-to-body
 
         Eigen::Matrix<T, 3, 1> v_body = dq.segment(3, 3);
         Eigen::Matrix<T, 3, 1> p_new = p + R.transpose() * v_body;  // R^T = body-to-world
@@ -2120,6 +2108,7 @@ TEST(InverseDynamicsDerivativesComplexStep, TelloImplicitConstraint) {
     
     if (!found_valid_state) {
         std::cout << "✗ Constraint solver could not find valid state\n";
+        throw::std::runtime_error("Constraint solver failed for Tello");
         GTEST_SKIP() << "Newton iteration did not converge for Tello constraints";
         return;
     }
