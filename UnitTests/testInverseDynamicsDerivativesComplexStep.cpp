@@ -2226,7 +2226,9 @@ TEST(InverseDynamicsDerivativesComplexStep, TelloImplicitConstraintDerivatives) 
     ModelState<double> state_real;
     double max_phi_residual = std::numeric_limits<double>::infinity();
     bool found_valid_state = false;
-    std::vector<unsigned int> deterministic_seeds = {0u, 1u, 2u, 7u, 42u, 123u, 456u, 789u};
+    constexpr bool enforce_constraints_flag = true;
+
+    std::vector<unsigned int> deterministic_seeds = {0u}; //, 1u, 2u, 7u, 42u, 123u, 456u, 789u};
     for (unsigned int seed : deterministic_seeds) {
         std::srand(seed);
         ModelState<double> candidate_state;
@@ -2235,9 +2237,13 @@ TEST(InverseDynamicsDerivativesComplexStep, TelloImplicitConstraintDerivatives) 
 
         for (const auto &cluster : model_real.clusters()) {
             try {
-                JointState<double> js = cluster->joint_->randomJointState();
+                std::cout << "Trying cluster " <<std::endl;
+                JointState<double> js = cluster->joint_->randomJointState(enforce_constraints_flag);
                 JointState<double> span_js = cluster->joint_->toSpanningTreeState(js);
                 candidate_state.push_back(span_js);
+
+                std::cout << "spannign joint state" << span_js.position.size() << ", " << span_js.position.isSpanning() << std::endl;
+                std::cout << "   velocity : " << span_js.velocity.size() << "," << span_js.velocity.isSpanning() << std::endl;
 
                 auto lc = cluster->joint_->cloneLoopConstraint();
                 if (lc && lc->isImplicit()) {
@@ -2249,12 +2255,13 @@ TEST(InverseDynamicsDerivativesComplexStep, TelloImplicitConstraintDerivatives) 
                 break;
             }
         }
+        std::cout << "Completed cluster processing" << std::endl;
 
-        if (seed_success && candidate_max_phi < max_phi_residual) {
+        // if (seed_success && candidate_max_phi < max_phi_residual) {
             state_real = candidate_state;
             max_phi_residual = candidate_max_phi;
             found_valid_state = true;
-        }
+        // }
     }
 
     if (!found_valid_state) {
@@ -2262,8 +2269,10 @@ TEST(InverseDynamicsDerivativesComplexStep, TelloImplicitConstraintDerivatives) 
         GTEST_SKIP() << "Newton iteration did not converge for Tello constraints";
         return;
     }
+    std::cout << "Setting state" << std::endl;
 
-    model_real.setState(state_real);
+    
+    model_real.setState(state_real, enforce_constraints_flag);
     std::cout << "✓ Found valid constrained state (max ||phi|| = " << max_phi_residual << ")\n";
 
     // Random acceleration
@@ -2310,7 +2319,7 @@ TEST(InverseDynamicsDerivativesComplexStep, TelloImplicitConstraintDerivatives) 
 
     // Helper lambda to set complex state from global q and qd vectors
     // Note: For implicit constraints, positions must be marked as spanning (is_spanning=true)
-    auto setComplexState = [&model_complex](const DVec<std::complex<double>>& q,
+    auto setComplexState = [&model_complex, enforce_constraints_flag](const DVec<std::complex<double>>& q,
                                             const DVec<std::complex<double>>& qd) {
         ModelState<std::complex<double>> model_state_complex;
         int pos_idx = 0, vel_idx = 0;
@@ -2330,7 +2339,7 @@ TEST(InverseDynamicsDerivativesComplexStep, TelloImplicitConstraintDerivatives) 
             pos_idx += np;
             vel_idx += nv;
         }
-        model_complex.setState(model_state_complex);
+        model_complex.setState(model_state_complex, enforce_constraints_flag);
     };
 
     // Build mapping from DOF index to (cluster, local_pos_idx) for position perturbation

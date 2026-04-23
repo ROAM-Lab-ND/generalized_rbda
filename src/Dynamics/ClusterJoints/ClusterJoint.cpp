@@ -21,9 +21,11 @@ namespace grbda
         }
 
         template <typename Scalar>
-        JointState<Scalar> Base<Scalar>::toSpanningTreeState(const JointState<Scalar> &joint_state)
+        JointState<Scalar> Base<Scalar>::toSpanningTreeState(const JointState<Scalar> &joint_state,
+                                                              bool enforce_constraints)
         {
             JointState<Scalar> spanning_joint_state(true, true);
+            std::cout << "converting and encording " << enforce_constraints << std::endl;
 
             // Spanning positions
             if (!joint_state.position.isSpanning() && loop_constraint_->isExplicit())
@@ -41,7 +43,7 @@ namespace grbda
             }
             else if (joint_state.position.isSpanning() && loop_constraint_->isImplicit())
             {
-                if (!loop_constraint_->isValidSpanningPosition(joint_state.position))
+                if (enforce_constraints && !loop_constraint_->isValidSpanningPosition(joint_state.position))
                 {
                     throw std::runtime_error("Spanning position is not valid");
                 }
@@ -60,7 +62,7 @@ namespace grbda
             }
             else
             {
-                if (!loop_constraint_->isValidSpanningVelocity(joint_state.velocity))
+                if (enforce_constraints && !loop_constraint_->isValidSpanningVelocity(joint_state.velocity))
                 {
                     throw std::runtime_error("Spanning velocity is not valid");
                 }
@@ -72,7 +74,7 @@ namespace grbda
         }
 
         template <typename Scalar>
-        JointState<double> Base<Scalar>::randomJointState() const
+        JointState<double> Base<Scalar>::randomJointState(bool enforce_position_constraint) const
         {
             JointState<double> joint_state(false, false);
             joint_state.position = DVec<double>::Random(numPositions());

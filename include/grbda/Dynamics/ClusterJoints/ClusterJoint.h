@@ -91,7 +91,7 @@ namespace grbda
                 return loop_constraint_->clone();
             }
 
-            virtual JointState<double> randomJointState() const;
+            virtual JointState<double> randomJointState(bool enforce_position_constraint = true) const;
 
             const DMat<Scalar> &G() const { return loop_constraint_->G(); }
             const DVec<Scalar> &g() const { return loop_constraint_->g(); }
@@ -114,7 +114,8 @@ namespace grbda
                 return spanning_tree_to_independent_coords_conversion_;
             }
 
-            JointState<Scalar> toSpanningTreeState(const JointState<Scalar> &joint_state);
+            JointState<Scalar> toSpanningTreeState(const JointState<Scalar> &joint_state,
+                                                   bool enforce_constraints = false);
 
         protected:
             const int num_bodies_;

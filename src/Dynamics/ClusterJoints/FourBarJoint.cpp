@@ -337,8 +337,11 @@ namespace grbda
     namespace ClusterJoints
     {
         template <typename Scalar>
-        JointState<double> FourBar<Scalar>::randomJointState() const
+        JointState<double> FourBar<Scalar>::randomJointState(bool enforce_position_constraint) const
         {
+            if (!enforce_position_constraint)
+                return Base<Scalar>::randomJointState();
+
             using DM = casadi::DM;
 
             // Create Helper functions

@@ -82,7 +82,7 @@ namespace grbda
 
             ClusterJointTypes type() const override { return ClusterJointTypes::FourBar; }
 
-            JointState<double> randomJointState() const override;
+            JointState<double> randomJointState(bool enforce_position_constraint = true) const override;
 
             // Override getSq to compute dS/dq analytically for FourBar
             // This is required for correct analytical derivative computation

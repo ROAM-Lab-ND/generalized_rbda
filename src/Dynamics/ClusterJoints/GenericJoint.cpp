@@ -916,7 +916,7 @@ namespace grbda
         }
 
         template <typename Scalar>
-        JointState<double> Generic<Scalar>::randomJointState() const
+        JointState<double> Generic<Scalar>::randomJointState(bool enforce_position_constraint) const
         {
             if (this->loop_constraint_->isExplicit())
                return Base<Scalar>::randomJointState(); 
@@ -981,45 +981,53 @@ namespace grbda
             double best_phi_norm = 1e10;
             DVec<double> best_q_span = q_span;
 
-            for (int attempt = 0; attempt < 30 && !converged; ++attempt) {
-                double damping = 0.5;  // Start with damping for stability
-                for (int iter = 0; iter < max_iters; ++iter) {
-                    DVec<double> phi = phi_eval(q_span);
-                    double phi_norm = phi.norm();
+            if(enforce_position_constraint)
+            {
 
-                    // Track best solution found
-                    if (phi_norm < best_phi_norm) {
-                        best_phi_norm = phi_norm;
-                        best_q_span = q_span;
+                for (int attempt = 0; attempt < 30 && !converged; ++attempt) {
+                    double damping = 0.5;  // Start with damping for stability
+                    for (int iter = 0; iter < max_iters; ++iter) {
+                        DVec<double> phi = phi_eval(q_span);
+                        double phi_norm = phi.norm();
+
+                        // Track best solution found
+                        if (phi_norm < best_phi_norm) {
+                            best_phi_norm = phi_norm;
+                            best_q_span = q_span;
+                        }
+
+                        if (phi_norm < tol_tight) { converged = true; break; }
+
+                        // Use undamped Newton when close to solution
+                        if (phi_norm < 1e-3) damping = 1.0;
+                        else if (phi_norm < 1e-2) damping = 0.8;
+                        else damping = 0.5;
+
+                        DMat<double> J(phi.size(), n_dep);
+                        for (int j = 0; j < n_dep; ++j) {
+                            DVec<double> q_pert = q_span;
+                            q_pert(dep_idx[j]) += h;
+                            J.col(j) = (phi_eval(q_pert) - phi) / h;
+                        }
+                        Eigen::CompleteOrthogonalDecomposition<DMat<double>> cod(J);
+                        DVec<double> dx = cod.solve(-phi);
+                        for (int j = 0; j < n_dep; ++j) q_span(dep_idx[j]) += damping * dx(j);
                     }
-
-                    if (phi_norm < tol_tight) { converged = true; break; }
-
-                    // Use undamped Newton when close to solution
-                    if (phi_norm < 1e-3) damping = 1.0;
-                    else if (phi_norm < 1e-2) damping = 0.8;
-                    else damping = 0.5;
-
-                    DMat<double> J(phi.size(), n_dep);
-                    for (int j = 0; j < n_dep; ++j) {
-                        DVec<double> q_pert = q_span;
-                        q_pert(dep_idx[j]) += h;
-                        J.col(j) = (phi_eval(q_pert) - phi) / h;
+                    if (!converged) {
+                        // reinitialize dependents with wider range
+                        for (int i = 0; i < n_span; ++i) if (!ind_mask[i]) q_span(i) = 0.3 * (2.0 * ((double)rand() / RAND_MAX) - 1.0);
                     }
-                    Eigen::CompleteOrthogonalDecomposition<DMat<double>> cod(J);
-                    DVec<double> dx = cod.solve(-phi);
-                    for (int j = 0; j < n_dep; ++j) q_span(dep_idx[j]) += damping * dx(j);
                 }
+
+                // Use best solution found if not converged
                 if (!converged) {
-                    // reinitialize dependents with wider range
-                    for (int i = 0; i < n_span; ++i) if (!ind_mask[i]) q_span(i) = 0.3 * (2.0 * ((double)rand() / RAND_MAX) - 1.0);
+                    q_span = best_q_span;
+                    converged = (best_phi_norm < tol_accept);
                 }
             }
-
-            // Use best solution found if not converged
-            if (!converged) {
-                q_span = best_q_span;
-                converged = (best_phi_norm < tol_accept);
+            else
+            {
+                converged = true;  // No constraint to enforce
             }
 
             // Final phi check - use native phi for validation too when available
@@ -1030,7 +1038,7 @@ namespace grbda
             // This ensures consistency between Newton convergence and validation
             bool is_valid = (final_phi_norm < 1e-8);  // Use our own tolerance since we know phi
 
-            if (!converged || !is_valid) {
+            if (!converged || (!is_valid && enforce_position_constraint)) {
                 std::cerr << "[Newton debug] converged=" << converged
                           << ", best_phi_norm=" << best_phi_norm
                           << ", final_phi_norm=" << final_phi_norm

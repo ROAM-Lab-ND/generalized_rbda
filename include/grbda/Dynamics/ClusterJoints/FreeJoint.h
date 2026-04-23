@@ -71,7 +71,7 @@ namespace grbda
             std::vector<std::tuple<Body<Scalar>, JointPtr<Scalar>, DMat<Scalar>>>
             bodiesJointsAndReflectedInertias() const override;
 
-            JointState<double> randomJointState() const override;
+            JointState<double> randomJointState(bool enforce_position_constraint = true) const override;
 
             // Derivative methods
             std::vector<DMat<Scalar>> getSq() const override;

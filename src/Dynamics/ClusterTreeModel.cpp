@@ -254,12 +254,14 @@ namespace grbda
     }
 
     template <typename Scalar, typename OriTpl>
-    void ClusterTreeModel<Scalar, OriTpl>::setState(const ModelState<Scalar> &model_state)
+    void ClusterTreeModel<Scalar, OriTpl>::setState(const ModelState<Scalar> &model_state,
+                                                    bool enforce_constraints)
     {
         size_t i = 0;
         for (auto &cluster : cluster_nodes_)
         {
-            cluster->joint_state_ = model_state.at(i);
+            cluster->joint_state_ = cluster->joint_->toSpanningTreeState(
+                model_state.at(i), enforce_constraints);
             i++;
         }
 

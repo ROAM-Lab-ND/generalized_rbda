@@ -153,7 +153,7 @@ namespace grbda
 
             ClusterJointTypes type() const override { return ClusterJointTypes::Generic; }
 
-            JointState<double> randomJointState() const override;
+            JointState<double> randomJointState(bool enforce_position_constraint = true) const override;
 
             void updateKinematics(const JointState<Scalar> &joint_state) override;
 
