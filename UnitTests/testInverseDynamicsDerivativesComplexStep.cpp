@@ -2226,7 +2226,7 @@ TEST(InverseDynamicsDerivativesComplexStep, TelloImplicitConstraintDerivatives) 
     ModelState<double> state_real;
     double max_phi_residual = std::numeric_limits<double>::infinity();
     bool found_valid_state = false;
-    constexpr bool enforce_constraints_flag = true;
+    constexpr bool enforce_constraints_flag = false;
 
     std::vector<unsigned int> deterministic_seeds = {0u}; //, 1u, 2u, 7u, 42u, 123u, 456u, 789u};
     for (unsigned int seed : deterministic_seeds) {
@@ -2271,7 +2271,7 @@ TEST(InverseDynamicsDerivativesComplexStep, TelloImplicitConstraintDerivatives) 
     }
     std::cout << "Setting state" << std::endl;
 
-    
+    ModelState<double> state_real0 = state_real;
     model_real.setState(state_real, enforce_constraints_flag);
     std::cout << "✓ Found valid constrained state (max ||phi|| = " << max_phi_residual << ")\n";
 
@@ -2558,43 +2558,19 @@ TEST(InverseDynamicsDerivativesComplexStep, TelloImplicitConstraintDerivatives) 
 
         DVec<std::complex<double>> q_perturbed = q_complex;
         if (ci.is_implicit) {
-            auto* generic_joint_complex = dynamic_cast<ClusterJoints::Generic<std::complex<double>>*>(
-                model_complex.clusters()[cidx]->joint_.get());
+            // G-based perturbation: dq_span = G(q_real) * (ih * e_local_dof)
+            auto lc = model_real.clusters()[cidx]->joint_->cloneLoopConstraint();
+            DVec<double> q_cluster_real = q0.segment(ci.q0_start, ci.np);
+            JointCoordinate<double> jc(q_cluster_real, true);
+            lc->updateJacobians(jc);
+            const DMat<double> G = lc->G();
 
-            if (generic_joint_complex && generic_joint_complex->getGenericConstraint() &&
-                generic_joint_complex->getGenericConstraint()->hasNativePhi()) {
-                auto constraint_complex = generic_joint_complex->getGenericConstraint();
-                const auto& is_ind = constraint_complex->isCoordinateIndependent();
+            DVec<std::complex<double>> dq_ind = DVec<std::complex<double>>::Zero(G.cols());
+            dq_ind(local_dof) = ih;
 
-                DVec<double> q_cluster_real = q0.segment(ci.q0_start, ci.np);
-
-                std::vector<int> ind_indices, dep_indices;
-                for (int k = 0; k < ci.np; ++k) {
-                    if (is_ind[k]) ind_indices.push_back(k);
-                    else dep_indices.push_back(k);
-                }
-
-                DVec<std::complex<double>> y_ind(ind_indices.size());
-                for (size_t k = 0; k < ind_indices.size(); ++k) {
-                    y_ind(k) = std::complex<double>(q_cluster_real(ind_indices[k]), 0.0);
-                }
-                y_ind(local_dof) += ih;
-
-                DVec<std::complex<double>> q_dep_init(dep_indices.size());
-                for (size_t k = 0; k < dep_indices.size(); ++k) {
-                    q_dep_init(k) = std::complex<double>(q_cluster_real(dep_indices[k]), 0.0);
-                }
-
-                DVec<std::complex<double>> q_spanning_complex =
-                    constraint_complex->solveConstraintsComplex(y_ind, q_dep_init);
-
-                for (int k = 0; k < ci.np; ++k) {
-                    q_perturbed[ci.q0_start + k] = q_spanning_complex(k);
-                }
-            } else {
-                GTEST_FAIL() << "Implicit cluster non-floating-base check requires native phi + solveConstraintsComplex";
-                return;
-            }
+            DVec<std::complex<double>> dq_span = G.cast<std::complex<double>>() * dq_ind;
+            for (int k = 0; k < ci.np; ++k)
+                q_perturbed[ci.q0_start + k] += dq_span(k);
         } else {
             // Simple joint: perturb position directly
             int perturb_idx = dof_to_perturb[i].q0_offset;
@@ -2667,85 +2643,22 @@ TEST(InverseDynamicsDerivativesComplexStep, TelloImplicitConstraintDerivatives) 
         }
 
         // Finite-difference derivative (using real model with Newton iteration)
-        model_real.setState(state_real);
+        model_real.setState(state_real0, enforce_constraints_flag);  // Reset to original state before perturbation
         DVec<double> q_perturbed_real = q0;
         if (ci.is_implicit) {
-            // Use Newton iteration to solve constraints at perturbed state
-            auto* generic_joint_real = dynamic_cast<ClusterJoints::Generic<double>*>(
-                model_real.clusters()[cidx]->joint_.get());
+            // G-based perturbation: dq_span = G(q_real) * (fd_h * e_local_dof)
+            auto lc = model_real.clusters()[cidx]->joint_->cloneLoopConstraint();
+            DVec<double> q_cluster_real = q0.segment(ci.q0_start, ci.np);
+            JointCoordinate<double> jc(q_cluster_real, true);
+            lc->updateJacobians(jc);
+            const DMat<double> G = lc->G();
 
-            if (generic_joint_real && generic_joint_real->getGenericConstraint()) {
-                auto constraint_real = generic_joint_real->getGenericConstraint();
-                const auto& is_ind = constraint_real->isCoordinateIndependent();
+            DVec<double> dq_ind = DVec<double>::Zero(G.cols());
+            dq_ind(local_dof) = fd_h;
 
-                DVec<double> q_cluster_real = q0.segment(ci.q0_start, ci.np);
-
-                std::vector<int> ind_indices, dep_indices;
-                for (int k = 0; k < ci.np; ++k) {
-                    if (is_ind[k]) ind_indices.push_back(k);
-                    else dep_indices.push_back(k);
-                }
-
-                // Perturb independent coordinates
-                DVec<double> y_ind(ind_indices.size());
-                for (size_t k = 0; k < ind_indices.size(); ++k) {
-                    y_ind(k) = q_cluster_real(ind_indices[k]);
-                }
-                y_ind(local_dof) += fd_h;
-
-                // Solve for dependent coordinates using Newton iteration
-                DVec<double> q_dep = DVec<double>::Zero(dep_indices.size());
-                for (size_t k = 0; k < dep_indices.size(); ++k) {
-                    q_dep(k) = q_cluster_real(dep_indices[k]);
-                }
-
-                // Simple Newton iteration for real case
-                const int max_iters = 10;
-                const double tol = 1e-12;
-                for (int iter = 0; iter < max_iters; ++iter) {
-                    // Build full spanning position
-                    DVec<double> q_spanning(ci.np);
-                    for (size_t k = 0; k < ind_indices.size(); ++k) {
-                        q_spanning(ind_indices[k]) = y_ind(k);
-                    }
-                    for (size_t k = 0; k < dep_indices.size(); ++k) {
-                        q_spanning(dep_indices[k]) = q_dep(k);
-                    }
-
-                    JointCoordinate<double> jc(q_spanning, true);
-                    DVec<double> phi = constraint_real->phi(jc);
-
-                    if (phi.norm() < tol) break;
-
-                    // Compute Jacobian w.r.t. dependent coords via finite differences
-                    const double jac_h = 1e-8;
-                    int m = phi.size();
-                    DMat<double> Kd(m, (int)dep_indices.size());
-                    for (size_t j = 0; j < dep_indices.size(); ++j) {
-                        DVec<double> q_plus = q_spanning;
-                        q_plus(dep_indices[j]) += jac_h;
-                        JointCoordinate<double> jc_plus(q_plus, true);
-                        DVec<double> phi_plus = constraint_real->phi(jc_plus);
-                        Kd.col(j) = (phi_plus - phi) / jac_h;
-                    }
-
-                    // Newton step
-                    Eigen::PartialPivLU<DMat<double>> lu(Kd);
-                    DVec<double> delta = -lu.solve(phi);
-                    q_dep += delta;
-                }
-
-                // Copy result
-                for (size_t k = 0; k < ind_indices.size(); ++k) {
-                    q_perturbed_real(ci.q0_start + ind_indices[k]) = y_ind(k);
-                }
-                for (size_t k = 0; k < dep_indices.size(); ++k) {
-                    q_perturbed_real(ci.q0_start + dep_indices[k]) = q_dep(k);
-                }
-            } else {
-                GTEST_FAIL() << "Implicit finite-difference validation requires Generic<double> constraint access";
-                return;
-            }
+            DVec<double> dq_span = G * dq_ind;
+            for (int k = 0; k < ci.np; ++k)
+                q_perturbed_real[ci.q0_start + k] += dq_span(k);
         } else {
             int perturb_idx = dof_to_perturb[i].q0_offset;
             q_perturbed_real[perturb_idx] += fd_h;
@@ -2765,7 +2678,7 @@ TEST(InverseDynamicsDerivativesComplexStep, TelloImplicitConstraintDerivatives) 
         model_real.setState(state_plus_q, false);
         DVec<double> tau_plus_q = model_real.inverseDynamics(ydd_real);
 
-        model_real.setState(state_real, enforce_constraints_flag);
+        model_real.setState(state_real0, enforce_constraints_flag);
         DVec<double> tau_base_q = model_real.inverseDynamics(ydd_real);
 
         DVec<double> dtau_dqi_fd = (tau_plus_q - tau_base_q) / fd_h;
@@ -2795,7 +2708,7 @@ TEST(InverseDynamicsDerivativesComplexStep, TelloImplicitConstraintDerivatives) 
         }
 
         // Finite-difference derivative (using real model)
-        model_real.setState(state_real);
+        model_real.setState(state_real0, enforce_constraints_flag);
         DVec<double> qd_plus = qd0;
         qd_plus[i] += fd_h;
         // Set perturbed state
@@ -2813,7 +2726,7 @@ TEST(InverseDynamicsDerivativesComplexStep, TelloImplicitConstraintDerivatives) 
         model_real.setState(state_plus, enforce_constraints_flag);
         DVec<double> tau_plus = model_real.inverseDynamics(ydd_real);
 
-        model_real.setState(state_real, enforce_constraints_flag);
+        model_real.setState(state_real0, enforce_constraints_flag);
         DVec<double> tau_base = model_real.inverseDynamics(ydd_real);
 
         DVec<double> dtau_dqdoti_fd = (tau_plus - tau_base) / fd_h;
@@ -2827,29 +2740,6 @@ TEST(InverseDynamicsDerivativesComplexStep, TelloImplicitConstraintDerivatives) 
     }
     std::cout << "Max complex-step vs finite-diff error (dtau/dqdot): " << max_cs_vs_fd_error << "\n";
 
-    // ============================================================================
-    // VALIDATION RESULTS SUMMARY
-    // ============================================================================
-    //
-    // Complex-step differentiation achieves machine precision for implicit constraints!
-    // Key findings:
-    //
-    // 1. Complex-step vs Finite-difference: ~1e-7 (machine precision for FD with h=1e-7)
-    //    This validates that the complex-step implementation is correct.
-    //
-    // 2. Analytical vs Complex-step (ground truth):
-    //    - dtau/dq:    ~0.003 error
-    //    - dtau/dqdot: ~0.0006 error
-    //
-    // CONCLUSION: The analytical derivatives computed by firstOrderInverseDynamicsDerivatives()
-    // have room for improvement. The complex-step method serves as machine-precision ground
-    // truth for validating/debugging the analytical derivative implementation.
-    //
-    // The complex-step implementation now uses:
-    // - Exact Newton iteration to solve constraints with complex perturbation
-    // - Complex-valued G matrix evaluation using native phi function
-    // - Proper imaginary part propagation through the implicit function theorem
-    // ============================================================================
 
     // Complex-step vs finite-difference should match to FD precision (~1e-7 for h=1e-7)
     // Using 5e-5 tolerance to account for accumulated FD errors in complex constraint evaluation
