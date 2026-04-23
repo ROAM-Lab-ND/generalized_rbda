@@ -334,10 +334,8 @@ ModelState<T> applyMinimalPerturbation(
 ModelState<double> randomModelState(const ClusterTreeModel<double>& model,
                                     bool enforce_constraints = false) {
     ModelState<double> state;
-    for (const auto& c : model.clusters()) {
-        JointState<double> js = c->joint_->randomJointState(enforce_constraints);
-        state.push_back(c->joint_->toSpanningTreeState(js));
-    }
+    for (const auto& c : model.clusters())
+        state.push_back(c->joint_->randomJointState(enforce_constraints));
     return state;
 }
 
@@ -1067,7 +1065,7 @@ auto forwardDifferenceJacobian = [](auto func, const Eigen::VectorXd& point, dou
 TEST(InverseDynamicsDerivativesComplexStep, PlanarLegLinkageImplicitConstraint) {
     PlanarLegLinkage<double> robot_real;
     ClusterTreeModel<double> model_real = robot_real.buildClusterTreeModel();
-    model_real.setState(randomModelState(model_real));
+    model_real.setState(randomModelState(model_real, true), true);
     const int nDOF = model_real.getNumDegreesOfFreedom();
     DVec<double> tau_real = model_real.inverseDynamics(DVec<double>::Zero(nDOF));
     EXPECT_GE(tau_real.norm(), 0.0);
@@ -1092,7 +1090,7 @@ TEST(InverseDynamicsDerivativesComplexStep, PlanarLegLinkageImplicitConstraintDe
     ClusterTreeModel<std::complex<double>> model_complex = robot_complex.buildClusterTreeModel();
 
     ASSERT_EQ(model_real.getNumDegreesOfFreedom(), 2);
-    model_real.setState(randomModelState(model_real));
+    model_real.setState(randomModelState(model_real, true), true);
 
     testInverseDynamicsDerivativesComplexStepFloatingBase(
         model_real, model_complex, "PlanarLegLinkage (ImplicitConstraint)");
