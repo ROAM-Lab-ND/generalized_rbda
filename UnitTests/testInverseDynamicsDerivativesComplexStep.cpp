@@ -829,24 +829,6 @@ TEST(InverseDynamicsDerivativesComplexStep, TelloWithArmsImplicitConstraint) {
     EXPECT_GE(tau.norm(), 0.0);
 }
 
-
-auto forwardDifferenceJacobian = [](auto func, const Eigen::VectorXd& point, double h) {
-    int n = point.size();
-    // Evaluate once to get output dimension
-    auto f0 = func(point);
-    int m = f0.size();
-    Eigen::MatrixXd jacobian(m, n);
-    for (int i = 0; i < n; ++i) {
-        Eigen::VectorXd point_plus = point;
-        point_plus(i) += h;
-        auto f_plus = func(point_plus);
-        jacobian.col(i) = (f_plus - f0) / (h);
-    }
-    return jacobian;
-};
-
-
-
 TEST(InverseDynamicsDerivativesComplexStep, PlanarLegLinkageImplicitConstraint) {
     PlanarLegLinkage<double> robot_real;
     ClusterTreeModel<double> model_real = robot_real.buildClusterTreeModel();
