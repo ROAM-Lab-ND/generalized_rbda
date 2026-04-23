@@ -2642,44 +2642,19 @@ TEST(InverseDynamicsDerivativesComplexStep, TelloImplicitConstraintDerivatives) 
 
         DVec<std::complex<double>> q_perturbed_i = q_complex_i;
         if (ci.is_implicit) {
-            // Use exact Newton iteration for machine precision (same as main loop)
-            auto* generic_joint_complex = dynamic_cast<ClusterJoints::Generic<std::complex<double>>*>(
-                model_complex.clusters()[cidx]->joint_.get());
+            // G-based perturbation: dq_span = G(q_real) * (ih * e_local_dof)
+            auto lc = model_real.clusters()[cidx]->joint_->cloneLoopConstraint();
+            DVec<double> q_cluster_real = q0.segment(ci.q0_start, ci.np);
+            JointCoordinate<double> jc(q_cluster_real, true);
+            lc->updateJacobians(jc);
+            const DMat<double> G = lc->G();
 
-            if (generic_joint_complex && generic_joint_complex->getGenericConstraint() &&
-                generic_joint_complex->getGenericConstraint()->hasNativePhi()) {
-                auto constraint_complex = generic_joint_complex->getGenericConstraint();
-                const auto& is_ind = constraint_complex->isCoordinateIndependent();
+            DVec<std::complex<double>> dq_ind = DVec<std::complex<double>>::Zero(G.cols());
+            dq_ind(local_dof) = ih;
 
-                DVec<double> q_cluster_real = q0.segment(ci.q0_start, ci.np);
-
-                std::vector<int> ind_indices, dep_indices;
-                for (int k = 0; k < ci.np; ++k) {
-                    if (is_ind[k]) ind_indices.push_back(k);
-                    else dep_indices.push_back(k);
-                }
-
-                DVec<std::complex<double>> y_ind(ind_indices.size());
-                for (size_t k = 0; k < ind_indices.size(); ++k) {
-                    y_ind(k) = std::complex<double>(q_cluster_real(ind_indices[k]), 0.0);
-                }
-                y_ind(local_dof) += ih;
-
-                DVec<std::complex<double>> q_dep_init(dep_indices.size());
-                for (size_t k = 0; k < dep_indices.size(); ++k) {
-                    q_dep_init(k) = std::complex<double>(q_cluster_real(dep_indices[k]), 0.0);
-                }
-
-                DVec<std::complex<double>> q_spanning_complex =
-                    constraint_complex->solveConstraintsComplex(y_ind, q_dep_init);
-
-                for (int k = 0; k < ci.np; ++k) {
-                    q_perturbed_i[ci.q0_start + k] = q_spanning_complex(k);
-                }
-            } else {
-                GTEST_FAIL() << "Implicit cluster perturbation requires native phi + solveConstraintsComplex";
-                return;
-            }
+            DVec<std::complex<double>> dq_span = G.cast<std::complex<double>>() * dq_ind;
+            for (int k = 0; k < ci.np; ++k)
+                q_perturbed_i[ci.q0_start + k] += dq_span(k);
         } else {
             int perturb_idx = dof_to_perturb[i].q0_offset;
             q_perturbed_i[perturb_idx] += ih;
@@ -2787,10 +2762,10 @@ TEST(InverseDynamicsDerivativesComplexStep, TelloImplicitConstraintDerivatives) 
             pos_idx += np;
             vel_idx += nv;
         }
-        model_real.setState(state_plus_q);
+        model_real.setState(state_plus_q, false);
         DVec<double> tau_plus_q = model_real.inverseDynamics(ydd_real);
 
-        model_real.setState(state_real);
+        model_real.setState(state_real, enforce_constraints_flag);
         DVec<double> tau_base_q = model_real.inverseDynamics(ydd_real);
 
         DVec<double> dtau_dqi_fd = (tau_plus_q - tau_base_q) / fd_h;
@@ -2835,10 +2810,10 @@ TEST(InverseDynamicsDerivativesComplexStep, TelloImplicitConstraintDerivatives) 
             pos_idx += np;
             vel_idx += nv;
         }
-        model_real.setState(state_plus);
+        model_real.setState(state_plus, enforce_constraints_flag);
         DVec<double> tau_plus = model_real.inverseDynamics(ydd_real);
 
-        model_real.setState(state_real);
+        model_real.setState(state_real, enforce_constraints_flag);
         DVec<double> tau_base = model_real.inverseDynamics(ydd_real);
 
         DVec<double> dtau_dqdoti_fd = (tau_plus - tau_base) / fd_h;
