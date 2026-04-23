@@ -2318,7 +2318,7 @@ TEST(InverseDynamicsDerivativesComplexStep, TelloImplicitConstraintDerivatives) 
     ModelState<double> state_real;
     double max_phi_residual = std::numeric_limits<double>::infinity();
     bool found_valid_state = false;
-    constexpr bool enforce_constraints_flag = false;
+    constexpr bool enforce_constraints_flag = true;
 
     std::vector<unsigned int> deterministic_seeds = {0u}; //, 1u, 2u, 7u, 42u, 123u, 456u, 789u};
     for (unsigned int seed : deterministic_seeds) {
@@ -2418,42 +2418,29 @@ TEST(InverseDynamicsDerivativesComplexStep, TelloImplicitConstraintDerivatives) 
 
     // Test dtau/dq using complex-step
     std::cout << "Testing dtau/dq...\n";
-    DMat<double> dtau_dq_cs = forwardDifferenceJacobian(ID_of_dq_cs, zero_dq_real, h);
-    double max_error_dq = (dtau_dq-dtau_dq_cs).cwiseAbs().maxCoeff();
-    std::cout << "Max error (dtau/dq): " << max_error_dq << "\n";
-
-    // Test dtau/dqdot using complex-step
-    std::cout << "Testing dtau/dqdot...\n";
+    DMat<double> dtau_dq_cs    = forwardDifferenceJacobian(ID_of_dq_cs   , zero_dq_real, h);
     DMat<double> dtau_dqdot_cs = forwardDifferenceJacobian(ID_of_dqdot_cs, zero_dq_real, h);
-    double max_error_dqdot = (dtau_dqdot-dtau_dqdot_cs).cwiseAbs().maxCoeff();
     
+    double max_error_dq = (dtau_dq-dtau_dq_cs).cwiseAbs().maxCoeff();
+    double max_error_dqdot = (dtau_dqdot-dtau_dqdot_cs).cwiseAbs().maxCoeff();
+
+    std::cout << "Max error (dtau/dq): " << max_error_dq << "\n";
     std::cout << "Max error (dtau/dqdot): " << max_error_dqdot << "\n";
     std::cout << "========================================\n\n";
 
-
-    std::cout << "\nComparing complex-step vs finite-difference for dtau/dq...\n";
-
-    DMat<double> dtau_dq_fd = forwardDifferenceJacobian(ID_of_dq_fd, zero_dq_real, 1e-7);
-    std::cout << " Max error (dtau/dq) between CS and FD: " << (dtau_dq_cs - dtau_dq_fd).cwiseAbs().maxCoeff() << "\n";
-
-    double max_cs_vs_fd_error_dq = (dtau_dq_cs - dtau_dq_fd).cwiseAbs().maxCoeff();
-    std::cout << "Max complex-step vs finite-diff error (dtau/dq): " << max_cs_vs_fd_error_dq << "\n";
-
-    std::cout << "\nComparing complex-step vs finite-difference for dtau/dqdot...\n";
-
+    // Compare complex step to finite diff
+    DMat<double> dtau_dq_fd    = forwardDifferenceJacobian(ID_of_dq_fd   , zero_dq_real, 1e-7);
     DMat<double> dtau_dqdot_fd = forwardDifferenceJacobian(ID_of_dqdot_fd, zero_dq_real, 1e-7);
 
-    std::cout << " Max error (dtau/dqdot) between CS and FD: " << (dtau_dqdot_cs - dtau_dqdot_fd).cwiseAbs().maxCoeff() << "\n";
+    double max_cs_vs_fd_error_dq    = (dtau_dq_cs    - dtau_dq_fd).cwiseAbs().maxCoeff();
+    double max_cs_vs_fd_error_dqdot = (dtau_dqdot_cs - dtau_dqdot_fd).cwiseAbs().maxCoeff();
 
-    double max_cs_vs_fd_error = (dtau_dqdot_cs - dtau_dqdot_fd).cwiseAbs().maxCoeff();
-
-    
-    std::cout << "Max complex-step vs finite-diff error (dtau/dqdot): " << max_cs_vs_fd_error << "\n";
-
+    std::cout << "Max complex-step vs finite-diff error (dtau/dq):    " << max_cs_vs_fd_error_dq    << "\n";    
+    std::cout << "Max complex-step vs finite-diff error (dtau/dqdot): " << max_cs_vs_fd_error_dqdot << "\n";
 
     // Complex-step vs finite-difference should match to FD precision (~1e-7 for h=1e-7)
     // Using 5e-5 tolerance to account for accumulated FD errors in complex constraint evaluation
-    EXPECT_LT(max_cs_vs_fd_error, 5e-5) << "Complex-step dtau/dqdot should match finite-difference";
+    EXPECT_LT(max_cs_vs_fd_error_dqdot, 5e-5) << "Complex-step dtau/dqdot should match finite-difference";
     EXPECT_LT(max_cs_vs_fd_error_dq, 5e-5) << "Complex-step dtau/dq should match finite-difference";
 
     // Print summary for analytical derivative accuracy
@@ -2464,10 +2451,8 @@ TEST(InverseDynamicsDerivativesComplexStep, TelloImplicitConstraintDerivatives) 
     std::cout << "============================================================================\n";
 
     // Tolerances for comparison with analytical derivatives
-    // These tolerances reflect current analytical derivative accuracy for implicit constraints.
-    // The errors are documented here as validation targets for future improvements.
-    const double dq_tolerance = 0.005;     // Current: ~0.002-0.003 for dtau/dq
-    const double dqdot_tolerance = 0.002;  // Current: ~0.0006-0.001 for dtau/dqdot
+    const double dq_tolerance = 1e-13;     // Current: ~0.002-0.003 for dtau/dq
+    const double dqdot_tolerance = 1e-14;  // Current: ~0.0006-0.001 for dtau/dqdot
     EXPECT_LT(max_error_dq, dq_tolerance) << "dtau/dq error exceeds tolerance";
     EXPECT_LT(max_error_dqdot, dqdot_tolerance) << "dtau/dqdot error exceeds tolerance";
 }
