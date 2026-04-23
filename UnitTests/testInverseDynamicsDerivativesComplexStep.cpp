@@ -329,6 +329,18 @@ ModelState<T> applyMinimalPerturbation(
     return result;
 }
 
+// Sets a random state on model. For constrained models, pass enforce_constraints=true
+// so that randomJointState() solves loop constraints before returning.
+ModelState<double> randomModelState(const ClusterTreeModel<double>& model,
+                                    bool enforce_constraints = false) {
+    ModelState<double> state;
+    for (const auto& c : model.clusters()) {
+        JointState<double> js = c->joint_->randomJointState(enforce_constraints);
+        state.push_back(c->joint_->toSpanningTreeState(js));
+    }
+    return state;
+}
+
 // Helper function to run complex-step derivative test on simple serial chain models
 // NOTE: This version only works for models with simple revolute joints (no rotors, no free joints)
 void testInverseDynamicsDerivativesComplexStepSimple(ClusterTreeModel<double>& model_real,
@@ -347,13 +359,7 @@ void testInverseDynamicsDerivativesComplexStepSimple(ClusterTreeModel<double>& m
 
     ASSERT_EQ(nDOF, expected_dof);
 
-    // Set random state on real model
-    ModelState<double> model_state_real;
-    for (const auto &cluster : model_real.clusters()) {
-        JointState<> joint_state = cluster->joint_->randomJointState();
-        model_state_real.push_back(joint_state);
-    }
-    model_real.setState(model_state_real);
+    model_real.setState(randomModelState(model_real));
 
     // Random acceleration
     const DVec<double> ydd_real = DVec<double>::Random(nDOF);
@@ -680,10 +686,7 @@ TEST(InverseDynamicsDerivativesComplexStep, SimpleFloatingBaseWithRotor) {
     ClusterTreeModel<double> model_real    = buildSimpleFBWithRotorModel<double>();
     ClusterTreeModel<CD>     model_complex = buildSimpleFBWithRotorModel<CD>();
 
-    ModelState<double> state;
-    for (const auto& c : model_real.clusters())
-        state.push_back(c->joint_->randomJointState());
-    model_real.setState(state);
+    model_real.setState(randomModelState(model_real));
 
     testInverseDynamicsDerivativesComplexStepFloatingBase(
         model_real, model_complex, "Simple Floating Base + 1 Revolute With Rotor");
@@ -709,10 +712,7 @@ TEST(InverseDynamicsDerivativesComplexStep, SimpleFloatingBase) {
     ClusterTreeModel<double> model_real    = buildSimpleFBModel<double>();
     ClusterTreeModel<CD>     model_complex = buildSimpleFBModel<CD>();
 
-    ModelState<double> state;
-    for (const auto& c : model_real.clusters())
-        state.push_back(c->joint_->randomJointState());
-    model_real.setState(state);
+    model_real.setState(randomModelState(model_real));
 
     testInverseDynamicsDerivativesComplexStepFloatingBase(
         model_real, model_complex, "Simple Floating Base + 1 Revolute");
@@ -724,10 +724,7 @@ TEST(InverseDynamicsDerivativesComplexStep, MiniCheetahQuaternion) {
     ClusterTreeModel<double>               model_real    = robot_real.buildClusterTreeModel();
     ClusterTreeModel<std::complex<double>> model_complex = robot_complex.buildClusterTreeModel();
 
-    ModelState<double> state;
-    for (const auto& c : model_real.clusters())
-        state.push_back(c->joint_->randomJointState());
-    model_real.setState(state);
+    model_real.setState(randomModelState(model_real));
 
     testInverseDynamicsDerivativesComplexStepFloatingBase(
         model_real, model_complex, "MiniCheetah (Quaternion)");
@@ -844,13 +841,7 @@ void testRobotComplexStepDirect(const std::string& robot_name,
 
     ASSERT_EQ(nDOF, expected_dof);
 
-    // Set random state on real model
-    ModelState<double> model_state_real;
-    for (const auto &cluster : model_real.clusters()) {
-        JointState<> joint_state = cluster->joint_->randomJointState();
-        model_state_real.push_back(joint_state);
-    }
-    model_real.setState(model_state_real);
+    model_real.setState(randomModelState(model_real));
 
     // Random acceleration
     const DVec<double> ydd_real = DVec<double>::Random(nDOF);
@@ -1018,10 +1009,7 @@ TEST(InverseDynamicsDerivativesComplexStep, MITHumanoidQuaternion) {
     ClusterTreeModel<double>               model_real    = robot_real.buildClusterTreeModel();
     ClusterTreeModel<std::complex<double>> model_complex = robot_complex.buildClusterTreeModel();
 
-    ModelState<double> state;
-    for (const auto& c : model_real.clusters())
-        state.push_back(c->joint_->randomJointState());
-    model_real.setState(state);
+    model_real.setState(randomModelState(model_real));
 
     testInverseDynamicsDerivativesComplexStepFloatingBase(
         model_real, model_complex, "MIT Humanoid (Quaternion)", 1.0, 0.1);
@@ -1035,39 +1023,24 @@ TEST(InverseDynamicsDerivativesComplexStep, TeleopArm) {
 
     ASSERT_EQ(model_real.getNumDegreesOfFreedom(), 7);
 
-    ModelState<double> state;
-    for (const auto& c : model_real.clusters())
-        state.push_back(c->joint_->randomJointState());
-    model_real.setState(state);
+    model_real.setState(randomModelState(model_real));
 
     testInverseDynamicsDerivativesComplexStepFloatingBase(
         model_real, model_complex, "TeleopArm");
 }
 TEST(InverseDynamicsDerivativesComplexStep, TelloImplicitConstraint) {
-    using namespace grbda;
     Tello<double> robot_real;
     ClusterTreeModel<double> model_real = robot_real.buildClusterTreeModel();
-
-    ModelState<double> state;
-    for (const auto& c : model_real.clusters())
-        state.push_back(c->joint_->randomJointState(true));
-    model_real.setState(state, true);
-
+    model_real.setState(randomModelState(model_real, true), true);
     const int nDOF = model_real.getNumDegreesOfFreedom();
     DVec<double> tau = model_real.inverseDynamics(DVec<double>::Zero(nDOF));
     EXPECT_GE(tau.norm(), 0.0);
 }
 
 TEST(InverseDynamicsDerivativesComplexStep, TelloWithArmsImplicitConstraint) {
-    using namespace grbda;
     TelloWithArms<double> robot_real;
     ClusterTreeModel<double> model_real = robot_real.buildClusterTreeModel();
-
-    ModelState<double> state;
-    for (const auto& c : model_real.clusters())
-        state.push_back(c->joint_->randomJointState(true));
-    model_real.setState(state, true);
-
+    model_real.setState(randomModelState(model_real, true), true);
     const int nDOF = model_real.getNumDegreesOfFreedom();
     DVec<double> tau = model_real.inverseDynamics(DVec<double>::Zero(nDOF));
     EXPECT_GE(tau.norm(), 0.0);
@@ -1091,172 +1064,35 @@ auto forwardDifferenceJacobian = [](auto func, const Eigen::VectorXd& point, dou
 
 
 
-// Test for PlanarLegLinkage - simpler implicit constraint system
 TEST(InverseDynamicsDerivativesComplexStep, PlanarLegLinkageImplicitConstraint) {
-    using namespace grbda;
     PlanarLegLinkage<double> robot_real;
     ClusterTreeModel<double> model_real = robot_real.buildClusterTreeModel();
-
+    model_real.setState(randomModelState(model_real));
     const int nDOF = model_real.getNumDegreesOfFreedom();
-    ASSERT_GT(nDOF, 0);
-
-    std::cout << "\n========================================\n";
-    std::cout << "Testing PlanarLegLinkage with implicit FourBar constraints\n";
-    std::cout << "Robot: PlanarLegLinkage (2-DOF, simpler constraint manifold)\n";
-    std::cout << "========================================\n\n";
-
-    // Use randomJointState() which properly solves the loop constraints
-    ModelState<double> state_real;
-    bool found_valid_state = false;
-
-    for (int attempt = 0; attempt < 10 && !found_valid_state; ++attempt) {
-        state_real.clear();
-        try {
-            for (const auto& cluster : model_real.clusters()) {
-                JointState<double> js = cluster->joint_->randomJointState();
-                state_real.push_back(js);
-            }
-            model_real.setState(state_real);
-            found_valid_state = true;
-        } catch (const std::exception& e) {
-            std::cout << "Attempt " << attempt << " failed: " << e.what() << "\n";
-        }
-    }
-
-    if (!found_valid_state) {
-        GTEST_SKIP() << "Could not find valid PlanarLegLinkage state";
-        return;
-    }
-
     DVec<double> tau_real = model_real.inverseDynamics(DVec<double>::Zero(nDOF));
-
-    std::cout << "✓ Inverse dynamics computed successfully\n";
-    std::cout << "  tau norm: " << tau_real.norm() << "\n";
-
     EXPECT_GE(tau_real.norm(), 0.0);
 }
 
-// Complex-step derivative test for Tello with implicit differential constraints
-// This test now works thanks to the complex-step aware CasADi wrapper implementation
 TEST(InverseDynamicsDerivativesComplexStep, TelloImplicitConstraintDerivatives) {
-    using namespace grbda;
-    std::cout << std::setprecision(16);
-
-    std::cout << "\n========================================\n";
-    std::cout << "Tello ImplicitConstraint Complex-Step Derivative Test\n";
-    std::cout << "========================================\n";
-
-    // Build both real and complex models
-    Tello<double> robot_real;
+    Tello<double>               robot_real;
     Tello<std::complex<double>> robot_complex;
-
-    ClusterTreeModel<double> model_real = robot_real.buildClusterTreeModel();
+    ClusterTreeModel<double>               model_real    = robot_real.buildClusterTreeModel();
     ClusterTreeModel<std::complex<double>> model_complex = robot_complex.buildClusterTreeModel();
 
-    const int nDOF = model_real.getNumDegreesOfFreedom();
-
-    // Sample a deterministic valid constrained state by trying a fixed seed set
-    // and selecting the candidate with the smallest max implicit residual.
-    ModelState<double> state_real;
-    double max_phi_residual = std::numeric_limits<double>::infinity();
-    bool found_valid_state = false;
-    constexpr bool enforce_constraints_flag = true;
-
-    std::vector<unsigned int> deterministic_seeds = {0u}; //, 1u, 2u, 7u, 42u, 123u, 456u, 789u};
-    for (unsigned int seed : deterministic_seeds) {
-        std::srand(seed);
-        ModelState<double> candidate_state;
-        double candidate_max_phi = 0.0;
-        bool seed_success = true;
-
-        for (const auto &cluster : model_real.clusters()) {
-            try {
-                JointState<double> js = cluster->joint_->randomJointState(enforce_constraints_flag);
-                JointState<double> span_js = cluster->joint_->toSpanningTreeState(js);
-                candidate_state.push_back(span_js);
-
-                auto lc = cluster->joint_->cloneLoopConstraint();
-                if (lc && lc->isImplicit()) {
-                    DVec<double> phi = lc->phi(span_js.position);
-                    candidate_max_phi = std::max(candidate_max_phi, phi.norm());
-                }
-            } catch (const std::exception&) {
-                seed_success = false;
-                break;
-            }
-        }
-        if (seed_success && (!enforce_constraints_flag || candidate_max_phi < max_phi_residual)) {
-            state_real = candidate_state;
-            max_phi_residual = candidate_max_phi;
-            found_valid_state = true;
-        }
-    }
-
-    if (!found_valid_state) {
-        std::cout << "✗ Constraint solver could not find valid state\n";
-        GTEST_SKIP() << "Newton iteration did not converge for Tello constraints";
-        return;
-    }
-
-    model_real.setState(state_real, enforce_constraints_flag);
-    std::cout << "✓ Found valid constrained state (max ||phi|| = " << max_phi_residual << ")\n";
+    model_real.setState(randomModelState(model_real, true), true);
 
     testInverseDynamicsDerivativesComplexStepFloatingBase(
         model_real, model_complex, "Tello (ImplicitConstraint)", 1e-13, 1e-14);
 }
 
-// Complex-step derivative test for PlanarLegLinkage with implicit FourBar constraints
-// FourBar constraints use standard C++ trig functions which work with complex<double>
 TEST(InverseDynamicsDerivativesComplexStep, PlanarLegLinkageImplicitConstraintDerivatives) {
-    using namespace grbda;
-    std::cout << std::setprecision(16);
-
-    std::cout << "\n========================================\n";
-    std::cout << "PlanarLegLinkage FourBar Complex-Step Derivative Test\n";
-    std::cout << "========================================\n";
-
-    // Build both real and complex models
-    PlanarLegLinkage<double> robot_real;
+    PlanarLegLinkage<double>               robot_real;
     PlanarLegLinkage<std::complex<double>> robot_complex;
-
-    ClusterTreeModel<double> model_real = robot_real.buildClusterTreeModel();
+    ClusterTreeModel<double>               model_real    = robot_real.buildClusterTreeModel();
     ClusterTreeModel<std::complex<double>> model_complex = robot_complex.buildClusterTreeModel();
 
-    const int nDOF = model_real.getNumDegreesOfFreedom();
-    std::cout << "DOF: " << nDOF << "\n";
-    ASSERT_EQ(nDOF, 2);
-
-    // Sample valid spanning state using randomJointState() which solves constraints
-    ModelState<double> state_real;
-    double max_phi_residual = 0.0;
-    bool found_valid_state = true;
-    for (const auto &cluster : model_real.clusters()) {
-        try {
-            JointState<double> js = cluster->joint_->randomJointState();
-            JointState<double> span_js = cluster->joint_->toSpanningTreeState(js);
-            state_real.push_back(span_js);
-
-            // Check constraint residual
-            auto lc = cluster->joint_->cloneLoopConstraint();
-            if (lc && lc->isImplicit()) {
-                DVec<double> phi = lc->phi(span_js.position);
-                max_phi_residual = std::max(max_phi_residual, phi.norm());
-            }
-        } catch (const std::exception& e) {
-            std::cout << "✗ Failed to sample state for cluster: " << e.what() << "\n";
-            found_valid_state = false;
-            break;
-        }
-    }
-
-    if (!found_valid_state) {
-        std::cout << "✗ Constraint solver could not find valid state\n";
-        GTEST_SKIP() << "Newton iteration did not converge for FourBar constraints";
-        return;
-    }
-
-    model_real.setState(state_real);
-    std::cout << "✓ Found valid constrained state (max ||phi|| = " << max_phi_residual << ")\n";
+    ASSERT_EQ(model_real.getNumDegreesOfFreedom(), 2);
+    model_real.setState(randomModelState(model_real));
 
     testInverseDynamicsDerivativesComplexStepFloatingBase(
         model_real, model_complex, "PlanarLegLinkage (ImplicitConstraint)");
