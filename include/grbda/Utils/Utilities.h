@@ -353,18 +353,14 @@ namespace grbda
     ComplexDoubleInverse() {}
     ComplexDoubleInverse(const DMat<std::complex<double>> &mat)
     {
-      std::cout << "[DEBUG] ComplexDoubleInverse called with matrix size: " << mat.rows() << "x" << mat.cols() << "\n";
-
       // For 1x1 matrices, inverse is just 1/mat(0,0)
       if (mat.rows() == 1 && mat.cols() == 1) {
-        std::cout << "[DEBUG] Using 1x1 algebraic inverse\n";
         Ainv_.resize(1, 1);
         Ainv_(0, 0) = std::complex<double>(1.0, 0.0) / mat(0, 0);
       }
       // For 2x2 matrices, use analytical formula: inv([[a,b],[c,d]]) = (1/det)*[[d,-b],[-c,a]]
       // This is complex-step safe as it uses only algebraic operations
       else if (mat.rows() == 2 && mat.cols() == 2) {
-        std::cout << "[DEBUG] Using 2x2 analytical inverse (complex-step safe)\n";
         Ainv_.resize(2, 2);
         const auto a = mat(0, 0);
         const auto b = mat(0, 1);
@@ -379,7 +375,6 @@ namespace grbda
       // For 3x3 matrices, use analytical formula with cofactor expansion
       // This is complex-step safe as it uses only algebraic operations
       else if (mat.rows() == 3 && mat.cols() == 3) {
-        std::cout << "[DEBUG] Using 3x3 analytical inverse (complex-step safe)\n";
         Ainv_.resize(3, 3);
         
         // Compute cofactors
@@ -411,8 +406,6 @@ namespace grbda
       }
       // For larger matrices, fall back to .inverse() with warning
       else {
-        std::cout << "[DEBUG] WARNING: Using general .inverse() for " << mat.rows() << "x" << mat.cols() 
-                  << " matrix - NOT complex-step safe!\n";
         Ainv_ = mat.inverse();
       }
     }

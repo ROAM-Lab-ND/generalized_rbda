@@ -151,18 +151,6 @@ DVec<T> lieGroupConfigurationAddition(const DVec<T>& q0, const DVec<T>& dq, bool
             }
         }
 
-        // DEBUG: Print what path we're taking
-        static bool first_call = true;
-        if (first_call && !std::is_arithmetic<T>::value) {
-            std::cout << "DEBUG lieGroupConfigurationAddition:\n";
-            std::cout << "  omega_body = " << omega_body.transpose() << "\n";
-            std::cout << "  has_imag = " << has_imag << "\n";
-            std::cout << "  imag(omega[0]) = " << std::imag(omega_body[0]) << "\n";
-            std::cout << "  imag(omega[1]) = " << std::imag(omega_body[1]) << "\n";
-            std::cout << "  imag(omega[2]) = " << std::imag(omega_body[2]) << "\n";
-            first_call = false;
-        }
-
         if (has_imag) {
             // COMPLEX-STEP: Use tangent directly (not exponential)
             // tang = [0, ω/2] (not exp([0, ω/2]) = [1, ω/2])
@@ -192,16 +180,6 @@ DVec<T> lieGroupConfigurationAddition(const DVec<T>& q0, const DVec<T>& dq, bool
             T sca = delta_quat[0];
             Eigen::Matrix<T, 3, 1> vec = delta_quat.template tail<3>();
 
-            // DEBUG: Print intermediate values for first call
-            static bool debug_first = true;
-            if (debug_first && !std::is_arithmetic<T>::value) {
-                std::cout << "DEBUG complex quaternion multiplication:\n";
-                std::cout << "  sca = " << sca << "\n";
-                std::cout << "  vec = " << vec.transpose() << "\n";
-                std::cout << "  quat_vec = " << quat_vec.transpose() << "\n";
-                debug_first = false;
-            }
-
             // Scalar part: (1+sca)*q[0] - vec^T*q_vec
             // CRITICAL: Use transpose(), NOT dot(), to avoid complex conjugation in Eigen's dot product
             // Eigen's dot(a,b) computes conj(a)^T * b, but we need a^T * b for complex-step
@@ -221,27 +199,9 @@ DVec<T> lieGroupConfigurationAddition(const DVec<T>& q0, const DVec<T>& dq, bool
             cross_vec_q[1] = q_vec_3[2] * vec[0] - q_vec_3[0] * vec[2];
             cross_vec_q[2] = q_vec_3[0] * vec[1] - q_vec_3[1] * vec[0];
 
-            // DEBUG
-            static bool debug_cross = true;
-            if (debug_cross && !std::is_arithmetic<T>::value) {
-                std::cout << "  Manual cross_vec_q = " << cross_vec_q.transpose() << "\n";
-                std::cout << "  Expected: [0, -ih/2*q[3], +ih/2*q[2]] = [0, -ih/2*0.346, ih/2*0.00274]\n";
-                debug_cross = false;
-            }
-
             quat_new.template tail<3>() = vec * quat_vec[0] +
                                           (T(1.0) + sca) * quat_vec.template tail<3>() +
                                           cross_vec_q;
-
-            // DEBUG: Print result for first call
-            if (!std::is_arithmetic<T>::value) {
-                static bool debug_result = true;
-                if (debug_result) {
-                    std::cout << "  quat_new = " << quat_new.transpose() << "\n";
-                    std::cout << "  imag(quat_new[0]) = " << std::imag(quat_new[0]) << "\n";
-                    debug_result = false;
-                }
-            }
         } else {
             // REAL: Use standard quaternion multiplication
             quat_new[0] = quat_vec[0] * delta_quat[0] - quat_vec.template tail<3>().dot(delta_quat.template tail<3>());
@@ -278,20 +238,6 @@ DVec<T> lieGroupConfigurationAddition(const DVec<T>& q0, const DVec<T>& dq, bool
         // Assemble new configuration [pos(3), quat(4)]
         q_new.head(3) = p_new;
         q_new.segment(3, 4) = quat_new;
-
-        // DEBUG: Print for first complex perturbation
-        if constexpr (!std::is_arithmetic<T>::value) {
-            static bool debug_output = true;
-            if (debug_output) {
-                std::cout << "[lieGroupConfigurationAddition DEBUG]\n";
-                std::cout << "  Input q0 config: pos=" << p.transpose() << ", quat=" << quat_vec.transpose() << "\n";
-                std::cout << "  Input dq velocity: omega=" << omega_body.transpose() << ", v=" << v_body.transpose() << "\n";
-                std::cout << "  Rotation matrix R (from original quat):\n" << R << "\n";
-                std::cout << "  R.transpose() * v_body = " << (R.transpose() * v_body).transpose() << "\n";
-                std::cout << "  Output q_new: pos=" << p_new.transpose() << ", quat=" << quat_new.transpose() << "\n";
-                debug_output = false;
-            }
-        }
 
         return q_new;
     }
@@ -3859,6 +3805,16 @@ TEST(InverseDynamicsDerivativesComplexStep, KangarooWithConstraints) {
             if (ci.is_floating_base) std::cout << " (floating base)";
             if (ci.is_implicit) std::cout << " (FourBar cluster " << cidx << ")";
             std::cout << "\n";
+            // Print per-row errors for debugging
+            if (error > 0.01) {
+                for (int row = 0; row < nDOF; ++row) {
+                    double row_err = std::abs(dtau_dqdoti_cs[row] - dtau_dqdot(row, i));
+                    if (row_err > 1e-10) {
+                        std::cout << "    tau[" << row << "] error: " << row_err
+                                  << " (CS=" << dtau_dqdoti_cs[row] << ", anal=" << dtau_dqdot(row, i) << ")\n";
+                    }
+                }
+            }
         }
         max_error_dqdot = std::max(max_error_dqdot, error);
     }
