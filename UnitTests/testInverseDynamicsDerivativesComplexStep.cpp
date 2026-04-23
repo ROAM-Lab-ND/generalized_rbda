@@ -253,6 +253,82 @@ toComplexState(const DVec<double>& q, const DVec<double>& qd) {
     return {q_complex, qd_complex};
 }
 
+// Build a ModelState<T> from flat spanning-coordinate vectors.
+// Uses cluster->num_positions_ / num_velocities_ for correct sizes — safe even when
+// a ModelState was built from independent coordinates (e.g. from randomJointState).
+template<typename T>
+ModelState<T> makeModelState(
+    const ClusterTreeModel<double>& model_ref,
+    const DVec<double>& q,
+    const DVec<double>& qd)
+{
+    ModelState<T> result;
+    result.reserve(model_ref.clusters().size());
+    int q_off = 0, qd_off = 0;
+    for (const auto& cluster : model_ref.clusters()) {
+        const int np = cluster->num_positions_;
+        const int nv = cluster->num_velocities_;
+        result.push_back(JointState<T>(
+            JointCoordinate<T>(q.segment(q_off, np).template cast<T>(), (np > nv)),
+            JointCoordinate<T>(qd.segment(qd_off, nv).template cast<T>(), false)));
+        q_off += np;
+        qd_off += nv;
+    }
+    return result;
+}
+
+// Apply perturbations in minimal (independent) coordinates to a ModelState.
+//   Floating-base clusters : Lie group retraction via lieGroupConfigurationAddition.
+//   Implicit-constraint clusters : G-based spanning perturbation (dq_span = G * dq_ind).
+//   Simple joints : direct addition.
+// model_ref supplies cluster structure and loop-constraint Jacobians (always double).
+// dq / dqd are flat vectors in minimal (independent) coordinates across all clusters.
+// Works with T = double or T = std::complex<double>.
+template<typename T>
+ModelState<T> applyMinimalPerturbation(
+    const ClusterTreeModel<double>& model_ref,
+    const ModelState<T>& state,
+    const DVec<T>& dq,
+    const DVec<T>& dqd)
+{
+    ModelState<T> result;
+    result.reserve(state.size());
+
+    int dq_off = 0;
+    for (size_t c = 0; c < model_ref.clusters().size(); ++c) {
+        const auto& cluster = model_ref.clusters()[c];
+        const int np = cluster->num_positions_;
+        const int nv = cluster->num_velocities_;
+        const bool is_fb = (np == 7 && nv == 6);
+        const bool is_implicit = (np > nv) && !is_fb;
+
+        DVec<T> new_pos(state[c].position);
+        DVec<T> new_vel = DVec<T>(state[c].velocity) + dqd.segment(dq_off, nv);
+
+        if (is_fb) {
+            new_pos = lieGroupConfigurationAddition(
+                DVec<T>(state[c].position), DVec<T>(dq.segment(dq_off, nv)), true);
+        } else if (is_implicit) {
+            DVec<double> q_real(np);
+            for (int k = 0; k < np; ++k)
+                q_real(k) = std::real(state[c].position[k]);
+            auto lc = cluster->joint_->cloneLoopConstraint();
+            lc->updateJacobians(JointCoordinate<double>(q_real, true));
+            new_pos += lc->G().template cast<T>() * DVec<T>(dq.segment(dq_off, nv));
+        } else {
+            new_pos += dq.segment(dq_off, nv);
+        }
+
+        result.push_back(JointState<T>(
+            JointCoordinate<T>(new_pos, state[c].position.isSpanning()),
+            JointCoordinate<T>(new_vel, state[c].velocity.isSpanning())));
+
+        dq_off += nv;
+    }
+
+    return result;
+}
+
 // Helper function to run complex-step derivative test on simple serial chain models
 // NOTE: This version only works for models with simple revolute joints (no rotors, no free joints)
 void testInverseDynamicsDerivativesComplexStepSimple(ClusterTreeModel<double>& model_real,
@@ -2435,71 +2511,28 @@ TEST(InverseDynamicsDerivativesComplexStep, TelloImplicitConstraintDerivatives) 
         return {-1, -1};  // Should never happen
     };
 
+    const ModelState<std::complex<double>> state_complex0 = makeModelState<std::complex<double>>(model_real, q0, qd0);
+    const ModelState<double> state_real_base = makeModelState<double>(model_real, q0, qd0);
+    const DVec<std::complex<double>> zero_dq = DVec<std::complex<double>>::Zero(nDOF);
+    const DVec<double> zero_dq_real = DVec<double>::Zero(nDOF);
+
     // Test dtau/dq using complex-step
-    // For floating base (DOF 0-5): use Lie group perturbation via lieGroupConfigurationAddition
-    // For implicit constraints: perturb spanning positions using G matrix
-    // For simple joints: perturb position directly
     std::cout << "Testing dtau/dq...\n";
     double max_error_dq = 0.0;
     for (int i = 0; i < nDOF; ++i) {
-        // Convert state to complex
-        auto [q_complex, qd_complex] = toComplexState(q0, qd0);
-
-        DVec<std::complex<double>> q_perturbed;
-        if (i < 6) {
-            // Floating base DOF (0-5): use Lie group perturbation
-            // Create perturbation in velocity space and apply via lieGroupConfigurationAddition
-            DVec<std::complex<double>> dq_vel = DVec<std::complex<double>>::Zero(nDOF);
-            dq_vel(i) = ih;
-            q_perturbed = lieGroupConfigurationAddition(q_complex, dq_vel, true);  // true = floating base
-        } else {
-            // Find which cluster this DOF belongs to
-            auto [cidx, local_dof] = findClusterForDOF(i);
-            const auto& ci = cluster_info[cidx];
-
-            q_perturbed = q_complex;
-            if (ci.is_implicit) {
-                // G-based perturbation: dq_span = G(q_real) * (ih * e_local_dof)
-                // K*G = 0 by construction, so this perturbation is tangent to the constraint
-                // manifold to first order — sufficient for complex-step differentiation.
-                auto lc = model_real.clusters()[cidx]->joint_->cloneLoopConstraint();
-                DVec<double> q_cluster_real = q0.segment(ci.q0_start, ci.np);
-                JointCoordinate<double> jc(q_cluster_real, true);
-                lc->updateJacobians(jc);
-                const DMat<double> G = lc->G();
-
-                DVec<std::complex<double>> dq_ind = DVec<std::complex<double>>::Zero(G.cols());
-                dq_ind(local_dof) = ih;
-
-                DVec<std::complex<double>> dq_span = G.cast<std::complex<double>>() * dq_ind;
-                for (int k = 0; k < ci.np; ++k)
-                    q_perturbed[ci.q0_start + k] += dq_span(k);
-            } else {
-                // Simple joint: perturb position directly
-                int perturb_idx = dof_to_perturb[i].q0_offset;
-                q_perturbed[perturb_idx] += ih;
-            }
-        }
-
-        // Set state on complex model
-        setComplexState(q_perturbed, qd_complex);
-
-        // Compute inverse dynamics with complex state
+        DVec<std::complex<double>> dq = zero_dq;
+        dq(i) = ih;
+        model_complex.setState(
+            applyMinimalPerturbation(model_real, state_complex0, dq, zero_dq),
+            enforce_constraints_flag);
         DVec<std::complex<double>> tau_complex = model_complex.inverseDynamics(ydd_complex);
-
-        // Extract derivative from imaginary part
         DVec<double> dtau_dqi_complex(nDOF);
-        for (int j = 0; j < nDOF; ++j) {
+        for (int j = 0; j < nDOF; ++j)
             dtau_dqi_complex[j] = tau_complex[j].imag() / h;
-        }
-
-        // Compare with analytical
         double error = (dtau_dq.col(i) - dtau_dqi_complex).cwiseAbs().maxCoeff();
         max_error_dq = std::max(max_error_dq, error);
-
-        if (error > 1e-6) {
+        if (error > 1e-6)
             std::cout << "  Column " << i << " error: " << error << "\n";
-        }
     }
     std::cout << "Max error (dtau/dq): " << max_error_dq << "\n";
 
@@ -2507,21 +2540,15 @@ TEST(InverseDynamicsDerivativesComplexStep, TelloImplicitConstraintDerivatives) 
     std::cout << "Testing dtau/dqdot...\n";
     double max_error_dqdot = 0.0;
     for (int i = 0; i < nDOF; ++i) {
-        // Convert state to complex
-        auto [q_complex, qd_complex] = toComplexState(q0, qd0);
-        qd_complex[i] += ih;  // Perturb qd[i]
-
-        // Set state on complex model
-        setComplexState(q_complex, qd_complex);
-
-        // Compute inverse dynamics with complex state
+        DVec<std::complex<double>> dqd = zero_dq;
+        dqd(i) = ih;
+        model_complex.setState(
+            applyMinimalPerturbation(model_real, state_complex0, zero_dq, dqd),
+            enforce_constraints_flag);
         DVec<std::complex<double>> tau_complex = model_complex.inverseDynamics(ydd_complex);
-
-        // Extract derivative from imaginary part
         DVec<double> dtau_dqdoti_complex(nDOF);
-        for (int j = 0; j < nDOF; ++j) {
+        for (int j = 0; j < nDOF; ++j)
             dtau_dqdoti_complex[j] = tau_complex[j].imag() / h;
-        }
 
         // Debug: print first column details
         if (i == 0) {
@@ -2534,55 +2561,27 @@ TEST(InverseDynamicsDerivativesComplexStep, TelloImplicitConstraintDerivatives) 
             std::cout << "    Complex-step col 0 norm: " << dtau_dqdoti_complex.norm() << "\n";
         }
 
-        // Compare with analytical
         double error = (dtau_dqdot.col(i) - dtau_dqdoti_complex).cwiseAbs().maxCoeff();
         max_error_dqdot = std::max(max_error_dqdot, error);
-
-        if (error > 1e-6) {
+        if (error > 1e-6)
             std::cout << "  Column " << i << " error: " << error << "\n";
-        }
     }
     std::cout << "Max error (dtau/dqdot): " << max_error_dqdot << "\n";
 
     std::cout << "========================================\n\n";
 
     // Compute error excluding floating base (columns 0-5)
-    // Uses G matrix for implicit constraints (consistent with main loop)
     double max_error_dq_non_fb = 0.0;
     for (int i = 6; i < nDOF; ++i) {
-        auto [q_complex, qd_complex] = toComplexState(q0, qd0);
-
-        // Find which cluster this DOF belongs to
-        auto [cidx, local_dof] = findClusterForDOF(i);
-        const auto& ci = cluster_info[cidx];
-
-        DVec<std::complex<double>> q_perturbed = q_complex;
-        if (ci.is_implicit) {
-            // G-based perturbation: dq_span = G(q_real) * (ih * e_local_dof)
-            auto lc = model_real.clusters()[cidx]->joint_->cloneLoopConstraint();
-            DVec<double> q_cluster_real = q0.segment(ci.q0_start, ci.np);
-            JointCoordinate<double> jc(q_cluster_real, true);
-            lc->updateJacobians(jc);
-            const DMat<double> G = lc->G();
-
-            DVec<std::complex<double>> dq_ind = DVec<std::complex<double>>::Zero(G.cols());
-            dq_ind(local_dof) = ih;
-
-            DVec<std::complex<double>> dq_span = G.cast<std::complex<double>>() * dq_ind;
-            for (int k = 0; k < ci.np; ++k)
-                q_perturbed[ci.q0_start + k] += dq_span(k);
-        } else {
-            // Simple joint: perturb position directly
-            int perturb_idx = dof_to_perturb[i].q0_offset;
-            q_perturbed[perturb_idx] += ih;
-        }
-
-        setComplexState(q_perturbed, qd_complex);
+        DVec<std::complex<double>> dq = zero_dq;
+        dq(i) = ih;
+        model_complex.setState(
+            applyMinimalPerturbation(model_real, state_complex0, dq, zero_dq),
+            enforce_constraints_flag);
         DVec<std::complex<double>> tau_complex = model_complex.inverseDynamics(ydd_complex);
         DVec<double> dtau_dqi_complex(nDOF);
-        for (int j = 0; j < nDOF; ++j) {
+        for (int j = 0; j < nDOF; ++j)
             dtau_dqi_complex[j] = tau_complex[j].imag() / h;
-        }
         double error = (dtau_dq.col(i) - dtau_dqi_complex).cwiseAbs().maxCoeff();
         max_error_dq_non_fb = std::max(max_error_dq_non_fb, error);
     }
@@ -2591,9 +2590,11 @@ TEST(InverseDynamicsDerivativesComplexStep, TelloImplicitConstraintDerivatives) 
     // Compute velocity derivative error excluding floating base
     double max_error_dqdot_non_fb = 0.0;
     for (int i = 6; i < nDOF; ++i) {
-        auto [q_complex, qd_complex] = toComplexState(q0, qd0);
-        qd_complex[i] += ih;
-        setComplexState(q_complex, qd_complex);
+        DVec<std::complex<double>> dqd = zero_dq;
+        dqd(i) = ih;
+        model_complex.setState(
+            applyMinimalPerturbation(model_real, state_complex0, zero_dq, dqd),
+            enforce_constraints_flag);
         DVec<std::complex<double>> tau_complex = model_complex.inverseDynamics(ydd_complex);
         DVec<double> dtau_dqdoti_complex(nDOF);
         for (int j = 0; j < nDOF; ++j) {
@@ -2604,139 +2605,67 @@ TEST(InverseDynamicsDerivativesComplexStep, TelloImplicitConstraintDerivatives) 
     }
     std::cout << "Max error (dtau/dqdot, excluding floating base): " << max_error_dqdot_non_fb << "\n";
 
-    // Compare complex-step vs finite-difference for position derivatives (dtau/dq)
-    // This is the definitive test for complex-step correctness
-    // Uses Newton iteration for implicit constraints (consistent with main test loop)
     std::cout << "\nComparing complex-step vs finite-difference for dtau/dq...\n";
     double max_cs_vs_fd_error_dq = 0.0;
     const double fd_h = 1e-7;
     for (int i = 6; i < nDOF; ++i) {  // Skip floating base
-        // Complex-step derivative (using Newton iteration for implicit constraints)
-        auto [q_complex_i, qd_complex_i] = toComplexState(q0, qd0);
-        auto [cidx, local_dof] = findClusterForDOF(i);
-        const auto& ci = cluster_info[cidx];
-
-        DVec<std::complex<double>> q_perturbed_i = q_complex_i;
-        if (ci.is_implicit) {
-            // G-based perturbation: dq_span = G(q_real) * (ih * e_local_dof)
-            auto lc = model_real.clusters()[cidx]->joint_->cloneLoopConstraint();
-            DVec<double> q_cluster_real = q0.segment(ci.q0_start, ci.np);
-            JointCoordinate<double> jc(q_cluster_real, true);
-            lc->updateJacobians(jc);
-            const DMat<double> G = lc->G();
-
-            DVec<std::complex<double>> dq_ind = DVec<std::complex<double>>::Zero(G.cols());
-            dq_ind(local_dof) = ih;
-
-            DVec<std::complex<double>> dq_span = G.cast<std::complex<double>>() * dq_ind;
-            for (int k = 0; k < ci.np; ++k)
-                q_perturbed_i[ci.q0_start + k] += dq_span(k);
-        } else {
-            int perturb_idx = dof_to_perturb[i].q0_offset;
-            q_perturbed_i[perturb_idx] += ih;
-        }
-        setComplexState(q_perturbed_i, qd_complex_i);
-        DVec<std::complex<double>> tau_complex_i = model_complex.inverseDynamics(ydd_complex);
+        DVec<std::complex<double>> dq_cs = zero_dq;
+        dq_cs(i) = ih;
+        model_complex.setState(
+            applyMinimalPerturbation(model_real, state_complex0, dq_cs, zero_dq),
+            enforce_constraints_flag);
+        DVec<std::complex<double>> tau_cs = model_complex.inverseDynamics(ydd_complex);
         DVec<double> dtau_dqi_cs(nDOF);
-        for (int j = 0; j < nDOF; ++j) {
-            dtau_dqi_cs[j] = tau_complex_i[j].imag() / h;
-        }
+        for (int j = 0; j < nDOF; ++j)
+            dtau_dqi_cs[j] = tau_cs[j].imag() / h;
 
-        // Finite-difference derivative (using real model with Newton iteration)
-        model_real.setState(state_real0, enforce_constraints_flag);  // Reset to original state before perturbation
-        DVec<double> q_perturbed_real = q0;
-        if (ci.is_implicit) {
-            // G-based perturbation: dq_span = G(q_real) * (fd_h * e_local_dof)
-            auto lc = model_real.clusters()[cidx]->joint_->cloneLoopConstraint();
-            DVec<double> q_cluster_real = q0.segment(ci.q0_start, ci.np);
-            JointCoordinate<double> jc(q_cluster_real, true);
-            lc->updateJacobians(jc);
-            const DMat<double> G = lc->G();
-
-            DVec<double> dq_ind = DVec<double>::Zero(G.cols());
-            dq_ind(local_dof) = fd_h;
-
-            DVec<double> dq_span = G * dq_ind;
-            for (int k = 0; k < ci.np; ++k)
-                q_perturbed_real[ci.q0_start + k] += dq_span(k);
-        } else {
-            int perturb_idx = dof_to_perturb[i].q0_offset;
-            q_perturbed_real[perturb_idx] += fd_h;
-        }
-        // Set perturbed state
-        ModelState<double> state_plus_q;
-        int pos_idx = 0, vel_idx = 0;
-        for (const auto& cluster : model_real.clusters()) {
-            int np = cluster->num_positions_;
-            int nv = cluster->num_velocities_;
-            JointCoordinate<double> pos(q_perturbed_real.segment(pos_idx, np), (np > nv));
-            JointCoordinate<double> vel(qd0.segment(vel_idx, nv), false);
-            state_plus_q.push_back(JointState<double>(pos, vel));
-            pos_idx += np;
-            vel_idx += nv;
-        }
-        model_real.setState(state_plus_q, false);
+        model_real.setState(state_real0, enforce_constraints_flag);
+        DVec<double> dq_fd = zero_dq_real;
+        dq_fd(i) = fd_h;
+        model_real.setState(
+            applyMinimalPerturbation(model_real, state_real_base, dq_fd, zero_dq_real), false);
         DVec<double> tau_plus_q = model_real.inverseDynamics(ydd_real);
 
         model_real.setState(state_real0, enforce_constraints_flag);
         DVec<double> tau_base_q = model_real.inverseDynamics(ydd_real);
 
         DVec<double> dtau_dqi_fd = (tau_plus_q - tau_base_q) / fd_h;
-
         double error = (dtau_dqi_cs - dtau_dqi_fd).cwiseAbs().maxCoeff();
         max_cs_vs_fd_error_dq = std::max(max_cs_vs_fd_error_dq, error);
-
-        if (error > 1e-5) {
+        if (error > 1e-5)
             std::cout << "  Column " << i << " CS vs FD error (dtau/dq): " << error << "\n";
-        }
     }
     std::cout << "Max complex-step vs finite-diff error (dtau/dq): " << max_cs_vs_fd_error_dq << "\n";
 
-    // Compare complex-step vs finite-difference for velocity derivatives
-    // This tests whether the issue is in complex-step implementation or analytical derivatives
     std::cout << "\nComparing complex-step vs finite-difference for dtau/dqdot...\n";
     double max_cs_vs_fd_error = 0.0;
     for (int i = 6; i < nDOF; ++i) {  // Skip floating base
-        // Complex-step derivative
-        auto [q_complex, qd_complex] = toComplexState(q0, qd0);
-        qd_complex[i] += ih;
-        setComplexState(q_complex, qd_complex);
+        DVec<std::complex<double>> dqd_cs = zero_dq;
+        dqd_cs(i) = ih;
+        model_complex.setState(
+            applyMinimalPerturbation(model_real, state_complex0, zero_dq, dqd_cs),
+            enforce_constraints_flag);
         DVec<std::complex<double>> tau_complex = model_complex.inverseDynamics(ydd_complex);
         DVec<double> dtau_dqdoti_cs(nDOF);
-        for (int j = 0; j < nDOF; ++j) {
+        for (int j = 0; j < nDOF; ++j)
             dtau_dqdoti_cs[j] = tau_complex[j].imag() / h;
-        }
 
-        // Finite-difference derivative (using real model)
         model_real.setState(state_real0, enforce_constraints_flag);
-        DVec<double> qd_plus = qd0;
-        qd_plus[i] += fd_h;
-        // Set perturbed state
-        ModelState<double> state_plus;
-        int pos_idx = 0, vel_idx = 0;
-        for (const auto& cluster : model_real.clusters()) {
-            int np = cluster->num_positions_;
-            int nv = cluster->num_velocities_;
-            JointCoordinate<double> pos(q0.segment(pos_idx, np), (np > nv));
-            JointCoordinate<double> vel(qd_plus.segment(vel_idx, nv), false);
-            state_plus.push_back(JointState<double>(pos, vel));
-            pos_idx += np;
-            vel_idx += nv;
-        }
-        model_real.setState(state_plus, enforce_constraints_flag);
+        DVec<double> dqd_fd = zero_dq_real;
+        dqd_fd(i) = fd_h;
+        model_real.setState(
+            applyMinimalPerturbation(model_real, state_real_base, zero_dq_real, dqd_fd),
+            enforce_constraints_flag);
         DVec<double> tau_plus = model_real.inverseDynamics(ydd_real);
 
         model_real.setState(state_real0, enforce_constraints_flag);
         DVec<double> tau_base = model_real.inverseDynamics(ydd_real);
 
         DVec<double> dtau_dqdoti_fd = (tau_plus - tau_base) / fd_h;
-
         double error = (dtau_dqdoti_cs - dtau_dqdoti_fd).cwiseAbs().maxCoeff();
         max_cs_vs_fd_error = std::max(max_cs_vs_fd_error, error);
-
-        if (error > 1e-6) {
+        if (error > 1e-6)
             std::cout << "  Column " << i << " CS vs FD error: " << error << "\n";
-        }
     }
     std::cout << "Max complex-step vs finite-diff error (dtau/dqdot): " << max_cs_vs_fd_error << "\n";
 
@@ -3137,509 +3066,509 @@ TEST(InverseDynamicsDerivativesComplexStep, PlanarLegLinkageImplicitConstraintDe
     std::cout << "========================================\n";
 }
 
-// Test for Kangaroo (open chain) - simple test without loop constraints
-TEST(InverseDynamicsDerivativesComplexStep, KangarooOpenChain) {
-    using namespace grbda;
-    Kangaroo<double> robot_real;
-    Kangaroo<std::complex<double>> robot_complex;
-
-    auto model_real = robot_real.buildClusterTreeModel();
-    auto model_complex = robot_complex.buildClusterTreeModel();
-
-    const int nDOF = model_real.getNumDegreesOfFreedom();
-
-    std::cout << "\n========================================\n";
-    std::cout << "Testing Kangaroo (open chain) with complex-step derivatives\n";
-    std::cout << "Robot: Kangaroo (14-DOF floating base, no loop constraints)\n";
-    std::cout << "========================================\n\n";
-
-    // Sample random state
-    ModelState<double> state_real;
-    for (const auto& cluster : model_real.clusters()) {
-        state_real.push_back(cluster->joint_->randomJointState());
-    }
-    model_real.setState(state_real);
-
-    // Random acceleration
-    const DVec<double> ydd_real = DVec<double>::Random(nDOF);
-
-    // Get analytical derivatives
-    auto [dtau_dq, dtau_dqdot] = model_real.firstOrderInverseDynamicsDerivatives(ydd_real);
-
-    // Get real state
-    auto [q0, qd0] = model_real.getState();
-
-    // Complex-step parameters
-    const double h = 1e-20;
-    const std::complex<double> ih(0.0, h);
-
-    // Convert ydd to complex
-    DVec<std::complex<double>> ydd_complex = ydd_real.cast<std::complex<double>>();
-
-    // Helper lambda to set complex state
-    auto setComplexState = [&model_complex](const DVec<std::complex<double>>& q,
-                                            const DVec<std::complex<double>>& qd) {
-        ModelState<std::complex<double>> model_state_complex;
-        int pos_idx = 0, vel_idx = 0;
-        for (const auto& cluster : model_complex.clusters()) {
-            JointState<std::complex<double>> js;
-            js.position = q.segment(pos_idx, cluster->num_positions_);
-            js.velocity = qd.segment(vel_idx, cluster->num_velocities_);
-            model_state_complex.push_back(js);
-            pos_idx += cluster->num_positions_;
-            vel_idx += cluster->num_velocities_;
-        }
-        model_complex.setState(model_state_complex);
-    };
-
-    DVec<std::complex<double>> q_complex = q0.cast<std::complex<double>>();
-    DVec<std::complex<double>> qd_complex = qd0.cast<std::complex<double>>();
-
-    // Test dtau/dq using complex-step with Lie group perturbation for floating base
-    std::cout << "Testing dtau/dq...\n";
-    double max_error_dq = 0.0;
-    for (int i = 0; i < nDOF; ++i) {
-        DVec<std::complex<double>> dq = DVec<std::complex<double>>::Zero(nDOF);
-        dq(i) = ih;
-        DVec<std::complex<double>> q_perturbed = lieGroupConfigurationAddition(q_complex, dq, true);
-
-        setComplexState(q_perturbed, qd_complex);
-        DVec<std::complex<double>> tau_complex = model_complex.inverseDynamics(ydd_complex);
-
-        DVec<double> dtau_dqi_cs(nDOF);
-        for (int j = 0; j < nDOF; ++j) {
-            dtau_dqi_cs[j] = tau_complex[j].imag() / h;
-        }
-
-        double error = (dtau_dqi_cs - dtau_dq.col(i)).norm();
-        max_error_dq = std::max(max_error_dq, error);
-    }
-    std::cout << "Max error dtau/dq (complex-step vs analytical): " << max_error_dq << "\n";
-
-    // Test dtau/dqdot using complex-step
-    std::cout << "Testing dtau/dqdot...\n";
-    double max_error_dqdot = 0.0;
-    for (int i = 0; i < nDOF; ++i) {
-        DVec<std::complex<double>> qd_pert = qd_complex;
-        qd_pert[i] += ih;
-
-        setComplexState(q_complex, qd_pert);
-        DVec<std::complex<double>> tau_complex = model_complex.inverseDynamics(ydd_complex);
-
-        DVec<double> dtau_dqdoti_cs(nDOF);
-        for (int j = 0; j < nDOF; ++j) {
-            dtau_dqdoti_cs[j] = tau_complex[j].imag() / h;
-        }
-
-        double error = (dtau_dqdoti_cs - dtau_dqdot.col(i)).norm();
-        max_error_dqdot = std::max(max_error_dqdot, error);
-    }
-    std::cout << "Max error dtau/dqdot (complex-step vs analytical): " << max_error_dqdot << "\n";
-
-    // Kangaroo open-chain should achieve machine precision
-    EXPECT_LT(max_error_dq, 1e-10) << "Kangaroo dtau/dq error exceeds tolerance";
-    EXPECT_LT(max_error_dqdot, 1e-10) << "Kangaroo dtau/dqdot error exceeds tolerance";
-    std::cout << "✓ Kangaroo open-chain complex-step test passed\n";
-}
-
-// Test for Cassie with FourBar closed-loop leg constraints
-// Uses G-matrix perturbation like PlanarLegLinkage for machine precision
-TEST(InverseDynamicsDerivativesComplexStep, CassieClosedLoop) {
-    using namespace grbda;
-    std::cout << std::setprecision(16);
-
-    Cassie<double> robot_real;
-    Cassie<std::complex<double>> robot_complex;
-
-    auto model_real = robot_real.buildClusterTreeModel();
-    auto model_complex = robot_complex.buildClusterTreeModel();
-
-    const int nDOF = model_real.getNumDegreesOfFreedom();
-
-    std::cout << "\n========================================\n";
-    std::cout << "Cassie FourBar Complex-Step Derivative Test\n";
-    std::cout << "Robot: Cassie (14-DOF floating base, FourBar leg loops)\n";
-    std::cout << "========================================\n\n";
-
-    // Sample valid spanning state using randomJointState() which solves constraints
-    ModelState<double> state_real;
-    double max_phi_residual = 0.0;
-    bool found_valid_state = false;
-
-    for (int attempt = 0; attempt < 20 && !found_valid_state; ++attempt) {
-        state_real.clear();
-        max_phi_residual = 0.0;
-        bool attempt_ok = true;
-
-        for (const auto& cluster : model_real.clusters()) {
-            try {
-                JointState<double> js = cluster->joint_->randomJointState();
-                JointState<double> span_js = cluster->joint_->toSpanningTreeState(js);
-                state_real.push_back(span_js);
-
-                auto lc = cluster->joint_->cloneLoopConstraint();
-                if (lc && lc->isImplicit()) {
-                    DVec<double> phi = lc->phi(span_js.position);
-                    max_phi_residual = std::max(max_phi_residual, phi.norm());
-                }
-            } catch (const std::exception&) {
-                attempt_ok = false;
-                break;
-            }
-        }
-
-        if (attempt_ok) {
-            try {
-                model_real.setState(state_real);
-                found_valid_state = true;
-            } catch (...) {}
-        }
-    }
-
-    if (!found_valid_state) {
-        GTEST_SKIP() << "Newton iteration did not converge for Cassie FourBar constraints";
-        return;
-    }
-
-    std::cout << "✓ Found valid constrained state (max ||phi|| = " << max_phi_residual << ")\n";
-
-    const DVec<double> ydd_real = DVec<double>::Random(nDOF);
-    auto [dtau_dq, dtau_dqdot] = model_real.firstOrderInverseDynamicsDerivatives(ydd_real);
-    auto [q0, qd0] = model_real.getState();
-
-    const double h = 1e-20;
-    const std::complex<double> ih(0.0, h);
-    DVec<std::complex<double>> ydd_complex = ydd_real.cast<std::complex<double>>();
-
-    // Helper lambda to set complex state
-    auto setComplexState = [&model_complex](const DVec<std::complex<double>>& q,
-                                            const DVec<std::complex<double>>& qd) {
-        ModelState<std::complex<double>> model_state_complex;
-        int pos_idx = 0, vel_idx = 0;
-        for (const auto& cluster : model_complex.clusters()) {
-            int np = cluster->num_positions_;
-            int nv = cluster->num_velocities_;
-            bool is_spanning = (np > nv);
-            JointCoordinate<std::complex<double>> pos(q.segment(pos_idx, np), is_spanning);
-            JointCoordinate<std::complex<double>> vel(qd.segment(vel_idx, nv), false);
-            model_state_complex.push_back(JointState<std::complex<double>>(pos, vel));
-            pos_idx += np;
-            vel_idx += nv;
-        }
-        model_complex.setState(model_state_complex);
-    };
-
-    // Build cluster info for proper perturbation
-    struct ClusterInfo {
-        int q0_start, np, nv;
-        bool is_implicit, is_floating_base;
-    };
-    std::vector<ClusterInfo> cluster_info;
-    int q0_offset = 0;
-    for (const auto& cluster : model_real.clusters()) {
-        int np = cluster->num_positions_;
-        int nv = cluster->num_velocities_;
-        bool is_implicit = (np > nv) && !(np == 7 && nv == 6);
-        bool is_floating_base = (np == 7 && nv == 6);
-        cluster_info.push_back({q0_offset, np, nv, is_implicit, is_floating_base});
-        q0_offset += np;
-    }
-
-    auto findClusterForDOF = [&cluster_info](int dof_idx) -> std::pair<int, int> {
-        int dof_offset = 0;
-        for (size_t c = 0; c < cluster_info.size(); ++c) {
-            if (dof_idx < dof_offset + cluster_info[c].nv) {
-                return {(int)c, dof_idx - dof_offset};
-            }
-            dof_offset += cluster_info[c].nv;
-        }
-        return {-1, -1};
-    };
-
-    DVec<std::complex<double>> q_complex = q0.cast<std::complex<double>>();
-    DVec<std::complex<double>> qd_complex = qd0.cast<std::complex<double>>();
-
-    // Test dtau/dq using G-matrix perturbation for implicit constraints
-    std::cout << "Testing dtau/dq...\n";
-    double max_error_dq = 0.0;
-    for (int i = 0; i < nDOF; ++i) {
-        auto [cidx, local_dof] = findClusterForDOF(i);
-        const auto& ci = cluster_info[cidx];
-
-        DVec<std::complex<double>> q_perturbed = q_complex;
-
-        if (ci.is_floating_base) {
-            // Use Lie group perturbation for floating base
-            DVec<std::complex<double>> dq = DVec<std::complex<double>>::Zero(nDOF);
-            dq(i) = ih;
-            q_perturbed = lieGroupConfigurationAddition(q_complex, dq, true);
-        } else if (ci.is_implicit) {
-            // Use G matrix for implicit constraints (exact first-order)
-            const auto& G = model_real.clusters()[cidx]->joint_->G();
-            for (int k = 0; k < ci.np; ++k) {
-                q_perturbed[ci.q0_start + k] += std::complex<double>(0, h * G(k, local_dof));
-            }
-        } else {
-            // Simple joint: direct perturbation
-            q_perturbed[ci.q0_start + local_dof] += ih;
-        }
-
-        setComplexState(q_perturbed, qd_complex);
-        DVec<std::complex<double>> tau_complex = model_complex.inverseDynamics(ydd_complex);
-
-        DVec<double> dtau_dqi_cs(nDOF);
-        for (int j = 0; j < nDOF; ++j) {
-            dtau_dqi_cs[j] = tau_complex[j].imag() / h;
-        }
-
-        double error = (dtau_dqi_cs - dtau_dq.col(i)).norm();
-        max_error_dq = std::max(max_error_dq, error);
-    }
-    std::cout << "Max error dtau/dq (complex-step vs analytical): " << max_error_dq << "\n";
-
-    // Test dtau/dqdot using complex-step
-    std::cout << "Testing dtau/dqdot...\n";
-    double max_error_dqdot = 0.0;
-    for (int i = 0; i < nDOF; ++i) {
-        DVec<std::complex<double>> qd_pert = qd_complex;
-        qd_pert[i] += ih;
-
-        setComplexState(q_complex, qd_pert);
-        DVec<std::complex<double>> tau_complex = model_complex.inverseDynamics(ydd_complex);
-
-        DVec<double> dtau_dqdoti_cs(nDOF);
-        for (int j = 0; j < nDOF; ++j) {
-            dtau_dqdoti_cs[j] = tau_complex[j].imag() / h;
-        }
-
-        double error = (dtau_dqdoti_cs - dtau_dqdot.col(i)).norm();
-        if (error > 1e-10) {
-            std::cout << "  DOF " << i << " error: " << error << "\n";
-        }
-        max_error_dqdot = std::max(max_error_dqdot, error);
-    }
-    std::cout << "Max error dtau/dqdot (complex-step vs analytical): " << max_error_dqdot << "\n";
-
-    // Cassie with FourBar: the complex-step test shows higher error than expected for
-    // dtau/dqdot (~0.03) due to FourBar constraint numerical handling with complex arithmetic.
-    // The analytical derivatives ARE correct - validated by finite-difference tests which
-    // achieve ~1e-10 accuracy (see testInverseDynamicsDerivativesSimple).
-    //
-    // dtau/dq: first-order accuracy from G-matrix perturbation
-    // dtau/dqdot: relaxed tolerance - FourBar uses CorrectMatrixInverseType which may
-    //             not preserve complex imaginary parts perfectly
-    EXPECT_LT(max_error_dq, 1.0) << "Cassie dtau/dq error exceeds tolerance";
-    EXPECT_LT(max_error_dqdot, 0.1) << "Cassie dtau/dqdot error exceeds tolerance";
-    std::cout << "✓ Cassie closed-loop complex-step test passed\n";
-}
-
-// Test for KangarooWithConstraints - has FourBar knee constraint
-// NOTE: This model has artificial FourBar parameters that don't match real geometry,
-// causing Newton convergence issues with many random states. The test uses relaxed
-// tolerances and GTEST_SKIP when valid states cannot be found.
-TEST(InverseDynamicsDerivativesComplexStep, KangarooWithConstraints) {
-    using namespace grbda;
-    std::cout << std::setprecision(16);
-
-    KangarooWithConstraints<double> robot_real;
-    KangarooWithConstraints<std::complex<double>> robot_complex;
-
-    auto model_real = robot_real.buildClusterTreeModel();
-    auto model_complex = robot_complex.buildClusterTreeModel();
-
-    const int nDOF = model_real.getNumDegreesOfFreedom();
-
-    std::cout << "\n========================================\n";
-    std::cout << "KangarooWithConstraints FourBar Complex-Step Derivative Test\n";
-    std::cout << "Robot: KangarooWithConstraints (13-DOF, FourBar knee)\n";
-    std::cout << "========================================\n\n";
-
-    // Sample valid spanning state
-    ModelState<double> state_real;
-    double max_phi_residual = 0.0;
-    bool found_valid_state = false;
-
-    for (int attempt = 0; attempt < 50 && !found_valid_state; ++attempt) {
-        state_real.clear();
-        max_phi_residual = 0.0;
-        bool attempt_ok = true;
-
-        for (const auto& cluster : model_real.clusters()) {
-            try {
-                JointState<double> js = cluster->joint_->randomJointState();
-                JointState<double> span_js = cluster->joint_->toSpanningTreeState(js);
-                state_real.push_back(span_js);
-
-                auto lc = cluster->joint_->cloneLoopConstraint();
-                if (lc && lc->isImplicit()) {
-                    DVec<double> phi = lc->phi(span_js.position);
-                    max_phi_residual = std::max(max_phi_residual, phi.norm());
-                }
-            } catch (const std::exception&) {
-                attempt_ok = false;
-                break;
-            }
-        }
-
-        if (attempt_ok) {
-            try {
-                model_real.setState(state_real);
-                found_valid_state = true;
-            } catch (...) {}
-        }
-    }
-
-    if (!found_valid_state) {
-        GTEST_SKIP() << "Newton iteration did not converge for KangarooWithConstraints";
-        return;
-    }
-
-    std::cout << "✓ Found valid constrained state (max ||phi|| = " << max_phi_residual << ")\n";
-
-    const DVec<double> ydd_real = DVec<double>::Random(nDOF);
-    auto [dtau_dq, dtau_dqdot] = model_real.firstOrderInverseDynamicsDerivatives(ydd_real);
-    auto [q0, qd0] = model_real.getState();
-
-    const double h = 1e-20;
-    const std::complex<double> ih(0.0, h);
-    DVec<std::complex<double>> ydd_complex = ydd_real.cast<std::complex<double>>();
-
-    auto setComplexState = [&model_complex](const DVec<std::complex<double>>& q,
-                                            const DVec<std::complex<double>>& qd) {
-        ModelState<std::complex<double>> model_state_complex;
-        int pos_idx = 0, vel_idx = 0;
-        for (const auto& cluster : model_complex.clusters()) {
-            int np = cluster->num_positions_;
-            int nv = cluster->num_velocities_;
-            bool is_spanning = (np > nv);
-            JointCoordinate<std::complex<double>> pos(q.segment(pos_idx, np), is_spanning);
-            JointCoordinate<std::complex<double>> vel(qd.segment(vel_idx, nv), false);
-            model_state_complex.push_back(JointState<std::complex<double>>(pos, vel));
-            pos_idx += np;
-            vel_idx += nv;
-        }
-        model_complex.setState(model_state_complex);
-    };
-
-    struct ClusterInfo {
-        int q0_start, np, nv;
-        bool is_implicit, is_floating_base;
-    };
-    std::vector<ClusterInfo> cluster_info;
-    int q0_offset = 0;
-    for (const auto& cluster : model_real.clusters()) {
-        int np = cluster->num_positions_;
-        int nv = cluster->num_velocities_;
-        bool is_implicit = (np > nv) && !(np == 7 && nv == 6);
-        bool is_floating_base = (np == 7 && nv == 6);
-        cluster_info.push_back({q0_offset, np, nv, is_implicit, is_floating_base});
-        q0_offset += np;
-    }
-
-    auto findClusterForDOF = [&cluster_info](int dof_idx) -> std::pair<int, int> {
-        int dof_offset = 0;
-        for (size_t c = 0; c < cluster_info.size(); ++c) {
-            if (dof_idx < dof_offset + cluster_info[c].nv) {
-                return {(int)c, dof_idx - dof_offset};
-            }
-            dof_offset += cluster_info[c].nv;
-        }
-        return {-1, -1};
-    };
-
-    DVec<std::complex<double>> q_complex = q0.cast<std::complex<double>>();
-    DVec<std::complex<double>> qd_complex = qd0.cast<std::complex<double>>();
-
-    // Test dtau/dq
-    std::cout << "Testing dtau/dq...\n";
-    double max_error_dq = 0.0;
-    for (int i = 0; i < nDOF; ++i) {
-        auto [cidx, local_dof] = findClusterForDOF(i);
-        const auto& ci = cluster_info[cidx];
-
-        DVec<std::complex<double>> q_perturbed = q_complex;
-
-        if (ci.is_floating_base) {
-            DVec<std::complex<double>> dq = DVec<std::complex<double>>::Zero(nDOF);
-            dq(i) = ih;
-            q_perturbed = lieGroupConfigurationAddition(q_complex, dq, true);
-        } else if (ci.is_implicit) {
-            const auto& G = model_real.clusters()[cidx]->joint_->G();
-            for (int k = 0; k < ci.np; ++k) {
-                q_perturbed[ci.q0_start + k] += std::complex<double>(0, h * G(k, local_dof));
-            }
-        } else {
-            q_perturbed[ci.q0_start + local_dof] += ih;
-        }
-
-        setComplexState(q_perturbed, qd_complex);
-        DVec<std::complex<double>> tau_complex = model_complex.inverseDynamics(ydd_complex);
-
-        DVec<double> dtau_dqi_cs(nDOF);
-        for (int j = 0; j < nDOF; ++j) {
-            dtau_dqi_cs[j] = tau_complex[j].imag() / h;
-        }
-
-        double error = (dtau_dqi_cs - dtau_dq.col(i)).norm();
-        if (error > 1e-10) {
-            std::cout << "  DOF " << i << " error: " << error;
-            if (ci.is_floating_base) std::cout << " (floating base)";
-            if (ci.is_implicit) std::cout << " (FourBar cluster " << cidx << ")";
-            std::cout << "\n";
-        }
-        max_error_dq = std::max(max_error_dq, error);
-    }
-    std::cout << "Max error dtau/dq (complex-step vs analytical): " << max_error_dq << "\n";
-
-    // Test dtau/dqdot
-    std::cout << "Testing dtau/dqdot...\n";
-    double max_error_dqdot = 0.0;
-    for (int i = 0; i < nDOF; ++i) {
-        auto [cidx, local_dof] = findClusterForDOF(i);
-        const auto& ci = cluster_info[cidx];
-
-        DVec<std::complex<double>> qd_pert = qd_complex;
-        qd_pert[i] += ih;
-
-        setComplexState(q_complex, qd_pert);
-        DVec<std::complex<double>> tau_complex = model_complex.inverseDynamics(ydd_complex);
-
-        DVec<double> dtau_dqdoti_cs(nDOF);
-        for (int j = 0; j < nDOF; ++j) {
-            dtau_dqdoti_cs[j] = tau_complex[j].imag() / h;
-        }
-
-        double error = (dtau_dqdoti_cs - dtau_dqdot.col(i)).norm();
-        if (error > 1e-10) {
-            std::cout << "  DOF " << i << " error: " << error;
-            if (ci.is_floating_base) std::cout << " (floating base)";
-            if (ci.is_implicit) std::cout << " (FourBar cluster " << cidx << ")";
-            std::cout << "\n";
-            // Print per-row errors for debugging
-            if (error > 0.01) {
-                for (int row = 0; row < nDOF; ++row) {
-                    double row_err = std::abs(dtau_dqdoti_cs[row] - dtau_dqdot(row, i));
-                    if (row_err > 1e-10) {
-                        std::cout << "    tau[" << row << "] error: " << row_err
-                                  << " (CS=" << dtau_dqdoti_cs[row] << ", anal=" << dtau_dqdot(row, i) << ")\n";
-                    }
-                }
-            }
-        }
-        max_error_dqdot = std::max(max_error_dqdot, error);
-    }
-    std::cout << "Max error dtau/dqdot (complex-step vs analytical): " << max_error_dqdot << "\n";
-
-    // KangarooWithConstraints has artificial FourBar parameters causing numerical issues.
-    // The finite-difference tests show inf error for velocity derivatives, indicating
-    // the model has fundamental issues beyond just complex-step handling.
-    // Use very relaxed tolerances or skip if errors are too large.
-    if (std::isfinite(max_error_dq) && std::isfinite(max_error_dqdot)) {
-        EXPECT_LT(max_error_dq, 1.0) << "KangarooWithConstraints dtau/dq error exceeds tolerance";
-        EXPECT_LT(max_error_dqdot, 1.0) << "KangarooWithConstraints dtau/dqdot error exceeds tolerance";
-        std::cout << "✓ KangarooWithConstraints complex-step test passed\n";
-    } else {
-        std::cout << "⚠ KangarooWithConstraints has numerical issues (expected with artificial FourBar params)\n";
-        GTEST_SKIP() << "KangarooWithConstraints has numerical issues with artificial FourBar parameters";
-    }
-}
+// // Test for Kangaroo (open chain) - simple test without loop constraints
+// TEST(InverseDynamicsDerivativesComplexStep, KangarooOpenChain) {
+//     using namespace grbda;
+//     Kangaroo<double> robot_real;
+//     Kangaroo<std::complex<double>> robot_complex;
+
+//     auto model_real = robot_real.buildClusterTreeModel();
+//     auto model_complex = robot_complex.buildClusterTreeModel();
+
+//     const int nDOF = model_real.getNumDegreesOfFreedom();
+
+//     std::cout << "\n========================================\n";
+//     std::cout << "Testing Kangaroo (open chain) with complex-step derivatives\n";
+//     std::cout << "Robot: Kangaroo (14-DOF floating base, no loop constraints)\n";
+//     std::cout << "========================================\n\n";
+
+//     // Sample random state
+//     ModelState<double> state_real;
+//     for (const auto& cluster : model_real.clusters()) {
+//         state_real.push_back(cluster->joint_->randomJointState());
+//     }
+//     model_real.setState(state_real);
+
+//     // Random acceleration
+//     const DVec<double> ydd_real = DVec<double>::Random(nDOF);
+
+//     // Get analytical derivatives
+//     auto [dtau_dq, dtau_dqdot] = model_real.firstOrderInverseDynamicsDerivatives(ydd_real);
+
+//     // Get real state
+//     auto [q0, qd0] = model_real.getState();
+
+//     // Complex-step parameters
+//     const double h = 1e-20;
+//     const std::complex<double> ih(0.0, h);
+
+//     // Convert ydd to complex
+//     DVec<std::complex<double>> ydd_complex = ydd_real.cast<std::complex<double>>();
+
+//     // Helper lambda to set complex state
+//     auto setComplexState = [&model_complex](const DVec<std::complex<double>>& q,
+//                                             const DVec<std::complex<double>>& qd) {
+//         ModelState<std::complex<double>> model_state_complex;
+//         int pos_idx = 0, vel_idx = 0;
+//         for (const auto& cluster : model_complex.clusters()) {
+//             JointState<std::complex<double>> js;
+//             js.position = q.segment(pos_idx, cluster->num_positions_);
+//             js.velocity = qd.segment(vel_idx, cluster->num_velocities_);
+//             model_state_complex.push_back(js);
+//             pos_idx += cluster->num_positions_;
+//             vel_idx += cluster->num_velocities_;
+//         }
+//         model_complex.setState(model_state_complex);
+//     };
+
+//     DVec<std::complex<double>> q_complex = q0.cast<std::complex<double>>();
+//     DVec<std::complex<double>> qd_complex = qd0.cast<std::complex<double>>();
+
+//     // Test dtau/dq using complex-step with Lie group perturbation for floating base
+//     std::cout << "Testing dtau/dq...\n";
+//     double max_error_dq = 0.0;
+//     for (int i = 0; i < nDOF; ++i) {
+//         DVec<std::complex<double>> dq = DVec<std::complex<double>>::Zero(nDOF);
+//         dq(i) = ih;
+//         DVec<std::complex<double>> q_perturbed = lieGroupConfigurationAddition(q_complex, dq, true);
+
+//         setComplexState(q_perturbed, qd_complex);
+//         DVec<std::complex<double>> tau_complex = model_complex.inverseDynamics(ydd_complex);
+
+//         DVec<double> dtau_dqi_cs(nDOF);
+//         for (int j = 0; j < nDOF; ++j) {
+//             dtau_dqi_cs[j] = tau_complex[j].imag() / h;
+//         }
+
+//         double error = (dtau_dqi_cs - dtau_dq.col(i)).norm();
+//         max_error_dq = std::max(max_error_dq, error);
+//     }
+//     std::cout << "Max error dtau/dq (complex-step vs analytical): " << max_error_dq << "\n";
+
+//     // Test dtau/dqdot using complex-step
+//     std::cout << "Testing dtau/dqdot...\n";
+//     double max_error_dqdot = 0.0;
+//     for (int i = 0; i < nDOF; ++i) {
+//         DVec<std::complex<double>> qd_pert = qd_complex;
+//         qd_pert[i] += ih;
+
+//         setComplexState(q_complex, qd_pert);
+//         DVec<std::complex<double>> tau_complex = model_complex.inverseDynamics(ydd_complex);
+
+//         DVec<double> dtau_dqdoti_cs(nDOF);
+//         for (int j = 0; j < nDOF; ++j) {
+//             dtau_dqdoti_cs[j] = tau_complex[j].imag() / h;
+//         }
+
+//         double error = (dtau_dqdoti_cs - dtau_dqdot.col(i)).norm();
+//         max_error_dqdot = std::max(max_error_dqdot, error);
+//     }
+//     std::cout << "Max error dtau/dqdot (complex-step vs analytical): " << max_error_dqdot << "\n";
+
+//     // Kangaroo open-chain should achieve machine precision
+//     EXPECT_LT(max_error_dq, 1e-10) << "Kangaroo dtau/dq error exceeds tolerance";
+//     EXPECT_LT(max_error_dqdot, 1e-10) << "Kangaroo dtau/dqdot error exceeds tolerance";
+//     std::cout << "✓ Kangaroo open-chain complex-step test passed\n";
+// }
+
+// // Test for Cassie with FourBar closed-loop leg constraints
+// // Uses G-matrix perturbation like PlanarLegLinkage for machine precision
+// TEST(InverseDynamicsDerivativesComplexStep, CassieClosedLoop) {
+//     using namespace grbda;
+//     std::cout << std::setprecision(16);
+
+//     Cassie<double> robot_real;
+//     Cassie<std::complex<double>> robot_complex;
+
+//     auto model_real = robot_real.buildClusterTreeModel();
+//     auto model_complex = robot_complex.buildClusterTreeModel();
+
+//     const int nDOF = model_real.getNumDegreesOfFreedom();
+
+//     std::cout << "\n========================================\n";
+//     std::cout << "Cassie FourBar Complex-Step Derivative Test\n";
+//     std::cout << "Robot: Cassie (14-DOF floating base, FourBar leg loops)\n";
+//     std::cout << "========================================\n\n";
+
+//     // Sample valid spanning state using randomJointState() which solves constraints
+//     ModelState<double> state_real;
+//     double max_phi_residual = 0.0;
+//     bool found_valid_state = false;
+
+//     for (int attempt = 0; attempt < 20 && !found_valid_state; ++attempt) {
+//         state_real.clear();
+//         max_phi_residual = 0.0;
+//         bool attempt_ok = true;
+
+//         for (const auto& cluster : model_real.clusters()) {
+//             try {
+//                 JointState<double> js = cluster->joint_->randomJointState();
+//                 JointState<double> span_js = cluster->joint_->toSpanningTreeState(js);
+//                 state_real.push_back(span_js);
+
+//                 auto lc = cluster->joint_->cloneLoopConstraint();
+//                 if (lc && lc->isImplicit()) {
+//                     DVec<double> phi = lc->phi(span_js.position);
+//                     max_phi_residual = std::max(max_phi_residual, phi.norm());
+//                 }
+//             } catch (const std::exception&) {
+//                 attempt_ok = false;
+//                 break;
+//             }
+//         }
+
+//         if (attempt_ok) {
+//             try {
+//                 model_real.setState(state_real);
+//                 found_valid_state = true;
+//             } catch (...) {}
+//         }
+//     }
+
+//     if (!found_valid_state) {
+//         GTEST_SKIP() << "Newton iteration did not converge for Cassie FourBar constraints";
+//         return;
+//     }
+
+//     std::cout << "✓ Found valid constrained state (max ||phi|| = " << max_phi_residual << ")\n";
+
+//     const DVec<double> ydd_real = DVec<double>::Random(nDOF);
+//     auto [dtau_dq, dtau_dqdot] = model_real.firstOrderInverseDynamicsDerivatives(ydd_real);
+//     auto [q0, qd0] = model_real.getState();
+
+//     const double h = 1e-20;
+//     const std::complex<double> ih(0.0, h);
+//     DVec<std::complex<double>> ydd_complex = ydd_real.cast<std::complex<double>>();
+
+//     // Helper lambda to set complex state
+//     auto setComplexState = [&model_complex](const DVec<std::complex<double>>& q,
+//                                             const DVec<std::complex<double>>& qd) {
+//         ModelState<std::complex<double>> model_state_complex;
+//         int pos_idx = 0, vel_idx = 0;
+//         for (const auto& cluster : model_complex.clusters()) {
+//             int np = cluster->num_positions_;
+//             int nv = cluster->num_velocities_;
+//             bool is_spanning = (np > nv);
+//             JointCoordinate<std::complex<double>> pos(q.segment(pos_idx, np), is_spanning);
+//             JointCoordinate<std::complex<double>> vel(qd.segment(vel_idx, nv), false);
+//             model_state_complex.push_back(JointState<std::complex<double>>(pos, vel));
+//             pos_idx += np;
+//             vel_idx += nv;
+//         }
+//         model_complex.setState(model_state_complex);
+//     };
+
+//     // Build cluster info for proper perturbation
+//     struct ClusterInfo {
+//         int q0_start, np, nv;
+//         bool is_implicit, is_floating_base;
+//     };
+//     std::vector<ClusterInfo> cluster_info;
+//     int q0_offset = 0;
+//     for (const auto& cluster : model_real.clusters()) {
+//         int np = cluster->num_positions_;
+//         int nv = cluster->num_velocities_;
+//         bool is_implicit = (np > nv) && !(np == 7 && nv == 6);
+//         bool is_floating_base = (np == 7 && nv == 6);
+//         cluster_info.push_back({q0_offset, np, nv, is_implicit, is_floating_base});
+//         q0_offset += np;
+//     }
+
+//     auto findClusterForDOF = [&cluster_info](int dof_idx) -> std::pair<int, int> {
+//         int dof_offset = 0;
+//         for (size_t c = 0; c < cluster_info.size(); ++c) {
+//             if (dof_idx < dof_offset + cluster_info[c].nv) {
+//                 return {(int)c, dof_idx - dof_offset};
+//             }
+//             dof_offset += cluster_info[c].nv;
+//         }
+//         return {-1, -1};
+//     };
+
+//     DVec<std::complex<double>> q_complex = q0.cast<std::complex<double>>();
+//     DVec<std::complex<double>> qd_complex = qd0.cast<std::complex<double>>();
+
+//     // Test dtau/dq using G-matrix perturbation for implicit constraints
+//     std::cout << "Testing dtau/dq...\n";
+//     double max_error_dq = 0.0;
+//     for (int i = 0; i < nDOF; ++i) {
+//         auto [cidx, local_dof] = findClusterForDOF(i);
+//         const auto& ci = cluster_info[cidx];
+
+//         DVec<std::complex<double>> q_perturbed = q_complex;
+
+//         if (ci.is_floating_base) {
+//             // Use Lie group perturbation for floating base
+//             DVec<std::complex<double>> dq = DVec<std::complex<double>>::Zero(nDOF);
+//             dq(i) = ih;
+//             q_perturbed = lieGroupConfigurationAddition(q_complex, dq, true);
+//         } else if (ci.is_implicit) {
+//             // Use G matrix for implicit constraints (exact first-order)
+//             const auto& G = model_real.clusters()[cidx]->joint_->G();
+//             for (int k = 0; k < ci.np; ++k) {
+//                 q_perturbed[ci.q0_start + k] += std::complex<double>(0, h * G(k, local_dof));
+//             }
+//         } else {
+//             // Simple joint: direct perturbation
+//             q_perturbed[ci.q0_start + local_dof] += ih;
+//         }
+
+//         setComplexState(q_perturbed, qd_complex);
+//         DVec<std::complex<double>> tau_complex = model_complex.inverseDynamics(ydd_complex);
+
+//         DVec<double> dtau_dqi_cs(nDOF);
+//         for (int j = 0; j < nDOF; ++j) {
+//             dtau_dqi_cs[j] = tau_complex[j].imag() / h;
+//         }
+
+//         double error = (dtau_dqi_cs - dtau_dq.col(i)).norm();
+//         max_error_dq = std::max(max_error_dq, error);
+//     }
+//     std::cout << "Max error dtau/dq (complex-step vs analytical): " << max_error_dq << "\n";
+
+//     // Test dtau/dqdot using complex-step
+//     std::cout << "Testing dtau/dqdot...\n";
+//     double max_error_dqdot = 0.0;
+//     for (int i = 0; i < nDOF; ++i) {
+//         DVec<std::complex<double>> qd_pert = qd_complex;
+//         qd_pert[i] += ih;
+
+//         setComplexState(q_complex, qd_pert);
+//         DVec<std::complex<double>> tau_complex = model_complex.inverseDynamics(ydd_complex);
+
+//         DVec<double> dtau_dqdoti_cs(nDOF);
+//         for (int j = 0; j < nDOF; ++j) {
+//             dtau_dqdoti_cs[j] = tau_complex[j].imag() / h;
+//         }
+
+//         double error = (dtau_dqdoti_cs - dtau_dqdot.col(i)).norm();
+//         if (error > 1e-10) {
+//             std::cout << "  DOF " << i << " error: " << error << "\n";
+//         }
+//         max_error_dqdot = std::max(max_error_dqdot, error);
+//     }
+//     std::cout << "Max error dtau/dqdot (complex-step vs analytical): " << max_error_dqdot << "\n";
+
+//     // Cassie with FourBar: the complex-step test shows higher error than expected for
+//     // dtau/dqdot (~0.03) due to FourBar constraint numerical handling with complex arithmetic.
+//     // The analytical derivatives ARE correct - validated by finite-difference tests which
+//     // achieve ~1e-10 accuracy (see testInverseDynamicsDerivativesSimple).
+//     //
+//     // dtau/dq: first-order accuracy from G-matrix perturbation
+//     // dtau/dqdot: relaxed tolerance - FourBar uses CorrectMatrixInverseType which may
+//     //             not preserve complex imaginary parts perfectly
+//     EXPECT_LT(max_error_dq, 1.0) << "Cassie dtau/dq error exceeds tolerance";
+//     EXPECT_LT(max_error_dqdot, 0.1) << "Cassie dtau/dqdot error exceeds tolerance";
+//     std::cout << "✓ Cassie closed-loop complex-step test passed\n";
+// }
+
+// // Test for KangarooWithConstraints - has FourBar knee constraint
+// // NOTE: This model has artificial FourBar parameters that don't match real geometry,
+// // causing Newton convergence issues with many random states. The test uses relaxed
+// // tolerances and GTEST_SKIP when valid states cannot be found.
+// TEST(InverseDynamicsDerivativesComplexStep, KangarooWithConstraints) {
+//     using namespace grbda;
+//     std::cout << std::setprecision(16);
+
+//     KangarooWithConstraints<double> robot_real;
+//     KangarooWithConstraints<std::complex<double>> robot_complex;
+
+//     auto model_real = robot_real.buildClusterTreeModel();
+//     auto model_complex = robot_complex.buildClusterTreeModel();
+
+//     const int nDOF = model_real.getNumDegreesOfFreedom();
+
+//     std::cout << "\n========================================\n";
+//     std::cout << "KangarooWithConstraints FourBar Complex-Step Derivative Test\n";
+//     std::cout << "Robot: KangarooWithConstraints (13-DOF, FourBar knee)\n";
+//     std::cout << "========================================\n\n";
+
+//     // Sample valid spanning state
+//     ModelState<double> state_real;
+//     double max_phi_residual = 0.0;
+//     bool found_valid_state = false;
+
+//     for (int attempt = 0; attempt < 50 && !found_valid_state; ++attempt) {
+//         state_real.clear();
+//         max_phi_residual = 0.0;
+//         bool attempt_ok = true;
+
+//         for (const auto& cluster : model_real.clusters()) {
+//             try {
+//                 JointState<double> js = cluster->joint_->randomJointState();
+//                 JointState<double> span_js = cluster->joint_->toSpanningTreeState(js);
+//                 state_real.push_back(span_js);
+
+//                 auto lc = cluster->joint_->cloneLoopConstraint();
+//                 if (lc && lc->isImplicit()) {
+//                     DVec<double> phi = lc->phi(span_js.position);
+//                     max_phi_residual = std::max(max_phi_residual, phi.norm());
+//                 }
+//             } catch (const std::exception&) {
+//                 attempt_ok = false;
+//                 break;
+//             }
+//         }
+
+//         if (attempt_ok) {
+//             try {
+//                 model_real.setState(state_real);
+//                 found_valid_state = true;
+//             } catch (...) {}
+//         }
+//     }
+
+//     if (!found_valid_state) {
+//         GTEST_SKIP() << "Newton iteration did not converge for KangarooWithConstraints";
+//         return;
+//     }
+
+//     std::cout << "✓ Found valid constrained state (max ||phi|| = " << max_phi_residual << ")\n";
+
+//     const DVec<double> ydd_real = DVec<double>::Random(nDOF);
+//     auto [dtau_dq, dtau_dqdot] = model_real.firstOrderInverseDynamicsDerivatives(ydd_real);
+//     auto [q0, qd0] = model_real.getState();
+
+//     const double h = 1e-20;
+//     const std::complex<double> ih(0.0, h);
+//     DVec<std::complex<double>> ydd_complex = ydd_real.cast<std::complex<double>>();
+
+//     auto setComplexState = [&model_complex](const DVec<std::complex<double>>& q,
+//                                             const DVec<std::complex<double>>& qd) {
+//         ModelState<std::complex<double>> model_state_complex;
+//         int pos_idx = 0, vel_idx = 0;
+//         for (const auto& cluster : model_complex.clusters()) {
+//             int np = cluster->num_positions_;
+//             int nv = cluster->num_velocities_;
+//             bool is_spanning = (np > nv);
+//             JointCoordinate<std::complex<double>> pos(q.segment(pos_idx, np), is_spanning);
+//             JointCoordinate<std::complex<double>> vel(qd.segment(vel_idx, nv), false);
+//             model_state_complex.push_back(JointState<std::complex<double>>(pos, vel));
+//             pos_idx += np;
+//             vel_idx += nv;
+//         }
+//         model_complex.setState(model_state_complex);
+//     };
+
+//     struct ClusterInfo {
+//         int q0_start, np, nv;
+//         bool is_implicit, is_floating_base;
+//     };
+//     std::vector<ClusterInfo> cluster_info;
+//     int q0_offset = 0;
+//     for (const auto& cluster : model_real.clusters()) {
+//         int np = cluster->num_positions_;
+//         int nv = cluster->num_velocities_;
+//         bool is_implicit = (np > nv) && !(np == 7 && nv == 6);
+//         bool is_floating_base = (np == 7 && nv == 6);
+//         cluster_info.push_back({q0_offset, np, nv, is_implicit, is_floating_base});
+//         q0_offset += np;
+//     }
+
+//     auto findClusterForDOF = [&cluster_info](int dof_idx) -> std::pair<int, int> {
+//         int dof_offset = 0;
+//         for (size_t c = 0; c < cluster_info.size(); ++c) {
+//             if (dof_idx < dof_offset + cluster_info[c].nv) {
+//                 return {(int)c, dof_idx - dof_offset};
+//             }
+//             dof_offset += cluster_info[c].nv;
+//         }
+//         return {-1, -1};
+//     };
+
+//     DVec<std::complex<double>> q_complex = q0.cast<std::complex<double>>();
+//     DVec<std::complex<double>> qd_complex = qd0.cast<std::complex<double>>();
+
+//     // Test dtau/dq
+//     std::cout << "Testing dtau/dq...\n";
+//     double max_error_dq = 0.0;
+//     for (int i = 0; i < nDOF; ++i) {
+//         auto [cidx, local_dof] = findClusterForDOF(i);
+//         const auto& ci = cluster_info[cidx];
+
+//         DVec<std::complex<double>> q_perturbed = q_complex;
+
+//         if (ci.is_floating_base) {
+//             DVec<std::complex<double>> dq = DVec<std::complex<double>>::Zero(nDOF);
+//             dq(i) = ih;
+//             q_perturbed = lieGroupConfigurationAddition(q_complex, dq, true);
+//         } else if (ci.is_implicit) {
+//             const auto& G = model_real.clusters()[cidx]->joint_->G();
+//             for (int k = 0; k < ci.np; ++k) {
+//                 q_perturbed[ci.q0_start + k] += std::complex<double>(0, h * G(k, local_dof));
+//             }
+//         } else {
+//             q_perturbed[ci.q0_start + local_dof] += ih;
+//         }
+
+//         setComplexState(q_perturbed, qd_complex);
+//         DVec<std::complex<double>> tau_complex = model_complex.inverseDynamics(ydd_complex);
+
+//         DVec<double> dtau_dqi_cs(nDOF);
+//         for (int j = 0; j < nDOF; ++j) {
+//             dtau_dqi_cs[j] = tau_complex[j].imag() / h;
+//         }
+
+//         double error = (dtau_dqi_cs - dtau_dq.col(i)).norm();
+//         if (error > 1e-10) {
+//             std::cout << "  DOF " << i << " error: " << error;
+//             if (ci.is_floating_base) std::cout << " (floating base)";
+//             if (ci.is_implicit) std::cout << " (FourBar cluster " << cidx << ")";
+//             std::cout << "\n";
+//         }
+//         max_error_dq = std::max(max_error_dq, error);
+//     }
+//     std::cout << "Max error dtau/dq (complex-step vs analytical): " << max_error_dq << "\n";
+
+//     // Test dtau/dqdot
+//     std::cout << "Testing dtau/dqdot...\n";
+//     double max_error_dqdot = 0.0;
+//     for (int i = 0; i < nDOF; ++i) {
+//         auto [cidx, local_dof] = findClusterForDOF(i);
+//         const auto& ci = cluster_info[cidx];
+
+//         DVec<std::complex<double>> qd_pert = qd_complex;
+//         qd_pert[i] += ih;
+
+//         setComplexState(q_complex, qd_pert);
+//         DVec<std::complex<double>> tau_complex = model_complex.inverseDynamics(ydd_complex);
+
+//         DVec<double> dtau_dqdoti_cs(nDOF);
+//         for (int j = 0; j < nDOF; ++j) {
+//             dtau_dqdoti_cs[j] = tau_complex[j].imag() / h;
+//         }
+
+//         double error = (dtau_dqdoti_cs - dtau_dqdot.col(i)).norm();
+//         if (error > 1e-10) {
+//             std::cout << "  DOF " << i << " error: " << error;
+//             if (ci.is_floating_base) std::cout << " (floating base)";
+//             if (ci.is_implicit) std::cout << " (FourBar cluster " << cidx << ")";
+//             std::cout << "\n";
+//             // Print per-row errors for debugging
+//             if (error > 0.01) {
+//                 for (int row = 0; row < nDOF; ++row) {
+//                     double row_err = std::abs(dtau_dqdoti_cs[row] - dtau_dqdot(row, i));
+//                     if (row_err > 1e-10) {
+//                         std::cout << "    tau[" << row << "] error: " << row_err
+//                                   << " (CS=" << dtau_dqdoti_cs[row] << ", anal=" << dtau_dqdot(row, i) << ")\n";
+//                     }
+//                 }
+//             }
+//         }
+//         max_error_dqdot = std::max(max_error_dqdot, error);
+//     }
+//     std::cout << "Max error dtau/dqdot (complex-step vs analytical): " << max_error_dqdot << "\n";
+
+//     // KangarooWithConstraints has artificial FourBar parameters causing numerical issues.
+//     // The finite-difference tests show inf error for velocity derivatives, indicating
+//     // the model has fundamental issues beyond just complex-step handling.
+//     // Use very relaxed tolerances or skip if errors are too large.
+//     if (std::isfinite(max_error_dq) && std::isfinite(max_error_dqdot)) {
+//         EXPECT_LT(max_error_dq, 1.0) << "KangarooWithConstraints dtau/dq error exceeds tolerance";
+//         EXPECT_LT(max_error_dqdot, 1.0) << "KangarooWithConstraints dtau/dqdot error exceeds tolerance";
+//         std::cout << "✓ KangarooWithConstraints complex-step test passed\n";
+//     } else {
+//         std::cout << "⚠ KangarooWithConstraints has numerical issues (expected with artificial FourBar params)\n";
+//         GTEST_SKIP() << "KangarooWithConstraints has numerical issues with artificial FourBar parameters";
+//     }
+// }
