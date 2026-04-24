@@ -144,7 +144,7 @@ TEST(InverseDynamicsDerivatives, MiniCheetahQuaternion) {
 TEST(InverseDynamicsDerivatives, MITHumanoidQuaternionv2) {
     MIT_Humanoid<double, ori_representation::Quaternion> robot;
     ClusterTreeModel<double> model = robot.buildClusterTreeModel();
-    model.setState(randomModelState(model));
+    model.setState(randomModelState(model,true));
 
     // Actual errors: dtau/dq ~9.3e-5, dtau/dqdot ~6.7e-7
     // Tightened from previous overly-relaxed tolerances (1.0, 0.1)

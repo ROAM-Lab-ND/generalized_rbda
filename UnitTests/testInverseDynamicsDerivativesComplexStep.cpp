@@ -312,7 +312,7 @@ TEST(InverseDynamicsDerivativesComplexStep, MITHumanoidQuaternion) {
     ClusterTreeModel<double>               model_real    = robot_real.buildClusterTreeModel();
     ClusterTreeModel<std::complex<double>> model_complex = robot_complex.buildClusterTreeModel();
 
-    model_real.setState(randomModelState(model_real));
+    model_real.setState(randomModelState(model_real,true));
 
     testInverseDynamicsDerivativesComplexStep(
         model_real, model_complex, "MIT Humanoid (Quaternion)", 1e-12, 1e-13);
