@@ -11,208 +11,8 @@
 
 using namespace grbda;
 
-// CasADi-based constraint-aware perturbation computation
-// Computes a perturbation direction in the null space of ALL constraint Jacobians
-// This ensures the perturbation stays on the constraint manifold to first order
-struct ConstraintAwarePerturbation {
-    casadi::Function constraint_jacobian_fcn;
-    casadi::Function null_space_fcn;
-    int nq;
-    int num_constraints;
-    bool initialized = false;
 
-    void initialize(ClusterTreeModel<double>& model) {
-        // Simpler approach: don't use CasADi for initialization
-        // Just compute the constraint Jacobian numerically from G matrices
-        nq = model.getNumPositions();
-        num_constraints = 0;
 
-        // Count constraints
-        for (const auto& cluster : model.clusters()) {
-            if (cluster->joint_->isImplicit()) {
-                num_constraints += cluster->joint_->G().rows() - cluster->joint_->G().cols();
-            }
-        }
-
-        initialized = (num_constraints > 0);
-
-        if (initialized) {
-            std::cout << "  Constraint-aware perturbation: "
-                      << num_constraints << " constraints, " << nq << " positions\n";
-        }
-    }
-
-    // Compute a perturbation direction in the null space of constraint Jacobian
-    // using the model's current G matrices (constraint Jacobians)
-    bool computeNullSpaceDirection(ClusterTreeModel<double>& model,
-                                   const ModelState<double>& current_state,
-                                   DVec<double>& delta_q,
-                                   const DVec<double>& desired_direction) {
-        if (!initialized || num_constraints == 0) {
-            // No constraints, use desired direction directly
-            delta_q = desired_direction;
-            return true;
-        }
-
-        // Build global constraint Jacobian from G matrices of all implicit clusters
-        // G matrix maps independent coordinates to spanning coordinates: q_span = G * q_ind + g
-        // The tangent space is range(G), so valid perturbations are: δq_span = G * δq_ind
-        // Strategy: Project desired_direction onto range(G) to get a valid tangent vector
-
-        // Collect all G matrices and their position indices
-        std::vector<DMat<double>> G_matrices;
-        std::vector<int> position_indices;
-        std::vector<int> spanning_dims;
-
-        for (size_t ci = 0; ci < model.clusters().size(); ++ci) {
-            const auto& cluster = model.clusters()[ci];
-            if (cluster->joint_->isImplicit()) {
-                G_matrices.push_back(cluster->joint_->G());
-                position_indices.push_back(cluster->position_index_);
-                spanning_dims.push_back(cluster->joint_->G().rows());
-            }
-        }
-
-        if (G_matrices.empty()) {
-            delta_q = desired_direction;
-            return true;
-        }
-
-        // Build global G matrix: maps independent coords to spanning coords
-        int total_independent = 0;
-        for (const auto& G : G_matrices) {
-            total_independent += G.cols();
-        }
-
-        DMat<double> G_global = DMat<double>::Zero(nq, total_independent);
-        int col_offset = 0;
-
-        for (size_t i = 0; i < G_matrices.size(); ++i) {
-            const auto& G = G_matrices[i];
-            int pos_idx = position_indices[i];
-            int n_spanning = G.rows();
-            int n_independent = G.cols();
-
-            G_global.block(pos_idx, col_offset, n_spanning, n_independent) = G;
-            col_offset += n_independent;
-        }
-
-        // Project desired direction onto range(G): δq = G * (G^T G)^{-1} * G^T * desired_direction
-        DMat<double> GTG = G_global.transpose() * G_global;
-        double det = GTG.determinant();
-
-        if (std::abs(det) < 1e-12) {
-            std::cout << "    Warning: G^T*G is singular (det=" << det << ")" << std::endl;
-            return false;
-        }
-
-        DMat<double> GTG_inv = GTG.inverse();
-        DMat<double> projection = G_global * GTG_inv * G_global.transpose();
-
-        delta_q = projection * desired_direction;
-
-        // Verify that the perturbation has reasonable magnitude
-        double norm = delta_q.norm();
-        if (norm < 1e-12) {
-            return false;
-        }
-
-        return true;
-    }
-};
-
-// Newton projection: projects a spanning-space position onto the constraint manifold
-// by iteratively solving: q_new = q - G^+ * phi(q)
-// Returns true if projection succeeded, false if constraints cannot be satisfied
-bool newtonProjection(const std::shared_ptr<ClusterJoints::Base<double>> &joint,
-                      DVec<double> &span_pos,
-                      int max_iters = 20,
-                      double tol = 1e-6) {
-    if (!joint->isImplicit()) {
-        return true;  // No constraints, no projection needed
-    }
-
-    double initial_phi_norm = 0.0;
-    static bool debug_once = true;
-    for (int iter = 0; iter < max_iters; ++iter) {
-        // Create JointCoordinate from current position
-        JointCoordinate<double> jc(span_pos, true);
-
-        // Update Jacobians at current position
-        joint->updateJacobians(jc);
-
-        // Evaluate constraint residual
-        DVec<double> phi_val = joint->phi(jc);
-        double phi_norm = phi_val.norm();
-
-        if (iter == 0) {
-            initial_phi_norm = phi_norm;
-            if (debug_once && initial_phi_norm > 1e-3) {
-                std::cout << "      Newton iter 0: phi_norm=" << phi_norm << std::endl;
-            }
-        }
-
-        // Check convergence
-        if (phi_norm < tol) {
-            if (debug_once && initial_phi_norm > 1e-3) {
-                std::cout << "      Newton converged at iter " << iter << ": phi_norm=" << phi_norm << std::endl;
-                debug_once = false;
-            }
-            return true;
-        }
-
-        // For implicit constraints, G maps independent->spanning coords
-        // G is (n_span x n_ind) where n_span > n_ind
-        // We need G^+ (pseudo-inverse) to project phi back to a correction
-        //
-        // The correct formula is: use G^T (G^T G)^{-1} since G has more rows than columns
-        // This gives us the minimum-norm solution
-        DMat<double> G = joint->G();
-        DMat<double> GTG = G.transpose() * G;
-
-        // Check if GTG is singular
-        double det = GTG.determinant();
-        if (std::abs(det) < 1e-12) {
-            if (debug_once) {
-                std::cout << "      Newton FAILED: singular GTG (det=" << det << ")" << std::endl;
-                debug_once = false;
-            }
-            return false;
-        }
-
-        DMat<double> GTG_inv = GTG.inverse();
-        DMat<double> G_pinv = GTG_inv * G.transpose();
-
-        // Newton step: q := q - G^+ * phi(q)
-        DVec<double> correction = G_pinv * phi_val;
-        span_pos -= correction;
-
-        // Safety check for divergence
-        if (!span_pos.allFinite() || phi_norm > 1e6 || phi_norm > 10.0 * initial_phi_norm) {
-            if (debug_once) {
-                std::cout << "      Newton DIVERGED at iter " << iter << ": phi_norm=" << phi_norm << std::endl;
-                debug_once = false;
-            }
-            return false;
-        }
-    }
-
-    // If we've made substantial progress but didn't fully converge, accept it
-    // Check final constraint violation
-    JointCoordinate<double> jc_final(span_pos, true);
-    joint->updateJacobians(jc_final);
-    DVec<double> phi_final = joint->phi(jc_final);
-    double final_phi_norm = phi_final.norm();
-
-    if (debug_once) {
-        std::cout << "      Newton max iters reached: final_phi_norm=" << final_phi_norm << std::endl;
-        debug_once = false;
-    }
-
-    // Accept if we're within a reasonable tolerance
-    // The position validation uses 2e-2, so we need to at least meet that
-    return final_phi_norm < 2e-2;
-}
 
 // Velocity projection: projects a spanning velocity onto the velocity constraint manifold
 // For constraints K*v = 0, we project v onto null(K) using: v_proj = v - K^+ * (K*v)
@@ -317,6 +117,51 @@ void projectPosition(const std::shared_ptr<ClusterJoints::Base<double>> &joint,
     }
 }
 
+
+void testInverseDynamicsDerivativesFiniteDifference(
+    ClusterTreeModel<double>& model_real,
+    const std::string& robot_name,
+    double tol_dq = 1e-6,
+    double tol_dqdot = 1e-6) {
+    std::cout << std::setprecision(16);
+    const int nDOF = model_real.getNumDegreesOfFreedom();
+    std::cout << "\n========================================\n";
+    std::cout << "Finite-Difference Derivative Test: " << robot_name << " (DOF=" << nDOF << ")\n";
+    std::cout << "========================================\n\n";
+
+    const DVec<double> ydd_real = DVec<double>::Random(nDOF);
+
+    auto [dtau_dq, dtau_dqdot] = model_real.firstOrderInverseDynamicsDerivatives(ydd_real);
+    auto [q0, qd0] = model_real.getState();
+
+    const ModelState<double> state_real_base = makeModelState<double>(model_real, q0, qd0);
+    const DVec<double>       zero_dqr = DVec<double>::Zero(nDOF);
+
+    auto ID_of_dq_fd = [&](const DVec<double>& dq) -> DVec<double> {
+        model_real.setState(applyMinimalPerturbation(model_real, state_real_base, dq, zero_dqr), false);
+        return model_real.inverseDynamics(ydd_real);
+    };
+    auto ID_of_dqdot_fd = [&](const DVec<double>& dqdot) -> DVec<double> {
+        model_real.setState(applyMinimalPerturbation(model_real, state_real_base, zero_dqr, dqdot), false);
+        return model_real.inverseDynamics(ydd_real);
+    };
+
+    const double h_fd = 1e-7;
+    DMat<double> dtau_dq_fd    = finiteDifferenceJacobian(ID_of_dq_fd,    zero_dqr, h_fd);
+    DMat<double> dtau_dqdot_fd = finiteDifferenceJacobian(ID_of_dqdot_fd, zero_dqr, h_fd);
+
+    double max_error_dq    = (dtau_dq    - dtau_dq_fd).cwiseAbs().maxCoeff();
+    double max_error_dqdot = (dtau_dqdot - dtau_dqdot_fd).cwiseAbs().maxCoeff();
+
+    std::cout << "Max FD vs analytical error (dtau/dq):    " << max_error_dq    << "\n";
+    std::cout << "Max FD vs analytical error (dtau/dqdot): " << max_error_dqdot << "\n";
+    
+    EXPECT_LT(max_error_dq,    tol_dq)    << "dtau/dq error exceeds tolerance";
+    EXPECT_LT(max_error_dqdot, tol_dqdot) << "dtau/dqdot error exceeds tolerance";
+}
+
+
+
 // Helper function to run the finite difference test on any model
 void testInverseDynamicsDerivatives(ClusterTreeModel<double>& model,
                                      const std::string& robot_name,
@@ -339,7 +184,9 @@ void testInverseDynamicsDerivatives(ClusterTreeModel<double>& model,
     ModelState<double> model_state;
     for (const auto &cluster : model.clusters()) {
         JointState<> joint_state = cluster->joint_->randomJointState();
-        model_state.push_back(joint_state);
+        auto span_js = cluster->joint_->toSpanningTreeState(joint_state);
+
+        model_state.push_back(span_js);
     }
     model.setState(model_state);
 
@@ -575,122 +422,6 @@ void testImplicitConstraintDerivatives(ClusterTreeModel<double>& model,
     std::cout << "========================================\n\n";
 }
 
-/*
-// DISABLED: Still has memory corruption issues even with Eigen::aligned_allocator
-// Same root cause as TelloWithArms - complex implicit constraints with large state vectors
-// Simpler tests (Tello) work perfectly
-TEST(InverseDynamicsDerivatives, DISABLED_PlanarLegLinkageImplicitConstraint_ORIGINAL) {
-    using namespace grbda;
-    PlanarLegLinkage<double> robot;
-    ClusterTreeModel<double> model = robot.buildClusterTreeModel();
-
-    const int nDOF = model.getNumDegreesOfFreedom();
-    ASSERT_GT(nDOF, 0);
-    const int trials = 10;
-    const double eps = 1e-6;
-    const double tol = 1e-3;
-
-    for (int t = 0; t < trials; ++t) {
-        ModelState<double> model_state;
-        for (const auto &cluster : model.clusters()) {
-            std::cout << "    Sampling cluster: " << cluster->name_ << "\n";
-            JointState<double> spanning_js(false, false);  // Initialize properly
-            bool found = false;
-            for (int attempt = 0; attempt < 5; ++attempt) {  // Reduce attempts for debugging
-                try {
-                    JointState<double> js = cluster->joint_->randomJointState();
-                    std::cout << "      Attempt " << attempt << ": random state created\n";
-                    spanning_js = cluster->joint_->toSpanningTreeState(js);
-                    std::cout << "      Attempt " << attempt << ": spanning state converted\n";
-                    found = true;
-                    break;
-                } catch (const std::exception &e) {
-                    std::cout << "      Attempt " << attempt << " failed: " << e.what() << "\n";
-                    continue;
-                }
-            }
-            if (!found) {
-                std::cout << "    [ERROR] Failed to sample valid spanning state for cluster: " << cluster->name_ << std::endl;
-                throw std::runtime_error(std::string("Failed to sample valid spanning state for cluster: ") + cluster->name_);
-            }
-            std::cout << "    Adding state for cluster: " << cluster->name_ << "\n";
-            model_state.push_back(spanning_js);
-            std::cout << "    Added state for cluster: " << cluster->name_ << "\n";
-        }
-        std::cout << "  Trial " << t << ": setting model state\n";
-        model.setState(model_state);
-        std::cout << "  Trial " << t << ": model state set\n";
-
-        DVec<double> ydd = DVec<double>::Random(nDOF);
-        std::cout << "  Trial " << t << ": sampled valid spanning state.\n";
-        auto [dtau_dq, dtau_dqdot] = model.firstOrderInverseDynamicsDerivatives(ydd);
-        std::cout << "    dtau_dq: " << dtau_dq.rows() << "x" << dtau_dq.cols()
-              << ", dtau_dqdot: " << dtau_dqdot.rows() << "x" << dtau_dqdot.cols() << "\n";
-
-        auto state_pair = model.getState();
-        const DVec<double> q0 = state_pair.first;
-        const DVec<double> qd0 = state_pair.second;
-        DVec<double> tau0 = model.inverseDynamics(ydd);
-
-        ModelState<double> perturbed_model_state;
-        perturbed_model_state.reserve(model_state.size());
-        DVec<double> qd_delta_span = DVec<double>::Zero(nDOF);
-        for (size_t ci = 0; ci < model.clusters().size(); ++ci) {
-            const auto &cluster = model.clusters()[ci];
-            const int vel_idx = cluster->velocity_index_;
-            const int num_ind = cluster->num_velocities_;
-            DVec<double> delta_ind = DVec<double>::Random(num_ind) * eps;
-            DVec<double> delta_span = cluster->joint_->G() * delta_ind;
-            // Create new JointState instead of copying
-            DVec<double> new_vel = DVec<double>(model_state[ci].velocity) + delta_span;
-            JointCoordinate<double> vel(new_vel, model_state[ci].velocity.isSpanning());
-            JointCoordinate<double> pos(model_state[ci].position, model_state[ci].position.isSpanning());
-            perturbed_model_state.push_back(JointState<double>(pos, vel));
-            // Store independent coordinate perturbation for Jacobian multiplication
-            // dtau_dqdot is in independent coordinates, so qd_delta_span must be too
-            qd_delta_span.segment(vel_idx, num_ind) = delta_ind;
-        }
-
-        model.setState(perturbed_model_state);
-        DVec<double> tau_pert = model.inverseDynamics(ydd);
-        DVec<double> tau_pred = tau0 + dtau_dqdot * qd_delta_span;
-
-        double err = (tau_pert - tau_pred).norm();
-        std::cout << "    Trial " << t << " err=" << err << " qd_delta_norm=" << qd_delta_span.norm() << "\n";
-        EXPECT_LT(err, tol) << "PlanarLegLinkage directional dtau/dqdot check failed (err=" << err << ")";
-
-        // --- Directional dtau/dq check ---
-        // Perturb positions along a random direction in the independent coordinates
-        ModelState<double> perturbed_model_state_q;
-        perturbed_model_state_q.reserve(model_state.size());
-        DVec<double> q_delta_span = DVec<double>::Zero(nDOF);
-        for (size_t ci = 0; ci < model.clusters().size(); ++ci) {
-            const auto &cluster = model.clusters()[ci];
-            const int pos_idx = cluster->position_index_;
-            const int num_ind = cluster->joint_->G().cols();  // Independent dimension
-            DVec<double> delta_ind = DVec<double>::Random(num_ind) * eps;
-            DVec<double> delta_span = cluster->joint_->G() * delta_ind;
-            // Create new JointState instead of copying
-            DVec<double> new_pos = DVec<double>(model_state[ci].position) + delta_span;
-            JointCoordinate<double> pos(new_pos, model_state[ci].position.isSpanning());
-            JointCoordinate<double> vel(model_state[ci].velocity, model_state[ci].velocity.isSpanning());
-            perturbed_model_state_q.push_back(JointState<double>(pos, vel));
-            // Store independent coordinate perturbation for Jacobian multiplication
-            // dtau_dq is in independent coordinates, so q_delta_span must be too
-            q_delta_span.segment(pos_idx, num_ind) = delta_ind;
-        }
-        model.setState(perturbed_model_state_q);
-        DVec<double> tau_pert_q = model.inverseDynamics(ydd);
-        DVec<double> tau_pred_q = tau0 + dtau_dq * q_delta_span;
-        double err_q = (tau_pert_q - tau_pred_q).norm();
-        std::cout << "    Trial " << t << " (q) err=" << err_q << " q_delta_norm=" << q_delta_span.norm() << "\n";
-        EXPECT_LT(err_q, tol) << "PlanarLegLinkage directional dtau/dq check failed (err=" << err_q << ")";
-
-        // model.setState(model_state);  // DISABLED: Investigating memory corruption
-    }
-}
-*/
-
 TEST(InverseDynamicsDerivatives, TelloWithArmsImplicitConstraint) {
     using namespace grbda;
     TelloWithArms<double> robot;
@@ -742,27 +473,6 @@ TEST(InverseDynamicsDerivatives, MiniCheetahQuaternion) {
     testInverseDynamicsDerivatives(model, "MiniCheetah (Quaternion)", 18, true, 1e-4, 1e-5);
 }
 
-// NOTE: MIT Humanoid finite-difference test currently fails because the Free joint
-// (floating base with quaternion orientation) does not have getSq() derivatives implemented.
-// For quaternion-based floating bases, the motion subspace S depends on orientation, so
-// getSq() should return non-zero values, but currently returns zeros (base class default).
-//
-// The cluster joints (RevoluteWithRotor and RevolutePairWithRotor) DO have correct analytical
-// derivative implementations. Note that for MIT Humanoid specifically, RevolutePairWithRotor
-// correctly returns zero derivatives because both knee and ankle joints rotate around parallel
-// Y axes, so the motion subspace doesn't change with configuration.
-//
-// MIT Humanoid derivatives ARE validated successfully via CasADi symbolic differentiation in
-// testRigidBodyDynamicsAlgosDerivatives:
-//   - DynamicsAlgosDerivativesTest/2.contactJacobians: PASS ✅
-//   - DynamicsAlgosDerivativesTest/2.rnea: PASS ✅
-//
-// To fix this test, the Free joint class needs getSq(), getSdotqd_q(), and getSdotqd_qd()
-// implementations for quaternion-based orientation representation.
-//
-// UPDATE: Basic implementations added (returning zeros for now, since S is constant in body frame).
-// Testing to see if this is sufficient or if more sophisticated quaternion derivative handling is needed.
-//
 TEST(InverseDynamicsDerivatives, MITHumanoidQuaternion) {
     MIT_Humanoid<double, ori_representation::Quaternion> robot;
     ClusterTreeModel<double> model = robot.buildClusterTreeModel();
@@ -770,6 +480,17 @@ TEST(InverseDynamicsDerivatives, MITHumanoidQuaternion) {
     // Tightened from previous overly-relaxed tolerances (1.0, 0.1)
     testInverseDynamicsDerivatives(model, "MIT Humanoid (Quaternion)", 24, true, 1e-4, 1e-6);
 }
+
+TEST(InverseDynamicsDerivatives, MITHumanoidQuaternionv2) {
+    MIT_Humanoid<double, ori_representation::Quaternion> robot;
+    ClusterTreeModel<double> model = robot.buildClusterTreeModel();
+    model.setState(randomModelState(model));
+
+    // Actual errors: dtau/dq ~9.3e-5, dtau/dqdot ~6.7e-7
+    // Tightened from previous overly-relaxed tolerances (1.0, 0.1)
+    testInverseDynamicsDerivativesFiniteDifference(model, "MIT Humanoid (Quaternion) - Finite Difference", 1e-4, 1e-6);
+}
+
 TEST(InverseDynamicsDerivatives, TeleopArm) {
     TeleopArm<> robot;
     ClusterTreeModel<double> model = robot.buildClusterTreeModel();
