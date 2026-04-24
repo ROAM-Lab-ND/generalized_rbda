@@ -282,10 +282,49 @@ namespace grbda
 
         for (const auto &cluster : cluster_nodes_)
         {
-            q.segment(cluster->position_index_, cluster->num_positions_) = 
-                cluster->joint_state_.position;
-            qd.segment(cluster->velocity_index_, cluster->num_velocities_) = 
-                cluster->joint_state_.velocity;
+            const auto &pos = cluster->joint_state_.position;
+            const auto &vel = cluster->joint_state_.velocity;
+
+            if ((int)pos.size() != cluster->num_positions_)
+            {
+                const DMat<Scalar> conv =
+                    cluster->joint_->spanningTreeToIndependentCoordsConversion()
+                        .template cast<Scalar>();
+                q.segment(cluster->position_index_, cluster->num_positions_) =
+                    (conv * pos).eval();
+            }
+            else
+            {
+                q.segment(cluster->position_index_, cluster->num_positions_) = pos;
+            }
+
+            if ((int)vel.size() != cluster->num_velocities_)
+            {
+                const int nv_ind = cluster->num_velocities_;
+                const auto &conv_int =
+                    cluster->joint_->spanningTreeToIndependentCoordsConversion();
+                if (conv_int.rows() == nv_ind && conv_int.cols() == (int)vel.size())
+                {
+                    const DMat<Scalar> conv = conv_int.template cast<Scalar>();
+                    qd.segment(cluster->velocity_index_, nv_ind) = (conv * vel).eval();
+                }
+                else
+                {
+                    // Recover independent velocity via G pseudoinverse: v_ind = (G^T G)^{-1} G^T v_span
+                    // Not supported for casadi::SX (symbolic models don't use getState())
+                    if constexpr (!std::is_same_v<Scalar, casadi::SX>)
+                    {
+                        const DMat<Scalar> &G_mat = cluster->joint_->G();
+                        const DMat<Scalar> GtG = G_mat.transpose() * G_mat;
+                        qd.segment(cluster->velocity_index_, nv_ind) =
+                            GtG.inverse() * (G_mat.transpose() * vel);
+                    }
+                }
+            }
+            else
+            {
+                qd.segment(cluster->velocity_index_, cluster->num_velocities_) = vel;
+            }
         }
 
         return {q, qd};
