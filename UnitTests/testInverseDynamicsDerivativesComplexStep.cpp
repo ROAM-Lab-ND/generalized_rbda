@@ -77,6 +77,34 @@ void testInverseDynamicsDerivativesComplexStep(
     std::cout << "Max CS vs FD error         (dtau/dq):    " << max_cs_fd_dq    << "\n";
     std::cout << "Max CS vs FD error         (dtau/dqdot): " << max_cs_fd_dqdot << "\n";
 
+    if( max_error_dq > tol_dq) {
+        std::cout << "Details for dtau/dq error:\n";
+        std::cerr << "Analytical derivatives:\n";
+        std::cerr << "dtau/dq:\n" << dtau_dq << "\n";
+        std::cerr << "Finite difference derivatives (CS):\n";
+        std::cerr << "dtau/dq (CS):\n" << dtau_dq_cs << "\n";
+
+        std::cerr << "Error (boolean):\n";
+        Eigen::Matrix<bool, Eigen::Dynamic, Eigen::Dynamic> out_of_tol =
+        (dtau_dq - dtau_dq_cs).array().abs() > tol_dq;
+        std::cerr << out_of_tol << "\n";
+
+    }
+
+    if (max_error_dqdot > tol_dqdot) {
+        std::cout << "Details for dtau/dqdot error:\n";
+        std::cerr << "Analytical derivatives:\n";
+        std::cerr << "dtau/dqdot:\n" << dtau_dqdot << "\n";
+        std::cerr << "Finite difference derivatives (CS):\n";
+        std::cerr << "dtau/dqdot (CS):\n" << dtau_dqdot_cs << "\n";
+
+        std::cerr << "Error (boolean):\n";
+        Eigen::Matrix<bool, Eigen::Dynamic, Eigen::Dynamic> out_of_tol =
+        (dtau_dqdot - dtau_dqdot_cs).array().abs() > tol_dqdot;
+        std::cerr << out_of_tol << "\n";
+    }
+
+
     EXPECT_LT(max_cs_fd_dq,    5e-5) << "CS vs FD mismatch (dtau/dq)";
     EXPECT_LT(max_cs_fd_dqdot, 5e-5) << "CS vs FD mismatch (dtau/dqdot)";
     EXPECT_LT(max_error_dq,    tol_dq)    << "dtau/dq error exceeds tolerance";
@@ -287,7 +315,7 @@ TEST(InverseDynamicsDerivativesComplexStep, MITHumanoidQuaternion) {
     model_real.setState(randomModelState(model_real));
 
     testInverseDynamicsDerivativesComplexStep(
-        model_real, model_complex, "MIT Humanoid (Quaternion)", 1.0, 0.1);
+        model_real, model_complex, "MIT Humanoid (Quaternion)", 1e-12, 1e-13);
 }
 
 TEST(InverseDynamicsDerivativesComplexStep, TeleopArm) {

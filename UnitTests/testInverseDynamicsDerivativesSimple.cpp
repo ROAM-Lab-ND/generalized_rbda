@@ -51,6 +51,33 @@ void testInverseDynamicsDerivativesFiniteDifference(
 
     std::cout << "Max FD vs analytical error (dtau/dq):    " << max_error_dq    << "\n";
     std::cout << "Max FD vs analytical error (dtau/dqdot): " << max_error_dqdot << "\n";
+
+    if( max_error_dq > tol_dq) {
+        std::cout << "Details for dtau/dq error:\n";
+        std::cerr << "Analytical derivatives:\n";
+        std::cerr << "dtau/dq:\n" << dtau_dq << "\n";
+        std::cerr << "Finite difference derivatives:\n";
+        std::cerr << "dtau/dq (FD):\n" << dtau_dq_fd << "\n";
+
+        std::cerr << "Error (boolean):\n";
+        Eigen::Matrix<bool, Eigen::Dynamic, Eigen::Dynamic> out_of_tol =
+        (dtau_dq - dtau_dq_fd).array().abs() > tol_dq;
+        std::cerr << out_of_tol << "\n";
+
+    }
+
+    if (max_error_dqdot > tol_dqdot) {
+        std::cout << "Details for dtau/dqdot error:\n";
+        std::cerr << "Analytical derivatives:\n";
+        std::cerr << "dtau/dqdot:\n" << dtau_dqdot << "\n";
+        std::cerr << "Finite difference derivatives:\n";
+        std::cerr << "dtau/dqdot (FD):\n" << dtau_dqdot_fd << "\n";
+
+        std::cerr << "Error (boolean):\n";
+        Eigen::Matrix<bool, Eigen::Dynamic, Eigen::Dynamic> out_of_tol =
+        (dtau_dqdot - dtau_dqdot_fd).array().abs() > tol_dqdot;
+        std::cerr << out_of_tol << "\n";
+    }
     
     EXPECT_LT(max_error_dq,    tol_dq)    << "dtau/dq error exceeds tolerance";
     EXPECT_LT(max_error_dqdot, tol_dqdot) << "dtau/dqdot error exceeds tolerance";
