@@ -298,12 +298,12 @@ ModelState<double> randomModelState(const ClusterTreeModel<double>& model,
     return state;
 }
 
-// Helper function for complex-step differentiation with floating base robots
+// Helper function for complex-step differentiation 
 // Generic complex-step derivative test. Caller is responsible for:
 //   - building both model_real and model_complex with matching structure
 //   - setting a valid state on model_real before calling
 // Uses makeModelState / applyMinimalPerturbation so isSpanning() flags are always correct.
-void testInverseDynamicsDerivativesComplexStepFloatingBase(
+void testInverseDynamicsDerivativesComplexStep(
     ClusterTreeModel<double>& model_real,
     ClusterTreeModel<std::complex<double>>& model_complex,
     const std::string& robot_name,
@@ -414,7 +414,7 @@ TEST(InverseDynamicsDerivativesComplexStep, TwoLinkChain) {
     ClusterTreeModel<double> model_real = robot.buildClusterTreeModel();
     ClusterTreeModel<std::complex<double>> model_complex = cloneToComplex(model_real);
     model_real.setState(randomModelState(model_real));
-    testInverseDynamicsDerivativesComplexStepFloatingBase(
+    testInverseDynamicsDerivativesComplexStep(
         model_real, model_complex, "2-link revolute chain");
 }
 
@@ -423,7 +423,7 @@ TEST(InverseDynamicsDerivativesComplexStep, ThreeLinkChain) {
     ClusterTreeModel<double> model_real = robot.buildClusterTreeModel();
     ClusterTreeModel<std::complex<double>> model_complex = cloneToComplex(model_real);
     model_real.setState(randomModelState(model_real));
-    testInverseDynamicsDerivativesComplexStepFloatingBase(
+    testInverseDynamicsDerivativesComplexStep(
         model_real, model_complex, "3-link revolute chain");
 }
 
@@ -432,7 +432,7 @@ TEST(InverseDynamicsDerivativesComplexStep, FourLinkChain) {
     ClusterTreeModel<double> model_real = robot.buildClusterTreeModel();
     ClusterTreeModel<std::complex<double>> model_complex = cloneToComplex(model_real);
     model_real.setState(randomModelState(model_real));
-    testInverseDynamicsDerivativesComplexStepFloatingBase(
+    testInverseDynamicsDerivativesComplexStep(
         model_real, model_complex, "4-link revolute chain");
 }
 
@@ -462,7 +462,7 @@ TEST(InverseDynamicsDerivativesComplexStep, SimpleFloatingBaseWithRotor) {
 
     model_real.setState(randomModelState(model_real));
 
-    testInverseDynamicsDerivativesComplexStepFloatingBase(
+    testInverseDynamicsDerivativesComplexStep(
         model_real, model_complex, "Simple Floating Base + 1 Revolute With Rotor");
 }
 
@@ -488,7 +488,7 @@ TEST(InverseDynamicsDerivativesComplexStep, SimpleFloatingBase) {
 
     model_real.setState(randomModelState(model_real));
 
-    testInverseDynamicsDerivativesComplexStepFloatingBase(
+    testInverseDynamicsDerivativesComplexStep(
         model_real, model_complex, "Simple Floating Base + 1 Revolute");
 }
 
@@ -500,7 +500,7 @@ TEST(InverseDynamicsDerivativesComplexStep, MiniCheetahQuaternion) {
 
     model_real.setState(randomModelState(model_real));
 
-    testInverseDynamicsDerivativesComplexStepFloatingBase(
+    testInverseDynamicsDerivativesComplexStep(
         model_real, model_complex, "MiniCheetah (Quaternion)");
 }
 
@@ -570,7 +570,7 @@ TEST(InverseDynamicsDerivativesComplexStep, MITHumanoidQuaternion) {
 
     model_real.setState(randomModelState(model_real));
 
-    testInverseDynamicsDerivativesComplexStepFloatingBase(
+    testInverseDynamicsDerivativesComplexStep(
         model_real, model_complex, "MIT Humanoid (Quaternion)", 1.0, 0.1);
 }
 
@@ -584,7 +584,7 @@ TEST(InverseDynamicsDerivativesComplexStep, TeleopArm) {
 
     model_real.setState(randomModelState(model_real));
 
-    testInverseDynamicsDerivativesComplexStepFloatingBase(
+    testInverseDynamicsDerivativesComplexStep(
         model_real, model_complex, "TeleopArm");
 }
 TEST(InverseDynamicsDerivativesComplexStep, TelloImplicitConstraint) {
@@ -622,7 +622,7 @@ TEST(InverseDynamicsDerivativesComplexStep, TelloImplicitConstraintDerivatives) 
 
     model_real.setState(randomModelState(model_real, true), true);
 
-    testInverseDynamicsDerivativesComplexStepFloatingBase(
+    testInverseDynamicsDerivativesComplexStep(
         model_real, model_complex, "Tello (ImplicitConstraint)", 1e-13, 1e-14);
 }
 
@@ -637,7 +637,7 @@ TEST(InverseDynamicsDerivativesComplexStep, PlanarLegLinkageImplicitConstraintDe
 
     // FourBar::getSq() has a known ~1e-4 inaccuracy in the dX_intra/dq term;
     // the old test explicitly used tol ~1e-3 (= 6*phi_residual + 1e-3).
-    testInverseDynamicsDerivativesComplexStepFloatingBase(
+    testInverseDynamicsDerivativesComplexStep(
         model_real, model_complex, "PlanarLegLinkage (ImplicitConstraint)", 1e-12, 1e-14);
 }
 
