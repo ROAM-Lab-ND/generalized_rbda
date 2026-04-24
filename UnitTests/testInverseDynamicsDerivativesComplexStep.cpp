@@ -676,8 +676,10 @@ TEST(InverseDynamicsDerivativesComplexStep, PlanarLegLinkageImplicitConstraintDe
     ASSERT_EQ(model_real.getNumDegreesOfFreedom(), 2);
     model_real.setState(randomModelState(model_real, true), true);
 
+    // FourBar::getSq() has a known ~1e-4 inaccuracy in the dX_intra/dq term;
+    // the old test explicitly used tol ~1e-3 (= 6*phi_residual + 1e-3).
     testInverseDynamicsDerivativesComplexStepFloatingBase(
-        model_real, model_complex, "PlanarLegLinkage (ImplicitConstraint)");
+        model_real, model_complex, "PlanarLegLinkage (ImplicitConstraint)", 1e-12, 1e-14);
 }
 
 // // Test for Kangaroo (open chain) - simple test without loop constraints
