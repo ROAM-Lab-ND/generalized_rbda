@@ -5,56 +5,145 @@ namespace grbda
 {
     namespace LoopConstraint
     {
+        // ---------------------------------------------------------------------------
+        // Factory helpers for GenericImplicit constructor
+        // ---------------------------------------------------------------------------
+
+        namespace
+        {
+            // Build the is_coordinate_independent mask (3 coords, one independent)
+            std::vector<bool> makeFourBarIndMask(int ind_coord)
+            {
+                std::vector<bool> mask = {false, false, false};
+                mask[ind_coord] = true;
+                return mask;
+            }
+
+            // Build the symbolic phi (always SX; captures link lengths as SX constants)
+            template <typename Scalar>
+            std::function<DVec<casadi::SX>(const JointCoordinate<casadi::SX> &)>
+            makeFourBarSymPhi(const std::vector<Scalar> &p1, const std::vector<Scalar> &p2,
+                              const Vec2<Scalar> &off, size_t n1, size_t n2)
+            {
+                using SX = casadi::SX;
+
+                std::vector<SX> p1_sx, p2_sx;
+                Vec2<SX> off_sx;
+
+                if constexpr (std::is_same_v<Scalar, SX>)
+                {
+                    p1_sx = p1;
+                    p2_sx = p2;
+                    off_sx << off[0], off[1];
+                }
+                else
+                {
+                    using std::real;
+                    for (const auto &x : p1) p1_sx.push_back(SX(real(x)));
+                    for (const auto &x : p2) p2_sx.push_back(SX(real(x)));
+                    off_sx << SX(real(off[0])), SX(real(off[1]));
+                }
+
+                return [p1_sx, p2_sx, off_sx, n1, n2](const JointCoordinate<SX> &jp) -> DVec<SX>
+                {
+                    DVec<SX> pj1(2), pj2(1);
+                    pj1 << jp(0), jp(2);
+                    pj2 << jp(1);
+
+                    SX ca = SX(0.);
+                    DVec<SX> path1 = DVec<SX>::Zero(2);
+                    for (size_t i = 0; i < n1; i++)
+                    {
+                        ca = ca + pj1(i);
+                        path1(0) = path1(0) + p1_sx[i] * cos(ca);
+                        path1(1) = path1(1) + p1_sx[i] * sin(ca);
+                    }
+
+                    DVec<SX> path2(2);
+                    path2 << off_sx[0], off_sx[1];
+                    ca = SX(0.);
+                    for (size_t i = 0; i < n2; i++)
+                    {
+                        ca = ca + pj2(i);
+                        path2(0) = path2(0) + p2_sx[i] * cos(ca);
+                        path2(1) = path2(1) + p2_sx[i] * sin(ca);
+                    }
+
+                    DVec<SX> phi = path1 - path2;
+                    return phi;
+                };
+            }
+
+            // Build the native phi (works with any Scalar, including complex and SX)
+            template <typename Scalar>
+            std::function<DVec<Scalar>(const JointCoordinate<Scalar> &)>
+            makeFourBarNativePhi(std::vector<Scalar> p1, std::vector<Scalar> p2,
+                                 Vec2<Scalar> off, size_t n1, size_t n2)
+            {
+                return [p1, p2, off, n1, n2](const JointCoordinate<Scalar> &jp) -> DVec<Scalar>
+                {
+                    using std::cos;
+                    using std::sin;
+
+                    DVec<Scalar> pj1(2), pj2(1);
+                    pj1 << jp(0), jp(2);
+                    pj2 << jp(1);
+
+                    Scalar ca = Scalar(0.);
+                    DVec<Scalar> path1 = DVec<Scalar>::Zero(2);
+                    for (size_t i = 0; i < n1; i++)
+                    {
+                        ca += pj1(i);
+                        path1(0) += p1[i] * cos(ca);
+                        path1(1) += p1[i] * sin(ca);
+                    }
+
+                    DVec<Scalar> path2 = off;
+                    ca = Scalar(0.);
+                    for (size_t i = 0; i < n2; i++)
+                    {
+                        ca += pj2(i);
+                        path2(0) += p2[i] * cos(ca);
+                        path2(1) += p2[i] * sin(ca);
+                    }
+
+                    return path1 - path2;
+                };
+            }
+        } // anonymous namespace
+
+        // ---------------------------------------------------------------------------
+        // FourBar constructor
+        // ---------------------------------------------------------------------------
+
         template <typename Scalar>
         FourBar<Scalar>::FourBar(std::vector<Scalar> path1_link_lengths,
                                  std::vector<Scalar> path2_link_lengths,
                                  Vec2<Scalar> offset, int independent_coordinate)
-            : links_in_path1_(path1_link_lengths.size()),
+            : GenericImplicit<Scalar>(
+                  makeFourBarIndMask(independent_coordinate),
+                  makeFourBarSymPhi<Scalar>(path1_link_lengths, path2_link_lengths, offset,
+                                            path1_link_lengths.size(),
+                                            path2_link_lengths.size()),
+                  makeFourBarNativePhi<Scalar>(path1_link_lengths, path2_link_lengths, offset,
+                                               path1_link_lengths.size(),
+                                               path2_link_lengths.size())),
+              links_in_path1_(path1_link_lengths.size()),
               links_in_path2_(path2_link_lengths.size()),
               path1_link_lengths_(path1_link_lengths),
               path2_link_lengths_(path2_link_lengths),
-              offset_(offset), independent_coordinate_(independent_coordinate)
+              offset_(offset),
+              independent_coordinate_(independent_coordinate)
         {
             if (links_in_path1_ + links_in_path2_ != 3)
             {
                 throw std::runtime_error("FourBar: Must contain 3 links");
             }
 
-            this->phi_ = [this, offset](const JointCoordinate<Scalar> &joint_pos)
-            {
-                DVec<Scalar> phi = DVec<Scalar>::Zero(2);
-
-                DVec<Scalar> path1_joints(2), path2_joints(1);
-                path1_joints << joint_pos(0), joint_pos(2);
-                path2_joints << joint_pos(1);
-
-                Scalar cumulative_angle = 0.;
-                DVec<Scalar> path1 = DVec<Scalar>::Zero(2);
-                for (size_t i = 0; i < links_in_path1_; i++)
-                {
-                    cumulative_angle += path1_joints(i);
-                    path1(0) += path1_link_lengths_[i] * cos(cumulative_angle);
-                    path1(1) += path1_link_lengths_[i] * sin(cumulative_angle);
-                }
-
-                cumulative_angle = 0.;
-                DVec<Scalar> path2 = offset;
-                for (size_t i = 0; i < links_in_path2_; i++)
-                {
-                    cumulative_angle += path2_joints(i);
-                    path2(0) += path2_link_lengths_[i] * cos(cumulative_angle);
-                    path2(1) += path2_link_lengths_[i] * sin(cumulative_angle);
-                }
-
-                phi = path1 - path2;
-                return phi;
-            };
-
-            this->G_ = DMat<Scalar>::Zero(3, 1);
-            this->g_ = DVec<Scalar>::Zero(3);
-
-            this->K_ = DMat<Scalar>::Zero(2, 3);
-            this->k_ = DVec<Scalar>::Zero(2);
+            // Restore phi_ to the native computation so it works for all scalar types
+            // (GenericImplicit sets phi_ to a CasADi-backed version that only handles real inputs)
+            this->phi_ = makeFourBarNativePhi<Scalar>(path1_link_lengths_, path2_link_lengths_,
+                                                      offset_, links_in_path1_, links_in_path2_);
 
             switch (independent_coordinate_)
             {
@@ -85,31 +174,13 @@ namespace grbda
             updateExplicitJacobian(this->K_);
         }
 
-        // Override isValidSpanningPosition to use tight tolerance
-        // FourBar phi uses standard C++ trig functions (cos, sin) which work correctly
-        // with complex types and can achieve machine precision
-        template <typename Scalar>
-        bool FourBar<Scalar>::isValidSpanningPosition(const JointCoordinate<Scalar> &joint_pos) const
-        {
-            if (!joint_pos.isSpanning()) {
-                return false;
-            }
-
-            DVec<Scalar> violation = this->phi_(joint_pos);
-
-            // Tight tolerance - FourBar constraints can achieve machine precision
-            // since they use standard C++ trig functions, not CasADi
-            const double tol = 1e-8;
-            return nearZeroDefaultTrue(violation, static_cast<Scalar>(tol));
-        }
-
         template <typename Scalar>
         void FourBar<Scalar>::updateImplicitJacobian(const JointCoordinate<Scalar> &joint_pos)
         {
             DVec<Scalar> q1(2), q2(1);
             q1 << joint_pos(0), joint_pos(2);
             q2 << joint_pos(1);
-            
+
             Scalar cumulative_angle = 0.;
             DMat<Scalar> K1 = DMat<Scalar>::Zero(2, links_in_path1_);
             for (size_t i = 0; i < path1_link_lengths_.size(); i++)
@@ -217,7 +288,6 @@ namespace grbda
             this->g_ = indepenent_coordinate_map_ * this->g_;
         }
 
-        // TODO(@MatthewChignoli): This is the same as generic joint, so do we need it? Probably not. In fact, we can probably deprecate this entire class.
         template <typename Scalar>
         void FourBar<Scalar>::createRandomStateHelpers()
         {
@@ -229,46 +299,9 @@ namespace grbda
 
             using SX = casadi::SX;
 
-            // Create symbolic four bar loop constraint
-            std::vector<SX> path1_link_lengths_sym, path2_link_lengths_sym;
-            for (size_t i = 0; i < path1_link_lengths_.size(); i++)
-            {
-                if constexpr (std::is_same<Scalar, casadi::SX>::value)
-                {
-                    path1_link_lengths_sym.push_back(path1_link_lengths_[i]);
-                }
-                else
-                {
-                    using std::real;
-                    path1_link_lengths_sym.push_back(real(path1_link_lengths_[i])); 
-                }
-
-            }
-            for (size_t i = 0; i < path2_link_lengths_.size(); i++)
-            {
-                if constexpr (std::is_same<Scalar, casadi::SX>::value)
-                {
-                    path2_link_lengths_sym.push_back(path2_link_lengths_[i]);
-                }
-                else
-                {
-                    using std::real;
-                    path2_link_lengths_sym.push_back(real(path2_link_lengths_[i]));
-                }
-            }
-            Vec2<SX> offset_sym;
-            if constexpr (std::is_same<Scalar, casadi::SX>::value)
-            {
-                offset_sym = Vec2<SX>{offset_[0], offset_[1]};
-            }
-            else
-            {
-                using std::real;
-                offset_sym = Vec2<SX>{real(offset_[0]), real(offset_[1])};
-            }
-            FourBar<SX> symbolic = FourBar<SX>(path1_link_lengths_sym,
-                                               path2_link_lengths_sym,
-                                               offset_sym, independent_coordinate_);
+            // Build a symbolic phi using the factory (avoids constructing a full FourBar<SX>)
+            auto sym_phi = makeFourBarSymPhi<Scalar>(path1_link_lengths_, path2_link_lengths_,
+                                                      offset_, links_in_path1_, links_in_path2_);
 
             // Root finding
             {
@@ -276,13 +309,11 @@ namespace grbda
                 DVec<SX> q_sym(this->numSpanningPos());
                 casadi::copy(cs_q_sym, q_sym);
 
-                // Compute constraint violation
                 JointCoordinate<SX> joint_pos(q_sym, true);
-                DVec<SX> phi_sx = symbolic.phi(joint_pos);
+                DVec<SX> phi_sx = sym_phi(joint_pos);
                 SX cs_phi_sym = casadi::SX(casadi::Sparsity::dense(phi_sx.rows(), 1));
                 casadi::copy(phi_sx, cs_phi_sym);
 
-                // Slice depending on independent coordinate
                 casadi::Slice ind_slice, dep_slice;
                 switch (independent_coordinate_)
                 {
@@ -302,7 +333,6 @@ namespace grbda
                     throw std::runtime_error("FourBar: Invalid independent coordinate");
                 }
 
-                // Create rootfinder problem
                 casadi::SXDict rootfinder_problem;
                 rootfinder_problem["x"] = cs_q_sym(dep_slice);
                 rootfinder_problem["p"] = cs_q_sym(ind_slice);
@@ -315,11 +345,30 @@ namespace grbda
                                                                                  options);
             }
 
-            // Explicit constraint jacobian
+            // Explicit constraint jacobian for random state generation
             {
                 SX cs_q_sym = SX::sym("q", this->numSpanningPos());
                 DVec<SX> q_sym(this->numSpanningPos());
                 casadi::copy(cs_q_sym, q_sym);
+
+                // Use a temporary FourBar<SX> only for G (updateJacobians is analytic)
+                std::vector<SX> path1_sx, path2_sx;
+                Vec2<SX> offset_sx;
+                if constexpr (std::is_same_v<Scalar, SX>)
+                {
+                    path1_sx = path1_link_lengths_;
+                    path2_sx = path2_link_lengths_;
+                    offset_sx << offset_[0], offset_[1];
+                }
+                else
+                {
+                    using std::real;
+                    for (const auto &l : path1_link_lengths_) path1_sx.push_back(SX(real(l)));
+                    for (const auto &l : path2_link_lengths_) path2_sx.push_back(SX(real(l)));
+                    offset_sx << SX(real(offset_[0])), SX(real(offset_[1]));
+                }
+                FourBar<SX> symbolic(path1_sx, path2_sx, offset_sx, independent_coordinate_);
+
                 JointCoordinate<SX> joint_pos(q_sym, false);
                 symbolic.updateJacobians(joint_pos);
                 DMat<SX> G = symbolic.G();
@@ -405,242 +454,6 @@ namespace grbda
             JointCoordinate<double> joint_vel(v, false);
 
             return JointState<double>(joint_pos, joint_vel);
-        }
-
-        template <typename Scalar>
-        std::vector<DMat<Scalar>> FourBar<Scalar>::getSq() const
-        {
-            using std::sin;
-            using std::cos;
-
-            // Get dimensions
-            const int mss_dim = this->num_bodies_ * 6;  // motion subspace spatial dimension
-            const int nv = this->num_velocities_;       // number of independent velocities (1 for FourBar)
-            const int n_span = four_bar_constraint_->numSpanningPos();  // 3 for FourBar
-
-            // Initialize result: S_q[i] is the derivative of S w.r.t. the i-th independent coordinate
-            std::vector<DMat<Scalar>> S_q(nv, DMat<Scalar>::Zero(mss_dim, nv));
-
-            // S = X_intra(q) * S_spanning * G(q)
-            //
-            // dS/dy_i = sum_j (dS/dq_j * G(j, yi))  [chain rule with G mapping y -> q]
-            //
-            // dS/dq_j = dX_intra/dq_j * S_spanning * G + X_intra * S_spanning * dG/dq_j
-            //
-            // Term 1: dX_intra/dq_j * S_spanning * G
-            //   This involves the derivative of the intra-cluster transform.
-            //   X_intra depends on joint transforms which depend on q.
-            //
-            // Term 2: X_intra * S_spanning * dG/dq_j
-            //   This involves the derivative of the constraint Jacobian.
-
-            // Get constraint parameters
-            const auto& K = four_bar_constraint_->K();
-            const auto& G = four_bar_constraint_->G();
-            const int ind_coord = four_bar_constraint_->independent_coordinate();
-            const auto& path1_lengths = four_bar_constraint_->path1LinkLengths();
-            const auto& path2_lengths = four_bar_constraint_->path2LinkLengths();
-            const auto& coord_map = four_bar_constraint_->independentCoordinateMap();
-
-            if (this->q_cache_.size() == 0) {
-                return S_q;
-            }
-            const DVec<Scalar>& q = this->q_cache_;
-
-            DVec<Scalar> q1(2), q2(1);
-            q1 << q(0), q(2);
-            q2 << q(1);
-
-            Scalar angle_sum = q1(0) + q1(1);
-
-            // ===== Term 2: Compute X_intra * S_spanning * dG/dq =====
-            // dK/dq for each spanning coordinate
-            DMat<Scalar> dK_dq0 = DMat<Scalar>::Zero(2, 3);
-            dK_dq0(0, 0) = -path1_lengths[0] * cos(q1(0)) - path1_lengths[1] * cos(angle_sum);
-            dK_dq0(1, 0) = -path1_lengths[0] * sin(q1(0)) - path1_lengths[1] * sin(angle_sum);
-            dK_dq0(0, 2) = -path1_lengths[1] * cos(angle_sum);
-            dK_dq0(1, 2) = -path1_lengths[1] * sin(angle_sum);
-
-            DMat<Scalar> dK_dq1 = DMat<Scalar>::Zero(2, 3);
-            dK_dq1(0, 1) = path2_lengths[0] * cos(q2(0));
-            dK_dq1(1, 1) = path2_lengths[0] * sin(q2(0));
-
-            DMat<Scalar> dK_dq2 = DMat<Scalar>::Zero(2, 3);
-            dK_dq2(0, 0) = -path1_lengths[1] * cos(angle_sum);
-            dK_dq2(1, 0) = -path1_lengths[1] * sin(angle_sum);
-            dK_dq2(0, 2) = -path1_lengths[1] * cos(angle_sum);
-            dK_dq2(1, 2) = -path1_lengths[1] * sin(angle_sum);
-
-            std::array<DMat<Scalar>, 3> dK_dq = {dK_dq0, dK_dq1, dK_dq2};
-
-            // Extract Ki and Kd
-            DVec<Scalar> Ki(2);
-            DMat<Scalar> Kd(2, 2);
-            int dep_col = 0;
-            for (int i = 0; i < 3; i++) {
-                if (i == ind_coord) {
-                    Ki = K.col(i);
-                } else {
-                    Kd.col(dep_col++) = K.col(i);
-                }
-            }
-
-            DVec<Scalar> Kd_inv_Ki = four_bar_constraint_->KdInverse().solve(Ki);
-
-            // Compute dG/dq_j for each spanning coordinate
-            std::array<DVec<Scalar>, 3> dG_dq;
-            for (int j = 0; j < n_span; ++j) {
-                DVec<Scalar> dKi_dqj(2);
-                DMat<Scalar> dKd_dqj(2, 2);
-                dep_col = 0;
-                for (int i = 0; i < 3; i++) {
-                    if (i == ind_coord) {
-                        dKi_dqj = dK_dq[j].col(i);
-                    } else {
-                        dKd_dqj.col(dep_col++) = dK_dq[j].col(i);
-                    }
-                }
-
-                DVec<Scalar> d_Kdinv_Ki_dqj = four_bar_constraint_->KdInverse().solve(
-                    dKi_dqj - dKd_dqj * Kd_inv_Ki);
-
-                DVec<Scalar> dG_dqj_before_map(3);
-                dG_dqj_before_map << Scalar(0), -d_Kdinv_Ki_dqj;
-                dG_dq[j] = coord_map * dG_dqj_before_map;
-            }
-
-            // ===== Term 1: Compute dX_intra/dq * S_spanning * G =====
-            // For FourBar with 3 revolute joints:
-            // X_intra has structure based on tree connectivity.
-            // Joint i affects X_intra blocks downstream of joint i.
-            //
-            // For revolute joint at angle q_j:
-            // dX_intra_block/dq_j = -crm([0;0;1;0;0;0]) * X_intra_block
-            //
-            // We compute this using the structure of the FourBar mechanism.
-
-            const DMat<Scalar>& S_spanning = this->S_spanning_;
-            const DMat<Scalar>& X_intra = this->X_intra_;
-            DMat<Scalar> S_implicit = X_intra * S_spanning;
-
-            // dX_intra/dq_j for each spanning coordinate
-            // For a revolute joint, dXJ/dq = -crm([0;0;1;0;0;0]) * XJ = -crm(s_axis) * XJ
-            // where s_axis is the joint axis in spatial coordinates.
-            //
-            // For FourBar mechanism with 3 revolute joints along z-axis:
-            // dX_intra[i,j]/dq_k depends on which joint k affects the transform from j to i.
-            //
-            // Since computing this analytically is complex, we use the fact that
-            // for revolute joints, dX/dq * v = crm(X * s_axis) * X * v = crm(s) * (X * v)
-            // where s is the joint axis expressed in the current frame.
-
-            // For simplicity, compute dS/dq_j directly using the S_ring structure.
-            // Actually, S_ring = dX_intra/dt * S_spanning * G, where dt involves qd.
-            // We need dX_intra/dq_j, not dX_intra/dt.
-            //
-            // For each revolute joint j, dX_intra/dq_j affects blocks (i,k) where
-            // joint j is on the path from body k to body i.
-            //
-            // For FourBar topology, this requires knowing the tree structure.
-            // Let's use the fact that X_intra_ring encodes this information scaled by velocity.
-
-            // Alternative: Use chain rule through the motion subspace
-            // For revolute joints: dS/dq = crm(s) * S where s is the unit axis
-            // This gives us a way to compute dX_intra_S_span/dq without full X_intra derivatives.
-
-            // Actually, for implicit constraints with configuration-dependent G:
-            // The key insight is that both terms contribute.
-            //
-            // Term 1 (dX_intra/dq contribution) is captured in S_ring but scaled by velocity.
-            // For per-position derivatives, we need to unscale.
-            //
-            // Let's compute Term 1 using the revolute joint axis structure:
-            // For joint j at position q_j, dXJ_j/dq_j = -crm(axis) * XJ_j
-            // Then dX_intra/dq_j propagates through the tree.
-
-            // ===== Compute dX_intra/dq_j for the FourBar topology =====
-            // PlanarLegLinkage FourBar structure:
-            // - Body 0 (shank_driver): parent outside cluster
-            // - Body 1 (shank_support): parent outside cluster
-            // - Body 2 (foot): parent = body 0 (shank_driver)
-            //
-            // X_intra structure:
-            // - X_intra[2,0] = XJ_foot * Xtree_foot (depends on q[2], the foot joint angle)
-            // - Other blocks don't depend on positions within the cluster
-            //
-            // For revolute joint: dXJ/dq = -crm(axis) * XJ
-            // where axis = [0,0,1,0,0,0] for z-axis revolute
-            //
-            // dX_intra[2,0]/dq[2] = -crm(axis) * X_intra[2,0]
-            // dX_intra[2,0]/dq[0] = 0 (joint 0 is outside the path from body 0 to body 2)
-            // dX_intra[2,0]/dq[1] = 0 (joint 1 is outside the path from body 0 to body 2)
-
-            // S_spanning structure for 3 revolute joints:
-            // S_spanning = diag([s0, s1, s2]) where s_i = [0,0,1,0,0,0]^T for z-axis
-            // It's an 18x3 matrix with 6x1 blocks on the diagonal
-
-            // X_intra * S_spanning structure:
-            // Row block i corresponds to body i, column j corresponds to joint j
-            // (X_intra * S_spanning)[body i, joint j] = X_intra[i,j] * s_j
-
-            // For the FourBar:
-            // (X_intra * S_spanning)[0,0] = I * s0 = s0 (body 0, joint 0)
-            // (X_intra * S_spanning)[0,1] = 0 (body 0, joint 1 - no connectivity)
-            // (X_intra * S_spanning)[0,2] = 0 (body 0, joint 2 - no connectivity)
-            // (X_intra * S_spanning)[1,0] = 0 (body 1, joint 0 - no connectivity)
-            // (X_intra * S_spanning)[1,1] = I * s1 = s1 (body 1, joint 1)
-            // (X_intra * S_spanning)[1,2] = 0 (body 1, joint 2 - no connectivity)
-            // (X_intra * S_spanning)[2,0] = X_intra[2,0] * s0 (body 2, joint 0)
-            // (X_intra * S_spanning)[2,1] = 0 (body 2, joint 1 - no connectivity in standard FourBar)
-            // (X_intra * S_spanning)[2,2] = I * s2 = s2 (body 2, joint 2)
-
-            // d(X_intra * S_spanning)/dq[2]:
-            // Only affects rows corresponding to body 2, column 0:
-            // d(X_intra[2,0] * s0)/dq[2] = dX_intra[2,0]/dq[2] * s0 = -crm(axis) * X_intra[2,0] * s0
-
-            // Get the current X_intra[2,0] block (rows 12-17, cols 0-5)
-            Mat6<Scalar> X_intra_20 = X_intra.template block<6, 6>(12, 0);
-
-            // Revolute joint axis (z-axis)
-            SVec<Scalar> axis;
-            axis << Scalar(0), Scalar(0), Scalar(1), Scalar(0), Scalar(0), Scalar(0);
-
-            // d(X_intra * S_spanning)/dq[2] (only body 2, joint 0 is affected)
-            // = -crm(axis) * X_intra[2,0] * S_spanning column 0
-            SVec<Scalar> X_intra_20_s0 = X_intra_20 * axis;  // X_intra[2,0] * s0
-            SVec<Scalar> dXintra_Sspan_dq2_block = -spatial::motionCrossProduct(axis, X_intra_20_s0);
-
-            // Build full dX_intra_S_span/dq matrices
-            std::array<DMat<Scalar>, 3> dXintra_Sspan_dq;
-            for (int j = 0; j < n_span; ++j) {
-                dXintra_Sspan_dq[j] = DMat<Scalar>::Zero(mss_dim, n_span);
-            }
-            // Only q[2] affects X_intra_S_spanning (at block [body 2, joint 0])
-            dXintra_Sspan_dq[2].template block<6, 1>(12, 0) = dXintra_Sspan_dq2_block;
-
-            // Final S_q computation combining both terms
-            for (int yi = 0; yi < nv; ++yi) {
-                // Term 2: X_intra * S_spanning * sum_j(dG/dq_j * G(j, yi))
-                DVec<Scalar> dG_dy(n_span);
-                dG_dy.setZero();
-                for (int j = 0; j < n_span; ++j) {
-                    dG_dy += dG_dq[j] * G(j, yi);
-                }
-                DVec<Scalar> term2 = S_implicit * dG_dy;
-
-                // Term 1: sum_j(dX_intra_S_span/dq_j * G * G(j, yi))
-                DVec<Scalar> term1 = DVec<Scalar>::Zero(mss_dim);
-                for (int j = 0; j < n_span; ++j) {
-                    // dX_intra_S_span/dq_j * G gives (mss_dim x 1) vector
-                    // Scale by G(j, yi) to get contribution from spanning coord j
-                    DVec<Scalar> dXS_G = dXintra_Sspan_dq[j] * G;
-                    term1 += dXS_G * G(j, yi);
-                }
-
-                S_q[yi].col(yi) = term1 + term2;
-            }
-
-            return S_q;
         }
 
         template class FourBar<double>;
