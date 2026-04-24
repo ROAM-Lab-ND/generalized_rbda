@@ -1,4 +1,5 @@
 #include "grbda/Dynamics/ClusterJoints/ClusterJoint.h"
+#include <iostream>
 
 namespace grbda
 {
@@ -44,6 +45,8 @@ namespace grbda
             {
                 if (enforce_constraints && !loop_constraint_->isValidSpanningPosition(joint_state.position))
                 {
+                    DVec<Scalar> phi_val = loop_constraint_->phi(joint_state.position);
+                    std::cerr << "Spanning position is not valid. phi = " << phi_val.transpose() << std::endl;
                     throw std::runtime_error("Spanning position is not valid");
                 }
                 spanning_joint_state.position = joint_state.position;

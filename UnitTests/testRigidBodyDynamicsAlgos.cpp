@@ -44,66 +44,6 @@ protected:
         }
     }
 
-    // Small damped Newton solver to find dependent coordinates for implicit constraints
-    static bool solveImplicitConstraint(
-        const std::shared_ptr<LoopConstraint::Base<double>> &lc,
-        const std::vector<bool> &ind_mask,
-        DVec<double> &q_full,
-        double &out_residual)
-    {
-        const int n_span = lc->numSpanningPos();
-        const int n_ind = lc->numIndependentPos();
-        const int n_dep = n_span - n_ind;
-
-        // Build index lists
-        std::vector<int> ind_idx, dep_idx;
-        ind_idx.reserve(n_ind);
-        dep_idx.reserve(n_dep);
-        for (int i = 0; i < n_span; ++i) {
-            if (i < (int)ind_mask.size() ? ind_mask[i] : (i < n_ind)) ind_idx.push_back(i); else dep_idx.push_back(i);
-        }
-
-        auto phi_eval = [&](const DVec<double> &q) {
-            return lc->phi(JointCoordinate<double>(q, true));
-        };
-
-        // Newton parameters
-        const int max_iters = 50;
-        const double tol_accept = 2e-2; // align with model validation tolerance
-        const double h = 1e-7;
-        const double damping = 0.5;
-
-        // Ensure Jacobians updated for current q
-        lc->updateJacobians(JointCoordinate<double>(q_full, true));
-
-        for (int iter = 0; iter < max_iters; ++iter) {
-            DVec<double> phi = phi_eval(q_full);
-            out_residual = phi.norm();
-            if (out_residual < tol_accept) return true;
-
-            // FD Jacobian w.r.t dependent variables
-            DMat<double> J(phi.size(), n_dep);
-            for (int j = 0; j < n_dep; ++j) {
-                DVec<double> q_pert = q_full;
-                q_pert(dep_idx[j]) += h;
-                DVec<double> phi_pert = phi_eval(q_pert);
-                J.col(j) = (phi_pert - phi) / h;
-            }
-
-            // Solve J * dx = -phi
-            Eigen::CompleteOrthogonalDecomposition<DMat<double>> cod(J);
-            DVec<double> dx = cod.solve(-phi);
-            
-            // Update only dependent components
-            for (int j = 0; j < n_dep; ++j) q_full(dep_idx[j]) += damping * dx(j);
-        }
-
-        // Final residual check
-        DVec<double> phi = phi_eval(q_full);
-        out_residual = phi.norm();
-        return out_residual < tol_accept;
-    }
-
     void initializeRandomStates(const int robot_idx, bool use_spanning_state)
     {
         ModelState<> model_state;
@@ -113,55 +53,9 @@ protected:
         for (const auto &cluster : cluster_models.at(robot_idx).clusters())
         {
             JointState<> spanning_joint_state(true, true);
-
-            // For implicit loop constraints, use a robust solver to avoid CasADi singularities
-            {
-                auto lc = cluster->joint_->cloneLoopConstraint();
-                if (lc->isImplicit()) {
-                    // Build independent mask if available
-                    std::vector<bool> ind_mask;
-                    ind_mask.resize(lc->numSpanningPos(), false);
-                    if (auto gi = std::dynamic_pointer_cast<LoopConstraint::GenericImplicit<double>>(lc)) {
-                        ind_mask = gi->isCoordinateIndependent();
-                    } else {
-                        // Fallback: assume first numIndependentPos are independent
-                        for (int i = 0; i < lc->numSpanningPos(); ++i) ind_mask[i] = (i < lc->numIndependentPos());
-                    }
-
-                    // Randomize independent coordinates, initialize dependents near zero
-                    const int n_span = lc->numSpanningPos();
-                    const int n_ind = lc->numIndependentPos();
-                    DVec<double> q_span = DVec<double>::Zero(n_span);
-                    int cnt_ind = 0;
-                    for (int i = 0; i < n_span; ++i) {
-                        if (ind_mask[i]) q_span(i) = 0.3 * (2.0 * ((double)rand() / RAND_MAX) - 1.0);
-                    }
-
-                    double resid = 0.0;
-                    constraints_ok = false;
-                    // Multi-attempts with small perturbations on dependents
-                    for (int attempt = 0; attempt < 10 && !constraints_ok; ++attempt) {
-                        for (int i = 0; i < n_span; ++i) if (!ind_mask[i]) q_span(i) = 0.01 * (2.0 * ((double)rand() / RAND_MAX) - 1.0);
-                        constraints_ok = solveImplicitConstraint(lc, ind_mask, q_span, resid);
-                    }
-
-                    // Update Jacobians and map velocities: qd = G(q) * ydot
-                    lc->updateJacobians(JointCoordinate<double>(q_span, true));
-                    DMat<double> G = lc->G();
-                    DVec<double> ydot = DVec<double>::Random(lc->numIndependentVel());
-                    DVec<double> qd_span = G * ydot;
-
-                    spanning_joint_state.position = q_span;
-                    spanning_joint_state.velocity = qd_span;
-                    // Validate spanning state via joint API
-                    // Allow spanning state off manifold since this is only used in tests.
-                    spanning_joint_state = cluster->joint_->toSpanningTreeState(spanning_joint_state, constraints_ok /* enforce_constraints */);
-                } else {
-                    // Explicit constraint: fall back to existing random
-                    JointState<> joint_state = cluster->joint_->randomJointState();
-                    spanning_joint_state = cluster->joint_->toSpanningTreeState(joint_state);
-                }
-            }
+            // Explicit constraint: fall back to existing random
+            JointState<> joint_state = cluster->joint_->randomJointState();
+            spanning_joint_state = cluster->joint_->toSpanningTreeState(joint_state);
 
             spanning_joint_pos = appendEigenVector(spanning_joint_pos,
                                                    spanning_joint_state.position);
@@ -177,8 +71,8 @@ protected:
             }
         }
 
-        cluster_models[robot_idx].setState(model_state, false /* enforce_constraints */);
-        generic_models[robot_idx].setState(model_state, false /* enforce_constraints */);
+        cluster_models[robot_idx].setState(model_state);
+        generic_models[robot_idx].setState(model_state);
         lg_mult_custom_models[robot_idx].setState(spanning_joint_pos, spanning_joint_vel);
         lg_mult_eigen_models[robot_idx].setState(spanning_joint_pos, spanning_joint_vel);
         projection_models[robot_idx].setState(spanning_joint_pos, spanning_joint_vel);
