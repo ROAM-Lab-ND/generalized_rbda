@@ -53,7 +53,7 @@ namespace grbda
         }
 
         template <typename Scalar, typename OrientationRepresentation>
-        JointState<double> Free<Scalar, OrientationRepresentation>::randomJointState() const
+        JointState<double> Free<Scalar, OrientationRepresentation>::randomJointState(bool enforce_position_constraint) const
         {
             const int num_ori_param = OrientationRepresentation::num_ori_parameter;
 

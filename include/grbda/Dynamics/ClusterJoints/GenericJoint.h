@@ -54,15 +54,6 @@ namespace grbda
             // Check if native phi is available (for complex-step support)
             bool hasNativePhi() const { return has_native_phi_; }
 
-            // Solve constraints phi(y, q_dep) = 0 for q_dep given (possibly complex) independent coords y
-            // Uses Newton iteration with native phi for machine-precision complex-step differentiation
-            // Returns the full spanning coordinates q = [q_ind, q_dep] in proper order
-            // q_dep_init is the initial guess for dependent coordinates (usually the real solution)
-            DVec<Scalar> solveConstraintsComplex(const DVec<Scalar>& y_independent,
-                                                  const DVec<Scalar>& q_dep_init,
-                                                  int max_iters = 10,
-                                                  double tol = 1e-12) const;
-
             // Native phi function for use with complex-step differentiation
             // Returns empty function if not available
             const NativePhiFcn& nativePhi() const { return phi_native_; }
@@ -116,6 +107,7 @@ namespace grbda
             NativePhiFcn phi_native_;  // Optional native phi for complex-step support
             bool has_native_phi_ = false;
 
+            casadi::Function cs_phi_fcn_;
             casadi::Function K_fcn_;
             casadi::Function G_fcn_;
             casadi::Function k_fcn_;
@@ -153,7 +145,7 @@ namespace grbda
 
             ClusterJointTypes type() const override { return ClusterJointTypes::Generic; }
 
-            JointState<double> randomJointState() const override;
+            JointState<double> randomJointState(bool enforce_position_constraint = true) const override;
 
             void updateKinematics(const JointState<Scalar> &joint_state) override;
 

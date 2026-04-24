@@ -25,8 +25,8 @@ namespace grbda
             int dep_dim = dep_coords.size();
 
             // Debug output for coordinate sizes
-            std::cout << "[GenericImplicit] state_dim=" << state_dim
-                      << ", ind_dim=" << ind_dim << ", dep_dim=" << dep_dim << std::endl;
+            // std::cout << "[GenericImplicit] state_dim=" << state_dim
+            //           << ", ind_dim=" << ind_dim << ", dep_dim=" << dep_dim << std::endl;
             if (state_dim == 0 || ind_dim + dep_dim != state_dim) {
                 std::cerr << "[GenericImplicit] Invalid coordinate sizes!" << std::endl;
             }
@@ -71,7 +71,7 @@ namespace grbda
             }
             SX cs_phi_sym = casadi::SX(casadi::Sparsity::dense(constraint_dim, 1));
             casadi::copy(phi_sym, cs_phi_sym);
-            casadi::Function cs_phi_fcn = casadi::Function("phi", {cs_q_sym}, {cs_phi_sym});
+            cs_phi_fcn_ = casadi::Function("phi", {cs_q_sym}, {cs_phi_sym});
 
             // Implicit constraint jacobian
             SX cs_K_sym = jacobian(cs_phi_sym, cs_q_sym);
@@ -119,9 +119,9 @@ namespace grbda
             cs_g_sym = SX::mtimes(coord_map, cs_g_sym);
 
             // Assign member variables using casadi functions
-            this->phi_ = [cs_phi_fcn](const JointCoordinate<Scalar> &joint_pos)
+            this->phi_ = [this](const JointCoordinate<Scalar> &joint_pos)
             {
-                return runCasadiFcn(cs_phi_fcn, joint_pos);
+                return runCasadiFcn(cs_phi_fcn_, joint_pos);
             };
 
             this->K_ = DMat<Scalar>::Zero(constraint_dim, state_dim);
@@ -170,9 +170,22 @@ namespace grbda
 
             // Override phi_ to use native phi for complex types (CasADi doesn't support complex)
             // Also use native phi for double types when available for better numerical accuracy
-            // The native C++ implementation using std::sin/std::cos is more precise than
-            // CasADi's symbolic evaluation, which may have truncation in constant terms
-            if constexpr (std::is_same_v<Scalar, std::complex<double>> || std::is_same_v<Scalar, double>) {
+            if constexpr (std::is_same_v<Scalar, double>) {
+                this->phi_ = [this](const JointCoordinate<Scalar> &joint_pos) -> DVec<Scalar>
+                {
+                    DVec<double> phi_casadi = runCasadiFcn(cs_phi_fcn_, joint_pos);
+                    DVec<double> phi_native_val = phi_native_(joint_pos);
+                    DVec<double> phi_diff = phi_casadi - phi_native_val;
+                    double max_diff = phi_diff.cwiseAbs().maxCoeff();
+                    std::cout << "[GenericImplicit] phi difference (CasADi vs native) max abs: " << max_diff << std::endl;
+                    if (max_diff > 1e-6) {
+                        std::cerr << "[GenericImplicit] WARNING: Large difference between CasADi and native phi! max_diff=" << max_diff << std::endl;
+                        //throw std::runtime_error("Large difference between CasADi and native phi, check implementation!");
+                    }
+                    return phi_native_(joint_pos);
+                };
+            } else if constexpr (std::is_same_v<Scalar, std::complex<double>>) {
+                // CasADi can't evaluate complex types; use native phi directly
                 this->phi_ = [this](const JointCoordinate<Scalar> &joint_pos) -> DVec<Scalar>
                 {
                     return phi_native_(joint_pos);
@@ -614,190 +627,6 @@ namespace grbda
             }
         }
 
-        // Solve constraints phi(y, q_dep) = 0 for q_dep given (possibly complex) independent coords y
-        // Uses Newton iteration with native phi for machine-precision complex-step differentiation
-        // Returns the full spanning coordinates q = [q_ind, q_dep] in proper order
-        template <typename Scalar>
-        DVec<Scalar> GenericImplicit<Scalar>::solveConstraintsComplex(
-            const DVec<Scalar>& y_independent,
-            const DVec<Scalar>& q_dep_init,
-            int max_iters,
-            double tol) const
-        {
-            // This function only makes sense for complex types - used for complex-step differentiation
-            if constexpr (std::is_same_v<Scalar, std::complex<double>>) {
-                if (!has_native_phi_) {
-                    throw std::runtime_error(
-                        "solveConstraintsComplex requires native phi function for complex-step support");
-                }
-
-                const int n = is_coordinate_independent_.size();
-
-                // Identify independent and dependent coordinate indices
-                std::vector<int> ind_coords, dep_coords;
-                for (int i = 0; i < n; i++) {
-                    if (is_coordinate_independent_[i])
-                        ind_coords.push_back(i);
-                    else
-                        dep_coords.push_back(i);
-                }
-                const int ind_dim = ind_coords.size();
-                const int dep_dim = dep_coords.size();
-
-                if (y_independent.size() != ind_dim) {
-                    throw std::runtime_error("y_independent size mismatch");
-                }
-                if (q_dep_init.size() != dep_dim) {
-                    throw std::runtime_error("q_dep_init size mismatch");
-                }
-
-                // Initialize dependent coordinates
-                DVec<Scalar> q_dep = q_dep_init;
-
-                // For complex-step differentiation, we need to find q_dep such that:
-                //   phi(y_independent, q_dep) = 0
-                //
-                // When y_independent = y_real + i*h*e_j (perturbing the j-th independent coord),
-                // and assuming phi(y_real, q_dep_real) = 0, the solution has form:
-                //   q_dep = q_dep_real + i * q_dep_imag
-                //
-                // To first order (which is exact for analytic functions):
-                //   phi(y_real + i*h*e_j, q_dep_real + i*q_dep_imag)
-                //     ≈ phi(y_real, q_dep_real) + i * (dPhi/dy * h * e_j + dPhi/dq_dep * q_dep_imag)
-                //     = 0 + i * (Ki * h * e_j + Kd * q_dep_imag) = 0
-                //
-                // So: q_dep_imag = -Kd^{-1} * Ki * h * e_j
-                //
-                // This is exactly the first-order formula using G = -Kd^{-1}*Ki, but we compute it
-                // via Newton iteration to handle the general case correctly.
-
-                const int m = (int)phi_native_(JointCoordinate<Scalar>(DVec<Scalar>::Zero(n), true)).size();
-
-                // Helper lambda to compute K using CasADi K_fcn_ (analytically, no finite differences)
-                auto computeK = [this, n, m](const DVec<double>& q_spanning_real) -> DMat<double> {
-                    std::vector<double> q_vec(n);
-                    for (int j = 0; j < n; ++j) {
-                        q_vec[j] = q_spanning_real(j);
-                    }
-                    casadi::DM q_dm(q_vec);
-                    casadi::DM K_dm = K_fcn_(casadi::DMVector{q_dm})[0];
-
-                    DMat<double> K_real(m, n);
-                    for (int i = 0; i < m; ++i) {
-                        for (int j = 0; j < n; ++j) {
-                            K_real(i, j) = static_cast<double>(K_dm(i, j));
-                        }
-                    }
-                    return K_real;
-                };
-
-                // Extract real parts of the input
-                DVec<double> y_ind_real(ind_dim), q_dep_real(dep_dim);
-                DVec<double> y_ind_imag(ind_dim), q_dep_imag(dep_dim);
-                for (int i = 0; i < ind_dim; ++i) {
-                    y_ind_real(i) = y_independent(i).real();
-                    y_ind_imag(i) = y_independent(i).imag();
-                }
-                for (int i = 0; i < dep_dim; ++i) {
-                    q_dep_real(i) = q_dep_init(i).real();
-                    q_dep_imag(i) = 0.0;  // Start with zero imaginary part
-                }
-
-                // Build full spanning coordinate vector (real)
-                DVec<double> q_spanning_real(n);
-                for (int i = 0; i < ind_dim; ++i) {
-                    q_spanning_real(ind_coords[i]) = y_ind_real(i);
-                }
-                for (int i = 0; i < dep_dim; ++i) {
-                    q_spanning_real(dep_coords[i]) = q_dep_real(i);
-                }
-
-                // First, do Newton iteration on real parts if needed
-                for (int iter = 0; iter < max_iters; ++iter) {
-                    // Evaluate phi at real point
-                    DVec<Scalar> q_spanning_c(n);
-                    for (int j = 0; j < n; ++j) {
-                        q_spanning_c(j) = Scalar(q_spanning_real(j), 0.0);
-                    }
-                    JointCoordinate<Scalar> jc(q_spanning_c, true);
-                    DVec<Scalar> phi_c = phi_native_(jc);
-
-                    double phi_norm = 0.0;
-                    for (int i = 0; i < m; ++i) {
-                        phi_norm += phi_c(i).real() * phi_c(i).real();
-                    }
-                    phi_norm = std::sqrt(phi_norm);
-
-                    if (phi_norm < tol) {
-                        break;
-                    }
-
-                    // Compute K using CasADi (analytically)
-                    DMat<double> K_real = computeK(q_spanning_real);
-
-                    // Extract Kd
-                    DMat<double> Kd_real(m, dep_dim);
-                    for (int i = 0; i < dep_dim; ++i) {
-                        Kd_real.col(i) = K_real.col(dep_coords[i]);
-                    }
-
-                    // Newton step for real part
-                    Eigen::PartialPivLU<DMat<double>> lu(Kd_real);
-                    DVec<double> phi_real_vec(m);
-                    for (int i = 0; i < m; ++i) {
-                        phi_real_vec(i) = phi_c(i).real();
-                    }
-                    DVec<double> delta = -lu.solve(phi_real_vec);
-
-                    for (int i = 0; i < dep_dim; ++i) {
-                        q_dep_real(i) += delta(i);
-                        q_spanning_real(dep_coords[i]) = q_dep_real(i);
-                    }
-                }
-
-                // Now compute the imaginary part of q_dep using the implicit function theorem
-                // q_dep_imag = -Kd^{-1} * Ki * y_ind_imag
-                // where Ki is the Jacobian of phi w.r.t. independent coords
-
-                // Compute K at the converged real point using CasADi (analytically)
-                DMat<double> K_real = computeK(q_spanning_real);
-
-                // Extract Ki (columns for independent coords) and Kd (columns for dependent coords)
-                DMat<double> Ki_real(m, ind_dim), Kd_real(m, dep_dim);
-                for (int i = 0; i < ind_dim; ++i) {
-                    Ki_real.col(i) = K_real.col(ind_coords[i]);
-                }
-                for (int i = 0; i < dep_dim; ++i) {
-                    Kd_real.col(i) = K_real.col(dep_coords[i]);
-                }
-
-                // Compute q_dep_imag = -Kd^{-1} * Ki * y_ind_imag
-                Eigen::PartialPivLU<DMat<double>> lu(Kd_real);
-                DVec<double> rhs = Ki_real * y_ind_imag;
-                q_dep_imag = -lu.solve(rhs);
-
-                // Build final complex spanning coordinates
-                for (int i = 0; i < dep_dim; ++i) {
-                    q_dep(i) = Scalar(q_dep_real(i), q_dep_imag(i));
-                }
-
-                // Build final spanning coordinates
-                DVec<Scalar> q_spanning(n);
-                for (int i = 0; i < ind_dim; ++i) {
-                    q_spanning(ind_coords[i]) = y_independent(i);
-                }
-                for (int i = 0; i < dep_dim; ++i) {
-                    q_spanning(dep_coords[i]) = q_dep(i);
-                }
-
-                return q_spanning;
-            } else {
-                // For non-complex types, this function should not be called
-                throw std::runtime_error(
-                    "solveConstraintsComplex is only implemented for std::complex<double>");
-            }
-        }
-
         template struct GenericImplicit<double>;
         template struct GenericImplicit<std::complex<double>>;
         template struct GenericImplicit<float>;
@@ -852,6 +681,37 @@ namespace grbda
 
             X_intra_ = DMat<Scalar>::Identity(6 * this->num_bodies_, 6 * this->num_bodies_);
             X_intra_ring_ = DMat<Scalar>::Zero(6 * this->num_bodies_, 6 * this->num_bodies_);
+
+            // Build spanning-to-independent position conversion for explicit constraints.
+            // G maps independent → spanning (qdot_span = G * ydot). For each independent
+            // coordinate j, find the spanning row i where G(i,j)==1 and all other G(*,j)==0
+            // (i.e. the unit-selection row), then set conv(j,i)=1.
+            if (loop_constraint->isExplicit()) {
+                if constexpr (std::is_same_v<Scalar, double> || std::is_same_v<Scalar, float>) {
+                    const int n_ind = loop_constraint->numIndependentPos();
+                    const int n_span = loop_constraint->numSpanningPos();
+                    const DMat<Scalar>& G = loop_constraint->G();
+                    this->spanning_tree_to_independent_coords_conversion_ =
+                        DMat<int>::Zero(n_ind, n_span);
+                    for (int col = 0; col < n_ind; col++) {
+                        for (int row = 0; row < n_span; row++) {
+                            if (std::abs(static_cast<double>(G(row, col)) - 1.0) < 1e-9) {
+                                bool only_nonzero = true;
+                                for (int r = 0; r < n_span; r++) {
+                                    if (r != row && std::abs(static_cast<double>(G(r, col))) > 1e-9) {
+                                        only_nonzero = false;
+                                        break;
+                                    }
+                                }
+                                if (only_nonzero) {
+                                    this->spanning_tree_to_independent_coords_conversion_(col, row) = 1;
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
         }
 
         template <typename Scalar>
@@ -916,7 +776,7 @@ namespace grbda
         }
 
         template <typename Scalar>
-        JointState<double> Generic<Scalar>::randomJointState() const
+        JointState<double> Generic<Scalar>::randomJointState(bool enforce_position_constraint) const
         {
             if (this->loop_constraint_->isExplicit())
                return Base<Scalar>::randomJointState(); 
@@ -981,45 +841,63 @@ namespace grbda
             double best_phi_norm = 1e10;
             DVec<double> best_q_span = q_span;
 
-            for (int attempt = 0; attempt < 30 && !converged; ++attempt) {
-                double damping = 0.5;  // Start with damping for stability
-                for (int iter = 0; iter < max_iters; ++iter) {
-                    DVec<double> phi = phi_eval(q_span);
-                    double phi_norm = phi.norm();
+            if(enforce_position_constraint)
+            {
 
-                    // Track best solution found
-                    if (phi_norm < best_phi_norm) {
-                        best_phi_norm = phi_norm;
-                        best_q_span = q_span;
+                for (int attempt = 0; attempt < 1000 && !converged; ++attempt) {
+                    double damping = 0.5;  // Start with damping for stability
+                    for (int iter = 0; iter < max_iters; ++iter) {
+                        DVec<double> phi = phi_eval(q_span);
+                        double phi_norm = phi.norm();
+
+                        // Track best solution found
+                        if (phi_norm < best_phi_norm) {
+                            best_phi_norm = phi_norm;
+                            best_q_span = q_span;
+                        }
+
+                        if (phi_norm < tol_tight) { converged = true; break; }
+
+                        // Use undamped Newton when close to solution
+                        if (phi_norm < 1e-3) damping = 1.0;
+                        else if (phi_norm < 1e-2) damping = 0.8;
+                        else damping = 0.5;
+
+                        DMat<double> J(phi.size(), n_dep);
+                        for (int j = 0; j < n_dep; ++j) {
+                            DVec<double> q_pert = q_span;
+                            q_pert(dep_idx[j]) += h;
+                            J.col(j) = (phi_eval(q_pert) - phi) / h;
+                        }
+                        Eigen::CompleteOrthogonalDecomposition<DMat<double>> cod(J);
+                        DVec<double> dx = cod.solve(-phi);
+                        for (int j = 0; j < n_dep; ++j) q_span(dep_idx[j]) += damping * dx(j);
                     }
-
-                    if (phi_norm < tol_tight) { converged = true; break; }
-
-                    // Use undamped Newton when close to solution
-                    if (phi_norm < 1e-3) damping = 1.0;
-                    else if (phi_norm < 1e-2) damping = 0.8;
-                    else damping = 0.5;
-
-                    DMat<double> J(phi.size(), n_dep);
-                    for (int j = 0; j < n_dep; ++j) {
-                        DVec<double> q_pert = q_span;
-                        q_pert(dep_idx[j]) += h;
-                        J.col(j) = (phi_eval(q_pert) - phi) / h;
+                    if (!converged) {
+                        // reinitialize dependents with wider range
+                        for (int i = 0; i < n_span; ++i) 
+                        {
+                            if (!ind_mask[i])
+                            {
+                                q_span(i) = 0.3 * (2.0 * ((double)rand() / RAND_MAX) - 1.0);
+                            } 
+                            else
+                            {
+                                q_span(i) = 0.3 * (2.0 * ((double)rand() / RAND_MAX) - 1.0);
+                            }
+                        }
                     }
-                    Eigen::CompleteOrthogonalDecomposition<DMat<double>> cod(J);
-                    DVec<double> dx = cod.solve(-phi);
-                    for (int j = 0; j < n_dep; ++j) q_span(dep_idx[j]) += damping * dx(j);
                 }
+
+                // Use best solution found if not converged
                 if (!converged) {
-                    // reinitialize dependents with wider range
-                    for (int i = 0; i < n_span; ++i) if (!ind_mask[i]) q_span(i) = 0.3 * (2.0 * ((double)rand() / RAND_MAX) - 1.0);
+                    q_span = best_q_span;
+                    converged = (best_phi_norm < tol_accept);
                 }
             }
-
-            // Use best solution found if not converged
-            if (!converged) {
-                q_span = best_q_span;
-                converged = (best_phi_norm < tol_accept);
+            else
+            {
+                converged = true;  // No constraint to enforce
             }
 
             // Final phi check - use native phi for validation too when available
@@ -1030,7 +908,7 @@ namespace grbda
             // This ensures consistency between Newton convergence and validation
             bool is_valid = (final_phi_norm < 1e-8);  // Use our own tolerance since we know phi
 
-            if (!converged || !is_valid) {
+            if (!converged || (!is_valid && enforce_position_constraint)) {
                 std::cerr << "[Newton debug] converged=" << converged
                           << ", best_phi_norm=" << best_phi_norm
                           << ", final_phi_norm=" << final_phi_norm

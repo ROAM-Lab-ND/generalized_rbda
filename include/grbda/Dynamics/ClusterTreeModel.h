@@ -89,7 +89,7 @@ namespace grbda
         void print() const;
 
         typedef std::pair<DVec<Scalar>, DVec<Scalar>> StatePair;
-        void setState(const ModelState<Scalar> &model_state);
+        void setState(const ModelState<Scalar> &model_state, bool enforce_constraints = true);
         void setState(const StatePair &q_qd_pair);
 
         std::pair<DVec<Scalar>, DVec<Scalar>> getState();
