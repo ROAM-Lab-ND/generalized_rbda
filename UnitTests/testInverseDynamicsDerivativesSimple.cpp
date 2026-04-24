@@ -7,6 +7,7 @@
 #include "grbda/Dynamics/ClusterTreeModel.h"
 #include "grbda/Robots/RobotTypes.h"
 #include <casadi/casadi.hpp>
+#include "testHelpers.hpp"
 
 using namespace grbda;
 
@@ -316,40 +317,6 @@ void projectPosition(const std::shared_ptr<ClusterJoints::Base<double>> &joint,
     }
 }
 
-// NOTE: The tolerance is set to 1e-6 to account for numerical errors in finite
-// Finite difference Jacobian using FIVE-POINT STENCIL (O(h⁴) error)
-// f'(x) ≈ [-f(x+2h) + 8f(x+h) - 8f(x-h) + f(x-2h)] / (12h)
-// The step size must be >= 1e-6 for quaternion-based joints because
-// ori::so3ToQuat() returns the identity quaternion for ||omega|| < 1e-6.
-auto finiteDifferenceJacobian = [](auto func, const Eigen::VectorXd& point, double h) {
-    int n = point.size();
-    // Evaluate once to get output dimension
-    Eigen::VectorXd f0 = func(point);
-    int m = f0.size();
-    Eigen::MatrixXd jacobian(m, n);
-
-    for (int i = 0; i < n; ++i) {
-        Eigen::VectorXd point_plus = point;
-        Eigen::VectorXd point_minus = point;
-        Eigen::VectorXd point_plus2 = point;
-        Eigen::VectorXd point_minus2 = point;
-
-        point_plus[i] += h;
-        point_minus[i] -= h;
-        point_plus2[i] += 2.0 * h;
-        point_minus2[i] -= 2.0 * h;
-
-        Eigen::VectorXd f_plus = func(point_plus);
-        Eigen::VectorXd f_minus = func(point_minus);
-        Eigen::VectorXd f_plus2 = func(point_plus2);
-        Eigen::VectorXd f_minus2 = func(point_minus2);
-
-        // Five-point stencil: [-f(+2h) + 8f(+h) - 8f(-h) + f(-2h)] / (12h)
-        jacobian.col(i) = (-f_plus2 + 8.0*f_plus - 8.0*f_minus + f_minus2) / (12.0 * h);
-    }
-    return jacobian;
-};
-
 // Helper function to run the finite difference test on any model
 void testInverseDynamicsDerivatives(ClusterTreeModel<double>& model,
                                      const std::string& robot_name,
@@ -387,90 +354,49 @@ void testInverseDynamicsDerivatives(ClusterTreeModel<double>& model,
     std::cout << "  dtau_dqdot: " << dtau_dqdot.rows() << " x " << dtau_dqdot.cols() << "\n\n";
 
     // Verify with finite differences
-    std::pair<DVec<double>, DVec<double>> state = model.getState();
-    const DVec<double>& q0 = state.first;
-    const DVec<double>& qd0 = state.second;
+    auto [q0, qd0] = model.getState();
     const double h = floating_base ? 1e-6 : 1e-8;
 
     std::cout << "Finite difference verification (h = " << h << "):\n";
     std::cout << "  Tolerance: dtau/dq = " << tol_dq << ", dtau/dqdot = " << tol_dqdot << "\n\n";
 
-    auto conf_add = [&](const DVec<double> &dq) -> DVec<double>
-    {
-        if(!floating_base)
-        {
-            return q0 + dq;
-        }
-        else
-        {
-            // Lie group configuration addition for floating base with quaternions
-            // Implements the retraction map: q_new = q ⊞ dq
-            // where dq is in the tangent space (velocity space) at q
-            //
-            // Note: q0 has size n_q (7 for floating base + n_joints)
-            //       dq has size n_v (6 for floating base + n_joints) - velocity space
-            //
-            // The floating base velocity dq(1:6) is in BODY frame:
-            //   dq(1:3) = angular velocity in body frame
-            //   dq(4:6) = linear velocity in body frame
-            //
-            // This matches the MATLAB spatial_v2 convention in configurationAddition.m
-            const int n_q = q0.size();        // Configuration space dimension
-            const int n_v = dq.size();        // Velocity space dimension
-            const int nj = n_v - 6;           // Number of joint DOFs
-
-            DVec<double> q_new = q0;
-
-            // Joint DOFs use simple vector space addition
-            q_new.tail(nj) += dq.tail(nj);
-
-            // Extract current floating base configuration
-            // NOTE: Configuration ordering is [pos(3), quat(4)] based on Joint.h Free joint
-            Vec3<double> p = q0.head(3);           // Position in world frame
-            Quat<double> quat = q0.segment(3, 4);  // Orientation quaternion [w, x, y, z]
-
-            // Update orientation using quaternion exponential map
-            // For body frame angular velocity ω, the quaternion update is:
-            //   q_new = q * exp(ω) where exp: so(3) → quaternion
-            Vec3<double> omega_body = dq.head(3);
-            Quat<double> delta_quat = ori::so3ToQuat(omega_body);
-            Quat<double> quat_new = ori::quatProduct(quat, delta_quat);  // Right multiplication
-            quat_new.normalize();
-
-            // Update position: transform body-frame linear velocity to world frame
-            // p_new = p + R^T * v_body where R = world-to-body rotation matrix
-            Mat3<double> R = ori::quaternionToRotationMatrix(quat);  // world-to-body
-            Vec3<double> v_body = dq.segment(3, 3);
-            Vec3<double> p_new = p + R.transpose() * v_body;  // R^T = body-to-world
-
-            // Assemble new configuration [pos(3), quat(4)]
-            q_new.head(3) = p_new;
-            q_new.segment(3, 4) = quat_new;
-
-            return q_new;
-        }
-    };
+    // Use cluster-aware Lie group retraction (matches the convention used by
+    // firstOrderInverseDynamicsDerivatives) for both floating-base and constrained models.
+    const ModelState<double> base_state = makeModelState<double>(model, q0, qd0);
+    const DVec<double> zero_dof = DVec<double>::Zero(nDOF);
 
     auto tau_func_q = [&](const DVec<double>& dq) {
-        auto q = conf_add(dq);
-        std::pair<DVec<double>, DVec<double>> state_q = {q, qd0};
-        model.setState(state_q);
+        model.setState(applyMinimalPerturbation(model, base_state, dq, zero_dof), false);
         return model.inverseDynamics(ydd);
     };
 
-    auto tau_func_qd = [&](const DVec<double>& qd) {
-        std::pair<DVec<double>, DVec<double>> state_qd = {q0, qd};
-        model.setState(state_qd);
+    auto tau_func_qd = [&](const DVec<double>& dqd) {
+        model.setState(applyMinimalPerturbation(model, base_state, zero_dof, dqd), false);
         return model.inverseDynamics(ydd);
     };
 
-    auto dtau_dq_fd = finiteDifferenceJacobian(tau_func_q, qd0*0, h);
-    auto dtau_dqdot_fd = finiteDifferenceJacobian(tau_func_qd, qd0, h);
+    auto dtau_dq_fd    = finiteDifferenceJacobian(tau_func_q,  zero_dof, h);
+    auto dtau_dqdot_fd = finiteDifferenceJacobian(tau_func_qd, zero_dof, h);
 
     double max_error_dq = (dtau_dq - dtau_dq_fd).cwiseAbs().maxCoeff();
     double max_error_dqdot = (dtau_dqdot - dtau_dqdot_fd).cwiseAbs().maxCoeff();
     EXPECT_LT(max_error_dq, tol_dq) << "dtau_dq error exceeds tolerance";
     EXPECT_LT(max_error_dqdot, tol_dqdot) << "dtau_dqdot error exceeds tolerance";
+
+    Eigen::Matrix<bool, Eigen::Dynamic, Eigen::Dynamic> results_dq =
+        (dtau_dq - dtau_dq_fd).array().abs() > tol_dq;
+
+    std::cout << "dtau/dq max error: " << std::endl;
+    std::cout << results_dq << "\n";
+
+
+    Eigen::Matrix<bool, Eigen::Dynamic, Eigen::Dynamic> results_dqdot =
+        (dtau_dqdot - dtau_dqdot_fd).array().abs() > tol_dqdot;
+
+    std::cout << "dtau/dqdot max error: " << std::endl;
+    std::cout << results_dqdot << "\n";
+
+
 
     std::cout << "\n========================================\n";
     std::cout << "RESULTS:\n";
