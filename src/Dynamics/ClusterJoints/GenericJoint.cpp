@@ -668,6 +668,37 @@ namespace grbda
 
             X_intra_ = DMat<Scalar>::Identity(6 * this->num_bodies_, 6 * this->num_bodies_);
             X_intra_ring_ = DMat<Scalar>::Zero(6 * this->num_bodies_, 6 * this->num_bodies_);
+
+            // Build spanning-to-independent position conversion for explicit constraints.
+            // G maps independent → spanning (qdot_span = G * ydot). For each independent
+            // coordinate j, find the spanning row i where G(i,j)==1 and all other G(*,j)==0
+            // (i.e. the unit-selection row), then set conv(j,i)=1.
+            if (loop_constraint->isExplicit()) {
+                if constexpr (std::is_same_v<Scalar, double> || std::is_same_v<Scalar, float>) {
+                    const int n_ind = loop_constraint->numIndependentPos();
+                    const int n_span = loop_constraint->numSpanningPos();
+                    const DMat<Scalar>& G = loop_constraint->G();
+                    this->spanning_tree_to_independent_coords_conversion_ =
+                        DMat<int>::Zero(n_ind, n_span);
+                    for (int col = 0; col < n_ind; col++) {
+                        for (int row = 0; row < n_span; row++) {
+                            if (std::abs(static_cast<double>(G(row, col)) - 1.0) < 1e-9) {
+                                bool only_nonzero = true;
+                                for (int r = 0; r < n_span; r++) {
+                                    if (r != row && std::abs(static_cast<double>(G(r, col))) > 1e-9) {
+                                        only_nonzero = false;
+                                        break;
+                                    }
+                                }
+                                if (only_nonzero) {
+                                    this->spanning_tree_to_independent_coords_conversion_(col, row) = 1;
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
         }
 
         template <typename Scalar>
@@ -800,7 +831,7 @@ namespace grbda
             if(enforce_position_constraint)
             {
 
-                for (int attempt = 0; attempt < 30 && !converged; ++attempt) {
+                for (int attempt = 0; attempt < 1000 && !converged; ++attempt) {
                     double damping = 0.5;  // Start with damping for stability
                     for (int iter = 0; iter < max_iters; ++iter) {
                         DVec<double> phi = phi_eval(q_span);
@@ -831,7 +862,17 @@ namespace grbda
                     }
                     if (!converged) {
                         // reinitialize dependents with wider range
-                        for (int i = 0; i < n_span; ++i) if (!ind_mask[i]) q_span(i) = 0.3 * (2.0 * ((double)rand() / RAND_MAX) - 1.0);
+                        for (int i = 0; i < n_span; ++i) 
+                        {
+                            if (!ind_mask[i])
+                            {
+                                q_span(i) = 0.3 * (2.0 * ((double)rand() / RAND_MAX) - 1.0);
+                            } 
+                            else
+                            {
+                                q_span(i) = 0.3 * (2.0 * ((double)rand() / RAND_MAX) - 1.0);
+                            }
+                        }
                     }
                 }
 
