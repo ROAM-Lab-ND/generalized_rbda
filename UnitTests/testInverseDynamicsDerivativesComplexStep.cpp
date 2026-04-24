@@ -14,26 +14,6 @@
 #include "grbda/Dynamics/ClusterJoints/GenericJoint.h"
 #include "grbda/Robots/PlanarLegLinkage.hpp"
 
-
-namespace grbda {
-// Helper: set ModelState from flat q/qd vectors using cluster indices
-template <typename Scalar>
-void setModelStateFromVectors(grbda::ClusterTreeModel<Scalar>& model, const grbda::DVec<Scalar>& q, const grbda::DVec<Scalar>& qd) {
-    grbda::ModelState<Scalar> state;
-    for (const auto& cluster : model.clusters()) {
-        grbda::JointState<Scalar> js;
-        js.position = q.segment(cluster->position_index_, cluster->num_positions_);
-        js.velocity = qd.segment(cluster->velocity_index_, cluster->num_velocities_);
-        state.push_back(js);
-    }
-    model.setState(state);
-}
-} // namespace grbda
-
-
-
-
-
 #include <iostream>
 #include <iomanip>
 #include <complex>
@@ -231,27 +211,6 @@ DVec<T> lieGroupConfigurationAddition(const DVec<T>& q0, const DVec<T>& dq, bool
     }
 }
 
-
-
-// NOTE: This test uses complex-step differentiation to verify inverse dynamics derivatives.
-// Complex-step provides machine-precision derivatives without subtractive cancellation errors.
-// The method computes: f'(x) ≈ Im(f(x + ih)) / h  where i is the imaginary unit.
-
-// Helper function to convert real state to complex state
-std::pair<DVec<std::complex<double>>, DVec<std::complex<double>>>
-toComplexState(const DVec<double>& q, const DVec<double>& qd) {
-    DVec<std::complex<double>> q_complex(q.size());
-    DVec<std::complex<double>> qd_complex(qd.size());
-
-    for (int i = 0; i < q.size(); ++i) {
-        q_complex[i] = std::complex<double>(q[i], 0.0);
-    }
-    for (int i = 0; i < qd.size(); ++i) {
-        qd_complex[i] = std::complex<double>(qd[i], 0.0);
-    }
-
-    return {q_complex, qd_complex};
-}
 
 // Build a ModelState<T> from flat spanning-coordinate vectors.
 // Uses cluster->num_positions_ / num_velocities_ for correct sizes — safe even when
