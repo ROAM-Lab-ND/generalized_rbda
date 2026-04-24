@@ -71,7 +71,7 @@ namespace grbda
             }
             SX cs_phi_sym = casadi::SX(casadi::Sparsity::dense(constraint_dim, 1));
             casadi::copy(phi_sym, cs_phi_sym);
-            casadi::Function cs_phi_fcn = casadi::Function("phi", {cs_q_sym}, {cs_phi_sym});
+            cs_phi_fcn_ = casadi::Function("phi", {cs_q_sym}, {cs_phi_sym});
 
             // Implicit constraint jacobian
             SX cs_K_sym = jacobian(cs_phi_sym, cs_q_sym);
@@ -119,9 +119,9 @@ namespace grbda
             cs_g_sym = SX::mtimes(coord_map, cs_g_sym);
 
             // Assign member variables using casadi functions
-            this->phi_ = [cs_phi_fcn](const JointCoordinate<Scalar> &joint_pos)
+            this->phi_ = [this](const JointCoordinate<Scalar> &joint_pos)
             {
-                return runCasadiFcn(cs_phi_fcn, joint_pos);
+                return runCasadiFcn(cs_phi_fcn_, joint_pos);
             };
 
             this->K_ = DMat<Scalar>::Zero(constraint_dim, state_dim);
@@ -170,9 +170,22 @@ namespace grbda
 
             // Override phi_ to use native phi for complex types (CasADi doesn't support complex)
             // Also use native phi for double types when available for better numerical accuracy
-            // The native C++ implementation using std::sin/std::cos is more precise than
-            // CasADi's symbolic evaluation, which may have truncation in constant terms
-            if constexpr (std::is_same_v<Scalar, std::complex<double>> || std::is_same_v<Scalar, double>) {
+            if constexpr (std::is_same_v<Scalar, double>) {
+                this->phi_ = [this](const JointCoordinate<Scalar> &joint_pos) -> DVec<Scalar>
+                {
+                    DVec<double> phi_casadi = runCasadiFcn(cs_phi_fcn_, joint_pos);
+                    DVec<double> phi_native_val = phi_native_(joint_pos);
+                    DVec<double> phi_diff = phi_casadi - phi_native_val;
+                    double max_diff = phi_diff.cwiseAbs().maxCoeff();
+                    std::cout << "[GenericImplicit] phi difference (CasADi vs native) max abs: " << max_diff << std::endl;
+                    if (max_diff > 1e-6) {
+                        std::cerr << "[GenericImplicit] WARNING: Large difference between CasADi and native phi! max_diff=" << max_diff << std::endl;
+                        //throw std::runtime_error("Large difference between CasADi and native phi, check implementation!");
+                    }
+                    return phi_native_(joint_pos);
+                };
+            } else if constexpr (std::is_same_v<Scalar, std::complex<double>>) {
+                // CasADi can't evaluate complex types; use native phi directly
                 this->phi_ = [this](const JointCoordinate<Scalar> &joint_pos) -> DVec<Scalar>
                 {
                     return phi_native_(joint_pos);

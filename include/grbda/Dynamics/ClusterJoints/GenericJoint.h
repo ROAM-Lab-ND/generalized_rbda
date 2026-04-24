@@ -107,6 +107,7 @@ namespace grbda
             NativePhiFcn phi_native_;  // Optional native phi for complex-step support
             bool has_native_phi_ = false;
 
+            casadi::Function cs_phi_fcn_;
             casadi::Function K_fcn_;
             casadi::Function G_fcn_;
             casadi::Function k_fcn_;
