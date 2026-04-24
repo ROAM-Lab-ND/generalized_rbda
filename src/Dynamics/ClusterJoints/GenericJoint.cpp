@@ -184,8 +184,9 @@ namespace grbda
                     }
                     return phi_native_(joint_pos);
                 };
-            } else if constexpr (std::is_same_v<Scalar, std::complex<double>>) {
-                // CasADi can't evaluate complex types; use native phi directly
+            } else {
+                // For all non-double types (complex, SX, float): use native phi directly
+                // CasADi functions can't be evaluated with symbolic or complex inputs
                 this->phi_ = [this](const JointCoordinate<Scalar> &joint_pos) -> DVec<Scalar>
                 {
                     return phi_native_(joint_pos);
