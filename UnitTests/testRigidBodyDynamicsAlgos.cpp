@@ -138,11 +138,11 @@ protected:
                     }
 
                     double resid = 0.0;
-                    bool ok = false;
+                    constraints_ok = false;
                     // Multi-attempts with small perturbations on dependents
-                    for (int attempt = 0; attempt < 10 && !ok; ++attempt) {
+                    for (int attempt = 0; attempt < 10 && !constraints_ok; ++attempt) {
                         for (int i = 0; i < n_span; ++i) if (!ind_mask[i]) q_span(i) = 0.01 * (2.0 * ((double)rand() / RAND_MAX) - 1.0);
-                        ok = solveImplicitConstraint(lc, ind_mask, q_span, resid);
+                        constraints_ok = solveImplicitConstraint(lc, ind_mask, q_span, resid);
                     }
 
                     // Update Jacobians and map velocities: qd = G(q) * ydot
@@ -154,7 +154,8 @@ protected:
                     spanning_joint_state.position = q_span;
                     spanning_joint_state.velocity = qd_span;
                     // Validate spanning state via joint API
-                    spanning_joint_state = cluster->joint_->toSpanningTreeState(spanning_joint_state);
+                    // Allow spanning state off manifold since this is only used in tests.
+                    spanning_joint_state = cluster->joint_->toSpanningTreeState(spanning_joint_state, constraints_ok /* enforce_constraints */);
                 } else {
                     // Explicit constraint: fall back to existing random
                     JointState<> joint_state = cluster->joint_->randomJointState();
@@ -176,8 +177,8 @@ protected:
             }
         }
 
-        cluster_models[robot_idx].setState(model_state);
-        generic_models[robot_idx].setState(model_state);
+        cluster_models[robot_idx].setState(model_state, false /* enforce_constraints */);
+        generic_models[robot_idx].setState(model_state, false /* enforce_constraints */);
         lg_mult_custom_models[robot_idx].setState(spanning_joint_pos, spanning_joint_vel);
         lg_mult_eigen_models[robot_idx].setState(spanning_joint_pos, spanning_joint_vel);
         projection_models[robot_idx].setState(spanning_joint_pos, spanning_joint_vel);
@@ -384,11 +385,11 @@ TYPED_TEST(RigidBodyDynamicsAlgosTest, LambdaInv)
             GTEST_ASSERT_EQ(cluster_model.getNumEndEffectors(), gen_model.getNumEndEffectors());
             GTEST_ASSERT_EQ(cluster_model.getNumEndEffectors(), proj_model.getNumEndEffectors());
 
-            // Debug output for state sizes and validity before CasADi routines
-            std::cout << "[LambdaInv] Robot idx: " << i << ", test idx: " << j << std::endl;
-            std::cout << "  cluster_model.getNumPositions(): " << cluster_model.getNumPositions() << std::endl;
-            std::cout << "  cluster_model.getNumDegreesOfFreedom(): " << cluster_model.getNumDegreesOfFreedom() << std::endl;
-            std::cout << "  cluster_model.getNumEndEffectors(): " << cluster_model.getNumEndEffectors() << std::endl;
+            // // Debug output for state sizes and validity before CasADi routines
+            // std::cout << "[LambdaInv] Robot idx: " << i << ", test idx: " << j << std::endl;
+            // std::cout << "  cluster_model.getNumPositions(): " << cluster_model.getNumPositions() << std::endl;
+            // std::cout << "  cluster_model.getNumDegreesOfFreedom(): " << cluster_model.getNumDegreesOfFreedom() << std::endl;
+            // std::cout << "  cluster_model.getNumEndEffectors(): " << cluster_model.getNumEndEffectors() << std::endl;
 
             // Add try-catch to catch CasADi slice errors
             try {

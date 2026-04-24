@@ -25,8 +25,8 @@ namespace grbda
             int dep_dim = dep_coords.size();
 
             // Debug output for coordinate sizes
-            std::cout << "[GenericImplicit] state_dim=" << state_dim
-                      << ", ind_dim=" << ind_dim << ", dep_dim=" << dep_dim << std::endl;
+            // std::cout << "[GenericImplicit] state_dim=" << state_dim
+            //           << ", ind_dim=" << ind_dim << ", dep_dim=" << dep_dim << std::endl;
             if (state_dim == 0 || ind_dim + dep_dim != state_dim) {
                 std::cerr << "[GenericImplicit] Invalid coordinate sizes!" << std::endl;
             }
