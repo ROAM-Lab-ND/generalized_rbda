@@ -157,6 +157,10 @@ namespace grbda
             DMat<Scalar> getSdotqd_q() const override;
             DMat<Scalar> getSdotqd_qd() const override;
 
+            // Contraction-based derivatives (efficient, avoids materializing S_q tensor)
+            DMat<Scalar> evalSTimesVec_dq(const DVec<Scalar>& b) const override;
+            DMat<Scalar> evalSTTimesVec_dq(const DVec<Scalar>& F) const override;
+
             // Access to GenericImplicit constraint for complex-step differentiation
             std::shared_ptr<LoopConstraint::GenericImplicit<Scalar>> getGenericConstraint() const {
                 return generic_constraint_;
@@ -196,6 +200,13 @@ namespace grbda
             // CasADi functions for computing dG/dq and Sdotqd derivatives
             mutable casadi::Function dG_dq_fcn_;
             mutable casadi::Function dSdotqd_dq_fcn_;
+
+            // CasADi functions for efficient contraction-based derivatives
+            // d(S*b)/dq: inputs {q_span, b}, outputs (mss_dim x nv) matrix
+            mutable casadi::Function dSb_dy_fcn_;
+            // d(S^T*F)/dq: inputs {q_span, F}, outputs (nv x nv) matrix
+            mutable casadi::Function dSTF_dy_fcn_;
+
             mutable bool derivative_functions_initialized_ = false;
         };
 

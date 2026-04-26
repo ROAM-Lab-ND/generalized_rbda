@@ -1233,6 +1233,39 @@ namespace grbda
 
                 dSdotqd_dq_fcn_ = casadi::Function("dSdotqd_dq",
                     {q_span_sx, ydot_sx}, {dcJ_dy_sx});
+
+                // Build contraction-based derivative functions for efficient ID derivatives
+                // S = S_implicit * G = X_intra * S_spanning * G
+                // Convert S_implicit_sx to CasADi SX matrix for multiplication with G_casadi
+                SX S_implicit_casadi = SX::zeros(mss_dim, n_span_vel);
+                casadi::copy(S_implicit_sx, S_implicit_casadi);
+                SX S_casadi = SX::mtimes(S_implicit_casadi, G_casadi);  // mss_dim x nv
+
+                // d(S*b)/dy: Jacobian of S*b w.r.t. independent coordinates
+                // b is a symbolic input vector of size nv
+                SX b_sx = SX::sym("b", nv);
+
+                SX Sb_casadi = SX::mtimes(S_casadi, b_sx);  // mss_dim x 1
+
+                // Differentiate S*b w.r.t. q_span, then contract with G to get w.r.t. y
+                SX dSb_dq_sx = jacobian(Sb_casadi, q_span_sx);  // mss_dim x n_span_pos
+                SX dSb_dy_sx = SX::mtimes(dSb_dq_sx, G_casadi); // mss_dim x nv
+
+                dSb_dy_fcn_ = casadi::Function("dSb_dy",
+                    {q_span_sx, b_sx}, {dSb_dy_sx});
+
+                // d(S^T*F)/dy: Jacobian of S^T*F w.r.t. independent coordinates
+                // F is a symbolic input vector of size mss_dim
+                SX F_sx = SX::sym("F", mss_dim);
+
+                SX STF_casadi = SX::mtimes(S_casadi.T(), F_sx);  // nv x 1
+
+                // Differentiate S^T*F w.r.t. q_span, then contract with G to get w.r.t. y
+                SX dSTF_dq_sx = jacobian(STF_casadi, q_span_sx);  // nv x n_span_pos
+                SX dSTF_dy_sx = SX::mtimes(dSTF_dq_sx, G_casadi); // nv x nv
+
+                dSTF_dy_fcn_ = casadi::Function("dSTF_dy",
+                    {q_span_sx, F_sx}, {dSTF_dy_sx});
             }
 
             } // if constexpr (std::is_same_v<Scalar, double>)
@@ -1523,6 +1556,192 @@ namespace grbda
             std::cout << "[DEBUG getSdotqd_qd] Called with Scalar = " << typeid(Scalar).name() << std::endl;
             throw std::runtime_error("getSdotqd_qd is not implemented yet");
         }
+
+        template <typename Scalar>
+        DMat<Scalar> Generic<Scalar>::evalSTimesVec_dq(const DVec<Scalar>& b) const
+        {
+            const int mss_dim = this->num_bodies_ * 6;
+            const int nv = this->num_velocities_;
+
+            if (!generic_constraint_) {
+                return DMat<Scalar>::Zero(mss_dim, nv);
+            }
+
+            // Safety check: ensure state has been cached
+            if (q_cache_.size() == 0) {
+                return DMat<Scalar>::Zero(mss_dim, nv);
+            }
+
+            if constexpr (std::is_same_v<Scalar, double>) {
+                initializeDerivativeFunctions();
+
+                if (!derivative_functions_initialized_ || dSb_dy_fcn_.is_null()) {
+                    return DMat<Scalar>::Zero(mss_dim, nv);
+                }
+
+                // Evaluate d(S*b)/dy using CasADi function
+                casadi::DM q_dm(q_cache_.size());
+                casadi::DM b_dm(b.size());
+                casadi::copy(q_cache_, q_dm);
+                casadi::copy(b, b_dm);
+
+
+                casadi::DM result_dm = dSb_dy_fcn_(casadi::DMVector{q_dm, b_dm})[0];
+
+                DMat<Scalar> out(mss_dim, nv);
+                casadi::copy(result_dm, out);
+                return out;
+
+            } else if constexpr (std::is_same_v<Scalar, std::complex<double>>) {
+                // Complex-step Taylor expansion:
+                // d(S*b)/dy evaluated at q + i*dq is approximated as:
+                // [d(S*b)/dy](q) + i * d/dq[d(S*b)/dy] @ dq
+                //
+                // However, this requires the second derivative which we don't have.
+                // For now, we use real-part evaluation which is sufficient for
+                // forward-mode complex-step where we're differentiating the final result.
+                //
+                // The proper approach would be to evaluate the CasADi function at real(q)
+                // and real(b), and track complex contributions separately.
+
+                // Extract real parts
+                DVec<double> q_real(q_cache_.size());
+                DVec<double> b_real(b.size());
+                for (int i = 0; i < q_cache_.size(); ++i) {
+                    q_real(i) = q_cache_(i).real();
+                }
+                for (int i = 0; i < b.size(); ++i) {
+                    b_real(i) = b(i).real();
+                }
+
+                // For complex b, we need: d(S*b)/dy = d(S)/dy * b
+                // If b = b_r + i*b_i, then d(S*(b_r + i*b_i))/dy = d(S*b_r)/dy + i*d(S*b_i)/dy
+                DVec<double> b_imag(b.size());
+                for (int i = 0; i < b.size(); ++i) {
+                    b_imag(i) = b(i).imag();
+                }
+
+                // Cast this to double temporarily to call initializeDerivativeFunctions
+                // This is safe because we're just using it to check/init the CasADi functions
+                const_cast<Generic<Scalar>*>(this)->initializeDerivativeFunctions();
+
+                if (dSb_dy_fcn_.is_null()) {
+                    return DMat<Scalar>::Zero(mss_dim, nv);
+                }
+
+                casadi::DM q_dm(q_real.size());
+                casadi::DM b_real_dm(b_real.size());
+                casadi::DM b_imag_dm(b_imag.size());
+                casadi::copy(q_real, q_dm);
+                casadi::copy(b_real, b_real_dm);
+                casadi::copy(b_imag, b_imag_dm);
+
+                casadi::DM result_real_dm = dSb_dy_fcn_(casadi::DMVector{q_dm, b_real_dm})[0];
+                casadi::DM result_imag_dm = dSb_dy_fcn_(casadi::DMVector{q_dm, b_imag_dm})[0];
+
+                DMat<double> result_real(mss_dim, nv);
+                DMat<double> result_imag(mss_dim, nv);
+                casadi::copy(result_real_dm, result_real);
+                casadi::copy(result_imag_dm, result_imag);
+
+                DMat<Scalar> out(mss_dim, nv);
+                for (int i = 0; i < mss_dim; ++i) {
+                    for (int j = 0; j < nv; ++j) {
+                        out(i, j) = std::complex<double>(result_real(i, j), result_imag(i, j));
+                    }
+                }
+                return out;
+
+            } else {
+                return DMat<Scalar>::Zero(mss_dim, nv);
+            }
+        }
+
+        template <typename Scalar>
+        DMat<Scalar> Generic<Scalar>::evalSTTimesVec_dq(const DVec<Scalar>& F) const
+        {
+            const int mss_dim = this->num_bodies_ * 6;
+            const int nv = this->num_velocities_;
+
+            if (!generic_constraint_) {
+                return DMat<Scalar>::Zero(nv, nv);
+            }
+
+            // Safety check: ensure state has been cached
+            if (q_cache_.size() == 0) {
+                return DMat<Scalar>::Zero(nv, nv);
+            }
+
+            if constexpr (std::is_same_v<Scalar, double>) {
+                initializeDerivativeFunctions();
+
+                if (!derivative_functions_initialized_ || dSTF_dy_fcn_.is_null()) {
+                    return DMat<Scalar>::Zero(nv, nv);
+                }
+
+                // Evaluate d(S^T*F)/dy using CasADi function
+                casadi::DM q_dm(q_cache_.size());
+                casadi::DM F_dm(F.size());
+                casadi::copy(q_cache_, q_dm);
+                casadi::copy(F, F_dm);
+
+
+                casadi::DM result_dm = dSTF_dy_fcn_(casadi::DMVector{q_dm, F_dm})[0];
+
+                DMat<Scalar> out(nv, nv);
+                casadi::copy(result_dm, out);
+                return out;
+
+            } else if constexpr (std::is_same_v<Scalar, std::complex<double>>) {
+                // Complex-step: linearity in F means we can split real/imag parts
+                // d(S^T*F)/dy with F = F_r + i*F_i gives:
+                // d(S^T*F_r)/dy + i*d(S^T*F_i)/dy
+
+                DVec<double> q_real(q_cache_.size());
+                DVec<double> F_real(F.size());
+                DVec<double> F_imag(F.size());
+                for (int i = 0; i < q_cache_.size(); ++i) {
+                    q_real(i) = q_cache_(i).real();
+                }
+                for (int i = 0; i < F.size(); ++i) {
+                    F_real(i) = F(i).real();
+                    F_imag(i) = F(i).imag();
+                }
+
+                const_cast<Generic<Scalar>*>(this)->initializeDerivativeFunctions();
+
+                if (dSTF_dy_fcn_.is_null()) {
+                    return DMat<Scalar>::Zero(nv, nv);
+                }
+
+                casadi::DM q_dm(q_real.size());
+                casadi::DM F_real_dm(F_real.size());
+                casadi::DM F_imag_dm(F_imag.size());
+                casadi::copy(q_real, q_dm);
+                casadi::copy(F_real, F_real_dm);
+                casadi::copy(F_imag, F_imag_dm);
+
+                casadi::DM result_real_dm = dSTF_dy_fcn_(casadi::DMVector{q_dm, F_real_dm})[0];
+                casadi::DM result_imag_dm = dSTF_dy_fcn_(casadi::DMVector{q_dm, F_imag_dm})[0];
+
+                DMat<double> result_real(nv, nv);
+                DMat<double> result_imag(nv, nv);
+                casadi::copy(result_real_dm, result_real);
+                casadi::copy(result_imag_dm, result_imag);
+
+                DMat<Scalar> out(nv, nv);
+                for (int i = 0; i < nv; ++i) {
+                    for (int j = 0; j < nv; ++j) {
+                        out(i, j) = std::complex<double>(result_real(i, j), result_imag(i, j));
+                    }
+                }
+                return out;
+
+            } else {
+                return DMat<Scalar>::Zero(nv, nv);
+            }
+        }
+
         template class Generic<double>;
         template class Generic<std::complex<double>>;
         template class Generic<float>;

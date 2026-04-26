@@ -3,7 +3,6 @@
  */
 
 #include "grbda/Dynamics/ClusterTreeModel.h"
-#include "grbda/Utils/JointDerivatives.h"
 
 namespace grbda
 {
@@ -472,12 +471,11 @@ namespace grbda
                 a_parent_up = cluster->Xup_.transformMotionVector(-this->getGravity());
             }
 
-            // Compute alpha = contract(S_q, qd) and beta = contract(S_q, qdd)
+            // Compute alpha = d(S*qd)/dq and beta = d(S*qdd)/dq using efficient contractions
             const DVec<Scalar> cluster_qd = qd.segment(cluster->velocity_index_, num_vel);
             const DVec<Scalar> cluster_qdd = qdd.segment(cluster->velocity_index_, num_vel);
-            const auto &S_q = cluster->joint_->getSq();
-            const DMat<Scalar> alpha = contractSqWithVector(S_q, cluster_qd, mss_dim);
-            const DMat<Scalar> beta = contractSqWithVector(S_q, cluster_qdd, mss_dim);
+            const DMat<Scalar> alpha = cluster->joint_->evalSTimesVec_dq(cluster_qd);
+            const DMat<Scalar> beta = cluster->joint_->evalSTimesVec_dq(cluster_qdd);
             const DMat<Scalar> &Sdotqd_q = cluster->joint_->getSdotqd_q();
 
             // Psi_dot = crm(v_parent_up) * S + alpha
@@ -560,9 +558,8 @@ namespace grbda
                     }
                     else  // j == i (diagonal block)
                     {
-                        const auto &S_q_i = cluster_i->joint_->getSq();
                         dtau_dq.block(ii, ii, num_vel_i, num_vel_i) +=
-                            contractSqTransposeWithVector(S_q_i, F);
+                            cluster_i->joint_->evalSTTimesVec_dq(F);
                     }
 
                     dtau_dq_dot.block(jj, ii, num_vel_j, num_vel_i).noalias() = S_j.transpose() * t2;
@@ -599,9 +596,8 @@ namespace grbda
                     }
                     else
                     {
-                        const auto &S_q_i = cluster_i->joint_->getSq();
                         dtau_dq.block(ii, ii, num_vel_i, num_vel_i) +=
-                            contractSqTransposeWithVector(S_q_i, F);
+                            cluster_i->joint_->evalSTTimesVec_dq(F);
                     }
 
                     dtau_dq_dot.block(jj, ii, num_vel_j, num_vel_i).noalias() = S_j.transpose() * t2;
