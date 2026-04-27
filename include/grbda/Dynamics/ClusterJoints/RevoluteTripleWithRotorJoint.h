@@ -2,6 +2,7 @@
 #define GRBDA_GENERALIZED_JOINTS_REVOLUTE_TRIPLE_WITH_ROTOR_JOINT_H
 
 #include "grbda/Dynamics/ClusterJoints/ClusterJoint.h"
+#include "grbda/Utils/JointDerivatives.h"
 
 namespace grbda
 {
@@ -40,6 +41,17 @@ namespace grbda
             std::vector<DMat<Scalar>> getSq() const override;
             DMat<Scalar> getSdotqd_q() const override;
             DMat<Scalar> getSdotqd_qd() const override;
+
+            // Contraction-based derivatives (uses getSq)
+            DMat<Scalar> evalSTimesVec_dq(const DVec<Scalar>& b) const override {
+                const int mss_dim = this->num_bodies_ * 6;
+                const auto& S_q = getSq();
+                return contractSqWithVector(S_q, b, mss_dim);
+            }
+            DMat<Scalar> evalSTTimesVec_dq(const DVec<Scalar>& F) const override {
+                const auto& S_q = getSq();
+                return contractSqTransposeWithVector(S_q, F);
+            }
 
         private:
             char axisToChar(ori::CoordinateAxis axis) const;

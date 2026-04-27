@@ -7,7 +7,6 @@
 #include "grbda/Dynamics/ClusterJoints/Transmissions.h"
 #include "grbda/Dynamics/Joints/Joint.h"
 #include "grbda/Utils/SpatialTransforms.h"
-#include "grbda/Utils/JointDerivatives.h"
 
 namespace grbda
 {
@@ -88,21 +87,17 @@ namespace grbda
 
             // Contraction-based derivative interface (more efficient than getSq for ID derivatives)
             // These compute the Jacobian of S*b or S^T*F directly without materializing the S_q tensor
-            // Default implementation uses getSq() + contraction; override for efficiency
+            // Default returns zero (for joints with constant S). Override for configuration-dependent S.
 
             // Returns ∂(S*b)/∂q as a (6*num_bodies x nv) matrix
-            // This is equivalent to contractSqWithVector(getSq(), b) but can be computed directly
             virtual DMat<Scalar> evalSTimesVec_dq(const DVec<Scalar>& b) const {
                 const int mss_dim = num_bodies_ * 6;
-                const auto& S_q = getSq();
-                return contractSqWithVector(S_q, b, mss_dim);
+                return DMat<Scalar>::Zero(mss_dim, num_velocities_);
             }
 
             // Returns ∂(S^T*F)/∂q as a (nv x nv) matrix
-            // This is equivalent to contractSqTransposeWithVector(getSq(), F) but can be computed directly
             virtual DMat<Scalar> evalSTTimesVec_dq(const DVec<Scalar>& F) const {
-                const auto& S_q = getSq();
-                return contractSqTransposeWithVector(S_q, F);
+                return DMat<Scalar>::Zero(num_velocities_, num_velocities_);
             }
 
 
