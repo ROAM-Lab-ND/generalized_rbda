@@ -3,9 +3,65 @@
  */
 
 #include "grbda/Dynamics/ClusterTreeModel.h"
+#include <chrono>
+
+// Profiling accumulators for ID derivatives breakdown
+namespace {
+    thread_local double prof_fwd_kin_us = 0;
+    thread_local double prof_fwd_casadi_us = 0;
+    thread_local double prof_fwd_other_us = 0;
+    thread_local double prof_bwd_casadi_us = 0;
+    thread_local double prof_bwd_other_us = 0;
+    thread_local double prof_bwd_prop_us = 0;
+    thread_local int prof_count = 0;
+    thread_local int prof_fwd_casadi_calls = 0;
+    thread_local int prof_bwd_casadi_calls = 0;
+    thread_local bool prof_enabled = false;
+}
 
 namespace grbda
 {
+    // Call this to enable profiling
+    void enableIDDerivativesProfiling() {
+        prof_enabled = true;
+        prof_count = 0;
+        prof_fwd_casadi_calls = 0;
+        prof_bwd_casadi_calls = 0;
+    }
+
+    // Call this to print and reset profiling results
+    void printIDDerivativesProfiling() {
+        if (prof_count > 0) {
+            double total = prof_fwd_kin_us + prof_fwd_casadi_us + prof_fwd_other_us +
+                          prof_bwd_casadi_us + prof_bwd_other_us + prof_bwd_prop_us;
+            int fwd_calls_per = prof_fwd_casadi_calls / prof_count;
+            int bwd_calls_per = prof_bwd_casadi_calls / prof_count;
+            std::cout << "\n=== ID Derivatives Profiling (" << prof_count << " calls) ===" << std::endl;
+            std::cout << "Forward kinematics:    " << (prof_fwd_kin_us / prof_count) << " us/call ("
+                      << (100.0 * prof_fwd_kin_us / total) << "%)" << std::endl;
+            std::cout << "Forward pass CasADi:   " << (prof_fwd_casadi_us / prof_count) << " us/call ("
+                      << (100.0 * prof_fwd_casadi_us / total) << "%) [" << fwd_calls_per << " fcn calls]" << std::endl;
+            std::cout << "Forward pass other:    " << (prof_fwd_other_us / prof_count) << " us/call ("
+                      << (100.0 * prof_fwd_other_us / total) << "%)" << std::endl;
+            std::cout << "Backward pass CasADi:  " << (prof_bwd_casadi_us / prof_count) << " us/call ("
+                      << (100.0 * prof_bwd_casadi_us / total) << "%) [" << bwd_calls_per << " fcn calls]" << std::endl;
+            std::cout << "Backward pass other:   " << (prof_bwd_other_us / prof_count) << " us/call ("
+                      << (100.0 * prof_bwd_other_us / total) << "%)" << std::endl;
+            std::cout << "Backward propagate:    " << (prof_bwd_prop_us / prof_count) << " us/call ("
+                      << (100.0 * prof_bwd_prop_us / total) << "%)" << std::endl;
+            std::cout << "Total:                 " << (total / prof_count) << " us/call" << std::endl;
+            if (fwd_calls_per + bwd_calls_per > 0) {
+                double casadi_total = prof_fwd_casadi_us + prof_bwd_casadi_us;
+                double casadi_per_fcn = casadi_total / (prof_fwd_casadi_calls + prof_bwd_casadi_calls);
+                std::cout << "CasADi avg per fcn:    " << casadi_per_fcn << " us/fcn" << std::endl;
+            }
+        }
+        prof_fwd_kin_us = prof_fwd_casadi_us = prof_fwd_other_us = 0;
+        prof_bwd_casadi_us = prof_bwd_other_us = prof_bwd_prop_us = 0;
+        prof_fwd_casadi_calls = prof_bwd_casadi_calls = 0;
+        prof_count = 0;
+        prof_enabled = false;
+    }
 
     template <typename Scalar, typename OriTpl>
     const D6Mat<Scalar> &
@@ -439,18 +495,28 @@ namespace grbda
     template <typename Scalar, typename OriTpl>
     std::pair<DMat<Scalar>, DMat<Scalar>> ClusterTreeModel<Scalar, OriTpl>::firstOrderInverseDynamicsDerivatives(const DVec<Scalar> &qdd)
     {
+        using clock = std::chrono::high_resolution_clock;
+        auto t0 = clock::now();
+
         const auto [q, qd] = this->getState();
         this->forwardAccelerationKinematics(qdd);
         updateArticulatedBodies();
+
+        auto t1 = clock::now();
+        if (prof_enabled) prof_fwd_kin_us += std::chrono::duration<double, std::micro>(t1 - t0).count();
 
         const int nDOF = this->getNumDegreesOfFreedom();
         const int nClusters = static_cast<int>(cluster_nodes_.size());
         DMat<Scalar> dtau_dq = DMat<Scalar>::Zero(nDOF, nDOF);
         DMat<Scalar> dtau_dq_dot = DMat<Scalar>::Zero(nDOF, nDOF);
 
+        double fwd_casadi_local = 0, fwd_other_local = 0;
+
         // Forward Pass - compute Psi_dot, Psi_ddot, Upsilon_dot, M_cup, B_cup, F for each cluster
         for (auto &cluster : cluster_nodes_)
         {
+            auto tf0 = clock::now();
+
             const int mss_dim = cluster->motion_subspace_dimension_;
             const int num_vel = cluster->num_velocities_;
             const DMat<Scalar> &S = cluster->S();
@@ -474,9 +540,23 @@ namespace grbda
             // Compute alpha = d(S*qd)/dq and beta = d(S*qdd)/dq using efficient contractions
             const DVec<Scalar> cluster_qd = qd.segment(cluster->velocity_index_, num_vel);
             const DVec<Scalar> cluster_qdd = qdd.segment(cluster->velocity_index_, num_vel);
+
+            auto tf1 = clock::now();
             const DMat<Scalar> alpha = cluster->joint_->evalSTimesVec_dq(cluster_qd);
             const DMat<Scalar> beta = cluster->joint_->evalSTimesVec_dq(cluster_qdd);
             const DMat<Scalar> &Sdotqd_q = cluster->joint_->getSdotqd_q();
+            auto tf2 = clock::now();
+
+            if (prof_enabled) {
+                fwd_other_local += std::chrono::duration<double, std::micro>(tf1 - tf0).count();
+                fwd_casadi_local += std::chrono::duration<double, std::micro>(tf2 - tf1).count();
+                // Count actual CasADi calls (non-zero alpha means GenericJoint was used)
+                if (alpha.squaredNorm() > 0 || Sdotqd_q.squaredNorm() > 0) {
+                    prof_fwd_casadi_calls += 3;  // evalSTimesVec_dq x2 + getSdotqd_q
+                }
+            }
+
+            auto tf3 = clock::now();
 
             // Psi_dot = crm(v_parent_up) * S + alpha
             // Use optimized motionCrossTimesMatrix to avoid building full cross-product matrix
@@ -508,11 +588,25 @@ namespace grbda
             // F = I*a + crf(v)*I*v
             cluster->F_.noalias() = I * cluster->a_;
             cluster->F_ += spatial::generalForceCrossProduct(v, Iv);
+
+            if (prof_enabled) {
+                fwd_other_local += std::chrono::duration<double, std::micro>(clock::now() - tf3).count();
+            }
         }
+
+        if (prof_enabled) {
+            prof_fwd_casadi_us += fwd_casadi_local;
+            prof_fwd_other_us += fwd_other_local;
+        }
+
+        double bwd_casadi_local = 0, bwd_other_local = 0, bwd_prop_local = 0;
 
         // Backward Pass - compute derivatives and propagate M_cup, B_cup, F to parents
         for (int i = nClusters - 1; i >= 0; i--)
         {
+            auto tb0 = clock::now();
+            double iter_casadi_us = 0;  // CasADi time for this iteration only
+
             auto &cluster_i = cluster_nodes_[i];
             const int ii = cluster_i->velocity_index_;
             const int num_vel_i = cluster_i->num_velocities_;
@@ -534,6 +628,8 @@ namespace grbda
             t3.noalias() += cluster_i->Xup_.blockDiagonalInertiaTimesMotionSubspace(M_cup, cluster_i->Psi_ddot_);
             t3 += spatial::swappedForceCrossTimesMatrix(F, S_i);
             DMat<Scalar> t4 = cluster_i->Xup_.blockDiagonalInertiaTimesMotionSubspace(B_cup.transpose(), S_i);
+
+            auto tb1 = clock::now();
 
             // Walk from cluster i to root
             // Use optimized path for single-body clusters (most common case)
@@ -558,8 +654,13 @@ namespace grbda
                     }
                     else  // j == i (diagonal block)
                     {
-                        dtau_dq.block(ii, ii, num_vel_i, num_vel_i) +=
-                            cluster_i->joint_->evalSTTimesVec_dq(F);
+                        auto tc0 = clock::now();
+                        DMat<Scalar> st_dq = cluster_i->joint_->evalSTTimesVec_dq(F);
+                        dtau_dq.block(ii, ii, num_vel_i, num_vel_i) += st_dq;
+                        if (prof_enabled) {
+                            iter_casadi_us = std::chrono::duration<double, std::micro>(clock::now() - tc0).count();
+                            if (st_dq.squaredNorm() > 0) prof_bwd_casadi_calls++;
+                        }
                     }
 
                     dtau_dq_dot.block(jj, ii, num_vel_j, num_vel_i).noalias() = S_j.transpose() * t2;
@@ -596,8 +697,13 @@ namespace grbda
                     }
                     else
                     {
-                        dtau_dq.block(ii, ii, num_vel_i, num_vel_i) +=
-                            cluster_i->joint_->evalSTTimesVec_dq(F);
+                        auto tc0 = clock::now();
+                        DMat<Scalar> st_dq = cluster_i->joint_->evalSTTimesVec_dq(F);
+                        dtau_dq.block(ii, ii, num_vel_i, num_vel_i) += st_dq;
+                        if (prof_enabled) {
+                            iter_casadi_us = std::chrono::duration<double, std::micro>(clock::now() - tc0).count();
+                            if (st_dq.squaredNorm() > 0) prof_bwd_casadi_calls++;
+                        }
                     }
 
                     dtau_dq_dot.block(jj, ii, num_vel_j, num_vel_i).noalias() = S_j.transpose() * t2;
@@ -614,6 +720,8 @@ namespace grbda
                 }
             }
 
+            auto tb2 = clock::now();
+
             // Propagate M_cup, B_cup, F to parent
             // Use batched inertia accumulation to share E^T and r_hat computation
             if (cluster_i->parent_index_ >= 0)
@@ -624,6 +732,25 @@ namespace grbda
                     B_cup, parent_cluster->B_cup_);
                 parent_cluster->F_ += cluster_i->Xup_.inverseTransformForceVector(F);
             }
+
+            auto tb3 = clock::now();
+
+            if (prof_enabled) {
+                // tb0->tb1: t1-t4 computation (backward other)
+                // tb1->tb2: walk to root including CasADi call
+                // tb2->tb3: M_cup/B_cup/F propagation (backward propagate)
+                bwd_other_local += std::chrono::duration<double, std::micro>(tb1 - tb0).count();
+                bwd_other_local += std::chrono::duration<double, std::micro>(tb2 - tb1).count() - iter_casadi_us;
+                bwd_casadi_local += iter_casadi_us;
+                bwd_prop_local += std::chrono::duration<double, std::micro>(tb3 - tb2).count();
+            }
+        }
+
+        if (prof_enabled) {
+            prof_bwd_casadi_us += bwd_casadi_local;
+            prof_bwd_other_us += bwd_other_local;
+            prof_bwd_prop_us += bwd_prop_local;
+            prof_count++;
         }
 
         return {dtau_dq, dtau_dq_dot};

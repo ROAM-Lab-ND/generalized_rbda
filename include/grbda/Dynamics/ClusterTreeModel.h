@@ -14,6 +14,10 @@
 
 namespace grbda
 {
+    // ID derivatives profiling functions
+    void enableIDDerivativesProfiling();
+    void printIDDerivativesProfiling();
+
     template <typename Scalar>
     using ClusterTreeNodePtr = std::shared_ptr<ClusterTreeNode<Scalar>>;
 

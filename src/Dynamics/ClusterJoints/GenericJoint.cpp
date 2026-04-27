@@ -1231,8 +1231,17 @@ namespace grbda
                 SX dcJ_dq_sx = jacobian(cJ_casadi, q_span_sx);        // mss_dim x n_span_pos
                 SX dcJ_dy_sx = SX::mtimes(dcJ_dq_sx, G_casadi);       // mss_dim x nv
 
+                // Densify output for low-level API compatibility
+                SX dcJ_dy_dense = SX::densify(dcJ_dy_sx);
+
+                // Use JIT compilation for faster function evaluation (clang with march=native)
+                casadi::Dict jit_opts_sdot;
+                jit_opts_sdot["jit"] = true;
+                jit_opts_sdot["compiler"] = "shell";
+                jit_opts_sdot["jit_options"] = casadi::Dict{{"compiler", "clang"}, {"flags", "-O3 -march=native"}};
+
                 dSdotqd_dq_fcn_ = casadi::Function("dSdotqd_dq",
-                    {q_span_sx, ydot_sx}, {dcJ_dy_sx});
+                    {q_span_sx, ydot_sx}, {dcJ_dy_dense}, jit_opts_sdot);
 
                 // Build contraction-based derivative functions for efficient ID derivatives
                 // S = S_implicit * G = X_intra * S_spanning * G
@@ -1251,8 +1260,17 @@ namespace grbda
                 SX dSb_dq_sx = jacobian(Sb_casadi, q_span_sx);  // mss_dim x n_span_pos
                 SX dSb_dy_sx = SX::mtimes(dSb_dq_sx, G_casadi); // mss_dim x nv
 
+                // Densify the output to ensure low-level API writes to contiguous memory
+                SX dSb_dy_dense = SX::densify(dSb_dy_sx);
+
+                // Use JIT compilation for faster function evaluation (clang with march=native)
+                casadi::Dict jit_opts;
+                jit_opts["jit"] = true;
+                jit_opts["compiler"] = "shell";
+                jit_opts["jit_options"] = casadi::Dict{{"compiler", "clang"}, {"flags", "-O3 -march=native"}};
+
                 dSb_dy_fcn_ = casadi::Function("dSb_dy",
-                    {q_span_sx, b_sx}, {dSb_dy_sx});
+                    {q_span_sx, b_sx}, {dSb_dy_dense}, jit_opts);
 
                 // d(S^T*F)/dy: Jacobian of S^T*F w.r.t. independent coordinates
                 // F is a symbolic input vector of size mss_dim
@@ -1264,8 +1282,33 @@ namespace grbda
                 SX dSTF_dq_sx = jacobian(STF_casadi, q_span_sx);  // nv x n_span_pos
                 SX dSTF_dy_sx = SX::mtimes(dSTF_dq_sx, G_casadi); // nv x nv
 
+                // Densify the output
+                SX dSTF_dy_dense = SX::densify(dSTF_dy_sx);
+
                 dSTF_dy_fcn_ = casadi::Function("dSTF_dy",
-                    {q_span_sx, F_sx}, {dSTF_dy_sx});
+                    {q_span_sx, F_sx}, {dSTF_dy_dense}, jit_opts);
+
+                // Pre-allocate work vectors for low-level evaluation API
+                // This avoids allocation overhead on each function call
+                size_t sz_arg, sz_res, sz_iw, sz_w;
+
+                dSb_dy_fcn_.sz_work(sz_arg, sz_res, sz_iw, sz_w);
+                dSb_work_w_.resize(sz_w);
+                dSb_work_iw_.resize(sz_iw);
+                dSb_arg_buf_.resize(n_span_pos + nv);  // q_span + b
+                dSb_res_buf_.resize(mss_dim * nv);     // output matrix
+
+                dSTF_dy_fcn_.sz_work(sz_arg, sz_res, sz_iw, sz_w);
+                dSTF_work_w_.resize(sz_w);
+                dSTF_work_iw_.resize(sz_iw);
+                dSTF_arg_buf_.resize(n_span_pos + mss_dim);  // q_span + F
+                dSTF_res_buf_.resize(nv * nv);               // output matrix
+
+                dSdotqd_dq_fcn_.sz_work(sz_arg, sz_res, sz_iw, sz_w);
+                dSdotqd_work_w_.resize(sz_w);
+                dSdotqd_work_iw_.resize(sz_iw);
+                dSdotqd_arg_buf_.resize(n_span_pos + nv);  // q_span + ydot
+                dSdotqd_res_buf_.resize(mss_dim * nv);     // output matrix
             }
 
             } // if constexpr (std::is_same_v<Scalar, double>)
@@ -1514,37 +1557,38 @@ namespace grbda
                 return DMat<Scalar>::Zero(mss_dim, nv);
             }
 
-            // For implicit joints, compute d(cJ)/dy directly via finite differences,
+            // For implicit joints, compute d(cJ)/dy directly via CasADi,
             // where cJ = X_intra_ring * S_spanning * qd_span + S_implicit * g(q_span, qd_span).
             // This captures all chain-rule paths through X_intra, X_intra_ring, and g.
             if constexpr (std::is_same_v<Scalar, double> ) {
-                const DMat<Scalar>& G_base = this->loop_constraint_->G();
-
-                // coord_map^T * qd_span = [ydot; qdot_dep], so ydot is the first nv entries
-                const DMat<double>& coord_map = generic_constraint_->getCoordMap();
-                const DVec<Scalar> ydot_independent =
-                    (coord_map.transpose() * qd_cache_).head(nv);
-
-                DMat<Scalar> out = DMat<Scalar>::Zero(mss_dim, nv);
-
                 initializeDerivativeFunctions();
 
                 if (q_cache_.size() == 0 || qd_cache_.size() == 0 ||
                     !derivative_functions_initialized_ || dSdotqd_dq_fcn_.is_null())
                     return DMat<Scalar>::Zero(mss_dim, nv);
 
+                // coord_map^T * qd_span = [ydot; qdot_dep], so ydot is the first nv entries
+                const DMat<double>& coord_map = generic_constraint_->getCoordMap();
+                const DVec<Scalar> ydot_independent =
+                    (coord_map.transpose() * qd_cache_).head(nv);
 
-                // --- CasADi symbolic derivative ---
-                casadi::DM q_dm(q_cache_.size());
-                casadi::DM ydot_dm(ydot_independent.size());
-                casadi::copy(q_cache_, q_dm);
-                casadi::copy(ydot_independent, ydot_dm);
+                const int n_span_pos = q_cache_.size();
 
-                casadi::DM result_dm = dSdotqd_dq_fcn_(casadi::DMVector{q_dm, ydot_dm})[0];
+                // Use low-level CasADi API with pre-allocated buffers
+                for (int i = 0; i < n_span_pos; ++i) {
+                    dSdotqd_arg_buf_[i] = q_cache_(i);
+                }
+                for (int i = 0; i < nv; ++i) {
+                    dSdotqd_arg_buf_[n_span_pos + i] = ydot_independent(i);
+                }
 
-                casadi::copy(result_dm, out);
-                
-                return out;
+                const double* arg_ptrs[2] = {dSdotqd_arg_buf_.data(), dSdotqd_arg_buf_.data() + n_span_pos};
+                double* res_ptrs[1] = {dSdotqd_res_buf_.data()};
+
+                dSdotqd_dq_fcn_(arg_ptrs, res_ptrs, dSdotqd_work_iw_.data(), dSdotqd_work_w_.data(), 0);
+
+                // Map result buffer to Eigen matrix (CasADi uses column-major, same as Eigen)
+                return Eigen::Map<DMat<Scalar>>(dSdotqd_res_buf_.data(), mss_dim, nv);
             }
 
             return DMat<Scalar>::Zero(mss_dim, nv);
@@ -1579,18 +1623,25 @@ namespace grbda
                     return DMat<Scalar>::Zero(mss_dim, nv);
                 }
 
-                // Evaluate d(S*b)/dy using CasADi function
-                casadi::DM q_dm(q_cache_.size());
-                casadi::DM b_dm(b.size());
-                casadi::copy(q_cache_, q_dm);
-                casadi::copy(b, b_dm);
+                const int n_span_pos = q_cache_.size();
 
+                // Use low-level CasADi API with pre-allocated buffers
+                for (int i = 0; i < n_span_pos; ++i) {
+                    dSb_arg_buf_[i] = q_cache_(i);
+                }
+                for (int i = 0; i < nv; ++i) {
+                    dSb_arg_buf_[n_span_pos + i] = b(i);
+                }
 
-                casadi::DM result_dm = dSb_dy_fcn_(casadi::DMVector{q_dm, b_dm})[0];
+                // Set up pointers - CasADi expects separate pointers for each input
+                const double* arg_ptrs[2] = {dSb_arg_buf_.data(), dSb_arg_buf_.data() + n_span_pos};
+                double* res_ptrs[1] = {dSb_res_buf_.data()};
 
-                DMat<Scalar> out(mss_dim, nv);
-                casadi::copy(result_dm, out);
-                return out;
+                // Call function using low-level API
+                dSb_dy_fcn_(arg_ptrs, res_ptrs, dSb_work_iw_.data(), dSb_work_w_.data(), 0);
+
+                // Map result buffer to Eigen matrix (CasADi uses column-major, same as Eigen)
+                return Eigen::Map<DMat<Scalar>>(dSb_res_buf_.data(), mss_dim, nv);
 
             } else if constexpr (std::is_same_v<Scalar, std::complex<double>>) {
                 // Complex-step Taylor expansion:
@@ -1679,18 +1730,26 @@ namespace grbda
                     return DMat<Scalar>::Zero(nv, nv);
                 }
 
-                // Evaluate d(S^T*F)/dy using CasADi function
-                casadi::DM q_dm(q_cache_.size());
-                casadi::DM F_dm(F.size());
-                casadi::copy(q_cache_, q_dm);
-                casadi::copy(F, F_dm);
+                // Use low-level CasADi API with pre-allocated buffers
+                const int n_span_pos = q_cache_.size();
 
+                // Copy inputs to pre-allocated buffers
+                for (int i = 0; i < n_span_pos; ++i) {
+                    dSTF_arg_buf_[i] = q_cache_(i);
+                }
+                for (int i = 0; i < mss_dim; ++i) {
+                    dSTF_arg_buf_[n_span_pos + i] = F(i);
+                }
 
-                casadi::DM result_dm = dSTF_dy_fcn_(casadi::DMVector{q_dm, F_dm})[0];
+                // Set up pointers - CasADi expects separate pointers for each input
+                const double* arg_ptrs[2] = {dSTF_arg_buf_.data(), dSTF_arg_buf_.data() + n_span_pos};
+                double* res_ptrs[1] = {dSTF_res_buf_.data()};
 
-                DMat<Scalar> out(nv, nv);
-                casadi::copy(result_dm, out);
-                return out;
+                // Call function using low-level API
+                dSTF_dy_fcn_(arg_ptrs, res_ptrs, dSTF_work_iw_.data(), dSTF_work_w_.data(), 0);
+
+                // Map result buffer to Eigen matrix (CasADi uses column-major, same as Eigen)
+                return Eigen::Map<DMat<Scalar>>(dSTF_res_buf_.data(), nv, nv);
 
             } else if constexpr (std::is_same_v<Scalar, std::complex<double>>) {
                 // Complex-step: linearity in F means we can split real/imag parts

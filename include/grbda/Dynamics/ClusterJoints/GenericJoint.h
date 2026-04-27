@@ -207,6 +207,20 @@ namespace grbda
             // d(S^T*F)/dq: inputs {q_span, F}, outputs (nv x nv) matrix
             mutable casadi::Function dSTF_dy_fcn_;
 
+            // Pre-allocated work vectors for low-level CasADi evaluation (avoids allocation overhead)
+            mutable std::vector<double> dSb_work_w_;
+            mutable std::vector<casadi_int> dSb_work_iw_;
+            mutable std::vector<double> dSb_arg_buf_;   // concatenated input buffer [q; b]
+            mutable std::vector<double> dSb_res_buf_;   // output buffer
+            mutable std::vector<double> dSTF_work_w_;
+            mutable std::vector<casadi_int> dSTF_work_iw_;
+            mutable std::vector<double> dSTF_arg_buf_;  // concatenated input buffer [q; F]
+            mutable std::vector<double> dSTF_res_buf_;  // output buffer
+            mutable std::vector<double> dSdotqd_work_w_;
+            mutable std::vector<casadi_int> dSdotqd_work_iw_;
+            mutable std::vector<double> dSdotqd_arg_buf_;  // concatenated input buffer [q; ydot]
+            mutable std::vector<double> dSdotqd_res_buf_;  // output buffer
+
             mutable bool derivative_functions_initialized_ = false;
         };
 

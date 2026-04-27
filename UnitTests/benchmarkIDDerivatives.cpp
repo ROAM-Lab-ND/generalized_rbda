@@ -126,6 +126,39 @@ int main() {
     results.push_back(benchmarkRobot<Tello<double>>("Tello (+R,+M) [full]", ITERATIONS));
     std::cout << " done\n";
 
+    // Profiling breakdown for Tello (full model)
+    std::cout << "\n  Running Tello profiling breakdown..." << std::flush;
+    {
+        Tello<double> robot;
+        ClusterTreeModel<double> model = robot.buildClusterTreeModel();
+        const int nDOF = model.getNumDegreesOfFreedom();
+
+        ModelState<double> model_state;
+        for (const auto& cluster : model.clusters()) {
+            model_state.push_back(cluster->joint_->randomJointState());
+        }
+        model.setState(model_state);
+
+        DVec<double> ydd = DVec<double>::Random(nDOF);
+
+        // Warmup (100 calls)
+        for (int i = 0; i < 100; ++i) {
+            auto [dtau_dq, dtau_dqdot] = model.firstOrderInverseDynamicsDerivatives(ydd);
+            (void)dtau_dq;
+            (void)dtau_dqdot;
+        }
+
+        // Enable profiling and run 1000 iterations
+        enableIDDerivativesProfiling();
+        for (int i = 0; i < 1000; ++i) {
+            auto [dtau_dq, dtau_dqdot] = model.firstOrderInverseDynamicsDerivatives(ydd);
+            (void)dtau_dq;
+            (void)dtau_dqdot;
+        }
+        printIDDerivativesProfiling();
+    }
+    std::cout << " done\n";
+
     // Legacy variant for reference (rotors with independent clusters, no constraint coupling)
     std::cout << "  Benchmarking Tello (+R,-M-old) [legacy]..." << std::flush;
     results.push_back(benchmarkRobot<TelloNoMechanisms<double>>("Tello (+R,-M-old) [legacy]", ITERATIONS));

@@ -289,46 +289,11 @@ ClusterTreeModel<double> buildParallelChainsWithCrossLinks(
 }
 
 // Build two parallel chains without cross-links (baseline)
-ClusterTreeModel<double> buildParallelChainsBaseline(int chain_length) {
-    ClusterTreeModel<double> model{};
-
-    Mat3<double> I3 = Mat3<double>::Identity();
-    Vec3<double> z3 = Vec3<double>::Zero();
-
+// Load two parallel chains (with or without loop) from URDF+
+ClusterTreeModel<double> buildParallelChainsFromURDF(const std::string& urdf_path) {
+    ClusterTreeModel<double> model;
+    model.buildModelFromURDF(urdf_path);
     model.setGravity(Vec3<double>{9.81, 0., 0.});
-
-    Mat3<double> link_inertia;
-    link_inertia << 0.1, 0., 0., 0., 0.1, 0., 0., 0., 0.1;
-    const SpatialInertia<double> link_spatial_inertia(1.0, Vec3<double>(0.5, 0., 0.), link_inertia);
-
-    ori::CoordinateAxis axis = ori::CoordinateAxis::Z;
-
-    // Build base link
-    std::string base_name = "base";
-    spatial::Transform<double> base_Xtree(I3, z3);
-    model.template appendBody<ClusterJoints::Revolute<double>>(
-        base_name, link_spatial_inertia, "ground", base_Xtree, axis);
-
-    // Build two parallel chains
-    std::string prev_chain1 = base_name;
-    std::string prev_chain2 = base_name;
-
-    for (int i = 1; i <= chain_length; ++i) {
-        // Chain 1 link
-        std::string link1_name = "chain1_link" + std::to_string(i);
-        spatial::Transform<double> link1_Xtree(I3, Vec3<double>(1.0, 0., 0.));
-        model.template appendBody<ClusterJoints::Revolute<double>>(
-            link1_name, link_spatial_inertia, prev_chain1, link1_Xtree, axis);
-        prev_chain1 = link1_name;
-
-        // Chain 2 link
-        std::string link2_name = "chain2_link" + std::to_string(i);
-        spatial::Transform<double> link2_Xtree(I3, Vec3<double>(1.0, 0., 0.));
-        model.template appendBody<ClusterJoints::Revolute<double>>(
-            link2_name, link_spatial_inertia, prev_chain2, link2_Xtree, axis);
-        prev_chain2 = link2_name;
-    }
-
     return model;
 }
 
@@ -494,12 +459,24 @@ void printResult(const DepthResult& r) {
 }
 
 int main() {
+
     std::cout << "\n===========================================================================\n";
     std::cout << "Parallel Chain Cross-Link Depth Benchmark\n";
     std::cout << "===========================================================================\n\n";
 
     std::cout << "Testing two parallel chains with cross-links (RevolutePair constraints)\n";
     std::cout << "at increasing depths to measure impact on derivative computation.\n\n";
+
+    // --- URDF+ DEMO ---
+    std::cout << "\n[URDF+] Loading 5-link parallel chains with loop at depth 3...\n";
+    std::string urdf_path = std::string(SOURCE_DIRECTORY) + "/../../urdf_benchmarks/parallel_chains_5links_loop3.urdf";
+    ClusterTreeModel<double> urdf_model = buildParallelChainsFromURDF(urdf_path);
+    DepthResult urdf_result = testModel(urdf_model, "URDF+_5L_Loop3", 5, 1, 3, true);
+    printHeader();
+    printResult(urdf_result);
+    std::cout << "\n[URDF+] Demo complete.\n\n";
+
+    // ...existing code...
 
     // =========================================================================
     // Randomized multi-pass benchmarking strategy
