@@ -42,6 +42,9 @@ namespace grbda
             DMat<Scalar> getSdotqd_q() const override;
             DMat<Scalar> getSdotqd_qd() const override;
 
+            // RevoluteTripleWithRotor has configuration-dependent S (uses CasADi)
+            bool hasConfigurationDependentS() const override { return true; }
+
             // Contraction-based derivatives (uses getSq)
             DMat<Scalar> evalSTimesVec_dq(const DVec<Scalar>& b) const override {
                 const int mss_dim = this->num_bodies_ * 6;

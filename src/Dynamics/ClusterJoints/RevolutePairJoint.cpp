@@ -1,5 +1,6 @@
 #include "grbda/Dynamics/ClusterJoints/RevolutePairJoint.h"
 #include "grbda/Utils/CasadiDerivatives.h"
+#include "grbda/Utils/JointDerivatives.h"
 
 namespace grbda
 {
@@ -283,6 +284,37 @@ namespace grbda
         RevolutePair<std::complex<double>>::getSdotqd_qd() const
         {
             return DMat<std::complex<double>>::Zero(12, 2);
+        }
+
+        template <typename Scalar>
+        DMat<Scalar> RevolutePair<Scalar>::evalSTimesVec_dq(const DVec<Scalar>& b) const
+        {
+            const int mss_dim = this->num_bodies_ * 6;
+            const auto& S_q = getSq();
+            return contractSqWithVector(S_q, b, mss_dim);
+        }
+
+        template <typename Scalar>
+        DMat<Scalar> RevolutePair<Scalar>::evalSTTimesVec_dq(const DVec<Scalar>& F) const
+        {
+            const auto& S_q = getSq();
+            return contractSqTransposeWithVector(S_q, F);
+        }
+
+        template <>
+        DMat<std::complex<double>>
+        RevolutePair<std::complex<double>>::evalSTimesVec_dq(const DVec<std::complex<double>>& b) const
+        {
+            (void)b;
+            return DMat<std::complex<double>>::Zero(12, 2);
+        }
+
+        template <>
+        DMat<std::complex<double>>
+        RevolutePair<std::complex<double>>::evalSTTimesVec_dq(const DVec<std::complex<double>>& F) const
+        {
+            (void)F;
+            return DMat<std::complex<double>>::Zero(2, 2);
         }
 
         template class RevolutePair<double>;

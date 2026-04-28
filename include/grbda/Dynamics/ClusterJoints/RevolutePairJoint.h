@@ -32,6 +32,13 @@ namespace grbda
             DMat<Scalar> getSdotqd_q() const override;
             DMat<Scalar> getSdotqd_qd() const override;
 
+            // RevolutePair has configuration-dependent S (uses CasADi)
+            bool hasConfigurationDependentS() const override { return true; }
+
+            // Contraction-based derivatives
+            DMat<Scalar> evalSTimesVec_dq(const DVec<Scalar>& b) const override;
+            DMat<Scalar> evalSTTimesVec_dq(const DVec<Scalar>& F) const override;
+
         private:
             char axisToChar(ori::CoordinateAxis axis) const;
             void initializeCasadiFunctions() const;
