@@ -1,0 +1,8 @@
+<?xml version="1.0"?>
+
+<robot name="parallel_chain_imp_3" xmlns:xacro="http://ros.org/wiki/xacro">
+    <xacro:include filename="../Implicit/implicit_parallel_chains_properties.xacro"/>
+
+    <xacro:add_constrained_parallel_links_and_joints_from_base/>
+
+</robot>
