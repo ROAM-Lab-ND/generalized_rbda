@@ -89,15 +89,20 @@ namespace grbda
             // These compute the Jacobian of S*b or S^T*F directly without materializing the S_q tensor
             // Default returns zero (for joints with constant S). Override for configuration-dependent S.
 
+            // Returns true if this joint has configuration-dependent motion subspace S(q)
+            // Override to return true for joints that use CasADi (GenericJoint)
+            virtual bool hasConfigurationDependentS() const { return false; }
+
             // Returns ∂(S*b)/∂q as a (6*num_bodies x nv) matrix
             virtual DMat<Scalar> evalSTimesVec_dq(const DVec<Scalar>& b) const {
-                const int mss_dim = num_bodies_ * 6;
-                return DMat<Scalar>::Zero(mss_dim, num_velocities_);
+                (void)b;  // Unused for constant S
+                return DMat<Scalar>();  // Return empty matrix for constant S joints
             }
 
             // Returns ∂(S^T*F)/∂q as a (nv x nv) matrix
             virtual DMat<Scalar> evalSTTimesVec_dq(const DVec<Scalar>& F) const {
-                return DMat<Scalar>::Zero(num_velocities_, num_velocities_);
+                (void)F;  // Unused for constant S
+                return DMat<Scalar>();  // Return empty matrix for constant S joints
             }
 
 

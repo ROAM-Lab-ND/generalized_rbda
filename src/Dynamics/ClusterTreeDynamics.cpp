@@ -29,6 +29,31 @@ namespace grbda
         prof_bwd_casadi_calls = 0;
     }
 
+    // Get profiling data without printing (returns averages per call)
+    // Returns: {fwd_kin, fwd_casadi, fwd_other, bwd_casadi, bwd_other, bwd_prop, total}
+    std::vector<double> getIDDerivativesProfilingData() {
+        if (prof_count == 0) return {0, 0, 0, 0, 0, 0, 0};
+        double total = prof_fwd_kin_us + prof_fwd_casadi_us + prof_fwd_other_us +
+                      prof_bwd_casadi_us + prof_bwd_other_us + prof_bwd_prop_us;
+        return {
+            prof_fwd_kin_us / prof_count,
+            prof_fwd_casadi_us / prof_count,
+            prof_fwd_other_us / prof_count,
+            prof_bwd_casadi_us / prof_count,
+            prof_bwd_other_us / prof_count,
+            prof_bwd_prop_us / prof_count,
+            total / prof_count
+        };
+    }
+
+    void resetIDDerivativesProfiling() {
+        prof_fwd_kin_us = prof_fwd_casadi_us = prof_fwd_other_us = 0;
+        prof_bwd_casadi_us = prof_bwd_other_us = prof_bwd_prop_us = 0;
+        prof_fwd_casadi_calls = prof_bwd_casadi_calls = 0;
+        prof_count = 0;
+        prof_enabled = false;
+    }
+
     // Call this to print and reset profiling results
     void printIDDerivativesProfiling() {
         if (prof_count > 0) {
@@ -538,30 +563,40 @@ namespace grbda
             }
 
             // Compute alpha = d(S*qd)/dq and beta = d(S*qdd)/dq using efficient contractions
+            // Only compute for joints with configuration-dependent S (e.g., GenericJoint with CasADi)
             const DVec<Scalar> cluster_qd = qd.segment(cluster->velocity_index_, num_vel);
             const DVec<Scalar> cluster_qdd = qdd.segment(cluster->velocity_index_, num_vel);
 
-            auto tf1 = clock::now();
-            const DMat<Scalar> alpha = cluster->joint_->evalSTimesVec_dq(cluster_qd);
-            const DMat<Scalar> beta = cluster->joint_->evalSTimesVec_dq(cluster_qdd);
-            const DMat<Scalar> &Sdotqd_q = cluster->joint_->getSdotqd_q();
-            auto tf2 = clock::now();
+            DMat<Scalar> alpha, beta, Sdotqd_q;
+            const bool has_config_dependent_S = cluster->joint_->hasConfigurationDependentS();
+            double iter_casadi_time = 0;
 
-            if (prof_enabled) {
-                fwd_other_local += std::chrono::duration<double, std::micro>(tf1 - tf0).count();
-                fwd_casadi_local += std::chrono::duration<double, std::micro>(tf2 - tf1).count();
-                // Count actual CasADi calls (non-zero alpha means GenericJoint was used)
-                if (alpha.squaredNorm() > 0 || Sdotqd_q.squaredNorm() > 0) {
+            if (has_config_dependent_S) {
+                auto tf1 = clock::now();
+                alpha = cluster->joint_->evalSTimesVec_dq(cluster_qd);
+                beta = cluster->joint_->evalSTimesVec_dq(cluster_qdd);
+                Sdotqd_q = cluster->joint_->getSdotqd_q();
+                auto tf2 = clock::now();
+
+                iter_casadi_time = std::chrono::duration<double, std::micro>(tf2 - tf1).count();
+                if (prof_enabled) {
+                    fwd_casadi_local += iter_casadi_time;
                     prof_fwd_casadi_calls += 3;  // evalSTimesVec_dq x2 + getSdotqd_q
                 }
             }
 
             auto tf3 = clock::now();
+            if (prof_enabled) {
+                // Forward other = total cluster time minus CasADi time for this iteration
+                fwd_other_local += std::chrono::duration<double, std::micro>(tf3 - tf0).count() - iter_casadi_time;
+            }
 
             // Psi_dot = crm(v_parent_up) * S + alpha
             // Use optimized motionCrossTimesMatrix to avoid building full cross-product matrix
             cluster->Psi_dot_ = spatial::motionCrossTimesMatrix(v_parent_up, S);
-            cluster->Psi_dot_ += alpha;
+            if (has_config_dependent_S) {
+                cluster->Psi_dot_ += alpha;
+            }
 
             // Cache crm(v)*S since it's used in both Psi_ddot and Upsilon_dot
             const DMat<Scalar> crm_v_S = spatial::motionCrossTimesMatrix(v, S);
@@ -569,8 +604,10 @@ namespace grbda
             // Psi_ddot = crm(a_parent_up)*S + crm(v_parent_up)*Psi_dot + Sdotqd_q + beta + crm(v)*alpha
             cluster->Psi_ddot_ = spatial::motionCrossTimesMatrix(a_parent_up, S);
             cluster->Psi_ddot_ += spatial::motionCrossTimesMatrix(v_parent_up, cluster->Psi_dot_);
-            cluster->Psi_ddot_ += Sdotqd_q + beta;
-            cluster->Psi_ddot_ += spatial::motionCrossTimesMatrix(v, alpha);
+            if (has_config_dependent_S) {
+                cluster->Psi_ddot_ += Sdotqd_q + beta;
+                cluster->Psi_ddot_ += spatial::motionCrossTimesMatrix(v, alpha);
+            }
 
             // Upsilon_dot = crm(v)*S + Psi_dot + S_ring (reuse cached crm_v_S)
             cluster->Upsilon_dot_ = crm_v_S;
@@ -654,12 +691,15 @@ namespace grbda
                     }
                     else  // j == i (diagonal block)
                     {
-                        auto tc0 = clock::now();
-                        DMat<Scalar> st_dq = cluster_i->joint_->evalSTTimesVec_dq(F);
-                        dtau_dq.block(ii, ii, num_vel_i, num_vel_i) += st_dq;
-                        if (prof_enabled) {
-                            iter_casadi_us = std::chrono::duration<double, std::micro>(clock::now() - tc0).count();
-                            if (st_dq.squaredNorm() > 0) prof_bwd_casadi_calls++;
+                        // Only compute S^T derivative for joints with config-dependent S
+                        if (cluster_i->joint_->hasConfigurationDependentS()) {
+                            auto tc0 = clock::now();
+                            DMat<Scalar> st_dq = cluster_i->joint_->evalSTTimesVec_dq(F);
+                            dtau_dq.block(ii, ii, num_vel_i, num_vel_i) += st_dq;
+                            if (prof_enabled) {
+                                iter_casadi_us = std::chrono::duration<double, std::micro>(clock::now() - tc0).count();
+                                prof_bwd_casadi_calls++;
+                            }
                         }
                     }
 
@@ -697,12 +737,15 @@ namespace grbda
                     }
                     else
                     {
-                        auto tc0 = clock::now();
-                        DMat<Scalar> st_dq = cluster_i->joint_->evalSTTimesVec_dq(F);
-                        dtau_dq.block(ii, ii, num_vel_i, num_vel_i) += st_dq;
-                        if (prof_enabled) {
-                            iter_casadi_us = std::chrono::duration<double, std::micro>(clock::now() - tc0).count();
-                            if (st_dq.squaredNorm() > 0) prof_bwd_casadi_calls++;
+                        // Only compute S^T derivative for joints with config-dependent S
+                        if (cluster_i->joint_->hasConfigurationDependentS()) {
+                            auto tc0 = clock::now();
+                            DMat<Scalar> st_dq = cluster_i->joint_->evalSTTimesVec_dq(F);
+                            dtau_dq.block(ii, ii, num_vel_i, num_vel_i) += st_dq;
+                            if (prof_enabled) {
+                                iter_casadi_us = std::chrono::duration<double, std::micro>(clock::now() - tc0).count();
+                                prof_bwd_casadi_calls++;
+                            }
                         }
                     }
 

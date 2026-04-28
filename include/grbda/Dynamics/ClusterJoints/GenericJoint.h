@@ -157,6 +157,9 @@ namespace grbda
             DMat<Scalar> getSdotqd_q() const override;
             DMat<Scalar> getSdotqd_qd() const override;
 
+            // GenericJoint has configuration-dependent S (uses CasADi)
+            bool hasConfigurationDependentS() const override { return generic_constraint_ != nullptr; }
+
             // Contraction-based derivatives (efficient, avoids materializing S_q tensor)
             DMat<Scalar> evalSTimesVec_dq(const DVec<Scalar>& b) const override;
             DMat<Scalar> evalSTTimesVec_dq(const DVec<Scalar>& F) const override;
