@@ -160,10 +160,43 @@ namespace grbda
             SX dSdotqd_dqd1 = jacobian(Sdotqd, qd1);
             SX dSdotqd_dqd2 = jacobian(Sdotqd, qd2);
 
-            f_dS_dq1_ = Function("dS_dq1", {q1, q2}, {dS_body2_col0_dq1});
-            f_dS_dq2_ = Function("dS_dq2", {q1, q2}, {dS_body2_col0_dq2});
-            f_Sdotqd_q_ = Function("Sdotqd_q", {q1, q2, qd1, qd2}, {horzcat(dSdotqd_dq1, dSdotqd_dq2)});
-            f_Sdotqd_qd_ = Function("Sdotqd_qd", {q1, q2, qd1, qd2}, {horzcat(dSdotqd_dqd1, dSdotqd_dqd2)});
+            // Use JIT compilation for faster function evaluation (clang with march=native)
+            casadi::Dict jit_opts;
+            jit_opts["jit"] = true;
+            jit_opts["compiler"] = "shell";
+            jit_opts["jit_options"] = casadi::Dict{{"compiler", "clang"}, {"flags", "-O3 -march=native"}};
+
+            f_dS_dq1_ = Function("dS_dq1", {q1, q2}, {dS_body2_col0_dq1}, jit_opts);
+            f_dS_dq2_ = Function("dS_dq2", {q1, q2}, {dS_body2_col0_dq2}, jit_opts);
+            f_Sdotqd_q_ = Function("Sdotqd_q", {q1, q2, qd1, qd2}, {horzcat(dSdotqd_dq1, dSdotqd_dq2)}, jit_opts);
+            f_Sdotqd_qd_ = Function("Sdotqd_qd", {q1, q2, qd1, qd2}, {horzcat(dSdotqd_dqd1, dSdotqd_dqd2)}, jit_opts);
+
+            // Pre-allocate work buffers for low-level CasADi API
+            size_t sz_arg, sz_res, sz_iw, sz_w;
+
+            f_dS_dq1_.sz_work(sz_arg, sz_res, sz_iw, sz_w);
+            dS_dq1_arg_buf_.resize(2);  // q1, q2
+            dS_dq1_res_buf_.resize(6);  // 6x1 output
+            dS_dq1_iw_.resize(sz_iw);
+            dS_dq1_w_.resize(sz_w);
+
+            f_dS_dq2_.sz_work(sz_arg, sz_res, sz_iw, sz_w);
+            dS_dq2_arg_buf_.resize(2);  // q1, q2
+            dS_dq2_res_buf_.resize(6);  // 6x1 output
+            dS_dq2_iw_.resize(sz_iw);
+            dS_dq2_w_.resize(sz_w);
+
+            f_Sdotqd_q_.sz_work(sz_arg, sz_res, sz_iw, sz_w);
+            Sdotqd_q_arg_buf_.resize(4);   // q1, q2, qd1, qd2
+            Sdotqd_q_res_buf_.resize(12);  // 6x2 output
+            Sdotqd_q_iw_.resize(sz_iw);
+            Sdotqd_q_w_.resize(sz_w);
+
+            f_Sdotqd_qd_.sz_work(sz_arg, sz_res, sz_iw, sz_w);
+            Sdotqd_qd_arg_buf_.resize(4);   // q1, q2, qd1, qd2
+            Sdotqd_qd_res_buf_.resize(12);  // 6x2 output
+            Sdotqd_qd_iw_.resize(sz_iw);
+            Sdotqd_qd_w_.resize(sz_w);
 
             casadi_functions_initialized_ = true;
         }
@@ -183,27 +216,55 @@ namespace grbda
 
             S_q_cache_.assign(nv, DMat<Scalar>::Zero(spatial_dim, nv));
 
-            std::vector<casadi::DM> input = {
-                casadi::DM(static_cast<double>(q_cache_(0))),
-                casadi::DM(static_cast<double>(q_cache_(1)))
-            };
-            auto res_dq1 = f_dS_dq1_(input);
-            auto res_dq2 = f_dS_dq2_(input);
+            if constexpr (std::is_same_v<Scalar, double>) {
+                // Use low-level CasADi API for maximum performance
+                dS_dq1_arg_buf_[0] = q_cache_(0);
+                dS_dq1_arg_buf_[1] = q_cache_(1);
+                const double* arg_ptrs1[2] = {&dS_dq1_arg_buf_[0], &dS_dq1_arg_buf_[1]};
+                double* res_ptrs1[1] = {dS_dq1_res_buf_.data()};
+                f_dS_dq1_(arg_ptrs1, res_ptrs1, dS_dq1_iw_.data(), dS_dq1_w_.data(), 0);
 
-            // Create ∂X_intra_S_span/∂qi (12x2 matrix, mostly zero)
-            DMat<Scalar> dX_intra_dq1 = DMat<Scalar>::Zero(spatial_dim, 2);
-            DMat<Scalar> dX_intra_dq2 = DMat<Scalar>::Zero(spatial_dim, 2);
+                dS_dq2_arg_buf_[0] = q_cache_(0);
+                dS_dq2_arg_buf_[1] = q_cache_(1);
+                const double* arg_ptrs2[2] = {&dS_dq2_arg_buf_[0], &dS_dq2_arg_buf_[1]};
+                double* res_ptrs2[1] = {dS_dq2_res_buf_.data()};
+                f_dS_dq2_(arg_ptrs2, res_ptrs2, dS_dq2_iw_.data(), dS_dq2_w_.data(), 0);
 
-            // Only the [link2, link1] block is non-zero (rows 6-11, column 0)
-            for (int i = 0; i < 6; ++i) {
-                dX_intra_dq1(6 + i, 0) = static_cast<Scalar>(static_cast<double>(res_dq1[0](i)));
-                dX_intra_dq2(6 + i, 0) = static_cast<Scalar>(static_cast<double>(res_dq2[0](i)));
+                // Create ∂X_intra_S_span/∂qi (12x2 matrix, mostly zero)
+                DMat<Scalar> dX_intra_dq1 = DMat<Scalar>::Zero(spatial_dim, 2);
+                DMat<Scalar> dX_intra_dq2 = DMat<Scalar>::Zero(spatial_dim, 2);
+
+                // Only the [link2, link1] block is non-zero (rows 6-11, column 0)
+                for (int i = 0; i < 6; ++i) {
+                    dX_intra_dq1(6 + i, 0) = dS_dq1_res_buf_[i];
+                    dX_intra_dq2(6 + i, 0) = dS_dq2_res_buf_[i];
+                }
+
+                // Compute ∂S/∂qi = (∂X_intra_S_span/∂qi) * G
+                const DMat<Scalar> &G = this->loop_constraint_->G();
+                S_q_cache_[0] = dX_intra_dq1 * G;  // 12x2 matrix
+                S_q_cache_[1] = dX_intra_dq2 * G;  // 12x2 matrix
+            } else {
+                // Fallback to high-level API for other scalar types
+                std::vector<casadi::DM> input = {
+                    casadi::DM(static_cast<double>(q_cache_(0))),
+                    casadi::DM(static_cast<double>(q_cache_(1)))
+                };
+                auto res_dq1 = f_dS_dq1_(input);
+                auto res_dq2 = f_dS_dq2_(input);
+
+                DMat<Scalar> dX_intra_dq1 = DMat<Scalar>::Zero(spatial_dim, 2);
+                DMat<Scalar> dX_intra_dq2 = DMat<Scalar>::Zero(spatial_dim, 2);
+
+                for (int i = 0; i < 6; ++i) {
+                    dX_intra_dq1(6 + i, 0) = static_cast<Scalar>(static_cast<double>(res_dq1[0](i)));
+                    dX_intra_dq2(6 + i, 0) = static_cast<Scalar>(static_cast<double>(res_dq2[0](i)));
+                }
+
+                const DMat<Scalar> &G = this->loop_constraint_->G();
+                S_q_cache_[0] = dX_intra_dq1 * G;
+                S_q_cache_[1] = dX_intra_dq2 * G;
             }
-
-            // Compute ∂S/∂qi = (∂X_intra_S_span/∂qi) * G
-            const DMat<Scalar> &G = this->loop_constraint_->G();
-            S_q_cache_[0] = dX_intra_dq1 * G;  // 12x2 matrix
-            S_q_cache_[1] = dX_intra_dq2 * G;  // 12x2 matrix
 
             S_q_cache_valid_ = true;
             return S_q_cache_;
@@ -216,22 +277,44 @@ namespace grbda
             const int nv = 2;
             const int spatial_dim = 12;
 
-            std::vector<casadi::DM> input = {
-                casadi::DM(static_cast<double>(q_cache_(0))),
-                casadi::DM(static_cast<double>(q_cache_(1))),
-                casadi::DM(static_cast<double>(qd_cache_(0))),
-                casadi::DM(static_cast<double>(qd_cache_(1)))
-            };
-
-            std::vector<casadi::DM> result = f_Sdotqd_q_(input);
-            casadi::DM Sdotqd_q_result = result[0];  // 6x2 matrix
-
             DMat<Scalar> output = DMat<Scalar>::Zero(spatial_dim, nv);
 
-            // Fill in the link2 block (rows 6-11)
-            for (int i = 0; i < 6; ++i) {
+            if constexpr (std::is_same_v<Scalar, double>) {
+                // Use low-level CasADi API for maximum performance
+                Sdotqd_q_arg_buf_[0] = q_cache_(0);
+                Sdotqd_q_arg_buf_[1] = q_cache_(1);
+                Sdotqd_q_arg_buf_[2] = qd_cache_(0);
+                Sdotqd_q_arg_buf_[3] = qd_cache_(1);
+
+                const double* arg_ptrs[4] = {
+                    &Sdotqd_q_arg_buf_[0], &Sdotqd_q_arg_buf_[1],
+                    &Sdotqd_q_arg_buf_[2], &Sdotqd_q_arg_buf_[3]
+                };
+                double* res_ptrs[1] = {Sdotqd_q_res_buf_.data()};
+                f_Sdotqd_q_(arg_ptrs, res_ptrs, Sdotqd_q_iw_.data(), Sdotqd_q_w_.data(), 0);
+
+                // Fill in the link2 block (rows 6-11), CasADi uses column-major
                 for (int j = 0; j < nv; ++j) {
-                    output(6 + i, j) = static_cast<Scalar>(static_cast<double>(Sdotqd_q_result(i, j)));
+                    for (int i = 0; i < 6; ++i) {
+                        output(6 + i, j) = Sdotqd_q_res_buf_[j * 6 + i];
+                    }
+                }
+            } else {
+                // Fallback to high-level API for other scalar types
+                std::vector<casadi::DM> input = {
+                    casadi::DM(static_cast<double>(q_cache_(0))),
+                    casadi::DM(static_cast<double>(q_cache_(1))),
+                    casadi::DM(static_cast<double>(qd_cache_(0))),
+                    casadi::DM(static_cast<double>(qd_cache_(1)))
+                };
+
+                std::vector<casadi::DM> result = f_Sdotqd_q_(input);
+                casadi::DM Sdotqd_q_result = result[0];  // 6x2 matrix
+
+                for (int i = 0; i < 6; ++i) {
+                    for (int j = 0; j < nv; ++j) {
+                        output(6 + i, j) = static_cast<Scalar>(static_cast<double>(Sdotqd_q_result(i, j)));
+                    }
                 }
             }
 
@@ -244,18 +327,44 @@ namespace grbda
             initializeCasadiFunctions();
             const int nv = 2;
             const int spatial_dim = 12;
-            std::vector<casadi::DM> input = {
-                casadi::DM(static_cast<double>(q_cache_(0))),
-                casadi::DM(static_cast<double>(q_cache_(1))),
-                casadi::DM(static_cast<double>(qd_cache_(0))),
-                casadi::DM(static_cast<double>(qd_cache_(1)))
-            };
-            auto res = f_Sdotqd_qd_(input);
+
             DMat<Scalar> result = DMat<Scalar>::Zero(spatial_dim, nv);
-            for (int i = 0; i < 6; ++i) {
-                result(6 + i, 0) = static_cast<Scalar>(static_cast<double>(res[0](i, 0)));
-                result(6 + i, 1) = static_cast<Scalar>(static_cast<double>(res[0](i, 1)));
+
+            if constexpr (std::is_same_v<Scalar, double>) {
+                // Use low-level CasADi API for maximum performance
+                Sdotqd_qd_arg_buf_[0] = q_cache_(0);
+                Sdotqd_qd_arg_buf_[1] = q_cache_(1);
+                Sdotqd_qd_arg_buf_[2] = qd_cache_(0);
+                Sdotqd_qd_arg_buf_[3] = qd_cache_(1);
+
+                const double* arg_ptrs[4] = {
+                    &Sdotqd_qd_arg_buf_[0], &Sdotqd_qd_arg_buf_[1],
+                    &Sdotqd_qd_arg_buf_[2], &Sdotqd_qd_arg_buf_[3]
+                };
+                double* res_ptrs[1] = {Sdotqd_qd_res_buf_.data()};
+                f_Sdotqd_qd_(arg_ptrs, res_ptrs, Sdotqd_qd_iw_.data(), Sdotqd_qd_w_.data(), 0);
+
+                // Fill in the link2 block (rows 6-11), CasADi uses column-major
+                for (int j = 0; j < nv; ++j) {
+                    for (int i = 0; i < 6; ++i) {
+                        result(6 + i, j) = Sdotqd_qd_res_buf_[j * 6 + i];
+                    }
+                }
+            } else {
+                // Fallback to high-level API for other scalar types
+                std::vector<casadi::DM> input = {
+                    casadi::DM(static_cast<double>(q_cache_(0))),
+                    casadi::DM(static_cast<double>(q_cache_(1))),
+                    casadi::DM(static_cast<double>(qd_cache_(0))),
+                    casadi::DM(static_cast<double>(qd_cache_(1)))
+                };
+                auto res = f_Sdotqd_qd_(input);
+                for (int i = 0; i < 6; ++i) {
+                    result(6 + i, 0) = static_cast<Scalar>(static_cast<double>(res[0](i, 0)));
+                    result(6 + i, 1) = static_cast<Scalar>(static_cast<double>(res[0](i, 1)));
+                }
             }
+
             return result;
         }
 

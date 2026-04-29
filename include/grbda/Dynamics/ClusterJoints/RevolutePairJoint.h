@@ -64,6 +64,24 @@ namespace grbda
             mutable casadi::Function f_Sdotqd_q_;
             mutable casadi::Function f_Sdotqd_qd_;
 
+            // Pre-allocated work buffers for low-level CasADi API
+            mutable std::vector<double> dS_dq1_arg_buf_;
+            mutable std::vector<double> dS_dq1_res_buf_;
+            mutable std::vector<casadi_int> dS_dq1_iw_;
+            mutable std::vector<double> dS_dq1_w_;
+            mutable std::vector<double> dS_dq2_arg_buf_;
+            mutable std::vector<double> dS_dq2_res_buf_;
+            mutable std::vector<casadi_int> dS_dq2_iw_;
+            mutable std::vector<double> dS_dq2_w_;
+            mutable std::vector<double> Sdotqd_q_arg_buf_;
+            mutable std::vector<double> Sdotqd_q_res_buf_;
+            mutable std::vector<casadi_int> Sdotqd_q_iw_;
+            mutable std::vector<double> Sdotqd_q_w_;
+            mutable std::vector<double> Sdotqd_qd_arg_buf_;
+            mutable std::vector<double> Sdotqd_qd_res_buf_;
+            mutable std::vector<casadi_int> Sdotqd_qd_iw_;
+            mutable std::vector<double> Sdotqd_qd_w_;
+
             // Cache for current state
             mutable DVec<Scalar> q_cache_;
             mutable DVec<Scalar> qd_cache_;
