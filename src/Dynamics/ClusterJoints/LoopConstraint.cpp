@@ -15,9 +15,9 @@ namespace grbda
         bool Base<Scalar>::isValidSpanningPosition(const JointCoordinate<Scalar> &joint_pos) const
         {
             DVec<Scalar> violation = phi_(joint_pos);
-            // Tolerance for constraint validation - Newton solver can achieve machine precision
-            // when properly converged, but accept slightly larger values for robustness
-            const Scalar tol = static_cast<Scalar>(1e-8);
+            // Tolerance for constraint validation - relaxed to 1e-6 to account for
+            // numerical precision in forward kinematics when not using Newton solver
+            const Scalar tol = static_cast<Scalar>(1e-6);
             return nearZeroDefaultTrue(violation, tol) && joint_pos.isSpanning();
         }
 

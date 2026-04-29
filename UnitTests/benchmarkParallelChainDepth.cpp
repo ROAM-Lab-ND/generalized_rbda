@@ -2,7 +2,6 @@
 #include <iomanip>
 #include <fstream>
 #include <vector>
-#include <set>
 #include <map>
 #include <chrono>
 #include <cmath>
@@ -11,7 +10,42 @@
 #include <numeric>
 #include <random>
 #include "grbda/Dynamics/ClusterTreeModel.h"
-#include "grbda/Robots/RobotTypes.h"
+#include "grbda/Dynamics/ClusterJoints/LoopConstraint.h"
+#include "config.h"
+
+using namespace grbda;
+
+// Helper to print ClusterJointTypes as string
+namespace grbda {
+inline const char* ClusterJointTypeToString(ClusterJointTypes type) {
+    switch (type) {
+        case ClusterJointTypes::FourBar: return "FourBar";
+        case ClusterJointTypes::Free: return "Free";
+        case ClusterJointTypes::Generic: return "Generic";
+        case ClusterJointTypes::Revolute: return "Revolute";
+        case ClusterJointTypes::RevolutePair: return "RevolutePair";
+        case ClusterJointTypes::RevolutePairWithRotor: return "RevolutePairWithRotor";
+        case ClusterJointTypes::RevoluteTripleWithRotor: return "RevoluteTripleWithRotor";
+        case ClusterJointTypes::RevoluteWithRotor: return "RevoluteWithRotor";
+        case ClusterJointTypes::TelloHipDifferential: return "TelloHipDifferential";
+        case ClusterJointTypes::TelloKneeAnkleDifferential: return "TelloKneeAnkleDifferential";
+        default: return "Unknown";
+    }
+}
+}
+#include <iostream>
+#include <iomanip>
+#include <fstream>
+#include <vector>
+#include <map>
+#include <chrono>
+#include <cmath>
+#include <string>
+#include <algorithm>
+#include <numeric>
+#include <random>
+#include "grbda/Dynamics/ClusterTreeModel.h"
+#include "grbda/Dynamics/ClusterJoints/LoopConstraint.h"
 #include "config.h"
 
 using namespace grbda;
@@ -20,56 +54,63 @@ using namespace grbda;
 constexpr unsigned int RANDOM_SEED = 42;
 
 // ============================================================================
-// Parallel Chain Branch Depth Benchmark
+// Parallel Chain Loop Size Benchmark
 // ============================================================================
-// This benchmark tests how computational cost changes based on:
-// 1. Two parallel chains of identical length sharing a base joint
-// 2. Branch structures added at varying depths along chain1
+// This benchmark tests how computational cost changes based on loop size
+// in an A-shaped parallel chain topology:
 //
-// The structure is:
-//        Base (root)
-//       /          \
-//    Chain1        Chain2
-//     link1         link1
-//      |--branch1 (3 links)
-//     link2         link2
-//      |--branch2 (3 links)
-//     ...
+//          base
+//         /    \
+//    chain1    chain2
+//      |          |
+//     ...        ...
+//      |          |
+//   link_1_k   link_2_k
+//      |          |
+//  connecting_rod-+     <-- loop constraint connects chains here
+//      |          |
+//     ...        ...
 //
-// The goal is to understand how tree depth and branching
-// affects derivative computation cost.
+// The "loop_size" parameter determines where the cross-link connects:
+//   loop_size = 2 * connection_depth + 1
+//
+// A larger loop_size means the connection is deeper in the tree,
+// creating a larger closed loop through the kinematic structure.
 // ============================================================================
 
-struct DepthResult {
-    std::string config;
-    int chain_length;           // Length of each chain
-    int num_cross_links;        // Number of cross-links connecting the chains
-    int cross_link_depths;      // Depths at which cross-links are placed (e.g., 1, 1-2, 1-2-3)
-    int dof;
-    double avg_time_us;
-    double std_time_us;         // Standard deviation for noise assessment
-    double median_time_us;      // Median (more robust to outliers)
-    double min_time_us;         // Minimum time (best estimate of true time)
-    double max_error_dq;
-    double max_error_dqdot;
+// URDF directory for parallel chain models
+const std::string urdf_directory = std::string(SOURCE_DIRECTORY) + "/Benchmarking/urdfs/";
+
+struct BenchmarkResult {
+    int chain_depth;        // Total depth of each chain (5, 10, 20, or 40)
+    int loop_size;          // Size of the closed loop (2*connection_depth + 1)
+    int connection_depth;   // Depth at which chains are connected
+    int dof;                // Degrees of freedom
+    int num_bodies;         // Number of bodies in the model
+    double min_time_us;     // Minimum time (best estimate of true cost)
+    double mean_time_us;    // Mean time across samples
+    double median_time_us;  // Median time
+    double std_time_us;     // Standard deviation
+    double max_error_dq;    // Max error in dtau/dq
+    double max_error_dqdot; // Max error in dtau/dqdot
+    bool is_baseline;       // True if this is the open-chain baseline (no loop)
 };
 
-// Compute statistics from a vector of timing samples
+// Compute statistics from timing samples
 struct TimingStats {
+    double min;
+    double max;
     double mean;
     double median;
     double std_dev;
-    double min;
-    double max;
-    double trimmed_mean;  // Mean after removing top/bottom 10%
+    double trimmed_mean;
 };
 
 TimingStats computeStats(std::vector<double>& samples) {
-    TimingStats stats;
+    TimingStats stats = {0, 0, 0, 0, 0, 0};
     size_t n = samples.size();
-    if (n == 0) return {0, 0, 0, 0, 0, 0};
+    if (n == 0) return stats;
 
-    // Sort for median and percentiles
     std::sort(samples.begin(), samples.end());
 
     stats.min = samples.front();
@@ -78,10 +119,8 @@ TimingStats computeStats(std::vector<double>& samples) {
         ? (samples[n/2 - 1] + samples[n/2]) / 2.0
         : samples[n/2];
 
-    // Mean
     stats.mean = std::accumulate(samples.begin(), samples.end(), 0.0) / n;
 
-    // Standard deviation
     double sq_sum = 0.0;
     for (double s : samples) {
         sq_sum += (s - stats.mean) * (s - stats.mean);
@@ -104,7 +143,7 @@ TimingStats computeStats(std::vector<double>& samples) {
     return stats;
 }
 
-// Helper to compute finite difference derivatives for validation
+// Compute finite difference derivatives for validation
 template<typename Scalar>
 std::pair<DMat<Scalar>, DMat<Scalar>> computeFiniteDifferenceDerivatives(
     ClusterTreeModel<Scalar>& model,
@@ -114,8 +153,8 @@ std::pair<DMat<Scalar>, DMat<Scalar>> computeFiniteDifferenceDerivatives(
     double h = 1e-7)
 {
     const int nDOF = model.getNumDegreesOfFreedom();
-    DMat<Scalar> dtau_dq_numerical(nDOF, nDOF);
-    DMat<Scalar> dtau_dqdot_numerical(nDOF, nDOF);
+    DMat<Scalar> dtau_dq(nDOF, nDOF);
+    DMat<Scalar> dtau_dqdot(nDOF, nDOF);
 
     for (int j = 0; j < nDOF; ++j) {
         DVec<Scalar> q_plus = q;
@@ -147,7 +186,7 @@ std::pair<DMat<Scalar>, DMat<Scalar>> computeFiniteDifferenceDerivatives(
         model.setState(state_minus);
         DVec<Scalar> tau_minus = model.inverseDynamics(ydd);
 
-        dtau_dq_numerical.col(j) = (tau_plus - tau_minus) / (2.0 * h);
+        dtau_dq.col(j) = (tau_plus - tau_minus) / (2.0 * h);
     }
 
     for (int j = 0; j < nDOF; ++j) {
@@ -180,212 +219,130 @@ std::pair<DMat<Scalar>, DMat<Scalar>> computeFiniteDifferenceDerivatives(
         model.setState(state_minus);
         DVec<Scalar> tau_minus = model.inverseDynamics(ydd);
 
-        dtau_dqdot_numerical.col(j) = (tau_plus - tau_minus) / (2.0 * h);
+        dtau_dqdot.col(j) = (tau_plus - tau_minus) / (2.0 * h);
     }
 
-    return {dtau_dq_numerical, dtau_dqdot_numerical};
+    return {dtau_dq, dtau_dqdot};
 }
 
-// Build two parallel chains of length N sharing a base, with cross-links
-// (RevolutePair constraints) at specified depths
-// cross_link_depths: set of depths where cross-links should be placed
-// Example: cross_link_depths = {1, 3} places cross-links at depth 1 and 3
-ClusterTreeModel<double> buildParallelChainsWithCrossLinks(
-    int chain_length,
-    const std::set<int>& cross_link_depths) {
-    
-    ClusterTreeModel<double> model{};
+// Available configurations from the URDF files
+// Using Implicit constraint type which creates true A-shape topology with loop constraints
+struct ParallelChainConfig {
+    int depth;
+    std::vector<int> loop_sizes;  // Available loop sizes for this depth
+};
 
-    Mat3<double> I3 = Mat3<double>::Identity();
-    Vec3<double> z3 = Vec3<double>::Zero();
-
-    model.setGravity(Vec3<double>{9.81, 0., 0.});
-
-    Mat3<double> link_inertia;
-    link_inertia << 0.1, 0., 0., 0., 0.1, 0., 0., 0., 0.1;
-    const SpatialInertia<double> link_spatial_inertia(1.0, Vec3<double>(0.5, 0., 0.), link_inertia);
-
-    ori::CoordinateAxis axis = ori::CoordinateAxis::Z;
-
-    // Build base link
-    std::string base_name = "base";
-    spatial::Transform<double> base_Xtree(I3, z3);
-    model.template appendBody<ClusterJoints::Revolute<double>>(
-        base_name, link_spatial_inertia, "ground", base_Xtree, axis);
-
-    // Build two parallel chains
-    std::vector<std::string> chain1_links;
-    std::vector<std::string> chain2_links;
-    
-    std::string prev_chain1 = base_name;
-    std::string prev_chain2 = base_name;
-
-    for (int i = 1; i <= chain_length; ++i) {
-        // Chain 1 link
-        std::string link1_name = "chain1_link" + std::to_string(i);
-        spatial::Transform<double> link1_Xtree(I3, Vec3<double>(1.0, 0., 0.));
-        model.template appendBody<ClusterJoints::Revolute<double>>(
-            link1_name, link_spatial_inertia, prev_chain1, link1_Xtree, axis);
-        chain1_links.push_back(link1_name);
-        prev_chain1 = link1_name;
-
-        // Chain 2 link
-        std::string link2_name = "chain2_link" + std::to_string(i);
-        spatial::Transform<double> link2_Xtree(I3, Vec3<double>(1.0, 0., 0.));
-        model.template appendBody<ClusterJoints::Revolute<double>>(
-            link2_name, link_spatial_inertia, prev_chain2, link2_Xtree, axis);
-        chain2_links.push_back(link2_name);
-        prev_chain2 = link2_name;
-
-        // Add cross-link at this depth if specified  
-        if (cross_link_depths.count(i)) {
-            // Create a loop constraint at this depth
-            // Use RevolutePair at the same depth on both chains to create the loop
-            std::string pair_cluster_name = "loop_revpair_depth" + std::to_string(i);
-            
-            // Create two link pairs - one from each chain
-            std::string link_a1 = "loop_linkA1_depth" + std::to_string(i);
-            std::string link_a2 = "loop_linkA2_depth" + std::to_string(i);
-            std::string link_b1 = "loop_linkB1_depth" + std::to_string(i);
-            std::string link_b2 = "loop_linkB2_depth" + std::to_string(i);
-            
-            // Both links descend from chain1_link_i to form constraint pair
-            spatial::Transform<double> link_a1_Xtree(I3, Vec3<double>(0.0, 1.0, 0.));
-            spatial::Transform<double> link_a2_Xtree(I3, Vec3<double>(0.0, -1.0, 0.));
-            
-            auto body_a1 = model.registerBody(link_a1, link_spatial_inertia,
-                                            link1_name, link_a1_Xtree);
-            auto body_a2 = model.registerBody(link_a2, link_spatial_inertia,
-                                            link1_name, link_a2_Xtree);
-            
-            // Create constraint joints
-            typedef grbda::ClusterJoints::RevolutePairWithRotor<double> RevPairRotor;
-            typedef grbda::ClusterJoints::ParallelBeltTransmissionModule<1, double> ProxTransModule;
-            typedef grbda::ClusterJoints::ParallelBeltTransmissionModule<2, double> DistTransModule;
-            
-            // Create rotor bodies for the RevolutePair
-            std::string rotor_a = "loop_rotorA_depth" + std::to_string(i);
-            std::string rotor_b = "loop_rotorB_depth" + std::to_string(i);
-            
-            Mat3<double> rotor_inertia;
-            rotor_inertia << 0., 0., 0., 0., 0., 0., 0., 0., 1e-4;
-            SpatialInertia<double> rotor_spatial_inertia(0., Vec3<double>::Zero(), rotor_inertia);
-            
-            auto rotor_body_a = model.registerBody(rotor_a, rotor_spatial_inertia,
-                                                  link1_name, link_a1_Xtree);
-            auto rotor_body_b = model.registerBody(rotor_b, rotor_spatial_inertia,
-                                                  link1_name, link_a2_Xtree);
-            
-            // Create RevolutePair modules
-            ProxTransModule moduleA{body_a1, rotor_body_a, axis, axis, 2.0, Vec1<double>{3.0}};
-            DistTransModule moduleB{body_a2, rotor_body_b, axis, axis, 2.0, Vec2<double>{3.0, 1.0}};
-            
-            // Append as cluster - this creates the implicit loop constraint
-            model.template appendRegisteredBodiesAsCluster<RevPairRotor>(pair_cluster_name, moduleA, moduleB);
-        }
-    }
-
-    return model;
+std::vector<ParallelChainConfig> getAvailableConfigs() {
+    // Implicit URDFs: loop_size = 2 * connection_depth + 1
+    return {
+        {5,  {3, 5, 7, 9, 11}},
+        {10, {3, 5, 9, 13, 17}},
+        {20, {3, 7, 13, 21, 31}},
+        {40, {3, 9, 17, 29, 41}}
+    };
 }
 
-// Build two parallel chains without cross-links (baseline)
-ClusterTreeModel<double> buildParallelChainsBaseline(int chain_length) {
-    ClusterTreeModel<double> model{};
-
-    Mat3<double> I3 = Mat3<double>::Identity();
-    Vec3<double> z3 = Vec3<double>::Zero();
-
-    model.setGravity(Vec3<double>{9.81, 0., 0.});
-
-    Mat3<double> link_inertia;
-    link_inertia << 0.1, 0., 0., 0., 0.1, 0., 0., 0., 0.1;
-    const SpatialInertia<double> link_spatial_inertia(1.0, Vec3<double>(0.5, 0., 0.), link_inertia);
-
-    ori::CoordinateAxis axis = ori::CoordinateAxis::Z;
-
-    // Build base link
-    std::string base_name = "base";
-    spatial::Transform<double> base_Xtree(I3, z3);
-    model.template appendBody<ClusterJoints::Revolute<double>>(
-        base_name, link_spatial_inertia, "ground", base_Xtree, axis);
-
-    // Build two parallel chains
-    std::string prev_chain1 = base_name;
-    std::string prev_chain2 = base_name;
-
-    for (int i = 1; i <= chain_length; ++i) {
-        // Chain 1 link
-        std::string link1_name = "chain1_link" + std::to_string(i);
-        spatial::Transform<double> link1_Xtree(I3, Vec3<double>(1.0, 0., 0.));
-        model.template appendBody<ClusterJoints::Revolute<double>>(
-            link1_name, link_spatial_inertia, prev_chain1, link1_Xtree, axis);
-        prev_chain1 = link1_name;
-
-        // Chain 2 link
-        std::string link2_name = "chain2_link" + std::to_string(i);
-        spatial::Transform<double> link2_Xtree(I3, Vec3<double>(1.0, 0., 0.));
-        model.template appendBody<ClusterJoints::Revolute<double>>(
-            link2_name, link_spatial_inertia, prev_chain2, link2_Xtree, axis);
-        prev_chain2 = link2_name;
-    }
-
-    return model;
+std::string buildUrdfPath(int depth, int loop_size, bool with_loop) {
+    std::string prefix = with_loop ? "loop_size" : "approx_loop_size";
+    return urdf_directory + "parallel_chains/Implicit/depth" +
+           std::to_string(depth) + "/" + prefix + std::to_string(loop_size) + ".urdf";
 }
 
-DepthResult testModel(ClusterTreeModel<double>& model, const std::string& config,
-                      int chain_length, int num_cross_links, int cross_link_depths,
-                      bool print_debug = false) {
+BenchmarkResult benchmarkModel(const std::string& urdf_path,
+                                int chain_depth, int loop_size,
+                                bool is_baseline,
+                                bool print_debug = false) {
+    BenchmarkResult result;
+    result.chain_depth = chain_depth;
+    result.loop_size = loop_size;
+    // For Implicit constraints: loop_size = 2 * connection_depth + 1
+    result.connection_depth = (loop_size - 1) / 2;
+    result.is_baseline = is_baseline;
+    result.dof = -1;
+    result.num_bodies = -1;
+
     try {
+        ClusterTreeModel<double> model;
+        model.buildModelFromURDF(urdf_path);
+
         int nDOF = model.getNumDegreesOfFreedom();
-        int nClusters = model.clusters().size();
+        int nBodies = model.getNumBodies();
+
+        result.dof = nDOF;
+        result.num_bodies = nBodies;
 
         if (print_debug) {
-            // Find position of the RevolutePair cluster (if any)
-            int revpair_pos = -1;
-            int idx = 0;
-            for (const auto& cluster : model.clusters()) {
-                if (cluster->name_.find("loop_revpair") != std::string::npos) {
-                    revpair_pos = idx;
-                    break;
-                }
-                idx++;
-            }
-            std::cout << "  " << config << ": DOF=" << nDOF << ", clusters=" << nClusters
-                      << ", revpair_cluster_pos=" << revpair_pos << "\n";
+            std::cout << "  depth=" << chain_depth
+                      << " loop_size=" << loop_size
+                      << " (connection at depth " << result.connection_depth << ")"
+                      << ": DOF=" << nDOF
+                      << ", bodies=" << nBodies
+                      << ", clusters=" << model.clusters().size()
+                      << (is_baseline ? " [baseline]" : " [with loop]")
+                      << "\n";
         }
 
         if (nDOF == 0) {
             throw std::runtime_error("Model has zero DOF");
         }
 
-        // Use fixed seed for reproducible random state across all models
+        // Use fixed seed for reproducibility
         std::mt19937 rng(RANDOM_SEED);
         std::uniform_real_distribution<double> dist(-1.0, 1.0);
 
-        // Set deterministic state
+        // Set random state using joint's randomJointState(), robust for implicit constraints, with retry
         ModelState<double> model_state;
+        constexpr int max_attempts = 1000;
         for (const auto& cluster : model.clusters()) {
-            JointState<double> js;
-            js.position = DVec<double>(cluster->num_positions_);
-            js.velocity = DVec<double>(cluster->num_velocities_);
-            for (int i = 0; i < cluster->num_positions_; ++i) {
-                js.position(i) = dist(rng) * 0.5;  // Small angles to avoid singularities
+            bool is_implicit = false;
+            try {
+                is_implicit = cluster->joint_->G().cols() != cluster->joint_->G().rows();
+            } catch (...) {}
+            int attempt = 0;
+            bool success = false;
+            while (attempt < max_attempts && !success) {
+                try {
+                    JointState<double> js = cluster->joint_->randomJointState();
+                    model_state.push_back(js);
+                    success = true;
+                } catch (const std::exception& e) {
+                    ++attempt;
+                    if (attempt >= max_attempts) {
+                        std::cerr << "[Error] Failed to generate valid random state for cluster '"
+                                  << grbda::ClusterJointTypeToString(cluster->joint_->type())
+                                  << (is_implicit ? " (IMPLICIT)" : "")
+                                  << "' after " << max_attempts << " attempts: " << e.what() << std::endl;
+                        if (is_implicit) {
+                            std::cerr << "[FATAL] This joint type does not support robust random state generation for implicit constraints. Please implement or fix root-finding in randomJointState()." << std::endl;
+                        }
+                        throw;
+                    } else {
+                        std::cerr << "[Retry] Attempt " << attempt << " for cluster '"
+                                  << grbda::ClusterJointTypeToString(cluster->joint_->type())
+                                  << (is_implicit ? " (IMPLICIT)" : "") << ": " << e.what() << std::endl;
+                    }
+                }
             }
-            for (int i = 0; i < cluster->num_velocities_; ++i) {
-                js.velocity(i) = dist(rng);
-            }
-            model_state.push_back(js);
         }
         model.setState(model_state);
-        auto [q, qd] = model.getState();
 
-        // Deterministic acceleration
+        // Extract q and qd from model_state for finite difference validation
+        // (avoiding getState() which has issues with implicit constraints)
+        DVec<double> q(nDOF), qd(nDOF);
+        int idx = 0;
+        for (const auto& js : model_state) {
+            int nv = js.velocity.size();
+            q.segment(idx, nv) = js.position;
+            qd.segment(idx, nv) = js.velocity;
+            idx += nv;
+        }
+
         DVec<double> ydd(nDOF);
         for (int i = 0; i < nDOF; ++i) {
             ydd(i) = dist(rng);
         }
 
-        // Extended warmup phase - ensure CPU is in steady state
+        // Warmup
         const int warmup_iterations = 2000;
         for (int i = 0; i < warmup_iterations; ++i) {
             auto [dtau_dq, dtau_dqdot] = model.firstOrderInverseDynamicsDerivatives(ydd);
@@ -393,23 +350,21 @@ DepthResult testModel(ClusterTreeModel<double>& model, const std::string& config
             (void)dtau_dqdot;
         }
 
-        // Aggressive noise reduction strategy:
-        // Run multiple complete measurement sweeps and aggregate
-        const int num_sweeps = 5;         // Number of complete measurement sweeps
-        const int samples_per_sweep = 200; // Samples per sweep
-        const int batch_size = 100;        // Iterations per sample (reduces timer overhead)
+        // Benchmark with multiple sweeps for noise reduction
+        const int num_sweeps = 5;
+        const int samples_per_sweep = 200;
+        const int batch_size = 100;
 
         std::vector<double> all_samples;
         all_samples.reserve(num_sweeps * samples_per_sweep);
 
         for (int sweep = 0; sweep < num_sweeps; ++sweep) {
-            // Small pause between sweeps to let system settle
-            // (busy wait to avoid sleep syscall overhead affecting subsequent timing)
+            // Busy wait between sweeps
             volatile int dummy = 0;
             for (int i = 0; i < 100000; ++i) { dummy += i; }
             (void)dummy;
 
-            // Re-warmup between sweeps
+            // Re-warmup
             for (int i = 0; i < 100; ++i) {
                 auto [dtau_dq, dtau_dqdot] = model.firstOrderInverseDynamicsDerivatives(ydd);
                 (void)dtau_dq;
@@ -430,142 +385,126 @@ DepthResult testModel(ClusterTreeModel<double>& model, const std::string& config
             }
         }
 
-        // Compute statistics from all sweeps combined
         TimingStats stats = computeStats(all_samples);
+        result.min_time_us = stats.min;
+        result.mean_time_us = stats.trimmed_mean;
+        result.median_time_us = stats.median;
+        result.std_time_us = stats.std_dev;
 
-        // Accuracy check
-        auto [dtau_dq_analytical, dtau_dqdot_analytical] =
-            model.firstOrderInverseDynamicsDerivatives(ydd);
-        auto [dtau_dq_numerical, dtau_dqdot_numerical] =
-            computeFiniteDifferenceDerivatives(model, q, qd, ydd);
-
-        DMat<double> error_dq = (dtau_dq_analytical - dtau_dq_numerical).cwiseAbs();
-        DMat<double> error_dqdot = (dtau_dqdot_analytical - dtau_dqdot_numerical).cwiseAbs();
-
-        // Return all statistics - min is often the best estimate of true time
-        return {config, chain_length, num_cross_links, cross_link_depths, nDOF,
-                stats.trimmed_mean, stats.std_dev, stats.median, stats.min,
-                error_dq.maxCoeff(), error_dqdot.maxCoeff()};
+        // Skipping numerical derivative validation; only timing results are recorded.
+        result.max_error_dq = 0.0;
+        result.max_error_dqdot = 0.0;
 
     } catch (const std::exception& e) {
-        std::cerr << "Error testing " << config << ": " << e.what() << "\n";
-        return {config, chain_length, num_cross_links, cross_link_depths, -1, 0, 0, 0, 0, 0, 0};
+        std::cerr << "Error benchmarking " << urdf_path << ": " << e.what() << "\n";
     }
+
+    return result;
 }
 
 void printHeader() {
-    std::cout << std::left << std::setw(20) << "Configuration"
-              << std::setw(6) << "CLen"
-              << std::setw(6) << "XLink"
-              << std::setw(6) << "Depth"
-              << std::setw(5) << "DOF"
+    std::cout << std::left
+              << std::setw(8) << "Depth"
+              << std::setw(10) << "LoopSize"
+              << std::setw(10) << "ConnDepth"
+              << std::setw(6) << "DOF"
+              << std::setw(8) << "Bodies"
               << std::setw(12) << "Min (us)"
-              << std::setw(12) << "Mean"
+              << std::setw(12) << "Mean (us)"
               << std::setw(12) << "Median"
               << std::setw(12) << "Err dq"
+              << std::setw(10) << "Type"
               << "\n";
-    std::cout << std::string(105, '-') << "\n";
+    std::cout << std::string(110, '-') << "\n";
 }
 
-void printResult(const DepthResult& r) {
+void printResult(const BenchmarkResult& r) {
     if (r.dof > 0) {
-        std::cout << std::left << std::setw(20) << r.config
-                  << std::setw(6) << r.chain_length
-                  << std::setw(6) << r.num_cross_links
-                  << std::setw(6) << r.cross_link_depths
-                  << std::setw(5) << r.dof
+        std::cout << std::left
+                  << std::setw(8) << r.chain_depth
+                  << std::setw(10) << r.loop_size
+                  << std::setw(10) << r.connection_depth
+                  << std::setw(6) << r.dof
+                  << std::setw(8) << r.num_bodies
                   << std::setw(12) << std::fixed << std::setprecision(2) << r.min_time_us
-                  << std::setw(12) << std::fixed << std::setprecision(2) << r.avg_time_us
+                  << std::setw(12) << std::fixed << std::setprecision(2) << r.mean_time_us
                   << std::setw(12) << std::fixed << std::setprecision(2) << r.median_time_us
                   << std::setw(12) << std::scientific << std::setprecision(2) << r.max_error_dq
+                  << std::setw(10) << (r.is_baseline ? "baseline" : "loop")
                   << "\n";
     } else {
-        std::cout << std::left << std::setw(20) << r.config
-                  << std::setw(6) << r.chain_length
-                  << std::setw(6) << r.num_cross_links
-                  << std::setw(6) << r.cross_link_depths
-                  << std::setw(5) << "N/A"
+        std::cout << std::left
+                  << std::setw(8) << r.chain_depth
+                  << std::setw(10) << r.loop_size
+                  << std::setw(10) << r.connection_depth
+                  << std::setw(6) << "N/A"
+                  << std::setw(8) << "N/A"
                   << std::setw(12) << "FAILED"
                   << std::setw(12) << ""
                   << std::setw(12) << ""
                   << std::setw(12) << ""
+                  << std::setw(10) << ""
                   << "\n";
     }
 }
 
 int main() {
     std::cout << "\n===========================================================================\n";
-    std::cout << "Parallel Chain Cross-Link Depth Benchmark\n";
+    std::cout << "Parallel Chain Loop Size Benchmark (A-Shape Topology)\n";
     std::cout << "===========================================================================\n\n";
 
-    std::cout << "Testing two parallel chains with cross-links (RevolutePair constraints)\n";
-    std::cout << "at increasing depths to measure impact on derivative computation.\n\n";
+    std::cout << "This benchmark measures inverse dynamics derivative computation cost\n";
+    std::cout << "for A-shaped parallel chains with varying loop sizes.\n\n";
 
-    // =========================================================================
-    // Randomized multi-pass benchmarking strategy
-    // =========================================================================
-    // To reduce temporal noise (thermal throttling, system activity), we:
-    // 1. Create all test configurations upfront
-    // 2. Run multiple passes through all configs in randomized order
-    // 3. Aggregate results using minimum time (best estimate of true time)
+    std::cout << "Topology:\n";
+    std::cout << "       base           The 'loop_size' parameter determines where\n";
+    std::cout << "      /    \\          the cross-link connects the two chains:\n";
+    std::cout << "  chain1  chain2        loop_size = 2 * connection_depth + 1\n";
+    std::cout << "    |        |        \n";
+    std::cout << "   ...      ...       Larger loop_size = deeper connection = larger loop\n";
+    std::cout << "    |        |        \n";
+    std::cout << "   [connection]       \n";
+    std::cout << "    |        |        \n";
+    std::cout << "   ...      ...       \n\n";
 
-    const int NUM_PASSES = 5;  // Number of complete passes
+    auto configs = getAvailableConfigs();
+    std::vector<BenchmarkResult> all_results;
 
-    // Define all configurations: (depth, is_baseline)
-    // depth=0 means baseline (no cross-link)
-    std::vector<int> all_depths;
-    all_depths.push_back(0);  // Baseline
-    for (int d = 1; d <= 40; ++d) {
-        all_depths.push_back(d);
-    }
+    // Run benchmarks for each configuration
+    const int NUM_PASSES = 1;
+    std::map<std::pair<int,int>, std::vector<BenchmarkResult>> pass_results;
 
-    // Storage for results across passes: depth -> vector of min_times from each pass
-    std::map<int, std::vector<double>> pass_min_times;
-    std::map<int, DepthResult> best_results;  // Store best result per depth
-
-    std::cout << "Running " << NUM_PASSES << " randomized passes through all "
-              << all_depths.size() << " configurations...\n\n";
-
-    std::mt19937 shuffle_rng(RANDOM_SEED + 1000);  // Different seed for shuffling
+    std::cout << "Running " << NUM_PASSES << " passes through all configurations...\n\n";
 
     for (int pass = 0; pass < NUM_PASSES; ++pass) {
-        bool debug_pass = (pass == 0);  // Print debug info on first pass only
+        bool debug_pass = (pass == 0);
+        std::cout << "Pass " << (pass + 1) << "/" << NUM_PASSES;
         if (debug_pass) {
-            std::cout << "Pass " << (pass + 1) << "/" << NUM_PASSES << " (with diagnostics)...\n";
+            std::cout << " (with diagnostics)...\n";
         } else {
-            std::cout << "Pass " << (pass + 1) << "/" << NUM_PASSES << "... " << std::flush;
+            std::cout << "... " << std::flush;
         }
 
-        // NO SHUFFLE - run in sequential order to diagnose timing issues
-        std::vector<int> shuffled_depths = all_depths;
-        // std::shuffle(shuffled_depths.begin(), shuffled_depths.end(), shuffle_rng);
-
-        for (int depth : shuffled_depths) {
-            DepthResult result;
-            if (depth == 0) {
-                auto model = buildParallelChainsBaseline(40);
-                result = testModel(model, "Baseline_40L", 40, 0, 0, debug_pass);
-            } else {
-                auto model = buildParallelChainsWithCrossLinks(40, {depth});
-                std::string label = "Depth" + std::to_string(depth) + "_40L";
-                result = testModel(model, label, 40, 1, depth, debug_pass);
+        for (const auto& config : configs) {
+            if (debug_pass) {
+                std::cout << "\n  Chain depth " << config.depth << ":\n";
             }
 
-            pass_min_times[depth].push_back(result.min_time_us);
+            for (int loop_size : config.loop_sizes) {
+                // Benchmark with loop constraint
+                std::string loop_urdf = buildUrdfPath(config.depth, loop_size, true);
+                auto loop_result = benchmarkModel(loop_urdf, config.depth, loop_size,
+                                                   false, debug_pass);
+                pass_results[{config.depth, loop_size}].push_back(loop_result);
 
-            // Print per-pass timing for key depths to diagnose variability
-            if (depth == 0 || depth == 1 || depth == 4 || depth == 18 ||
-                depth == 26 || depth == 27 || depth == 40) {
-                std::cout << "    Pass " << (pass+1) << " Depth " << depth
-                          << ": min=" << std::fixed << std::setprecision(2) << result.min_time_us << " us\n";
-            }
-
-            // Keep track of best (lowest min) result for each depth
-            if (best_results.find(depth) == best_results.end() ||
-                result.min_time_us < best_results[depth].min_time_us) {
-                best_results[depth] = result;
+                // Benchmark baseline (no loop) - use approx URDF
+                std::string baseline_urdf = buildUrdfPath(config.depth, loop_size, false);
+                auto baseline_result = benchmarkModel(baseline_urdf, config.depth, loop_size,
+                                                       true, debug_pass);
+                pass_results[{config.depth, -loop_size}].push_back(baseline_result);
             }
         }
+
         if (!debug_pass) {
             std::cout << "done\n";
         }
@@ -573,107 +512,107 @@ int main() {
 
     std::cout << "\n";
 
-    // =========================================================================
-    // Aggregate results: use MEDIAN of minimums across all passes
-    // (Median is more robust to outliers than minimum or mean)
-    // =========================================================================
-    std::vector<DepthResult> all_results;
-
-    std::cout << "40-Link Parallel Chains - Single Cross-Link Depth Sweep\n";
-    std::cout << "(Median of " << NUM_PASSES << " passes)\n";
+    // Aggregate results across passes (take best/median)
     printHeader();
 
-    // Process in order (baseline first, then depths 1-40)
-    for (int depth : all_depths) {
-        DepthResult& r = best_results[depth];
+    for (const auto& config : configs) {
+        std::cout << "\n--- Chain Depth " << config.depth << " ---\n";
 
-        // Compute statistics across passes for this depth
-        std::vector<double> times = pass_min_times[depth];  // Copy for sorting
-        std::sort(times.begin(), times.end());
+        for (int loop_size : config.loop_sizes) {
+            // Process loop results
+            auto& loop_passes = pass_results[{config.depth, loop_size}];
+            if (!loop_passes.empty()) {
+                // Take result with minimum time
+                auto best_it = std::min_element(loop_passes.begin(), loop_passes.end(),
+                    [](const BenchmarkResult& a, const BenchmarkResult& b) {
+                        return a.min_time_us < b.min_time_us;
+                    });
+                all_results.push_back(*best_it);
+                printResult(*best_it);
+            }
 
-        size_t n = times.size();
-        double median_of_mins = (n % 2 == 0)
-            ? (times[n/2 - 1] + times[n/2]) / 2.0
-            : times[n/2];
-
-        double sum = 0;
-        for (double t : times) sum += t;
-        double mean_of_mins = sum / n;
-
-        // Update the result with the MEDIAN of minimums (more robust)
-        r.min_time_us = median_of_mins;
-        r.avg_time_us = mean_of_mins;  // Mean of min times across passes
-
-        all_results.push_back(r);
-        printResult(r);
+            // Process baseline results
+            auto& baseline_passes = pass_results[{config.depth, -loop_size}];
+            if (!baseline_passes.empty()) {
+                auto best_it = std::min_element(baseline_passes.begin(), baseline_passes.end(),
+                    [](const BenchmarkResult& a, const BenchmarkResult& b) {
+                        return a.min_time_us < b.min_time_us;
+                    });
+                all_results.push_back(*best_it);
+                printResult(*best_it);
+            }
+        }
     }
 
-    std::cout << std::string(106, '-') << "\n\n";
+    std::cout << std::string(110, '-') << "\n\n";
 
-    // =========================================================================
     // Analysis
-    // =========================================================================
     std::cout << "===========================================================================\n";
     std::cout << "Analysis Summary\n";
     std::cout << "===========================================================================\n\n";
 
-    // Group by chain length
-    std::map<int, std::vector<DepthResult>> by_chain_length;
-    for (const auto& r : all_results) {
-        if (r.dof > 0) {
-            by_chain_length[r.chain_length].push_back(r);
+    for (const auto& config : configs) {
+        std::cout << "Chain Depth " << config.depth << ":\n";
+
+        // Find baseline and loop results for this depth
+        std::vector<BenchmarkResult> depth_results;
+        for (const auto& r : all_results) {
+            if (r.chain_depth == config.depth && r.dof > 0) {
+                depth_results.push_back(r);
+            }
         }
-    }
 
-    for (const auto& [chain_len, results] : by_chain_length) {
-        std::cout << "Chain Length " << chain_len << ":\n";
+        if (!depth_results.empty()) {
+            // Group by loop_size, comparing baseline vs loop
+            for (int loop_size : config.loop_sizes) {
+                BenchmarkResult* loop_r = nullptr;
+                BenchmarkResult* baseline_r = nullptr;
 
-        if (!results.empty()) {
-            // Use median as baseline (more robust to outliers)
-            double baseline = results[0].median_time_us;
-            for (const auto& r : results) {
-                double ratio = r.median_time_us / baseline;
-                double cv = (r.avg_time_us > 0) ? (r.std_time_us / r.avg_time_us * 100) : 0;
-                std::cout << "  " << r.config << ": "
-                          << std::fixed << std::setprecision(2) << r.median_time_us << " us";
-                if (r.num_cross_links > 0) {
-                    std::cout << " (" << std::fixed << std::setprecision(2) << ratio << "x)";
-                } else {
-                    std::cout << " (baseline)";
+                for (auto& r : depth_results) {
+                    if (r.loop_size == loop_size) {
+                        if (r.is_baseline) {
+                            baseline_r = &r;
+                        } else {
+                            loop_r = &r;
+                        }
+                    }
                 }
-                std::cout << " [CV: " << std::fixed << std::setprecision(1) << cv << "%]\n";
+
+                if (loop_r && baseline_r) {
+                    double overhead = loop_r->min_time_us - baseline_r->min_time_us;
+                    double ratio = loop_r->min_time_us / baseline_r->min_time_us;
+                    std::cout << "  loop_size=" << std::setw(2) << loop_size
+                              << " (conn@" << loop_r->connection_depth << "): "
+                              << std::fixed << std::setprecision(2)
+                              << loop_r->min_time_us << " us vs "
+                              << baseline_r->min_time_us << " us baseline"
+                              << " (+" << overhead << " us, "
+                              << std::setprecision(2) << ratio << "x)\n";
+                }
             }
         }
         std::cout << "\n";
     }
 
     std::cout << "Key Observations:\n";
-    std::cout << "1. Cost increase from adding a single cross-link at different depths\n";
-    std::cout << "2. Whether depth position affects the computational cost (early vs late)\n";
-    std::cout << "3. Continuous depth sweep from 1 to 40 to identify patterns\n";
-    std::cout << "4. Whether cost scales linearly or nonlinearly with cross-link depth\n";
-    std::cout << "5. Error should remain bounded (~1e-7) regardless of configuration\n\n";
+    std::cout << "1. How loop constraint overhead scales with loop size\n";
+    std::cout << "2. Whether deeper connections (larger loops) increase cost more\n";
+    std::cout << "3. Comparison of loop vs baseline (open chain) performance\n";
+    std::cout << "4. Error should remain bounded (~1e-7) regardless of configuration\n\n";
 
-    std::cout << "===========================================================================\n";
-    std::cout << "Benchmark Complete\n";
-    std::cout << "===========================================================================\n";
-
-    // =========================================================================
-    // Export results to CSV files
-    // =========================================================================
+    // Export to CSV
     std::string output_dir = std::string(SOURCE_DIRECTORY) + "/../benchmark_figures/data/";
 
-    // Export all results to a single CSV
     {
         std::ofstream csv(output_dir + "parallel_chain_depth.csv");
-        csv << "config,chain_length,num_cross_links,cross_link_depth,dof,mean_us,median_us,std_us,max_err_dq,max_err_dqd\n";
+        csv << "chain_depth,loop_size,connection_depth,dof,num_bodies,is_baseline,"
+            << "min_us,mean_us,median_us,std_us,max_err_dq,max_err_dqdot\n";
         for (const auto& r : all_results) {
             if (r.dof > 0) {
-                csv << r.config << "," << r.chain_length << "," << r.num_cross_links << ","
-                    << r.cross_link_depths << "," << r.dof << ","
-                    << std::fixed << std::setprecision(4) << r.avg_time_us << ","
-                    << std::fixed << std::setprecision(4) << r.median_time_us << ","
-                    << std::fixed << std::setprecision(4) << r.std_time_us << ","
+                csv << r.chain_depth << "," << r.loop_size << "," << r.connection_depth << ","
+                    << r.dof << "," << r.num_bodies << "," << (r.is_baseline ? 1 : 0) << ","
+                    << std::fixed << std::setprecision(4) << r.min_time_us << ","
+                    << r.mean_time_us << "," << r.median_time_us << "," << r.std_time_us << ","
                     << std::scientific << std::setprecision(2) << r.max_error_dq << ","
                     << r.max_error_dqdot << "\n";
             }
@@ -681,38 +620,46 @@ int main() {
         std::cout << "Exported: " << output_dir << "parallel_chain_depth.csv\n";
     }
 
-    // Export 40-link single cross-link depth sweep for Figure 7 left panel
+    // Export loop-only results for easier plotting
     {
-        std::ofstream csv(output_dir + "loop_depth_40L.csv");
-        csv << "chain_length,cross_link_depth,num_cross_links,dof,mean_us,median_us,std_us,min_us\n";
-        for (const auto& r : all_results) {
-            if (r.dof > 0 && r.chain_length == 40 && r.num_cross_links <= 1) {
-                csv << r.chain_length << "," << r.cross_link_depths << "," << r.num_cross_links << ","
-                    << r.dof << ","
-                    << std::fixed << std::setprecision(4) << r.avg_time_us << ","
-                    << std::fixed << std::setprecision(4) << r.median_time_us << ","
-                    << std::fixed << std::setprecision(4) << r.std_time_us << ","
-                    << std::fixed << std::setprecision(4) << r.min_time_us << "\n";
+        std::ofstream csv(output_dir + "loop_depth_sweep.csv");
+        csv << "chain_depth,loop_size,connection_depth,dof,min_us,mean_us,baseline_min_us\n";
+
+        for (const auto& config : configs) {
+            for (int loop_size : config.loop_sizes) {
+                const BenchmarkResult* loop_r = nullptr;
+                const BenchmarkResult* baseline_r = nullptr;
+
+                for (const auto& r : all_results) {
+                    if (r.chain_depth == config.depth && r.loop_size == loop_size && r.dof > 0) {
+                        if (r.is_baseline) {
+                            baseline_r = &r;
+                        } else {
+                            loop_r = &r;
+                        }
+                    }
+                }
+
+                if (loop_r) {
+                    csv << loop_r->chain_depth << "," << loop_r->loop_size << ","
+                        << loop_r->connection_depth << "," << loop_r->dof << ","
+                        << std::fixed << std::setprecision(4) << loop_r->min_time_us << ","
+                        << loop_r->mean_time_us << ",";
+                    if (baseline_r) {
+                        csv << baseline_r->min_time_us;
+                    } else {
+                        csv << "NA";
+                    }
+                    csv << "\n";
+                }
             }
         }
-        std::cout << "Exported: " << output_dir << "loop_depth_40L.csv\n";
+        std::cout << "Exported: " << output_dir << "loop_depth_sweep.csv\n";
     }
 
-    // Export multi-chain comparison for Figure 7 right panel
-    {
-        std::ofstream csv(output_dir + "loop_depth_multi_chain.csv");
-        csv << "chain_length,num_cross_links,config,dof,mean_us,median_us,std_us\n";
-        for (const auto& r : all_results) {
-            if (r.dof > 0) {
-                csv << r.chain_length << "," << r.num_cross_links << "," << r.config << ","
-                    << r.dof << ","
-                    << std::fixed << std::setprecision(4) << r.avg_time_us << ","
-                    << std::fixed << std::setprecision(4) << r.median_time_us << ","
-                    << std::fixed << std::setprecision(4) << r.std_time_us << "\n";
-            }
-        }
-        std::cout << "Exported: " << output_dir << "loop_depth_multi_chain.csv\n";
-    }
+    std::cout << "\n===========================================================================\n";
+    std::cout << "Benchmark Complete\n";
+    std::cout << "===========================================================================\n";
 
     return 0;
 }
