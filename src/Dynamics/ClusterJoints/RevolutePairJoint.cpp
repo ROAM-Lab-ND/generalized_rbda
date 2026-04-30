@@ -1,6 +1,4 @@
 #include "grbda/Dynamics/ClusterJoints/RevolutePairJoint.h"
-#include "grbda/Utils/CasadiDerivatives.h"
-#include "grbda/Utils/JointDerivatives.h"
 
 namespace grbda
 {
@@ -8,428 +6,64 @@ namespace grbda
     namespace ClusterJoints
     {
 
+        namespace
+        {
+            template <typename Scalar>
+            std::vector<Body<Scalar>> makeRPBodies(Body<Scalar> &link_1, Body<Scalar> &link_2)
+            {
+                return {link_1, link_2};
+            }
+
+            template <typename Scalar>
+            std::vector<JointPtr<Scalar>> makeRPJoints(ori::CoordinateAxis axis1,
+                                                       ori::CoordinateAxis axis2)
+            {
+                using Rev = Joints::Revolute<Scalar>;
+                return {std::make_shared<Rev>(axis1), std::make_shared<Rev>(axis2)};
+            }
+
+            template <typename Scalar>
+            std::shared_ptr<LoopConstraint::Static<Scalar>> makeRPConstraint()
+            {
+                DMat<Scalar> G = DMat<Scalar>::Identity(2, 2);
+                DMat<Scalar> K = DMat<Scalar>::Identity(0, 2);
+                return std::make_shared<LoopConstraint::Static<Scalar>>(G, K);
+            }
+        } // anonymous namespace
+
         template <typename Scalar>
         RevolutePair<Scalar>::RevolutePair(Body<Scalar> &link_1, Body<Scalar> &link_2,
                                            ori::CoordinateAxis joint_axis_1,
                                            ori::CoordinateAxis joint_axis_2)
-            : Base<Scalar>(2, 2, 2), link_1_(link_1), link_2_(link_2),
-              axis1_(joint_axis_1), axis2_(joint_axis_2)
+            : Generic<Scalar>(
+                  makeRPBodies<Scalar>(link_1, link_2),
+                  makeRPJoints<Scalar>(joint_axis_1, joint_axis_2),
+                  makeRPConstraint<Scalar>()),
+              link_1_(link_1), link_2_(link_2)
         {
-            using Rev = Joints::Revolute<Scalar>;
-            link_1_joint_ =  this->single_joints_.emplace_back(new Rev(joint_axis_1));
-            link_2_joint_ =  this->single_joints_.emplace_back(new Rev(joint_axis_2));
-
-            this->spanning_tree_to_independent_coords_conversion_ = DMat<int>::Identity(2, 2);
-
-            DMat<Scalar> G = DMat<Scalar>::Zero(2, 2);
-            G << 1., 0.,
-                0., 1.;
-            const DMat<Scalar> K = DMat<Scalar>::Identity(0, 2);
-            this->loop_constraint_ = std::make_shared<LoopConstraint::Static<Scalar>>(G, K);
-
-            X_intra_S_span_ = DMat<Scalar>::Zero(12, 2);
-            X_intra_S_span_ring_ = DMat<Scalar>::Zero(12, 2);
-
-            X_intra_S_span_.template block<6, 1>(0, 0) = link_1_joint_->S();
-            X_intra_S_span_.template block<6, 1>(6, 1) = link_2_joint_->S();
-
-            this->S_ = X_intra_S_span_ * this->loop_constraint_->G();
-        }
-
-        template <typename Scalar>
-        void RevolutePair<Scalar>::updateKinematics(const JointState<Scalar> &joint_state)
-        {
-            const JointState<Scalar> spanning_joint_state = this->toSpanningTreeState(joint_state);
-            const DVec<Scalar> &q = spanning_joint_state.position;
-            const DVec<Scalar> &qd = spanning_joint_state.velocity;
-
-            // Cache INDEPENDENT coordinates for derivative methods (not spanning tree!)
-            q_cache_ = joint_state.position;
-            qd_cache_ = joint_state.velocity;
-            S_q_cache_valid_ = false;  // state changed, invalidate derivative cache
-
-            link_1_joint_->updateKinematics(q.template segment<1>(0), qd.template segment<1>(0));
-            link_2_joint_->updateKinematics(q.template segment<1>(1), qd.template segment<1>(1));
-
-            X21_ = link_2_joint_->XJ() * link_2_.Xtree_;
-            const DVec<Scalar> v2_relative = link_2_joint_->S() * qd[1];
-            X_intra_S_span_.template block<6, 1>(6, 0) =
-                X21_.transformMotionSubspace(link_1_joint_->S());
-            this->S_.template block<6, 1>(6, 0) = X21_.transformMotionSubspace(link_1_joint_->S());
-
-            X_intra_S_span_ring_.template block<6, 1>(6, 0) =
-                -spatial::generalMotionCrossMatrix(v2_relative) *
-                X_intra_S_span_.template block<6, 1>(6, 0);
-
-            this->vJ_ = X_intra_S_span_ * qd;
-            this->cJ_ = X_intra_S_span_ring_ * qd;
-            this->S_ring_ = X_intra_S_span_ring_ * this->loop_constraint_->G(); //+X_intra*S_span_*G_dot_;
-        }
-
-        template <typename Scalar>
-        void RevolutePair<Scalar>::computeSpatialTransformFromParentToCurrentCluster(
-            spatial::GeneralizedTransform<Scalar> &Xup) const
-        {
-#ifdef DEBUG_MODE
-            if (Xup.getNumOutputBodies() != 2)
-                throw std::runtime_error("[RevolutePair] Xup must have 12 rows");
-#endif
-
-            Xup[0] = link_1_joint_->XJ() * link_1_.Xtree_;
-            Xup[1] = link_2_joint_->XJ() * link_2_.Xtree_ * Xup[0];
+            link_1_joint_ = this->single_joints_[0];
+            link_2_joint_ = this->single_joints_[1];
         }
 
         template <typename Scalar>
         std::vector<std::tuple<Body<Scalar>, JointPtr<Scalar>, DMat<Scalar>>>
         RevolutePair<Scalar>::bodiesJointsAndReflectedInertias() const
         {
-            std::vector<std::tuple<Body<Scalar>, JointPtr<Scalar>, DMat<Scalar>>> bodies_joints_and_reflected_inertias;
+            std::vector<std::tuple<Body<Scalar>, JointPtr<Scalar>, DMat<Scalar>>> result;
 
-            const DMat<Scalar> reflected_inertia_1 = DMat<Scalar>::Zero(this->numVelocities(),
-                                                                        this->numVelocities());
-            bodies_joints_and_reflected_inertias.push_back(
-                std::make_tuple(link_1_, link_1_joint_, reflected_inertia_1));
-
-            const DMat<Scalar> reflected_inertia_2 = DMat<Scalar>::Zero(this->numVelocities(),
-                                                                        this->numVelocities());
-            bodies_joints_and_reflected_inertias.push_back(
-                std::make_tuple(link_2_, link_2_joint_, reflected_inertia_2));
-
-            return bodies_joints_and_reflected_inertias;
-        }
-
-        template <typename Scalar>
-        char RevolutePair<Scalar>::axisToChar(ori::CoordinateAxis axis) const
-        {
-            switch (axis)
-            {
-            case ori::CoordinateAxis::X:
-                return 'X';
-            case ori::CoordinateAxis::Y:
-                return 'Y';
-            case ori::CoordinateAxis::Z:
-                return 'Z';
-            default:
-                throw std::runtime_error("Unknown axis");
-            }
-        }
-
-        template <typename Scalar>
-        void RevolutePair<Scalar>::initializeCasadiFunctions() const
-        {
-            if (casadi_functions_initialized_) return;
-
-            using namespace casadi;
-            using namespace casadi_derivatives;
-
-            SX q1 = SX::sym("q1");
-            SX q2 = SX::sym("q2");
-            SX qd1 = SX::sym("qd1");
-            SX qd2 = SX::sym("qd2");
-
-            char ax1 = axisToChar(axis1_);
-            char ax2 = axisToChar(axis2_);
-
-            SX S1_sym = revoluteMotionSubspace(ax1);
-            SX S2_sym = revoluteMotionSubspace(ax2);
-
-            DMat<double> Xtree2_eigen = link_2_.Xtree_.toMatrix().template cast<double>();
-            SX Xtree2_sx = SX::zeros(6, 6);
-            for (int i = 0; i < 6; ++i) {
-                for (int j = 0; j < 6; ++j) {
-                    Xtree2_sx(i, j) = Xtree2_eigen(i, j);
-                }
-            }
-
-            SX XJ2_sym = spatialRotation(ax2, q2);
-            SX X21_sym = mtimes(XJ2_sym, Xtree2_sx);
-            SX S_body2_col0 = mtimes(X21_sym, S1_sym);
-
-            SX dS_body2_col0_dq1 = jacobian(S_body2_col0, q1);
-            SX dS_body2_col0_dq2 = jacobian(S_body2_col0, q2);
-
-            // For Sdotqd_q and Sdotqd_qd: compute Ṡ*qd where Ṡ = dS/dq1*q̇1 + dS/dq2*q̇2
-            SX Sdot_col0 = dS_body2_col0_dq1 * qd1 + dS_body2_col0_dq2 * qd2;
-            SX Sdotqd = Sdot_col0 * qd1;  // Only column 0 contributes (column 1 is constant)
-
-            // Compute ∂(Ṡqd)/∂q
-            SX dSdotqd_dq1 = jacobian(Sdotqd, q1);
-            SX dSdotqd_dq2 = jacobian(Sdotqd, q2);
-
-            // Compute ∂(Ṡqd)/∂qd
-            SX dSdotqd_dqd1 = jacobian(Sdotqd, qd1);
-            SX dSdotqd_dqd2 = jacobian(Sdotqd, qd2);
-
-            // Use JIT compilation for faster function evaluation (clang with march=native)
-            casadi::Dict jit_opts;
-            jit_opts["jit"] = true;
-            jit_opts["compiler"] = "shell";
-            jit_opts["jit_options"] = casadi::Dict{{"compiler", "clang"}, {"flags", "-O3 -march=native"}};
-
-            f_dS_dq1_ = Function("dS_dq1", {q1, q2}, {dS_body2_col0_dq1}, jit_opts);
-            f_dS_dq2_ = Function("dS_dq2", {q1, q2}, {dS_body2_col0_dq2}, jit_opts);
-            f_Sdotqd_q_ = Function("Sdotqd_q", {q1, q2, qd1, qd2}, {horzcat(dSdotqd_dq1, dSdotqd_dq2)}, jit_opts);
-            f_Sdotqd_qd_ = Function("Sdotqd_qd", {q1, q2, qd1, qd2}, {horzcat(dSdotqd_dqd1, dSdotqd_dqd2)}, jit_opts);
-
-            // Pre-allocate work buffers for low-level CasADi API
-            size_t sz_arg, sz_res, sz_iw, sz_w;
-
-            f_dS_dq1_.sz_work(sz_arg, sz_res, sz_iw, sz_w);
-            dS_dq1_arg_buf_.resize(2);  // q1, q2
-            dS_dq1_res_buf_.resize(6);  // 6x1 output
-            dS_dq1_iw_.resize(sz_iw);
-            dS_dq1_w_.resize(sz_w);
-
-            f_dS_dq2_.sz_work(sz_arg, sz_res, sz_iw, sz_w);
-            dS_dq2_arg_buf_.resize(2);  // q1, q2
-            dS_dq2_res_buf_.resize(6);  // 6x1 output
-            dS_dq2_iw_.resize(sz_iw);
-            dS_dq2_w_.resize(sz_w);
-
-            f_Sdotqd_q_.sz_work(sz_arg, sz_res, sz_iw, sz_w);
-            Sdotqd_q_arg_buf_.resize(4);   // q1, q2, qd1, qd2
-            Sdotqd_q_res_buf_.resize(12);  // 6x2 output
-            Sdotqd_q_iw_.resize(sz_iw);
-            Sdotqd_q_w_.resize(sz_w);
-
-            f_Sdotqd_qd_.sz_work(sz_arg, sz_res, sz_iw, sz_w);
-            Sdotqd_qd_arg_buf_.resize(4);   // q1, q2, qd1, qd2
-            Sdotqd_qd_res_buf_.resize(12);  // 6x2 output
-            Sdotqd_qd_iw_.resize(sz_iw);
-            Sdotqd_qd_w_.resize(sz_w);
-
-            casadi_functions_initialized_ = true;
-        }
-
-        template <typename Scalar>
-        std::vector<DMat<Scalar>> RevolutePair<Scalar>::getSq() const
-        {
-            const int nv = 2;
-            const int spatial_dim = 12;
-
-            // Return cached result if available and state unchanged
-            if (S_q_cache_valid_ && (int)S_q_cache_.size() == nv) {
-                return S_q_cache_;
-            }
-
-            initializeCasadiFunctions();
-
-            S_q_cache_.assign(nv, DMat<Scalar>::Zero(spatial_dim, nv));
-
-            if constexpr (std::is_same_v<Scalar, double>) {
-                // Use low-level CasADi API for maximum performance
-                dS_dq1_arg_buf_[0] = q_cache_(0);
-                dS_dq1_arg_buf_[1] = q_cache_(1);
-                const double* arg_ptrs1[2] = {&dS_dq1_arg_buf_[0], &dS_dq1_arg_buf_[1]};
-                double* res_ptrs1[1] = {dS_dq1_res_buf_.data()};
-                f_dS_dq1_(arg_ptrs1, res_ptrs1, dS_dq1_iw_.data(), dS_dq1_w_.data(), 0);
-
-                dS_dq2_arg_buf_[0] = q_cache_(0);
-                dS_dq2_arg_buf_[1] = q_cache_(1);
-                const double* arg_ptrs2[2] = {&dS_dq2_arg_buf_[0], &dS_dq2_arg_buf_[1]};
-                double* res_ptrs2[1] = {dS_dq2_res_buf_.data()};
-                f_dS_dq2_(arg_ptrs2, res_ptrs2, dS_dq2_iw_.data(), dS_dq2_w_.data(), 0);
-
-                // Create ∂X_intra_S_span/∂qi (12x2 matrix, mostly zero)
-                DMat<Scalar> dX_intra_dq1 = DMat<Scalar>::Zero(spatial_dim, 2);
-                DMat<Scalar> dX_intra_dq2 = DMat<Scalar>::Zero(spatial_dim, 2);
-
-                // Only the [link2, link1] block is non-zero (rows 6-11, column 0)
-                for (int i = 0; i < 6; ++i) {
-                    dX_intra_dq1(6 + i, 0) = dS_dq1_res_buf_[i];
-                    dX_intra_dq2(6 + i, 0) = dS_dq2_res_buf_[i];
-                }
-
-                // Compute ∂S/∂qi = (∂X_intra_S_span/∂qi) * G
-                const DMat<Scalar> &G = this->loop_constraint_->G();
-                S_q_cache_[0] = dX_intra_dq1 * G;  // 12x2 matrix
-                S_q_cache_[1] = dX_intra_dq2 * G;  // 12x2 matrix
-            } else {
-                // Fallback to high-level API for other scalar types
-                std::vector<casadi::DM> input = {
-                    casadi::DM(static_cast<double>(q_cache_(0))),
-                    casadi::DM(static_cast<double>(q_cache_(1)))
-                };
-                auto res_dq1 = f_dS_dq1_(input);
-                auto res_dq2 = f_dS_dq2_(input);
-
-                DMat<Scalar> dX_intra_dq1 = DMat<Scalar>::Zero(spatial_dim, 2);
-                DMat<Scalar> dX_intra_dq2 = DMat<Scalar>::Zero(spatial_dim, 2);
-
-                for (int i = 0; i < 6; ++i) {
-                    dX_intra_dq1(6 + i, 0) = static_cast<Scalar>(static_cast<double>(res_dq1[0](i)));
-                    dX_intra_dq2(6 + i, 0) = static_cast<Scalar>(static_cast<double>(res_dq2[0](i)));
-                }
-
-                const DMat<Scalar> &G = this->loop_constraint_->G();
-                S_q_cache_[0] = dX_intra_dq1 * G;
-                S_q_cache_[1] = dX_intra_dq2 * G;
-            }
-
-            S_q_cache_valid_ = true;
-            return S_q_cache_;
-        }
-
-        template <typename Scalar>
-        DMat<Scalar> RevolutePair<Scalar>::getSdotqd_q() const
-        {
-            initializeCasadiFunctions();
-            const int nv = 2;
-            const int spatial_dim = 12;
-
-            DMat<Scalar> output = DMat<Scalar>::Zero(spatial_dim, nv);
-
-            if constexpr (std::is_same_v<Scalar, double>) {
-                // Use low-level CasADi API for maximum performance
-                Sdotqd_q_arg_buf_[0] = q_cache_(0);
-                Sdotqd_q_arg_buf_[1] = q_cache_(1);
-                Sdotqd_q_arg_buf_[2] = qd_cache_(0);
-                Sdotqd_q_arg_buf_[3] = qd_cache_(1);
-
-                const double* arg_ptrs[4] = {
-                    &Sdotqd_q_arg_buf_[0], &Sdotqd_q_arg_buf_[1],
-                    &Sdotqd_q_arg_buf_[2], &Sdotqd_q_arg_buf_[3]
-                };
-                double* res_ptrs[1] = {Sdotqd_q_res_buf_.data()};
-                f_Sdotqd_q_(arg_ptrs, res_ptrs, Sdotqd_q_iw_.data(), Sdotqd_q_w_.data(), 0);
-
-                // Fill in the link2 block (rows 6-11), CasADi uses column-major
-                for (int j = 0; j < nv; ++j) {
-                    for (int i = 0; i < 6; ++i) {
-                        output(6 + i, j) = Sdotqd_q_res_buf_[j * 6 + i];
-                    }
-                }
-            } else {
-                // Fallback to high-level API for other scalar types
-                std::vector<casadi::DM> input = {
-                    casadi::DM(static_cast<double>(q_cache_(0))),
-                    casadi::DM(static_cast<double>(q_cache_(1))),
-                    casadi::DM(static_cast<double>(qd_cache_(0))),
-                    casadi::DM(static_cast<double>(qd_cache_(1)))
-                };
-
-                std::vector<casadi::DM> result = f_Sdotqd_q_(input);
-                casadi::DM Sdotqd_q_result = result[0];  // 6x2 matrix
-
-                for (int i = 0; i < 6; ++i) {
-                    for (int j = 0; j < nv; ++j) {
-                        output(6 + i, j) = static_cast<Scalar>(static_cast<double>(Sdotqd_q_result(i, j)));
-                    }
-                }
-            }
-
-            return output;
-        }
-
-        template <typename Scalar>
-        DMat<Scalar> RevolutePair<Scalar>::getSdotqd_qd() const
-        {
-            initializeCasadiFunctions();
-            const int nv = 2;
-            const int spatial_dim = 12;
-
-            DMat<Scalar> result = DMat<Scalar>::Zero(spatial_dim, nv);
-
-            if constexpr (std::is_same_v<Scalar, double>) {
-                // Use low-level CasADi API for maximum performance
-                Sdotqd_qd_arg_buf_[0] = q_cache_(0);
-                Sdotqd_qd_arg_buf_[1] = q_cache_(1);
-                Sdotqd_qd_arg_buf_[2] = qd_cache_(0);
-                Sdotqd_qd_arg_buf_[3] = qd_cache_(1);
-
-                const double* arg_ptrs[4] = {
-                    &Sdotqd_qd_arg_buf_[0], &Sdotqd_qd_arg_buf_[1],
-                    &Sdotqd_qd_arg_buf_[2], &Sdotqd_qd_arg_buf_[3]
-                };
-                double* res_ptrs[1] = {Sdotqd_qd_res_buf_.data()};
-                f_Sdotqd_qd_(arg_ptrs, res_ptrs, Sdotqd_qd_iw_.data(), Sdotqd_qd_w_.data(), 0);
-
-                // Fill in the link2 block (rows 6-11), CasADi uses column-major
-                for (int j = 0; j < nv; ++j) {
-                    for (int i = 0; i < 6; ++i) {
-                        result(6 + i, j) = Sdotqd_qd_res_buf_[j * 6 + i];
-                    }
-                }
-            } else {
-                // Fallback to high-level API for other scalar types
-                std::vector<casadi::DM> input = {
-                    casadi::DM(static_cast<double>(q_cache_(0))),
-                    casadi::DM(static_cast<double>(q_cache_(1))),
-                    casadi::DM(static_cast<double>(qd_cache_(0))),
-                    casadi::DM(static_cast<double>(qd_cache_(1)))
-                };
-                auto res = f_Sdotqd_qd_(input);
-                for (int i = 0; i < 6; ++i) {
-                    result(6 + i, 0) = static_cast<Scalar>(static_cast<double>(res[0](i, 0)));
-                    result(6 + i, 1) = static_cast<Scalar>(static_cast<double>(res[0](i, 1)));
-                }
-            }
+            const DMat<Scalar> zero = DMat<Scalar>::Zero(this->numVelocities(),
+                                                         this->numVelocities());
+            result.push_back(std::make_tuple(link_1_, link_1_joint_, zero));
+            result.push_back(std::make_tuple(link_2_, link_2_joint_, zero));
 
             return result;
-        }
-
-        template <>
-        void RevolutePair<std::complex<double>>::initializeCasadiFunctions() const
-        {
-            casadi_functions_initialized_ = true;
-        }
-
-        template <>
-        std::vector<DMat<std::complex<double>>>
-        RevolutePair<std::complex<double>>::getSq() const
-        {
-            return std::vector<DMat<std::complex<double>>>(2, DMat<std::complex<double>>::Zero(12, 2));
-        }
-
-        template <>
-        DMat<std::complex<double>>
-        RevolutePair<std::complex<double>>::getSdotqd_q() const
-        {
-            return DMat<std::complex<double>>::Zero(12, 2);
-        }
-
-        template <>
-        DMat<std::complex<double>>
-        RevolutePair<std::complex<double>>::getSdotqd_qd() const
-        {
-            return DMat<std::complex<double>>::Zero(12, 2);
-        }
-
-        template <typename Scalar>
-        DMat<Scalar> RevolutePair<Scalar>::evalSTimesVec_dq(const DVec<Scalar>& b) const
-        {
-            const int mss_dim = this->num_bodies_ * 6;
-            const auto& S_q = getSq();
-            return contractSqWithVector(S_q, b, mss_dim);
-        }
-
-        template <typename Scalar>
-        DMat<Scalar> RevolutePair<Scalar>::evalSTTimesVec_dq(const DVec<Scalar>& F) const
-        {
-            const auto& S_q = getSq();
-            return contractSqTransposeWithVector(S_q, F);
-        }
-
-        template <>
-        DMat<std::complex<double>>
-        RevolutePair<std::complex<double>>::evalSTimesVec_dq(const DVec<std::complex<double>>& b) const
-        {
-            (void)b;
-            return DMat<std::complex<double>>::Zero(12, 2);
-        }
-
-        template <>
-        DMat<std::complex<double>>
-        RevolutePair<std::complex<double>>::evalSTTimesVec_dq(const DVec<std::complex<double>>& F) const
-        {
-            (void)F;
-            return DMat<std::complex<double>>::Zero(2, 2);
         }
 
         template class RevolutePair<double>;
         template class RevolutePair<std::complex<double>>;
         template class RevolutePair<float>;
         template class RevolutePair<casadi::SX>;
+
     }
 
 } // namespace grbda
