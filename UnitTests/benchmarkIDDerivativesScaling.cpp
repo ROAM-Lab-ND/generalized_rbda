@@ -31,6 +31,8 @@ struct ScalingResult {
 };
 
 // Helper to compute finite difference derivatives for validation
+// For implicit constraints, we perturb in independent coordinate space and use G to map
+// to spanning coordinates. This ensures the perturbation stays on the constraint manifold.
 template<typename Scalar>
 std::pair<DMat<Scalar>, DMat<Scalar>> computeFiniteDifferenceDerivatives(
     ClusterTreeModel<Scalar>& model,
@@ -45,31 +47,68 @@ std::pair<DMat<Scalar>, DMat<Scalar>> computeFiniteDifferenceDerivatives(
 
     // Numerical dtau/dq
     for (int j = 0; j < nDOF; ++j) {
-        DVec<Scalar> q_plus = q;
-        q_plus(j) += h;
-        DVec<Scalar> q_minus = q;
-        q_minus(j) -= h;
+        // Create perturbation in independent velocity space
+        DVec<Scalar> dy_plus = DVec<Scalar>::Zero(nDOF);
+        dy_plus(j) = h;
+        DVec<Scalar> dy_minus = DVec<Scalar>::Zero(nDOF);
+        dy_minus(j) = -h;
 
+        // Build perturbed states using G to map independent perturbations to spanning
         ModelState<Scalar> state_plus;
-        int idx = 0;
+        int pos_idx = 0, vel_idx = 0;
         for (const auto& cluster : model.clusters()) {
-            JointState<Scalar> js;
-            js.position = q_plus.segment(idx, cluster->num_positions_);
-            js.velocity = qd.segment(idx, cluster->num_velocities_);
-            state_plus.push_back(js);
-            idx += cluster->num_velocities_;
+            const int nv_cluster = cluster->num_velocities_;
+            const int np_cluster = cluster->num_positions_;
+
+            DVec<Scalar> dy_cluster = dy_plus.segment(vel_idx, nv_cluster);
+
+            if (cluster->joint_->isImplicit()) {
+                // Use G to map independent perturbation to spanning coordinates
+                const DMat<Scalar>& G = cluster->joint_->G();
+                DVec<Scalar> dq_span = G * dy_cluster;
+                DVec<Scalar> q_pert_cluster = q.segment(pos_idx, np_cluster) + dq_span;
+
+                JointState<Scalar> js(JointCoordinate<Scalar>(q_pert_cluster, true),
+                    JointCoordinate<Scalar>(qd.segment(vel_idx, nv_cluster), false));
+                state_plus.push_back(js);
+            } else {
+                DVec<Scalar> q_pert_cluster = q.segment(pos_idx, np_cluster) + dy_cluster;
+
+                JointState<Scalar> js(JointCoordinate<Scalar>(q_pert_cluster, false),
+                    JointCoordinate<Scalar>(qd.segment(vel_idx, nv_cluster), false));
+                state_plus.push_back(js);
+            }
+            pos_idx += np_cluster;
+            vel_idx += nv_cluster;
         }
         model.setState(state_plus);
         DVec<Scalar> tau_plus = model.inverseDynamics(ydd);
 
         ModelState<Scalar> state_minus;
-        idx = 0;
+        pos_idx = 0; vel_idx = 0;
         for (const auto& cluster : model.clusters()) {
-            JointState<Scalar> js;
-            js.position = q_minus.segment(idx, cluster->num_positions_);
-            js.velocity = qd.segment(idx, cluster->num_velocities_);
-            state_minus.push_back(js);
-            idx += cluster->num_velocities_;
+            const int nv_cluster = cluster->num_velocities_;
+            const int np_cluster = cluster->num_positions_;
+
+            DVec<Scalar> dy_cluster = dy_minus.segment(vel_idx, nv_cluster);
+
+            if (cluster->joint_->isImplicit()) {
+                const DMat<Scalar>& G = cluster->joint_->G();
+                DVec<Scalar> dq_span = G * dy_cluster;
+                DVec<Scalar> q_pert_cluster = q.segment(pos_idx, np_cluster) + dq_span;
+
+                JointState<Scalar> js(JointCoordinate<Scalar>(q_pert_cluster, true),
+                    JointCoordinate<Scalar>(qd.segment(vel_idx, nv_cluster), false));
+                state_minus.push_back(js);
+            } else {
+                DVec<Scalar> q_pert_cluster = q.segment(pos_idx, np_cluster) + dy_cluster;
+
+                JointState<Scalar> js(JointCoordinate<Scalar>(q_pert_cluster, false),
+                    JointCoordinate<Scalar>(qd.segment(vel_idx, nv_cluster), false));
+                state_minus.push_back(js);
+            }
+            pos_idx += np_cluster;
+            vel_idx += nv_cluster;
         }
         model.setState(state_minus);
         DVec<Scalar> tau_minus = model.inverseDynamics(ydd);
@@ -85,25 +124,31 @@ std::pair<DMat<Scalar>, DMat<Scalar>> computeFiniteDifferenceDerivatives(
         qd_minus(j) -= h;
 
         ModelState<Scalar> state_plus;
-        int idx = 0;
+        int pos_idx = 0, vel_idx = 0;
         for (const auto& cluster : model.clusters()) {
-            JointState<Scalar> js;
-            js.position = q.segment(idx, cluster->num_positions_);
-            js.velocity = qd_plus.segment(idx, cluster->num_velocities_);
+            const bool pos_is_spanning = cluster->joint_->isImplicit();
+            JointState<Scalar> js(JointCoordinate<Scalar>(
+                q.segment(pos_idx, cluster->num_positions_), pos_is_spanning),
+                JointCoordinate<Scalar>(
+                    qd_plus.segment(vel_idx, cluster->num_velocities_), false));
             state_plus.push_back(js);
-            idx += cluster->num_velocities_;
+            pos_idx += cluster->num_positions_;
+            vel_idx += cluster->num_velocities_;
         }
         model.setState(state_plus);
         DVec<Scalar> tau_plus = model.inverseDynamics(ydd);
 
         ModelState<Scalar> state_minus;
-        idx = 0;
+        pos_idx = 0; vel_idx = 0;
         for (const auto& cluster : model.clusters()) {
-            JointState<Scalar> js;
-            js.position = q.segment(idx, cluster->num_positions_);
-            js.velocity = qd_minus.segment(idx, cluster->num_velocities_);
+            const bool pos_is_spanning = cluster->joint_->isImplicit();
+            JointState<Scalar> js(JointCoordinate<Scalar>(
+                q.segment(pos_idx, cluster->num_positions_), pos_is_spanning),
+                JointCoordinate<Scalar>(
+                    qd_minus.segment(vel_idx, cluster->num_velocities_), false));
             state_minus.push_back(js);
-            idx += cluster->num_velocities_;
+            pos_idx += cluster->num_positions_;
+            vel_idx += cluster->num_velocities_;
         }
         model.setState(state_minus);
         DVec<Scalar> tau_minus = model.inverseDynamics(ydd);

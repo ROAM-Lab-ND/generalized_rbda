@@ -401,7 +401,7 @@ namespace grbda
             const int n_ind = four_bar_constraint_->numIndependentPos();
             const int n_span = four_bar_constraint_->numSpanningPos();
             double ind_range = 1.0;
-            double dep_range = 0.1;
+            double dep_range = M_PI;
             DM q_ind, q_dep;
 
             // Call the rootfinder to get dependent position coordinates

@@ -1,6 +1,7 @@
 #include <chrono>
 #include <iostream>
 #include <iomanip>
+#include <fstream>
 #include <vector>
 #include <string>
 #include "grbda/Dynamics/ClusterTreeModel.h"
@@ -177,16 +178,15 @@ int main() {
 
     // ========== Closed-Loop Humanoid Robots ==========
 
-    // Kangaroo (open chain version)
+    // Kangaroo with 4-bar knee constraint (primary closed-loop version)
+    std::cout << "  Benchmarking Kangaroo (4-bar knee)..." << std::flush;
+    results.push_back(benchmarkRobot<KangarooWithConstraints<double>>("Kangaroo (4-bar knee)", ITERATIONS));
+    std::cout << " done\n";
+
+    // Kangaroo (open chain version, for comparison)
     std::cout << "  Benchmarking Kangaroo (open chain)..." << std::flush;
     results.push_back(benchmarkRobot<Kangaroo<double>>("Kangaroo (open chain)", ITERATIONS));
     std::cout << " done\n";
-
-    // Kangaroo with 4-bar knee constraint
-    // Note: Currently disabled - FourBar constraint has Newton convergence issues with random states
-    // std::cout << "  Benchmarking Kangaroo (4-bar knee)..." << std::flush;
-    // results.push_back(benchmarkRobot<KangarooWithConstraints<double>>("Kangaroo (4-bar knee)", ITERATIONS));
-    // std::cout << " done\n";
 
     // Cassie (closed-loop leg)
     std::cout << "  Benchmarking Cassie (closed-loop)..." << std::flush;
@@ -261,6 +261,29 @@ int main() {
     }
 
     std::cout << "\n";
+
+    // Export results to CSV
+    std::string csv_path = std::string(SOURCE_DIRECTORY) + "/../benchmark_figures/data/robot_performance.csv";
+    std::ofstream csv(csv_path);
+    if (csv.is_open()) {
+        csv << "robot_name,label,dof,time_us\n";
+        for (const auto& r : results) {
+            // Create a clean CSV name from the display name
+            std::string csv_name = r.name;
+            // Replace spaces and special chars for CSV compatibility
+            for (char& c : csv_name) {
+                if (c == ' ' || c == '(' || c == ')' || c == '/' || c == ',') c = '_';
+            }
+            csv << csv_name << ","
+                << r.name << ","
+                << r.dof << ","
+                << std::fixed << std::setprecision(2) << r.avg_time_us << "\n";
+        }
+        csv.close();
+        std::cout << "CSV written to: " << csv_path << "\n";
+    } else {
+        std::cerr << "Warning: Could not write CSV to " << csv_path << "\n";
+    }
 
     return 0;
 }

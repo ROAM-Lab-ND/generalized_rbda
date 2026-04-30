@@ -188,22 +188,43 @@ AccuracyResult testAccuracyURDF(const std::string& urdf_path,
     const double h_fd = 1e-8;
 
     // Test dtau/dq using finite difference
+    // For implicit constraints, we perturb in independent coordinate space and use G to map
+    // to spanning coordinates. This ensures the perturbation stays on the constraint manifold.
     for (int i = 0; i < nDOF; ++i) {
-        DVec<double> dq = DVec<double>::Zero(nDOF);
-        dq[i] = h_fd;
+        // Create perturbation in independent velocity space (same dimension as DOF)
+        DVec<double> dy = DVec<double>::Zero(nDOF);
+        dy[i] = h_fd;
 
-        DVec<double> q_pert = lieGroupConfigurationAddition(q0, dq, floating_base);
-
-        // Set perturbed state
+        // For each cluster, map the independent perturbation to spanning coordinates via G
         ModelState<double> state_pert;
         int pos_idx = 0, vel_idx = 0;
         for (const auto& cluster : model_real.clusters()) {
-            JointState<double> joint_state;
-            joint_state.position = q_pert.segment(pos_idx, cluster->num_positions_);
-            joint_state.velocity = qd0.segment(vel_idx, cluster->num_velocities_);
-            state_pert.push_back(joint_state);
-            pos_idx += cluster->num_positions_;
-            vel_idx += cluster->num_velocities_;
+            const int nv_cluster = cluster->num_velocities_;
+            const int np_cluster = cluster->num_positions_;
+
+            DVec<double> dy_cluster = dy.segment(vel_idx, nv_cluster);
+
+            if (cluster->joint_->isImplicit()) {
+                // For implicit constraints: use G to map independent perturbation to spanning
+                const DMat<double>& G = cluster->joint_->G();
+                DVec<double> dq_span = G * dy_cluster;
+                DVec<double> q_pert_cluster = q0.segment(pos_idx, np_cluster) + dq_span;
+
+                JointState<double> joint_state(
+                    JointCoordinate<double>(q_pert_cluster, true),  // spanning
+                    JointCoordinate<double>(qd0.segment(vel_idx, nv_cluster), false));
+                state_pert.push_back(joint_state);
+            } else {
+                // For explicit constraints: direct perturbation in independent space
+                DVec<double> q_pert_cluster = q0.segment(pos_idx, np_cluster) + dy_cluster;
+
+                JointState<double> joint_state(
+                    JointCoordinate<double>(q_pert_cluster, false),  // independent
+                    JointCoordinate<double>(qd0.segment(vel_idx, nv_cluster), false));
+                state_pert.push_back(joint_state);
+            }
+            pos_idx += np_cluster;
+            vel_idx += nv_cluster;
         }
         model_real.setState(state_pert);
 
@@ -225,9 +246,10 @@ AccuracyResult testAccuracyURDF(const std::string& urdf_path,
         ModelState<double> state_pert;
         int pos_idx = 0, vel_idx = 0;
         for (const auto& cluster : model_real.clusters()) {
-            JointState<double> joint_state;
-            joint_state.position = q0.segment(pos_idx, cluster->num_positions_);
-            joint_state.velocity = qd_pert.segment(vel_idx, cluster->num_velocities_);
+            const bool pos_is_spanning = cluster->joint_->isImplicit();
+            JointState<double> joint_state(
+                JointCoordinate<double>(q0.segment(pos_idx, cluster->num_positions_), pos_is_spanning),
+                JointCoordinate<double>(qd_pert.segment(vel_idx, cluster->num_velocities_), false));
             state_pert.push_back(joint_state);
             pos_idx += cluster->num_positions_;
             vel_idx += cluster->num_velocities_;
@@ -312,35 +334,56 @@ AccuracyResult testAccuracyDirect(const std::string& name) {
     ModelState<std::complex<double>> model_state_complex;
     int pos_idx = 0, vel_idx = 0;
     for (const auto& cluster : model_complex.clusters()) {
-        JointState<std::complex<double>> joint_state;
-        joint_state.position = q_complex.segment(pos_idx, cluster->num_positions_);
-        joint_state.velocity = qd_complex.segment(vel_idx, cluster->num_velocities_);
+        const bool pos_is_spanning = cluster->joint_->isImplicit();
+        JointState<std::complex<double>> joint_state(
+            JointCoordinate<std::complex<double>>(q_complex.segment(pos_idx, cluster->num_positions_), pos_is_spanning),
+            JointCoordinate<std::complex<double>>(qd_complex.segment(vel_idx, cluster->num_velocities_), false));
         model_state_complex.push_back(joint_state);
         pos_idx += cluster->num_positions_;
         vel_idx += cluster->num_velocities_;
     }
-    model_complex.setState(model_state_complex);
+    model_complex.setState(model_state_complex, false);
 
     DVec<std::complex<double>> ydd_complex = ydd_real.cast<std::complex<double>>();
 
     // Compute dtau_dq using complex-step
+    // For implicit constraints, we perturb in independent coordinate space and use G to map
+    // to spanning coordinates. This ensures the perturbation stays on the constraint manifold.
     for (int i = 0; i < nDOF; ++i) {
-        DVec<std::complex<double>> dq_complex = DVec<std::complex<double>>::Zero(nDOF);
-        dq_complex(i) = ih;
+        // Create perturbation in independent velocity space (same dimension as DOF)
+        DVec<std::complex<double>> dy = DVec<std::complex<double>>::Zero(nDOF);
+        dy(i) = ih;
 
-        // Apply perturbation using Lie group addition (handles quaternions properly)
-        DVec<std::complex<double>> q_perturbed = lieGroupConfigurationAddition(
-            q_complex, dq_complex, floating_base);
-
+        // For each cluster, map the independent perturbation to spanning coordinates via G
         ModelState<std::complex<double>> state_perturbed;
         pos_idx = 0; vel_idx = 0;
         for (const auto& cluster : model_complex.clusters()) {
-            JointState<std::complex<double>> joint_state;
-            joint_state.position = q_perturbed.segment(pos_idx, cluster->num_positions_);
-            joint_state.velocity = qd_complex.segment(vel_idx, cluster->num_velocities_);
-            state_perturbed.push_back(joint_state);
-            pos_idx += cluster->num_positions_;
-            vel_idx += cluster->num_velocities_;
+            const int nv_cluster = cluster->num_velocities_;
+            const int np_cluster = cluster->num_positions_;
+
+            DVec<std::complex<double>> dy_cluster = dy.segment(vel_idx, nv_cluster);
+
+            if (cluster->joint_->isImplicit()) {
+                // For implicit constraints: use G to map independent perturbation to spanning
+                const DMat<std::complex<double>> G = cluster->joint_->G();
+                DVec<std::complex<double>> dq_span = G * dy_cluster;
+                DVec<std::complex<double>> q_pert_cluster = q_complex.segment(pos_idx, np_cluster) + dq_span;
+
+                JointState<std::complex<double>> joint_state(
+                    JointCoordinate<std::complex<double>>(q_pert_cluster, true),  // spanning
+                    JointCoordinate<std::complex<double>>(qd_complex.segment(vel_idx, nv_cluster), false));
+                state_perturbed.push_back(joint_state);
+            } else {
+                // For explicit constraints: direct perturbation in independent space
+                DVec<std::complex<double>> q_pert_cluster = q_complex.segment(pos_idx, np_cluster) + dy_cluster;
+
+                JointState<std::complex<double>> joint_state(
+                    JointCoordinate<std::complex<double>>(q_pert_cluster, false),  // independent
+                    JointCoordinate<std::complex<double>>(qd_complex.segment(vel_idx, nv_cluster), false));
+                state_perturbed.push_back(joint_state);
+            }
+            pos_idx += np_cluster;
+            vel_idx += nv_cluster;
         }
         model_complex.setState(state_perturbed);
 
@@ -358,9 +401,10 @@ AccuracyResult testAccuracyDirect(const std::string& name) {
         ModelState<std::complex<double>> state_perturbed;
         pos_idx = 0; vel_idx = 0;
         for (const auto& cluster : model_complex.clusters()) {
-            JointState<std::complex<double>> joint_state;
-            joint_state.position = q_complex.segment(pos_idx, cluster->num_positions_);
-            joint_state.velocity = qd_perturbed.segment(vel_idx, cluster->num_velocities_);
+            const bool pos_is_spanning = cluster->joint_->isImplicit();
+            JointState<std::complex<double>> joint_state(
+                JointCoordinate<std::complex<double>>(q_complex.segment(pos_idx, cluster->num_positions_), pos_is_spanning),
+                JointCoordinate<std::complex<double>>(qd_perturbed.segment(vel_idx, cluster->num_velocities_), false));
             state_perturbed.push_back(joint_state);
             pos_idx += cluster->num_positions_;
             vel_idx += cluster->num_velocities_;
@@ -441,35 +485,56 @@ AccuracyResult testAccuracyDirectScalarOnly(const std::string& name) {
     ModelState<std::complex<double>> model_state_complex;
     int pos_idx = 0, vel_idx = 0;
     for (const auto& cluster : model_complex.clusters()) {
-        JointState<std::complex<double>> joint_state;
-        joint_state.position = q_complex.segment(pos_idx, cluster->num_positions_);
-        joint_state.velocity = qd_complex.segment(vel_idx, cluster->num_velocities_);
+        const bool pos_is_spanning = cluster->joint_->isImplicit();
+        JointState<std::complex<double>> joint_state(
+            JointCoordinate<std::complex<double>>(q_complex.segment(pos_idx, cluster->num_positions_), pos_is_spanning),
+            JointCoordinate<std::complex<double>>(qd_complex.segment(vel_idx, cluster->num_velocities_), false));
         model_state_complex.push_back(joint_state);
         pos_idx += cluster->num_positions_;
         vel_idx += cluster->num_velocities_;
     }
-    model_complex.setState(model_state_complex);
+    model_complex.setState(model_state_complex, false);
 
     DVec<std::complex<double>> ydd_complex = ydd_real.cast<std::complex<double>>();
 
     // Compute dtau_dq using complex-step
+    // For implicit constraints, we perturb in independent coordinate space and use G to map
+    // to spanning coordinates. This ensures the perturbation stays on the constraint manifold.
     for (int i = 0; i < nDOF; ++i) {
-        DVec<std::complex<double>> dq_complex = DVec<std::complex<double>>::Zero(nDOF);
-        dq_complex(i) = ih;
+        // Create perturbation in independent velocity space (same dimension as DOF)
+        DVec<std::complex<double>> dy = DVec<std::complex<double>>::Zero(nDOF);
+        dy(i) = ih;
 
-        // Apply perturbation using Lie group addition (handles quaternions properly)
-        DVec<std::complex<double>> q_perturbed = lieGroupConfigurationAddition(
-            q_complex, dq_complex, floating_base);
-
+        // For each cluster, map the independent perturbation to spanning coordinates via G
         ModelState<std::complex<double>> state_perturbed;
         pos_idx = 0; vel_idx = 0;
         for (const auto& cluster : model_complex.clusters()) {
-            JointState<std::complex<double>> joint_state;
-            joint_state.position = q_perturbed.segment(pos_idx, cluster->num_positions_);
-            joint_state.velocity = qd_complex.segment(vel_idx, cluster->num_velocities_);
-            state_perturbed.push_back(joint_state);
-            pos_idx += cluster->num_positions_;
-            vel_idx += cluster->num_velocities_;
+            const int nv_cluster = cluster->num_velocities_;
+            const int np_cluster = cluster->num_positions_;
+
+            DVec<std::complex<double>> dy_cluster = dy.segment(vel_idx, nv_cluster);
+
+            if (cluster->joint_->isImplicit()) {
+                // For implicit constraints: use G to map independent perturbation to spanning
+                const DMat<std::complex<double>> G = cluster->joint_->G();
+                DVec<std::complex<double>> dq_span = G * dy_cluster;
+                DVec<std::complex<double>> q_pert_cluster = q_complex.segment(pos_idx, np_cluster) + dq_span;
+
+                JointState<std::complex<double>> joint_state(
+                    JointCoordinate<std::complex<double>>(q_pert_cluster, true),  // spanning
+                    JointCoordinate<std::complex<double>>(qd_complex.segment(vel_idx, nv_cluster), false));
+                state_perturbed.push_back(joint_state);
+            } else {
+                // For explicit constraints: direct perturbation in independent space
+                DVec<std::complex<double>> q_pert_cluster = q_complex.segment(pos_idx, np_cluster) + dy_cluster;
+
+                JointState<std::complex<double>> joint_state(
+                    JointCoordinate<std::complex<double>>(q_pert_cluster, false),  // independent
+                    JointCoordinate<std::complex<double>>(qd_complex.segment(vel_idx, nv_cluster), false));
+                state_perturbed.push_back(joint_state);
+            }
+            pos_idx += np_cluster;
+            vel_idx += nv_cluster;
         }
         model_complex.setState(state_perturbed);
 
@@ -487,9 +552,10 @@ AccuracyResult testAccuracyDirectScalarOnly(const std::string& name) {
         ModelState<std::complex<double>> state_perturbed;
         pos_idx = 0; vel_idx = 0;
         for (const auto& cluster : model_complex.clusters()) {
-            JointState<std::complex<double>> joint_state;
-            joint_state.position = q_complex.segment(pos_idx, cluster->num_positions_);
-            joint_state.velocity = qd_perturbed.segment(vel_idx, cluster->num_velocities_);
+            const bool pos_is_spanning = cluster->joint_->isImplicit();
+            JointState<std::complex<double>> joint_state(
+                JointCoordinate<std::complex<double>>(q_complex.segment(pos_idx, cluster->num_positions_), pos_is_spanning),
+                JointCoordinate<std::complex<double>>(qd_perturbed.segment(vel_idx, cluster->num_velocities_), false));
             state_perturbed.push_back(joint_state);
             pos_idx += cluster->num_positions_;
             vel_idx += cluster->num_velocities_;
@@ -571,21 +637,45 @@ AccuracyResult testAccuracyFDScalarOnly(const std::string& name) {
     const DVec<double>& qd0 = state.second;
 
     // Test dtau/dq using finite difference
+    // For implicit constraints, we perturb in independent coordinate space and use G to map
+    // to spanning coordinates. This ensures the perturbation stays on the constraint manifold.
     for (int i = 0; i < nDOF; ++i) {
-        DVec<double> dq = DVec<double>::Zero(nDOF);
-        dq[i] = h_fd;
+        // Create perturbation in independent velocity space (same dimension as DOF)
+        DVec<double> dy = DVec<double>::Zero(nDOF);
+        dy[i] = h_fd;
 
-        DVec<double> q_pert = lieGroupConfigurationAddition(q0, dq, floating_base);
-
+        // For each cluster, map the independent perturbation to spanning coordinates via G
         ModelState<double> state_pert;
         int pos_idx = 0, vel_idx = 0;
         for (const auto& cluster : model.clusters()) {
-            JointState<double> joint_state;
-            joint_state.position = q_pert.segment(pos_idx, cluster->num_positions_);
-            joint_state.velocity = qd0.segment(vel_idx, cluster->num_velocities_);
-            state_pert.push_back(joint_state);
-            pos_idx += cluster->num_positions_;
-            vel_idx += cluster->num_velocities_;
+            const int nv_cluster = cluster->num_velocities_;
+            const int np_cluster = cluster->num_positions_;
+
+            DVec<double> dy_cluster = dy.segment(vel_idx, nv_cluster);
+
+            if (cluster->joint_->isImplicit()) {
+                // For implicit constraints: use G to map independent perturbation to spanning
+                // G maps independent velocities to spanning velocities, and for small perturbations
+                // around the constraint manifold, it also maps position perturbations
+                const DMat<double>& G = cluster->joint_->G();
+                DVec<double> dq_span = G * dy_cluster;
+                DVec<double> q_pert_cluster = q0.segment(pos_idx, np_cluster) + dq_span;
+
+                JointState<double> joint_state(
+                    JointCoordinate<double>(q_pert_cluster, true),  // spanning
+                    JointCoordinate<double>(qd0.segment(vel_idx, nv_cluster), false));
+                state_pert.push_back(joint_state);
+            } else {
+                // For explicit constraints: direct perturbation in independent space
+                DVec<double> q_pert_cluster = q0.segment(pos_idx, np_cluster) + dy_cluster;
+
+                JointState<double> joint_state(
+                    JointCoordinate<double>(q_pert_cluster, false),  // independent
+                    JointCoordinate<double>(qd0.segment(vel_idx, nv_cluster), false));
+                state_pert.push_back(joint_state);
+            }
+            pos_idx += np_cluster;
+            vel_idx += nv_cluster;
         }
         model.setState(state_pert);
         DVec<double> tau_pert = model.inverseDynamics(ydd);
@@ -598,6 +688,7 @@ AccuracyResult testAccuracyFDScalarOnly(const std::string& name) {
     }
 
     // Test dtau/dqdot using finite difference
+    // Velocity perturbations are straightforward - perturb in independent space
     for (int i = 0; i < nDOF; ++i) {
         DVec<double> qd_pert = qd0;
         qd_pert[i] += h_fd;
@@ -605,9 +696,10 @@ AccuracyResult testAccuracyFDScalarOnly(const std::string& name) {
         ModelState<double> state_pert;
         int pos_idx = 0, vel_idx = 0;
         for (const auto& cluster : model.clusters()) {
-            JointState<double> joint_state;
-            joint_state.position = q0.segment(pos_idx, cluster->num_positions_);
-            joint_state.velocity = qd_pert.segment(vel_idx, cluster->num_velocities_);
+            const bool pos_is_spanning = cluster->joint_->isImplicit();
+            JointState<double> joint_state(
+                JointCoordinate<double>(q0.segment(pos_idx, cluster->num_positions_), pos_is_spanning),
+                JointCoordinate<double>(qd_pert.segment(vel_idx, cluster->num_velocities_), false));
             state_pert.push_back(joint_state);
             pos_idx += cluster->num_positions_;
             vel_idx += cluster->num_velocities_;
@@ -724,22 +816,26 @@ int main() {
     // Closed-loop humanoid robots
     // ========================================================================
 
-    // Test 6: Kangaroo (open chain) - complex-step works for open chain
+    // Test 6: Kangaroo with 4-bar knee (closed-loop, primary version)
+    {
+        std::cout << "Testing Kangaroo (4-bar knee, finite-diff)..." << std::flush;
+        results.push_back(testAccuracyFDScalarOnly<KangarooWithConstraints>("Kangaroo 4-bar (FD)"));
+        std::cout << " done\n";
+    }
+
+    // Test 7: Kangaroo (open chain) - complex-step works for open chain
     {
         std::cout << "Testing Kangaroo (open chain, complex-step)..." << std::flush;
         results.push_back(testAccuracyDirectScalarOnly<Kangaroo>("Kangaroo open (CS)"));
         std::cout << " done\n";
     }
 
-    // Test 7: Cassie (closed-loop leg)
-    // Note: Accuracy testing disabled - implicit constraints require perturbation
-    // in independent coordinate space with re-solving for dependent coordinates.
-    // Performance benchmark confirms ID derivatives work correctly for Cassie.
-    // {
-    //     std::cout << "Testing Cassie (closed-loop, finite-diff)..." << std::flush;
-    //     results.push_back(testAccuracyFDScalarOnly<Cassie>("Cassie (FD)"));
-    //     std::cout << " done\n";
-    // }
+    // Test 8: Cassie (closed-loop leg)
+    {
+        std::cout << "Testing Cassie (closed-loop, finite-diff)..." << std::flush;
+        results.push_back(testAccuracyFDScalarOnly<Cassie>("Cassie (FD)"));
+        std::cout << " done\n";
+    }
 
     // Print all results
     for (const auto& r : results) {
@@ -801,23 +897,31 @@ int main() {
     std::cout << "\n";
 
     // =========================================================================
-    // Export results to CSV file (disabled - GRBDA_SOURCE_DIR not defined)
+    // Export results to CSV file
     // =========================================================================
-    // std::string output_dir = std::string(GRBDA_SOURCE_DIR) + "/../benchmark_figures/data/";
-    // {
-    //     std::ofstream csv(output_dir + "robot_accuracy.csv");
-    //     csv << "robot_name,dof,max_err_dq,max_err_dqd,mean_err_dq,mean_err_dqd,floating_base,method\n";
-    //     for (const auto& r : results) {
-    //         csv << r.name << "," << r.dof << ","
-    //             << std::scientific << std::setprecision(3) << r.max_error_dq << ","
-    //             << r.max_error_dqdot << ","
-    //             << r.mean_error_dq << ","
-    //             << r.mean_error_dqdot << ","
-    //             << (r.floating_base ? "true" : "false") << ","
-    //             << "complex_step\n";
-    //     }
-    //     std::cout << "Exported: " << output_dir << "robot_accuracy.csv\n";
-    // }
+    std::string csv_path = std::string(SOURCE_DIRECTORY) + "/../benchmark_figures/data/robot_accuracy.csv";
+    std::ofstream csv(csv_path);
+    if (csv.is_open()) {
+        csv << "robot_name,dof,max_err_dq,max_err_dqd,mean_err_dq,mean_err_dqd,floating_base,method\n";
+        for (const auto& r : results) {
+            // Determine method from name
+            std::string method = "complex_step";
+            if (r.name.find("(FD)") != std::string::npos) {
+                method = "finite_diff";
+            }
+            csv << r.name << "," << r.dof << ","
+                << std::scientific << std::setprecision(3) << r.max_error_dq << ","
+                << r.max_error_dqdot << ","
+                << r.mean_error_dq << ","
+                << r.mean_error_dqdot << ","
+                << (r.floating_base ? "true" : "false") << ","
+                << method << "\n";
+        }
+        csv.close();
+        std::cout << "CSV written to: " << csv_path << "\n";
+    } else {
+        std::cerr << "Warning: Could not write CSV to " << csv_path << "\n";
+    }
 
     return all_pass ? 0 : 1;
 }

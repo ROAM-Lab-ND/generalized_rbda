@@ -6,13 +6,73 @@
 #include "grbda/Robots/PlanarLegLinkage.hpp"
 #include <iostream>
 #include <iomanip>
+#include <fstream>
 #include <complex>
+#include <vector>
+#include <string>
 #include "gtest/gtest.h"
 #include "grbda/Dynamics/ClusterTreeModel.h"
 #include "grbda/Robots/RobotTypes.h"
 #include "testHelpers.hpp"
+#include "config.h"
 
 using namespace grbda;
+
+// ── CSV output ──────────────────────────────────────────────────────────────
+
+struct SummaryRow {
+    std::string robot_name;
+    int         dof;
+    double      max_err_dq;
+    double      max_err_dqdot;
+};
+
+struct PerJointRow {
+    std::string robot_name;
+    std::string cluster_name;
+    int         joint_idx;
+    double      err_dq;
+    double      err_dqdot;
+};
+
+struct CsvAccumulator {
+    std::vector<SummaryRow>  summary;
+    std::vector<PerJointRow> per_joint;
+
+    static CsvAccumulator& get() {
+        static CsvAccumulator inst;
+        return inst;
+    }
+
+    void flush() const {
+        const std::string base = std::string(SOURCE_DIRECTORY) + "/../benchmark_figures/data/";
+
+        std::ofstream fs(base + "accuracy_summary.csv");
+        if (fs.is_open()) {
+            fs << "robot_name,dof,max_err_dq,max_err_dqdot\n";
+            fs << std::scientific << std::setprecision(6);
+            for (const auto& r : summary)
+                fs << r.robot_name << "," << r.dof << ","
+                   << r.max_err_dq << "," << r.max_err_dqdot << "\n";
+        }
+
+        std::ofstream fj(base + "minicheetah_per_joint.csv");
+        if (fj.is_open()) {
+            fj << "robot_name,cluster_name,joint_idx,err_dq,err_dqdot\n";
+            fj << std::scientific << std::setprecision(6);
+            for (const auto& r : per_joint)
+                fj << r.robot_name << "," << r.cluster_name << ","
+                   << r.joint_idx << "," << r.err_dq << "," << r.err_dqdot << "\n";
+        }
+    }
+};
+
+class CsvWriteEnvironment : public ::testing::Environment {
+public:
+    void TearDown() override { CsvAccumulator::get().flush(); }
+};
+
+// ── Helper ───────────────────────────────────────────────────────────────────
 
 // Helper function for complex-step differentiation 
 // Generic complex-step derivative test. Caller is responsible for:
@@ -24,7 +84,8 @@ void testInverseDynamicsDerivativesComplexStep(
     ClusterTreeModel<std::complex<double>>& model_complex,
     const std::string& robot_name,
     double tol_dq = 1e-12,
-    double tol_dqdot = 1e-12) {
+    double tol_dqdot = 1e-12,
+    bool record_per_joint = false) {
     std::cout << std::setprecision(16);
     const int nDOF = model_real.getNumDegreesOfFreedom();
     std::cout << "\n========================================\n";
@@ -104,6 +165,26 @@ void testInverseDynamicsDerivativesComplexStep(
         std::cerr << out_of_tol << "\n";
     }
 
+
+    // Record summary row
+    CsvAccumulator::get().summary.push_back({robot_name, nDOF, max_error_dq, max_error_dqdot});
+
+    // Record per-joint rows (column-wise max of the error matrix across all tau outputs)
+    if (record_per_joint) {
+        int dof_idx = 0;
+        for (const auto& cluster : model_real.clusters()) {
+            const int nv = cluster->num_velocities_;
+            for (int k = 0; k < nv; ++k, ++dof_idx) {
+                CsvAccumulator::get().per_joint.push_back({
+                    robot_name,
+                    cluster->name_,
+                    dof_idx,
+                    (dtau_dq    - dtau_dq_cs   ).col(dof_idx).cwiseAbs().maxCoeff(),
+                    (dtau_dqdot - dtau_dqdot_cs).col(dof_idx).cwiseAbs().maxCoeff()
+                });
+            }
+        }
+    }
 
     EXPECT_LT(max_cs_fd_dq,    5e-5) << "CS vs FD mismatch (dtau/dq)";
     EXPECT_LT(max_cs_fd_dqdot, 5e-5) << "CS vs FD mismatch (dtau/dqdot)";
@@ -245,7 +326,8 @@ TEST(InverseDynamicsDerivativesComplexStep, MiniCheetahQuaternion) {
     model_real.setState(randomModelState(model_real));
 
     testInverseDynamicsDerivativesComplexStep(
-        model_real, model_complex, "MiniCheetah (Quaternion)");
+        model_real, model_complex, "MiniCheetah (Quaternion)",
+        /*tol_dq=*/1e-12, /*tol_dqdot=*/1e-12, /*record_per_joint=*/true);
 }
 
 // Simpler version: Build complex model directly from templated robot class
@@ -417,4 +499,10 @@ TEST(InverseDynamicsDerivativesComplexStep, KangarooWithConstraintsDerivatives) 
 
     testInverseDynamicsDerivativesComplexStep(
         model_real, model_complex, "KangarooWithConstraints (Closed Chain)", 1e-12, 1e-14);
+}
+
+int main(int argc, char** argv) {
+    ::testing::InitGoogleTest(&argc, argv);
+    ::testing::AddGlobalTestEnvironment(new CsvWriteEnvironment);
+    return RUN_ALL_TESTS();
 }

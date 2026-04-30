@@ -349,7 +349,10 @@ namespace grbda
     }
 
     template <typename Scalar, typename OriTpl>
-    // NOTE: This function is only for non-spanning joint coordinates
+    // NOTE: This function converts state vectors to ModelState.
+    // For joints with implicit constraints, positions are treated as spanning (since they
+    // cannot be converted from independent to spanning). For explicit constraints, positions
+    // are treated as independent. Velocities are always treated as independent.
     ModelState<Scalar> ClusterTreeModel<Scalar, OriTpl>::stateVectorToModelState(const StatePair &q_qd_pair)
     {
 
@@ -363,7 +366,12 @@ namespace grbda
             const int &num_vel = cluster->num_velocities_;
             DVec<Scalar> qd_cluster = q_qd_pair.second.segment(vel_idx, num_vel);
 
-            JointState<Scalar> joint_state(JointCoordinate<Scalar>(q_cluster, false),
+            // For implicit constraints, positions must be spanning since we cannot
+            // convert independent positions to spanning. For explicit constraints,
+            // positions are independent and will be converted via gamma().
+            const bool pos_is_spanning = cluster->joint_->isImplicit();
+
+            JointState<Scalar> joint_state(JointCoordinate<Scalar>(q_cluster, pos_is_spanning),
                                            JointCoordinate<Scalar>(qd_cluster, false));
             state.push_back(joint_state);
         }
