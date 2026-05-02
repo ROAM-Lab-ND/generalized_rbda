@@ -236,9 +236,9 @@ std::vector<ParallelChainConfig> getAvailableConfigs() {
     // Implicit URDFs: loop_size = 2 * connection_depth + 1
     return {
         {5,  {3, 5, 7, 9, 11}},
-        {10, {3, 5, 9, 13, 17}},
-        {20, {3, 7, 13, 21, 31}},
-        {40, {3, 9, 17, 29, 41}}
+        {10, {3, 5, 7, 9, 11, 13, 15, 17, 19}},
+        //{20, {3, 7, 13, 21, 31}},
+        //{40, {3, 9, 17, 29, 41}}
     };
 }
 
@@ -601,7 +601,7 @@ int main() {
     std::cout << "4. Error should remain bounded (~1e-7) regardless of configuration\n\n";
 
     // Export to CSV
-    std::string output_dir = std::string(SOURCE_DIRECTORY) + "/../benchmark_figures/data/";
+    std::string output_dir = std::string(SOURCE_DIRECTORY) + "/Benchmarking/data/";
 
     {
         std::ofstream csv(output_dir + "parallel_chain_depth.csv");

@@ -137,6 +137,18 @@ int main(int argc, char** argv) {
         "MIT_Humanoid_no_rotors", "MIT Humanoid (-R)", 19, ITERATIONS));
     std::cout << " done\n";
 
+    // Tello (-R/-M) - no rotors, no mechanisms (baseline)
+    std::cout << "  Tello (-R/-M)..." << std::flush;
+    results.push_back(profileRobot<TelloNoRotors<double>>(
+        "Tello_no_rotors_no_mech", "Tello (-R/-M)", 16, ITERATIONS));
+    std::cout << " done\n";
+
+    // Tello (-R/+M) - no rotors, with mechanisms
+    std::cout << "  Tello (-R/+M)..." << std::flush;
+    results.push_back(profileRobot<TelloMechanismsNoRotors<double>>(
+        "Tello_no_rotors_mech", "Tello (-R/+M)", 16, ITERATIONS));
+    std::cout << " done\n";
+
     // Tello (+R/-M) - rotors, no mechanisms
     std::cout << "  Tello (+R/-M)..." << std::flush;
     results.push_back(profileRobot<TelloRotorsNoConstraints<double>>(

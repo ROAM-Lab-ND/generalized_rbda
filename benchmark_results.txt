@@ -1,0 +1,1553 @@
+
+Loading and benchmarking robots...
+URDF path: /home/docker/generalized_rbda/robot-models
+
+  Benchmarking MiniCheetah (with rotors)... done
+  Benchmarking MiniCheetah (no rotors)... done
+  Benchmarking MIT_Humanoid (with rotors)... done
+  Benchmarking MIT_Humanoid (no rotors)... done
+  Benchmarking Tello (-R,-M) [BASELINE]... done
+  Benchmarking Tello (+R,-M) [rotor cost]... done
+  Benchmarking Tello (-R,+M-Static) [linear cost]... done
+  Benchmarking Tello (-R,+M-Generic) [CasADi cost]...[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0166619, final_phi_norm=0.0166619, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0163635, final_phi_norm=0.0163635, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0166549, final_phi_norm=0.0166549, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0170254, final_phi_norm=0.0170254, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0164966, final_phi_norm=0.0164966, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0163963, final_phi_norm=0.0163963, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0164279, final_phi_norm=0.0164279, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0165748, final_phi_norm=0.0165748, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0169585, final_phi_norm=0.0169585, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.016798, final_phi_norm=0.016798, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0162459, final_phi_norm=0.0162459, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0159016, final_phi_norm=0.0159016, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.016542, final_phi_norm=0.016542, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0163281, final_phi_norm=0.0163281, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0162811, final_phi_norm=0.0162811, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0171534, final_phi_norm=0.0171534, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.016796, final_phi_norm=0.016796, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0172606, final_phi_norm=0.0172606, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0162599, final_phi_norm=0.0162599, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0165197, final_phi_norm=0.0165197, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0168482, final_phi_norm=0.0168482, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0168902, final_phi_norm=0.0168902, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0161119, final_phi_norm=0.0161119, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.01609, final_phi_norm=0.01609, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0162139, final_phi_norm=0.0162139, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0163889, final_phi_norm=0.0163889, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0168295, final_phi_norm=0.0168295, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0168243, final_phi_norm=0.0168243, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0164461, final_phi_norm=0.0164461, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0164442, final_phi_norm=0.0164442, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0167323, final_phi_norm=0.0167323, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0162622, final_phi_norm=0.0162622, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0165285, final_phi_norm=0.0165285, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0166349, final_phi_norm=0.0166349, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0163359, final_phi_norm=0.0163359, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0166458, final_phi_norm=0.0166458, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.016296, final_phi_norm=0.016296, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0162763, final_phi_norm=0.0162763, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0167306, final_phi_norm=0.0167306, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0166377, final_phi_norm=0.0166377, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0166158, final_phi_norm=0.0166158, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0169163, final_phi_norm=0.0169163, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0168685, final_phi_norm=0.0168685, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0156798, final_phi_norm=0.0156798, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0159999, final_phi_norm=0.0159999, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0166895, final_phi_norm=0.0166895, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0166387, final_phi_norm=0.0166387, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0163707, final_phi_norm=0.0163707, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0162797, final_phi_norm=0.0162797, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0163685, final_phi_norm=0.0163685, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0159957, final_phi_norm=0.0159957, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0167101, final_phi_norm=0.0167101, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.01612, final_phi_norm=0.01612, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0160607, final_phi_norm=0.0160607, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0160049, final_phi_norm=0.0160049, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0167121, final_phi_norm=0.0167121, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0162398, final_phi_norm=0.0162398, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0168086, final_phi_norm=0.0168086, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0168534, final_phi_norm=0.0168534, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.016388, final_phi_norm=0.016388, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0170868, final_phi_norm=0.0170868, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0161974, final_phi_norm=0.0161974, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0159767, final_phi_norm=0.0159767, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0169195, final_phi_norm=0.0169195, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0165092, final_phi_norm=0.0165092, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0167949, final_phi_norm=0.0167949, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0163996, final_phi_norm=0.0163996, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.016716, final_phi_norm=0.016716, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0167519, final_phi_norm=0.0167519, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0165782, final_phi_norm=0.0165782, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0165055, final_phi_norm=0.0165055, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0162925, final_phi_norm=0.0162925, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0158198, final_phi_norm=0.0158198, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0167621, final_phi_norm=0.0167621, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.016365, final_phi_norm=0.016365, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0159806, final_phi_norm=0.0159806, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0162957, final_phi_norm=0.0162957, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0162849, final_phi_norm=0.0162849, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0169072, final_phi_norm=0.0169072, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0161864, final_phi_norm=0.0161864, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0167496, final_phi_norm=0.0167496, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0167731, final_phi_norm=0.0167731, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0162083, final_phi_norm=0.0162083, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0167555, final_phi_norm=0.0167555, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0165441, final_phi_norm=0.0165441, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0161352, final_phi_norm=0.0161352, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0160808, final_phi_norm=0.0160808, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0167624, final_phi_norm=0.0167624, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0164889, final_phi_norm=0.0164889, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.016034, final_phi_norm=0.016034, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0168451, final_phi_norm=0.0168451, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.016089, final_phi_norm=0.016089, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0168434, final_phi_norm=0.0168434, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0169186, final_phi_norm=0.0169186, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0168705, final_phi_norm=0.0168705, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.016682, final_phi_norm=0.016682, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.016468, final_phi_norm=0.016468, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0168354, final_phi_norm=0.0168354, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0164824, final_phi_norm=0.0164824, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.016295, final_phi_norm=0.016295, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0167021, final_phi_norm=0.0167021, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0165981, final_phi_norm=0.0165981, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0171874, final_phi_norm=0.0171874, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0166005, final_phi_norm=0.0166005, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0161943, final_phi_norm=0.0161943, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0172923, final_phi_norm=0.0172923, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0159497, final_phi_norm=0.0159497, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0167222, final_phi_norm=0.0167222, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0166362, final_phi_norm=0.0166362, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0168605, final_phi_norm=0.0168605, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0172409, final_phi_norm=0.0172409, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0164618, final_phi_norm=0.0164618, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0157291, final_phi_norm=0.0157291, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0167074, final_phi_norm=0.0167074, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.016267, final_phi_norm=0.016267, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0164619, final_phi_norm=0.0164619, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0164726, final_phi_norm=0.0164726, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0167751, final_phi_norm=0.0167751, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0167636, final_phi_norm=0.0167636, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0165396, final_phi_norm=0.0165396, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0165003, final_phi_norm=0.0165003, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0161547, final_phi_norm=0.0161547, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0160087, final_phi_norm=0.0160087, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0171328, final_phi_norm=0.0171328, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0162254, final_phi_norm=0.0162254, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0161629, final_phi_norm=0.0161629, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0167329, final_phi_norm=0.0167329, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0165085, final_phi_norm=0.0165085, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0171696, final_phi_norm=0.0171696, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0161245, final_phi_norm=0.0161245, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0161143, final_phi_norm=0.0161143, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0167872, final_phi_norm=0.0167872, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0160449, final_phi_norm=0.0160449, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0158926, final_phi_norm=0.0158926, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0159902, final_phi_norm=0.0159902, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.016314, final_phi_norm=0.016314, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0157216, final_phi_norm=0.0157216, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0162524, final_phi_norm=0.0162524, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0165897, final_phi_norm=0.0165897, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0162543, final_phi_norm=0.0162543, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0168181, final_phi_norm=0.0168181, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0165767, final_phi_norm=0.0165767, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0163574, final_phi_norm=0.0163574, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0171115, final_phi_norm=0.0171115, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0156786, final_phi_norm=0.0156786, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0160259, final_phi_norm=0.0160259, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0160612, final_phi_norm=0.0160612, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.017265, final_phi_norm=0.017265, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0162743, final_phi_norm=0.0162743, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0160297, final_phi_norm=0.0160297, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0165889, final_phi_norm=0.0165889, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0163679, final_phi_norm=0.0163679, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0171198, final_phi_norm=0.0171198, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0166447, final_phi_norm=0.0166447, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0164112, final_phi_norm=0.0164112, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0168254, final_phi_norm=0.0168254, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0166625, final_phi_norm=0.0166625, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0159795, final_phi_norm=0.0159795, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0166019, final_phi_norm=0.0166019, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0164217, final_phi_norm=0.0164217, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0161876, final_phi_norm=0.0161876, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0161148, final_phi_norm=0.0161148, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0162174, final_phi_norm=0.0162174, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0167118, final_phi_norm=0.0167118, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0167049, final_phi_norm=0.0167049, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0164087, final_phi_norm=0.0164087, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0165727, final_phi_norm=0.0165727, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0162556, final_phi_norm=0.0162556, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0158287, final_phi_norm=0.0158287, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0166023, final_phi_norm=0.0166023, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0163129, final_phi_norm=0.0163129, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0168066, final_phi_norm=0.0168066, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.016555, final_phi_norm=0.016555, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0168322, final_phi_norm=0.0168322, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0163731, final_phi_norm=0.0163731, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0162035, final_phi_norm=0.0162035, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0165252, final_phi_norm=0.0165252, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.01596, final_phi_norm=0.01596, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0168094, final_phi_norm=0.0168094, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0157673, final_phi_norm=0.0157673, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0170657, final_phi_norm=0.0170657, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0163153, final_phi_norm=0.0163153, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0157336, final_phi_norm=0.0157336, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0166897, final_phi_norm=0.0166897, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0171754, final_phi_norm=0.0171754, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0168348, final_phi_norm=0.0168348, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0167052, final_phi_norm=0.0167052, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0158993, final_phi_norm=0.0158993, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0160814, final_phi_norm=0.0160814, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0163703, final_phi_norm=0.0163703, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0165788, final_phi_norm=0.0165788, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0165383, final_phi_norm=0.0165383, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0169866, final_phi_norm=0.0169866, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0165254, final_phi_norm=0.0165254, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0164059, final_phi_norm=0.0164059, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0164542, final_phi_norm=0.0164542, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0166545, final_phi_norm=0.0166545, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0161674, final_phi_norm=0.0161674, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0168071, final_phi_norm=0.0168071, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0164053, final_phi_norm=0.0164053, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.015963, final_phi_norm=0.015963, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0167502, final_phi_norm=0.0167502, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0163623, final_phi_norm=0.0163623, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.01629, final_phi_norm=0.01629, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0164989, final_phi_norm=0.0164989, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0158664, final_phi_norm=0.0158664, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0164204, final_phi_norm=0.0164204, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0166532, final_phi_norm=0.0166532, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0170218, final_phi_norm=0.0170218, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0163769, final_phi_norm=0.0163769, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0158152, final_phi_norm=0.0158152, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0161539, final_phi_norm=0.0161539, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0165545, final_phi_norm=0.0165545, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0159628, final_phi_norm=0.0159628, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0167796, final_phi_norm=0.0167796, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0169112, final_phi_norm=0.0169112, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.016177, final_phi_norm=0.016177, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0160335, final_phi_norm=0.0160335, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0158113, final_phi_norm=0.0158113, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.016623, final_phi_norm=0.016623, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0159302, final_phi_norm=0.0159302, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.016229, final_phi_norm=0.016229, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0163961, final_phi_norm=0.0163961, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0165909, final_phi_norm=0.0165909, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0163648, final_phi_norm=0.0163648, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0161653, final_phi_norm=0.0161653, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0166815, final_phi_norm=0.0166815, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0165533, final_phi_norm=0.0165533, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0169535, final_phi_norm=0.0169535, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0168944, final_phi_norm=0.0168944, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0163112, final_phi_norm=0.0163112, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0161658, final_phi_norm=0.0161658, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0164239, final_phi_norm=0.0164239, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0163642, final_phi_norm=0.0163642, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0166893, final_phi_norm=0.0166893, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0161637, final_phi_norm=0.0161637, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0163224, final_phi_norm=0.0163224, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.016466, final_phi_norm=0.016466, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0163538, final_phi_norm=0.0163538, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0169723, final_phi_norm=0.0169723, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.016899, final_phi_norm=0.016899, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0160372, final_phi_norm=0.0160372, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0162576, final_phi_norm=0.0162576, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.016365, final_phi_norm=0.016365, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0166805, final_phi_norm=0.0166805, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.01671, final_phi_norm=0.01671, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0164967, final_phi_norm=0.0164967, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0168743, final_phi_norm=0.0168743, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0156456, final_phi_norm=0.0156456, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0166222, final_phi_norm=0.0166222, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.016433, final_phi_norm=0.016433, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0169325, final_phi_norm=0.0169325, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0161544, final_phi_norm=0.0161544, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0170015, final_phi_norm=0.0170015, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0166124, final_phi_norm=0.0166124, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0162599, final_phi_norm=0.0162599, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0160374, final_phi_norm=0.0160374, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0162672, final_phi_norm=0.0162672, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0163446, final_phi_norm=0.0163446, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0166236, final_phi_norm=0.0166236, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0170588, final_phi_norm=0.0170588, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.016298, final_phi_norm=0.016298, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0169869, final_phi_norm=0.0169869, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0156367, final_phi_norm=0.0156367, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0162723, final_phi_norm=0.0162723, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0165515, final_phi_norm=0.0165515, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0159592, final_phi_norm=0.0159592, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0166055, final_phi_norm=0.0166055, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0162639, final_phi_norm=0.0162639, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0160079, final_phi_norm=0.0160079, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0161648, final_phi_norm=0.0161648, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.016616, final_phi_norm=0.016616, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0170402, final_phi_norm=0.0170402, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0170107, final_phi_norm=0.0170107, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0157966, final_phi_norm=0.0157966, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.016643, final_phi_norm=0.016643, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0163313, final_phi_norm=0.0163313, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0164749, final_phi_norm=0.0164749, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0167049, final_phi_norm=0.0167049, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0162159, final_phi_norm=0.0162159, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0165467, final_phi_norm=0.0165467, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0165552, final_phi_norm=0.0165552, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0163703, final_phi_norm=0.0163703, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0158973, final_phi_norm=0.0158973, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.016103, final_phi_norm=0.016103, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0163052, final_phi_norm=0.0163052, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0156379, final_phi_norm=0.0156379, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0160359, final_phi_norm=0.0160359, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0165264, final_phi_norm=0.0165264, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0168745, final_phi_norm=0.0168745, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0162866, final_phi_norm=0.0162866, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0171848, final_phi_norm=0.0171848, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0169706, final_phi_norm=0.0169706, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0169809, final_phi_norm=0.0169809, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0165559, final_phi_norm=0.0165559, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0165444, final_phi_norm=0.0165444, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0165973, final_phi_norm=0.0165973, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.016505, final_phi_norm=0.016505, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0167847, final_phi_norm=0.0167847, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.016451, final_phi_norm=0.016451, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0161571, final_phi_norm=0.0161571, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0170605, final_phi_norm=0.0170605, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.016472, final_phi_norm=0.016472, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0164761, final_phi_norm=0.0164761, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0167345, final_phi_norm=0.0167345, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0163965, final_phi_norm=0.0163965, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0157937, final_phi_norm=0.0157937, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0160309, final_phi_norm=0.0160309, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0165195, final_phi_norm=0.0165195, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0166947, final_phi_norm=0.0166947, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0165443, final_phi_norm=0.0165443, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0164729, final_phi_norm=0.0164729, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0164088, final_phi_norm=0.0164088, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.016591, final_phi_norm=0.016591, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0160024, final_phi_norm=0.0160024, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0157767, final_phi_norm=0.0157767, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0165341, final_phi_norm=0.0165341, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0165906, final_phi_norm=0.0165906, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0162469, final_phi_norm=0.0162469, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0162889, final_phi_norm=0.0162889, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0162867, final_phi_norm=0.0162867, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0163618, final_phi_norm=0.0163618, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0166081, final_phi_norm=0.0166081, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0170103, final_phi_norm=0.0170103, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0159063, final_phi_norm=0.0159063, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.016655, final_phi_norm=0.016655, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0161351, final_phi_norm=0.0161351, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0166223, final_phi_norm=0.0166223, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0160848, final_phi_norm=0.0160848, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.016273, final_phi_norm=0.016273, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0164042, final_phi_norm=0.0164042, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0163067, final_phi_norm=0.0163067, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0157815, final_phi_norm=0.0157815, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0168987, final_phi_norm=0.0168987, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0161895, final_phi_norm=0.0161895, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0167943, final_phi_norm=0.0167943, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0163203, final_phi_norm=0.0163203, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0161439, final_phi_norm=0.0161439, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0159682, final_phi_norm=0.0159682, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0164662, final_phi_norm=0.0164662, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0158428, final_phi_norm=0.0158428, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0167184, final_phi_norm=0.0167184, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0169099, final_phi_norm=0.0169099, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0159373, final_phi_norm=0.0159373, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0164697, final_phi_norm=0.0164697, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0171719, final_phi_norm=0.0171719, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.016162, final_phi_norm=0.016162, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0167081, final_phi_norm=0.0167081, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.01647, final_phi_norm=0.01647, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0168269, final_phi_norm=0.0168269, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0163443, final_phi_norm=0.0163443, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0165081, final_phi_norm=0.0165081, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0164879, final_phi_norm=0.0164879, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0160439, final_phi_norm=0.0160439, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0161689, final_phi_norm=0.0161689, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0168347, final_phi_norm=0.0168347, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0166053, final_phi_norm=0.0166053, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0168469, final_phi_norm=0.0168469, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0170113, final_phi_norm=0.0170113, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0169873, final_phi_norm=0.0169873, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0164585, final_phi_norm=0.0164585, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0165039, final_phi_norm=0.0165039, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0161249, final_phi_norm=0.0161249, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0162149, final_phi_norm=0.0162149, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0170653, final_phi_norm=0.0170653, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0164276, final_phi_norm=0.0164276, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0171139, final_phi_norm=0.0171139, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0161875, final_phi_norm=0.0161875, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0158078, final_phi_norm=0.0158078, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.016367, final_phi_norm=0.016367, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0158235, final_phi_norm=0.0158235, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0164215, final_phi_norm=0.0164215, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.016357, final_phi_norm=0.016357, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0166072, final_phi_norm=0.0166072, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.016561, final_phi_norm=0.016561, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0161187, final_phi_norm=0.0161187, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0164872, final_phi_norm=0.0164872, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0164292, final_phi_norm=0.0164292, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0163105, final_phi_norm=0.0163105, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0166629, final_phi_norm=0.0166629, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0162893, final_phi_norm=0.0162893, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0164266, final_phi_norm=0.0164266, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.016241, final_phi_norm=0.016241, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0160075, final_phi_norm=0.0160075, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.01706, final_phi_norm=0.01706, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0167976, final_phi_norm=0.0167976, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0165311, final_phi_norm=0.0165311, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0167303, final_phi_norm=0.0167303, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0170481, final_phi_norm=0.0170481, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0162431, final_phi_norm=0.0162431, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0166547, final_phi_norm=0.0166547, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0163321, final_phi_norm=0.0163321, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0164283, final_phi_norm=0.0164283, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.015989, final_phi_norm=0.015989, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0169794, final_phi_norm=0.0169794, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0163429, final_phi_norm=0.0163429, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0167214, final_phi_norm=0.0167214, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0166613, final_phi_norm=0.0166613, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0163657, final_phi_norm=0.0163657, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0164091, final_phi_norm=0.0164091, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0164852, final_phi_norm=0.0164852, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0165069, final_phi_norm=0.0165069, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0158406, final_phi_norm=0.0158406, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0171641, final_phi_norm=0.0171641, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.016639, final_phi_norm=0.016639, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0164328, final_phi_norm=0.0164328, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.016811, final_phi_norm=0.016811, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.01596, final_phi_norm=0.01596, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0166781, final_phi_norm=0.0166781, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0166029, final_phi_norm=0.0166029, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.016515, final_phi_norm=0.016515, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0168656, final_phi_norm=0.0168656, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0168118, final_phi_norm=0.0168118, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.017209, final_phi_norm=0.017209, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0171696, final_phi_norm=0.0171696, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0168347, final_phi_norm=0.0168347, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0163992, final_phi_norm=0.0163992, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0167589, final_phi_norm=0.0167589, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0161155, final_phi_norm=0.0161155, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0164371, final_phi_norm=0.0164371, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0163814, final_phi_norm=0.0163814, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0167734, final_phi_norm=0.0167734, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0161249, final_phi_norm=0.0161249, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.016688, final_phi_norm=0.016688, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0158912, final_phi_norm=0.0158912, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0167461, final_phi_norm=0.0167461, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0163427, final_phi_norm=0.0163427, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0160569, final_phi_norm=0.0160569, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0163536, final_phi_norm=0.0163536, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0159429, final_phi_norm=0.0159429, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0168153, final_phi_norm=0.0168153, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0163113, final_phi_norm=0.0163113, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0158202, final_phi_norm=0.0158202, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0168806, final_phi_norm=0.0168806, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0161725, final_phi_norm=0.0161725, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0162445, final_phi_norm=0.0162445, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.017167, final_phi_norm=0.017167, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0170225, final_phi_norm=0.0170225, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0171233, final_phi_norm=0.0171233, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0169125, final_phi_norm=0.0169125, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.01614, final_phi_norm=0.01614, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0170075, final_phi_norm=0.0170075, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0166746, final_phi_norm=0.0166746, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0166172, final_phi_norm=0.0166172, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.016256, final_phi_norm=0.016256, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0167011, final_phi_norm=0.0167011, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.016292, final_phi_norm=0.016292, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0161871, final_phi_norm=0.0161871, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0165604, final_phi_norm=0.0165604, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0158649, final_phi_norm=0.0158649, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0166956, final_phi_norm=0.0166956, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0159898, final_phi_norm=0.0159898, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0163658, final_phi_norm=0.0163658, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.016557, final_phi_norm=0.016557, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0168621, final_phi_norm=0.0168621, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0164238, final_phi_norm=0.0164238, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0163425, final_phi_norm=0.0163425, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0160225, final_phi_norm=0.0160225, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0163056, final_phi_norm=0.0163056, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0163371, final_phi_norm=0.0163371, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0166488, final_phi_norm=0.0166488, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0164467, final_phi_norm=0.0164467, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.016016, final_phi_norm=0.016016, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0167391, final_phi_norm=0.0167391, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0169371, final_phi_norm=0.0169371, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0165817, final_phi_norm=0.0165817, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.016607, final_phi_norm=0.016607, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0164097, final_phi_norm=0.0164097, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.016607, final_phi_norm=0.016607, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0161364, final_phi_norm=0.0161364, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.016832, final_phi_norm=0.016832, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0167952, final_phi_norm=0.0167952, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.016953, final_phi_norm=0.016953, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0161411, final_phi_norm=0.0161411, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0166507, final_phi_norm=0.0166507, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0161522, final_phi_norm=0.0161522, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.016372, final_phi_norm=0.016372, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0167472, final_phi_norm=0.0167472, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0157728, final_phi_norm=0.0157728, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0171845, final_phi_norm=0.0171845, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0161014, final_phi_norm=0.0161014, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0165563, final_phi_norm=0.0165563, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0166245, final_phi_norm=0.0166245, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0168132, final_phi_norm=0.0168132, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.015872, final_phi_norm=0.015872, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0164861, final_phi_norm=0.0164861, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0166429, final_phi_norm=0.0166429, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0164913, final_phi_norm=0.0164913, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.01603, final_phi_norm=0.01603, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0165429, final_phi_norm=0.0165429, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.016352, final_phi_norm=0.016352, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0170215, final_phi_norm=0.0170215, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0165369, final_phi_norm=0.0165369, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0165869, final_phi_norm=0.0165869, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0165293, final_phi_norm=0.0165293, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0164284, final_phi_norm=0.0164284, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0168702, final_phi_norm=0.0168702, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0169008, final_phi_norm=0.0169008, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0163508, final_phi_norm=0.0163508, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0167681, final_phi_norm=0.0167681, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0168514, final_phi_norm=0.0168514, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0171774, final_phi_norm=0.0171774, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0166016, final_phi_norm=0.0166016, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0162739, final_phi_norm=0.0162739, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0170139, final_phi_norm=0.0170139, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0160765, final_phi_norm=0.0160765, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0165461, final_phi_norm=0.0165461, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0159274, final_phi_norm=0.0159274, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0168274, final_phi_norm=0.0168274, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0171818, final_phi_norm=0.0171818, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.016564, final_phi_norm=0.016564, is_valid=0, use_native=0
+[GenericImplicit] state_dim=4, ind_dim=2, dep_dim=2
+[Newton debug] converged=0, best_phi_norm=0.0169399, final_phi_norm=0.0169399, is_valid=0, use_native=0
+terminate called after throwing an instance of 'std::runtime_error'
+  what():  Failed to find valid benchmark state for Tello (-R/+M-Generic) [CasADi]

@@ -241,8 +241,8 @@ int main() {
     std::cout << "  dtau/dqdot - Max error: " << error_dqdot_max.maxCoeff() << "\n";
     std::cout << "  dtau/dqdot - Avg error: " << error_dqdot_avg.mean() << "\n";
 
-    // Save to CSV files - use absolute path that works both inside and outside Docker
-    std::string output_dir = "/tmp/";
+    // Save to CSV files - write inside the Docker-mounted source tree
+    std::string output_dir = std::string(SOURCE_DIRECTORY) + "/Benchmarking/data/";
 
     // Save average error matrices
     {

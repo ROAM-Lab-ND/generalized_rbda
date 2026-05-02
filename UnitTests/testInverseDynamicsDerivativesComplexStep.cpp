@@ -45,7 +45,7 @@ struct CsvAccumulator {
     }
 
     void flush() const {
-        const std::string base = std::string(SOURCE_DIRECTORY) + "/../benchmark_figures/data/";
+        const std::string base = std::string(SOURCE_DIRECTORY) + "/Benchmarking/data/";
 
         std::ofstream fs(base + "accuracy_summary.csv");
         if (fs.is_open()) {
@@ -398,6 +398,18 @@ TEST(InverseDynamicsDerivativesComplexStep, MITHumanoidQuaternion) {
 
     testInverseDynamicsDerivativesComplexStep(
         model_real, model_complex, "MIT Humanoid (Quaternion)", 1e-12, 1e-13);
+}
+
+TEST(InverseDynamicsDerivativesComplexStep, KukaLWR) {
+    KukaLWR<double>               robot_real;
+    KukaLWR<std::complex<double>> robot_complex;
+    ClusterTreeModel<double>               model_real    = robot_real.buildClusterTreeModel();
+    ClusterTreeModel<std::complex<double>> model_complex = robot_complex.buildClusterTreeModel();
+
+    model_real.setState(randomModelState(model_real));
+
+    testInverseDynamicsDerivativesComplexStep(
+        model_real, model_complex, "KUKA LWR 4+");
 }
 
 TEST(InverseDynamicsDerivativesComplexStep, TeleopArm) {
