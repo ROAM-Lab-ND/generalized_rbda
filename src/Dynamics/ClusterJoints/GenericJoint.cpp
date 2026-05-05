@@ -177,7 +177,7 @@ namespace grbda
                     DVec<double> phi_native_val = phi_native_(joint_pos);
                     DVec<double> phi_diff = phi_casadi - phi_native_val;
                     double max_diff = phi_diff.cwiseAbs().maxCoeff();
-                    std::cout << "[GenericImplicit] phi difference (CasADi vs native) max abs: " << max_diff << std::endl;
+                    //std::cout << "[GenericImplicit] phi difference (CasADi vs native) max abs: " << max_diff << std::endl;
                     if (max_diff > 1e-6) {
                         std::cerr << "[GenericImplicit] WARNING: Large difference between CasADi and native phi! max_diff=" << max_diff << std::endl;
                         //throw std::runtime_error("Large difference between CasADi and native phi, check implementation!");
