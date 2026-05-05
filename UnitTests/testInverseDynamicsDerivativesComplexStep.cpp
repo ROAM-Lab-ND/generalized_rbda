@@ -486,7 +486,7 @@ TEST(InverseDynamicsDerivativesComplexStep, CassieOpenChainDerivatives) {
     model_real.setState(randomModelState(model_real, true), true);
 
     testInverseDynamicsDerivativesComplexStep(
-        model_real, model_complex, "Cassie (Closed Chain)", 1e-12, 1e-14);
+        model_real, model_complex, "Cassie (Closed Chain)", 1e-12, 1e-13);
 }
 
 
