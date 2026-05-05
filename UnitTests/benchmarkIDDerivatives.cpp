@@ -178,16 +178,6 @@ int main() {
 
     // ========== Closed-Loop Humanoid Robots ==========
 
-    // Kangaroo with 4-bar knee constraint (primary closed-loop version)
-    std::cout << "  Benchmarking Kangaroo (4-bar knee)..." << std::flush;
-    results.push_back(benchmarkRobot<KangarooWithConstraints<double>>("Kangaroo (4-bar knee)", ITERATIONS));
-    std::cout << " done\n";
-
-    // Kangaroo (open chain version, for comparison)
-    std::cout << "  Benchmarking Kangaroo (open chain)..." << std::flush;
-    results.push_back(benchmarkRobot<Kangaroo<double>>("Kangaroo (open chain)", ITERATIONS));
-    std::cout << " done\n";
-
     // Cassie (closed-loop leg)
     std::cout << "  Benchmarking Cassie (closed-loop)..." << std::flush;
     results.push_back(benchmarkRobot<Cassie<double>>("Cassie (closed-loop)", ITERATIONS));

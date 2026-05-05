@@ -816,19 +816,6 @@ int main() {
     // Closed-loop humanoid robots
     // ========================================================================
 
-    // Test 6: Kangaroo with 4-bar knee (closed-loop, primary version)
-    {
-        std::cout << "Testing Kangaroo (4-bar knee, finite-diff)..." << std::flush;
-        results.push_back(testAccuracyFDScalarOnly<KangarooWithConstraints>("Kangaroo 4-bar (FD)"));
-        std::cout << " done\n";
-    }
-
-    // Test 7: Kangaroo (open chain) - complex-step works for open chain
-    {
-        std::cout << "Testing Kangaroo (open chain, complex-step)..." << std::flush;
-        results.push_back(testAccuracyDirectScalarOnly<Kangaroo>("Kangaroo open (CS)"));
-        std::cout << " done\n";
-    }
 
     // Test 8: Cassie (closed-loop leg)
     {

@@ -167,18 +167,6 @@ int main(int argc, char** argv) {
         "TelloWithArms", "Tello with Arms (+R/+M)", 37, ITERATIONS));
     std::cout << " done\n";
 
-    // Kangaroo with 4-bar knee constraints (closed-loop, primary for plotting)
-    std::cout << "  Kangaroo (4-bar knee)..." << std::flush;
-    results.push_back(profileRobot<KangarooWithConstraints<double>>(
-        "Kangaroo_constraints", "Kangaroo (4-bar knee)", 14, ITERATIONS));
-    std::cout << " done\n";
-
-    // Kangaroo (open chain, for comparison)
-    std::cout << "  Kangaroo (open chain)..." << std::flush;
-    results.push_back(profileRobot<Kangaroo<double>>(
-        "Kangaroo_open", "Kangaroo (open chain)", 12, ITERATIONS));
-    std::cout << " done\n";
-
     // Cassie (closed-loop biped)
     std::cout << "  Cassie (closed-loop)..." << std::flush;
     results.push_back(profileRobot<Cassie<double>>(

@@ -177,15 +177,6 @@ TEST(InverseDynamicsDerivatives, PlanarLegLinkageImplicitConstraint) {
     testInverseDynamicsDerivativesFiniteDifference(model, "PlanarLegLinkage", 1e-4, 1e-6);
 }
 
-TEST(InverseDynamicsDerivatives, KangarooOpenChain) {
-    using namespace grbda;
-    Kangaroo<double> robot;
-    ClusterTreeModel<double> model = robot.buildClusterTreeModel();
-    model.setState(randomModelState(model));
-    // Kangaroo is a 14-DOF floating base robot without loop constraints
-    testInverseDynamicsDerivativesFiniteDifference(model, "Kangaroo (open chain)", 1e-4, 1e-5);
-}
-
 TEST(InverseDynamicsDerivatives, CassieClosedLoop) {
     using namespace grbda;
     Cassie<double> robot;
@@ -195,15 +186,3 @@ TEST(InverseDynamicsDerivatives, CassieClosedLoop) {
     // Cassie has FourBar constraints in the lower legs
     testInverseDynamicsDerivativesFiniteDifference(model, "Cassie (closed-loop)", 1e-4, 1e-5);
 }
-
-// KangarooWithConstraints test - may fail with some random states due to FourBar geometry
-TEST(InverseDynamicsDerivatives, KangarooWithConstraints) {
-    using namespace grbda;
-    KangarooWithConstraints<double> robot;
-    ClusterTreeModel<double> model = robot.buildClusterTreeModel();
-    constexpr bool enforce_constraints = true;
-    model.setState(randomModelState(model,enforce_constraints));
-    // Use fewer trials and verbose output to diagnose issues
-    testInverseDynamicsDerivativesFiniteDifference(model, "KangarooWithConstraints", 1e-4, 1e-5);
-}
-

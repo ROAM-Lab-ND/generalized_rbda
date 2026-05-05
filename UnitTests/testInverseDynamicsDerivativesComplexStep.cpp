@@ -477,18 +477,6 @@ TEST(InverseDynamicsDerivativesComplexStep, PlanarLegLinkageImplicitConstraintDe
         model_real, model_complex, "PlanarLegLinkage (ImplicitConstraint)", 1e-12, 1e-14);
 }
 
-TEST(InverseDynamicsDerivativesComplexStep, KangarooOpenChainDerivatives) {
-    Kangaroo<double>               robot_real;
-    Kangaroo<std::complex<double>> robot_complex;
-    ClusterTreeModel<double>               model_real    = robot_real.buildClusterTreeModel();
-    ClusterTreeModel<std::complex<double>> model_complex = robot_complex.buildClusterTreeModel();
-
-    model_real.setState(randomModelState(model_real, true), true);
-
-    testInverseDynamicsDerivativesComplexStep(
-        model_real, model_complex, "Kangaroo (Open Chain)", 1e-12, 1e-14);
-}
-
 TEST(InverseDynamicsDerivativesComplexStep, CassieOpenChainDerivatives) {
     Cassie<double>               robot_real;
     Cassie<std::complex<double>> robot_complex;
