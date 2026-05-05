@@ -36,10 +36,11 @@ namespace grbda
             Vec3<Scalar> hip_roll_pos = hip_roll_joint_pos;
             hip_roll_pos(1) *= side_sign;
             const spatial::Transform<Scalar> hip_roll_Xtree(Mat3<Scalar>::Identity(), hip_roll_pos);
-            const SpatialInertia<Scalar> hip_roll_inertia(
-                hip_roll_mass, hip_roll_CoM, Mat3<Scalar>::Identity() * Scalar(0.0035));
+            const SpatialInertia<Scalar> hip_roll_si(
+                hip_roll_mass, hip_roll_CoM,
+                (i == 0) ? hip_roll_inertia_left : hip_roll_inertia_right);
             model.template appendBody<Revolute<Scalar>>(
-                hip_roll_name, hip_roll_inertia,
+                hip_roll_name, hip_roll_si,
                 pelvis_name, hip_roll_Xtree,
                 CoordAxis::X, side + "-hip-roll-joint");
 
@@ -47,10 +48,12 @@ namespace grbda
             Vec3<Scalar> hip_yaw_pos = hip_yaw_joint_offset;
             hip_yaw_pos(1) *= side_sign;
             const spatial::Transform<Scalar> hip_yaw_Xtree(Mat3<Scalar>::Identity(), hip_yaw_pos);
-            const SpatialInertia<Scalar> hip_yaw_inertia(
-                hip_yaw_mass, hip_yaw_CoM, Mat3<Scalar>::Identity() * Scalar(0.0025));
+            const SpatialInertia<Scalar> hip_yaw_si(
+                hip_yaw_mass,
+                (i == 0) ? hip_yaw_CoM_left : hip_yaw_CoM_right,
+                (i == 0) ? hip_yaw_inertia_left : hip_yaw_inertia_right);
             model.template appendBody<Revolute<Scalar>>(
-                hip_yaw_name, hip_yaw_inertia,
+                hip_yaw_name, hip_yaw_si,
                 hip_roll_name, hip_yaw_Xtree,
                 CoordAxis::Z, side + "-hip-yaw-joint");
 
@@ -58,10 +61,12 @@ namespace grbda
             Vec3<Scalar> hip_pitch_pos = hip_pitch_joint_offset;
             hip_pitch_pos(1) *= side_sign;
             const spatial::Transform<Scalar> hip_pitch_Xtree(Mat3<Scalar>::Identity(), hip_pitch_pos);
-            const SpatialInertia<Scalar> hip_pitch_inertia(
-                hip_pitch_mass, hip_pitch_CoM, Mat3<Scalar>::Identity() * Scalar(0.01));
+            const SpatialInertia<Scalar> hip_pitch_si(
+                hip_pitch_mass,
+                (i == 0) ? hip_pitch_CoM_left : hip_pitch_CoM_right,
+                (i == 0) ? hip_pitch_inertia_left : hip_pitch_inertia_right);
             model.template appendBody<Revolute<Scalar>>(
-                hip_pitch_name, hip_pitch_inertia,
+                hip_pitch_name, hip_pitch_si,
                 hip_yaw_name, hip_pitch_Xtree,
                 CoordAxis::Y, side + "-hip-pitch-joint");
 
@@ -93,25 +98,28 @@ namespace grbda
             const Vec3<Scalar> knee_shin_pos{Scalar(0.12), Scalar(0.), Scalar(0.0045) * side_sign};
             const spatial::Transform<Scalar> knee_shin_Xtree(Mat3<Scalar>::Identity(), knee_shin_pos);
 
-            // Xtree for tarsus+heel-spring: shin joint position in knee+shin body frame.
-            // L1 = |shin_on_knee| = 0.077m (knee pivot to shin joint).
-            // L2 = |(shin_to_tarsus) + (heel_on_tarsus)| = 0.422m (shin joint to heel-spring
-            //      pivot, straight-line across the rigid tarsus body).
+            // Xtree for tarsus: shin joint position within the knee+shin body frame.
+            // This is the pos of left-shin in the MJCF (0.06068, 0.04741, 0), which is where
+            // the shin (and hence tarsus) joint lives relative to the knee pivot.
             const Vec3<Scalar> tarsus_pos{Scalar(0.06068), Scalar(0.04741), Scalar(0.)};
             const spatial::Transform<Scalar> tarsus_Xtree(Mat3<Scalar>::Identity(), tarsus_pos);
 
-            const SpatialInertia<Scalar> achilles_inertia(
-                achilles_mass, achilles_CoM, Mat3<Scalar>::Identity() * Scalar(4.5e-3));
-            const SpatialInertia<Scalar> knee_shin_inertia(
-                knee_shin_mass, knee_shin_CoM, Mat3<Scalar>::Identity() * Scalar(0.005));
-            const SpatialInertia<Scalar> tarsus_inertia(
-                tarsus_mass, tarsus_CoM, Mat3<Scalar>::Identity() * Scalar(0.014));
+            const SpatialInertia<Scalar> achilles_si(
+                achilles_mass, achilles_CoM, achilles_inertia);
+            const SpatialInertia<Scalar> knee_shin_si(
+                knee_shin_mass,
+                (i == 0) ? knee_shin_CoM_left : knee_shin_CoM_right,
+                (i == 0) ? knee_shin_inertia_left : knee_shin_inertia_right);
+            const SpatialInertia<Scalar> tarsus_si(
+                tarsus_mass,
+                (i == 0) ? tarsus_CoM_left : tarsus_CoM_right,
+                (i == 0) ? tarsus_inertia_left : tarsus_inertia_right);
 
-            auto knee_shin_body = model.registerBody(knee_shin_name, knee_shin_inertia,
+            auto knee_shin_body = model.registerBody(knee_shin_name, knee_shin_si,
                                                      hip_pitch_name, knee_shin_Xtree);
-            auto achilles_body = model.registerBody(achilles_name, achilles_inertia,
+            auto achilles_body = model.registerBody(achilles_name, achilles_si,
                                                     hip_pitch_name, achilles_Xtree);
-            auto tarsus_body = model.registerBody(tarsus_name, tarsus_inertia,
+            auto tarsus_body = model.registerBody(tarsus_name, tarsus_si,
                                                   knee_shin_name, tarsus_Xtree);
 
             std::vector<Body<Scalar>> upper_bodies = {knee_shin_body, achilles_body, tarsus_body};
@@ -169,18 +177,22 @@ namespace grbda
                                            Scalar(-0.00791) * side_sign};
             const spatial::Transform<Scalar> plantar_Xtree(Mat3<Scalar>::Identity(), plantar_pos);
 
-            const SpatialInertia<Scalar> foot_crank_inertia(
-                foot_crank_mass, foot_crank_CoM, Mat3<Scalar>::Identity() * Scalar(5e-5));
-            const SpatialInertia<Scalar> foot_inertia(
-                foot_mass, foot_CoM, Mat3<Scalar>::Identity() * Scalar(2e-4));
-            const SpatialInertia<Scalar> plantar_rod_inertia(
-                plantar_rod_mass, plantar_rod_CoM, Mat3<Scalar>::Identity() * Scalar(1.8e-3));
+            const SpatialInertia<Scalar> foot_crank_si(
+                foot_crank_mass,
+                (i == 0) ? foot_crank_CoM_left : foot_crank_CoM_right,
+                (i == 0) ? foot_crank_inertia_left : foot_crank_inertia_right);
+            const SpatialInertia<Scalar> foot_si(
+                foot_mass,
+                (i == 0) ? foot_CoM_left : foot_CoM_right,
+                (i == 0) ? foot_inertia_left : foot_inertia_right);
+            const SpatialInertia<Scalar> plantar_rod_si(
+                plantar_rod_mass, plantar_rod_CoM, plantar_rod_inertia);
 
-            auto foot_crank_body = model.registerBody(foot_crank_name, foot_crank_inertia,
+            auto foot_crank_body = model.registerBody(foot_crank_name, foot_crank_si,
                                                       tarsus_name, foot_crank_Xtree);
-            auto foot_body = model.registerBody(foot_name, foot_inertia,
+            auto foot_body = model.registerBody(foot_name, foot_si,
                                                 tarsus_name, foot_Xtree);
-            auto plantar_rod_body = model.registerBody(plantar_rod_name, plantar_rod_inertia,
+            auto plantar_rod_body = model.registerBody(plantar_rod_name, plantar_rod_si,
                                                        foot_crank_name, plantar_Xtree);
 
             std::vector<Body<Scalar>> lower_bodies = {foot_crank_body, foot_body, plantar_rod_body};
