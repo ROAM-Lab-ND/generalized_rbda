@@ -712,6 +712,21 @@ namespace grbda
                         }
                     }
                 }
+            } else if (generic_constraint_) {
+                if constexpr (std::is_same_v<Scalar, double> || std::is_same_v<Scalar, float>) {
+                    const auto& is_ind = generic_constraint_->isCoordinateIndependent();
+                    const int n_span = (int)is_ind.size();
+                    const int n_ind = (int)std::count(is_ind.begin(), is_ind.end(), true);
+                    this->spanning_tree_to_independent_coords_conversion_ =
+                        DMat<int>::Zero(n_ind, n_span);
+                    int ind_idx = 0;
+                    for (int j = 0; j < n_span; j++) {
+                        if (is_ind[j]) {
+                            this->spanning_tree_to_independent_coords_conversion_(ind_idx, j) = 1;
+                            ind_idx++;
+                        }
+                    }
+                }
             }
         }
 

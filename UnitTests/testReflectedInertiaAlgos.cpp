@@ -26,13 +26,30 @@ protected:
         {
             JointState<> joint_state = cluster->joint_->randomJointState();
 
-            if (joint_state.position.isSpanning() || joint_state.velocity.isSpanning())
-                throw std::runtime_error("Initializing reflected inertia model requires all independent coordinates");
-
-            independent_joint_pos_ = appendEigenVector(independent_joint_pos_,
+            if (joint_state.position.isSpanning())
+            {
+                const DMat<int>& conv = cluster->joint_->spanningTreeToIndependentCoordsConversion();
+                DVec<double> ind_pos = conv.cast<double>() * DVec<double>(joint_state.position);
+                independent_joint_pos_ = appendEigenVector(independent_joint_pos_, ind_pos);
+            }
+            else
+            {
+                independent_joint_pos_ = appendEigenVector(independent_joint_pos_,
                                                        joint_state.position);
-            independent_joint_vel_ = appendEigenVector(independent_joint_vel_,
+
+            }
+
+            if( joint_state.velocity.isSpanning() )
+            {
+                const DMat<int>& conv = cluster->joint_->spanningTreeToIndependentCoordsConversion();
+                DVec<double> ind_vel = conv.cast<double>() * DVec<double>(joint_state.velocity);
+                independent_joint_vel_ = appendEigenVector(independent_joint_vel_, ind_vel);
+            }
+            else
+            {
+                independent_joint_vel_ = appendEigenVector(independent_joint_vel_,
                                                        joint_state.velocity);
+            }
 
             model_state.push_back(joint_state);
         }
