@@ -121,6 +121,57 @@ namespace TestHelpers
         return q_plus_dq_vec;
     }
 
+    // Model-aware retraction for flat DM state vectors.
+    // Handles free joints (quaternion), implicit constraints (G * dq), and simple joints.
+    inline std::vector<casadi::DM> plus(const ClusterTreeModel<casadi::SX>& model,
+                                        const std::vector<casadi::DM>& q_flat,
+                                        const std::vector<casadi::DM>& dq_flat)
+    {
+        using DM = casadi::DM;
+        using SX = casadi::SX;
+
+        std::vector<DM> result = q_flat;
+
+        for (const auto& cluster : model.clusters()) {
+            const int pos_idx = cluster->position_index_;
+            const int vel_idx = cluster->velocity_index_;
+            const int num_pos = cluster->num_positions_;
+            const int num_vel = cluster->num_velocities_;
+
+            const bool is_fb = (num_pos == 7 && num_vel == 6);
+            const bool is_implicit = (num_pos > num_vel) && !is_fb;
+
+            if (is_fb) {
+                DVec<casadi::SX> q_sx(7), dq_sx(6);
+                for (int i = 0; i < 7; ++i) q_sx(i) = SX(static_cast<double>(q_flat[pos_idx + i]));
+                for (int i = 0; i < 6; ++i) dq_sx(i) = SX(static_cast<double>(dq_flat[vel_idx + i]));
+                DVec<casadi::SX> q_new_sx = plusFreeJoint(q_sx, dq_sx);
+                for (int i = 0; i < 7; ++i)
+                    result[pos_idx + i] = DM(static_cast<double>(q_new_sx(i)));
+            } else if (is_implicit) {
+                auto lc = cluster->joint_->cloneLoopConstraint();
+                auto* generic = dynamic_cast<LoopConstraint::GenericImplicit<SX>*>(lc.get());
+                if (generic) {
+                    DM q_dm(num_pos, 1);
+                    for (int i = 0; i < num_pos; ++i)
+                        q_dm(i) = static_cast<double>(q_flat[pos_idx + i]);
+                    DM G_dm = generic->getGFcn()(casadi::DMVector{q_dm})[0];
+                    DM dq_dm(num_vel, 1);
+                    for (int i = 0; i < num_vel; ++i)
+                        dq_dm(i) = static_cast<double>(dq_flat[vel_idx + i]);
+                    DM q_new = q_dm + DM::mtimes(G_dm, dq_dm);
+                    for (int i = 0; i < num_pos; ++i)
+                        result[pos_idx + i] = DM(static_cast<double>(q_new(i)));
+                }
+            } else {
+                for (int i = 0; i < num_pos; ++i)
+                    result[pos_idx + i] = q_flat[pos_idx + i] + dq_flat[vel_idx + i];
+            }
+        }
+
+        return result;
+    }
+
 } // namespace TestHelpers
 
 // ─── Lie-group state perturbation helpers (shared by simple and complex-step tests) ───

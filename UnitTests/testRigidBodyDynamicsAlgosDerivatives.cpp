@@ -26,6 +26,7 @@ protected:
             {
                 nq_ = model.getNumPositions();
                 nv_ = model.getNumDegreesOfFreedom();
+                sx_model_ = model;
             }
         }
     }
@@ -52,10 +53,10 @@ protected:
             DVec<SX> dq_cluster = dq_sym.segment(vel_idx, num_vel);
             DVec<SX> qd_cluster = qd_sym.segment(vel_idx, num_vel);
 
-            JointState<SX> joint_state(JointCoordinate<SX>(q_cluster, false),
+            DVec<SX> q_perturbed = TestHelpers::plus(cluster->joint_, q_cluster, dq_cluster);
+            const bool is_spanning = (q_cluster.size() > dq_cluster.size());
+            JointState<SX> joint_state(JointCoordinate<SX>(q_perturbed, is_spanning),
                                        JointCoordinate<SX>(qd_cluster, false));
-            joint_state.position = TestHelpers::plus(cluster->joint_,
-                                                     q_cluster, dq_cluster);
             state.push_back(joint_state);
         }
 
@@ -153,6 +154,7 @@ protected:
     }
 
     int nq_, nv_;
+    ClusterTreeModel<SX> sx_model_;
     const int num_robots_ = 4;
     std::vector<std::unordered_map<std::string, casadi::Function>> contact_jacobian_fcn_maps_;
     std::vector<casadi::Function> rnea_fcns_;
@@ -244,7 +246,7 @@ TYPED_TEST(DynamicsAlgosDerivativesTest, contactJacobians)
                 {
                     std::vector<DM> dq_plus = dq;
                     dq_plus[j] += h;
-                    std::vector<DM> q_plus = TestHelpers::plus(q, dq_plus);
+                    std::vector<DM> q_plus = TestHelpers::plus(this->sx_model_, q, dq_plus);
 
                     std::vector<DM> res_plus = fcn(std::vector<DM>{q_plus, dq, qd, qdd});
                     DVec<double> contact_point_pos_plus(3);
@@ -252,7 +254,7 @@ TYPED_TEST(DynamicsAlgosDerivativesTest, contactJacobians)
 
                     std::vector<DM> dq_minus = dq;
                     dq_minus[j] -= h;
-                    std::vector<DM> q_minus = TestHelpers::plus(q, dq_minus);
+                    std::vector<DM> q_minus = TestHelpers::plus(this->sx_model_, q, dq_minus);
 
                     std::vector<DM> res_minus = fcn(std::vector<DM>{q_minus, dq, qd, qdd});
                     DVec<double> contact_point_pos_minus(3);
@@ -315,7 +317,7 @@ TYPED_TEST(DynamicsAlgosDerivativesTest, rnea)
             {
                 std::vector<DM> dq_plus = dq;
                 dq_plus[j] += h;
-                std::vector<DM> q_plus = TestHelpers::plus(q, dq_plus);
+                std::vector<DM> q_plus = TestHelpers::plus(this->sx_model_, q, dq_plus);
 
                 std::vector<DM> res_plus = fcn(std::vector<DM>{q_plus, dq, qd, tau});
                 DVec<double> qdd_plus(this->nv_);
@@ -323,7 +325,7 @@ TYPED_TEST(DynamicsAlgosDerivativesTest, rnea)
 
                 std::vector<DM> dq_minus = dq;
                 dq_minus[j] -= h;
-                std::vector<DM> q_minus = TestHelpers::plus(q, dq_minus);
+                std::vector<DM> q_minus = TestHelpers::plus(this->sx_model_, q, dq_minus);
 
                 std::vector<DM> res_minus = fcn(std::vector<DM>{q_minus, dq, qd, tau});
                 DVec<double> qdd_minus(this->nv_);
