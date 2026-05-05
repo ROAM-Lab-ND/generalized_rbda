@@ -37,6 +37,11 @@ namespace grbda
             const int link2_index_;
             const int rotor1_index_;
             const int rotor2_index_;
+
+            // Gear/belt ratio matrix: ratio_product_(i, j) is the effective ratio from link j
+            // to rotor i. Stored at construction so bodiesJointsAndReflectedInertias() can
+            // compute reflected inertia without needing a prior updateKinematics() call.
+            Mat2<Scalar> ratio_product_;
         };
 
     }

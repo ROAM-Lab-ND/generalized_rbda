@@ -125,6 +125,12 @@ namespace grbda
               rotor1_index_(module_1.rotor_.sub_index_within_cluster_),
               rotor2_index_(module_2.rotor_.sub_index_within_cluster_)
         {
+            Vec2<Scalar> gear_ratios{module_1.gear_ratio_, module_2.gear_ratio_};
+            Eigen::DiagonalMatrix<Scalar, 2> rotor_matrix(gear_ratios);
+            Mat2<Scalar> belt_matrix;
+            belt_matrix << beltMatrixRowFromBeltRatios(module_1.belt_ratios_), Scalar(0),
+                beltMatrixRowFromBeltRatios(module_2.belt_ratios_);
+            ratio_product_ = rotor_matrix * belt_matrix;
         }
 
         template <typename Scalar>
@@ -133,12 +139,20 @@ namespace grbda
         {
             std::vector<std::tuple<Body<Scalar>, JointPtr<Scalar>, DMat<Scalar>>> result;
 
-            DMat<Scalar> S_dep_1 = this->S_.template middleRows<6>(6 * rotor1_index_);
+            // The gear/belt constraint is linear (constant K), so G is state-independent.
+            // Rotor 1 velocity = ratio_product_(0,0)*q_link1 + 0*q_link2
+            // Rotor 2 velocity = ratio_product_(1,0)*q_link1 + ratio_product_(1,1)*q_link2
+            // S_dep_i = S_rotor_i * [ratio_product row i]  (6 x 2 matrix)
+            // This avoids relying on this->S_ which is only set after updateKinematics().
+
+            const DMat<Scalar> S_rotor1 = this->single_joints_[rotor1_index_]->S();
+            DMat<Scalar> S_dep_1 = S_rotor1 * ratio_product_.row(0);
             Mat6<Scalar> Ir1 = rotor1_.inertia_.getMatrix();
             DMat<Scalar> ref_inertia_1 = S_dep_1.transpose() * Ir1 * S_dep_1;
             result.push_back(std::make_tuple(link1_, this->single_joints_[link1_index_], ref_inertia_1));
 
-            DMat<Scalar> S_dep_2 = this->S_.template middleRows<6>(6 * rotor2_index_);
+            const DMat<Scalar> S_rotor2 = this->single_joints_[rotor2_index_]->S();
+            DMat<Scalar> S_dep_2 = S_rotor2 * ratio_product_.row(1);
             Mat6<Scalar> Ir2 = rotor2_.inertia_.getMatrix();
             DMat<Scalar> ref_inertia_2 = S_dep_2.transpose() * Ir2 * S_dep_2;
             result.push_back(std::make_tuple(link2_, this->single_joints_[link2_index_], ref_inertia_2));
