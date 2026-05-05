@@ -13,17 +13,15 @@ namespace grbda
                 const ParallelBeltTransmissionModule<1, Scalar> &m1,
                 const ParallelBeltTransmissionModule<2, Scalar> &m2)
             {
-                std::vector<std::pair<int, Body<Scalar>>> indexed = {
-                    {m1.body_.sub_index_within_cluster_, m1.body_},
-                    {m1.rotor_.sub_index_within_cluster_, m1.rotor_},
-                    {m2.rotor_.sub_index_within_cluster_, m2.rotor_},
-                    {m2.body_.sub_index_within_cluster_, m2.body_},
-                };
-                std::sort(indexed.begin(), indexed.end(),
-                          [](const auto &a, const auto &b) { return a.first < b.first; });
+                // Body has const members so is not copy-assignable; sort a permutation instead.
+                const Body<Scalar> *src[4] = {&m1.body_, &m1.rotor_, &m2.rotor_, &m2.body_};
+                int order[4] = {0, 1, 2, 3};
+                std::sort(std::begin(order), std::end(order), [&](int a, int b) {
+                    return src[a]->sub_index_within_cluster_ < src[b]->sub_index_within_cluster_;
+                });
                 std::vector<Body<Scalar>> bodies;
-                for (auto &p : indexed)
-                    bodies.push_back(p.second);
+                for (int i : order)
+                    bodies.push_back(*src[i]);
                 return bodies;
             }
 
@@ -33,17 +31,25 @@ namespace grbda
                 const ParallelBeltTransmissionModule<2, Scalar> &m2)
             {
                 using Rev = Joints::Revolute<Scalar>;
-                std::vector<std::pair<int, JointPtr<Scalar>>> indexed = {
-                    {m1.body_.sub_index_within_cluster_, std::make_shared<Rev>(m1.joint_axis_)},
-                    {m1.rotor_.sub_index_within_cluster_, std::make_shared<Rev>(m1.rotor_axis_)},
-                    {m2.rotor_.sub_index_within_cluster_, std::make_shared<Rev>(m2.rotor_axis_)},
-                    {m2.body_.sub_index_within_cluster_, std::make_shared<Rev>(m2.joint_axis_)},
+                // Indices must match makeRPWRBodies insertion order.
+                int sub[4] = {
+                    m1.body_.sub_index_within_cluster_,
+                    m1.rotor_.sub_index_within_cluster_,
+                    m2.rotor_.sub_index_within_cluster_,
+                    m2.body_.sub_index_within_cluster_,
                 };
-                std::sort(indexed.begin(), indexed.end(),
-                          [](const auto &a, const auto &b) { return a.first < b.first; });
+                JointPtr<Scalar> src[4] = {
+                    std::make_shared<Rev>(m1.joint_axis_),
+                    std::make_shared<Rev>(m1.rotor_axis_),
+                    std::make_shared<Rev>(m2.rotor_axis_),
+                    std::make_shared<Rev>(m2.joint_axis_),
+                };
+                int order[4] = {0, 1, 2, 3};
+                std::sort(std::begin(order), std::end(order),
+                          [&](int a, int b) { return sub[a] < sub[b]; });
                 std::vector<JointPtr<Scalar>> joints;
-                for (auto &p : indexed)
-                    joints.push_back(p.second);
+                for (int i : order)
+                    joints.push_back(src[i]);
                 return joints;
             }
 
