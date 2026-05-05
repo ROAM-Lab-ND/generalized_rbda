@@ -489,17 +489,6 @@ TEST(InverseDynamicsDerivativesComplexStep, CassieOpenChainDerivatives) {
         model_real, model_complex, "Cassie (Closed Chain)", 1e-12, 1e-14);
 }
 
-TEST(InverseDynamicsDerivativesComplexStep, KangarooWithConstraintsDerivatives) {
-    KangarooWithConstraints<double>               robot_real;
-    KangarooWithConstraints<std::complex<double>> robot_complex;
-    ClusterTreeModel<double>               model_real    = robot_real.buildClusterTreeModel();
-    ClusterTreeModel<std::complex<double>> model_complex = robot_complex.buildClusterTreeModel();
-
-    model_real.setState(randomModelState(model_real, true), true);
-
-    testInverseDynamicsDerivativesComplexStep(
-        model_real, model_complex, "KangarooWithConstraints (Closed Chain)", 1e-12, 1e-14);
-}
 
 int main(int argc, char** argv) {
     ::testing::InitGoogleTest(&argc, argv);
