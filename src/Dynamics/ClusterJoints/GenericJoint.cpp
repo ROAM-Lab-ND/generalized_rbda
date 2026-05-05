@@ -168,30 +168,10 @@ namespace grbda
             phi_native_ = phi_native;
             has_native_phi_ = true;
 
-            // Override phi_ to use native phi for complex types (CasADi doesn't support complex)
-            // Also use native phi for double types when available for better numerical accuracy
-            if constexpr (std::is_same_v<Scalar, double>) {
-                this->phi_ = [this](const JointCoordinate<Scalar> &joint_pos) -> DVec<Scalar>
-                {
-                    DVec<double> phi_casadi = runCasadiFcn(cs_phi_fcn_, joint_pos);
-                    DVec<double> phi_native_val = phi_native_(joint_pos);
-                    DVec<double> phi_diff = phi_casadi - phi_native_val;
-                    double max_diff = phi_diff.cwiseAbs().maxCoeff();
-                    //std::cout << "[GenericImplicit] phi difference (CasADi vs native) max abs: " << max_diff << std::endl;
-                    if (max_diff > 1e-6) {
-                        std::cerr << "[GenericImplicit] WARNING: Large difference between CasADi and native phi! max_diff=" << max_diff << std::endl;
-                        //throw std::runtime_error("Large difference between CasADi and native phi, check implementation!");
-                    }
-                    return phi_native_(joint_pos);
-                };
-            } else {
-                // For all non-double types (complex, SX, float): use native phi directly
-                // CasADi functions can't be evaluated with symbolic or complex inputs
-                this->phi_ = [this](const JointCoordinate<Scalar> &joint_pos) -> DVec<Scalar>
-                {
-                    return phi_native_(joint_pos);
-                };
-            }
+            this->phi_ = [this](const JointCoordinate<Scalar> &joint_pos) -> DVec<Scalar>
+            {
+                return phi_native_(joint_pos);
+            };
         }
 
         template <typename Scalar>
