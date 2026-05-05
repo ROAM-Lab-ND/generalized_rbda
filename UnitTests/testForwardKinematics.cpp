@@ -249,16 +249,22 @@ GTEST_TEST(ForwardKinematics, HumanoidModelComparison)
         {
             JointState<> joint_state = cluster->joint_->randomJointState();
             rotor_model_state.push_back(joint_state);
-            if( joint_state.position.size() == 4  )
+            if( joint_state.position.size() == 4  ) // Revolute Pair with Rotor Joint
             {
-                DVec<double> pos_a = joint_state.position.segment(1, 1);
+                // TODO(pwensing): Switch back to revolute pair for no_rotors case.
+                const DMat<double> conv = cluster->joint_->spanningTreeToIndependentCoordsConversion().cast<double>();
+                const DVec<double> ind_pos = conv * joint_state.position;
+                
+                DVec<double> pos_a = ind_pos.segment(0, 1);
                 DVec<double> vel_a = joint_state.velocity.segment(0, 1);
                 JointState<> a_state(JointCoordinate<double>(pos_a, true),
                                      JointCoordinate<double>(vel_a, false));
-                DVec<double> pos_b = joint_state.position.segment(3, 1);
+                
+                                     DVec<double> pos_b = ind_pos.segment(1, 1);
                 DVec<double> vel_b = joint_state.velocity.segment(1, 1);
                 JointState<> b_state(JointCoordinate<double>(pos_b, true),
                                      JointCoordinate<double>(vel_b, false));
+                
                 no_rotor_model_state.push_back(a_state);
                 no_rotor_model_state.push_back(b_state);
             }
@@ -277,7 +283,6 @@ GTEST_TEST(ForwardKinematics, HumanoidModelComparison)
         // Compare
         for (const auto &body : no_rotor_model.bodies())
         {
-            std::cout << "Comparing body: " << body.name_ << std::endl;
             const Vec3<double> p_rotor = rotor_model.getPosition(body.name_);
             const Vec3<double> p_no_rotor = no_rotor_model.getPosition(body.name_);
             GTEST_ASSERT_LT((p_rotor - p_no_rotor).norm(), tol);
