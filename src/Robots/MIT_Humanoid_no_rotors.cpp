@@ -90,8 +90,8 @@ namespace grbda
             const Vec3<Scalar> kneeLocation = this->withLeftRightSigns(this->_kneeLocation, legID);
             const Xform xtreeKnee(I3, kneeLocation);
 
-            model.template appendBody<Revolute>(knee_name, knee_link_inertia,
-                                               knee_parent_name, xtreeKnee, Axis::Y);
+            Body<Scalar> knee = model.registerBody(knee_name, knee_link_inertia,
+                                                   knee_parent_name, xtreeKnee);
 
             // Ankle
             const std::string ankle_parent_name = knee_name;
@@ -104,13 +104,13 @@ namespace grbda
             const Vec3<Scalar> ankleLocation = this->withLeftRightSigns(this->_ankleLocation, legID);
             const Xform xtreeAnkle(I3, ankleLocation);
 
-            model.template appendBody<Revolute>(ankle_name, ankle_link_inertia,
-                                                ankle_parent_name, xtreeAnkle, Axis::Y);
+            Body<Scalar> ankle = model.registerBody(ankle_name, ankle_link_inertia,
+                                                    ankle_parent_name, xtreeAnkle);
 
-            // // Knee/Ankle Cluster
-            // const std::string knee_ankle_cluster_name = this->withLeftRightSigns("knee_ankle_cluster", legID);
-            // model.template appendRegisteredBodiesAsCluster<RevolutePair>(
-            //     knee_ankle_cluster_name, knee, ankle, Axis::Y, Axis::Y);
+            // Knee/Ankle Cluster
+            const std::string knee_ankle_cluster_name = this->withLeftRightSigns("knee_ankle_cluster", legID);
+            model.template appendRegisteredBodiesAsCluster<RevolutePair>(
+                knee_ankle_cluster_name, knee, ankle, Axis::Y, Axis::Y);
 
             // Contact Points
             const std::string toe_contact_name = this->withLeftRightSigns("toe_contact", legID);

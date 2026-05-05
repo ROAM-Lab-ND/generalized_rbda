@@ -251,22 +251,14 @@ GTEST_TEST(ForwardKinematics, HumanoidModelComparison)
             rotor_model_state.push_back(joint_state);
             if( joint_state.position.size() == 4  ) // Revolute Pair with Rotor Joint
             {
-                // TODO(pwensing): Switch back to revolute pair for no_rotors case.
                 const DMat<double> conv = cluster->joint_->spanningTreeToIndependentCoordsConversion().cast<double>();
                 const DVec<double> ind_pos = conv * joint_state.position;
                 
-                DVec<double> pos_a = ind_pos.segment(0, 1);
-                DVec<double> vel_a = joint_state.velocity.segment(0, 1);
-                JointState<> a_state(JointCoordinate<double>(pos_a, true),
-                                     JointCoordinate<double>(vel_a, false));
+                // Revolute Pair State
+                JointState<> rp_state(JointCoordinate<double>(ind_pos, false),
+                                     JointCoordinate<double>(joint_state.velocity, false));
                 
-                                     DVec<double> pos_b = ind_pos.segment(1, 1);
-                DVec<double> vel_b = joint_state.velocity.segment(1, 1);
-                JointState<> b_state(JointCoordinate<double>(pos_b, true),
-                                     JointCoordinate<double>(vel_b, false));
-                
-                no_rotor_model_state.push_back(a_state);
-                no_rotor_model_state.push_back(b_state);
+                no_rotor_model_state.push_back(rp_state);
             }
             else
             {
