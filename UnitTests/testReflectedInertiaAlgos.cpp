@@ -88,9 +88,9 @@ protected:
 using testing::Types;
 
 typedef Types<RevoluteChainWithRotor<2>,
-              RevoluteChainWithRotor<4>>
-            //   RevolutePairChainWithRotor<2>, TODO(pwensing): re-enable when we have time to fix
-            //   RevolutePairChainWithRotor<4>> TODO(pwensing): re-enable when we have time to fix
+              RevoluteChainWithRotor<4>,
+              RevolutePairChainWithRotor<2>, 
+              RevolutePairChainWithRotor<4>> 
     RobotsCompatibleWithReflectedInertiaModel;
 
 TYPED_TEST_SUITE(ReflectedInertiaDynamicsAlgosTest, RobotsCompatibleWithReflectedInertiaModel);
