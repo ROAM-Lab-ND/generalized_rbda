@@ -1,7 +1,14 @@
 #include "gtest/gtest.h"
 
 #include <complex>
+#include <cstdlib>
 #include "config.h"
+
+namespace {
+struct TestSeedInitializer {
+    TestSeedInitializer() { std::srand(42); }
+} g_test_seed_initializer;
+}
 #include "grbda/Dynamics/ClusterTreeModel.h"
 #include "grbda/Robots/RobotTypes.h"
 

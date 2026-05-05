@@ -1,6 +1,13 @@
 #include "gtest/gtest.h"
 
+#include <cstdlib>
 #include <eigen3/unsupported/Eigen/MatrixFunctions>
+
+namespace {
+struct TestSeedInitializer {
+    TestSeedInitializer() { std::srand(42); }
+} g_test_seed_initializer;
+}
 #include "grbda/Utils/SpatialInertia.h"
 #include "grbda/Utils/SpatialTransforms.h"
 

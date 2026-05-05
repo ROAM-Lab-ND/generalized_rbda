@@ -2,9 +2,16 @@
 #define GRBDA_TEST_HELPERS_H
 
 #include <complex>
+#include <cstdlib>
 #include <type_traits>
 #include "grbda/Dynamics/ClusterTreeModel.h"
 #include "grbda/Utils/OrientationTools.h"
+
+namespace {
+struct TestSeedInitializer {
+    TestSeedInitializer() { std::srand(42); }
+} g_test_seed_initializer;
+}
 
 using namespace grbda;
 

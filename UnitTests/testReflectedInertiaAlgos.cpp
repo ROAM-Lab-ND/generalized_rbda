@@ -1,6 +1,13 @@
 #include "gtest/gtest.h"
 
+#include <cstdlib>
 #include "grbda/Dynamics/RigidBodyTreeModel.h"
+
+namespace {
+struct TestSeedInitializer {
+    TestSeedInitializer() { std::srand(42); }
+} g_test_seed_initializer;
+}
 #include "grbda/Dynamics/ReflectedInertiaTreeModel.h"
 #include "grbda/Robots/RobotTypes.h"
 
