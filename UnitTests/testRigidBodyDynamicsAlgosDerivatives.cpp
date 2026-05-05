@@ -54,7 +54,7 @@ protected:
 
             JointState<SX> joint_state(JointCoordinate<SX>(q_cluster, false),
                                        JointCoordinate<SX>(qd_cluster, false));
-            joint_state.position = TestHelpers::plus(cluster->joint_->type(),
+            joint_state.position = TestHelpers::plus(cluster->joint_,
                                                      q_cluster, dq_cluster);
             state.push_back(joint_state);
         }

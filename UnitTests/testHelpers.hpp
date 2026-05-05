@@ -50,28 +50,35 @@ namespace TestHelpers
         return generic_model;
     }
 
-    inline DVec<casadi::SX> plus(ClusterJointTypes joint_type,
+    inline DVec<casadi::SX> plusFreeJoint(DVec<casadi::SX> q, DVec<casadi::SX> dq)
+    {
+        using SX = casadi::SX;
+        const Vec3<SX> pos = q.head<3>();
+        const Quat<SX> quat = q.tail<4>();
+        const Vec3<SX> dquat = dq.head<3>();
+        const Vec3<SX> dpos = dq.tail<3>();
+        Vec7<SX> q_plus_dq_vec;
+        const Mat3<SX> R = ori::quaternionToRotationMatrix(quat);
+        q_plus_dq_vec.head<3>() = pos + R.transpose() * dpos;
+        Quat<SX> dquat_vec(0, dquat[0], dquat[1], dquat[2]);
+        q_plus_dq_vec.template tail<4>() = quat + 0.5 * ori::quatProduct(quat, dquat_vec);
+        return q_plus_dq_vec;
+    }
+
+    inline DVec<casadi::SX> plus(std::shared_ptr<ClusterJoints::Base<casadi::SX>> joint,
                                  DVec<casadi::SX> q, DVec<casadi::SX> dq)
     {
         using SX = casadi::SX;
 
-        if (joint_type == ClusterJointTypes::Free)
+        if (joint->type() == ClusterJointTypes::Free)
         {
-            const Vec3<SX> pos = q.head<3>();
-            const Quat<SX> quat = q.tail<4>();
-
-            const Vec3<SX> dquat = dq.head<3>();
-            const Vec3<SX> dpos = dq.tail<3>();
-
-            Vec7<SX> q_plus_dq_vec;
-
-            const Mat3<SX> R = ori::quaternionToRotationMatrix(quat);
-            q_plus_dq_vec.head<3>() = pos + R.transpose() * dpos;
-
-            Quat<casadi::SX> dquat_vec(0, dquat[0], dquat[1], dquat[2]);
-            q_plus_dq_vec.template tail<4>() = quat + 0.5 * ori::quatProduct(quat, dquat_vec);
-
-            return q_plus_dq_vec;
+            return plusFreeJoint(q, dq);
+        }
+        else if (q.size() != dq.size()) // implicit constraint: q_span + G(q) * dq_ind
+        {
+            auto lc = joint->cloneLoopConstraint();
+            lc->updateJacobians(JointCoordinate<SX>(q, true));
+            return q + lc->G() * dq;
         }
         else
         {
@@ -94,7 +101,7 @@ namespace TestHelpers
             DVec<casadi::SX> dq_vec(6);
             dq_vec << dq[0], dq[1], dq[2], dq[3], dq[4], dq[5];
 
-            DVec<casadi::SX> qfb_plus_dq_vec = plus(ClusterJointTypes::Free, q_vec, dq_vec);
+            DVec<casadi::SX> qfb_plus_dq_vec = plusFreeJoint(q_vec, dq_vec);
 
             for (int i = 0; i < 7; i++)
             {

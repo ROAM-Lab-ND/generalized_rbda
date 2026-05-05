@@ -24,9 +24,9 @@ createBiasVelocityCasadiFunction(std::shared_ptr<ClusterJoints::Base<casadi::SX>
     casadi::copy(cs_qd_sym, qd_sym);
 
     // Set state and update kinematics
-    JointState<SX> joint_state(JointCoordinate<SX>(q_sym, false),
+    JointState<SX> joint_state(JointCoordinate<SX>(q_sym, true),
                                JointCoordinate<SX>(qd_sym, false));
-    joint_state.position = TestHelpers::plus(joint->type(), q_sym, dq_sym);
+    joint_state.position = TestHelpers::plus(joint, q_sym, dq_sym);
     joint->updateKinematics(joint_state);
 
     // Differentiate the motion subspace matrix with repsect to q, ∂S/∂dq
