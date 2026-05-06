@@ -63,6 +63,9 @@ namespace grbda
             }
             casadi::copy(cs_v_sym, v_sym);
 
+            casadi::Dict cse_opts;
+            cse_opts["cse"] = true;
+
             // Implicit constraint violation function
             DVec<SX> phi_sym = phi_fcn(joint_pos_sym);
             const int constraint_dim = phi_sym.rows();
@@ -71,7 +74,7 @@ namespace grbda
             }
             SX cs_phi_sym = casadi::SX(casadi::Sparsity::dense(constraint_dim, 1));
             casadi::copy(phi_sym, cs_phi_sym);
-            cs_phi_fcn_ = casadi::Function("phi", {cs_q_sym}, {cs_phi_sym});
+            cs_phi_fcn_ = casadi::Function("phi", {cs_q_sym}, {cs_phi_sym}, cse_opts);
 
             // Implicit constraint jacobian
             SX cs_K_sym = jacobian(cs_phi_sym, cs_q_sym);
@@ -125,37 +128,37 @@ namespace grbda
             };
 
             this->K_ = DMat<Scalar>::Zero(constraint_dim, state_dim);
-            K_fcn_ = casadi::Function("K", {cs_q_sym}, {cs_K_sym});
+            K_fcn_ = casadi::Function("K", {cs_q_sym}, {cs_K_sym}, cse_opts);
 
             this->G_ = DMat<Scalar>::Zero(state_dim, ind_dim);
-            G_fcn_ = casadi::Function("G", {cs_q_sym}, {cs_G_sym});
+            G_fcn_ = casadi::Function("G", {cs_q_sym}, {cs_G_sym}, cse_opts);
 
             this->k_ = DVec<Scalar>::Zero(constraint_dim);
-            k_fcn_ = casadi::Function("k", {cs_q_sym, cs_v_sym}, {cs_k_sym});
+            k_fcn_ = casadi::Function("k", {cs_q_sym, cs_v_sym}, {cs_k_sym}, cse_opts);
 
             this->g_ = DVec<Scalar>::Zero(state_dim);
-            g_fcn_ = casadi::Function("g", {cs_q_sym, cs_v_sym}, {cs_g_sym});
+            g_fcn_ = casadi::Function("g", {cs_q_sym, cs_v_sym}, {cs_g_sym}, cse_opts);
 
             // Create derivative functions for complex-step support
             // dK/dq: Jacobian of each element of K w.r.t. q
             SX dK_dq_sym = jacobian(SX::vec(cs_K_sym), cs_q_sym);
-            dK_dq_fcn_ = casadi::Function("dK_dq", {cs_q_sym}, {dK_dq_sym});
+            dK_dq_fcn_ = casadi::Function("dK_dq", {cs_q_sym}, {dK_dq_sym}, cse_opts);
 
             // dG/dq: Jacobian of each element of G w.r.t. q
             SX dG_dq_sym = jacobian(SX::vec(cs_G_sym), cs_q_sym);
-            dG_dq_fcn_ = casadi::Function("dG_dq", {cs_q_sym}, {dG_dq_sym});
+            dG_dq_fcn_ = casadi::Function("dG_dq", {cs_q_sym}, {dG_dq_sym}, cse_opts);
 
             // dk/dq and dk/dv: Jacobians of k w.r.t. position and velocity
             SX dk_dq_sym = jacobian(cs_k_sym, cs_q_sym);
             SX dk_dv_sym = jacobian(cs_k_sym, cs_v_sym);
-            dk_dq_fcn_ = casadi::Function("dk_dq", {cs_q_sym, cs_v_sym}, {dk_dq_sym});
-            dk_dv_fcn_ = casadi::Function("dk_dv", {cs_q_sym, cs_v_sym}, {dk_dv_sym});
+            dk_dq_fcn_ = casadi::Function("dk_dq", {cs_q_sym, cs_v_sym}, {dk_dq_sym}, cse_opts);
+            dk_dv_fcn_ = casadi::Function("dk_dv", {cs_q_sym, cs_v_sym}, {dk_dv_sym}, cse_opts);
 
             // dg/dq and dg/dv: Jacobians of g w.r.t. position and velocity
             SX dg_dq_sym = jacobian(cs_g_sym, cs_q_sym);
             SX dg_dv_sym = jacobian(cs_g_sym, cs_v_sym);
-            dg_dq_fcn_ = casadi::Function("dg_dq", {cs_q_sym, cs_v_sym}, {dg_dq_sym});
-            dg_dv_fcn_ = casadi::Function("dg_dv", {cs_q_sym, cs_v_sym}, {dg_dv_sym});
+            dg_dq_fcn_ = casadi::Function("dg_dq", {cs_q_sym, cs_v_sym}, {dg_dq_sym}, cse_opts);
+            dg_dv_fcn_ = casadi::Function("dg_dv", {cs_q_sym, cs_v_sym}, {dg_dv_sym}, cse_opts);
         }
 
         // Constructor with both symbolic and native phi functions
@@ -604,7 +607,9 @@ namespace grbda
                 DMat<SX> G = symbolic.G();
                 SX G_sym = casadi::SX(casadi::Sparsity::dense(G.rows(), G.cols()));
                 casadi::copy(G, G_sym);
-                this->random_state_helpers_.G = casadi::Function("G", {cs_q_sym}, {G_sym}, {"q"}, {"G"});
+                casadi::Dict cse_opts;
+                cse_opts["cse"] = true;
+                this->random_state_helpers_.G = casadi::Function("G", {cs_q_sym}, {G_sym}, {"q"}, {"G"}, cse_opts);
             }
         }
 
@@ -975,10 +980,10 @@ namespace grbda
                 {
                     if (connectivity_(i, j))
                     {
-                        const Mat6<Scalar> Xup = X_intra_.template block<6, 6>(6 * i, 6 * j);
+                        const auto Xup = X_intra_.template block<6, 6>(6 * i, 6 * j);
 
                         const SVec<Scalar> v_parent = Xup * this->vJ_.template segment<6>(6 * j);
-                        const SVec<Scalar> v_child = this->vJ_.template segment<6>(6 * i);
+                        const auto v_child = this->vJ_.template segment<6>(6 * i);
                         v_relative = v_child - v_parent;
 
                         X_intra_ring_.template block<6, 6>(6 * i, 6 * j) =
@@ -1155,7 +1160,11 @@ namespace grbda
                 dG_dq_vec.push_back(dG_dqi);
             }
             SX dG_dq_stacked = SX::vertcat(dG_dq_vec);
-            dG_dq_fcn_ = casadi::Function("dG_dq", {q_span_sx}, {dG_dq_stacked});
+            {
+                casadi::Dict cse_opts;
+                cse_opts["cse"] = true;
+                dG_dq_fcn_ = casadi::Function("dG_dq", {q_span_sx}, {dG_dq_stacked}, cse_opts);
+            }
 
             // Build symbolic cJ = X_intra_ring * S_spanning * qd_span + X_intra * S_spanning * g
             // by constructing SX-typed joint clones and running the same logic as updateKinematics_vJ.
@@ -1231,6 +1240,7 @@ namespace grbda
 
                 // Use JIT compilation for faster function evaluation (clang with march=native)
                 casadi::Dict jit_opts_sdot;
+                jit_opts_sdot["cse"] = true;
                 jit_opts_sdot["jit"] = true;
                 jit_opts_sdot["compiler"] = "shell";
                 jit_opts_sdot["jit_options"] = casadi::Dict{{"compiler", "clang"}, {"flags", "-O3 -march=native"}};
@@ -1260,6 +1270,7 @@ namespace grbda
 
                 // Use JIT compilation for faster function evaluation (clang with march=native)
                 casadi::Dict jit_opts;
+                jit_opts["cse"] = true;
                 jit_opts["jit"] = true;
                 jit_opts["compiler"] = "shell";
                 jit_opts["jit_options"] = casadi::Dict{{"compiler", "clang"}, {"flags", "-O3 -march=native"}};
