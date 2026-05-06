@@ -74,34 +74,40 @@ namespace grbda
             // Upper four-bar cluster (parent = hip-pitch)
             //
             // Bodies:
-            //   [0] knee+shin     — child of hip-pitch  (path1 link 1, dep, L=0.077)
-            //   [1] achilles-rod  — child of hip-pitch  (path2, ind, L=0.5012)
-            //   [2] tarsus        — child of knee+shin  (path1 link 2, dep, L=0.422)
+            //   [0] knee+shin     — child of hip-pitch  (path1 link 1, dep)
+            //   [1] achilles-rod  — child of hip-pitch  (path2, ind)
+            //   [2] tarsus        — child of knee+shin  (path1 link 2, dep)
             //
             // independent_coordinate = 1 (achilles, passive — knee/tarsus are dependent)
-            // Kd = [dPhi/dKnee, dPhi/dTarsus] uses L1 and L2 -> well-conditioned.
             //
-            // All Xtrees use R=Identity so joint angles measured from x-axis, matching phi.
-            // tarsus Xtree = shin_on_knee + tarsus_on_shin = (0.49544, 0.06741, 0)
-            // offset = achilles_pivot - knee_pivot in hip-pitch XY = (-0.12, 0)
+            // The FourBar phi is 2D (planar). The MJCF pivots have small z-offsets that
+            // make the mechanism non-planar in 3D. Zeroing those z-offsets collapses all
+            // pivots into the hip-pitch XY plane so that phi = 0 is exactly satisfiable.
+            //
+            // phi geometry (all in hip-pitch XY plane):
+            //   knee pivot:     (0.12, 0)
+            //   achilles pivot: (0, 0)
+            //   L1 = 0.077005 m  (knee pivot -> shin joint, |shin_pos_in_knee_frame|)
+            //   L2 = 0.422204 m  (shin joint -> heel-spring closure, spanning tarsus body)
+            //   L3 = 0.5012 m    (achilles pivot -> closure point)
+            //   offset = achilles_pivot - knee_pivot = (-0.12, 0)
+            //   Note: L1/L2 are phi link lengths, independent of the Xtree translations.
             // ---------------------------------------------------------------
 
             const std::string achilles_name = side + "-achilles-rod";
             const std::string knee_shin_name = side + "-knee-shin";
             const std::string tarsus_name = side + "-tarsus";
 
-            // Xtree for achilles-rod: (0, 0, ±0.045) from hip-pitch
-            const Vec3<Scalar> achilles_pos{Scalar(0.), Scalar(0.), Scalar(0.045) * side_sign};
+            // z-offsets zeroed to enforce planarity required by the 2D FourBar phi.
+            const Vec3<Scalar> achilles_pos{Scalar(0.), Scalar(0.), Scalar(0.)};
             const spatial::Transform<Scalar> achilles_Xtree(Mat3<Scalar>::Identity(), achilles_pos);
 
-            // Xtree for knee+shin: (0.12, 0, ±0.0045) from hip-pitch
-            const Vec3<Scalar> knee_shin_pos{Scalar(0.12), Scalar(0.), Scalar(0.0045) * side_sign};
+            const Vec3<Scalar> knee_shin_pos{Scalar(0.12), Scalar(0.), Scalar(0.)};
             const spatial::Transform<Scalar> knee_shin_Xtree(Mat3<Scalar>::Identity(), knee_shin_pos);
 
-            // Xtree for tarsus: shin joint position within the knee+shin body frame.
-            // This is the pos of left-shin in the MJCF (0.06068, 0.04741, 0), which is where
-            // the shin (and hence tarsus) joint lives relative to the knee pivot.
-            const Vec3<Scalar> tarsus_pos{Scalar(0.06068), Scalar(0.04741), Scalar(0.)};
+            // Tarsus Xtree: tarsus joint position in knee+shin body frame.
+            // = shin_pos_in_knee (0.06068, 0.04741) + tarsus_pos_in_shin (0.43476, 0.02)
+            const Vec3<Scalar> tarsus_pos{Scalar(0.49544), Scalar(0.06741), Scalar(0.)};
             const spatial::Transform<Scalar> tarsus_Xtree(Mat3<Scalar>::Identity(), tarsus_pos);
 
             const SpatialInertia<Scalar> achilles_si(
@@ -129,11 +135,11 @@ namespace grbda
                 std::make_shared<RevJoint>(CoordAxis::Z, side + "-shin-joint")};
 
             // path1 = {knee+shin (q[0], dep), tarsus (q[2], dep)}, path2 = {achilles (q[1], ind)}
-            // independent = 1 (achilles, passive)
-            // L1 = |shin_on_knee| = 0.077005 m (knee+shin arm = knee pivot to shin joint)
-            // L2 = |shin_to_tarsus + heel_on_tarsus| = 0.422204 m (shin joint to heel-spring pivot)
-            // L3 = 0.5012 m (achilles rod arm to closure point)
-            // offset = achilles_pivot - knee_pivot in hip-pitch XY = (0-0.12, 0-0) = (-0.12, 0)
+            // L1 = 0.077005 m  (knee pivot to shin joint, = |shin_pos_in_knee_frame|)
+            // L2 = 0.422204 m  (shin joint to heel-spring closure, spanning the tarsus body)
+            // L3 = 0.5012 m    (achilles pivot to closure point)
+            // offset = achilles_pivot - knee_pivot = (0,0) - (0.12,0) = (-0.12, 0)
+            // Note: L1/L2 are phi link lengths independent of the Xtree translations.
             std::vector<Scalar> upper_path1 = {Scalar(0.077005), Scalar(0.422204)};
             std::vector<Scalar> upper_path2 = {Scalar(0.5012)};
             Vec2<Scalar> upper_offset{Scalar(-0.12), Scalar(0.0)};
@@ -148,33 +154,31 @@ namespace grbda
             // Lower four-bar cluster (parent = tarsus+heel-spring body)
             //
             // Bodies:
-            //   [0] foot-crank   — child of tarsus  (path1 link 1, L=0.055)
+            //   [0] foot-crank   — child of tarsus  (path1 link 1, dep)
             //   [1] foot         — child of tarsus  (path2, zero-length rocker)
-            //   [2] plantar-rod  — child of foot-crank (path1 link 2, L=0.35012)
+            //   [2] plantar-rod  — child of foot-crank (path1 link 2, dep)
             //
             // independent_coordinate = 1 (foot joint, actuated)
             //
-            // offset = foot_pivot - foot_crank_pivot on tarsus
-            //        = (0.408,-0.04) - (0.058,-0.034) = (0.35, -0.006)
+            // z-offsets zeroed to enforce planarity required by the 2D FourBar phi.
+            // offset = foot_pivot - foot_crank_pivot = (0.408,-0.04) - (0.058,-0.034) = (0.35,-0.006)
             // ---------------------------------------------------------------
 
             const std::string foot_crank_name = side + "-foot-crank";
             const std::string plantar_rod_name = side + "-plantar-rod";
             const std::string foot_name = side + "-foot";
 
-            // Xtree for foot-crank: (0.058, -0.034, ±0.02275) from tarsus
-            const Vec3<Scalar> foot_crank_pos{Scalar(0.058), Scalar(-0.034),
-                                              Scalar(0.02275) * side_sign};
+            // z-offset zeroed (was ±0.02275) to enforce planarity.
+            const Vec3<Scalar> foot_crank_pos{Scalar(0.058), Scalar(-0.034), Scalar(0.)};
             const spatial::Transform<Scalar> foot_crank_Xtree(Mat3<Scalar>::Identity(),
                                                                foot_crank_pos);
 
-            // Xtree for foot: (0.408, -0.04, 0) from tarsus
+            // Foot pivot: z already zero in MJCF.
             const Vec3<Scalar> foot_pos{Scalar(0.408), Scalar(-0.04), Scalar(0.)};
             const spatial::Transform<Scalar> foot_Xtree(Mat3<Scalar>::Identity(), foot_pos);
 
-            // Xtree for plantar-rod: (0.055, 0, ∓0.00791) from foot-crank
-            const Vec3<Scalar> plantar_pos{Scalar(0.055), Scalar(0.),
-                                           Scalar(-0.00791) * side_sign};
+            // z-offset zeroed (was ∓0.00791) to enforce planarity.
+            const Vec3<Scalar> plantar_pos{Scalar(0.055), Scalar(0.), Scalar(0.)};
             const spatial::Transform<Scalar> plantar_Xtree(Mat3<Scalar>::Identity(), plantar_pos);
 
             const SpatialInertia<Scalar> foot_crank_si(
