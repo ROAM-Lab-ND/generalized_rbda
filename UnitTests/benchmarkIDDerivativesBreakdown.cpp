@@ -140,13 +140,13 @@ int main(int argc, char** argv) {
     // Tello (-R/-M) - no rotors, no mechanisms (baseline)
     std::cout << "  Tello (-R/-M)..." << std::flush;
     results.push_back(profileRobot<TelloNoRotors<double>>(
-        "Tello_no_rotors_no_mech", "Tello (-R/-M)", 16, ITERATIONS));
+        "Tello_no_rotors_no_mech", "Tello (-R/-M)", 11, ITERATIONS));
     std::cout << " done\n";
 
     // Tello (-R/+M) - no rotors, with mechanisms
     std::cout << "  Tello (-R/+M)..." << std::flush;
     results.push_back(profileRobot<TelloMechanismsNoRotors<double>>(
-        "Tello_no_rotors_mech", "Tello (-R/+M)", 16, ITERATIONS));
+        "Tello_no_rotors_mech", "Tello (-R/+M)", 19, ITERATIONS));
     std::cout << " done\n";
 
     // Tello (+R/-M) - rotors, no mechanisms

@@ -94,6 +94,13 @@ struct BenchmarkResult {
     double max_error_dq;    // Max error in dtau/dq
     double max_error_dqdot; // Max error in dtau/dqdot
     bool is_baseline;       // True if this is the open-chain baseline (no loop)
+    // Breakdown (averages per call, from profiling API)
+    double fwd_kin_us    = 0;
+    double fwd_casadi_us = 0;
+    double fwd_other_us  = 0;
+    double bwd_casadi_us = 0;
+    double bwd_other_us  = 0;
+    double bwd_prop_us   = 0;
 };
 
 // Compute statistics from timing samples
@@ -391,6 +398,24 @@ BenchmarkResult benchmarkModel(const std::string& urdf_path,
         result.median_time_us = stats.median;
         result.std_time_us = stats.std_dev;
 
+        // Collect profiling breakdown over a separate fixed run (1000 calls, post-warmup)
+        enableIDDerivativesProfiling();
+        const int prof_iters = 1000;
+        for (int i = 0; i < prof_iters; ++i) {
+            auto [dtau_dq, dtau_dqdot] = model.firstOrderInverseDynamicsDerivatives(ydd);
+            (void)dtau_dq;
+            (void)dtau_dqdot;
+        }
+        auto prof_data = getIDDerivativesProfilingData();
+        resetIDDerivativesProfiling();
+        // prof_data: {fwd_kin, fwd_casadi, fwd_other, bwd_casadi, bwd_other, bwd_prop, total}
+        result.fwd_kin_us    = prof_data[0];
+        result.fwd_casadi_us = prof_data[1];
+        result.fwd_other_us  = prof_data[2];
+        result.bwd_casadi_us = prof_data[3];
+        result.bwd_other_us  = prof_data[4];
+        result.bwd_prop_us   = prof_data[5];
+
         // Skipping numerical derivative validation; only timing results are recorded.
         result.max_error_dq = 0.0;
         result.max_error_dqdot = 0.0;
@@ -404,46 +429,50 @@ BenchmarkResult benchmarkModel(const std::string& urdf_path,
 
 void printHeader() {
     std::cout << std::left
-              << std::setw(8) << "Depth"
+              << std::setw(8)  << "Depth"
               << std::setw(10) << "LoopSize"
               << std::setw(10) << "ConnDepth"
-              << std::setw(6) << "DOF"
-              << std::setw(8) << "Bodies"
-              << std::setw(12) << "Min (us)"
-              << std::setw(12) << "Mean (us)"
-              << std::setw(12) << "Median"
-              << std::setw(12) << "Err dq"
+              << std::setw(6)  << "DOF"
+              << std::setw(8)  << "Bodies"
+              << std::setw(10) << "Min(us)"
+              << std::setw(10) << "Mean(us)"
+              << std::setw(10) << "FwdKin"
+              << std::setw(10) << "FwdCasADi"
+              << std::setw(10) << "FwdOther"
+              << std::setw(10) << "BwdCasADi"
+              << std::setw(10) << "BwdOther"
+              << std::setw(10) << "BwdProp"
               << std::setw(10) << "Type"
               << "\n";
-    std::cout << std::string(110, '-') << "\n";
+    std::cout << std::string(136, '-') << "\n";
 }
 
 void printResult(const BenchmarkResult& r) {
     if (r.dof > 0) {
-        std::cout << std::left
-                  << std::setw(8) << r.chain_depth
+        std::cout << std::left  << std::fixed << std::setprecision(2)
+                  << std::setw(8)  << r.chain_depth
                   << std::setw(10) << r.loop_size
                   << std::setw(10) << r.connection_depth
-                  << std::setw(6) << r.dof
-                  << std::setw(8) << r.num_bodies
-                  << std::setw(12) << std::fixed << std::setprecision(2) << r.min_time_us
-                  << std::setw(12) << std::fixed << std::setprecision(2) << r.mean_time_us
-                  << std::setw(12) << std::fixed << std::setprecision(2) << r.median_time_us
-                  << std::setw(12) << std::scientific << std::setprecision(2) << r.max_error_dq
+                  << std::setw(6)  << r.dof
+                  << std::setw(8)  << r.num_bodies
+                  << std::setw(10) << r.min_time_us
+                  << std::setw(10) << r.mean_time_us
+                  << std::setw(10) << r.fwd_kin_us
+                  << std::setw(10) << r.fwd_casadi_us
+                  << std::setw(10) << r.fwd_other_us
+                  << std::setw(10) << r.bwd_casadi_us
+                  << std::setw(10) << r.bwd_other_us
+                  << std::setw(10) << r.bwd_prop_us
                   << std::setw(10) << (r.is_baseline ? "baseline" : "loop")
                   << "\n";
     } else {
         std::cout << std::left
-                  << std::setw(8) << r.chain_depth
+                  << std::setw(8)  << r.chain_depth
                   << std::setw(10) << r.loop_size
                   << std::setw(10) << r.connection_depth
-                  << std::setw(6) << "N/A"
-                  << std::setw(8) << "N/A"
-                  << std::setw(12) << "FAILED"
-                  << std::setw(12) << ""
-                  << std::setw(12) << ""
-                  << std::setw(12) << ""
-                  << std::setw(10) << ""
+                  << std::setw(6)  << "N/A"
+                  << std::setw(8)  << "N/A"
+                  << std::setw(10) << "FAILED"
                   << "\n";
     }
 }
@@ -606,15 +635,20 @@ int main() {
     {
         std::ofstream csv(output_dir + "parallel_chain_depth.csv");
         csv << "chain_depth,loop_size,connection_depth,dof,num_bodies,is_baseline,"
-            << "min_us,mean_us,median_us,std_us,max_err_dq,max_err_dqdot\n";
+            << "min_us,mean_us,median_us,std_us,max_err_dq,max_err_dqdot,"
+            << "fwd_kin_us,fwd_casadi_us,fwd_other_us,bwd_casadi_us,bwd_other_us,bwd_prop_us\n";
         for (const auto& r : all_results) {
             if (r.dof > 0) {
                 csv << r.chain_depth << "," << r.loop_size << "," << r.connection_depth << ","
                     << r.dof << "," << r.num_bodies << "," << (r.is_baseline ? 1 : 0) << ","
-                    << std::fixed << std::setprecision(4) << r.min_time_us << ","
-                    << r.mean_time_us << "," << r.median_time_us << "," << r.std_time_us << ","
-                    << std::scientific << std::setprecision(2) << r.max_error_dq << ","
-                    << r.max_error_dqdot << "\n";
+                    << std::fixed << std::setprecision(4)
+                    << r.min_time_us << "," << r.mean_time_us << ","
+                    << r.median_time_us << "," << r.std_time_us << ","
+                    << std::scientific << std::setprecision(2)
+                    << r.max_error_dq << "," << r.max_error_dqdot << ","
+                    << std::fixed << std::setprecision(4)
+                    << r.fwd_kin_us << "," << r.fwd_casadi_us << "," << r.fwd_other_us << ","
+                    << r.bwd_casadi_us << "," << r.bwd_other_us << "," << r.bwd_prop_us << "\n";
             }
         }
         std::cout << "Exported: " << output_dir << "parallel_chain_depth.csv\n";
@@ -623,7 +657,10 @@ int main() {
     // Export loop-only results for easier plotting
     {
         std::ofstream csv(output_dir + "loop_depth_sweep.csv");
-        csv << "chain_depth,loop_size,connection_depth,dof,min_us,mean_us,baseline_min_us\n";
+        csv << "chain_depth,loop_size,connection_depth,dof,min_us,mean_us,baseline_min_us,"
+            << "fwd_kin_us,fwd_casadi_us,fwd_other_us,bwd_casadi_us,bwd_other_us,bwd_prop_us,"
+            << "baseline_fwd_kin_us,baseline_fwd_casadi_us,baseline_fwd_other_us,"
+            << "baseline_bwd_casadi_us,baseline_bwd_other_us,baseline_bwd_prop_us\n";
 
         for (const auto& config : configs) {
             for (int loop_size : config.loop_sizes) {
@@ -643,12 +680,23 @@ int main() {
                 if (loop_r) {
                     csv << loop_r->chain_depth << "," << loop_r->loop_size << ","
                         << loop_r->connection_depth << "," << loop_r->dof << ","
-                        << std::fixed << std::setprecision(4) << loop_r->min_time_us << ","
-                        << loop_r->mean_time_us << ",";
+                        << std::fixed << std::setprecision(4)
+                        << loop_r->min_time_us << "," << loop_r->mean_time_us << ",";
                     if (baseline_r) {
                         csv << baseline_r->min_time_us;
                     } else {
                         csv << "NA";
+                    }
+                    csv << "," << std::fixed << std::setprecision(4)
+                        << loop_r->fwd_kin_us << "," << loop_r->fwd_casadi_us << ","
+                        << loop_r->fwd_other_us << "," << loop_r->bwd_casadi_us << ","
+                        << loop_r->bwd_other_us << "," << loop_r->bwd_prop_us << ",";
+                    if (baseline_r) {
+                        csv << baseline_r->fwd_kin_us << "," << baseline_r->fwd_casadi_us << ","
+                            << baseline_r->fwd_other_us << "," << baseline_r->bwd_casadi_us << ","
+                            << baseline_r->bwd_other_us << "," << baseline_r->bwd_prop_us;
+                    } else {
+                        csv << "NA,NA,NA,NA,NA,NA";
                     }
                     csv << "\n";
                 }
