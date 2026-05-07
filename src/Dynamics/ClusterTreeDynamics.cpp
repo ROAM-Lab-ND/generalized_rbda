@@ -525,7 +525,6 @@ namespace grbda
 
         const auto [q, qd] = this->getState();
         this->forwardAccelerationKinematics(qdd);
-        updateArticulatedBodies();
 
         auto t1 = clock::now();
         if (prof_enabled) prof_fwd_kin_us += std::chrono::duration<double, std::micro>(t1 - t0).count();
