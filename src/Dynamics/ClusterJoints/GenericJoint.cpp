@@ -936,6 +936,7 @@ namespace grbda
             q_cache_ = q;
             qd_cache_ = qd;
             S_q_cache_valid_ = false; // state changed, invalidate derivative cache
+            Sdotqd_q_cache_valid_ = false;
 
             int pos_idx = 0;
             int vel_idx = 0;

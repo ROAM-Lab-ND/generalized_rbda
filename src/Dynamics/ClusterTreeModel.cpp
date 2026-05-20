@@ -148,6 +148,22 @@ namespace grbda
         this->H_ = DMat<Scalar>::Zero(num_degrees_of_freedom, num_degrees_of_freedom);
         this->C_ = DVec<Scalar>::Zero(num_degrees_of_freedom);
 
+        this->idDeriv_F1_ = D6Mat<Scalar>::Zero(6, num_degrees_of_freedom);
+        this->idDeriv_F2_ = D6Mat<Scalar>::Zero(6, num_degrees_of_freedom);
+        this->idDeriv_F3_ = D6Mat<Scalar>::Zero(6, num_degrees_of_freedom);
+        this->idDeriv_F4_ = D6Mat<Scalar>::Zero(6, num_degrees_of_freedom);
+
+        // Precompute subtree velocity counts for each node (used by world-frame CRBA).
+        for (auto &node : this->nodes_)
+            node->subtree_num_velocities_ = node->num_velocities_;
+        for (int i = (int)this->nodes_.size() - 1; i >= 0; i--)
+        {
+            const auto &node = this->nodes_[i];
+            if (node->parent_index_ >= 0)
+                this->nodes_[node->parent_index_]->subtree_num_velocities_ +=
+                    node->subtree_num_velocities_;
+        }
+
         for (auto &cluster : cluster_nodes_)
             cluster->qdd_for_subtree_due_to_subtree_root_joint_qdd
                 .setZero(num_degrees_of_freedom, cluster->num_velocities_);

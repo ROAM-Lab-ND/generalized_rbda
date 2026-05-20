@@ -174,6 +174,7 @@ namespace grbda
         DVec<Scalar> getBiasForceVector() override;
 
         std::pair<DMat<Scalar>, DMat<Scalar>> firstOrderInverseDynamicsDerivatives(const DVec<Scalar> &qdd);
+        std::pair<DMat<Scalar>, DMat<Scalar>> firstOrderInverseDynamicsDerivativesWorldFrame(const DVec<Scalar> &qdd);
 
     protected:
         using SX = casadi::SX;
@@ -230,6 +231,9 @@ namespace grbda
         bool articulated_bodies_updated_ = false;
         bool force_propagators_updated_ = false;
         bool qdd_effects_updated_ = false;
+
+        // 6 x nDOF accumulators for firstOrderInverseDynamicsDerivativesWorldFrame
+        D6Mat<Scalar> idDeriv_F1_, idDeriv_F2_, idDeriv_F3_, idDeriv_F4_;
 
         template <typename Scalar2>
         friend class RigidBodyTreeModel;

@@ -197,6 +197,8 @@ namespace grbda
             mutable DMat<Scalar> S_implicit_;
             mutable std::vector<DMat<Scalar>> S_q_cache_;
             mutable bool S_q_cache_valid_ = false;
+            mutable DMat<Scalar> Sdotqd_q_cache_;
+            mutable bool Sdotqd_q_cache_valid_ = false;
 
             void initializeDerivativeFunctions() const;
 

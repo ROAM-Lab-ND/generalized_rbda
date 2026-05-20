@@ -69,6 +69,14 @@ namespace grbda
         DMat<Scalar> t2_workspace_;
         DMat<Scalar> t3_workspace_;
         DMat<Scalar> t4_workspace_;
+
+        // World-frame quantities for firstOrderInverseDynamicsDerivativesWorldFrame.
+        // Ic0_ and S0_ (from TreeNode) are reused for IC0 and S0 respectively.
+        std::vector<Mat6<Scalar>, Eigen::aligned_allocator<Mat6<Scalar>>> BC0_;
+        std::vector<D6Mat<Scalar>, Eigen::aligned_allocator<D6Mat<Scalar>>> Psid0_;
+        std::vector<D6Mat<Scalar>, Eigen::aligned_allocator<D6Mat<Scalar>>> Psidd0_;
+        std::vector<D6Mat<Scalar>, Eigen::aligned_allocator<D6Mat<Scalar>>> Upsilond0_;
+        std::vector<SVec<Scalar>, Eigen::aligned_allocator<SVec<Scalar>>> f0_;
     };
 
 } // namespace grbda
