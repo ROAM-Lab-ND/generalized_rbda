@@ -110,12 +110,10 @@ std::vector<URDFvsManualTestData> GetTestRobots()
     std::vector<URDFvsManualTestData> test_data;
     test_data.push_back({urdf_directory + "planar_leg_linkage.urdf",
                          std::make_shared<PlanarLegLinkage<double>>()});
-    //test_data.push_back({urdf_directory + "mini_cheetah.urdf",
-    //                     std::make_shared<MiniCheetah<double>>()});
-    //test_data.push_back({urdf_directory + "mit_humanoid_leg.urdf",
-    //                     std::make_shared<MIT_Humanoid_Leg<double>>()});
-    // test_data.push_back({urdf_directory + "mit_humanoid.urdf",
-    //                      std::make_shared<MIT_Humanoid<double>>()});
+    test_data.push_back({urdf_directory + "revolute_rotor_chain.urdf",
+                         std::make_shared<RevoluteChainWithRotor<3, double>>(false)});
+    test_data.push_back({urdf_directory + "mini_cheetah.urdf",
+                         std::make_shared<MiniCheetah<double>>()});
     return test_data;
 }
 
@@ -232,91 +230,5 @@ TEST_P(URDFvsManualTests, compareToManuallyConstructed)
         const DVec<double> tau_manual = this->manual_model.inverseDynamics(ydd);
         const DVec<double> tau_urdf = this->urdf_model.inverseDynamics(ydd);
         GTEST_ASSERT_LT((tau_manual - tau_urdf).norm(), tol);
-
-        /*
-        // Verify the inverse dynamics derivatives
-        // NOTE: The firstOrderInverseDynamicsDerivatives() implementation is incomplete
-        // for floating bases with configuration-dependent motion subspaces (see comments
-        // marked "// + gradient terms" in ClusterTreeDynamics.cpp). We only test fixed-base
-        // robots where the motion subspace matrix S is configuration-independent.
-        // ========================================================================
-
-        // Determine if this is a floating base system
-        // Floating base robots have 6+ DOF at the root (full spatial motion)
-        // Fixed-base robots have <6 DOF at the root (typically 0 or individual joints)
-        auto root_cluster = this->manual_model.cluster(0);
-        const bool has_floating_base = (root_cluster->parent_index_ < 0) &&
-                                        (root_cluster->num_velocities_ >= 6);
-
-        std::cout << "  Root cluster parent_index: " << root_cluster->parent_index_ << "\n";
-        std::cout << "  Root cluster num_velocities: " << root_cluster->num_velocities_ << "\n";
-        std::cout << "  has_floating_base: " << (has_floating_base ? "true" : "false") << "\n";
-
-        // Only test derivatives for fixed-base robots
-        if (!has_floating_base) {
-            // Get analytical derivatives from the implementation
-            auto [dtau_dq, dtau_dqdot] =
-                this->manual_model.firstOrderInverseDynamicsDerivatives(ydd);
-
-            std::pair<DVec<double>, DVec<double>> state = this->manual_model.getState();
-            const DVec<double>& q0 = state.first;
-            const DVec<double>& qd0 = state.second;
-            const int nDOF = this->manual_model.getNumDegreesOfFreedom();
-
-            std::cout << "\n  Testing inverse dynamics derivatives for " << nDOF << " DOF system\n";
-            std::cout << "  Step size h = " << h << ", tolerance = " << tol << "\n";
-
-            // Verify dtau_dq (derivative w.r.t. joint positions)
-            double max_error_dq = 0.0;
-            for (int i = 0; i < nDOF; ++i) {
-                // Reset to original state before each perturbation
-                this->manual_model.setState(state);
-                DVec<double> tau0 = this->manual_model.inverseDynamics(ydd);
-
-                DVec<double> qNew = q0;
-                qNew[i] += h;
-                std::pair<DVec<double>, DVec<double>> stateNew = {qNew, qd0};
-                this->manual_model.setState(stateNew);
-                DVec<double> tauPlus = this->manual_model.inverseDynamics(ydd);
-
-                DVec<double> dtau_dqi = (tauPlus - tau0) / h;
-                double error_dqi = (dtau_dqi - dtau_dq.col(i)).norm();
-                max_error_dq = std::max(max_error_dq, error_dqi);
-
-                GTEST_ASSERT_LT(error_dqi, tol);
-            }
-            std::cout << "  Max error in dtau/dq: " << max_error_dq << " ["
-                      << (max_error_dq < tol ? "PASS" : "FAIL") << "]\n";
-
-            // Reset state for velocity derivatives
-            this->manual_model.setState(state);
-
-            // Verify dtau_dqdot (derivative w.r.t. joint velocities)
-            double max_error_dqdot = 0.0;
-            for (int i = 0; i < nDOF; ++i) {
-                // Reset to original state before each perturbation
-                this->manual_model.setState(state);
-                DVec<double> tau0 = this->manual_model.inverseDynamics(ydd);
-
-                DVec<double> qdNew = qd0;
-                qdNew[i] += h;
-                std::pair<DVec<double>, DVec<double>> stateNew = {q0, qdNew};
-                this->manual_model.setState(stateNew);
-                DVec<double> tauPlus = this->manual_model.inverseDynamics(ydd);
-
-                DVec<double> dtau_dqdoti = (tauPlus - tau0) / h;
-                double error_dqdoti = (dtau_dqdoti - dtau_dqdot.col(i)).norm();
-                max_error_dqdot = std::max(max_error_dqdot, error_dqdoti);
-
-                GTEST_ASSERT_LT(error_dqdoti, tol);
-            }
-            std::cout << "  Max error in dtau/dqdot: " << max_error_dqdot << " ["
-                      << (max_error_dqdot < tol ? "PASS" : "FAIL") << "]\n\n";
-
-            // Reset state after test
-            this->manual_model.setState(state);
-        }  // end if (!has_floating_base)
-        */
-
     }
 }
