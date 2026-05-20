@@ -15,9 +15,8 @@ namespace grbda
     /// This is the second factor in the factorial design:
     ///   - With Rotors, Without Constraints: pure rotor inertia cost
     /// 
-    /// Differs from TelloNoMechanisms in that TelloNoMechanisms still applies
-    /// GenericImplicit constraints for hip/knee differentials; this variant
-    /// removes all constraints to get independent cluster structure.
+    /// Removes all constraints to get an independent cluster structure,
+    /// isolating pure rotor inertia cost from constraint solving overhead.
     template <typename Scalar>
     class TelloRotorsNoConstraints : public Tello<Scalar>
     {

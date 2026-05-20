@@ -99,7 +99,7 @@ protected:
 using testing::Types;
 
 typedef Types<
-    TeleopArm<>, Tello<double>, TelloNoMechanisms<double>, TelloWithArms<double>, PlanarLegLinkage<>,
+    TeleopArm<>, Tello<double>, TelloWithArms<double>, PlanarLegLinkage<>,
     MIT_Humanoid<>, MIT_Humanoid<double, ori_representation::RollPitchYaw>,
     MiniCheetah<>, MiniCheetah<double, ori_representation::RollPitchYaw>,
     RevoluteChainWithRotor<2>,

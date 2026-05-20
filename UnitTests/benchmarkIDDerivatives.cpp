@@ -111,17 +111,6 @@ int main() {
     results.push_back(benchmarkRobot<TelloRotorsNoConstraints<double>>("Tello (+R,-M) [rotors]", ITERATIONS));
     std::cout << " done\n";
 
-    // With linear constraints only (virtual rotors 1e-9 kg, static constraints)
-    // NOTE: Disabled - crashes with new contraction-based derivative functions
-    // std::cout << "  Benchmarking Tello (-R,+M-Static) [linear cost]..." << std::flush;
-    // results.push_back(benchmarkRobot<TelloMechanismsNoRotorsStatic<double>>("Tello (-R/+M-Static) [linear]", ITERATIONS));
-    // std::cout << " done\n";
-
-    // With CasADi/GenericImplicit constraints only (virtual rotors 1e-9 kg, symbolic differentiation)
-    std::cout << "  Benchmarking Tello (-R,+M-Generic) [CasADi cost]..." << std::flush;
-    results.push_back(benchmarkRobot<TelloMechanismsNoRotors<double>>("Tello (-R/+M-Generic) [CasADi]", ITERATIONS));
-    std::cout << " done\n";
-
     // Full model: rotors + CasADi constraints (realistic robot)
     std::cout << "  Benchmarking Tello (+R,+M) [FULL MODEL]..." << std::flush;
     results.push_back(benchmarkRobot<Tello<double>>("Tello (+R,+M) [full]", ITERATIONS));
@@ -158,11 +147,6 @@ int main() {
         }
         printIDDerivativesProfiling();
     }
-    std::cout << " done\n";
-
-    // Legacy variant for reference (rotors with independent clusters, no constraint coupling)
-    std::cout << "  Benchmarking Tello (+R,-M-old) [legacy]..." << std::flush;
-    results.push_back(benchmarkRobot<TelloNoMechanisms<double>>("Tello (+R,-M-old) [legacy]", ITERATIONS));
     std::cout << " done\n";
 
     // Tello with Arms
@@ -227,27 +211,21 @@ int main() {
                   << speedup << "x\n";
     }
 
-    // Tello comparison (4 variants at indices 4, 5, 6, 7)
-    // 4: +R,+M (full Tello)
-    // 5: +R,-M (TelloNoMechanisms)
-    // 6: -R,-M (TelloNoRotors)
-    // 7: -R,+M (TelloMechanismsNoRotors)
-    if (results.size() >= 8) {
+    // Tello comparison (3 variants at indices 4, 5, 6)
+    // 4: -R,-M (TelloNoRotors) baseline
+    // 5: +R,-M (TelloRotorsNoConstraints)
+    // 6: +R,+M (full Tello)
+    if (results.size() >= 7) {
         std::cout << "Tello:\n";
-        std::cout << "  +R,+M: " << std::fixed << std::setprecision(2) << results[4].avg_time_us << " us\n";
+        std::cout << "  -R,-M: " << std::fixed << std::setprecision(2) << results[4].avg_time_us << " us\n";
         std::cout << "  +R,-M: " << std::fixed << std::setprecision(2) << results[5].avg_time_us << " us\n";
-        std::cout << "  -R,-M: " << std::fixed << std::setprecision(2) << results[6].avg_time_us << " us\n";
-        std::cout << "  -R,+M: " << std::fixed << std::setprecision(2) << results[7].avg_time_us << " us\n";
-        std::cout << "  Mechanisms overhead (with rotors): " << std::fixed << std::setprecision(2)
-                  << results[4].avg_time_us / results[5].avg_time_us << "x (+R,+M vs +R,-M)\n";
-        std::cout << "  Mechanisms overhead (no rotors):   " << std::fixed << std::setprecision(2)
-                  << results[7].avg_time_us / results[6].avg_time_us << "x (-R,+M vs -R,-M)\n";
-        std::cout << "  Rotors overhead (with mechanisms): " << std::fixed << std::setprecision(2)
-                  << results[4].avg_time_us / results[7].avg_time_us << "x (+R,+M vs -R,+M)\n";
-        std::cout << "  Rotors overhead (no mechanisms):   " << std::fixed << std::setprecision(2)
-                  << results[5].avg_time_us / results[6].avg_time_us << "x (+R,-M vs -R,-M)\n";
-        std::cout << "  Total overhead: " << std::fixed << std::setprecision(2)
-                  << results[4].avg_time_us / results[6].avg_time_us << "x (+R,+M vs -R,-M)\n";
+        std::cout << "  +R,+M: " << std::fixed << std::setprecision(2) << results[6].avg_time_us << " us\n";
+        std::cout << "  Rotor overhead:      " << std::fixed << std::setprecision(2)
+                  << results[5].avg_time_us / results[4].avg_time_us << "x (+R,-M vs -R,-M)\n";
+        std::cout << "  Mechanism overhead:  " << std::fixed << std::setprecision(2)
+                  << results[6].avg_time_us / results[5].avg_time_us << "x (+R,+M vs +R,-M)\n";
+        std::cout << "  Total overhead:      " << std::fixed << std::setprecision(2)
+                  << results[6].avg_time_us / results[4].avg_time_us << "x (+R,+M vs -R,-M)\n";
     }
 
     std::cout << "\n";
