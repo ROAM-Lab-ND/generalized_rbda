@@ -34,9 +34,9 @@ struct ProfilingResult {
 ProfilingResult profileModel(ClusterTreeModel<double>& model,
                               const std::string& robot_name,
                               const std::string& label,
-                              int bodies,
                               int iterations = 1000) {
     const int nDOF = model.getNumDegreesOfFreedom();
+    const int bodies = model.getNumBodies();
 
     // Set random state
     ModelState<double> model_state;
@@ -83,21 +83,19 @@ ProfilingResult profileModel(ClusterTreeModel<double>& model,
 template<typename RobotType>
 ProfilingResult profileRobot(const std::string& robot_name,
                               const std::string& label,
-                              int bodies,
                               int iterations = 1000) {
     RobotType robot;
     ClusterTreeModel<double> model = robot.buildClusterTreeModel();
-    return profileModel(model, robot_name, label, bodies, iterations);
+    return profileModel(model, robot_name, label, iterations);
 }
 
 ProfilingResult profileURDF(const std::string& urdf_path,
                              const std::string& robot_name,
                              const std::string& label,
-                             int bodies,
                              int iterations = 1000) {
     ClusterTreeModel<double> model;
     model.buildModelFromURDF(urdf_path);
-    return profileModel(model, robot_name, label, bodies, iterations);
+    return profileModel(model, robot_name, label, iterations);
 }
 
 int main(int argc, char** argv) {
@@ -110,67 +108,67 @@ int main(int argc, char** argv) {
     // KUKA LWR 4+
     std::cout << "  KUKA LWR 4+..." << std::flush;
     results.push_back(profileURDF(urdf_path + "/kuka_lwr_4plus.urdf",
-                                   "KUKA_LWR_4plus", "KUKA LWR 4+ (-R)", 8, ITERATIONS));
+                                   "KUKA_LWR_4plus", "KUKA LWR 4+ (-R)", ITERATIONS));
     std::cout << " done\n";
 
     // MiniCheetah with rotors
     std::cout << "  MiniCheetah (+R)..." << std::flush;
     results.push_back(profileRobot<MiniCheetah<double, ori_representation::Quaternion>>(
-        "MiniCheetah_rotors", "Mini Cheetah (+R)", 25, ITERATIONS));
+        "MiniCheetah_rotors", "Mini Cheetah (+R)", ITERATIONS));
     std::cout << " done\n";
 
     // MiniCheetah without rotors
     std::cout << "  MiniCheetah (-R)..." << std::flush;
     results.push_back(profileURDF(urdf_path + "/mini_cheetah_approximate.urdf",
-                                   "MiniCheetah_no_rotors", "Mini Cheetah (-R)", 13, ITERATIONS));
+                                   "MiniCheetah_no_rotors", "Mini Cheetah (-R)", ITERATIONS));
     std::cout << " done\n";
 
     // MIT Humanoid with rotors
     std::cout << "  MIT_Humanoid (+R)..." << std::flush;
     results.push_back(profileRobot<MIT_Humanoid<double, ori_representation::Quaternion>>(
-        "MIT_Humanoid_rotors", "MIT Humanoid (+R)", 37, ITERATIONS));
+        "MIT_Humanoid_rotors", "MIT Humanoid (+R)", ITERATIONS));
     std::cout << " done\n";
 
     // MIT Humanoid without rotors
     std::cout << "  MIT_Humanoid (-R)..." << std::flush;
     results.push_back(profileRobot<MIT_Humanoid_no_rotors<double, ori_representation::Quaternion>>(
-        "MIT_Humanoid_no_rotors", "MIT Humanoid (-R)", 19, ITERATIONS));
+        "MIT_Humanoid_no_rotors", "MIT Humanoid (-R)", ITERATIONS));
     std::cout << " done\n";
 
     // Tello (-R/-M) - no rotors, no mechanisms (baseline)
     std::cout << "  Tello (-R/-M)..." << std::flush;
     results.push_back(profileRobot<TelloNoRotors<double>>(
-        "Tello_no_rotors_no_mech", "Tello (-R/-M)", 11, ITERATIONS));
+        "Tello_no_rotors_no_mech", "Tello (-R/-M)", ITERATIONS));
     std::cout << " done\n";
 
     // Tello (-R/+M) - no rotors, with mechanisms
     std::cout << "  Tello (-R/+M)..." << std::flush;
     results.push_back(profileRobot<TelloMechanismsNoRotors<double>>(
-        "Tello_no_rotors_mech", "Tello (-R/+M)", 19, ITERATIONS));
+        "Tello_no_rotors_mech", "Tello (-R/+M)", ITERATIONS));
     std::cout << " done\n";
 
     // Tello (+R/-M) - rotors, no mechanisms
     std::cout << "  Tello (+R/-M)..." << std::flush;
     results.push_back(profileRobot<TelloRotorsNoConstraints<double>>(
-        "Tello_rotors_no_mech", "Tello (+R/-M)", 21, ITERATIONS));
+        "Tello_rotors_no_mech", "Tello (+R/-M)", ITERATIONS));
     std::cout << " done\n";
 
     // Tello (+R/+M) - rotors with mechanisms (CasADi)
     std::cout << "  Tello (+R/+M)..." << std::flush;
     results.push_back(profileRobot<Tello<double>>(
-        "Tello_rotors_mech", "Tello (+R/+M)", 21, ITERATIONS));
+        "Tello_rotors_mech", "Tello (+R/+M)", ITERATIONS));
     std::cout << " done\n";
 
     // TelloWithArms
     std::cout << "  TelloWithArms..." << std::flush;
     results.push_back(profileRobot<TelloWithArms<double>>(
-        "TelloWithArms", "Tello with Arms (+R/+M)", 37, ITERATIONS));
+        "TelloWithArms", "Tello with Arms (+R/+M)", ITERATIONS));
     std::cout << " done\n";
 
     // Cassie (closed-loop biped)
     std::cout << "  Cassie (closed-loop)..." << std::flush;
     results.push_back(profileRobot<Cassie<double>>(
-        "Cassie", "Cassie (closed-loop)", 22, ITERATIONS));
+        "Cassie", "Cassie (closed-loop)", ITERATIONS));
     std::cout << " done\n";
 
     // Print results table
