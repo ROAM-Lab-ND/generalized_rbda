@@ -134,7 +134,6 @@ namespace grbda
                 spatial::GeneralizedTransform<Scalar> &Xup) const override;
 
             // Motion subspace derivatives for configuration-dependent kinematics
-            std::vector<DMat<Scalar>> getSq() const override;
             DMat<Scalar> getSdotqd_q() const override;
             DMat<Scalar> getSdotqd_qd() const override;
 

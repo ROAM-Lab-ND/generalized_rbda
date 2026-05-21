@@ -1273,12 +1273,6 @@ namespace grbda
 
 
         template <typename Scalar>
-        std::vector<DMat<Scalar>> Generic<Scalar>::getSq() const
-        {
-            throw std::runtime_error("Generic::getSq() is not used; use evalSTimesVec_dq/evalSTTimesVec_dq instead");
-        }
-
-        template <typename Scalar>
         DMat<Scalar> Generic<Scalar>::getSdotqd_q() const
         {
             const int mss_dim = this->num_bodies_ * 6;
