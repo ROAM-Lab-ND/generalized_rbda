@@ -884,9 +884,8 @@ namespace grbda
             const DVec<Scalar> &qd = spanning_joint_state.velocity;
 
             // Cache state for derivative computation
-            q_cache_ = q;
-            qd_cache_ = qd;
-            Sdotqd_q_cache_valid_ = false;
+            q_spanning_ = q;
+            qd_spanning_ = qd;
 
             int pos_idx = 0;
             int vel_idx = 0;
@@ -958,17 +957,17 @@ namespace grbda
             // Compute G_dot for both double and complex types
             // For complex types, use the real part of q to evaluate dG/dq (valid for small imaginary parts)
             if constexpr (std::is_same_v<Scalar, double> || std::is_same_v<Scalar, std::complex<double>>) {
-                if (generic_constraint_ && q_cache_.size() > 0) {
+                if (generic_constraint_ && q_spanning_.size() > 0) {
                     // Get the constraint's dG/dq function (initialized in constructor)
                     const casadi::Function& dG_dq_fcn = generic_constraint_->getdGdqFcn();
 
                     // Evaluate dG/dq at current position (real part only for complex types)
-                    std::vector<double> q_vec(q_cache_.size());
-                    for (int i = 0; i < q_cache_.size(); ++i) {
+                    std::vector<double> q_vec(q_spanning_.size());
+                    for (int i = 0; i < q_spanning_.size(); ++i) {
                         if constexpr (std::is_same_v<Scalar, std::complex<double>>) {
-                            q_vec[i] = std::real(q_cache_(i));
+                            q_vec[i] = std::real(q_spanning_(i));
                         } else {
-                            q_vec[i] = q_cache_(i);
+                            q_vec[i] = q_spanning_(i);
                         }
                     }
                     casadi::DM q_dm(q_vec);
@@ -976,7 +975,7 @@ namespace grbda
 
                     // dG_dq_dm has shape (n_G_elements, n_q) where n_G_elements = G.rows() * G.cols()
                     // G_dot = sum_j (dG/dq_j * qd_j) = dG_dq * qd (matrix-vector product)
-                    const int n_q = q_cache_.size();
+                    const int n_q = q_spanning_.size();
                     const int n_G_rows = this->loop_constraint_->G().rows();
                     const int n_G_cols = this->loop_constraint_->G().cols();
                     const int n_G_elements = n_G_rows * n_G_cols;
@@ -1284,7 +1283,7 @@ namespace grbda
             }
 
             // Need a valid cached state from updateKinematics.
-            if (q_cache_.size() == 0 || S_implicit_.size() == 0) {
+            if (q_spanning_.size() == 0 || S_implicit_.size() == 0) {
                 return DMat<Scalar>::Zero(mss_dim, nv);
             }
 
@@ -1294,20 +1293,20 @@ namespace grbda
             if constexpr (std::is_same_v<Scalar, double> ) {
                 initializeDerivativeFunctions();
 
-                if (q_cache_.size() == 0 || qd_cache_.size() == 0 ||
+                if (q_spanning_.size() == 0 || qd_spanning_.size() == 0 ||
                     !derivative_functions_initialized_ || dSdotqd_dq_fcn_.is_null())
                     return DMat<Scalar>::Zero(mss_dim, nv);
 
                 // coord_map^T * qd_span = [ydot; qdot_dep], so ydot is the first nv entries
                 const DMat<double>& coord_map = generic_constraint_->getCoordMap();
                 const DVec<Scalar> ydot_independent =
-                    (coord_map.transpose() * qd_cache_).head(nv);
+                    (coord_map.transpose() * qd_spanning_).head(nv);
 
-                const int n_span_pos = q_cache_.size();
+                const int n_span_pos = q_spanning_.size();
 
                 // Use low-level CasADi API with pre-allocated buffers
                 for (int i = 0; i < n_span_pos; ++i) {
-                    dSdotqd_arg_buf_[i] = q_cache_(i);
+                    dSdotqd_arg_buf_[i] = q_spanning_(i);
                 }
                 for (int i = 0; i < nv; ++i) {
                     dSdotqd_arg_buf_[n_span_pos + i] = ydot_independent(i);
@@ -1343,7 +1342,7 @@ namespace grbda
             }
 
             // Safety check: ensure state has been cached
-            if (q_cache_.size() == 0) {
+            if (q_spanning_.size() == 0) {
                 return DMat<Scalar>::Zero(mss_dim, nv);
             }
 
@@ -1354,11 +1353,11 @@ namespace grbda
                     return DMat<Scalar>::Zero(mss_dim, nv);
                 }
 
-                const int n_span_pos = q_cache_.size();
+                const int n_span_pos = q_spanning_.size();
 
                 // Use low-level CasADi API with pre-allocated buffers
                 for (int i = 0; i < n_span_pos; ++i) {
-                    dSb_arg_buf_[i] = q_cache_(i);
+                    dSb_arg_buf_[i] = q_spanning_(i);
                 }
                 for (int i = 0; i < nv; ++i) {
                     dSb_arg_buf_[n_span_pos + i] = b(i);
@@ -1391,7 +1390,7 @@ namespace grbda
             }
 
             // Safety check: ensure state has been cached
-            if (q_cache_.size() == 0) {
+            if (q_spanning_.size() == 0) {
                 return DMat<Scalar>::Zero(nv, nv);
             }
 
@@ -1403,11 +1402,11 @@ namespace grbda
                 }
 
                 // Use low-level CasADi API with pre-allocated buffers
-                const int n_span_pos = q_cache_.size();
+                const int n_span_pos = q_spanning_.size();
 
                 // Copy inputs to pre-allocated buffers
                 for (int i = 0; i < n_span_pos; ++i) {
-                    dSTF_arg_buf_[i] = q_cache_(i);
+                    dSTF_arg_buf_[i] = q_spanning_(i);
                 }
                 for (int i = 0; i < mss_dim; ++i) {
                     dSTF_arg_buf_[n_span_pos + i] = F(i);

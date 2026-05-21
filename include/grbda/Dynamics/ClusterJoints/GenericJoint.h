@@ -154,8 +154,8 @@ namespace grbda
             DMat<Scalar> S_spanning_;
             DMat<Scalar> X_intra_;
             DMat<Scalar> X_intra_ring_;
-            mutable DVec<Scalar> q_cache_;
-            mutable DVec<Scalar> qd_cache_;
+            mutable DVec<Scalar> q_spanning_;
+            mutable DVec<Scalar> qd_spanning_;
 
         private:
             void initialize(const std::vector<JointPtr<Scalar>> &joints,
@@ -175,8 +175,6 @@ namespace grbda
 
             // Cached intermediates for derivative evaluation
             mutable DMat<Scalar> S_implicit_;
-            mutable DMat<Scalar> Sdotqd_q_cache_;
-            mutable bool Sdotqd_q_cache_valid_ = false;
 
             void initializeDerivativeFunctions() const;
 
