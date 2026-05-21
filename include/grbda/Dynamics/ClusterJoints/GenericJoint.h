@@ -14,16 +14,7 @@ namespace grbda
             using SX = casadi::SX;
             using SymPhiFcn = std::function<DVec<SX>(const JointCoordinate<SX> &)>;
 
-            // Native phi function type - works with any scalar type (double, complex, SX)
-            // This enables machine-precision complex-step differentiation
-            using NativePhiFcn = std::function<DVec<Scalar>(const JointCoordinate<Scalar> &)>;
-
-            // Constructor with symbolic phi only (legacy, uses Taylor expansion for complex)
             GenericImplicit(std::vector<bool> is_coordinate_independent, SymPhiFcn phi_fcn);
-
-            // Constructor with both symbolic and native phi (enables exact complex evaluation)
-            GenericImplicit(std::vector<bool> is_coordinate_independent, SymPhiFcn phi_sym,
-                           NativePhiFcn phi_native);
 
             std::shared_ptr<Base<Scalar>> clone() const override
             {
@@ -44,19 +35,11 @@ namespace grbda
             void updateJacobians(const JointCoordinate<Scalar> &joint_pos) override;
             void updateBiases(const JointState<Scalar> &joint_state) override;
 
-            // Override to use native phi when available for machine-precision validation
             bool isValidSpanningPosition(const JointCoordinate<Scalar> &joint_pos) const;
             
             const std::vector<bool>& isCoordinateIndependent() const;
 
             void createRandomStateHelpers() override;
-
-            // Check if native phi is available (for complex-step support)
-            bool hasNativePhi() const { return has_native_phi_; }
-
-            // Native phi function for use with complex-step differentiation
-            // Returns empty function if not available
-            const NativePhiFcn& nativePhi() const { return phi_native_; }
 
             // Symbolic phi function accessor (for creating complex-typed constraints)
             const SymPhiFcn& getSymbolicPhi() const { return phi_sym_; }
@@ -104,8 +87,6 @@ namespace grbda
             const std::vector<bool> is_coordinate_independent_;
             DMat<double> coord_map_;   // permutation: q_span = coord_map * [y; q_dep]
             SymPhiFcn phi_sym_;
-            NativePhiFcn phi_native_;  // Optional native phi for complex-step support
-            bool has_native_phi_ = false;
 
             casadi::Function cs_phi_fcn_;
             casadi::Function K_fcn_;
@@ -195,8 +176,6 @@ namespace grbda
 
             // Cached intermediates for derivative evaluation
             mutable DMat<Scalar> S_implicit_;
-            mutable std::vector<DMat<Scalar>> S_q_cache_;
-            mutable bool S_q_cache_valid_ = false;
             mutable DMat<Scalar> Sdotqd_q_cache_;
             mutable bool Sdotqd_q_cache_valid_ = false;
 

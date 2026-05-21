@@ -289,16 +289,8 @@ int main() {
     // Tello robot variations
     std::cout << "\nBenchmarking Tello robot variations...\n";
 
-    std::cout << "  TelloNoMechanisms..." << std::flush;
-    results.push_back(benchmarkRobot<TelloNoMechanisms<double>>("TelloNoMechanisms", ITERATIONS));
-    std::cout << " done\n";
-
     std::cout << "  TelloRotorsNoConstraints..." << std::flush;
     results.push_back(benchmarkRobot<TelloRotorsNoConstraints<double>>("TelloRotorsNoConstraints", ITERATIONS));
-    std::cout << " done\n";
-
-    std::cout << "  TelloClusteredNoConstraints..." << std::flush;
-    results.push_back(benchmarkRobot<TelloClusteredNoConstraints<double>>("TelloClusteredNoConstraints", ITERATIONS));
     std::cout << " done\n";
 
     // Tello with loop constraints (need retry logic)

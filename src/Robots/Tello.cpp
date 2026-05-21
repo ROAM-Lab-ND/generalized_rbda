@@ -155,32 +155,11 @@ namespace grbda
                 return out;
             };
 
-            // Native C++ phi for complex-step differentiation support
-            // Works with any scalar type (double, complex<double>, etc.)
-            std::function<DVec<Scalar>(const JointCoordinate<Scalar> &)>
-                hip_diff_phi_native = [](const JointCoordinate<Scalar> &q)
-            {
-                using std::sin;
-                using std::cos;
-                Scalar N = Scalar(6.0);
-                DVec<Scalar> out = DVec<Scalar>(2);
-                // q(0), q(1) are independent (rotors), q(2), q(3) are dependent (links)
-                Scalar y_1 = q(0) / N;  // rotor 1 post-gearbox (independent)
-                Scalar y_2 = q(1) / N;  // rotor 2 post-gearbox (independent)
-                Scalar ql_1 = q(2);     // gimbal angle (dependent)
-                Scalar ql_2 = q(3);     // thigh angle (dependent)
-
-                out[0] = (Scalar(57) * sin(y_1)) / Scalar(2500) - (Scalar(49) * cos(ql_1)) / Scalar(5000) - (Scalar(399) * sin(ql_1)) / Scalar(20000) - (Scalar(8) * cos(y_1) * cos(ql_2)) / Scalar(625) - (Scalar(57) * cos(ql_1) * sin(ql_2)) / Scalar(2500) - (Scalar(7) * sin(y_1) * sin(ql_1)) / Scalar(625) + (Scalar(7) * sin(ql_1) * sin(ql_2)) / Scalar(625) - (Scalar(8) * cos(ql_1) * sin(y_1) * sin(ql_2)) / Scalar(625) + Scalar(3021) / Scalar(160000);
-
-                out[1] = (Scalar(57) * sin(y_2)) / Scalar(2500) - (Scalar(49) * cos(ql_1)) / Scalar(5000) + (Scalar(399) * sin(ql_1)) / Scalar(20000) - (Scalar(8) * cos(y_2) * cos(ql_2)) / Scalar(625) - (Scalar(57) * cos(ql_1) * sin(ql_2)) / Scalar(2500) + (Scalar(7) * sin(y_2) * sin(ql_1)) / Scalar(625) - (Scalar(7) * sin(ql_1) * sin(ql_2)) / Scalar(625) - (Scalar(8) * cos(ql_1) * sin(y_2) * sin(ql_2)) / Scalar(625) + Scalar(3021) / Scalar(160000);
-
-                return out;
-            };
             std::vector<bool> hip_diff_independent_coordinates = {true, true, false, false};
 
             std::shared_ptr<LoopConstraintType> hip_diff_loop_constraint;
             hip_diff_loop_constraint = std::make_shared<LoopConstraintType>(
-                hip_diff_independent_coordinates, hip_diff_phi, hip_diff_phi_native);
+                hip_diff_independent_coordinates, hip_diff_phi);
 
             model.template appendRegisteredBodiesAsCluster<ClusterJoints::Generic<Scalar>>(
                 hip_differential_cluster_name, bodies_in_hip_diff_cluster,
@@ -277,33 +256,11 @@ namespace grbda
                 return out;
             };
 
-            // Native C++ phi for complex-step differentiation support
-            // Works with any scalar type (double, complex<double>, etc.)
-            std::function<DVec<Scalar>(const JointCoordinate<Scalar> &)>
-                knee_ankle_diff_phi_native = [](const JointCoordinate<Scalar> &q)
-            {
-                using std::sin;
-                using std::cos;
-                Scalar N = Scalar(6.0);
-                constexpr double PI = 3.1415;
-                DVec<Scalar> out = DVec<Scalar>(2);
-                // q(0), q(1) are independent (rotors), q(2), q(3) are dependent (links)
-                Scalar y_1 = q(0) / N;  // rotor 1 post-gearbox (independent)
-                Scalar y_2 = q(1) / N;  // rotor 2 post-gearbox (independent)
-                Scalar ql_1 = q(2);     // shin angle (dependent)
-                Scalar ql_2 = q(3);     // foot angle (dependent)
-
-                out[0] = (Scalar(21) * cos(y_1 / Scalar(2) - y_2 / Scalar(2) + Scalar(1979 * PI / 4500))) / Scalar(6250) - (Scalar(13) * cos(y_1 / Scalar(2) - y_2 / Scalar(2) + Scalar(493 * PI / 1500))) / Scalar(625) - Scalar(273 * cos(PI / 9)) / Scalar(12500) - (Scalar(7) * sin(y_1 / Scalar(2) - y_2 / Scalar(2) + ql_2 + Scalar(231 * PI / 500))) / Scalar(2500) + (Scalar(91) * sin(ql_2 + Scalar(2 * PI / 15))) / Scalar(5000) - (Scalar(147) * sin(ql_2 + Scalar(PI / 45))) / Scalar(50000) + Scalar(163349) / Scalar(6250000);
-
-                out[1] = ql_1 - y_2 / Scalar(2) - y_1 / Scalar(2);
-
-                return out;
-            };
             std::vector<bool> knee_ankle_diff_independent_coordinates = {true, true, false, false};
 
             std::shared_ptr<LoopConstraintType> knee_ankle_diff_loop_constraint;
             knee_ankle_diff_loop_constraint = std::make_shared<LoopConstraintType>(
-                knee_ankle_diff_independent_coordinates, knee_ankle_diff_phi, knee_ankle_diff_phi_native);
+                knee_ankle_diff_independent_coordinates, knee_ankle_diff_phi);
 
             model.template appendRegisteredBodiesAsCluster<ClusterJoints::Generic<Scalar>>(
                 knee_ankle_differential_cluster_name, bodies_in_knee_ankle_diff_cluster,

@@ -844,23 +844,33 @@ namespace grbda
                 a_parent_up = cluster->Xup_.transformMotionVector(-this->getGravity());
             }
 
-            // Compute alpha = contract(S_q, qd) and beta = contract(S_q, qdd)
+            // Compute alpha = dS/dy * qd and beta = dS/dy * qdd (zero for constant-S joints)
             const DVec<Scalar> cluster_qd = qd.segment(cluster->velocity_index_, num_vel);
             const DVec<Scalar> cluster_qdd = qdd.segment(cluster->velocity_index_, num_vel);
-            const auto &S_q = cluster->joint_->getSq();
-            const DMat<Scalar> alpha = contractSqWithVector(S_q, cluster_qd, mss_dim);
-            const DMat<Scalar> beta = contractSqWithVector(S_q, cluster_qdd, mss_dim);
-            const DMat<Scalar> &Sdotqd_q = cluster->joint_->getSdotqd_q();
+            const bool has_config_dependent_S = cluster->joint_->hasConfigurationDependentS();
+
+            DMat<Scalar> alpha = DMat<Scalar>::Zero(mss_dim, num_vel);
+            DMat<Scalar> beta  = DMat<Scalar>::Zero(mss_dim, num_vel);
+            DMat<Scalar> Sdotqd_q = DMat<Scalar>::Zero(mss_dim, num_vel);
+            if (has_config_dependent_S) {
+                alpha     = cluster->joint_->evalSTimesVec_dq(cluster_qd);
+                beta      = cluster->joint_->evalSTimesVec_dq(cluster_qdd);
+                Sdotqd_q  = cluster->joint_->getSdotqd_q();
+            }
 
             // Psi_dot = crm(v_parent_up) * S + alpha
             cluster->Psi_dot_ = spatial::motionCrossTimesMatrix(v_parent_up, S);
-            cluster->Psi_dot_ += alpha;
+            if (has_config_dependent_S) {
+                cluster->Psi_dot_ += alpha;
+            }
 
             // Psi_ddot = crm(a_parent_up)*S + crm(v_parent_up)*Psi_dot + Sdotqd_q + beta + crm(v)*alpha
             cluster->Psi_ddot_ = spatial::motionCrossTimesMatrix(a_parent_up, S);
             cluster->Psi_ddot_ += spatial::motionCrossTimesMatrix(v_parent_up, cluster->Psi_dot_);
-            cluster->Psi_ddot_ += Sdotqd_q + beta;
-            cluster->Psi_ddot_ += spatial::motionCrossTimesMatrix(v, alpha);
+            if (has_config_dependent_S) {
+                cluster->Psi_ddot_ += Sdotqd_q + beta;
+                cluster->Psi_ddot_ += spatial::motionCrossTimesMatrix(v, alpha);
+            }
 
             // Upsilon_dot = crm(v)*S + Psi_dot + S_ring
             cluster->Upsilon_dot_ = spatial::motionCrossTimesMatrix(v, S);
@@ -954,9 +964,10 @@ namespace grbda
             }
 
             // contractT(S_q, f)
-            const auto &S_q_i = cluster_i->joint_->getSq();
-            dtau_dq.block(ii, ii, num_vel_i, num_vel_i) +=
-                contractSqTransposeWithVector(S_q_i, cluster_i->F_);
+            if (cluster_i->joint_->hasConfigurationDependentS()) {
+                dtau_dq.block(ii, ii, num_vel_i, num_vel_i) +=
+                    cluster_i->joint_->evalSTTimesVec_dq(cluster_i->F_);
+            }
 
             if (cluster_i->parent_index_ >= 0)
             {

@@ -82,7 +82,6 @@ namespace grbda
                 K(cnstr2, l1) = ratio_product(1, 0);
                 K(cnstr2, l2) = ratio_product(1, 1);
 
-                // Build K_double for sym_phi (SX constants)
                 DMat<double> K_double = DMat<double>::Zero(2, 4);
                 for (int i = 0; i < 2; i++)
                     for (int j = 0; j < 4; j++) {
@@ -107,13 +106,8 @@ namespace grbda
                     return phi;
                 };
 
-                auto native_phi = [K](const JointCoordinate<Scalar> &jp) -> DVec<Scalar>
-                {
-                    return K * static_cast<const DVec<Scalar> &>(jp);
-                };
-
                 return std::make_shared<LoopConstraint::GenericImplicit<Scalar>>(
-                    is_ind, sym_phi, native_phi);
+                    is_ind, sym_phi);
             }
         } // anonymous namespace
 

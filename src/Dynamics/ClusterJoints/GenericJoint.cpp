@@ -161,22 +161,6 @@ namespace grbda
             dg_dv_fcn_ = casadi::Function("dg_dv", {cs_q_sym, cs_v_sym}, {dg_dv_sym}, cse_opts);
         }
 
-        // Constructor with both symbolic and native phi functions
-        // The native phi enables machine-precision complex-step differentiation
-        template <typename Scalar>
-        GenericImplicit<Scalar>::GenericImplicit(std::vector<bool> is_coordinate_independent,
-                                                 SymPhiFcn phi_sym, NativePhiFcn phi_native)
-            : GenericImplicit(is_coordinate_independent, phi_sym)
-        {
-            phi_native_ = phi_native;
-            has_native_phi_ = true;
-
-            this->phi_ = [this](const JointCoordinate<Scalar> &joint_pos) -> DVec<Scalar>
-            {
-                return phi_native_(joint_pos);
-            };
-        }
-
         template <typename Scalar>
         DVec<Scalar> GenericImplicit<Scalar>::gamma(const JointCoordinate<Scalar> &joint_pos) const
         {
@@ -203,30 +187,14 @@ namespace grbda
             return is_coordinate_independent_;
         }
 
-        // Override isValidSpanningPosition to use native phi when available
-        // This ensures consistency with the Newton solver that uses native phi
         template <typename Scalar>
         bool GenericImplicit<Scalar>::isValidSpanningPosition(const JointCoordinate<Scalar> &joint_pos) const
         {
             if (!joint_pos.isSpanning()) {
                 return false;
             }
-
-            DVec<Scalar> violation;
-
-            // Use native phi when available for machine-precision validation
-            // This is critical for complex-step differentiation where Newton solver
-            // converges to machine precision using native phi
-            if (has_native_phi_) {
-                violation = phi_native_(joint_pos);
-            } else {
-                violation = this->phi_(joint_pos);
-            }
-
-            // Tolerance for constraint validation - Newton solver can achieve machine precision
-            // when properly converged with native phi, but CasADi phi may have small offsets
-            const double tol = has_native_phi_ ? 1e-8 : 2e-2;
-            return nearZeroDefaultTrue(violation, static_cast<Scalar>(tol));
+            DVec<Scalar> violation = this->phi_(joint_pos);
+            return nearZeroDefaultTrue(violation, static_cast<Scalar>(2e-2));
         }
 
         template <typename Scalar>
@@ -805,24 +773,8 @@ namespace grbda
                 else q_span(i) = 0.01 * (2.0 * ((double)rand() / RAND_MAX) - 1.0);
             }
 
-            // Use native phi if available for better accuracy
-            // Only works when Scalar=double because the native phi function is templated on Scalar
-            bool use_native = false;
-            std::function<DVec<double>(const DVec<double>&)> phi_native_double;
-            if constexpr (std::is_same_v<Scalar, double>) {
-                use_native = generic_constraint_->hasNativePhi();
-                if (use_native) {
-                    phi_native_double = [this](const DVec<double>& q) -> DVec<double> {
-                        JointCoordinate<double> jc(q, true);
-                        return generic_constraint_->nativePhi()(jc);
-                    };
-                }
-            }
             auto numerical_lc = generic_constraint_->copyAsDouble();
-            auto phi_eval = [&numerical_lc, use_native, &phi_native_double](const DVec<double> &q) -> DVec<double> {
-                if (use_native) {
-                    return phi_native_double(q);
-                }
+            auto phi_eval = [&numerical_lc](const DVec<double> &q) -> DVec<double> {
                 JointCoordinate<double> jc(q, true);
                 return numerical_lc.phi(jc);
             };
@@ -913,8 +865,7 @@ namespace grbda
                 std::cerr << "[Newton debug] converged=" << converged
                           << ", best_phi_norm=" << best_phi_norm
                           << ", final_phi_norm=" << final_phi_norm
-                          << ", is_valid=" << is_valid
-                          << ", use_native=" << use_native << std::endl;
+                          << ", is_valid=" << is_valid << std::endl;
                 throw std::runtime_error("Failed to sample valid spanning state for implicit constraint");
             }
 
@@ -935,7 +886,6 @@ namespace grbda
             // Cache state for derivative computation
             q_cache_ = q;
             qd_cache_ = qd;
-            S_q_cache_valid_ = false; // state changed, invalidate derivative cache
             Sdotqd_q_cache_valid_ = false;
 
             int pos_idx = 0;
@@ -1325,7 +1275,7 @@ namespace grbda
         template <typename Scalar>
         std::vector<DMat<Scalar>> Generic<Scalar>::getSq() const
         {
-            throw std::runtime_error("getSq is not implemented yet");
+            throw std::runtime_error("Generic::getSq() is not used; use evalSTimesVec_dq/evalSTTimesVec_dq instead");
         }
 
         template <typename Scalar>
