@@ -321,7 +321,7 @@ namespace grbda
         }
 
         // Complex-step aware evaluation of K
-        // Uses TAYLOR SERIES EXPANSION to avoid finite-difference errors:
+        // Uses a Taylor series expansion to avoid finite-difference errors:
         //   K(q + i*δq) = K(q) + i * (dK/dq @ δq)
         //
         // This achieves machine precision for complex-step differentiation by using
@@ -332,7 +332,7 @@ namespace grbda
             if constexpr (std::is_same_v<Scalar, std::complex<double>>) {
                 const int n = joint_pos.size();
 
-                // TAYLOR SERIES EXPANSION using CasADi symbolic derivatives
+                // Taylor series expansion using CasADi symbolic derivatives
                 // K(q + i*δq) = K(q_real) + i * (dK/dq @ q_imag)
                 // This avoids finite-difference errors that limit accuracy to ~1e-4
                 DVec<double> q_real(n), q_imag(n);
@@ -373,7 +373,7 @@ namespace grbda
         // Complex-step aware evaluation of G
         // G is computed from K via implicit function theorem: G = [I; -Kd^{-1} * Ki]
         //
-        // Uses TAYLOR SERIES EXPANSION to avoid finite-difference errors:
+        // Uses a Taylor series expansion to avoid finite-difference errors:
         //   G(q + i*δq) = G(q) + i * (dG/dq @ δq)
         //
         // This achieves machine precision for complex-step differentiation by using
@@ -384,7 +384,7 @@ namespace grbda
             if constexpr (std::is_same_v<Scalar, std::complex<double>>) {
                 const int n = joint_pos.size();
 
-                // TAYLOR SERIES EXPANSION using CasADi symbolic derivatives
+                // Taylor series expansion using CasADi symbolic derivatives
                 // G(q + i*δq) = G(q_real) + i * (dG/dq @ q_imag)
                 // This avoids finite-difference errors that limit accuracy to ~1e-4
                 DVec<double> q_real(n), q_imag(n);
@@ -437,7 +437,7 @@ namespace grbda
         //
         // For velocity derivatives (dtau/dqdot), position has no imaginary part (dq=0),
         // so the expansion becomes: k(q, v + i*dv) = k(q,v) + i * (dk/dv * dv)
-        // This is EXACT (not approximate) since k is linear in v.
+        // This is exact (not approximate) since k is linear in v.
         template <typename Scalar>
         DMat<Scalar> GenericImplicit<Scalar>::evalk(const JointState<Scalar> &joint_state) const
         {
@@ -481,7 +481,7 @@ namespace grbda
         //
         // For velocity derivatives (dtau/dqdot), position has no imaginary part (dq=0),
         // so the expansion becomes: g(q, v + i*dv) = g(q,v) + i * (dg/dv * dv)
-        // This is EXACT since g depends linearly on v (through k which is linear in v).
+        // This is exact since g depends linearly on v (through k which is linear in v).
         template <typename Scalar>
         DMat<Scalar> GenericImplicit<Scalar>::evalg(const JointState<Scalar> &joint_state) const
         {
@@ -1078,7 +1078,7 @@ namespace grbda
             const int nv = this->num_velocities_;
 
             // Symbolic spanning positions and independent velocities.
-            // qd_span is NOT an independent symbolic variable — it is determined by
+            // qd_span is not an independent symbolic variable — it is determined by
             // the velocity constraint: qd_span = G(q_span) * ydot.
             // Using ydot as the velocity input ensures the Jacobian d(cJ)/dq_span
             // is taken holding ydot fixed (correct), capturing how qd_span also
