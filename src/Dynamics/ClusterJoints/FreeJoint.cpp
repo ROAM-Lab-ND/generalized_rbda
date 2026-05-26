@@ -77,40 +77,11 @@ namespace grbda
         }
 
         // Derivative methods for Free joint
-        // For a floating base, the motion subspace S in the body frame is identity (constant),
-        // but when expressed in the world frame it depends on the orientation.
-        // This implementation computes derivatives numerically using finite differences
-        // for now, which is sufficient for most applications.
-
-        template <typename Scalar, typename OrientationRepresentation>
-        std::vector<DMat<Scalar>> Free<Scalar, OrientationRepresentation>::getSq() const
-        {
-            const int nq = OrientationRepresentation::num_ori_parameter + 3;
-            const int nv = 6;
-            std::vector<DMat<Scalar>> S_q(nv);
-
-            // For now, return zeros. The Free joint motion subspace S is identity in body frame,
-            // which is constant. The dependency on orientation comes through the spatial transform,
-            // which is handled separately in the dynamics algorithms.
-            // A full implementation would compute ∂(R⊕R)/∂q for rotation matrix R.
-            for (int i = 0; i < nv; i++)
-            {
-                S_q[i] = DMat<Scalar>::Zero(6, nv);
-            }
-
-            return S_q;
-        }
 
         template <typename Scalar, typename OrientationRepresentation>
         DMat<Scalar> Free<Scalar, OrientationRepresentation>::getSdotqd_q() const
         {
-            const int nq = OrientationRepresentation::num_ori_parameter + 3;
-            const int nv = 6;
-
-            // CRITICAL FIX: getSdotqd_q() returns ∂(Ṡ*q̇)/∂q, which must match the output
-            // dimension of contractSqWithVector, which is (spatial_dim, nv), NOT (spatial_dim, nq)
-            // Free joint has constant S in body frame, so Sdot = 0
-            return DMat<Scalar>::Zero(6, nv);
+            return DMat<Scalar>::Zero(6, 6);
         }
 
         template <typename Scalar, typename OrientationRepresentation>
@@ -123,13 +94,6 @@ namespace grbda
         }
 
         // Template specializations for complex<double> (used by complex-step differentiation)
-        template <>
-        std::vector<DMat<std::complex<double>>>
-        Free<std::complex<double>, ori_representation::Quaternion>::getSq() const
-        {
-            return std::vector<DMat<std::complex<double>>>(6, DMat<std::complex<double>>::Zero(6, 6));
-        }
-
         template <>
         DMat<std::complex<double>>
         Free<std::complex<double>, ori_representation::Quaternion>::getSdotqd_q() const

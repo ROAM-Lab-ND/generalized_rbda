@@ -2,7 +2,6 @@
 #define GRBDA_GENERALIZED_JOINTS_REVOLUTE_TRIPLE_WITH_ROTOR_JOINT_H
 
 #include "grbda/Dynamics/ClusterJoints/ClusterJoint.h"
-#include "grbda/Utils/JointDerivatives.h"
 
 namespace grbda
 {
@@ -38,23 +37,14 @@ namespace grbda
             bodiesJointsAndReflectedInertias() const override;
 
             // Derivative methods
-            std::vector<DMat<Scalar>> getSq() const override;
             DMat<Scalar> getSdotqd_q() const override;
             DMat<Scalar> getSdotqd_qd() const override;
 
             // RevoluteTripleWithRotor has configuration-dependent S (uses CasADi)
             bool hasConfigurationDependentS() const override { return true; }
 
-            // Contraction-based derivatives (uses getSq)
-            DMat<Scalar> evalSTimesVec_dq(const DVec<Scalar>& b) const override {
-                const int mss_dim = this->num_bodies_ * 6;
-                const auto& S_q = getSq();
-                return contractSqWithVector(S_q, b, mss_dim);
-            }
-            DMat<Scalar> evalSTTimesVec_dq(const DVec<Scalar>& F) const override {
-                const auto& S_q = getSq();
-                return contractSqTransposeWithVector(S_q, F);
-            }
+            DMat<Scalar> evalSTimesVec_dq(const DVec<Scalar>& b) const override;
+            DMat<Scalar> evalSTTimesVec_dq(const DVec<Scalar>& F) const override;
 
         private:
             char axisToChar(ori::CoordinateAxis axis) const;
@@ -97,8 +87,6 @@ namespace grbda
             // Cache for current state
             mutable DVec<Scalar> q_cache_;
             mutable DVec<Scalar> qd_cache_;
-            mutable std::vector<DMat<Scalar>> S_q_cache_;
-            mutable bool S_q_cache_valid_ = false;
         };
 
     }

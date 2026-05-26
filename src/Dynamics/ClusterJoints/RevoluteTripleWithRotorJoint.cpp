@@ -71,7 +71,6 @@ namespace grbda
             // Cache INDEPENDENT coordinates for derivative methods
             q_cache_ = joint_state.position;
             qd_cache_ = joint_state.velocity;
-            S_q_cache_valid_ = false;  // state changed, invalidate derivative cache
 
             link_1_joint_->updateKinematics(q.template segment<1>(0), qd.template segment<1>(0));
             link_2_joint_->updateKinematics(q.template segment<1>(1), qd.template segment<1>(1));
@@ -305,67 +304,76 @@ namespace grbda
         }
 
         template <typename Scalar>
-        std::vector<DMat<Scalar>> RevoluteTripleWithRotor<Scalar>::getSq() const
+        static std::vector<DMat<Scalar>> computeSq(
+            casadi::Function& f_dS_link2_dq,
+            casadi::Function& f_dS_link3_dq,
+            const DVec<Scalar>& q_cache,
+            const DMat<Scalar>& G)
         {
             const int nv = 3;
             const int spatial_dim = 36;
 
-            // Return cached result if available and state unchanged
-            if (S_q_cache_valid_ && (int)S_q_cache_.size() == nv) {
-                return S_q_cache_;
-            }
-
-            initializeCasadiFunctions();
-
             std::vector<casadi::DM> input = {
-                casadi::DM(static_cast<double>(q_cache_(0))),
-                casadi::DM(static_cast<double>(q_cache_(1))),
-                casadi::DM(static_cast<double>(q_cache_(2)))
+                casadi::DM(static_cast<double>(q_cache(0))),
+                casadi::DM(static_cast<double>(q_cache(1))),
+                casadi::DM(static_cast<double>(q_cache(2)))
             };
 
-            auto res_link2 = f_dS_link2_dq_(input);
-            auto res_link3 = f_dS_link3_dq_(input);
+            auto res_link2 = f_dS_link2_dq(input);
+            auto res_link3 = f_dS_link3_dq(input);
 
-            casadi::DM dS_link2 = res_link2[0];  // 6x3 matrix
-            casadi::DM dS_link3_col0 = res_link3[0];  // 6x3 matrix
-            casadi::DM dS_link3_col1 = res_link3[1];  // 6x3 matrix
+            casadi::DM dS_link2 = res_link2[0];
+            casadi::DM dS_link3_col0 = res_link3[0];
+            casadi::DM dS_link3_col1 = res_link3[1];
 
-            // Create ∂X_intra_S_span/∂qi (36x6 matrix, mostly zero)
             std::vector<DMat<Scalar>> dX_intra_dq(nv);
-            for (int i = 0; i < nv; ++i) {
+            for (int i = 0; i < nv; ++i)
                 dX_intra_dq[i] = DMat<Scalar>::Zero(spatial_dim, 6);
-            }
 
-            // Fill in link2 derivatives (rows 6-11, column 0)
-            for (int i = 0; i < 6; ++i) {
-                for (int j = 0; j < nv; ++j) {
+            for (int i = 0; i < 6; ++i)
+                for (int j = 0; j < nv; ++j)
                     dX_intra_dq[j](6 + i, 0) = static_cast<Scalar>(static_cast<double>(dS_link2(i, j)));
-                }
-            }
 
-            // Fill in link3 column 0 derivatives (rows 12-17, column 0)
-            for (int i = 0; i < 6; ++i) {
-                for (int j = 0; j < nv; ++j) {
+            for (int i = 0; i < 6; ++i)
+                for (int j = 0; j < nv; ++j)
                     dX_intra_dq[j](12 + i, 0) = static_cast<Scalar>(static_cast<double>(dS_link3_col0(i, j)));
-                }
-            }
 
-            // Fill in link3 column 1 derivatives (rows 12-17, column 1)
-            for (int i = 0; i < 6; ++i) {
-                for (int j = 0; j < nv; ++j) {
+            for (int i = 0; i < 6; ++i)
+                for (int j = 0; j < nv; ++j)
                     dX_intra_dq[j](12 + i, 1) = static_cast<Scalar>(static_cast<double>(dS_link3_col1(i, j)));
-                }
-            }
 
-            // Compute ∂S/∂qi = (∂X_intra_S_span/∂qi) * G
-            const DMat<Scalar> &G = this->loop_constraint_->G();
-            S_q_cache_.resize(nv);
-            for (int i = 0; i < nv; ++i) {
-                S_q_cache_[i] = dX_intra_dq[i] * G;
-            }
+            std::vector<DMat<Scalar>> S_q(nv);
+            for (int i = 0; i < nv; ++i)
+                S_q[i] = dX_intra_dq[i] * G;
 
-            S_q_cache_valid_ = true;
-            return S_q_cache_;
+            return S_q;
+        }
+
+        template <typename Scalar>
+        DMat<Scalar> RevoluteTripleWithRotor<Scalar>::evalSTimesVec_dq(const DVec<Scalar>& b) const
+        {
+            initializeCasadiFunctions();
+            const int nv = 3;
+            const int mss_dim = this->num_bodies_ * 6;
+            const DMat<Scalar>& G = this->loop_constraint_->G();
+            const auto S_q = computeSq(f_dS_link2_dq_, f_dS_link3_dq_, q_cache_, G);
+            DMat<Scalar> result = DMat<Scalar>::Zero(mss_dim, nv);
+            for (int i = 0; i < nv; ++i)
+                result.col(i) = S_q[i] * b;
+            return result;
+        }
+
+        template <typename Scalar>
+        DMat<Scalar> RevoluteTripleWithRotor<Scalar>::evalSTTimesVec_dq(const DVec<Scalar>& F) const
+        {
+            initializeCasadiFunctions();
+            const int nv = 3;
+            const DMat<Scalar>& G = this->loop_constraint_->G();
+            const auto S_q = computeSq(f_dS_link2_dq_, f_dS_link3_dq_, q_cache_, G);
+            DMat<Scalar> result = DMat<Scalar>::Zero(nv, nv);
+            for (int i = 0; i < nv; ++i)
+                result.col(i) = S_q[i].transpose() * F;
+            return result;
         }
 
         template <typename Scalar>
@@ -454,10 +462,17 @@ namespace grbda
         }
 
         template <>
-        std::vector<DMat<std::complex<double>>>
-        RevoluteTripleWithRotor<std::complex<double>>::getSq() const
+        DMat<std::complex<double>>
+        RevoluteTripleWithRotor<std::complex<double>>::evalSTimesVec_dq(const DVec<std::complex<double>>&) const
         {
-            return std::vector<DMat<std::complex<double>>>(3, DMat<std::complex<double>>::Zero(36, 3));
+            return DMat<std::complex<double>>::Zero(36, 3);
+        }
+
+        template <>
+        DMat<std::complex<double>>
+        RevoluteTripleWithRotor<std::complex<double>>::evalSTTimesVec_dq(const DVec<std::complex<double>>&) const
+        {
+            return DMat<std::complex<double>>::Zero(3, 3);
         }
 
         template <>

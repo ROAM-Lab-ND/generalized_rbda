@@ -28,7 +28,6 @@ namespace grbda
             bodiesJointsAndReflectedInertias() const override;
 
             // Derivative methods: all return zeros since S is constant (doesn't depend on q)
-            std::vector<DMat<Scalar>> getSq() const override;
             DMat<Scalar> getSdotqd_q() const override;
             DMat<Scalar> getSdotqd_qd() const override;
 

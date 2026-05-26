@@ -74,15 +74,6 @@ namespace grbda
         }
 
         template <typename Scalar>
-        std::vector<DMat<Scalar>> RevoluteWithRotor<Scalar>::getSq() const
-        {
-            // S is constant (doesn't depend on q), so dS/dq = 0
-            const int nv = 1;
-            const int spatial_dim = 12;  // 2 bodies * 6 DOF
-            return std::vector<DMat<Scalar>>(nv, DMat<Scalar>::Zero(spatial_dim, nv));
-        }
-
-        template <typename Scalar>
         DMat<Scalar> RevoluteWithRotor<Scalar>::getSdotqd_q() const
         {
             // S is constant, so Sdot = 0, hence d(Sdot*qd)/dq = 0

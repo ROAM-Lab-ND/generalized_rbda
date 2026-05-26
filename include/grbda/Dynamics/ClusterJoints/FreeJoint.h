@@ -74,7 +74,6 @@ namespace grbda
             JointState<double> randomJointState(bool enforce_position_constraint = true) const override;
 
             // Derivative methods
-            std::vector<DMat<Scalar>> getSq() const override;
             DMat<Scalar> getSdotqd_q() const override;
             DMat<Scalar> getSdotqd_qd() const override;
 
