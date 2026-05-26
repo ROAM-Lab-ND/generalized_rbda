@@ -24,9 +24,6 @@ namespace grbda
             int ind_dim = ind_coords.size();
             int dep_dim = dep_coords.size();
 
-            // Debug output for coordinate sizes
-            // std::cout << "[GenericImplicit] state_dim=" << state_dim
-            //           << ", ind_dim=" << ind_dim << ", dep_dim=" << dep_dim << std::endl;
             if (state_dim == 0 || ind_dim + dep_dim != state_dim) {
                 std::cerr << "[GenericImplicit] Invalid coordinate sizes!" << std::endl;
             }
@@ -410,18 +407,6 @@ namespace grbda
                         G_complex(i, j) = std::complex<double>(G_real(i, j), G_imag_vec(idx));
                     }
                 }
-
-                // Debug: check if G has non-zero imaginary parts
-                double max_G_imag = 0.0;
-                for (int i = 0; i < rows; ++i) {
-                    for (int j = 0; j < cols; ++j) {
-                        max_G_imag = std::max(max_G_imag, std::abs(G_complex(i,j).imag()));
-                    }
-                }
-                // if (max_G_imag > 1e-25) {
-                //     std::cout << "[DEBUG evalG Taylor] G has imag, max|G_imag|=" << max_G_imag << std::endl;
-                //     std::cout << "  q_imag norm=" << q_imag.norm() << std::endl;
-                // }
 
                 return G_complex;
             } else {
