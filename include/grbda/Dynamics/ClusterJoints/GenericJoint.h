@@ -78,7 +78,7 @@ namespace grbda
             DMat<Scalar> evalk(const JointState<Scalar> &joint_state) const;
             DMat<Scalar> evalg(const JointState<Scalar> &joint_state) const;
 
-            // Legacy static methods for phi evaluation
+            // Static methods for phi evaluation
             static DMat<Scalar> runCasadiFcn(const casadi::Function &fcn,
                                              const JointCoordinate<Scalar> &arg);
             static DMat<Scalar> runCasadiFcn(const casadi::Function &fcn,
