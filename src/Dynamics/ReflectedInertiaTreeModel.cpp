@@ -499,8 +499,8 @@ namespace grbda
             const auto joint = node->joint_;
 
             DVec<Scalar> tmp = joint->S().transpose() * f;
-            // CRITICAL FIX: Use transpose()*vec instead of dot() to avoid complex conjugation
-            // Eigen's dot(a,b) computes conj(a)^T * b, but we need a^T * b for complex-step
+            // Use transpose()*vec instead of dot() to avoid complex conjugation
+            // Eigen's dot(a,b) computes conj(a)^T * b, but a^T * b needed for complex-step
             lambda_inv += (tmp.transpose() * DVec<Scalar>(node->D_inv_ * tmp))(0);
 
             dstate_out +=
@@ -524,7 +524,7 @@ namespace grbda
         const DMat<Scalar> H_inv = matrixInverse(H);
         const DMat<Scalar> inv_ops_inertia = J * H_inv * J.transpose();
         dstate_out = H_inv * (J.transpose() * force);
-        // CRITICAL FIX: Use transpose()*vec instead of dot() to avoid complex conjugation
+        // Use transpose()*vec instead of dot() to avoid complex conjugation
         return (force.transpose() * (inv_ops_inertia * force))(0);
     }
 
