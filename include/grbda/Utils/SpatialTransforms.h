@@ -80,11 +80,6 @@ namespace grbda
             Transform<Scalar> &operator[](int output_body_index);
 
             // World-frame CRBA support methods
-            // Transforms block-diagonal inertia from local body frames to world frame
-            // I_local is block-diagonal with each 6x6 block in its body's local frame
-            // Returns block-diagonal I_world with each block in world frame
-            DMat<Scalar> transformBlockDiagonalInertiaToWorld(const DMat<Scalar> &I_local) const;
-
             // Transforms motion subspace from local body frames to world frame
             // S_local has rows grouped by body, each group in that body's local frame
             // Returns S_world with all rows in world frame

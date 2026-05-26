@@ -349,25 +349,6 @@ namespace grbda
         }
 
         template <typename Scalar>
-        DMat<Scalar> GeneralizedAbsoluteTransform<Scalar>::transformBlockDiagonalInertiaToWorld(
-            const DMat<Scalar> &I_local) const
-        {
-            // Transform block-diagonal inertia from local body frames to world frame
-            // Each 6x6 diagonal block is transformed independently
-            DMat<Scalar> I_world = DMat<Scalar>::Zero(6 * num_output_bodies_, 6 * num_output_bodies_);
-
-            for (int body = 0; body < num_output_bodies_; body++)
-            {
-                const Transform<Scalar> &Xa = transforms_[body];
-                const Mat6<Scalar> I_body = I_local.template block<6, 6>(6 * body, 6 * body);
-                I_world.template block<6, 6>(6 * body, 6 * body) =
-                    Xa.transformSpatialInertiaToWorld(I_body);
-            }
-
-            return I_world;
-        }
-
-        template <typename Scalar>
         DMat<Scalar> GeneralizedAbsoluteTransform<Scalar>::transformMotionSubspaceToWorld(
             const DMat<Scalar> &S_local) const
         {
