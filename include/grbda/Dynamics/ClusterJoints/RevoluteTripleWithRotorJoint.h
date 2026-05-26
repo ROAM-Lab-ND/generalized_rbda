@@ -38,7 +38,6 @@ namespace grbda
 
             // Derivative methods
             DMat<Scalar> getSdotqd_q() const override;
-            DMat<Scalar> getSdotqd_qd() const override;
 
             // RevoluteTripleWithRotor has configuration-dependent S (uses CasADi)
             bool hasConfigurationDependentS() const override { return true; }
@@ -82,7 +81,6 @@ namespace grbda
             mutable casadi::Function f_dS_link2_dq_;
             mutable casadi::Function f_dS_link3_dq_;
             mutable casadi::Function f_Sdotqd_q_;
-            mutable casadi::Function f_Sdotqd_qd_;
 
             // Cache for current state
             mutable DVec<Scalar> q_cache_;

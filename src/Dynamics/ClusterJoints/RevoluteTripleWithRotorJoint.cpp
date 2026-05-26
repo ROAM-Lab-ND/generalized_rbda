@@ -283,22 +283,9 @@ namespace grbda
             SX dSdotqd_link3_dq2 = jacobian(Sdotqd_link3, q2);
             SX dSdotqd_link3_dq3 = jacobian(Sdotqd_link3, q3);
 
-            // Compute ∂(Ṡqd)/∂qd for each link separately
-            SX dSdotqd_link2_dqd1 = jacobian(Sdotqd_link2, qd1);
-            SX dSdotqd_link2_dqd2 = jacobian(Sdotqd_link2, qd2);
-            SX dSdotqd_link2_dqd3 = jacobian(Sdotqd_link2, qd3);
-
-            SX dSdotqd_link3_dqd1 = jacobian(Sdotqd_link3, qd1);
-            SX dSdotqd_link3_dqd2 = jacobian(Sdotqd_link3, qd2);
-            SX dSdotqd_link3_dqd3 = jacobian(Sdotqd_link3, qd3);
-
-            // Create functions that return separate results for link2 and link3
             f_Sdotqd_q_ = Function("Sdotqd_q", {q1, q2, q3, qd1, qd2, qd3},
                                    {horzcat(dSdotqd_link2_dq1, dSdotqd_link2_dq2, dSdotqd_link2_dq3),
                                     horzcat(dSdotqd_link3_dq1, dSdotqd_link3_dq2, dSdotqd_link3_dq3)});
-            f_Sdotqd_qd_ = Function("Sdotqd_qd", {q1, q2, q3, qd1, qd2, qd3},
-                                    {horzcat(dSdotqd_link2_dqd1, dSdotqd_link2_dqd2, dSdotqd_link2_dqd3),
-                                     horzcat(dSdotqd_link3_dqd1, dSdotqd_link3_dqd2, dSdotqd_link3_dqd3)});
 
             casadi_functions_initialized_ = true;
         }
@@ -415,45 +402,6 @@ namespace grbda
             return output;
         }
 
-        template <typename Scalar>
-        DMat<Scalar> RevoluteTripleWithRotor<Scalar>::getSdotqd_qd() const
-        {
-            initializeCasadiFunctions();
-            const int nv = 3;
-            const int spatial_dim = 36;
-
-            std::vector<casadi::DM> input = {
-                casadi::DM(static_cast<double>(q_cache_(0))),
-                casadi::DM(static_cast<double>(q_cache_(1))),
-                casadi::DM(static_cast<double>(q_cache_(2))),
-                casadi::DM(static_cast<double>(qd_cache_(0))),
-                casadi::DM(static_cast<double>(qd_cache_(1))),
-                casadi::DM(static_cast<double>(qd_cache_(2)))
-            };
-
-            std::vector<casadi::DM> result = f_Sdotqd_qd_(input);
-            casadi::DM Sdotqd_qd_link2 = result[0];  // 6x3 matrix for link2
-            casadi::DM Sdotqd_qd_link3 = result[1];  // 6x3 matrix for link3
-
-            DMat<Scalar> output = DMat<Scalar>::Zero(spatial_dim, nv);
-
-            // Link2 contribution (rows 6-11)
-            for (int i = 0; i < 6; ++i) {
-                for (int j = 0; j < nv; ++j) {
-                    output(6 + i, j) = static_cast<Scalar>(static_cast<double>(Sdotqd_qd_link2(i, j)));
-                }
-            }
-
-            // Link3 contribution (rows 12-17)
-            for (int i = 0; i < 6; ++i) {
-                for (int j = 0; j < nv; ++j) {
-                    output(12 + i, j) = static_cast<Scalar>(static_cast<double>(Sdotqd_qd_link3(i, j)));
-                }
-            }
-
-            return output;
-        }
-
         // Complex specializations
         template <>
         void RevoluteTripleWithRotor<std::complex<double>>::initializeCasadiFunctions() const
@@ -478,13 +426,6 @@ namespace grbda
         template <>
         DMat<std::complex<double>>
         RevoluteTripleWithRotor<std::complex<double>>::getSdotqd_q() const
-        {
-            return DMat<std::complex<double>>::Zero(36, 3);
-        }
-
-        template <>
-        DMat<std::complex<double>>
-        RevoluteTripleWithRotor<std::complex<double>>::getSdotqd_qd() const
         {
             return DMat<std::complex<double>>::Zero(36, 3);
         }

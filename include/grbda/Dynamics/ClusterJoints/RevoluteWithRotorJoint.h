@@ -29,7 +29,6 @@ namespace grbda
 
             // Derivative methods: all return zeros since S is constant (doesn't depend on q)
             DMat<Scalar> getSdotqd_q() const override;
-            DMat<Scalar> getSdotqd_qd() const override;
 
         private:
             JointPtr<Scalar> link_joint_;

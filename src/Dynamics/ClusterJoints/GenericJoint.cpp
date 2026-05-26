@@ -1325,13 +1325,6 @@ namespace grbda
         }
 
         template <typename Scalar>
-        DMat<Scalar> Generic<Scalar>::getSdotqd_qd() const
-        {
-            std::cout << "[DEBUG getSdotqd_qd] Called with Scalar = " << typeid(Scalar).name() << std::endl;
-            throw std::runtime_error("getSdotqd_qd is not implemented yet");
-        }
-
-        template <typename Scalar>
         DMat<Scalar> Generic<Scalar>::evalSTimesVec_dq(const DVec<Scalar>& b) const
         {
             const int mss_dim = this->num_bodies_ * 6;

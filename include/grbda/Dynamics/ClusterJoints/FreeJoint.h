@@ -75,7 +75,6 @@ namespace grbda
 
             // Derivative methods
             DMat<Scalar> getSdotqd_q() const override;
-            DMat<Scalar> getSdotqd_qd() const override;
 
         private:
             const Body<Scalar> body_;

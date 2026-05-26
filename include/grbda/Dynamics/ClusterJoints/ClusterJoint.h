@@ -72,12 +72,6 @@ namespace grbda
                 return DMat<Scalar>::Zero(mss_dim, num_velocities_);
             }
 
-            // Returns ∂(Ṡ·q̇)/∂q̇ as a (6*num_bodies x nv) matrix
-            virtual DMat<Scalar> getSdotqd_qd() const {
-                const int mss_dim = num_bodies_ * 6;
-                return DMat<Scalar>::Zero(mss_dim, num_velocities_);
-            }
-
             // Contraction-based derivative interface
             // Default returns zero (for joints with constant S). Override for configuration-dependent S.
 

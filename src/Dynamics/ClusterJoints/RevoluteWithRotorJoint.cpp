@@ -80,13 +80,6 @@ namespace grbda
             return DMat<Scalar>::Zero(12, 1);
         }
 
-        template <typename Scalar>
-        DMat<Scalar> RevoluteWithRotor<Scalar>::getSdotqd_qd() const
-        {
-            // S is constant, so Sdot = 0, hence d(Sdot*qd)/dqd = 0
-            return DMat<Scalar>::Zero(12, 1);
-        }
-
         template class RevoluteWithRotor<double>;
         template class RevoluteWithRotor<std::complex<double>>;
         template class RevoluteWithRotor<float>;

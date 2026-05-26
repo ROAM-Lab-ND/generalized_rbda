@@ -84,15 +84,6 @@ namespace grbda
             return DMat<Scalar>::Zero(6, 6);
         }
 
-        template <typename Scalar, typename OrientationRepresentation>
-        DMat<Scalar> Free<Scalar, OrientationRepresentation>::getSdotqd_qd() const
-        {
-            const int nv = 6;
-
-            // Free joint has constant S in body frame, so Sdot = 0
-            return DMat<Scalar>::Zero(6, nv);
-        }
-
         // Template specializations for complex<double> (used by complex-step differentiation)
         template <>
         DMat<std::complex<double>>
@@ -100,13 +91,6 @@ namespace grbda
         {
             // CRITICAL FIX: Must return (6, nv) not (6, nq)
             // nv = 6 for free joint, nq = 7 for quaternion
-            return DMat<std::complex<double>>::Zero(6, 6);
-        }
-
-        template <>
-        DMat<std::complex<double>>
-        Free<std::complex<double>, ori_representation::Quaternion>::getSdotqd_qd() const
-        {
             return DMat<std::complex<double>>::Zero(6, 6);
         }
 

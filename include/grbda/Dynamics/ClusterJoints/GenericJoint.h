@@ -135,7 +135,6 @@ namespace grbda
 
             // Motion subspace derivatives for configuration-dependent kinematics
             DMat<Scalar> getSdotqd_q() const override;
-            DMat<Scalar> getSdotqd_qd() const override;
 
             // GenericJoint has configuration-dependent S (uses CasADi)
             bool hasConfigurationDependentS() const override { return generic_constraint_ != nullptr; }

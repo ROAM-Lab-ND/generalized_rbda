@@ -44,11 +44,6 @@ namespace grbda
                 return DMat<Scalar>::Zero(6, num_velocities_);
             }
 
-            // Returns ∂(Ṡ·q̇)/∂q̇ as a (6 x nv) matrix
-            virtual DMat<Scalar> getSdotqd_qd() const {
-                return DMat<Scalar>::Zero(6, num_velocities_);
-            }
-
         protected:
             const std::string name_;             
             const int num_positions_;
