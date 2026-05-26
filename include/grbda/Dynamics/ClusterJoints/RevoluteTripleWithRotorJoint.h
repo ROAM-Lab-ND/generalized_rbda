@@ -83,8 +83,8 @@ namespace grbda
             mutable casadi::Function f_Sdotqd_q_;
 
             // Cache for current state
-            mutable DVec<Scalar> q_cache_;
-            mutable DVec<Scalar> qd_cache_;
+            mutable DVec<Scalar> q_spanning_;
+            mutable DVec<Scalar> qd_spanning_;
         };
 
     }

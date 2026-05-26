@@ -283,7 +283,7 @@ namespace grbda
 
         this->setExternalForces();
         // CRITICAL: Invalidate cached kinematics when state changes
-        // This ensures q_cache_ in Generic joints is updated on next forwardKinematics() call
+        // This ensures q_spanning_ in Generic joints is updated on next forwardKinematics() call
         this->resetCache();
     }
 

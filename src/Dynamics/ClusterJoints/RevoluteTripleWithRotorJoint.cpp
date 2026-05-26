@@ -69,8 +69,8 @@ namespace grbda
             const DVec<Scalar> &qd = spanning_joint_state.velocity;
 
             // Cache INDEPENDENT coordinates for derivative methods
-            q_cache_ = joint_state.position;
-            qd_cache_ = joint_state.velocity;
+            q_spanning_ = joint_state.position;
+            qd_spanning_ = joint_state.velocity;
 
             link_1_joint_->updateKinematics(q.template segment<1>(0), qd.template segment<1>(0));
             link_2_joint_->updateKinematics(q.template segment<1>(1), qd.template segment<1>(1));
@@ -343,7 +343,7 @@ namespace grbda
             const int nv = 3;
             const int mss_dim = this->num_bodies_ * 6;
             const DMat<Scalar>& G = this->loop_constraint_->G();
-            const auto S_q = computeSq(f_dS_link2_dq_, f_dS_link3_dq_, q_cache_, G);
+            const auto S_q = computeSq(f_dS_link2_dq_, f_dS_link3_dq_, q_spanning_, G);
             DMat<Scalar> result = DMat<Scalar>::Zero(mss_dim, nv);
             for (int i = 0; i < nv; ++i)
                 result.col(i) = S_q[i] * b;
@@ -356,7 +356,7 @@ namespace grbda
             initializeCasadiFunctions();
             const int nv = 3;
             const DMat<Scalar>& G = this->loop_constraint_->G();
-            const auto S_q = computeSq(f_dS_link2_dq_, f_dS_link3_dq_, q_cache_, G);
+            const auto S_q = computeSq(f_dS_link2_dq_, f_dS_link3_dq_, q_spanning_, G);
             DMat<Scalar> result = DMat<Scalar>::Zero(nv, nv);
             for (int i = 0; i < nv; ++i)
                 result.col(i) = S_q[i].transpose() * F;
@@ -371,12 +371,12 @@ namespace grbda
             const int spatial_dim = 36;
 
             std::vector<casadi::DM> input = {
-                casadi::DM(static_cast<double>(q_cache_(0))),
-                casadi::DM(static_cast<double>(q_cache_(1))),
-                casadi::DM(static_cast<double>(q_cache_(2))),
-                casadi::DM(static_cast<double>(qd_cache_(0))),
-                casadi::DM(static_cast<double>(qd_cache_(1))),
-                casadi::DM(static_cast<double>(qd_cache_(2)))
+                casadi::DM(static_cast<double>(q_spanning_(0))),
+                casadi::DM(static_cast<double>(q_spanning_(1))),
+                casadi::DM(static_cast<double>(q_spanning_(2))),
+                casadi::DM(static_cast<double>(qd_spanning_(0))),
+                casadi::DM(static_cast<double>(qd_spanning_(1))),
+                casadi::DM(static_cast<double>(qd_spanning_(2)))
             };
 
             std::vector<casadi::DM> result = f_Sdotqd_q_(input);
