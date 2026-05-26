@@ -82,14 +82,10 @@ namespace grbda
                 const int& num_ori_param = OrientationRepresentation::num_ori_parameter;
 
                 // Extract orientation parameters and normalize if quaternion
-                // CRITICAL: MATLAB's rq() function normalizes quaternions before converting to rotation matrix
-                // Unnormalized quaternions produce incorrect rotation matrices
                 auto orientation_segment = q.template tail<num_ori_param>();
 
                 if constexpr (num_ori_param == 4) {
                     // For quaternions, normalize before converting to rotation matrix
-                    // CRITICAL: MATLAB's rq() function normalizes quaternions (line 28: q = q / norm(q))
-                    // We must match this exactly, including for complex types!
                     // For complex-step differentiation, normalization is differentiable and the
                     // imaginary part will carry through correctly via the chain rule.
                     Quat<Scalar> quat_segment = orientation_segment;
