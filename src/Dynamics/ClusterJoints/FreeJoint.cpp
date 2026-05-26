@@ -89,8 +89,6 @@ namespace grbda
         DMat<std::complex<double>>
         Free<std::complex<double>, ori_representation::Quaternion>::getSdotqd_q() const
         {
-            // CRITICAL FIX: Must return (6, nv) not (6, nq)
-            // nv = 6 for free joint, nq = 7 for quaternion
             return DMat<std::complex<double>>::Zero(6, 6);
         }
 
