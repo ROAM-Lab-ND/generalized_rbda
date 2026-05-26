@@ -93,13 +93,6 @@ TEST(InverseDynamicsDerivatives, TelloWithArmsImplicitConstraint) {
     testInverseDynamicsDerivativesFiniteDifference(model, "TelloWithArms", 1e-6, 1e-6);
 }
 
-//TEST(InverseDynamicsDerivatives, DoublePendulumURDF) {
-//    ClusterTreeModel<double> model;
-//    model.buildModelFromURDF("/home/docker/generalized_rbda/robot-models/double_pendulum.urdf");
-//    // 2-link double pendulum from URDF works perfectly with current implementation
-//    testInverseDynamicsDerivatives(model, "Double pendulum (URDF)", 2);
-//}
-
 TEST(InverseDynamicsDerivatives, TwoLinkChain) {
     // RevoluteChainWithAndWithoutRotor<N, M> where N=rotors, M=no rotors
     // So <0, 2> means 0 with rotors, 2 without rotors = 2 DOF
@@ -133,7 +126,6 @@ TEST(InverseDynamicsDerivatives, FourLinkChain) {
 }
 
 
-// NOTE: Re-enabling test to debug and fix floating base derivatives
 TEST(InverseDynamicsDerivatives, MiniCheetahQuaternion) {
     MiniCheetah<double, ori_representation::Quaternion> robot;
     ClusterTreeModel<double> model = robot.buildClusterTreeModel();
@@ -146,8 +138,6 @@ TEST(InverseDynamicsDerivatives, MITHumanoidQuaternionv2) {
     ClusterTreeModel<double> model = robot.buildClusterTreeModel();
     model.setState(randomModelState(model,true));
 
-    // Actual errors: dtau/dq ~9.3e-5, dtau/dqdot ~6.7e-7
-    // Tightened from previous overly-relaxed tolerances (1.0, 0.1)
     testInverseDynamicsDerivativesFiniteDifference(model, "MIT Humanoid (Quaternion) - Finite Difference", 1e-4, 1e-6);
 }
 
