@@ -37,13 +37,13 @@ namespace grbda
             bodiesJointsAndReflectedInertias() const override;
 
             // Derivative methods
-            DMat<Scalar> getSdotqd_q() const override;
+            void getSdotqd_q(DMat<Scalar>& out) const override;
 
             // RevoluteTripleWithRotor has configuration-dependent S (uses CasADi)
             bool hasConfigurationDependentS() const override { return true; }
 
-            DMat<Scalar> evalSTimesVec_dq(const DVec<Scalar>& b) const override;
-            DMat<Scalar> evalSTTimesVec_dq(const DVec<Scalar>& F) const override;
+            void evalSTimesVec_dq(const DVec<Scalar>& b, DMat<Scalar>& out) const override;
+            void evalSTTimesVec_dq(const DVec<Scalar>& F, DMat<Scalar>& out) const override;
 
         private:
             char axisToChar(ori::CoordinateAxis axis) const;

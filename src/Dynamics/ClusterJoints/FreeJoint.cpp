@@ -79,17 +79,16 @@ namespace grbda
         // Derivative methods for Free joint
 
         template <typename Scalar, typename OrientationRepresentation>
-        DMat<Scalar> Free<Scalar, OrientationRepresentation>::getSdotqd_q() const
+        void Free<Scalar, OrientationRepresentation>::getSdotqd_q(DMat<Scalar>& out) const
         {
-            return DMat<Scalar>::Zero(6, 6);
+            out.setZero(6, 6);
         }
 
         // Template specializations for complex<double> (used by complex-step differentiation)
         template <>
-        DMat<std::complex<double>>
-        Free<std::complex<double>, ori_representation::Quaternion>::getSdotqd_q() const
+        void Free<std::complex<double>, ori_representation::Quaternion>::getSdotqd_q(DMat<std::complex<double>>& out) const
         {
-            return DMat<std::complex<double>>::Zero(6, 6);
+            out.setZero(6, 6);
         }
 
         template class Free<double, ori_representation::RollPitchYaw>;

@@ -28,7 +28,7 @@ namespace grbda
             bodiesJointsAndReflectedInertias() const override;
 
             // Derivative methods: all return zeros since S is constant (doesn't depend on q)
-            DMat<Scalar> getSdotqd_q() const override;
+            void getSdotqd_q(DMat<Scalar>& out) const override;
 
         private:
             JointPtr<Scalar> link_joint_;

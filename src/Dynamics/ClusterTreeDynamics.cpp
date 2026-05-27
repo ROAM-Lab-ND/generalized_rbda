@@ -448,6 +448,7 @@ namespace grbda
         DMat<Scalar> dtau_dq_dot = DMat<Scalar>::Zero(nDOF, nDOF);
 
         // Forward Pass - compute Psi_dot, Psi_ddot, Upsilon_dot, M_cup, B_cup, F for each cluster
+        DMat<Scalar> alpha, beta, Sdotqd_q;
         for (auto &cluster : cluster_nodes_)
         {
             const int mss_dim = cluster->motion_subspace_dimension_;
@@ -475,13 +476,12 @@ namespace grbda
             const DVec<Scalar> cluster_qd = qd.segment(cluster->velocity_index_, num_vel);
             const DVec<Scalar> cluster_qdd = qdd.segment(cluster->velocity_index_, num_vel);
 
-            DMat<Scalar> alpha, beta, Sdotqd_q;
             const bool has_config_dependent_S = cluster->joint_->hasConfigurationDependentS();
 
             if (has_config_dependent_S) {
-                alpha = cluster->joint_->evalSTimesVec_dq(cluster_qd);
-                beta = cluster->joint_->evalSTimesVec_dq(cluster_qdd);
-                Sdotqd_q = cluster->joint_->getSdotqd_q();
+                cluster->joint_->evalSTimesVec_dq(cluster_qd, alpha);
+                cluster->joint_->evalSTimesVec_dq(cluster_qdd, beta);
+                cluster->joint_->getSdotqd_q(Sdotqd_q);
             }
 
             // Psi_dot = crm(v_parent_up) * S + alpha
@@ -521,6 +521,7 @@ namespace grbda
         }
 
         // Backward Pass - compute derivatives and propagate M_cup, B_cup, F to parents
+        DMat<Scalar> st_dq;
         for (int i = nClusters - 1; i >= 0; i--)
         {
             auto &cluster_i = cluster_nodes_[i];
@@ -570,7 +571,7 @@ namespace grbda
                     {
                         // Only compute S^T derivative for joints with config-dependent S
                         if (cluster_i->joint_->hasConfigurationDependentS()) {
-                            DMat<Scalar> st_dq = cluster_i->joint_->evalSTTimesVec_dq(F);
+                            cluster_i->joint_->evalSTTimesVec_dq(F, st_dq);
                             dtau_dq.block(ii, ii, num_vel_i, num_vel_i) += st_dq;
                         }
                     }
@@ -611,7 +612,7 @@ namespace grbda
                     {
                         // Only compute S^T derivative for joints with config-dependent S
                         if (cluster_i->joint_->hasConfigurationDependentS()) {
-                            DMat<Scalar> st_dq = cluster_i->joint_->evalSTTimesVec_dq(F);
+                            cluster_i->joint_->evalSTTimesVec_dq(F, st_dq);
                             dtau_dq.block(ii, ii, num_vel_i, num_vel_i) += st_dq;
                         }
                     }
@@ -667,6 +668,7 @@ namespace grbda
         idDeriv_F4_.setZero();
 
         // Forward Pass - compute quantities and transform to world frame, storing in nodes
+        DMat<Scalar> alpha, beta, Sdotqd_q;
         for (int i = 0; i < nClusters; i++)
         {
             auto &cluster = cluster_nodes_[i];
@@ -696,13 +698,10 @@ namespace grbda
             const DVec<Scalar> cluster_qdd = qdd.segment(cluster->velocity_index_, num_vel);
             const bool has_config_dependent_S = cluster->joint_->hasConfigurationDependentS();
 
-            DMat<Scalar> alpha = DMat<Scalar>::Zero(mss_dim, num_vel);
-            DMat<Scalar> beta  = DMat<Scalar>::Zero(mss_dim, num_vel);
-            DMat<Scalar> Sdotqd_q = DMat<Scalar>::Zero(mss_dim, num_vel);
             if (has_config_dependent_S) {
-                alpha     = cluster->joint_->evalSTimesVec_dq(cluster_qd);
-                beta      = cluster->joint_->evalSTimesVec_dq(cluster_qdd);
-                Sdotqd_q  = cluster->joint_->getSdotqd_q();
+                cluster->joint_->evalSTimesVec_dq(cluster_qd, alpha);
+                cluster->joint_->evalSTimesVec_dq(cluster_qdd, beta);
+                cluster->joint_->getSdotqd_q(Sdotqd_q);
             }
 
             // Psi_dot = crm(v_parent_up) * S + alpha
@@ -771,6 +770,7 @@ namespace grbda
         }
 
         // Backward Pass
+        DMat<Scalar> st_dq;
         for (int i = nClusters - 1; i >= 0; i--)
         {
             auto &cluster_i = cluster_nodes_[i];
@@ -812,8 +812,8 @@ namespace grbda
 
             // contractT(S_q, f)
             if (cluster_i->joint_->hasConfigurationDependentS()) {
-                dtau_dq.block(ii, ii, num_vel_i, num_vel_i) +=
-                    cluster_i->joint_->evalSTTimesVec_dq(cluster_i->F_);
+                cluster_i->joint_->evalSTTimesVec_dq(cluster_i->F_, st_dq);
+                dtau_dq.block(ii, ii, num_vel_i, num_vel_i) += st_dq;
             }
 
             if (cluster_i->parent_index_ >= 0)

@@ -134,14 +134,14 @@ namespace grbda
                 spatial::GeneralizedTransform<Scalar> &Xup) const override;
 
             // Motion subspace derivatives for configuration-dependent kinematics
-            DMat<Scalar> getSdotqd_q() const override;
+            void getSdotqd_q(DMat<Scalar>& out) const override;
 
             // GenericJoint has configuration-dependent S (uses CasADi)
             bool hasConfigurationDependentS() const override { return generic_constraint_ != nullptr; }
 
             // Contraction-based derivatives (efficient, avoids materializing S_q tensor)
-            DMat<Scalar> evalSTimesVec_dq(const DVec<Scalar>& b) const override;
-            DMat<Scalar> evalSTTimesVec_dq(const DVec<Scalar>& F) const override;
+            void evalSTimesVec_dq(const DVec<Scalar>& b, DMat<Scalar>& out) const override;
+            void evalSTTimesVec_dq(const DVec<Scalar>& F, DMat<Scalar>& out) const override;
 
             // Access to GenericImplicit constraint for complex-step differentiation
             std::shared_ptr<LoopConstraint::GenericImplicit<Scalar>> getGenericConstraint() const {

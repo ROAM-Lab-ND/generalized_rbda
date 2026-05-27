@@ -67,9 +67,8 @@ namespace grbda
             // Override for joints with absolute coordinates or configuration-dependent kinematics
 
             // Returns ∂(Ṡ·q̇)/∂q as a (6*num_bodies x nv) matrix
-            virtual DMat<Scalar> getSdotqd_q() const {
-                const int mss_dim = num_bodies_ * 6;
-                return DMat<Scalar>::Zero(mss_dim, num_velocities_);
+            virtual void getSdotqd_q(DMat<Scalar>& out) const {
+                out.setZero(num_bodies_ * 6, num_velocities_);
             }
 
             // Contraction-based derivative interface
@@ -80,15 +79,15 @@ namespace grbda
             virtual bool hasConfigurationDependentS() const { return false; }
 
             // Returns ∂(S*b)/∂q as a (6*num_bodies x nv) matrix
-            virtual DMat<Scalar> evalSTimesVec_dq(const DVec<Scalar>& b) const {
-                (void)b;  // Unused for constant S
-                return DMat<Scalar>();  // Return empty matrix for constant S joints
+            virtual void evalSTimesVec_dq(const DVec<Scalar>& b, DMat<Scalar>& out) const {
+                (void)b;
+                out.resize(0, 0);
             }
 
             // Returns ∂(S^T*F)/∂q as a (nv x nv) matrix
-            virtual DMat<Scalar> evalSTTimesVec_dq(const DVec<Scalar>& F) const {
-                (void)F;  // Unused for constant S
-                return DMat<Scalar>();  // Return empty matrix for constant S joints
+            virtual void evalSTTimesVec_dq(const DVec<Scalar>& F, DMat<Scalar>& out) const {
+                (void)F;
+                out.resize(0, 0);
             }
 
 

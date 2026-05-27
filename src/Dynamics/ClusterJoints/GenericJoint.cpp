@@ -1257,151 +1257,121 @@ namespace grbda
 
 
         template <typename Scalar>
-        DMat<Scalar> Generic<Scalar>::getSdotqd_q() const
+        void Generic<Scalar>::getSdotqd_q(DMat<Scalar>& out) const
         {
             const int mss_dim = this->num_bodies_ * 6;
             const int nv = this->num_velocities_;
 
-            if (!generic_constraint_)
+            if (!generic_constraint_ || q_spanning_.size() == 0 || S_implicit_.size() == 0)
             {
-                return DMat<Scalar>::Zero(mss_dim, nv);
+                out.setZero(mss_dim, nv);
+                return;
             }
 
-            // Need a valid cached state from updateKinematics.
-            if (q_spanning_.size() == 0 || S_implicit_.size() == 0) {
-                return DMat<Scalar>::Zero(mss_dim, nv);
-            }
-
-            // For implicit joints, compute d(cJ)/dy directly via CasADi,
-            // where cJ = X_intra_ring * S_spanning * qd_span + S_implicit * g(q_span, qd_span).
-            // This captures all chain-rule paths through X_intra, X_intra_ring, and g.
-            if constexpr (std::is_same_v<Scalar, double> ) {
+            if constexpr (std::is_same_v<Scalar, double>) {
                 initializeDerivativeFunctions();
 
-                if (q_spanning_.size() == 0 || qd_spanning_.size() == 0 ||
+                if (qd_spanning_.size() == 0 ||
                     !derivative_functions_initialized_ || dSdotqd_dq_fcn_.is_null())
-                    return DMat<Scalar>::Zero(mss_dim, nv);
+                {
+                    out.setZero(mss_dim, nv);
+                    return;
+                }
 
-                // coord_map^T * qd_span = [ydot; qdot_dep], so ydot is the first nv entries
                 const DMat<double>& coord_map = generic_constraint_->getCoordMap();
                 const DVec<Scalar> ydot_independent =
                     (coord_map.transpose() * qd_spanning_).head(nv);
 
                 const int n_span_pos = q_spanning_.size();
 
-                // Use low-level CasADi API with pre-allocated buffers
-                for (int i = 0; i < n_span_pos; ++i) {
+                for (int i = 0; i < n_span_pos; ++i)
                     dSdotqd_arg_buf_[i] = q_spanning_(i);
-                }
-                for (int i = 0; i < nv; ++i) {
+                for (int i = 0; i < nv; ++i)
                     dSdotqd_arg_buf_[n_span_pos + i] = ydot_independent(i);
-                }
 
                 const double* arg_ptrs[2] = {dSdotqd_arg_buf_.data(), dSdotqd_arg_buf_.data() + n_span_pos};
                 double* res_ptrs[1] = {dSdotqd_res_buf_.data()};
 
                 dSdotqd_dq_fcn_(arg_ptrs, res_ptrs, dSdotqd_work_iw_.data(), dSdotqd_work_w_.data(), 0);
 
-                // Map result buffer to Eigen matrix (CasADi uses column-major, same as Eigen)
-                return Eigen::Map<DMat<Scalar>>(dSdotqd_res_buf_.data(), mss_dim, nv);
+                out = Eigen::Map<DMat<Scalar>>(dSdotqd_res_buf_.data(), mss_dim, nv);
+                return;
             }
 
-            return DMat<Scalar>::Zero(mss_dim, nv);
+            out.setZero(mss_dim, nv);
         }
 
         template <typename Scalar>
-        DMat<Scalar> Generic<Scalar>::evalSTimesVec_dq(const DVec<Scalar>& b) const
+        void Generic<Scalar>::evalSTimesVec_dq(const DVec<Scalar>& b, DMat<Scalar>& out) const
         {
             const int mss_dim = this->num_bodies_ * 6;
             const int nv = this->num_velocities_;
 
-            if (!generic_constraint_) {
-                return DMat<Scalar>::Zero(mss_dim, nv);
-            }
-
-            // Safety check: ensure state has been cached
-            if (q_spanning_.size() == 0) {
-                return DMat<Scalar>::Zero(mss_dim, nv);
+            if (!generic_constraint_ || q_spanning_.size() == 0) {
+                out.setZero(mss_dim, nv);
+                return;
             }
 
             if constexpr (std::is_same_v<Scalar, double>) {
                 initializeDerivativeFunctions();
 
                 if (!derivative_functions_initialized_ || dSb_dy_fcn_.is_null()) {
-                    return DMat<Scalar>::Zero(mss_dim, nv);
+                    out.setZero(mss_dim, nv);
+                    return;
                 }
 
                 const int n_span_pos = q_spanning_.size();
 
-                // Use low-level CasADi API with pre-allocated buffers
-                for (int i = 0; i < n_span_pos; ++i) {
+                for (int i = 0; i < n_span_pos; ++i)
                     dSb_arg_buf_[i] = q_spanning_(i);
-                }
-                for (int i = 0; i < nv; ++i) {
+                for (int i = 0; i < nv; ++i)
                     dSb_arg_buf_[n_span_pos + i] = b(i);
-                }
 
-                // Set up pointers - CasADi expects separate pointers for each input
                 const double* arg_ptrs[2] = {dSb_arg_buf_.data(), dSb_arg_buf_.data() + n_span_pos};
                 double* res_ptrs[1] = {dSb_res_buf_.data()};
 
-                // Call function using low-level API
                 dSb_dy_fcn_(arg_ptrs, res_ptrs, dSb_work_iw_.data(), dSb_work_w_.data(), 0);
 
-                // Map result buffer to Eigen matrix (CasADi uses column-major, same as Eigen)
-                return Eigen::Map<DMat<Scalar>>(dSb_res_buf_.data(), mss_dim, nv);
-
+                out = Eigen::Map<DMat<Scalar>>(dSb_res_buf_.data(), mss_dim, nv);
             } else {
                 throw std::runtime_error("evalSTimesVec_dq is not implemented for given type yet");
-                return DMat<Scalar>::Zero(mss_dim, nv);   
             }
         }
 
         template <typename Scalar>
-        DMat<Scalar> Generic<Scalar>::evalSTTimesVec_dq(const DVec<Scalar>& F) const
+        void Generic<Scalar>::evalSTTimesVec_dq(const DVec<Scalar>& F, DMat<Scalar>& out) const
         {
             const int mss_dim = this->num_bodies_ * 6;
             const int nv = this->num_velocities_;
 
-            if (!generic_constraint_) {
-                return DMat<Scalar>::Zero(nv, nv);
-            }
-
-            // Safety check: ensure state has been cached
-            if (q_spanning_.size() == 0) {
-                return DMat<Scalar>::Zero(nv, nv);
+            if (!generic_constraint_ || q_spanning_.size() == 0) {
+                out.setZero(nv, nv);
+                return;
             }
 
             if constexpr (std::is_same_v<Scalar, double>) {
                 initializeDerivativeFunctions();
 
                 if (!derivative_functions_initialized_ || dSTF_dy_fcn_.is_null()) {
-                    return DMat<Scalar>::Zero(nv, nv);
+                    out.setZero(nv, nv);
+                    return;
                 }
 
-                // Use low-level CasADi API with pre-allocated buffers
                 const int n_span_pos = q_spanning_.size();
 
-                // Copy inputs to pre-allocated buffers
-                for (int i = 0; i < n_span_pos; ++i) {
+                for (int i = 0; i < n_span_pos; ++i)
                     dSTF_arg_buf_[i] = q_spanning_(i);
-                }
-                for (int i = 0; i < mss_dim; ++i) {
+                for (int i = 0; i < mss_dim; ++i)
                     dSTF_arg_buf_[n_span_pos + i] = F(i);
-                }
 
-                // Set up pointers - CasADi expects separate pointers for each input
                 const double* arg_ptrs[2] = {dSTF_arg_buf_.data(), dSTF_arg_buf_.data() + n_span_pos};
                 double* res_ptrs[1] = {dSTF_res_buf_.data()};
 
-                // Call function using low-level API
                 dSTF_dy_fcn_(arg_ptrs, res_ptrs, dSTF_work_iw_.data(), dSTF_work_w_.data(), 0);
 
-                // Map result buffer to Eigen matrix (CasADi uses column-major, same as Eigen)
-                return Eigen::Map<DMat<Scalar>>(dSTF_res_buf_.data(), nv, nv);
+                out = Eigen::Map<DMat<Scalar>>(dSTF_res_buf_.data(), nv, nv);
             } else {
                 throw std::runtime_error("evalSTTimesVec_dq is not implemented for given type yet");
-                return DMat<Scalar>::Zero(nv, nv);
             }
         }
 

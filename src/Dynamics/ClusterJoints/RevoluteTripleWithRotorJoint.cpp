@@ -337,34 +337,32 @@ namespace grbda
         }
 
         template <typename Scalar>
-        DMat<Scalar> RevoluteTripleWithRotor<Scalar>::evalSTimesVec_dq(const DVec<Scalar>& b) const
+        void RevoluteTripleWithRotor<Scalar>::evalSTimesVec_dq(const DVec<Scalar>& b, DMat<Scalar>& out) const
         {
             initializeCasadiFunctions();
             const int nv = 3;
             const int mss_dim = this->num_bodies_ * 6;
             const DMat<Scalar>& G = this->loop_constraint_->G();
             const auto S_q = computeSq(f_dS_link2_dq_, f_dS_link3_dq_, q_spanning_, G);
-            DMat<Scalar> result = DMat<Scalar>::Zero(mss_dim, nv);
+            out.setZero(mss_dim, nv);
             for (int i = 0; i < nv; ++i)
-                result.col(i) = S_q[i] * b;
-            return result;
+                out.col(i) = S_q[i] * b;
         }
 
         template <typename Scalar>
-        DMat<Scalar> RevoluteTripleWithRotor<Scalar>::evalSTTimesVec_dq(const DVec<Scalar>& F) const
+        void RevoluteTripleWithRotor<Scalar>::evalSTTimesVec_dq(const DVec<Scalar>& F, DMat<Scalar>& out) const
         {
             initializeCasadiFunctions();
             const int nv = 3;
             const DMat<Scalar>& G = this->loop_constraint_->G();
             const auto S_q = computeSq(f_dS_link2_dq_, f_dS_link3_dq_, q_spanning_, G);
-            DMat<Scalar> result = DMat<Scalar>::Zero(nv, nv);
+            out.setZero(nv, nv);
             for (int i = 0; i < nv; ++i)
-                result.col(i) = S_q[i].transpose() * F;
-            return result;
+                out.col(i) = S_q[i].transpose() * F;
         }
 
         template <typename Scalar>
-        DMat<Scalar> RevoluteTripleWithRotor<Scalar>::getSdotqd_q() const
+        void RevoluteTripleWithRotor<Scalar>::getSdotqd_q(DMat<Scalar>& out) const
         {
             initializeCasadiFunctions();
             const int nv = 3;
@@ -383,23 +381,17 @@ namespace grbda
             casadi::DM Sdotqd_q_link2 = result[0];  // 6x3 matrix for link2
             casadi::DM Sdotqd_q_link3 = result[1];  // 6x3 matrix for link3
 
-            DMat<Scalar> output = DMat<Scalar>::Zero(spatial_dim, nv);
+            out.setZero(spatial_dim, nv);
 
             // Link2 contribution (rows 6-11)
-            for (int i = 0; i < 6; ++i) {
-                for (int j = 0; j < nv; ++j) {
-                    output(6 + i, j) = static_cast<Scalar>(static_cast<double>(Sdotqd_q_link2(i, j)));
-                }
-            }
+            for (int i = 0; i < 6; ++i)
+                for (int j = 0; j < nv; ++j)
+                    out(6 + i, j) = static_cast<Scalar>(static_cast<double>(Sdotqd_q_link2(i, j)));
 
             // Link3 contribution (rows 12-17)
-            for (int i = 0; i < 6; ++i) {
-                for (int j = 0; j < nv; ++j) {
-                    output(12 + i, j) = static_cast<Scalar>(static_cast<double>(Sdotqd_q_link3(i, j)));
-                }
-            }
-
-            return output;
+            for (int i = 0; i < 6; ++i)
+                for (int j = 0; j < nv; ++j)
+                    out(12 + i, j) = static_cast<Scalar>(static_cast<double>(Sdotqd_q_link3(i, j)));
         }
 
         // Complex specializations
@@ -410,24 +402,23 @@ namespace grbda
         }
 
         template <>
-        DMat<std::complex<double>>
-        RevoluteTripleWithRotor<std::complex<double>>::evalSTimesVec_dq(const DVec<std::complex<double>>&) const
+        void RevoluteTripleWithRotor<std::complex<double>>::evalSTimesVec_dq(
+            const DVec<std::complex<double>>&, DMat<std::complex<double>>& out) const
         {
-            return DMat<std::complex<double>>::Zero(36, 3);
+            out.setZero(36, 3);
         }
 
         template <>
-        DMat<std::complex<double>>
-        RevoluteTripleWithRotor<std::complex<double>>::evalSTTimesVec_dq(const DVec<std::complex<double>>&) const
+        void RevoluteTripleWithRotor<std::complex<double>>::evalSTTimesVec_dq(
+            const DVec<std::complex<double>>&, DMat<std::complex<double>>& out) const
         {
-            return DMat<std::complex<double>>::Zero(3, 3);
+            out.setZero(3, 3);
         }
 
         template <>
-        DMat<std::complex<double>>
-        RevoluteTripleWithRotor<std::complex<double>>::getSdotqd_q() const
+        void RevoluteTripleWithRotor<std::complex<double>>::getSdotqd_q(DMat<std::complex<double>>& out) const
         {
-            return DMat<std::complex<double>>::Zero(36, 3);
+            out.setZero(36, 3);
         }
 
         template class RevoluteTripleWithRotor<double>;
