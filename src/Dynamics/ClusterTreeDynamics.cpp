@@ -521,7 +521,7 @@ namespace grbda
         }
 
         // Backward Pass - compute derivatives and propagate M_cup, B_cup, F to parents
-        DMat<Scalar> st_dq;
+        DMat<Scalar> st_dq, t1, t2, t3, t4;
         for (int i = nClusters - 1; i >= 0; i--)
         {
             auto &cluster_i = cluster_nodes_[i];
@@ -538,13 +538,13 @@ namespace grbda
             // Compute t1, t2, t3, t4 once
             // M_cup and B_cup are block-diagonal, use optimized block-diagonal multiplication
             // The blockDiagonalInertiaTimesMotionSubspace method has a fast path for single-body clusters
-            DMat<Scalar> t1 = cluster_i->Xup_.blockDiagonalInertiaTimesMotionSubspace(M_cup, S_i);
-            DMat<Scalar> t2 = cluster_i->Xup_.blockDiagonalInertiaTimesMotionSubspace(B_cup, S_i);
+            t1 = cluster_i->Xup_.blockDiagonalInertiaTimesMotionSubspace(M_cup, S_i);
+            t2 = cluster_i->Xup_.blockDiagonalInertiaTimesMotionSubspace(B_cup, S_i);
             t2.noalias() += cluster_i->Xup_.blockDiagonalInertiaTimesMotionSubspace(M_cup, cluster_i->Upsilon_dot_);
-            DMat<Scalar> t3 = cluster_i->Xup_.blockDiagonalInertiaTimesMotionSubspace(B_cup, cluster_i->Psi_dot_);
+            t3 = cluster_i->Xup_.blockDiagonalInertiaTimesMotionSubspace(B_cup, cluster_i->Psi_dot_);
             t3.noalias() += cluster_i->Xup_.blockDiagonalInertiaTimesMotionSubspace(M_cup, cluster_i->Psi_ddot_);
             t3 += spatial::swappedForceCrossTimesMatrix(F, S_i);
-            DMat<Scalar> t4 = cluster_i->Xup_.blockDiagonalInertiaTimesMotionSubspace(B_cup.transpose(), S_i);
+            t4 = cluster_i->Xup_.blockDiagonalInertiaTimesMotionSubspace(B_cup.transpose(), S_i);
 
             // Walk from cluster i to root
             // Use optimized path for single-body clusters (most common case)
