@@ -69,6 +69,11 @@ namespace grbda
         DMat<Scalar> t2_workspace_;
         DMat<Scalar> t3_workspace_;
         DMat<Scalar> t4_workspace_;
+        DMat<Scalar> t_tmp_workspace_;
+        DMat<Scalar> alpha_workspace_;
+        DMat<Scalar> beta_workspace_;
+        DMat<Scalar> Sdotqd_q_workspace_;
+        DMat<Scalar> st_dq_workspace_;
 
         // World-frame quantities for firstOrderInverseDynamicsDerivativesWorldFrame.
         // Ic0_ and S0_ (from TreeNode) are reused for IC0 and S0 respectively.

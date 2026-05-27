@@ -142,6 +142,8 @@ namespace grbda
             // Returns F with dimensions (6 * num_output_bodies) x (num_cols of S)
             DMat<Scalar> blockDiagonalInertiaTimesMotionSubspace(
                 const DMat<Scalar> &Ic_block_diag, const DMat<Scalar> &S) const;
+            void blockDiagonalInertiaTimesMotionSubspace(
+                const DMat<Scalar> &Ic_block_diag, const DMat<Scalar> &S, DMat<Scalar> &out) const;
 
             // Transforms F from child frame to parent frame, accumulating to connected parent bodies.
             // This is similar to inverseTransformForceSubspace but optimized for the CRBA pattern

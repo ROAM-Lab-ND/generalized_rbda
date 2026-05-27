@@ -448,7 +448,6 @@ namespace grbda
         DMat<Scalar> dtau_dq_dot = DMat<Scalar>::Zero(nDOF, nDOF);
 
         // Forward Pass - compute Psi_dot, Psi_ddot, Upsilon_dot, M_cup, B_cup, F for each cluster
-        DMat<Scalar> alpha, beta, Sdotqd_q;
         for (auto &cluster : cluster_nodes_)
         {
             const int mss_dim = cluster->motion_subspace_dimension_;
@@ -477,6 +476,10 @@ namespace grbda
             const DVec<Scalar> cluster_qdd = qdd.segment(cluster->velocity_index_, num_vel);
 
             const bool has_config_dependent_S = cluster->joint_->hasConfigurationDependentS();
+
+            DMat<Scalar> &alpha = cluster->alpha_workspace_;
+            DMat<Scalar> &beta = cluster->beta_workspace_;
+            DMat<Scalar> &Sdotqd_q = cluster->Sdotqd_q_workspace_;
 
             if (has_config_dependent_S) {
                 cluster->joint_->evalSTimesVec_dq(cluster_qd, alpha);
@@ -521,7 +524,6 @@ namespace grbda
         }
 
         // Backward Pass - compute derivatives and propagate M_cup, B_cup, F to parents
-        DMat<Scalar> st_dq, t1, t2, t3, t4;
         for (int i = nClusters - 1; i >= 0; i--)
         {
             auto &cluster_i = cluster_nodes_[i];
@@ -535,16 +537,21 @@ namespace grbda
             const DVec<Scalar> &F = cluster_i->F_;
             const DMat<Scalar> &S_i = cluster_i->S();
 
-            // Compute t1, t2, t3, t4 once
-            // M_cup and B_cup are block-diagonal, use optimized block-diagonal multiplication
-            // The blockDiagonalInertiaTimesMotionSubspace method has a fast path for single-body clusters
-            t1 = cluster_i->Xup_.blockDiagonalInertiaTimesMotionSubspace(M_cup, S_i);
-            t2 = cluster_i->Xup_.blockDiagonalInertiaTimesMotionSubspace(B_cup, S_i);
-            t2.noalias() += cluster_i->Xup_.blockDiagonalInertiaTimesMotionSubspace(M_cup, cluster_i->Upsilon_dot_);
-            t3 = cluster_i->Xup_.blockDiagonalInertiaTimesMotionSubspace(B_cup, cluster_i->Psi_dot_);
-            t3.noalias() += cluster_i->Xup_.blockDiagonalInertiaTimesMotionSubspace(M_cup, cluster_i->Psi_ddot_);
+            DMat<Scalar> &t1 = cluster_i->t1_workspace_;
+            DMat<Scalar> &t2 = cluster_i->t2_workspace_;
+            DMat<Scalar> &t3 = cluster_i->t3_workspace_;
+            DMat<Scalar> &t4 = cluster_i->t4_workspace_;
+
+            DMat<Scalar> &tmp = cluster_i->t_tmp_workspace_;
+            cluster_i->Xup_.blockDiagonalInertiaTimesMotionSubspace(M_cup, S_i, t1);
+            cluster_i->Xup_.blockDiagonalInertiaTimesMotionSubspace(B_cup, S_i, t2);
+            cluster_i->Xup_.blockDiagonalInertiaTimesMotionSubspace(M_cup, cluster_i->Upsilon_dot_, tmp);
+            t2.noalias() += tmp;
+            cluster_i->Xup_.blockDiagonalInertiaTimesMotionSubspace(B_cup, cluster_i->Psi_dot_, t3);
+            cluster_i->Xup_.blockDiagonalInertiaTimesMotionSubspace(M_cup, cluster_i->Psi_ddot_, tmp);
+            t3.noalias() += tmp;
             t3 += spatial::swappedForceCrossTimesMatrix(F, S_i);
-            t4 = cluster_i->Xup_.blockDiagonalInertiaTimesMotionSubspace(B_cup.transpose(), S_i);
+            cluster_i->Xup_.blockDiagonalInertiaTimesMotionSubspace(B_cup.transpose(), S_i, t4);
 
             // Walk from cluster i to root
             // Use optimized path for single-body clusters (most common case)
@@ -571,8 +578,8 @@ namespace grbda
                     {
                         // Only compute S^T derivative for joints with config-dependent S
                         if (cluster_i->joint_->hasConfigurationDependentS()) {
-                            cluster_i->joint_->evalSTTimesVec_dq(F, st_dq);
-                            dtau_dq.block(ii, ii, num_vel_i, num_vel_i) += st_dq;
+                            cluster_i->joint_->evalSTTimesVec_dq(F, cluster_i->st_dq_workspace_);
+                            dtau_dq.block(ii, ii, num_vel_i, num_vel_i) += cluster_i->st_dq_workspace_;
                         }
                     }
 
@@ -612,8 +619,8 @@ namespace grbda
                     {
                         // Only compute S^T derivative for joints with config-dependent S
                         if (cluster_i->joint_->hasConfigurationDependentS()) {
-                            cluster_i->joint_->evalSTTimesVec_dq(F, st_dq);
-                            dtau_dq.block(ii, ii, num_vel_i, num_vel_i) += st_dq;
+                            cluster_i->joint_->evalSTTimesVec_dq(F, cluster_i->st_dq_workspace_);
+                            dtau_dq.block(ii, ii, num_vel_i, num_vel_i) += cluster_i->st_dq_workspace_;
                         }
                     }
 
@@ -668,7 +675,6 @@ namespace grbda
         idDeriv_F4_.setZero();
 
         // Forward Pass - compute quantities and transform to world frame, storing in nodes
-        DMat<Scalar> alpha, beta, Sdotqd_q;
         for (int i = 0; i < nClusters; i++)
         {
             auto &cluster = cluster_nodes_[i];
@@ -697,6 +703,10 @@ namespace grbda
             const DVec<Scalar> cluster_qd = qd.segment(cluster->velocity_index_, num_vel);
             const DVec<Scalar> cluster_qdd = qdd.segment(cluster->velocity_index_, num_vel);
             const bool has_config_dependent_S = cluster->joint_->hasConfigurationDependentS();
+
+            DMat<Scalar> &alpha = cluster->alpha_workspace_;
+            DMat<Scalar> &beta = cluster->beta_workspace_;
+            DMat<Scalar> &Sdotqd_q = cluster->Sdotqd_q_workspace_;
 
             if (has_config_dependent_S) {
                 cluster->joint_->evalSTimesVec_dq(cluster_qd, alpha);
@@ -770,7 +780,6 @@ namespace grbda
         }
 
         // Backward Pass
-        DMat<Scalar> st_dq;
         for (int i = nClusters - 1; i >= 0; i--)
         {
             auto &cluster_i = cluster_nodes_[i];
@@ -812,8 +821,8 @@ namespace grbda
 
             // contractT(S_q, f)
             if (cluster_i->joint_->hasConfigurationDependentS()) {
-                cluster_i->joint_->evalSTTimesVec_dq(cluster_i->F_, st_dq);
-                dtau_dq.block(ii, ii, num_vel_i, num_vel_i) += st_dq;
+                cluster_i->joint_->evalSTTimesVec_dq(cluster_i->F_, cluster_i->st_dq_workspace_);
+                dtau_dq.block(ii, ii, num_vel_i, num_vel_i) += cluster_i->st_dq_workspace_;
             }
 
             if (cluster_i->parent_index_ >= 0)

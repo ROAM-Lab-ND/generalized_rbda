@@ -755,6 +755,27 @@ namespace grbda
         }
 
         template <typename Scalar>
+        void GeneralizedTransform<Scalar>::blockDiagonalInertiaTimesMotionSubspace(
+            const DMat<Scalar> &Ic_block_diag, const DMat<Scalar> &S, DMat<Scalar> &out) const
+        {
+            const int num_cols = S.cols();
+
+            if (num_output_bodies_ == 1)
+            {
+                out.noalias() = Ic_block_diag.template block<6, 6>(0, 0) * S;
+                return;
+            }
+
+            out.setZero(6 * num_output_bodies_, num_cols);
+            for (int body = 0; body < num_output_bodies_; body++)
+            {
+                const auto Ic_block = Ic_block_diag.template block<6, 6>(6 * body, 6 * body);
+                const auto S_block = S.template middleRows<6>(6 * body);
+                out.template middleRows<6>(6 * body).noalias() = Ic_block * S_block;
+            }
+        }
+
+        template <typename Scalar>
         DMat<Scalar> GeneralizedTransform<Scalar>::transformForceSubspaceToParent(
             const DMat<Scalar> &F_in) const
         {

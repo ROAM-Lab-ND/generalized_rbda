@@ -165,8 +165,22 @@ namespace grbda
         }
 
         for (auto &cluster : cluster_nodes_)
+        {
             cluster->qdd_for_subtree_due_to_subtree_root_joint_qdd
                 .setZero(num_degrees_of_freedom, cluster->num_velocities_);
+
+            const int mss_dim = cluster->motion_subspace_dimension_;
+            const int num_vel = cluster->num_velocities_;
+            cluster->t1_workspace_.resize(mss_dim, num_vel);
+            cluster->t2_workspace_.resize(mss_dim, num_vel);
+            cluster->t3_workspace_.resize(mss_dim, num_vel);
+            cluster->t4_workspace_.resize(mss_dim, num_vel);
+            cluster->t_tmp_workspace_.resize(mss_dim, num_vel);
+            cluster->alpha_workspace_.resize(mss_dim, num_vel);
+            cluster->beta_workspace_.resize(mss_dim, num_vel);
+            cluster->Sdotqd_q_workspace_.resize(mss_dim, num_vel);
+            cluster->st_dq_workspace_.resize(num_vel, num_vel);
+        }
 
         for (auto &contact_point : this->contact_points_)
         {
