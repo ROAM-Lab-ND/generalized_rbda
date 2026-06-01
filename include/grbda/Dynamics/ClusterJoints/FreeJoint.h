@@ -73,8 +73,6 @@ namespace grbda
 
             JointState<double> randomJointState(bool enforce_position_constraint = true) const override;
 
-            // Derivative methods
-            void getSdotqd_q(DMat<Scalar>& out) const override;
 
         private:
             const Body<Scalar> body_;

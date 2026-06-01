@@ -73,11 +73,6 @@ namespace grbda
             return bodies_joints_and_reflected_inertias;
         }
 
-        template <typename Scalar>
-        void RevoluteWithRotor<Scalar>::getSdotqd_q(DMat<Scalar>& out) const
-        {
-            out.setZero(12, 1);
-        }
 
         template class RevoluteWithRotor<double>;
         template class RevoluteWithRotor<std::complex<double>>;

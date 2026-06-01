@@ -76,20 +76,6 @@ namespace grbda
             return bodies_joints_and_ref_inertias;
         }
 
-        // Derivative methods for Free joint
-
-        template <typename Scalar, typename OrientationRepresentation>
-        void Free<Scalar, OrientationRepresentation>::getSdotqd_q(DMat<Scalar>& out) const
-        {
-            out.setZero(6, 6);
-        }
-
-        // Template specializations for complex<double> (used by complex-step differentiation)
-        template <>
-        void Free<std::complex<double>, ori_representation::Quaternion>::getSdotqd_q(DMat<std::complex<double>>& out) const
-        {
-            out.setZero(6, 6);
-        }
 
         template class Free<double, ori_representation::RollPitchYaw>;
         template class Free<double, ori_representation::Quaternion>;

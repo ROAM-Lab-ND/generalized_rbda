@@ -64,7 +64,6 @@ namespace grbda
 
             // Derivative interface for configuration-dependent motion subspaces
             // Returns zero by default for cluster joints
-            // Override for joints with absolute coordinates or configuration-dependent kinematics
 
             // Returns ∂(Ṡ·q̇)/∂q as a (6*num_bodies x nv) matrix
             virtual void getSdotqd_q(DMat<Scalar>& out) const {
@@ -75,7 +74,6 @@ namespace grbda
             // Default returns zero (for joints with constant S). Override for configuration-dependent S.
 
             // Returns true if this joint has configuration-dependent motion subspace S(q)
-            // Override to return true for joints that use CasADi (GenericJoint)
             virtual bool hasConfigurationDependentS() const { return false; }
 
             // Returns ∂(S*b)/∂q as a (6*num_bodies x nv) matrix
