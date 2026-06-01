@@ -192,43 +192,153 @@ void testInverseDynamicsDerivativesComplexStep(
     EXPECT_LT(max_error_dqdot, tol_dqdot) << "dtau/dqdot error exceeds tolerance";
 }
 
-// Build a complex-scalar copy of a real model by cloning body geometry from each cluster.
-// Supports single-body clusters with axis-aligned revolute joints (np == nv == 1).
+// Helper: infer revolute axis from the first 6 rows of a motion subspace column.
+static ori::CoordinateAxis axisFromS(const DMat<double>& S, int col = 0)
+{
+    if (std::abs(S(0, col)) > 0.9) return ori::CoordinateAxis::X;
+    if (std::abs(S(1, col)) > 0.9) return ori::CoordinateAxis::Y;
+    if (std::abs(S(2, col)) > 0.9) return ori::CoordinateAxis::Z;
+    throw std::runtime_error("cloneToComplex: non-axis-aligned revolute joint");
+}
+
+// Helper: cast a double Body to complex<double>, rewriting its parent name via src.bodies().
+static SpatialInertia<std::complex<double>> castInertia(const Body<double>& b)
+{
+    using CD = std::complex<double>;
+    return SpatialInertia<CD>(CD(b.inertia_.getMass()),
+                              b.inertia_.getCOM().cast<CD>(),
+                              b.inertia_.getInertiaTensor().cast<CD>());
+}
+static spatial::Transform<std::complex<double>> castXtree(const Body<double>& b)
+{
+    using CD = std::complex<double>;
+    return spatial::Transform<CD>(b.Xtree_.getRotation().cast<CD>(),
+                                  b.Xtree_.getTranslation().cast<CD>());
+}
+static std::string parentName(const Body<double>& b, const ClusterTreeModel<double>& src)
+{
+    return b.parent_index_ < 0 ? "ground" : src.bodies()[b.parent_index_].name_;
+}
+
+// Build a complex-scalar copy of a real model by reconstructing each cluster.
+// Supports Revolute, RevoluteWithRotor, and RevoluteTripleWithRotor clusters.
 ClusterTreeModel<std::complex<double>> cloneToComplex(const ClusterTreeModel<double>& src) {
     using CD = std::complex<double>;
+    using namespace ClusterJoints;
     ClusterTreeModel<CD> dst;
 
     for (const auto& cluster : src.clusters()) {
-        const auto& bodies = cluster->bodies();
-        const int np = cluster->num_positions_;
-        const int nv = cluster->num_velocities_;
+        const auto& bodies  = cluster->bodies();
+        const auto  jtype   = cluster->joint_->type();
+        const auto& G       = cluster->joint_->G(); // loop constraint G matrix
+        const auto& S       = cluster->S();
 
-        if ((int)bodies.size() != 1 || np != 1 || nv != 1)
+        if (jtype == ClusterJointTypes::Revolute)
+        {
+            // Single-body, single-DOF revolute cluster
+            const auto& b = bodies[0];
+            dst.template appendBody<Revolute<CD>>(
+                b.name_, castInertia(b), parentName(b, src), castXtree(b),
+                axisFromS(S));
+        }
+        else if (jtype == ClusterJointTypes::RevoluteWithRotor)
+        {
+            // 2-body cluster: bodies[0]=link, bodies[1]=rotor.
+            // G is 2x1: G(0)=1, G(1)=gear_ratio.
+            const auto& link  = bodies[0];
+            const auto& rotor = bodies[1];
+            const double gear_ratio = G(1, 0);
+
+            Body<CD> link_c  = dst.registerBody(link.name_,  castInertia(link),
+                                                 parentName(link,  src), castXtree(link));
+            Body<CD> rotor_c = dst.registerBody(rotor.name_, castInertia(rotor),
+                                                 parentName(rotor, src), castXtree(rotor));
+
+            // Axes from singleJoints(): [link_joint, rotor_joint]
+            auto getRevAxis = [](const std::shared_ptr<Joints::Base<double>>& j) {
+                auto* rev = dynamic_cast<Joints::Revolute<double>*>(j.get());
+                if (!rev) throw std::runtime_error("cloneToComplex: expected revolute joint");
+                return rev->getAxis();
+            };
+            const auto sj = cluster->joint_->singleJoints();
+            const ori::CoordinateAxis link_axis  = getRevAxis(sj[0]);
+            const ori::CoordinateAxis rotor_axis = getRevAxis(sj[1]);
+
+            GearedTransmissionModule<CD> mod{link_c, rotor_c,
+                                             link.name_ + "_joint",
+                                             rotor.name_ + "_joint",
+                                             link_axis, rotor_axis,
+                                             CD(gear_ratio)};
+            dst.template appendRegisteredBodiesAsCluster<RevoluteWithRotor<CD>>(
+                cluster->name_, mod);
+        }
+        else if (jtype == ClusterJointTypes::RevoluteTripleWithRotor)
+        {
+            // 6-body cluster: [link1, link2, link3, rotor1, rotor2, rotor3].
+            // G is 6x3: top 3x3 = I, bottom 3x3 encodes gear*belt products.
+            // For module i (0-indexed), the bottom row i of G gives the cumulative
+            // gear*belt products for belts 0..i.  We set gear_ratio=1 and recover
+            // belt_ratios from the row: belt[0]=G(3+i,0), belt[k]=G(3+i,k)/G(3+i,k-1).
+            const auto& link1  = bodies[0];
+            const auto& link2  = bodies[1];
+            const auto& link3  = bodies[2];
+            const auto& rotor1 = bodies[3];
+            const auto& rotor2 = bodies[4];
+            const auto& rotor3 = bodies[5];
+
+            Body<CD> link1_c  = dst.registerBody(link1.name_,  castInertia(link1),  parentName(link1,  src), castXtree(link1));
+            Body<CD> link2_c  = dst.registerBody(link2.name_,  castInertia(link2),  parentName(link2,  src), castXtree(link2));
+            Body<CD> link3_c  = dst.registerBody(link3.name_,  castInertia(link3),  parentName(link3,  src), castXtree(link3));
+            Body<CD> rotor1_c = dst.registerBody(rotor1.name_, castInertia(rotor1), parentName(rotor1, src), castXtree(rotor1));
+            Body<CD> rotor2_c = dst.registerBody(rotor2.name_, castInertia(rotor2), parentName(rotor2, src), castXtree(rotor2));
+            Body<CD> rotor3_c = dst.registerBody(rotor3.name_, castInertia(rotor3), parentName(rotor3, src), castXtree(rotor3));
+
+            // Axes from singleJoints(): [link1, link2, link3, rotor1, rotor2, rotor3]
+            auto getRevAxis = [](const std::shared_ptr<Joints::Base<double>>& j) {
+                auto* rev = dynamic_cast<Joints::Revolute<double>*>(j.get());
+                if (!rev) throw std::runtime_error("cloneToComplex: expected revolute joint");
+                return rev->getAxis();
+            };
+            const auto sj = cluster->joint_->singleJoints();
+            const ori::CoordinateAxis ax1  = getRevAxis(sj[0]);
+            const ori::CoordinateAxis ax2  = getRevAxis(sj[1]);
+            const ori::CoordinateAxis ax3  = getRevAxis(sj[2]);
+            const ori::CoordinateAxis rax1 = getRevAxis(sj[3]);
+            const ori::CoordinateAxis rax2 = getRevAxis(sj[4]);
+            const ori::CoordinateAxis rax3 = getRevAxis(sj[5]);
+
+            // Extract belt products from G rows 3,4,5.
+            // Module 1 (1 belt):  G(3,0)         = g1*b1
+            // Module 2 (2 belts): G(4,0), G(4,1) = g2*b1, g2*b1*b2
+            // Module 3 (3 belts): G(5,0..2)      = g3*b1, g3*b1*b2, g3*b1*b2*b3
+            // We set gear_ratio=1 and reconstruct belt_ratios so that
+            // beltMatrixRowFromBeltRatios(belt_ratios) == G.row(3+i).head(i+1).
+            // belt[0]=G(3+i,0), belt[k]=G(3+i,k)/G(3+i,k-1) for k>0.
+            Eigen::Matrix<CD, 1, 1> br1;
+            br1(0) = CD(G(3, 0));
+
+            Eigen::Matrix<CD, 2, 1> br2;
+            br2(0) = CD(G(4, 0));
+            br2(1) = CD(G(4, 1) / G(4, 0));
+
+            Eigen::Matrix<CD, 3, 1> br3;
+            br3(0) = CD(G(5, 0));
+            br3(1) = CD(G(5, 1) / G(5, 0));
+            br3(2) = CD(G(5, 2) / G(5, 1));
+
+            ParallelBeltTransmissionModule<1, CD> mod1{link1_c, rotor1_c, ax1, rax1, CD(1.), br1};
+            ParallelBeltTransmissionModule<2, CD> mod2{link2_c, rotor2_c, ax2, rax2, CD(1.), br2};
+            ParallelBeltTransmissionModule<3, CD> mod3{link3_c, rotor3_c, ax3, rax3, CD(1.), br3};
+
+            dst.template appendRegisteredBodiesAsCluster<RevoluteTripleWithRotor<CD>>(
+                cluster->name_, mod1, mod2, mod3);
+        }
+        else
+        {
             throw std::runtime_error(
-                "cloneToComplex: unsupported cluster (nb=" + std::to_string(bodies.size()) +
-                ", np=" + std::to_string(np) + ", nv=" + std::to_string(nv) + ")");
-
-        const auto& b = bodies[0];
-        const std::string parent_name =
-            b.parent_index_ < 0 ? "ground" : src.bodies()[b.parent_index_].name_;
-
-        SpatialInertia<CD> inertia_c(
-            CD(b.inertia_.getMass()),
-            b.inertia_.getCOM().template cast<CD>(),
-            b.inertia_.getInertiaTensor().template cast<CD>());
-        spatial::Transform<CD> Xtree_c(
-            b.Xtree_.getRotation().template cast<CD>(),
-            b.Xtree_.getTranslation().template cast<CD>());
-
-        const DMat<double>& S = cluster->S();
-        ori::CoordinateAxis axis;
-        if      (std::abs(S(0)) > 0.9) axis = ori::CoordinateAxis::X;
-        else if (std::abs(S(1)) > 0.9) axis = ori::CoordinateAxis::Y;
-        else if (std::abs(S(2)) > 0.9) axis = ori::CoordinateAxis::Z;
-        else throw std::runtime_error("cloneToComplex: non-axis-aligned revolute joint");
-
-        dst.template appendBody<ClusterJoints::Revolute<CD>>(
-            b.name_, inertia_c, parent_name, Xtree_c, axis);
+                "cloneToComplex: unsupported cluster type (nb=" +
+                std::to_string(bodies.size()) + ")");
+        }
     }
 
     return dst;
@@ -413,10 +523,9 @@ TEST(InverseDynamicsDerivativesComplexStep, KukaLWR) {
 }
 
 TEST(InverseDynamicsDerivativesComplexStep, TeleopArm) {
-    TeleopArm<double>               robot_real;
-    TeleopArm<std::complex<double>> robot_complex;
+    TeleopArm robot_real;
     ClusterTreeModel<double>               model_real    = robot_real.buildClusterTreeModel();
-    ClusterTreeModel<std::complex<double>> model_complex = robot_complex.buildClusterTreeModel();
+    ClusterTreeModel<std::complex<double>> model_complex = cloneToComplex(model_real);
 
     ASSERT_EQ(model_real.getNumDegreesOfFreedom(), 7);
 

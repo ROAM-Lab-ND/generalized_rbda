@@ -188,7 +188,7 @@ namespace grbda
             auto &node = nodes_[i];
             const int num_bodies = node->Xa_.getNumOutputBodies();
 
-            // Initialize composite inertia (block-diagonal) with each inertia in world frame
+            // Initialize composite inertia (one 6x6 block per body) with each inertia in world frame
             node->Ic0_.resize(num_bodies);
             node->S0_.resize(num_bodies);
 
@@ -196,17 +196,12 @@ namespace grbda
             for (int body = 0; body < num_bodies; body++)
             {
                 const auto &Xa_body = node->Xa_.getTransformForOutputBody(body);
-                // IC0{i}(inds, inds) = Xj.'*model.I{i}(inds,inds)*Xj
-                // where Xj = X0{i}(inds, :) and X0 maps world->body
-                // So IC0 = X^{-T} * I_body * X^{-1}
                 node->Ic0_[body] =
                     Xa_body.inverseTransformSpatialInertia(
                         node->I_.template block<6, 6>(6 * body, 6 * body));
 
-                // S0{i}(inds, :) = Xj\S{i}(inds,:)  =>  S0 = X^{-1} * S_body
                 const auto S_body_block = node->S().template middleRows<6>(6 * body);
-                node->S0_[body] =
-                    Xa_body.inverseTransformMotionSubspace(S_body_block);
+                node->S0_[body] = Xa_body.inverseTransformMotionSubspace(S_body_block);
             }
         }
 
@@ -230,11 +225,9 @@ namespace grbda
                 node_i->Ftmp_[body].noalias() =
                     node_i->Ic0_[body] * node_i->S0_[body];
 
-                // Diagonal block: H(ii,ii) += S0[body]' * Ftmp[body]
                 H_.block(vel_idx_i, vel_idx_i, num_vel_i, num_vel_i).noalias() +=
                     node_i->S0_[body].transpose() * node_i->Ftmp_[body];
 
-                // F(:, ii) = blockRowSum(Ftmp) - ancestors only see the sum of forces from the cluster
                 F_.middleCols(vel_idx_i, num_vel_i).noalias() +=
                     node_i->Ftmp_[body];
             }

@@ -142,7 +142,7 @@ TEST(InverseDynamicsDerivatives, MITHumanoidQuaternionv2) {
 }
 
 TEST(InverseDynamicsDerivatives, TeleopArm) {
-    TeleopArm<> robot;
+    TeleopArm robot;
     ClusterTreeModel<double> model = robot.buildClusterTreeModel();
     model.setState(randomModelState(model));
     testInverseDynamicsDerivativesFiniteDifference(model, "TeleopArm", 1e-6, 1e-6);
