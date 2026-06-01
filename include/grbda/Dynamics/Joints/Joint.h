@@ -80,27 +80,9 @@ namespace grbda
             void updateKinematics(const DVec<Scalar> &q, const DVec<Scalar> &qd) override
             {
                 const int& num_ori_param = OrientationRepresentation::num_ori_parameter;
-
-                // Extract orientation parameters and normalize if quaternion
-                auto orientation_segment = q.template tail<num_ori_param>();
-
-                if constexpr (num_ori_param == 4) {
-                    // For quaternions, normalize before converting to rotation matrix
-                    // For complex-step differentiation, normalization is differentiable and the
-                    // imaginary part will carry through correctly via the chain rule.
-                    Quat<Scalar> quat_segment = orientation_segment;
-                    Scalar norm_val = quat_segment.norm();
-                    quat_segment = quat_segment / norm_val;
-
-                    const RotMat<Scalar> R = OrientationRepresentation::getRotationMatrix(quat_segment);
-                    const Vec3<Scalar> q_pos = q.template head<3>();
-                    this->XJ_ = spatial::Transform<Scalar>(R, q_pos);
-                } else {
-                    // For RPY, use as-is
-                    const RotMat<Scalar> R = OrientationRepresentation::getRotationMatrix(orientation_segment);
-                    const Vec3<Scalar> q_pos = q.template head<3>();
-                    this->XJ_ = spatial::Transform<Scalar>(R, q_pos);
-                }
+                const RotMat<Scalar> R = OrientationRepresentation::getRotationMatrix(
+                    q.template tail<num_ori_param>());
+                this->XJ_ = spatial::Transform<Scalar>(R, q.template head<3>());
             }
 
             OrientationRepresentation orientation_representation_;
