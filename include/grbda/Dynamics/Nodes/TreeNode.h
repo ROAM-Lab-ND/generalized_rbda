@@ -73,9 +73,9 @@ namespace grbda
         DMat<Scalar> I_;  // spatial inertia
         DMat<Scalar> Ic_; // compisite rigid body inertia
 
-        DMat<Scalar> Ic0_; // compisite rigid body inertia in World frame
-        DMat<Scalar> S0_;  // motion subspace in World frame
-        DMat<Scalar> Ftmp_; // temporary variable used in CRBA 
+        std::vector<Mat6<Scalar>, Eigen::aligned_allocator<Mat6<Scalar>>> Ic0_; // composite rigid body inertia in World frame, one 6x6 block per body
+        std::vector<D6Mat<Scalar>, Eigen::aligned_allocator<D6Mat<Scalar>>> S0_;   // motion subspace in World frame, one 6xNv block per body
+        std::vector<D6Mat<Scalar>, Eigen::aligned_allocator<D6Mat<Scalar>>> Ftmp_; // temporary variable used in CRBA, one 6xNv block per body
 
 
 

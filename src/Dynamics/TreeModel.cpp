@@ -189,8 +189,8 @@ namespace grbda
             const int num_bodies = node->Xa_.getNumOutputBodies();
 
             // Initialize composite inertia (block-diagonal) with each inertia in world frame
-            node->Ic0_.resize(6 * num_bodies, 6 * num_bodies);
-            node->S0_.resize(6 * num_bodies, node->num_velocities_);
+            node->Ic0_.resize(num_bodies);
+            node->S0_.resize(num_bodies);
 
             // Transform down to frame {0}, block by block
             for (int body = 0; body < num_bodies; body++)
@@ -199,13 +199,13 @@ namespace grbda
                 // IC0{i}(inds, inds) = Xj.'*model.I{i}(inds,inds)*Xj
                 // where Xj = X0{i}(inds, :) and X0 maps world->body
                 // So IC0 = X^{-T} * I_body * X^{-1}
-                node->Ic0_.template block<6, 6>(6 * body, 6 * body) =
+                node->Ic0_[body] =
                     Xa_body.inverseTransformSpatialInertia(
                         node->I_.template block<6, 6>(6 * body, 6 * body));
 
                 // S0{i}(inds, :) = Xj\S{i}(inds,:)  =>  S0 = X^{-1} * S_body
                 const auto S_body_block = node->S().template middleRows<6>(6 * body);
-                node->S0_.template middleRows<6>(6 * body) =
+                node->S0_[body] =
                     Xa_body.inverseTransformMotionSubspace(S_body_block);
             }
         }
@@ -218,45 +218,42 @@ namespace grbda
         for (int i = n - 1; i >= 0; i--)
         {
             auto &node_i = nodes_[i];
-            const int vel_idx_i = node_i->velocity_index_;
-            const int num_vel_i = node_i->num_velocities_;
-            const int num_bodies = node_i->Xa_.getNumOutputBodies();
+            const int & vel_idx_i = node_i->velocity_index_;
+            const int & num_vel_i = node_i->num_velocities_;
+            const int & num_bodies = node_i->Xa_.getNumOutputBodies();
 
             // Compute Ftmp = IC0{i} * S0{i} (block-diagonal multiplication)
-            node_i->Ftmp_ .resize(6 * num_bodies, num_vel_i);
+            node_i->Ftmp_.resize(num_bodies);
+            H_.block(vel_idx_i, vel_idx_i, num_vel_i, num_vel_i).setZero();
             for (int body = 0; body < num_bodies; body++)
             {
-                node_i->Ftmp_.template middleRows<6>(6 * body).noalias() =
-                    node_i->Ic0_.template block<6, 6>(6 * body, 6 * body) *
-                    node_i->S0_.template middleRows<6>(6 * body);
-            }
+                node_i->Ftmp_[body].noalias() =
+                    node_i->Ic0_[body] * node_i->S0_[body];
 
-            // Diagonal block: H(ii,ii) = S0{i}'*Ftmp
-            H_.block(vel_idx_i, vel_idx_i, num_vel_i, num_vel_i).noalias() =
-                node_i->S0_.transpose() * node_i->Ftmp_;
+                // Diagonal block: H(ii,ii) += S0[body]' * Ftmp[body]
+                H_.block(vel_idx_i, vel_idx_i, num_vel_i, num_vel_i).noalias() +=
+                    node_i->S0_[body].transpose() * node_i->Ftmp_[body];
 
-            // F(:, ii) = blockRowSum(Ftmp) - ancestors only see the sum of forces from the cluster
-            for (int body = 0; body < num_bodies; body++)
-            {
+                // F(:, ii) = blockRowSum(Ftmp) - ancestors only see the sum of forces from the cluster
                 F_.middleCols(vel_idx_i, num_vel_i).noalias() +=
-                    node_i->Ftmp_.template middleRows<6>(6 * body);
+                    node_i->Ftmp_[body];
             }
 
             if (node_i->parent_index_ >= 0)
             {
-                const int parent = node_i->parent_index_;
-                const int vel_idx_parent = nodes_[parent]->velocity_index_;
-                const int num_vel_parent = nodes_[parent]->num_velocities_;
+                const int & parent = node_i->parent_index_;
+                const int & vel_idx_parent = nodes_[parent]->velocity_index_;
+                const int & num_vel_parent = nodes_[parent]->num_velocities_;
 
                 // Get subtree velocity indices (all velocities from node i and its descendants)
                 const int & subtree_start = vel_idx_i;
                 const int & subtree_size = node_i->subtree_num_velocities_;
 
                 // parent_body_subindex: which body in the parent cluster does this cluster attach to
-                const int parent_subindex = node_i->Xup_.transform_and_parent_subindex(0).second;
+                const int & parent_subindex = node_i->Xup_.transform_and_parent_subindex(0).second;
 
                 // Sblock = S0{p(i)}(inds, :) - the parent's motion subspace for the connecting body
-                const auto Sblock = nodes_[parent]->S0_.template middleRows<6>(6 * parent_subindex);
+                const auto &Sblock = nodes_[parent]->S0_[parent_subindex];
 
                 // H(pp, vi) = Sblock'*F(:, vi)
                 H_.block(vel_idx_parent, subtree_start, num_vel_parent, subtree_size).noalias() =
@@ -267,10 +264,10 @@ namespace grbda
 
                 // Accumulate composite inertia to parent: IC0{p(i)}(inds, inds) += blockDiagSum(IC0{i})
                 // blockDiagSum sums all 6x6 diagonal blocks into one 6x6 matrix
-                auto parent_IC0_block = nodes_[parent]->Ic0_.template block<6, 6>(6 * parent_subindex, 6 * parent_subindex);
+                auto &parent_IC0_block = nodes_[parent]->Ic0_[parent_subindex];
                 for (int body = 0; body < num_bodies; body++)
                 {
-                    parent_IC0_block.noalias() += node_i->Ic0_.template block<6, 6>(6 * body, 6 * body);
+                    parent_IC0_block.noalias() += node_i->Ic0_[body];
                 }
             }
         }
