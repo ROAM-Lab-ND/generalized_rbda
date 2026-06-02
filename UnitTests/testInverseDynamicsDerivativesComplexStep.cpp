@@ -511,10 +511,8 @@ TEST(InverseDynamicsDerivativesComplexStep, MITHumanoidQuaternion) {
 }
 
 TEST(InverseDynamicsDerivativesComplexStep, KukaLWR) {
-    KukaLWR<double>               robot_real;
-    KukaLWR<std::complex<double>> robot_complex;
-    ClusterTreeModel<double>               model_real    = robot_real.buildClusterTreeModel();
-    ClusterTreeModel<std::complex<double>> model_complex = robot_complex.buildClusterTreeModel();
+    ClusterTreeModel<double> model_real(SOURCE_DIRECTORY "/robot-models/kuka_lwr_4plus.urdf");
+    ClusterTreeModel<std::complex<double>> model_complex = cloneToComplex(model_real);
 
     model_real.setState(randomModelState(model_real));
 

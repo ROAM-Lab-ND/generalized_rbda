@@ -12,7 +12,6 @@
 #include "grbda/Robots/PlanarLegLinkage.hpp"
 #include "grbda/Robots/SingleRigidBody.hpp"
 #include "grbda/Robots/DoublePendulum.hpp"
-#include "grbda/Robots/KukaLWR.hpp"
 #include "grbda/Robots/SerialChains/RevoluteChainWithRotor.hpp"
 #include "grbda/Robots/SerialChains/RevolutePairChain.hpp"
 #include "grbda/Robots/SerialChains/RevolutePairChainWithRotor.hpp"
