@@ -344,109 +344,24 @@ namespace grbda
   };
 
   /*!
-   * Complex-step safe matrix inverse for std::complex<double>
-   * Uses algebraic inverse (no pivoting/decomposition) for complex-step safety
+   * Adapts Eigen's .inverse() to the solve() interface expected by CorrectMatrixInverseType.
+   * Used for scalar types where a decomposition-based solver is not available (e.g. complex, CasADi).
    */
-  class ComplexDoubleInverse
+  template <typename Scalar>
+  class ExplicitInverse
   {
   public:
-    ComplexDoubleInverse() {}
-    ComplexDoubleInverse(const DMat<std::complex<double>> &mat)
-    {
-      // For 1x1 matrices, inverse is just 1/mat(0,0)
-      if (mat.rows() == 1 && mat.cols() == 1) {
-        Ainv_.resize(1, 1);
-        Ainv_(0, 0) = std::complex<double>(1.0, 0.0) / mat(0, 0);
-      }
-      // For 2x2 matrices, use analytical formula: inv([[a,b],[c,d]]) = (1/det)*[[d,-b],[-c,a]]
-      // This is complex-step safe as it uses only algebraic operations
-      else if (mat.rows() == 2 && mat.cols() == 2) {
-        Ainv_.resize(2, 2);
-        const auto a = mat(0, 0);
-        const auto b = mat(0, 1);
-        const auto c = mat(1, 0);
-        const auto d = mat(1, 1);
-        const auto det = a * d - b * c;
-        Ainv_(0, 0) =  d / det;
-        Ainv_(0, 1) = -b / det;
-        Ainv_(1, 0) = -c / det;
-        Ainv_(1, 1) =  a / det;
-      }
-      // For 3x3 matrices, use analytical formula with cofactor expansion
-      // This is complex-step safe as it uses only algebraic operations
-      else if (mat.rows() == 3 && mat.cols() == 3) {
-        Ainv_.resize(3, 3);
-        
-        // Compute cofactors
-        const auto m00 = mat(1,1)*mat(2,2) - mat(1,2)*mat(2,1);
-        const auto m01 = mat(1,2)*mat(2,0) - mat(1,0)*mat(2,2);
-        const auto m02 = mat(1,0)*mat(2,1) - mat(1,1)*mat(2,0);
-        
-        const auto m10 = mat(0,2)*mat(2,1) - mat(0,1)*mat(2,2);
-        const auto m11 = mat(0,0)*mat(2,2) - mat(0,2)*mat(2,0);
-        const auto m12 = mat(0,1)*mat(2,0) - mat(0,0)*mat(2,1);
-        
-        const auto m20 = mat(0,1)*mat(1,2) - mat(0,2)*mat(1,1);
-        const auto m21 = mat(0,2)*mat(1,0) - mat(0,0)*mat(1,2);
-        const auto m22 = mat(0,0)*mat(1,1) - mat(0,1)*mat(1,0);
-        
-        // Compute determinant using first row
-        const auto det = mat(0,0)*m00 + mat(0,1)*m01 + mat(0,2)*m02;
-        
-        // Transpose of cofactor matrix divided by determinant
-        Ainv_(0,0) = m00 / det;
-        Ainv_(0,1) = m10 / det;
-        Ainv_(0,2) = m20 / det;
-        Ainv_(1,0) = m01 / det;
-        Ainv_(1,1) = m11 / det;
-        Ainv_(1,2) = m21 / det;
-        Ainv_(2,0) = m02 / det;
-        Ainv_(2,1) = m12 / det;
-        Ainv_(2,2) = m22 / det;
-      }
-      // For larger matrices, fall back to .inverse() with warning
-      else {
-        Ainv_ = mat.inverse();
-      }
-    }
+    ExplicitInverse() {}
+    ExplicitInverse(const DMat<Scalar> &mat) : Ainv_(mat.inverse()) {}
 
     template <typename Derived>
-    DMat<std::complex<double>> solve(const Eigen::MatrixBase<Derived> &b) const
+    DMat<Scalar> solve(const Eigen::MatrixBase<Derived> &b) const
     {
       return Ainv_ * b;
     }
 
   private:
-    DMat<std::complex<double>> Ainv_;
-  };
-
-  /*!
-   * Complex-step safe matrix inverse for std::complex<float>
-   */
-  class ComplexFloatInverse
-  {
-  public:
-    ComplexFloatInverse() {}
-    ComplexFloatInverse(const DMat<std::complex<float>> &mat)
-    {
-      // For 1x1 matrices, inverse is just 1/mat(0,0)
-      if (mat.rows() == 1 && mat.cols() == 1) {
-        Ainv_.resize(1, 1);
-        Ainv_(0, 0) = std::complex<float>(1.0f, 0.0f) / mat(0, 0);
-      }
-      else {
-        Ainv_ = mat.inverse();
-      }
-    }
-
-    template <typename Derived>
-    DMat<std::complex<float>> solve(const Eigen::MatrixBase<Derived> &b) const
-    {
-      return Ainv_ * b;
-    }
-
-  private:
-    DMat<std::complex<float>> Ainv_;
+    DMat<Scalar> Ainv_;
   };
 
   template <typename Scalar>
@@ -455,26 +370,22 @@ namespace grbda
     using type = Eigen::ColPivHouseholderQR<DMat<Scalar>>;
   };
 
-  // Specialization for casadi::SX
   template <>
   struct CorrectMatrixInverseType<casadi::SX>
   {
     using type = CasadiInverse;
   };
 
-  // Complex-step safe specialization for std::complex<double>
-  // Use direct inverse instead of decompositions with pivoting
   template <>
   struct CorrectMatrixInverseType<std::complex<double>>
   {
-    using type = ComplexDoubleInverse;
+    using type = ExplicitInverse<std::complex<double>>;
   };
 
-  // Complex-step safe specialization for std::complex<float>
   template <>
   struct CorrectMatrixInverseType<std::complex<float>>
   {
-    using type = ComplexFloatInverse;
+    using type = ExplicitInverse<std::complex<float>>;
   };
 
   /*!
