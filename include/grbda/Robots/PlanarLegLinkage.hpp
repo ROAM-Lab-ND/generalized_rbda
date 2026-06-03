@@ -9,7 +9,6 @@ namespace grbda
     class PlanarLegLinkage : public Robot<Scalar>
     {
     public:
-        EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
         PlanarLegLinkage();
         ClusterTreeModel<Scalar> buildClusterTreeModel() const override;

@@ -21,7 +21,6 @@ namespace grbda
     class TelloRotorsNoConstraints : public Tello<Scalar>
     {
     public:
-        EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
         TelloRotorsNoConstraints() {}
 

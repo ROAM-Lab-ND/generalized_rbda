@@ -2,6 +2,7 @@
 #define GRBDA_CASADI_DERIVATIVES_H
 
 #include <casadi/casadi.hpp>
+#include <stdexcept>
 #include "grbda/Utils/cppTypes.h"
 #include "grbda/Utils/SpatialTransforms.h"
 
@@ -64,6 +65,8 @@ inline casadi::SX rotationMatrix(char axis, const casadi::SX& angle)
         R(0, 0) =  c; R(0, 1) =  s;
         R(1, 0) = -s; R(1, 1) =  c;
     }
+    else
+        throw std::runtime_error("rotationMatrix: invalid axis '" + std::string(1, axis) + "'");
 
     return R;
 }
@@ -88,6 +91,8 @@ inline casadi::SX revoluteMotionSubspace(char axis)
         S(1) = 1.0;
     else if (axis == 'Z' || axis == 'z')
         S(2) = 1.0;
+    else
+        throw std::runtime_error("revoluteMotionSubspace: invalid axis '" + std::string(1, axis) + "'");
     return S;
 }
 

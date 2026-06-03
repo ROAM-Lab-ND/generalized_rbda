@@ -142,94 +142,132 @@ namespace grbda
     }
 
     /*!
-     * Compute spatial motion cross product.  Faster than the matrix multiplication
-     * version
-     *
-     * This is a general formulation to deal with the the ability of aggregate bodies
-     * to have 6N dimensional spatial velocities
+     * Compute spatial motion cross product into a pre-allocated output vector.
      */
     template <typename T>
-    DVec<T> generalMotionCrossProduct(const DVec<T> &a, const DVec<T> &b)
+    void generalMotionCrossProduct(const DVec<T> &a, const DVec<T> &b, DVec<T> &out)
     {
       const int n = a.rows();
       if (n != b.rows())
         throw std::runtime_error("General Motion Cross Product requires vectors of the same size");
 
       if (n == 6)
-        return motionCrossProduct(a.template head<6>(), b.template head<6>());
+        out = motionCrossProduct(a.template head<6>(), b.template head<6>());
       else if (n % 6 == 0)
       {
-        DVec<T> mv = DVec<T>::Zero(n);
+        out.setZero(n);
         for (int i = 0; i < n / 6; i++)
-          mv.template segment<6>(6 * i) = motionCrossProduct(a.template segment<6>(6 * i),
-                                                             b.template segment<6>(6 * i));
-        return mv;
+          out.template segment<6>(6 * i) = motionCrossProduct(a.template segment<6>(6 * i),
+                                                              b.template segment<6>(6 * i));
       }
       else
         throw std::runtime_error("Invalid number of rows provided to General Motion Cross Product");
     }
 
+    template <typename T>
+    DVec<T> generalMotionCrossProduct(const DVec<T> &a, const DVec<T> &b)
+    {
+      DVec<T> out;
+      generalMotionCrossProduct(a, b, out);
+      return out;
+    }
+
     /*!
-     * Compute motion cross matrix times a matrix: crm(v) * M
-     * This avoids building the full 6x6 cross-product matrix.
+     * Compute motion cross matrix times a matrix: out = crm(v) * M
+     * Writes directly into the pre-allocated output matrix to avoid heap allocation.
      */
     template <typename Scalar>
-    DMat<Scalar> motionCrossTimesMatrix(const DVec<Scalar> &v, const DMat<Scalar> &M)
+    void motionCrossTimesMatrix(const DVec<Scalar> &v, const DMat<Scalar> &M, DMat<Scalar> &out)
     {
       const int n = v.rows();
       const int cols = M.cols();
 
       if (n == 6)
       {
-        // crm(v) structure (from motionCrossMatrix):
-        // [  0  -v2   v1   0    0    0  ]
-        // [ v2   0   -v0   0    0    0  ]
-        // [-v1  v0    0    0    0    0  ]
-        // [  0  -v5   v4   0   -v2   v1 ]
-        // [ v5   0   -v3  v2    0   -v0 ]
-        // [-v4  v3    0  -v1   v0    0  ]
-
-        // Row i of result = dot product of row i of crm(v) with column c of M
-        DMat<Scalar> result(6, cols);
+        out.resize(6, cols);
         for (int c = 0; c < cols; ++c)
         {
-          // Row 0: [0, -v2, v1, 0, 0, 0] . M(:,c)
-          result(0, c) = -v(2)*M(1,c) + v(1)*M(2,c);
-          // Row 1: [v2, 0, -v0, 0, 0, 0] . M(:,c)
-          result(1, c) =  v(2)*M(0,c) - v(0)*M(2,c);
-          // Row 2: [-v1, v0, 0, 0, 0, 0] . M(:,c)
-          result(2, c) = -v(1)*M(0,c) + v(0)*M(1,c);
-          // Row 3: [0, -v5, v4, 0, -v2, v1] . M(:,c)
-          result(3, c) = -v(5)*M(1,c) + v(4)*M(2,c) - v(2)*M(4,c) + v(1)*M(5,c);
-          // Row 4: [v5, 0, -v3, v2, 0, -v0] . M(:,c)
-          result(4, c) =  v(5)*M(0,c) - v(3)*M(2,c) + v(2)*M(3,c) - v(0)*M(5,c);
-          // Row 5: [-v4, v3, 0, -v1, v0, 0] . M(:,c)
-          result(5, c) = -v(4)*M(0,c) + v(3)*M(1,c) - v(1)*M(3,c) + v(0)*M(4,c);
+          out(0, c) = -v(2)*M(1,c) + v(1)*M(2,c);
+          out(1, c) =  v(2)*M(0,c) - v(0)*M(2,c);
+          out(2, c) = -v(1)*M(0,c) + v(0)*M(1,c);
+          out(3, c) = -v(5)*M(1,c) + v(4)*M(2,c) - v(2)*M(4,c) + v(1)*M(5,c);
+          out(4, c) =  v(5)*M(0,c) - v(3)*M(2,c) + v(2)*M(3,c) - v(0)*M(5,c);
+          out(5, c) = -v(4)*M(0,c) + v(3)*M(1,c) - v(1)*M(3,c) + v(0)*M(4,c);
         }
-        return result;
       }
       else if (n % 6 == 0)
       {
-        DMat<Scalar> result = DMat<Scalar>::Zero(n, cols);
+        out.setZero(n, cols);
         const int num_bodies = n / 6;
         for (int b = 0; b < num_bodies; ++b)
         {
           const int o = 6 * b;
           for (int c = 0; c < cols; ++c)
           {
-            result(o+0, c) = -v(o+2)*M(o+1,c) + v(o+1)*M(o+2,c);
-            result(o+1, c) =  v(o+2)*M(o+0,c) - v(o+0)*M(o+2,c);
-            result(o+2, c) = -v(o+1)*M(o+0,c) + v(o+0)*M(o+1,c);
-            result(o+3, c) = -v(o+5)*M(o+1,c) + v(o+4)*M(o+2,c) - v(o+2)*M(o+4,c) + v(o+1)*M(o+5,c);
-            result(o+4, c) =  v(o+5)*M(o+0,c) - v(o+3)*M(o+2,c) + v(o+2)*M(o+3,c) - v(o+0)*M(o+5,c);
-            result(o+5, c) = -v(o+4)*M(o+0,c) + v(o+3)*M(o+1,c) - v(o+1)*M(o+3,c) + v(o+0)*M(o+4,c);
+            out(o+0, c) = -v(o+2)*M(o+1,c) + v(o+1)*M(o+2,c);
+            out(o+1, c) =  v(o+2)*M(o+0,c) - v(o+0)*M(o+2,c);
+            out(o+2, c) = -v(o+1)*M(o+0,c) + v(o+0)*M(o+1,c);
+            out(o+3, c) = -v(o+5)*M(o+1,c) + v(o+4)*M(o+2,c) - v(o+2)*M(o+4,c) + v(o+1)*M(o+5,c);
+            out(o+4, c) =  v(o+5)*M(o+0,c) - v(o+3)*M(o+2,c) + v(o+2)*M(o+3,c) - v(o+0)*M(o+5,c);
+            out(o+5, c) = -v(o+4)*M(o+0,c) + v(o+3)*M(o+1,c) - v(o+1)*M(o+3,c) + v(o+0)*M(o+4,c);
           }
         }
-        return result;
       }
       else
       {
         throw std::runtime_error("Invalid dimension for motionCrossTimesMatrix");
+      }
+    }
+
+    template <typename Scalar>
+    DMat<Scalar> motionCrossTimesMatrix(const DVec<Scalar> &v, const DMat<Scalar> &M)
+    {
+      DMat<Scalar> out;
+      motionCrossTimesMatrix(v, M, out);
+      return out;
+    }
+
+    /*!
+     * Compute motion cross matrix times a matrix and accumulate: out += crm(v) * M
+     */
+    template <typename Scalar>
+    void addMotionCrossTimesMatrix(const DVec<Scalar> &v, const DMat<Scalar> &M, DMat<Scalar> &out)
+    {
+      const int n = v.rows();
+      const int cols = M.cols();
+
+      if (n == 6)
+      {
+        for (int c = 0; c < cols; ++c)
+        {
+          out(0, c) += -v(2)*M(1,c) + v(1)*M(2,c);
+          out(1, c) +=  v(2)*M(0,c) - v(0)*M(2,c);
+          out(2, c) += -v(1)*M(0,c) + v(0)*M(1,c);
+          out(3, c) += -v(5)*M(1,c) + v(4)*M(2,c) - v(2)*M(4,c) + v(1)*M(5,c);
+          out(4, c) +=  v(5)*M(0,c) - v(3)*M(2,c) + v(2)*M(3,c) - v(0)*M(5,c);
+          out(5, c) += -v(4)*M(0,c) + v(3)*M(1,c) - v(1)*M(3,c) + v(0)*M(4,c);
+        }
+      }
+      else if (n % 6 == 0)
+      {
+        const int num_bodies = n / 6;
+        for (int b = 0; b < num_bodies; ++b)
+        {
+          const int o = 6 * b;
+          for (int c = 0; c < cols; ++c)
+          {
+            out(o+0, c) += -v(o+2)*M(o+1,c) + v(o+1)*M(o+2,c);
+            out(o+1, c) +=  v(o+2)*M(o+0,c) - v(o+0)*M(o+2,c);
+            out(o+2, c) += -v(o+1)*M(o+0,c) + v(o+0)*M(o+1,c);
+            out(o+3, c) += -v(o+5)*M(o+1,c) + v(o+4)*M(o+2,c) - v(o+2)*M(o+4,c) + v(o+1)*M(o+5,c);
+            out(o+4, c) +=  v(o+5)*M(o+0,c) - v(o+3)*M(o+2,c) + v(o+2)*M(o+3,c) - v(o+0)*M(o+5,c);
+            out(o+5, c) += -v(o+4)*M(o+0,c) + v(o+3)*M(o+1,c) - v(o+1)*M(o+3,c) + v(o+0)*M(o+4,c);
+          }
+        }
+      }
+      else
+      {
+        throw std::runtime_error("Invalid dimension for addMotionCrossTimesMatrix");
       }
     }
 
@@ -301,33 +339,20 @@ namespace grbda
 
     /*!
      * Compute crf(v)*I - I*crm(v) for spatial inertia I and velocity v.
-     * This is a key term in computing B_cup for inverse dynamics derivatives.
-     * Fusing these operations avoids two separate matrix traversals.
+     * Writes directly into the pre-allocated output matrix to avoid heap allocation.
      */
     template <typename Scalar>
-    DMat<Scalar> spatialInertiaCrossTerms(const DMat<Scalar> &I, const DVec<Scalar> &v)
+    void spatialInertiaCrossTerms(const DMat<Scalar> &I, const DVec<Scalar> &v, DMat<Scalar> &out)
     {
       const int n = v.rows();
 
       if (n == 6)
       {
-        // Compute crf(v)*I - I*crm(v) in a single pass
-        // Result(r,c) = (crf(v)*I)(r,c) - (I*crm(v))(r,c)
-        // where (crf(v)*I)(r,c) = sum_k crf(v)(r,k) * I(k,c)
-        // and   (I*crm(v))(r,c) = sum_k I(r,k) * crm(v)(k,c)
-        DMat<Scalar> result(6, 6);
+        out.resize(6, 6);
         for (int r = 0; r < 6; ++r)
         {
           for (int c = 0; c < 6; ++c)
           {
-            // crf(v)*I part: row r of crf(v) dotted with column c of I
-            // crf(v) rows:
-            // Row 0: [0, -v2, v1, 0, -v5, v4]
-            // Row 1: [v2, 0, -v0, v5, 0, -v3]
-            // Row 2: [-v1, v0, 0, -v4, v3, 0]
-            // Row 3: [0, 0, 0, 0, -v2, v1]
-            // Row 4: [0, 0, 0, v2, 0, -v0]
-            // Row 5: [0, 0, 0, -v1, v0, 0]
             Scalar crf_part;
             switch (r) {
               case 0: crf_part = -v(2)*I(1,c) + v(1)*I(2,c) - v(5)*I(4,c) + v(4)*I(5,c); break;
@@ -339,14 +364,6 @@ namespace grbda
               default: crf_part = Scalar(0); break;
             }
 
-            // I*crm(v) part: row r of I dotted with column c of crm(v)
-            // crm(v) columns:
-            // Col 0: [0, v2, -v1, 0, v5, -v4]^T
-            // Col 1: [-v2, 0, v0, -v5, 0, v3]^T
-            // Col 2: [v1, -v0, 0, v4, -v3, 0]^T
-            // Col 3: [0, 0, 0, 0, v2, -v1]^T
-            // Col 4: [0, 0, 0, -v2, 0, v0]^T
-            // Col 5: [0, 0, 0, v1, -v0, 0]^T
             Scalar crm_part;
             switch (c) {
               case 0: crm_part = v(2)*I(r,1) - v(1)*I(r,2) + v(5)*I(r,4) - v(4)*I(r,5); break;
@@ -358,15 +375,13 @@ namespace grbda
               default: crm_part = Scalar(0); break;
             }
 
-            result(r, c) = crf_part - crm_part;
+            out(r, c) = crf_part - crm_part;
           }
         }
-        return result;
       }
       else if (n % 6 == 0)
       {
-        // Block-diagonal case
-        DMat<Scalar> result = DMat<Scalar>::Zero(n, n);
+        out.setZero(n, n);
         const int num_bodies = n / 6;
         for (int b = 0; b < num_bodies; ++b)
         {
@@ -400,16 +415,23 @@ namespace grbda
                 default: crm_part = Scalar(0); break;
               }
 
-              result(rr, cc) = crf_part - crm_part;
+              out(rr, cc) = crf_part - crm_part;
             }
           }
         }
-        return result;
       }
       else
       {
         throw std::runtime_error("Invalid dimension for spatialInertiaCrossTerms");
       }
+    }
+
+    template <typename Scalar>
+    DMat<Scalar> spatialInertiaCrossTerms(const DMat<Scalar> &I, const DVec<Scalar> &v)
+    {
+      DMat<Scalar> out;
+      spatialInertiaCrossTerms(I, v, out);
+      return out;
     }
 
     /*!
@@ -493,31 +515,34 @@ namespace grbda
     }
 
     /*!
-     * Compute spatial force cross product.  Faster than the matrix multiplication
-     * version
-     *
-     * This is a general formulation to deal with the the ability of aggregate bodies
-     * to have 6N dimensional spatial forces
+     * Compute spatial force cross product, accumulating into a pre-allocated output vector.
      */
     template <typename T>
-    DVec<T> generalForceCrossProduct(const DVec<T> &a, const DVec<T> &b)
+    void addGeneralForceCrossProduct(const DVec<T> &a, const DVec<T> &b, DVec<T> &out)
     {
       const int n = a.rows();
       if (n != b.rows())
         throw std::runtime_error("General Force Cross Product requires vectors of the same size");
 
       if (n == 6)
-        return forceCrossProduct(a.template head<6>(), b.template head<6>());
+        out += forceCrossProduct(a.template head<6>(), b.template head<6>());
       else if (n % 6 == 0)
       {
-        DVec<T> fv = DVec<T>::Zero(n);
         for (int i = 0; i < n / 6; i++)
-          fv.template segment<6>(6 * i) = forceCrossProduct(a.template segment<6>(6 * i),
-                                                            b.template segment<6>(6 * i));
-        return fv;
+          out.template segment<6>(6 * i) += forceCrossProduct(a.template segment<6>(6 * i),
+                                                              b.template segment<6>(6 * i));
       }
       else
-        throw std::runtime_error("Invalid number of rows provided to General Motion Cross Product");
+        throw std::runtime_error("Invalid number of rows provided to General Force Cross Product");
+    }
+
+    template <typename T>
+    DVec<T> generalForceCrossProduct(const DVec<T> &a, const DVec<T> &b)
+    {
+      const int n = a.rows();
+      DVec<T> fv = DVec<T>::Zero(n);
+      addGeneralForceCrossProduct(a, b, fv);
+      return fv;
     }
 
     /*!
@@ -631,57 +656,59 @@ namespace grbda
     }
 
     /*!
-     * Compute swapped force cross matrix times a matrix: icrf(f) * M
-     * For single-body clusters (6x6 or 6xN), this avoids building the full cross matrix.
+     * Compute swapped force cross matrix times a matrix: out += icrf(f) * M
+     * Accumulates into the pre-allocated output matrix to avoid heap allocation.
      */
     template <typename Scalar>
-    DMat<Scalar> swappedForceCrossTimesMatrix(const DVec<Scalar> &f, const DMat<Scalar> &M)
+    void addSwappedForceCrossTimesMatrix(const DVec<Scalar> &f, const DMat<Scalar> &M,
+                                         DMat<Scalar> &out)
     {
       const int n = f.rows();
       const int cols = M.cols();
 
       if (n == 6)
       {
-        // General path for single 6D force vector
-        DMat<Scalar> result(6, cols);
         for (int c = 0; c < cols; ++c)
         {
-          result(0, c) = f(2)*M(1,c) - f(1)*M(2,c) + f(5)*M(4,c) - f(4)*M(5,c);
-          result(1, c) = f(0)*M(2,c) - f(2)*M(0,c) + f(3)*M(5,c) - f(5)*M(3,c);
-          result(2, c) = f(1)*M(0,c) - f(0)*M(1,c) + f(4)*M(3,c) - f(3)*M(4,c);
-          result(3, c) = f(5)*M(1,c) - f(4)*M(2,c);
-          result(4, c) = f(3)*M(2,c) - f(5)*M(0,c);
-          result(5, c) = f(4)*M(0,c) - f(3)*M(1,c);
+          out(0, c) += f(2)*M(1,c) - f(1)*M(2,c) + f(5)*M(4,c) - f(4)*M(5,c);
+          out(1, c) += f(0)*M(2,c) - f(2)*M(0,c) + f(3)*M(5,c) - f(5)*M(3,c);
+          out(2, c) += f(1)*M(0,c) - f(0)*M(1,c) + f(4)*M(3,c) - f(3)*M(4,c);
+          out(3, c) += f(5)*M(1,c) - f(4)*M(2,c);
+          out(4, c) += f(3)*M(2,c) - f(5)*M(0,c);
+          out(5, c) += f(4)*M(0,c) - f(3)*M(1,c);
         }
-        return result;
       }
       else if (n % 6 == 0)
       {
-        // General case: block-diagonal structure
-        DMat<Scalar> result = DMat<Scalar>::Zero(n, cols);
         const int num_bodies = n / 6;
         for (int b = 0; b < num_bodies; ++b)
         {
-          const int offset = 6 * b;
+          const int o = 6 * b;
           for (int c = 0; c < cols; ++c)
           {
-            result(offset + 0, c) = f(offset+2)*M(offset+1,c) - f(offset+1)*M(offset+2,c)
-                                  + f(offset+5)*M(offset+4,c) - f(offset+4)*M(offset+5,c);
-            result(offset + 1, c) = f(offset+0)*M(offset+2,c) - f(offset+2)*M(offset+0,c)
-                                  + f(offset+3)*M(offset+5,c) - f(offset+5)*M(offset+3,c);
-            result(offset + 2, c) = f(offset+1)*M(offset+0,c) - f(offset+0)*M(offset+1,c)
-                                  + f(offset+4)*M(offset+3,c) - f(offset+3)*M(offset+4,c);
-            result(offset + 3, c) = f(offset+5)*M(offset+1,c) - f(offset+4)*M(offset+2,c);
-            result(offset + 4, c) = f(offset+3)*M(offset+2,c) - f(offset+5)*M(offset+0,c);
-            result(offset + 5, c) = f(offset+4)*M(offset+0,c) - f(offset+3)*M(offset+1,c);
+            out(o+0, c) += f(o+2)*M(o+1,c) - f(o+1)*M(o+2,c) + f(o+5)*M(o+4,c) - f(o+4)*M(o+5,c);
+            out(o+1, c) += f(o+0)*M(o+2,c) - f(o+2)*M(o+0,c) + f(o+3)*M(o+5,c) - f(o+5)*M(o+3,c);
+            out(o+2, c) += f(o+1)*M(o+0,c) - f(o+0)*M(o+1,c) + f(o+4)*M(o+3,c) - f(o+3)*M(o+4,c);
+            out(o+3, c) += f(o+5)*M(o+1,c) - f(o+4)*M(o+2,c);
+            out(o+4, c) += f(o+3)*M(o+2,c) - f(o+5)*M(o+0,c);
+            out(o+5, c) += f(o+4)*M(o+0,c) - f(o+3)*M(o+1,c);
           }
         }
-        return result;
       }
       else
       {
-        throw std::runtime_error("Invalid dimension for swappedForceCrossTimesMatrix");
+        throw std::runtime_error("Invalid dimension for addSwappedForceCrossTimesMatrix");
       }
+    }
+
+    template <typename Scalar>
+    DMat<Scalar> swappedForceCrossTimesMatrix(const DVec<Scalar> &f, const DMat<Scalar> &M)
+    {
+      const int n = f.rows();
+      const int cols = M.cols();
+      DMat<Scalar> out = DMat<Scalar>::Zero(n, cols);
+      addSwappedForceCrossTimesMatrix(f, M, out);
+      return out;
     }
 
     /*!

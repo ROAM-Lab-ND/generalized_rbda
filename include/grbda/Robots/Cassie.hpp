@@ -23,7 +23,6 @@ namespace grbda
     class Cassie : public Robot<Scalar>
     {
     public:
-        EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
         Cassie() {}
 

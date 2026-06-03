@@ -25,7 +25,7 @@ namespace grbda
                 node->Xa_ = node->Xup_.toAbsolute();
             }
 
-            node->avp_ = spatial::generalMotionCrossProduct(node->v_, node->vJ());
+            spatial::generalMotionCrossProduct(node->v_, node->vJ(), node->avp_);
         }
 
         kinematics_updated_ = true;
@@ -289,9 +289,8 @@ namespace grbda
         // Forward Pass
         for (auto &node : nodes_)
         {
-            node->f_ = node->I_ * node->a_ +
-                       spatial::generalForceCrossProduct(node->v_,
-                                                         DVec<Scalar>(node->I_ * node->v_));
+            node->f_ = node->I_ * node->a_;
+            spatial::addGeneralForceCrossProduct(node->v_, DVec<Scalar>(node->I_ * node->v_), node->f_);
         }
 
         // Account for external forces in bias force

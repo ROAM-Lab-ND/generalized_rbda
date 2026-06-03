@@ -94,7 +94,8 @@ namespace grbda
         // Forward Pass - Articulated body bias force
         for (auto &cluster : cluster_nodes_)
         {
-            cluster->pA_ = spatial::generalForceCrossProduct(cluster->v_, DVec<Scalar>(cluster->I_ * cluster->v_));
+            cluster->pA_.setZero(cluster->motion_subspace_dimension_);
+            spatial::addGeneralForceCrossProduct(cluster->v_, DVec<Scalar>(cluster->I_ * cluster->v_), cluster->pA_);
         }
 
         // Account for external forces in bias force
@@ -488,39 +489,34 @@ namespace grbda
             }
 
             // Psi_dot = crm(v_parent_up) * S + alpha
-            // Use optimized motionCrossTimesMatrix to avoid building full cross-product matrix
-            cluster->Psi_dot_ = spatial::motionCrossTimesMatrix(v_parent_up, S);
+            spatial::motionCrossTimesMatrix(v_parent_up, S, cluster->Psi_dot_);
             if (has_config_dependent_S) {
                 cluster->Psi_dot_ += alpha;
             }
 
-            // Cache crm(v)*S since it's used in both Psi_ddot and Upsilon_dot
-            const DMat<Scalar> crm_v_S = spatial::motionCrossTimesMatrix(v, S);
+            // Upsilon_dot = crm(v)*S + Psi_dot + S_ring (compute crm(v)*S directly into Upsilon_dot)
+            spatial::motionCrossTimesMatrix(v, S, cluster->Upsilon_dot_);
+            cluster->Upsilon_dot_ += cluster->Psi_dot_ + cluster->S_ring();
 
             // Psi_ddot = crm(a_parent_up)*S + crm(v_parent_up)*Psi_dot + Sdotqd_q + beta + crm(v)*alpha
-            cluster->Psi_ddot_ = spatial::motionCrossTimesMatrix(a_parent_up, S);
-            cluster->Psi_ddot_ += spatial::motionCrossTimesMatrix(v_parent_up, cluster->Psi_dot_);
+            spatial::motionCrossTimesMatrix(a_parent_up, S, cluster->Psi_ddot_);
+            spatial::addMotionCrossTimesMatrix(v_parent_up, cluster->Psi_dot_, cluster->Psi_ddot_);
             if (has_config_dependent_S) {
                 cluster->Psi_ddot_ += Sdotqd_q + beta;
-                cluster->Psi_ddot_ += spatial::motionCrossTimesMatrix(v, alpha);
+                spatial::addMotionCrossTimesMatrix(v, alpha, cluster->Psi_ddot_);
             }
-
-            // Upsilon_dot = crm(v)*S + Psi_dot + S_ring (reuse cached crm_v_S)
-            cluster->Upsilon_dot_ = crm_v_S;
-            cluster->Upsilon_dot_ += cluster->Psi_dot_ + cluster->S_ring();
 
             // M_cup = I (will accumulate children's contributions)
             cluster->M_cup_ = I;
 
             // B_cup = crf(v)*I - I*crm(v) + icrf(I*v)
-            // Use fused spatialInertiaCrossTerms to compute crf(v)*I - I*crm(v) in one pass
             const DVec<Scalar> Iv = I * v;
-            cluster->B_cup_ = spatial::spatialInertiaCrossTerms(I, v);
+            spatial::spatialInertiaCrossTerms(I, v, cluster->B_cup_);
             spatial::addSwappedForceCrossMatrixInPlace(cluster->B_cup_, Iv);
 
             // F = I*a + crf(v)*I*v
             cluster->F_.noalias() = I * cluster->a_;
-            cluster->F_ += spatial::generalForceCrossProduct(v, Iv);
+            spatial::addGeneralForceCrossProduct(v, Iv, cluster->F_);
         }
 
         // Backward Pass - compute derivatives and propagate M_cup, B_cup, F to parents
@@ -550,7 +546,7 @@ namespace grbda
             cluster_i->Xup_.blockDiagonalInertiaTimesMotionSubspace(B_cup, cluster_i->Psi_dot_, t3);
             cluster_i->Xup_.blockDiagonalInertiaTimesMotionSubspace(M_cup, cluster_i->Psi_ddot_, tmp);
             t3.noalias() += tmp;
-            t3 += spatial::swappedForceCrossTimesMatrix(F, S_i);
+            spatial::addSwappedForceCrossTimesMatrix(F, S_i, t3);
             cluster_i->Xup_.blockDiagonalInertiaTimesMotionSubspace(B_cup.transpose(), S_i, t4);
 
             // Walk from cluster i to root
@@ -715,27 +711,27 @@ namespace grbda
             }
 
             // Psi_dot = crm(v_parent_up) * S + alpha
-            cluster->Psi_dot_ = spatial::motionCrossTimesMatrix(v_parent_up, S);
+            spatial::motionCrossTimesMatrix(v_parent_up, S, cluster->Psi_dot_);
             if (has_config_dependent_S) {
                 cluster->Psi_dot_ += alpha;
             }
 
+            // Upsilon_dot = crm(v)*S + Psi_dot + S_ring (compute crm(v)*S directly into Upsilon_dot)
+            spatial::motionCrossTimesMatrix(v, S, cluster->Upsilon_dot_);
+            cluster->Upsilon_dot_ += cluster->Psi_dot_ + cluster->S_ring();
+
             // Psi_ddot = crm(a_parent_up)*S + crm(v_parent_up)*Psi_dot + Sdotqd_q + beta + crm(v)*alpha
-            cluster->Psi_ddot_ = spatial::motionCrossTimesMatrix(a_parent_up, S);
-            cluster->Psi_ddot_ += spatial::motionCrossTimesMatrix(v_parent_up, cluster->Psi_dot_);
+            spatial::motionCrossTimesMatrix(a_parent_up, S, cluster->Psi_ddot_);
+            spatial::addMotionCrossTimesMatrix(v_parent_up, cluster->Psi_dot_, cluster->Psi_ddot_);
             if (has_config_dependent_S) {
                 cluster->Psi_ddot_ += Sdotqd_q + beta;
-                cluster->Psi_ddot_ += spatial::motionCrossTimesMatrix(v, alpha);
+                spatial::addMotionCrossTimesMatrix(v, alpha, cluster->Psi_ddot_);
             }
-
-            // Upsilon_dot = crm(v)*S + Psi_dot + S_ring
-            cluster->Upsilon_dot_ = spatial::motionCrossTimesMatrix(v, S);
-            cluster->Upsilon_dot_ += cluster->Psi_dot_ + cluster->S_ring();
 
             // F = I*a + crf(v)*I*v
             const DVec<Scalar> Iv = I * v;
             cluster->F_.noalias() = I * cluster->a_;
-            cluster->F_.noalias() += spatial::generalForceCrossProduct(v, Iv);
+            spatial::addGeneralForceCrossProduct(v, Iv, cluster->F_);
 
             // Transform quantities to world frame, block by block, into node storage
             cluster->Ic0_.resize(num_bodies);

@@ -14,7 +14,6 @@ namespace grbda
     class TelloNoRotors : public Tello<Scalar>
     {
     public:
-        EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
         TelloNoRotors() {}
 
