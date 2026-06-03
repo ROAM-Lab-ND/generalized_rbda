@@ -599,38 +599,37 @@ namespace grbda
 
         template <typename Scalar>
         void GeneralizedTransform<Scalar>::accumulateBlockDiagonalInertia(
-            const DMat<Scalar> &I_child, DMat<Scalar> &I_parent) const
+            const std::vector<Mat6<Scalar>, Eigen::aligned_allocator<Mat6<Scalar>>> &I_child,
+            std::vector<Mat6<Scalar>, Eigen::aligned_allocator<Mat6<Scalar>>> &I_parent) const
         {
-            // I_child is block-diagonal: diag(I_1, I_2, ..., I_n) where n = num_output_bodies_
-            // Each body i in the child connects to parent body parent_subindex[i]
-            // We transform each I_i and add it to the corresponding parent block
-
-            // Fast path for single-body clusters (most common case)
-            if (num_output_bodies_ == 1)
+            for (int i = 0; i < num_output_bodies_; i++)
             {
-                const Transform<Scalar> &X = transforms_and_parent_subindices_[0].first;
-                const int parent_subindex = transforms_and_parent_subindices_[0].second;
-                I_parent.template block<6, 6>(6 * parent_subindex, 6 * parent_subindex) +=
-                    X.inverseTransformSpatialInertia(I_child.template block<6, 6>(0, 0));
-                return;
+                const Transform<Scalar> &X = transforms_and_parent_subindices_[i].first;
+                const int parent_subindex = transforms_and_parent_subindices_[i].second;
+                I_parent[parent_subindex] += X.inverseTransformSpatialInertia(I_child[i]);
             }
+        }
 
-            int output_body = 0;
-            for (const auto &transform_and_parent_subindex : transforms_and_parent_subindices_)
-            {
-                const Transform<Scalar> &X = transform_and_parent_subindex.first;
-                const int parent_subindex = transform_and_parent_subindex.second;
+        template <typename Scalar>
+        DMat<Scalar> GeneralizedTransform<Scalar>::blockDiagonalInertiaTimesMotionSubspace(
+            const std::vector<Mat6<Scalar>, Eigen::aligned_allocator<Mat6<Scalar>>> &Ic,
+            const DMat<Scalar> &S) const
+        {
+            DMat<Scalar> out;
+            blockDiagonalInertiaTimesMotionSubspace(Ic, S, out);
+            return out;
+        }
 
-                // Extract the 6x6 inertia block for this child body
-                const Mat6<Scalar> I_child_block =
-                    I_child.template block<6, 6>(6 * output_body, 6 * output_body);
-
-                // Transform to parent frame and accumulate to the parent body's block
-                I_parent.template block<6, 6>(6 * parent_subindex, 6 * parent_subindex) +=
-                    X.inverseTransformSpatialInertia(I_child_block);
-
-                output_body++;
-            }
+        template <typename Scalar>
+        void GeneralizedTransform<Scalar>::blockDiagonalInertiaTimesMotionSubspace(
+            const std::vector<Mat6<Scalar>, Eigen::aligned_allocator<Mat6<Scalar>>> &Ic,
+            const DMat<Scalar> &S, DMat<Scalar> &out) const
+        {
+            const int num_cols = S.cols();
+            out.resize(6 * num_output_bodies_, num_cols);
+            for (int body = 0; body < num_output_bodies_; body++)
+                out.template middleRows<6>(6 * body).noalias() =
+                    Ic[body] * S.template middleRows<6>(6 * body);
         }
 
         template <typename Scalar>
@@ -638,27 +637,21 @@ namespace grbda
             const DMat<Scalar> &I1_child, DMat<Scalar> &I1_parent,
             const DMat<Scalar> &I2_child, DMat<Scalar> &I2_parent) const
         {
-            // Batched version: transform and accumulate two inertias with shared E^T and r_hat
-
-            // Fast path for single-body clusters (most common case)
-            if (num_output_bodies_ == 1)
+            for (int i = 0; i < num_output_bodies_; i++)
             {
-                const Transform<Scalar> &X = transforms_and_parent_subindices_[0].first;
-                const int parent_subindex = transforms_and_parent_subindices_[0].second;
+                const Transform<Scalar> &X = transforms_and_parent_subindices_[i].first;
+                const int parent_subindex = transforms_and_parent_subindices_[i].second;
 
-                // Compute E^T and r_hat once
-                const Mat3<Scalar> E_trans = X.getRotation().transpose();
-                const Mat3<Scalar> r_hat = ori::vectorToSkewMat(X.getTranslation());
                 const Mat3<Scalar> &E = X.getRotation();
+                const Mat3<Scalar> E_trans = E.transpose();
+                const Mat3<Scalar> r_hat = ori::vectorToSkewMat(X.getTranslation());
 
-                // Helper lambda to transform a 6x6 inertia
                 auto transformInertia = [&](const Mat6<Scalar> &I_in) -> Mat6<Scalar> {
                     Mat6<Scalar> I_out;
                     const Mat3<Scalar> &I_TL = I_in.template topLeftCorner<3, 3>();
                     const Mat3<Scalar> &I_TR = I_in.template topRightCorner<3, 3>();
                     const Mat3<Scalar> &I_BL = I_in.template bottomLeftCorner<3, 3>();
                     const Mat3<Scalar> &I_BR = I_in.template bottomRightCorner<3, 3>();
-
                     I_out.template topLeftCorner<3, 3>() = E_trans * I_TL * E +
                                                            r_hat * E_trans * I_BL * E -
                                                            E_trans * I_TR * E * r_hat -
@@ -671,50 +664,11 @@ namespace grbda
                     return I_out;
                 };
 
-                I1_parent.template block<6, 6>(6 * parent_subindex, 6 * parent_subindex) +=
-                    transformInertia(I1_child.template block<6, 6>(0, 0));
-                I2_parent.template block<6, 6>(6 * parent_subindex, 6 * parent_subindex) +=
-                    transformInertia(I2_child.template block<6, 6>(0, 0));
-                return;
-            }
-
-            // Multi-body case
-            int output_body = 0;
-            for (const auto &transform_and_parent_subindex : transforms_and_parent_subindices_)
-            {
-                const Transform<Scalar> &X = transform_and_parent_subindex.first;
-                const int parent_subindex = transform_and_parent_subindex.second;
-
-                // Compute E^T and r_hat once for this body
-                const Mat3<Scalar> E_trans = X.getRotation().transpose();
-                const Mat3<Scalar> r_hat = ori::vectorToSkewMat(X.getTranslation());
-                const Mat3<Scalar> &E = X.getRotation();
-
-                auto transformInertia = [&](const Mat6<Scalar> &I_in) -> Mat6<Scalar> {
-                    Mat6<Scalar> I_out;
-                    const Mat3<Scalar> &I_TL = I_in.template topLeftCorner<3, 3>();
-                    const Mat3<Scalar> &I_TR = I_in.template topRightCorner<3, 3>();
-                    const Mat3<Scalar> &I_BL = I_in.template bottomLeftCorner<3, 3>();
-                    const Mat3<Scalar> &I_BR = I_in.template bottomRightCorner<3, 3>();
-
-                    I_out.template topLeftCorner<3, 3>() = E_trans * I_TL * E +
-                                                           r_hat * E_trans * I_BL * E -
-                                                           E_trans * I_TR * E * r_hat -
-                                                           r_hat * E_trans * I_BR * E * r_hat;
-                    I_out.template topRightCorner<3, 3>() = E_trans * I_TR * E +
-                                                            r_hat * E_trans * I_BR * E;
-                    I_out.template bottomLeftCorner<3, 3>() = E_trans * I_BL * E -
-                                                              E_trans * I_BR * E * r_hat;
-                    I_out.template bottomRightCorner<3, 3>() = E_trans * I_BR * E;
-                    return I_out;
-                };
-
-                I1_parent.template block<6, 6>(6 * parent_subindex, 6 * parent_subindex) +=
-                    transformInertia(I1_child.template block<6, 6>(6 * output_body, 6 * output_body));
-                I2_parent.template block<6, 6>(6 * parent_subindex, 6 * parent_subindex) +=
-                    transformInertia(I2_child.template block<6, 6>(6 * output_body, 6 * output_body));
-
-                output_body++;
+                const int ps = 6 * parent_subindex;
+                I1_parent.template block<6, 6>(ps, ps) +=
+                    transformInertia(I1_child.template block<6, 6>(6 * i, 6 * i));
+                I2_parent.template block<6, 6>(ps, ps) +=
+                    transformInertia(I2_child.template block<6, 6>(6 * i, 6 * i));
             }
         }
 
@@ -722,36 +676,9 @@ namespace grbda
         DMat<Scalar> GeneralizedTransform<Scalar>::blockDiagonalInertiaTimesMotionSubspace(
             const DMat<Scalar> &Ic_block_diag, const DMat<Scalar> &S) const
         {
-            // Ic is block-diagonal: diag(Ic_1, Ic_2, ..., Ic_n)
-            // S has rows corresponding to each body's motion subspace contribution
-            // F = Ic * S, but we only need to multiply each 6x6 block by its corresponding rows of S
-
-            const int num_cols = S.cols();
-
-            // Fast path for single-body clusters (most common case)
-            // Avoids loop overhead and dynamic indexing
-            if (num_output_bodies_ == 1)
-            {
-                DMat<Scalar> F(6, num_cols);
-                F.noalias() = Ic_block_diag.template block<6, 6>(0, 0) * S;
-                return F;
-            }
-
-            DMat<Scalar> F = DMat<Scalar>::Zero(6 * num_output_bodies_, num_cols);
-
-            for (int body = 0; body < num_output_bodies_; body++)
-            {
-                // Extract the 6x6 inertia block for this body
-                const auto Ic_block = Ic_block_diag.template block<6, 6>(6 * body, 6 * body);
-
-                // Extract the corresponding rows of S for this body
-                const auto S_block = S.template middleRows<6>(6 * body);
-
-                // Compute F_block = Ic_block * S_block
-                F.template middleRows<6>(6 * body).noalias() = Ic_block * S_block;
-            }
-
-            return F;
+            DMat<Scalar> out;
+            blockDiagonalInertiaTimesMotionSubspace(Ic_block_diag, S, out);
+            return out;
         }
 
         template <typename Scalar>
@@ -759,20 +686,11 @@ namespace grbda
             const DMat<Scalar> &Ic_block_diag, const DMat<Scalar> &S, DMat<Scalar> &out) const
         {
             const int num_cols = S.cols();
-
-            if (num_output_bodies_ == 1)
-            {
-                out.noalias() = Ic_block_diag.template block<6, 6>(0, 0) * S;
-                return;
-            }
-
-            out.setZero(6 * num_output_bodies_, num_cols);
+            out.resize(6 * num_output_bodies_, num_cols);
             for (int body = 0; body < num_output_bodies_; body++)
-            {
-                const auto Ic_block = Ic_block_diag.template block<6, 6>(6 * body, 6 * body);
-                const auto S_block = S.template middleRows<6>(6 * body);
-                out.template middleRows<6>(6 * body).noalias() = Ic_block * S_block;
-            }
+                out.template middleRows<6>(6 * body).noalias() =
+                    Ic_block_diag.template block<6, 6>(6 * body, 6 * body) *
+                    S.template middleRows<6>(6 * body);
         }
 
         template <typename Scalar>

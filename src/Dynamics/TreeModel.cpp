@@ -122,7 +122,7 @@ namespace grbda
 
         // Forward Pass: Initialize composite inertias to local inertias
         for (auto &node : nodes_)
-            node->Ic_ = node->I_;
+            node->Ic_ = node->I_;  // element-wise copy of vector<Mat6>
 
         // Backward Pass
         for (int i = (int)nodes_.size() - 1; i >= 0; i--)
@@ -196,9 +196,7 @@ namespace grbda
             for (int body = 0; body < num_bodies; body++)
             {
                 const auto &Xa_body = node->Xa_.getTransformForOutputBody(body);
-                node->Ic0_[body] =
-                    Xa_body.inverseTransformSpatialInertia(
-                        node->I_.template block<6, 6>(6 * body, 6 * body));
+                node->Ic0_[body] = Xa_body.inverseTransformSpatialInertia(node->I_[body]);
 
                 const auto S_body_block = node->S().template middleRows<6>(6 * body);
                 node->S0_[body] = Xa_body.inverseTransformMotionSubspace(S_body_block);
@@ -289,8 +287,9 @@ namespace grbda
         // Forward Pass
         for (auto &node : nodes_)
         {
-            node->f_ = node->I_ * node->a_;
-            spatial::addGeneralForceCrossProduct(node->v_, DVec<Scalar>(node->I_ * node->v_), node->f_);
+            node->f_ = spatial::blockDiagonalTimesVector(node->I_, node->a_);
+            spatial::addGeneralForceCrossProduct(node->v_,
+                spatial::blockDiagonalTimesVector(node->I_, node->v_), node->f_);
         }
 
         // Account for external forces in bias force

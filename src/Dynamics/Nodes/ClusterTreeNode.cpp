@@ -16,7 +16,7 @@ namespace grbda
     {
         for (size_t i = 0; i < bodies.size(); i++)
         {
-            this->I_.template block<6, 6>(6 * i, 6 * i) = bodies[i].inertia_.getMatrix();
+            this->I_[i] = bodies[i].inertia_.getMatrix();
             this->Xup_.appendTransformWithClusterAncestorSubIndex(
                 spatial::Transform<Scalar>{}, bodies[i].cluster_ancestor_sub_index_within_cluster_);
             this->Xa_.appendTransform(spatial::Transform<Scalar>{});

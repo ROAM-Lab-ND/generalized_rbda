@@ -16,7 +16,7 @@ namespace grbda
     struct TreeNode
     {
         EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-        TreeNode(int index, std::string name, int parent_index, int num_parent_bodies, 
+        TreeNode(int index, std::string name, int parent_index, int num_parent_bodies,
                  int motion_subspace_index, int motion_subspace_dimension,
                  int position_index, int num_positions,
                  int velocity_index, int num_velocities)
@@ -27,7 +27,9 @@ namespace grbda
               index_(index), name_(name), parent_index_(parent_index),
               Xup_(num_parent_bodies)
         {
-            I_ = DMat<Scalar>::Zero(motion_subspace_dimension_, motion_subspace_dimension_);
+            const int num_bodies = motion_subspace_dimension / 6;
+            I_.resize(num_bodies, Mat6<Scalar>::Zero());
+            Ic_.resize(num_bodies, Mat6<Scalar>::Zero());
             f_ext_ = DVec<Scalar>::Zero(motion_subspace_dimension_);
         }
 
@@ -70,8 +72,8 @@ namespace grbda
         DVec<Scalar> f_ext_; // net external spatial force acting on the cluster
         DVec<Scalar> avp_;   // acceleration velocity product
 
-        DMat<Scalar> I_;  // spatial inertia
-        DMat<Scalar> Ic_; // compisite rigid body inertia
+        std::vector<Mat6<Scalar>, Eigen::aligned_allocator<Mat6<Scalar>>> I_;   // spatial inertia, one 6x6 block per body
+        std::vector<Mat6<Scalar>, Eigen::aligned_allocator<Mat6<Scalar>>> Ic_;  // composite rigid body inertia, one 6x6 block per body
 
         std::vector<Mat6<Scalar>, Eigen::aligned_allocator<Mat6<Scalar>>> Ic0_; // composite rigid body inertia in World frame, one 6x6 block per body
         std::vector<D6Mat<Scalar>, Eigen::aligned_allocator<D6Mat<Scalar>>> S0_;   // motion subspace in World frame, one 6xNv block per body

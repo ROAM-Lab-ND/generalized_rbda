@@ -95,7 +95,8 @@ namespace grbda
         for (auto &cluster : cluster_nodes_)
         {
             cluster->pA_.setZero(cluster->motion_subspace_dimension_);
-            spatial::addGeneralForceCrossProduct(cluster->v_, DVec<Scalar>(cluster->I_ * cluster->v_), cluster->pA_);
+            spatial::addGeneralForceCrossProduct(cluster->v_,
+                spatial::blockDiagonalTimesVector(cluster->I_, cluster->v_), cluster->pA_);
         }
 
         // Account for external forces in bias force
@@ -166,7 +167,7 @@ namespace grbda
         // Forward pass
         for (auto &cluster : cluster_nodes_)
         {
-            cluster->IA_ = cluster->I_;
+            cluster->IA_ = spatial::blockDiagonalToMatrix(cluster->I_);
         }
 
         // Backward pass (Gauss principal of least constraint)
@@ -304,7 +305,7 @@ namespace grbda
         this->forwardKinematics();
         for (auto &cluster : cluster_nodes_)
         {
-            cluster->IA_ = cluster->I_;
+            cluster->IA_ = spatial::blockDiagonalToMatrix(cluster->I_);
         }
 
         // Reset Force Propagators for the end-effectors
@@ -454,7 +455,7 @@ namespace grbda
             const int mss_dim = cluster->motion_subspace_dimension_;
             const int num_vel = cluster->num_velocities_;
             const DMat<Scalar> &S = cluster->S();
-            const DMat<Scalar> &I = cluster->I_;
+            const auto &I_blocks = cluster->I_;
             const DVec<Scalar> &v = cluster->v_;
 
             // Get parent velocity and acceleration
@@ -507,15 +508,15 @@ namespace grbda
             }
 
             // M_cup = I (will accumulate children's contributions)
-            cluster->M_cup_ = I;
+            cluster->M_cup_ = spatial::blockDiagonalToMatrix(I_blocks);
 
             // B_cup = crf(v)*I - I*crm(v) + icrf(I*v)
-            const DVec<Scalar> Iv = I * v;
-            spatial::spatialInertiaCrossTerms(I, v, cluster->B_cup_);
+            const DVec<Scalar> Iv = spatial::blockDiagonalTimesVector(I_blocks, v);
+            spatial::spatialInertiaCrossTerms(I_blocks, v, cluster->B_cup_);
             spatial::addSwappedForceCrossMatrixInPlace(cluster->B_cup_, Iv);
 
             // F = I*a + crf(v)*I*v
-            cluster->F_.noalias() = I * cluster->a_;
+            cluster->F_ = spatial::blockDiagonalTimesVector(I_blocks, cluster->a_);
             spatial::addGeneralForceCrossProduct(v, Iv, cluster->F_);
         }
 
@@ -678,7 +679,7 @@ namespace grbda
             const int & num_vel = cluster->num_velocities_;
             const int num_bodies = cluster->Xa_.getNumOutputBodies();
             const DMat<Scalar> &S = cluster->S();
-            const DMat<Scalar> &I = cluster->I_;
+            const auto &I_blocks = cluster->I_;
             const DVec<Scalar> &v = cluster->v_;
 
             // Get parent velocity and acceleration in cluster i's frame
@@ -729,8 +730,8 @@ namespace grbda
             }
 
             // F = I*a + crf(v)*I*v
-            const DVec<Scalar> Iv = I * v;
-            cluster->F_.noalias() = I * cluster->a_;
+            const DVec<Scalar> Iv = spatial::blockDiagonalTimesVector(I_blocks, v);
+            cluster->F_ = spatial::blockDiagonalTimesVector(I_blocks, cluster->a_);
             spatial::addGeneralForceCrossProduct(v, Iv, cluster->F_);
 
             // Transform quantities to world frame, block by block, into node storage
@@ -749,7 +750,7 @@ namespace grbda
 
                 // IC0[body] = X^{-T} * I_body * X^{-1}
                 cluster->Ic0_[body].noalias() =
-                    Xa_body.inverseTransformSpatialInertia(I.template block<6, 6>(start, start));
+                    Xa_body.inverseTransformSpatialInertia(I_blocks[body]);
 
                 // v0 = X^{-1} * v_body
                 const SVec<Scalar> v0_body =

@@ -125,21 +125,26 @@ namespace grbda
             DMat<Scalar> rightMultiplyMotionTransform(const DMat<Scalar> &M_in) const;
             DMat<Scalar> leftMultiplyForceTransform(const DMat<Scalar> &M_in) const;
 
-            // Accumulates child's block-diagonal composite inertia to parent's block-diagonal
-            // composite inertia. Each 6x6 block of I_child is transformed and added to the
-            // corresponding parent body's 6x6 block in I_parent based on connectivity.
-            void accumulateBlockDiagonalInertia(const DMat<Scalar> &I_child,
-                                                DMat<Scalar> &I_parent) const;
+            // Accumulates child's composite inertia blocks to parent's composite inertia blocks.
+            void accumulateBlockDiagonalInertia(
+                const std::vector<Mat6<Scalar>, Eigen::aligned_allocator<Mat6<Scalar>>> &I_child,
+                std::vector<Mat6<Scalar>, Eigen::aligned_allocator<Mat6<Scalar>>> &I_parent) const;
 
-            // Batched version: accumulates two child inertias to two parent inertias.
-            // Shares E^T and r_hat computation across both inertias per body.
-            // Used in ID derivatives for M_cup and B_cup propagation.
+            // Accumulates child's block-diagonal DMat inertia to parent's block-diagonal DMat inertia.
+            // Used for M_cup/B_cup which remain DMat.
             void accumulateBlockDiagonalInertia2(
                 const DMat<Scalar> &I1_child, DMat<Scalar> &I1_parent,
                 const DMat<Scalar> &I2_child, DMat<Scalar> &I2_parent) const;
 
-            // Computes F = Ic * S exploiting block-diagonal structure of Ic.
-            // Returns F with dimensions (6 * num_output_bodies) x (num_cols of S)
+            // Computes F = Ic * S exploiting block structure of Ic (vector<Mat6> form).
+            DMat<Scalar> blockDiagonalInertiaTimesMotionSubspace(
+                const std::vector<Mat6<Scalar>, Eigen::aligned_allocator<Mat6<Scalar>>> &Ic,
+                const DMat<Scalar> &S) const;
+            void blockDiagonalInertiaTimesMotionSubspace(
+                const std::vector<Mat6<Scalar>, Eigen::aligned_allocator<Mat6<Scalar>>> &Ic,
+                const DMat<Scalar> &S, DMat<Scalar> &out) const;
+
+            // Computes F = Ic * S exploiting block-diagonal structure (DMat form, for M_cup/B_cup).
             DMat<Scalar> blockDiagonalInertiaTimesMotionSubspace(
                 const DMat<Scalar> &Ic_block_diag, const DMat<Scalar> &S) const;
             void blockDiagonalInertiaTimesMotionSubspace(

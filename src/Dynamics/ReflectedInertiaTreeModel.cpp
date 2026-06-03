@@ -347,7 +347,8 @@ namespace grbda
         // Forward Pass - Articulated body bias force
         for (auto &link_node : reflected_inertia_nodes_)
         {
-            link_node->pA_ = spatial::generalForceCrossProduct(link_node->v_, DVec<Scalar>(link_node->I_ * link_node->v_));
+            link_node->pA_ = spatial::generalForceCrossProduct(link_node->v_,
+                DVec<Scalar>(link_node->I_[0] * link_node->v_));
         }
 
         // Account for external forces in bias force
@@ -421,7 +422,7 @@ namespace grbda
         // Forward pass
         for (auto &link_node : reflected_inertia_nodes_)
         {
-            link_node->IA_ = link_node->I_;
+            link_node->IA_ = link_node->I_[0];
         }
 
         // Backward pass (Gauss principal of least constraint)

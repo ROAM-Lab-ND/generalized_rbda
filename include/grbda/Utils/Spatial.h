@@ -973,6 +973,81 @@ namespace grbda
       return fs;
     }
 
+    /*!
+     * Multiply block-diagonal inertia (stored as vector<Mat6>) by a spatial velocity vector.
+     * Equivalent to assembling the block-diagonal DMat and multiplying, but avoids the allocation.
+     */
+    template <typename Scalar>
+    DVec<Scalar> blockDiagonalTimesVector(
+        const std::vector<Mat6<Scalar>, Eigen::aligned_allocator<Mat6<Scalar>>> &I,
+        const DVec<Scalar> &v)
+    {
+      const int n = (int)I.size();
+      DVec<Scalar> out(6 * n);
+      for (int i = 0; i < n; i++)
+        out.template segment<6>(6 * i).noalias() = I[i] * v.template segment<6>(6 * i);
+      return out;
+    }
+
+    /*!
+     * Convert block-diagonal inertia (stored as vector<Mat6>) to a full block-diagonal DMat.
+     * Only use when a dense matrix is unavoidable (e.g. initializing IA_).
+     */
+    template <typename Scalar>
+    DMat<Scalar> blockDiagonalToMatrix(
+        const std::vector<Mat6<Scalar>, Eigen::aligned_allocator<Mat6<Scalar>>> &I)
+    {
+      const int n = (int)I.size();
+      DMat<Scalar> M = DMat<Scalar>::Zero(6 * n, 6 * n);
+      for (int i = 0; i < n; i++)
+        M.template block<6, 6>(6 * i, 6 * i) = I[i];
+      return M;
+    }
+
+    /*!
+     * Compute crf(v)*I - I*crm(v) where I is stored as a vector of 6x6 blocks.
+     */
+    template <typename Scalar>
+    void spatialInertiaCrossTerms(
+        const std::vector<Mat6<Scalar>, Eigen::aligned_allocator<Mat6<Scalar>>> &I_blocks,
+        const DVec<Scalar> &v, DMat<Scalar> &out)
+    {
+      const int n = (int)I_blocks.size();
+      out.setZero(6 * n, 6 * n);
+      for (int b = 0; b < n; b++)
+      {
+        const int o = 6 * b;
+        const Mat6<Scalar> &I = I_blocks[b];
+        for (int r = 0; r < 6; ++r)
+        {
+          for (int c = 0; c < 6; ++c)
+          {
+            Scalar crf_part;
+            switch (r) {
+              case 0: crf_part = -v(o+2)*I(1,c) + v(o+1)*I(2,c) - v(o+5)*I(4,c) + v(o+4)*I(5,c); break;
+              case 1: crf_part =  v(o+2)*I(0,c) - v(o+0)*I(2,c) + v(o+5)*I(3,c) - v(o+3)*I(5,c); break;
+              case 2: crf_part = -v(o+1)*I(0,c) + v(o+0)*I(1,c) - v(o+4)*I(3,c) + v(o+3)*I(4,c); break;
+              case 3: crf_part = -v(o+2)*I(4,c) + v(o+1)*I(5,c); break;
+              case 4: crf_part =  v(o+2)*I(3,c) - v(o+0)*I(5,c); break;
+              case 5: crf_part = -v(o+1)*I(3,c) + v(o+0)*I(4,c); break;
+              default: crf_part = Scalar(0); break;
+            }
+            Scalar crm_part;
+            switch (c) {
+              case 0: crm_part = v(o+2)*I(r,1) - v(o+1)*I(r,2) + v(o+5)*I(r,4) - v(o+4)*I(r,5); break;
+              case 1: crm_part = -v(o+2)*I(r,0) + v(o+0)*I(r,2) - v(o+5)*I(r,3) + v(o+3)*I(r,5); break;
+              case 2: crm_part = v(o+1)*I(r,0) - v(o+0)*I(r,1) + v(o+4)*I(r,3) - v(o+3)*I(r,4); break;
+              case 3: crm_part = v(o+2)*I(r,4) - v(o+1)*I(r,5); break;
+              case 4: crm_part = -v(o+2)*I(r,3) + v(o+0)*I(r,5); break;
+              case 5: crm_part = v(o+1)*I(r,3) - v(o+0)*I(r,4); break;
+              default: crm_part = Scalar(0); break;
+            }
+            out(o+r, o+c) = crf_part - crm_part;
+          }
+        }
+      }
+    }
+
   } // namespace spatial
 
 } // namespace grbda
