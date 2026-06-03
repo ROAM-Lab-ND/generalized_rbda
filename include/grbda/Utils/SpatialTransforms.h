@@ -130,11 +130,11 @@ namespace grbda
                 const std::vector<Mat6<Scalar>, Eigen::aligned_allocator<Mat6<Scalar>>> &I_child,
                 std::vector<Mat6<Scalar>, Eigen::aligned_allocator<Mat6<Scalar>>> &I_parent) const;
 
-            // Accumulates child's block-diagonal DMat inertia to parent's block-diagonal DMat inertia.
-            // Used for M_cup/B_cup which remain DMat.
-            void accumulateBlockDiagonalInertia2(
-                const DMat<Scalar> &I1_child, DMat<Scalar> &I1_parent,
-                const DMat<Scalar> &I2_child, DMat<Scalar> &I2_parent) const;
+            // Accumulates two block-diagonal child matrices to corresponding parent matrices.
+            // Transforms and adds each 6x6 block; does not assume any structure within the blocks.
+            void accumulateBlockDiagonalPair(
+                const DMat<Scalar> &M1_child, DMat<Scalar> &M1_parent,
+                const DMat<Scalar> &M2_child, DMat<Scalar> &M2_parent) const;
 
             // Computes F = Ic * S exploiting block structure of Ic (vector<Mat6> form).
             DMat<Scalar> blockDiagonalInertiaTimesMotionSubspace(

@@ -640,7 +640,7 @@ namespace grbda
             if (cluster_i->parent_index_ >= 0)
             {
                 auto &parent_cluster = cluster_nodes_[cluster_i->parent_index_];
-                cluster_i->Xup_.accumulateBlockDiagonalInertia2(
+                cluster_i->Xup_.accumulateBlockDiagonalPair(
                     M_cup, parent_cluster->M_cup_,
                     B_cup, parent_cluster->B_cup_);
                 parent_cluster->F_ += cluster_i->Xup_.inverseTransformForceVector(F);

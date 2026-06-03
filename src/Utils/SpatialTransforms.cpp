@@ -633,9 +633,9 @@ namespace grbda
         }
 
         template <typename Scalar>
-        void GeneralizedTransform<Scalar>::accumulateBlockDiagonalInertia2(
-            const DMat<Scalar> &I1_child, DMat<Scalar> &I1_parent,
-            const DMat<Scalar> &I2_child, DMat<Scalar> &I2_parent) const
+        void GeneralizedTransform<Scalar>::accumulateBlockDiagonalPair(
+            const DMat<Scalar> &M1_child, DMat<Scalar> &M1_parent,
+            const DMat<Scalar> &M2_child, DMat<Scalar> &M2_parent) const
         {
             for (int i = 0; i < num_output_bodies_; i++)
             {
@@ -646,29 +646,29 @@ namespace grbda
                 const Mat3<Scalar> E_trans = E.transpose();
                 const Mat3<Scalar> r_hat = ori::vectorToSkewMat(X.getTranslation());
 
-                auto transformInertia = [&](const Mat6<Scalar> &I_in) -> Mat6<Scalar> {
-                    Mat6<Scalar> I_out;
-                    const Mat3<Scalar> &I_TL = I_in.template topLeftCorner<3, 3>();
-                    const Mat3<Scalar> &I_TR = I_in.template topRightCorner<3, 3>();
-                    const Mat3<Scalar> &I_BL = I_in.template bottomLeftCorner<3, 3>();
-                    const Mat3<Scalar> &I_BR = I_in.template bottomRightCorner<3, 3>();
-                    I_out.template topLeftCorner<3, 3>() = E_trans * I_TL * E +
-                                                           r_hat * E_trans * I_BL * E -
-                                                           E_trans * I_TR * E * r_hat -
-                                                           r_hat * E_trans * I_BR * E * r_hat;
-                    I_out.template topRightCorner<3, 3>() = E_trans * I_TR * E +
-                                                            r_hat * E_trans * I_BR * E;
-                    I_out.template bottomLeftCorner<3, 3>() = E_trans * I_BL * E -
-                                                              E_trans * I_BR * E * r_hat;
-                    I_out.template bottomRightCorner<3, 3>() = E_trans * I_BR * E;
-                    return I_out;
+                auto transformBlock = [&](const Mat6<Scalar> &M_in) -> Mat6<Scalar> {
+                    Mat6<Scalar> M_out;
+                    const Mat3<Scalar> &TL = M_in.template topLeftCorner<3, 3>();
+                    const Mat3<Scalar> &TR = M_in.template topRightCorner<3, 3>();
+                    const Mat3<Scalar> &BL = M_in.template bottomLeftCorner<3, 3>();
+                    const Mat3<Scalar> &BR = M_in.template bottomRightCorner<3, 3>();
+                    M_out.template topLeftCorner<3, 3>() = E_trans * TL * E +
+                                                           r_hat * E_trans * BL * E -
+                                                           E_trans * TR * E * r_hat -
+                                                           r_hat * E_trans * BR * E * r_hat;
+                    M_out.template topRightCorner<3, 3>() = E_trans * TR * E +
+                                                            r_hat * E_trans * BR * E;
+                    M_out.template bottomLeftCorner<3, 3>() = E_trans * BL * E -
+                                                              E_trans * BR * E * r_hat;
+                    M_out.template bottomRightCorner<3, 3>() = E_trans * BR * E;
+                    return M_out;
                 };
 
                 const int ps = 6 * parent_subindex;
-                I1_parent.template block<6, 6>(ps, ps) +=
-                    transformInertia(I1_child.template block<6, 6>(6 * i, 6 * i));
-                I2_parent.template block<6, 6>(ps, ps) +=
-                    transformInertia(I2_child.template block<6, 6>(6 * i, 6 * i));
+                M1_parent.template block<6, 6>(ps, ps) +=
+                    transformBlock(M1_child.template block<6, 6>(6 * i, 6 * i));
+                M2_parent.template block<6, 6>(ps, ps) +=
+                    transformBlock(M2_child.template block<6, 6>(6 * i, 6 * i));
             }
         }
 

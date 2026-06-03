@@ -712,26 +712,6 @@ namespace grbda
     }
 
     /*!
-     * Compute S^T * M where S is a motion subspace matrix.
-     * S: 6 x nv, M: 6 x cols -> result: nv x cols
-     */
-    template <typename Scalar>
-    DMat<Scalar> motionSubspaceTransposeTimesMatrix(const DMat<Scalar> &S, const DMat<Scalar> &M)
-    {
-      return S.transpose() * M;
-    }
-
-    /*!
-     * Compute M^T * S where S is a motion subspace matrix.
-     * M: 6 x N, S: 6 x nv -> M^T: N x 6, result: N x nv
-     */
-    template <typename Scalar>
-    DMat<Scalar> matrixTransposeTimesMotionSubspace(const DMat<Scalar> &M, const DMat<Scalar> &S)
-    {
-      return M.transpose() * S;
-    }
-
-    /*!
      * Create spatial coordinate transformation from rotation and translation
      */
     template <typename T, typename T2>
