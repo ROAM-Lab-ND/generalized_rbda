@@ -14,6 +14,14 @@ namespace grbda
         {
             typedef typename CorrectMatrixInverseType<Scalar>::type InverseType;
 
+            // A four-bar linkage is modeled as two open kinematic chains (path1 and path2)
+            // whose tips must coincide. The constraint phi(q) = tip1(q) - tip2(q) = 0 enforces
+            // this closure condition.
+            //
+            // path1_link_lengths: lengths of links along the first chain, in order from base to tip
+            // path2_link_lengths: lengths of links along the second chain, in order from base to tip
+            // offset:             2D position of path2's base relative to path1's base
+            // independent_coordinate: index (0, 1, or 2) of the actuated joint coordinate
             FourBar(std::vector<Scalar> path1_link_lengths, std::vector<Scalar> path2_link_lengths,
                     Vec2<Scalar> offset, int independent_coordinate);
 

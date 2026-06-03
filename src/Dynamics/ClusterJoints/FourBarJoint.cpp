@@ -74,40 +74,43 @@ namespace grbda
                 };
             }
 
-            // Build the native phi (works with any Scalar, including complex and SX)
+            // Build the four-bar constraint function (works with any Scalar, including complex and SX)
+            // phi(q) = tip_of_path1(q) - tip_of_path2(q), which must equal zero at all times
             template <typename Scalar>
             std::function<DVec<Scalar>(const JointCoordinate<Scalar> &)>
-            makeFourBarNativePhi(std::vector<Scalar> p1, std::vector<Scalar> p2,
-                                 Vec2<Scalar> off, size_t n1, size_t n2)
+            makeFourBarPhi(std::vector<Scalar> path1_lengths, std::vector<Scalar> path2_lengths,
+                           Vec2<Scalar> path2_origin, size_t num_path1_links, size_t num_path2_links)
             {
-                return [p1, p2, off, n1, n2](const JointCoordinate<Scalar> &jp) -> DVec<Scalar>
+                return [path1_lengths, path2_lengths, path2_origin,
+                        num_path1_links, num_path2_links](const JointCoordinate<Scalar> &q) -> DVec<Scalar>
                 {
                     using std::cos;
                     using std::sin;
 
-                    DVec<Scalar> pj1(2), pj2(1);
-                    pj1 << jp(0), jp(2);
-                    pj2 << jp(1);
+                    // Joint angles for each path: path1 uses q(0),q(2); path2 uses q(1)
+                    DVec<Scalar> path1_angles(2), path2_angles(1);
+                    path1_angles << q(0), q(2);
+                    path2_angles << q(1);
 
-                    Scalar ca = Scalar(0.);
-                    DVec<Scalar> path1 = DVec<Scalar>::Zero(2);
-                    for (size_t i = 0; i < n1; i++)
+                    Scalar cumulative_angle = Scalar(0.);
+                    DVec<Scalar> tip1 = DVec<Scalar>::Zero(2);
+                    for (size_t i = 0; i < num_path1_links; i++)
                     {
-                        ca += pj1(i);
-                        path1(0) += p1[i] * cos(ca);
-                        path1(1) += p1[i] * sin(ca);
+                        cumulative_angle += path1_angles(i);
+                        tip1(0) += path1_lengths[i] * cos(cumulative_angle);
+                        tip1(1) += path1_lengths[i] * sin(cumulative_angle);
                     }
 
-                    DVec<Scalar> path2 = off;
-                    ca = Scalar(0.);
-                    for (size_t i = 0; i < n2; i++)
+                    DVec<Scalar> tip2 = path2_origin;
+                    cumulative_angle = Scalar(0.);
+                    for (size_t i = 0; i < num_path2_links; i++)
                     {
-                        ca += pj2(i);
-                        path2(0) += p2[i] * cos(ca);
-                        path2(1) += p2[i] * sin(ca);
+                        cumulative_angle += path2_angles(i);
+                        tip2(0) += path2_lengths[i] * cos(cumulative_angle);
+                        tip2(1) += path2_lengths[i] * sin(cumulative_angle);
                     }
 
-                    return path1 - path2;
+                    return tip1 - tip2;
                 };
             }
         } // anonymous namespace
@@ -137,10 +140,8 @@ namespace grbda
                 throw std::runtime_error("FourBar: Must contain 3 links");
             }
 
-            // Restore phi_ to the native computation so it works for all scalar types
-            // (GenericImplicit sets phi_ to a CasADi-backed version that only handles real inputs)
-            this->phi_ = makeFourBarNativePhi<Scalar>(path1_link_lengths_, path2_link_lengths_,
-                                                      offset_, links_in_path1_, links_in_path2_);
+            this->phi_ = makeFourBarPhi<Scalar>(path1_link_lengths_, path2_link_lengths_,
+                                                offset_, links_in_path1_, links_in_path2_);
 
             switch (independent_coordinate_)
             {
@@ -298,7 +299,7 @@ namespace grbda
 
             // Build a symbolic phi using the factory (avoids constructing a full FourBar<SX>)
             auto sym_phi = makeFourBarSymPhi<Scalar>(path1_link_lengths_, path2_link_lengths_,
-                                                      offset_, links_in_path1_, links_in_path2_);
+                                                     offset_, links_in_path1_, links_in_path2_);
 
             // Root finding
             {
