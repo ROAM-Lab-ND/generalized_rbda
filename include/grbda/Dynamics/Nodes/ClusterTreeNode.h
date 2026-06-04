@@ -63,6 +63,10 @@ namespace grbda
         DMat<Scalar> B_cup_;
         DVec<Scalar> F_;
 
+        // Workspace vectors for parent velocity/acceleration (sized by motion_subspace_dimension_)
+        DVec<Scalar> v_parent_up_;
+        DVec<Scalar> a_parent_up_;
+
         // Workspace matrices for firstOrderInverseDynamicsDerivatives
         // Pre-allocated to avoid dynamic allocation in hot loop
         DMat<Scalar> t1_workspace_;

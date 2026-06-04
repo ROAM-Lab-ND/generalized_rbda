@@ -14,6 +14,10 @@ namespace grbda
                            velocity_index, joint->numVelocities()),
           bodies_(bodies), joint_(joint)
     {
+        const int mss_dim = 6 * (int)bodies.size();
+        this->v_parent_up_ = DVec<Scalar>::Zero(mss_dim);
+        this->a_parent_up_ = DVec<Scalar>::Zero(mss_dim);
+
         for (size_t i = 0; i < bodies.size(); i++)
         {
             this->I_[i] = bodies[i].inertia_.getMatrix();

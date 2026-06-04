@@ -229,6 +229,10 @@ namespace grbda
         // 6 x nDOF accumulators for firstOrderInverseDynamicsDerivativesWorldFrame
         D6Mat<Scalar> idDeriv_F1_, idDeriv_F2_, idDeriv_F3_, idDeriv_F4_;
 
+        // nDOF x nDOF output matrices for firstOrderInverseDynamicsDerivatives
+        // Pre-allocated to avoid heap allocation on each call
+        mutable DMat<Scalar> dtau_dq_, dtau_dqd_;
+
         template <typename Scalar2>
         friend class RigidBodyTreeModel;
 

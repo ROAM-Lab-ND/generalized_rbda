@@ -153,6 +153,9 @@ namespace grbda
         this->idDeriv_F3_ = D6Mat<Scalar>::Zero(6, num_degrees_of_freedom);
         this->idDeriv_F4_ = D6Mat<Scalar>::Zero(6, num_degrees_of_freedom);
 
+        this->dtau_dq_ = DMat<Scalar>::Zero(num_degrees_of_freedom, num_degrees_of_freedom);
+        this->dtau_dqd_ = DMat<Scalar>::Zero(num_degrees_of_freedom, num_degrees_of_freedom);
+
         // Precompute subtree velocity counts for each node (used by world-frame CRBA).
         for (auto &node : this->nodes_)
             node->subtree_num_velocities_ = node->num_velocities_;
@@ -320,8 +323,8 @@ namespace grbda
                 const DMat<Scalar> conv =
                     cluster->joint_->spanningTreeToIndependentCoordsConversion()
                         .template cast<Scalar>();
-                q.segment(cluster->position_index_, cluster->num_positions_) =
-                    (conv * pos).eval();
+                q.segment(cluster->position_index_, cluster->num_positions_).noalias() =
+                    conv * pos;
             }
             else
             {
@@ -336,7 +339,7 @@ namespace grbda
                 if (conv_int.rows() == nv_ind && conv_int.cols() == (int)vel.size())
                 {
                     const DMat<Scalar> conv = conv_int.template cast<Scalar>();
-                    qd.segment(cluster->velocity_index_, nv_ind) = (conv * vel).eval();
+                    qd.segment(cluster->velocity_index_, nv_ind).noalias() = conv * vel;
                 }
                 else
                 {
