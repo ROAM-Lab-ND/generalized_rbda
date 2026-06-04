@@ -11,8 +11,6 @@ namespace grbda
             : Base<Scalar>(1, OrientationRepresentation::num_ori_parameter + 3, 6),
               body_(body)
         {
-            q_spanning_ = DVec<Scalar>::Zero(OrientationRepresentation::num_ori_parameter + 3);
-            qd_spanning_ = DVec<Scalar>::Zero(6);
             if (body.parent_index_ >= 0)
                 throw std::runtime_error("Free joint is only valid as the first joint in a tree and thus cannot have a parent body");
 
@@ -32,10 +30,6 @@ namespace grbda
         void Free<Scalar, OrientationRepresentation>::updateKinematics(
             const JointState<Scalar> &joint_state)
         {
-            // Cache state for derivative methods
-            q_spanning_ = joint_state.position;
-            qd_spanning_ = joint_state.velocity;
-
             this->single_joints_[0]->updateKinematics(joint_state.position, joint_state.velocity);
             this->vJ_ = this->S_ * joint_state.velocity;
         }

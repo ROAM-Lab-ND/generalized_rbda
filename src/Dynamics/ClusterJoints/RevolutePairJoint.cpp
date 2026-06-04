@@ -39,11 +39,10 @@ namespace grbda
                   makeRPBodies<Scalar>(link_1, link_2),
                   makeRPJoints<Scalar>(joint_axis_1, joint_axis_2),
                   makeRPConstraint<Scalar>()),
-              link_1_(link_1), link_2_(link_2)
-        {
-            link_1_joint_ = this->single_joints_[0];
-            link_2_joint_ = this->single_joints_[1];
-        }
+              link_1_(link_1), link_2_(link_2),
+              link_1_joint_(this->single_joints_[0]),
+              link_2_joint_(this->single_joints_[1])
+        {}
 
         template <typename Scalar>
         std::vector<std::tuple<Body<Scalar>, JointPtr<Scalar>, DMat<Scalar>>>

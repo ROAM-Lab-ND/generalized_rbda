@@ -72,7 +72,7 @@ namespace grbda
                     beltMatrixRowFromBeltRatios(m2.belt_ratios_);
                 Mat2<Scalar> ratio_product = rotor_matrix * belt_matrix;
 
-                // phi(q_span) = K * q_span = 0  (linear constraint from gear/belt ratios)
+                // K * q_span = 0: rotor velocities are linearly determined by link velocities
                 DMat<Scalar> K = DMat<Scalar>::Zero(2, 4);
                 int cnstr1 = (r1 > r2) ? 1 : 0;
                 int cnstr2 = (r2 > r1) ? 1 : 0;
@@ -82,17 +82,15 @@ namespace grbda
                 K(cnstr2, l1) = ratio_product(1, 0);
                 K(cnstr2, l2) = ratio_product(1, 1);
 
-                DMat<double> K_double = DMat<double>::Zero(2, 4);
+                // sym_phi is the CasADi version of K * q required by GenericImplicit
+                DMat<double> K_double(2, 4);
                 for (int i = 0; i < 2; i++)
                     for (int j = 0; j < 4; j++) {
-                        if constexpr (std::is_same_v<Scalar, SX>)
-                            K_double(i, j) = static_cast<double>(K(i, j));
-                        else if constexpr (std::is_same_v<Scalar, std::complex<double>>)
+                        if constexpr (std::is_same_v<Scalar, std::complex<double>>)
                             K_double(i, j) = std::real(K(i, j));
                         else
                             K_double(i, j) = static_cast<double>(K(i, j));
                     }
-
                 std::vector<bool> is_ind(4, false);
                 is_ind[l1] = true;
                 is_ind[l2] = true;

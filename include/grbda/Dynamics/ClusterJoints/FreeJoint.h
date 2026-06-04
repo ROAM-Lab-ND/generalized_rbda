@@ -77,9 +77,6 @@ namespace grbda
         private:
             const Body<Scalar> body_;
 
-            // Cache for joint state (updated in updateKinematics)
-            mutable DVec<Scalar> q_spanning_;
-            mutable DVec<Scalar> qd_spanning_;
         };
 
     }
