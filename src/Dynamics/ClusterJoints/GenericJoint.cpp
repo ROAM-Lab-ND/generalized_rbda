@@ -28,19 +28,18 @@ namespace grbda
                 std::cerr << "[GenericImplicit] Invalid coordinate sizes!" << std::endl;
             }
 
-            // The coordinate map is a matrix that maps the stacked indepedent
-            // coordinates [y;q_dep] to the spanning coordinate vector q such that
-            // q = coord_map * [y;q_dep]
-            SX coord_map = SX::zeros(state_dim, state_dim);
+            // The coordinate map satisfies q = coord_map * [y; q_dep],
+            // reordering stacked independent+dependent coords into spanning order
+            SX coord_map_sx = SX::zeros(state_dim, state_dim);
             coord_map_ = DMat<double>::Zero(state_dim, state_dim);
             for (int i = 0; i < ind_dim; i++)
             {
-                coord_map(ind_coords[i], i) = 1;
+                coord_map_sx(ind_coords[i], i) = 1;
                 coord_map_(ind_coords[i], i) = 1.0;
             }
             for (int i = 0; i < dep_dim; i++)
             {
-                coord_map(dep_coords[i], i + ind_dim) = 1;
+                coord_map_sx(dep_coords[i], i + ind_dim) = 1;
                 coord_map_(dep_coords[i], i + ind_dim) = 1.0;
             }
 
@@ -106,7 +105,7 @@ namespace grbda
             
             
             cs_G_sym(dep_slice, casadi::Slice()) = -SX::solve(cs_Kd_sym, cs_Ki_sym);
-            cs_G_sym = SX::mtimes(coord_map, cs_G_sym);
+            cs_G_sym = SX::mtimes(coord_map_sx, cs_G_sym);
 
             // Explicit constraints bias
             SX cs_g_sym = SX::zeros(state_dim, 1);
@@ -116,7 +115,7 @@ namespace grbda
             
             
             cs_g_sym(dep_slice) = SX::solve(cs_Kd_sym, cs_k_sym);
-            cs_g_sym = SX::mtimes(coord_map, cs_g_sym);
+            cs_g_sym = SX::mtimes(coord_map_sx, cs_g_sym);
 
             // Assign member variables using casadi functions
             this->phi_ = [this](const JointCoordinate<Scalar> &joint_pos)
@@ -191,7 +190,7 @@ namespace grbda
                 return false;
             }
             DVec<Scalar> violation = this->phi_(joint_pos);
-            return nearZeroDefaultTrue(violation, static_cast<Scalar>(2e-2));
+            return nearZeroDefaultTrue(violation, static_cast<Scalar>(1e-6));
         }
 
         template <typename Scalar>
@@ -904,9 +903,9 @@ namespace grbda
                 vel_idx += num_vel;
             }
 
-            S_implicit_ = X_intra_ * S_spanning_;
-            this->S_ = S_implicit_ * this->loop_constraint_->G();
-            this->vJ_ = S_implicit_ * qd;
+            S_implicit_.noalias() = X_intra_ * S_spanning_;
+            this->S_.noalias() = S_implicit_ * this->loop_constraint_->G();
+            this->vJ_.noalias() = S_implicit_ * qd;
 
             for (int i = 0; i < this->num_bodies_; i++)
             {
@@ -982,11 +981,11 @@ namespace grbda
                     }
 
                     // Second term: X_intra * S_spanning * G_dot
-                    S_ring_term2 = S_implicit_ * G_dot;
+                    S_ring_term2.noalias() = S_implicit_ * G_dot;
                 }
             }
 
-            this->S_ring_ = S_ring_term1 + S_ring_term2;
+            this->S_ring_.noalias() = S_ring_term1 + S_ring_term2;
         }
 
         template <typename Scalar>

@@ -68,9 +68,9 @@ namespace grbda
             const DVec<Scalar> &q = spanning_joint_state.position;
             const DVec<Scalar> &qd = spanning_joint_state.velocity;
 
-            // Cache INDEPENDENT coordinates for derivative methods
-            q_spanning_ = joint_state.position;
-            qd_spanning_ = joint_state.velocity;
+            // Cache spanning coordinates for derivative methods
+            q_spanning_ = q;
+            qd_spanning_ = qd;
 
             link_1_joint_->updateKinematics(q.template segment<1>(0), qd.template segment<1>(0));
             link_2_joint_->updateKinematics(q.template segment<1>(1), qd.template segment<1>(1));
