@@ -25,7 +25,6 @@ option(ASAN "set compile options for Address Sanitizer" OFF)
 message(STATUS "======> Find Dependencies")
 
 
-# Prefer local Eigen if available
 set(EIGEN_LOCAL_PATH "${PROJECT_SOURCE_DIR}/grbda-dependencies/eigen-3.4.0")
 if(EXISTS "${EIGEN_LOCAL_PATH}/Eigen/StdVector")
   message(STATUS "Using local Eigen at ${EIGEN_LOCAL_PATH}")
@@ -198,11 +197,3 @@ if(BUILD_BENCHMARKS)
   message(STATUS "======>  Setup Benchmarks  ")
   add_subdirectory(Benchmarking)
 endif()
-
-# Debug executable for floating base investigation
-# add_executable(debug_fb debug_floating_base.cpp)
-# target_link_libraries(debug_fb PRIVATE ${PROJECT_NAME})
-
-# Complex step test for floating base
-# add_executable(test_fb_complex_step test_fb_complex_step.cpp)
-# target_link_libraries(test_fb_complex_step PRIVATE ${PROJECT_NAME})

@@ -279,27 +279,12 @@ TYPED_TEST(RigidBodyDynamicsAlgosTest, LambdaInv)
             GTEST_ASSERT_EQ(cluster_model.getNumEndEffectors(), gen_model.getNumEndEffectors());
             GTEST_ASSERT_EQ(cluster_model.getNumEndEffectors(), proj_model.getNumEndEffectors());
 
-            // // Debug output for state sizes and validity before CasADi routines
-            // std::cout << "[LambdaInv] Robot idx: " << i << ", test idx: " << j << std::endl;
-            // std::cout << "  cluster_model.getNumPositions(): " << cluster_model.getNumPositions() << std::endl;
-            // std::cout << "  cluster_model.getNumDegreesOfFreedom(): " << cluster_model.getNumDegreesOfFreedom() << std::endl;
-            // std::cout << "  cluster_model.getNumEndEffectors(): " << cluster_model.getNumEndEffectors() << std::endl;
+            const DMat<double> lambda_inv = cluster_model.inverseOperationalSpaceInertiaMatrix();
+            const DMat<double> lambda_inv_gen = gen_model.inverseOperationalSpaceInertiaMatrix();
+            const DMat<double> lambda_inv_proj = proj_model.inverseOperationalSpaceInertiaMatrix();
 
-            // Add try-catch to catch CasADi slice errors
-            try {
-                const DMat<double> lambda_inv = cluster_model.inverseOperationalSpaceInertiaMatrix();
-                const DMat<double> lambda_inv_gen = gen_model.inverseOperationalSpaceInertiaMatrix();
-                const DMat<double> lambda_inv_proj = proj_model.inverseOperationalSpaceInertiaMatrix();
-
-                GTEST_ASSERT_LT((lambda_inv - lambda_inv_gen).norm(), tol);
-                GTEST_ASSERT_LT((lambda_inv - lambda_inv_proj).norm(), tol);
-            } catch (const std::exception& e) {
-                std::cerr << "[LambdaInv] Exception caught: " << e.what() << std::endl;
-                std::cerr << "  State sizes: positions=" << cluster_model.getNumPositions()
-                          << ", dof=" << cluster_model.getNumDegreesOfFreedom()
-                          << ", end_effectors=" << cluster_model.getNumEndEffectors() << std::endl;
-                throw;
-            }
+            GTEST_ASSERT_LT((lambda_inv - lambda_inv_gen).norm(), tol);
+            GTEST_ASSERT_LT((lambda_inv - lambda_inv_proj).norm(), tol);
         }
     }
 }

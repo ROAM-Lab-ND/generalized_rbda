@@ -150,8 +150,8 @@ namespace grbda
         Transform<Scalar>::inverseTransformSpatialInertia(const Mat6<Scalar> &I_in) const
         {
             Mat6<Scalar> I_out;
-            Mat3<Scalar> E_trans = E_.transpose();
-            Mat3<Scalar> r_hat = ori::vectorToSkewMat(r_);
+            const Mat3<Scalar> E_trans = E_.transpose();
+            const Mat3<Scalar> r_hat = ori::vectorToSkewMat(r_);
 
             const Mat3<Scalar> &I_TL = I_in.template topLeftCorner<3, 3>();
             const Mat3<Scalar> &I_TR = I_in.template topRightCorner<3, 3>();
@@ -186,8 +186,8 @@ namespace grbda
             // Note: r_hat^T = -r_hat, so X^{-T} = [E, E*r_hat; 0, E]
 
             Mat6<Scalar> I_out;
-            Mat3<Scalar> E_trans = E_.transpose();
-            Mat3<Scalar> r_hat = ori::vectorToSkewMat(r_);
+            const Mat3<Scalar> E_trans = E_.transpose();
+            const Mat3<Scalar> r_hat = ori::vectorToSkewMat(r_);
 
             const Mat3<Scalar> &I_TL = I_in.template topLeftCorner<3, 3>();
             const Mat3<Scalar> &I_TR = I_in.template topRightCorner<3, 3>();
@@ -202,17 +202,17 @@ namespace grbda
             // [I_TL, I_TR]   [E^T,       0  ]   [I_TL*E^T + I_TR*r_hat*E^T,  I_TR*E^T]
             // [I_BL, I_BR] * [r_hat*E^T, E^T] = [I_BL*E^T + I_BR*r_hat*E^T,  I_BR*E^T]
 
-            Mat3<Scalar> r_hat_ET = r_hat * E_trans;
-            Mat3<Scalar> temp_TL = I_TL * E_trans + I_TR * r_hat_ET;
-            Mat3<Scalar> temp_TR = I_TR * E_trans;
-            Mat3<Scalar> temp_BL = I_BL * E_trans + I_BR * r_hat_ET;
-            Mat3<Scalar> temp_BR = I_BR * E_trans;
+            const Mat3<Scalar> r_hat_ET = r_hat * E_trans;
+            const Mat3<Scalar> temp_TL = I_TL * E_trans + I_TR * r_hat_ET;
+            const Mat3<Scalar> temp_TR = I_TR * E_trans;
+            const Mat3<Scalar> temp_BL = I_BL * E_trans + I_BR * r_hat_ET;
+            const Mat3<Scalar> temp_BR = I_BR * E_trans;
 
             // Now compute X^{-T} * (I * X^{-1}):
             // [E,  E*r_hat]   [temp_TL, temp_TR]
             // [0,  E      ] * [temp_BL, temp_BR]
 
-            Mat3<Scalar> E_r_hat = E_ * r_hat;
+            const Mat3<Scalar> E_r_hat = E_ * r_hat;
             I_out.template topLeftCorner<3, 3>() = E_ * temp_TL + E_r_hat * temp_BL;
             I_out.template topRightCorner<3, 3>() = E_ * temp_TR + E_r_hat * temp_BR;
             I_out.template bottomLeftCorner<3, 3>() = E_ * temp_BL;

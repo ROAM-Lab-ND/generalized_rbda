@@ -68,6 +68,10 @@ namespace TestHelpers
         const Mat3<SX> R = ori::quaternionToRotationMatrix(quat);
         q_plus_dq_vec.head<3>() = pos + R.transpose() * dpos;
         Quat<SX> dquat_vec(0, dquat[0], dquat[1], dquat[2]);
+        // First-order retraction: steps off the quaternion sphere for finite dq.
+        // Acceptable here because this function is used symbolically (SX) — dq is
+        // later set to zero and the Jacobian w.r.t. dq is taken, recovering the exact
+        // derivative without any normalization error.
         q_plus_dq_vec.template tail<4>() = quat + 0.5 * ori::quatProduct(quat, dquat_vec);
         return q_plus_dq_vec;
     }
@@ -158,18 +162,19 @@ namespace TestHelpers
             } else if (is_implicit) {
                 auto lc = cluster->joint_->cloneLoopConstraint();
                 auto* generic = dynamic_cast<LoopConstraint::GenericImplicit<SX>*>(lc.get());
-                if (generic) {
-                    DM q_dm(num_pos, 1);
-                    for (int i = 0; i < num_pos; ++i)
-                        q_dm(i) = static_cast<double>(q_flat[pos_idx + i]);
-                    DM G_dm = generic->getGFcn()(casadi::DMVector{q_dm})[0];
-                    DM dq_dm(num_vel, 1);
-                    for (int i = 0; i < num_vel; ++i)
-                        dq_dm(i) = static_cast<double>(dq_flat[vel_idx + i]);
-                    DM q_new = q_dm + DM::mtimes(G_dm, dq_dm);
-                    for (int i = 0; i < num_pos; ++i)
-                        result[pos_idx + i] = DM(static_cast<double>(q_new(i)));
-                }
+                if (!generic)
+                    throw std::runtime_error("plus: implicit constraint is not GenericImplicit — unhandled type");
+                DM q_dm(num_pos, 1);
+                for (int i = 0; i < num_pos; ++i)
+                    q_dm(i) = static_cast<double>(q_flat[pos_idx + i]);
+                DM G_dm = generic->getGFcn()(casadi::DMVector{q_dm})[0];
+                DM dq_dm(num_vel, 1);
+                for (int i = 0; i < num_vel; ++i)
+                    dq_dm(i) = static_cast<double>(dq_flat[vel_idx + i]);
+                DM q_new = q_dm + DM::mtimes(G_dm, dq_dm);
+                for (int i = 0; i < num_pos; ++i)
+                    result[pos_idx + i] = DM(static_cast<double>(q_new(i)));
+
             } else {
                 for (int i = 0; i < num_pos; ++i)
                     result[pos_idx + i] = q_flat[pos_idx + i] + dq_flat[vel_idx + i];

@@ -440,8 +440,6 @@ TEST(InverseDynamicsDerivativesComplexStep, MiniCheetahQuaternion) {
         /*tol_dq=*/1e-12, /*tol_dqdot=*/1e-12, /*record_per_joint=*/true);
 }
 
-// Simpler version: Build complex model directly from templated robot class
-// This avoids all the reconstruction logic!
 template<template<typename, typename> class RobotType, typename OriRep>
 void testDirectTemplateApproach(const std::string& robot_name) {
     std::cout << "\n========================================\n";
@@ -584,7 +582,7 @@ TEST(InverseDynamicsDerivativesComplexStep, PlanarLegLinkageImplicitConstraintDe
         model_real, model_complex, "PlanarLegLinkage (ImplicitConstraint)", 1e-12, 1e-14);
 }
 
-TEST(InverseDynamicsDerivativesComplexStep, CassieOpenChainDerivatives) {
+TEST(InverseDynamicsDerivativesComplexStep, CassieClosedChainDerivatives) {
     Cassie<double>               robot_real;
     Cassie<std::complex<double>> robot_complex;
     ClusterTreeModel<double>               model_real    = robot_real.buildClusterTreeModel();
