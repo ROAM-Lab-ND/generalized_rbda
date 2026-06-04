@@ -129,19 +129,14 @@ namespace grbda
             const Mat3<Scalar> ET = E_.transpose();
             const Mat3<Scalar> r_hat_ET = ori::vectorToSkewMat(r_) * ET;
 
-            // Helper lambda to transform a single matrix in-place
-            auto transformInPlace = [&ET, &r_hat_ET](DMat<Scalar> &F) {
-                const int num_cols = F.cols();
-                DMat<Scalar> F_out(6, num_cols);
+            // Scratch buffer shared across all 4 transforms (F1-F4 are all the same size)
+            DMat<Scalar> F_out(6, F1.cols());
 
-                // Top 3 rows: E^T * F_top + r_hat * E^T * F_bottom
+            auto transformInPlace = [&ET, &r_hat_ET, &F_out](DMat<Scalar> &F) {
                 F_out.template topRows<3>().noalias() = ET * F.template topRows<3>();
                 F_out.template topRows<3>().noalias() += r_hat_ET * F.template bottomRows<3>();
-
-                // Bottom 3 rows: E^T * F_bottom
                 F_out.template bottomRows<3>().noalias() = ET * F.template bottomRows<3>();
-
-                F = std::move(F_out);
+                std::swap(F, F_out);
             };
 
             transformInPlace(F1);
