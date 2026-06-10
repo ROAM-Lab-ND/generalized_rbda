@@ -36,18 +36,15 @@ namespace grbda
             std::vector<std::tuple<Body<Scalar>, JointPtr<Scalar>, DMat<Scalar>>>
             bodiesJointsAndReflectedInertias() const override;
 
-            // Derivative methods
-            void getSdotqd_q(DMat<Scalar>& out) const override;
-
-            // RevoluteTripleWithRotor has configuration-dependent S (uses CasADi)
+            // TODO: migrate to Generic<Scalar> (see RevolutePairWithRotorJoint as the template).
+            // That would give correct S-derivative support via GenericJoint's CasADi machinery,
+            // with a static 3x6 K constraint matrix and the same three factory helpers pattern.
             bool hasConfigurationDependentS() const override { return true; }
-
+            void getSdotqd_q(DMat<Scalar>& out) const override;
             void evalSTimesVec_dq(const DVec<Scalar>& b, DMat<Scalar>& out) const override;
             void evalSTTimesVec_dq(const DVec<Scalar>& F, DMat<Scalar>& out) const override;
 
         private:
-            char axisToChar(ori::CoordinateAxis axis) const;
-            void initializeCasadiFunctions() const;
             JointPtr<Scalar> link_1_joint_;
             JointPtr<Scalar> link_2_joint_;
             JointPtr<Scalar> link_3_joint_;
@@ -66,25 +63,11 @@ namespace grbda
             const Body<Scalar> rotor_2_;
             const Body<Scalar> rotor_3_;
 
-            ori::CoordinateAxis axis1_;
-            ori::CoordinateAxis axis2_;
-            ori::CoordinateAxis axis3_;
-
             spatial::Transform<Scalar> X_tree_2_;
             spatial::Transform<Scalar> X_tree_3_;
 
             DMat<Scalar> X_intra_S_span_;
             DMat<Scalar> X_intra_S_span_ring_;
-
-            // CasADi functions for derivatives
-            mutable bool casadi_functions_initialized_ = false;
-            mutable casadi::Function f_dS_link2_dq_;
-            mutable casadi::Function f_dS_link3_dq_;
-            mutable casadi::Function f_Sdotqd_q_;
-
-            // Cache for current state
-            mutable DVec<Scalar> q_spanning_;
-            mutable DVec<Scalar> qd_spanning_;
         };
 
     }

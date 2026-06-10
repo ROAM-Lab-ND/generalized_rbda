@@ -518,18 +518,9 @@ TEST(InverseDynamicsDerivativesComplexStep, KukaLWR) {
         model_real, model_complex, "KUKA LWR 4+");
 }
 
-TEST(InverseDynamicsDerivativesComplexStep, TeleopArm) {
-    TeleopArm robot_real;
-    ClusterTreeModel<double>               model_real    = robot_real.buildClusterTreeModel();
-    ClusterTreeModel<std::complex<double>> model_complex = cloneToComplex(model_real);
-
-    ASSERT_EQ(model_real.getNumDegreesOfFreedom(), 7);
-
-    model_real.setState(randomModelState(model_real));
-
-    testInverseDynamicsDerivativesComplexStep(
-        model_real, model_complex, "TeleopArm");
-}
+// TeleopArm test removed: RevoluteTripleWithRotor S-derivative methods now throw.
+// TODO: restore once RevoluteTripleWithRotor is migrated to Generic<Scalar>
+// (see RevolutePairWithRotorJoint as the template).
 TEST(InverseDynamicsDerivativesComplexStep, TelloImplicitConstraint) {
     Tello<double> robot_real;
     ClusterTreeModel<double> model_real = robot_real.buildClusterTreeModel();

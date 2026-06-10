@@ -1,5 +1,4 @@
 #include "grbda/Dynamics/ClusterJoints/RevoluteTripleWithRotorJoint.h"
-#include "grbda/Utils/CasadiDerivatives.h"
 
 namespace grbda
 {
@@ -15,7 +14,6 @@ namespace grbda
             : Base<Scalar>(6, 3, 3), link_1_(module_1.body_), link_2_(module_2.body_),
               link_3_(module_3.body_), rotor_1_(module_1.rotor_), rotor_2_(module_2.rotor_),
               rotor_3_(module_3.rotor_),
-              axis1_(module_1.joint_axis_), axis2_(module_2.joint_axis_), axis3_(module_3.joint_axis_),
               X_tree_2_(module_2.body_.Xtree_), X_tree_3_(module_3.body_.Xtree_)
         {
             using Rev = Joints::Revolute<Scalar>;
@@ -67,10 +65,6 @@ namespace grbda
             const JointState<Scalar> spanning_joint_state = this->toSpanningTreeState(joint_state);
             const DVec<Scalar> &q = spanning_joint_state.position;
             const DVec<Scalar> &qd = spanning_joint_state.velocity;
-
-            // Cache spanning coordinates for derivative methods
-            q_spanning_ = q;
-            qd_spanning_ = qd;
 
             link_1_joint_->updateKinematics(q.template segment<1>(0), qd.template segment<1>(0));
             link_2_joint_->updateKinematics(q.template segment<1>(1), qd.template segment<1>(1));
@@ -155,270 +149,30 @@ namespace grbda
         }
 
         template <typename Scalar>
-        char RevoluteTripleWithRotor<Scalar>::axisToChar(ori::CoordinateAxis axis) const
+        void RevoluteTripleWithRotor<Scalar>::evalSTimesVec_dq(const DVec<Scalar>&, DMat<Scalar>&) const
         {
-            switch (axis)
-            {
-            case ori::CoordinateAxis::X:
-                return 'X';
-            case ori::CoordinateAxis::Y:
-                return 'Y';
-            case ori::CoordinateAxis::Z:
-                return 'Z';
-            default:
-                throw std::runtime_error("Unknown axis");
-            }
+            throw std::runtime_error(
+                "RevoluteTripleWithRotor::evalSTimesVec_dq is not implemented. "
+                "Migrate to Generic<Scalar> (see RevolutePairWithRotorJoint as the template) "
+                "to get correct S-derivative support via GenericJoint's CasADi machinery.");
         }
 
         template <typename Scalar>
-        void RevoluteTripleWithRotor<Scalar>::initializeCasadiFunctions() const
+        void RevoluteTripleWithRotor<Scalar>::evalSTTimesVec_dq(const DVec<Scalar>&, DMat<Scalar>&) const
         {
-            if (casadi_functions_initialized_) return;
-
-            using namespace casadi;
-            using namespace casadi_derivatives;
-
-            SX q1 = SX::sym("q1");
-            SX q2 = SX::sym("q2");
-            SX q3 = SX::sym("q3");
-            SX qd1 = SX::sym("qd1");
-            SX qd2 = SX::sym("qd2");
-            SX qd3 = SX::sym("qd3");
-
-            char ax1 = axisToChar(axis1_);
-            char ax2 = axisToChar(axis2_);
-            char ax3 = axisToChar(axis3_);
-
-            SX S1 = revoluteMotionSubspace(ax1);
-            SX S2 = revoluteMotionSubspace(ax2);
-            SX S3 = revoluteMotionSubspace(ax3);
-
-            // Convert Xtree matrices to CasADi SX
-            DMat<double> Xtree2_eigen = X_tree_2_.toMatrix().template cast<double>();
-            DMat<double> Xtree3_eigen = X_tree_3_.toMatrix().template cast<double>();
-
-            SX Xtree2_sx = SX::zeros(6, 6);
-            SX Xtree3_sx = SX::zeros(6, 6);
-
-            for (int i = 0; i < 6; ++i) {
-                for (int j = 0; j < 6; ++j) {
-                    Xtree2_sx(i, j) = Xtree2_eigen(i, j);
-                    Xtree3_sx(i, j) = Xtree3_eigen(i, j);
-                }
-            }
-
-            // Compute spatial rotations
-            SX XJ2 = spatialRotation(ax2, q2);
-            SX XJ3 = spatialRotation(ax3, q3);
-
-            // Compute X21 = XJ2 * Xtree2
-            SX X21 = mtimes(XJ2, Xtree2_sx);
-
-            // Compute X32 = XJ3 * Xtree3
-            SX X32 = mtimes(XJ3, Xtree3_sx);
-
-            // Compute X31 = X32 * X21
-            SX X31 = mtimes(X32, X21);
-
-            // Motion subspaces for link2 and link3
-            // Link2, column 0: X21 * S1
-            SX S_link2_col0 = mtimes(X21, S1);
-
-            // Link3, column 0: X31 * S1
-            SX S_link3_col0 = mtimes(X31, S1);
-
-            // Link3, column 1: X32 * S2
-            SX S_link3_col1 = mtimes(X32, S2);
-
-            // Compute jacobians for link2
-            SX dS_link2_col0_dq1 = jacobian(S_link2_col0, q1);
-            SX dS_link2_col0_dq2 = jacobian(S_link2_col0, q2);
-            SX dS_link2_col0_dq3 = jacobian(S_link2_col0, q3);
-
-            // Compute jacobians for link3 column 0
-            SX dS_link3_col0_dq1 = jacobian(S_link3_col0, q1);
-            SX dS_link3_col0_dq2 = jacobian(S_link3_col0, q2);
-            SX dS_link3_col0_dq3 = jacobian(S_link3_col0, q3);
-
-            // Compute jacobians for link3 column 1
-            SX dS_link3_col1_dq1 = jacobian(S_link3_col1, q1);
-            SX dS_link3_col1_dq2 = jacobian(S_link3_col1, q2);
-            SX dS_link3_col1_dq3 = jacobian(S_link3_col1, q3);
-
-            // Combine into output matrices
-            // Link2 derivatives: 6x3 matrix for each q
-            SX dS_link2_dq = horzcat(dS_link2_col0_dq1, dS_link2_col0_dq2, dS_link2_col0_dq3);
-
-            // Link3 derivatives: 6x3 matrix for each q (combining both columns)
-            SX dS_link3_col0_dq = horzcat(dS_link3_col0_dq1, dS_link3_col0_dq2, dS_link3_col0_dq3);
-            SX dS_link3_col1_dq = horzcat(dS_link3_col1_dq1, dS_link3_col1_dq2, dS_link3_col1_dq3);
-
-            // Create functions
-            f_dS_link2_dq_ = Function("dS_link2_dq", {q1, q2, q3}, {dS_link2_dq});
-            f_dS_link3_dq_ = Function("dS_link3_dq", {q1, q2, q3}, {dS_link3_col0_dq, dS_link3_col1_dq});
-
-            // For Sdotqd derivatives
-            // Ṡ = dS/dq1*q̇1 + dS/dq2*q̇2 + dS/dq3*q̇3
-            // We need to track derivatives for all configuration-dependent terms
-
-            // For Sdotqd derivatives
-            // Ṡ = dS/dq1*q̇1 + dS/dq2*q̇2 + dS/dq3*q̇3
-            // We need to compute Sdotqd for each link separately
-
-            // Link2: Only has configuration-dependent column 0
-            SX Sdot_link2_col0 = dS_link2_col0_dq1 * qd1 + dS_link2_col0_dq2 * qd2 + dS_link2_col0_dq3 * qd3;
-            SX Sdotqd_link2 = Sdot_link2_col0 * qd1;
-
-            // Link3: Has configuration-dependent columns 0 and 1
-            SX Sdot_link3_col0 = dS_link3_col0_dq1 * qd1 + dS_link3_col0_dq2 * qd2 + dS_link3_col0_dq3 * qd3;
-            SX Sdot_link3_col1 = dS_link3_col1_dq1 * qd1 + dS_link3_col1_dq2 * qd2 + dS_link3_col1_dq3 * qd3;
-            SX Sdotqd_link3 = Sdot_link3_col0 * qd1 + Sdot_link3_col1 * qd2;
-
-            // Compute ∂(Ṡqd)/∂q for each link separately
-            SX dSdotqd_link2_dq1 = jacobian(Sdotqd_link2, q1);
-            SX dSdotqd_link2_dq2 = jacobian(Sdotqd_link2, q2);
-            SX dSdotqd_link2_dq3 = jacobian(Sdotqd_link2, q3);
-
-            SX dSdotqd_link3_dq1 = jacobian(Sdotqd_link3, q1);
-            SX dSdotqd_link3_dq2 = jacobian(Sdotqd_link3, q2);
-            SX dSdotqd_link3_dq3 = jacobian(Sdotqd_link3, q3);
-
-            f_Sdotqd_q_ = Function("Sdotqd_q", {q1, q2, q3, qd1, qd2, qd3},
-                                   {horzcat(dSdotqd_link2_dq1, dSdotqd_link2_dq2, dSdotqd_link2_dq3),
-                                    horzcat(dSdotqd_link3_dq1, dSdotqd_link3_dq2, dSdotqd_link3_dq3)});
-
-            casadi_functions_initialized_ = true;
+            throw std::runtime_error(
+                "RevoluteTripleWithRotor::evalSTTimesVec_dq is not implemented. "
+                "Migrate to Generic<Scalar> (see RevolutePairWithRotorJoint as the template) "
+                "to get correct S-derivative support via GenericJoint's CasADi machinery.");
         }
 
         template <typename Scalar>
-        static std::vector<DMat<Scalar>> computeSq(
-            casadi::Function& f_dS_link2_dq,
-            casadi::Function& f_dS_link3_dq,
-            const DVec<Scalar>& q_cache,
-            const DMat<Scalar>& G)
+        void RevoluteTripleWithRotor<Scalar>::getSdotqd_q(DMat<Scalar>&) const
         {
-            const int nv = 3;
-            const int spatial_dim = 36;
-
-            std::vector<casadi::DM> input = {
-                casadi::DM(static_cast<double>(q_cache(0))),
-                casadi::DM(static_cast<double>(q_cache(1))),
-                casadi::DM(static_cast<double>(q_cache(2)))
-            };
-
-            auto res_link2 = f_dS_link2_dq(input);
-            auto res_link3 = f_dS_link3_dq(input);
-
-            casadi::DM dS_link2 = res_link2[0];
-            casadi::DM dS_link3_col0 = res_link3[0];
-            casadi::DM dS_link3_col1 = res_link3[1];
-
-            std::vector<DMat<Scalar>> dX_intra_dq(nv);
-            for (int i = 0; i < nv; ++i)
-                dX_intra_dq[i] = DMat<Scalar>::Zero(spatial_dim, 6);
-
-            for (int i = 0; i < 6; ++i)
-                for (int j = 0; j < nv; ++j)
-                    dX_intra_dq[j](6 + i, 0) = static_cast<Scalar>(static_cast<double>(dS_link2(i, j)));
-
-            for (int i = 0; i < 6; ++i)
-                for (int j = 0; j < nv; ++j)
-                    dX_intra_dq[j](12 + i, 0) = static_cast<Scalar>(static_cast<double>(dS_link3_col0(i, j)));
-
-            for (int i = 0; i < 6; ++i)
-                for (int j = 0; j < nv; ++j)
-                    dX_intra_dq[j](12 + i, 1) = static_cast<Scalar>(static_cast<double>(dS_link3_col1(i, j)));
-
-            std::vector<DMat<Scalar>> S_q(nv);
-            for (int i = 0; i < nv; ++i)
-                S_q[i] = dX_intra_dq[i] * G;
-
-            return S_q;
-        }
-
-        template <typename Scalar>
-        void RevoluteTripleWithRotor<Scalar>::evalSTimesVec_dq(const DVec<Scalar>& b, DMat<Scalar>& out) const
-        {
-            initializeCasadiFunctions();
-            const int nv = 3;
-            const int mss_dim = this->num_bodies_ * 6;
-            const DMat<Scalar>& G = this->loop_constraint_->G();
-            const auto S_q = computeSq(f_dS_link2_dq_, f_dS_link3_dq_, q_spanning_, G);
-            out.setZero(mss_dim, nv);
-            for (int i = 0; i < nv; ++i)
-                out.col(i) = S_q[i] * b;
-        }
-
-        template <typename Scalar>
-        void RevoluteTripleWithRotor<Scalar>::evalSTTimesVec_dq(const DVec<Scalar>& F, DMat<Scalar>& out) const
-        {
-            initializeCasadiFunctions();
-            const int nv = 3;
-            const DMat<Scalar>& G = this->loop_constraint_->G();
-            const auto S_q = computeSq(f_dS_link2_dq_, f_dS_link3_dq_, q_spanning_, G);
-            out.setZero(nv, nv);
-            for (int i = 0; i < nv; ++i)
-                out.col(i) = S_q[i].transpose() * F;
-        }
-
-        template <typename Scalar>
-        void RevoluteTripleWithRotor<Scalar>::getSdotqd_q(DMat<Scalar>& out) const
-        {
-            initializeCasadiFunctions();
-            const int nv = 3;
-            const int spatial_dim = 36;
-
-            std::vector<casadi::DM> input = {
-                casadi::DM(static_cast<double>(q_spanning_(0))),
-                casadi::DM(static_cast<double>(q_spanning_(1))),
-                casadi::DM(static_cast<double>(q_spanning_(2))),
-                casadi::DM(static_cast<double>(qd_spanning_(0))),
-                casadi::DM(static_cast<double>(qd_spanning_(1))),
-                casadi::DM(static_cast<double>(qd_spanning_(2)))
-            };
-
-            std::vector<casadi::DM> result = f_Sdotqd_q_(input);
-            casadi::DM Sdotqd_q_link2 = result[0];  // 6x3 matrix for link2
-            casadi::DM Sdotqd_q_link3 = result[1];  // 6x3 matrix for link3
-
-            out.setZero(spatial_dim, nv);
-
-            // Link2 contribution (rows 6-11)
-            for (int i = 0; i < 6; ++i)
-                for (int j = 0; j < nv; ++j)
-                    out(6 + i, j) = static_cast<Scalar>(static_cast<double>(Sdotqd_q_link2(i, j)));
-
-            // Link3 contribution (rows 12-17)
-            for (int i = 0; i < 6; ++i)
-                for (int j = 0; j < nv; ++j)
-                    out(12 + i, j) = static_cast<Scalar>(static_cast<double>(Sdotqd_q_link3(i, j)));
-        }
-
-        // Complex specializations
-        template <>
-        void RevoluteTripleWithRotor<std::complex<double>>::initializeCasadiFunctions() const
-        {
-            casadi_functions_initialized_ = true;
-        }
-
-        template <>
-        void RevoluteTripleWithRotor<std::complex<double>>::evalSTimesVec_dq(
-            const DVec<std::complex<double>>&, DMat<std::complex<double>>& out) const
-        {
-            out.setZero(36, 3);
-        }
-
-        template <>
-        void RevoluteTripleWithRotor<std::complex<double>>::evalSTTimesVec_dq(
-            const DVec<std::complex<double>>&, DMat<std::complex<double>>& out) const
-        {
-            out.setZero(3, 3);
-        }
-
-        template <>
-        void RevoluteTripleWithRotor<std::complex<double>>::getSdotqd_q(DMat<std::complex<double>>& out) const
-        {
-            out.setZero(36, 3);
+            throw std::runtime_error(
+                "RevoluteTripleWithRotor::getSdotqd_q is not implemented. "
+                "Migrate to Generic<Scalar> (see RevolutePairWithRotorJoint as the template) "
+                "to get correct S-derivative support via GenericJoint's CasADi machinery.");
         }
 
         template class RevoluteTripleWithRotor<double>;
