@@ -20,6 +20,11 @@ namespace grbda
             }
 
             // Build the symbolic phi (always SX; captures link lengths as SX constants)
+            // p1:  path1_link_lengths — lengths of links along the first chain, base to tip
+            // p2:  path2_link_lengths — lengths of links along the second chain, base to tip
+            // off: offset             — 2D position of path2's base relative to path1's base
+            // n1:  number of links in path1 (== p1.size())
+            // n2:  number of links in path2 (== p2.size())
             template <typename Scalar>
             std::function<DVec<casadi::SX>(const JointCoordinate<casadi::SX> &)>
             makeFourBarSymPhi(const std::vector<Scalar> &p1, const std::vector<Scalar> &p2,

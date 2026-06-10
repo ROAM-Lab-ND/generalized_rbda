@@ -164,14 +164,6 @@ namespace grbda
         throw std::runtime_error("Invalid number of rows provided to General Motion Cross Product");
     }
 
-    template <typename T>
-    DVec<T> generalMotionCrossProduct(const DVec<T> &a, const DVec<T> &b)
-    {
-      DVec<T> out;
-      generalMotionCrossProduct(a, b, out);
-      return out;
-    }
-
     /*!
      * Compute motion cross matrix times a matrix: out = crm(v) * M
      * Writes directly into the pre-allocated output matrix to avoid heap allocation.
