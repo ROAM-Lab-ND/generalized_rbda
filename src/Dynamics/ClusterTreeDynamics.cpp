@@ -566,12 +566,12 @@ namespace grbda
                     const DMat<Scalar> &S_j = cluster_j->S();
 
                     // dtau_dq(ii, jj) = t1^T * Psi_ddot_j + t4^T * Psi_dot_j
-                    dtau_dq.block(ii, jj, num_vel_i, num_vel_j)=
+                    dtau_dq.block(ii, jj, num_vel_i, num_vel_j).noalias() =
                         t1.transpose() * cluster_j->Psi_ddot_ + t4.transpose() * cluster_j->Psi_dot_;
 
                     if (j < i)
                     {
-                        dtau_dq.block(jj, ii, num_vel_j, num_vel_i)= S_j.transpose() * t3;
+                        dtau_dq.block(jj, ii, num_vel_j, num_vel_i).noalias() = S_j.transpose() * t3;
                     }
                     else  // j == i (diagonal block)
                     {
@@ -582,8 +582,8 @@ namespace grbda
                         }
                     }
 
-                    dtau_dq_dot.block(jj, ii, num_vel_j, num_vel_i)= S_j.transpose() * t2;
-                    dtau_dq_dot.block(ii, jj, num_vel_i, num_vel_j)=
+                    dtau_dq_dot.block(jj, ii, num_vel_j, num_vel_i).noalias() = S_j.transpose() * t2;
+                    dtau_dq_dot.block(ii, jj, num_vel_i, num_vel_j).noalias() =
                         t1.transpose() * cluster_j->Upsilon_dot_ + t4.transpose() * S_j;
 
                     // Transform t1, t2, t3, t4 to parent frame using batched transform
@@ -607,12 +607,12 @@ namespace grbda
                     const int num_vel_j = cluster_j->num_velocities_;
                     const DMat<Scalar> &S_j = cluster_j->S();
 
-                    dtau_dq.block(ii, jj, num_vel_i, num_vel_j)=
+                    dtau_dq.block(ii, jj, num_vel_i, num_vel_j).noalias() =
                         t1.transpose() * cluster_j->Psi_ddot_ + t4.transpose() * cluster_j->Psi_dot_;
 
                     if (j < i)
                     {
-                        dtau_dq.block(jj, ii, num_vel_j, num_vel_i)= S_j.transpose() * t3;
+                        dtau_dq.block(jj, ii, num_vel_j, num_vel_i).noalias() = S_j.transpose() * t3;
                     }
                     else
                     {
@@ -623,8 +623,8 @@ namespace grbda
                         }
                     }
 
-                    dtau_dq_dot.block(jj, ii, num_vel_j, num_vel_i)= S_j.transpose() * t2;
-                    dtau_dq_dot.block(ii, jj, num_vel_i, num_vel_j)=
+                    dtau_dq_dot.block(jj, ii, num_vel_j, num_vel_i).noalias() = S_j.transpose() * t2;
+                    dtau_dq_dot.block(ii, jj, num_vel_i, num_vel_j).noalias() =
                         t1.transpose() * cluster_j->Upsilon_dot_ + t4.transpose() * S_j;
 
                     // Transform t1, t2, t3, t4 to parent frame using batched transform
@@ -808,9 +808,9 @@ namespace grbda
                 const D6Mat<Scalar> F4_b = BC0_b.transpose() * S0_b;
 
                 // Diagonal blocks: accumulate over all bodies
-                dtau_dq_dot.block(ii, ii, num_vel_i, num_vel_i)+=
+                dtau_dq_dot.block(ii, ii, num_vel_i, num_vel_i).noalias() +=
                     F1_b.transpose() * Upd0_b + F4_b.transpose() * S0_b;
-                dtau_dq.block(ii, ii, num_vel_i, num_vel_i)+=
+                dtau_dq.block(ii, ii, num_vel_i, num_vel_i).noalias() +=
                     F1_b.transpose() * Psidd0_b + F4_b.transpose() * Psid0_b;
 
                 // F(:,ii) = blockRowSum — accumulate into class-member accumulators
@@ -846,14 +846,14 @@ namespace grbda
                 const D6Mat<Scalar> &Psiddblock = cluster_nodes_[parent]->Psidd0_[parent_subindex];
 
                 // Off-diagonal blocks
-                dtau_dq.block(vi_start, pp, vi_size, num_vel_parent)=
+                dtau_dq.block(vi_start, pp, vi_size, num_vel_parent).noalias() =
                     idDeriv_F1_.middleCols(vi_start, vi_size).transpose() * Psiddblock +
                     idDeriv_F4_.middleCols(vi_start, vi_size).transpose() * Psidblock;
-                dtau_dq.block(pp, vi_start, num_vel_parent, vi_size)=
+                dtau_dq.block(pp, vi_start, num_vel_parent, vi_size).noalias() =
                     Sblock.transpose() * idDeriv_F3_.middleCols(vi_start, vi_size);
-                dtau_dq_dot.block(pp, vi_start, num_vel_parent, vi_size)=
+                dtau_dq_dot.block(pp, vi_start, num_vel_parent, vi_size).noalias() =
                     Sblock.transpose() * idDeriv_F2_.middleCols(vi_start, vi_size);
-                dtau_dq_dot.block(vi_start, pp, vi_size, num_vel_parent)=
+                dtau_dq_dot.block(vi_start, pp, vi_size, num_vel_parent).noalias() =
                     idDeriv_F1_.middleCols(vi_start, vi_size).transpose() * Upblock +
                     idDeriv_F4_.middleCols(vi_start, vi_size).transpose() * Sblock;
 
