@@ -83,45 +83,63 @@ namespace grbda
         }
 
         template <typename Scalar>
-        D6Mat<Scalar> Transform<Scalar>::transformMotionSubspace(const D6Mat<Scalar> &S_in) const
+        void Transform<Scalar>::transformMotionSubspace(const D6Mat<Scalar> &S_in,
+                                                        D6Mat<Scalar> &S_out) const
         {
-            D6Mat<Scalar> S_out = D6Mat<Scalar>::Zero(6, S_in.cols());
+            S_out.resize(6, S_in.cols());
             for (int i = 0; i < S_in.cols(); i++)
                 S_out.col(i) = transformMotionVector(S_in.col(i));
+        }
+
+        template <typename Scalar>
+        D6Mat<Scalar> Transform<Scalar>::transformMotionSubspace(const D6Mat<Scalar> &S_in) const
+        {
+            D6Mat<Scalar> S_out;
+            transformMotionSubspace(S_in, S_out);
             return S_out;
+        }
+
+        template <typename Scalar>
+        void Transform<Scalar>::inverseTransformMotionSubspace(const D6Mat<Scalar> &S_in,
+                                                               D6Mat<Scalar> &S_out) const
+        {
+            S_out.resize(6, S_in.cols());
+            for (int i = 0; i < S_in.cols(); i++)
+                S_out.col(i) = inverseTransformMotionVector(S_in.col(i));
         }
 
         template <typename Scalar>
         D6Mat<Scalar> Transform<Scalar>::inverseTransformMotionSubspace(const D6Mat<Scalar> &S_in) const
         {
-            D6Mat<Scalar> S_out = D6Mat<Scalar>::Zero(6, S_in.cols());
-            for (int i = 0; i < S_in.cols(); i++)
-                S_out.col(i) = inverseTransformMotionVector(S_in.col(i));
+            D6Mat<Scalar> S_out;
+            inverseTransformMotionSubspace(S_in, S_out);
             return S_out;
+        }
+
+        template <typename Scalar>
+        void Transform<Scalar>::inverseTransformForceSubspace(const D6Mat<Scalar> &F_in,
+                                                              D6Mat<Scalar> &F_out) const
+        {
+            // X^{-T} * F where X^{-T} = [E^T, r_hat * E^T; 0, E^T]
+            const Mat3<Scalar> ET = E_.transpose();
+            const Mat3<Scalar> r_hat_ET = ori::vectorToSkewMat(r_) * ET;
+
+            F_out.resize(6, F_in.cols());
+            F_out.template topRows<3>().noalias() = ET * F_in.template topRows<3>();
+            F_out.template topRows<3>().noalias() += r_hat_ET * F_in.template bottomRows<3>();
+            F_out.template bottomRows<3>().noalias() = ET * F_in.template bottomRows<3>();
         }
 
         template <typename Scalar>
         D6Mat<Scalar> Transform<Scalar>::inverseTransformForceSubspace(const D6Mat<Scalar> &F_in) const
         {
-            // Optimized version using block operations instead of per-column loop
-            // X^{-T} * F where X^{-T} = [E^T, r_hat * E^T; 0, E^T]
-            const int num_cols = F_in.cols();
-            D6Mat<Scalar> F_out(6, num_cols);
-            const Mat3<Scalar> ET = E_.transpose();
-            const Mat3<Scalar> r_hat_ET = ori::vectorToSkewMat(r_) * ET;
-
-            // Top 3 rows: E^T * F_top + r_hat * E^T * F_bottom
-            F_out.template topRows<3>().noalias() = ET * F_in.template topRows<3>();
-            F_out.template topRows<3>().noalias() += r_hat_ET * F_in.template bottomRows<3>();
-
-            // Bottom 3 rows: E^T * F_bottom
-            F_out.template bottomRows<3>().noalias() = ET * F_in.template bottomRows<3>();
-
+            D6Mat<Scalar> F_out;
+            inverseTransformForceSubspace(F_in, F_out);
             return F_out;
         }
 
         template <typename Scalar>
-        void Transform<Scalar>::inverseTransformForceSubspace4(
+        void Transform<Scalar>::inverseTransformForceSubspace(
             DMat<Scalar> &F1, DMat<Scalar> &F2, DMat<Scalar> &F3, DMat<Scalar> &F4) const
         {
             // Batched version: transforms 4 force subspaces with shared E^T and r_hat*E^T computation
@@ -454,11 +472,11 @@ namespace grbda
         }
 
         template <typename Scalar>
-        DMat<Scalar>
-        GeneralizedTransform<Scalar>::inverseTransformForceSubspace(const DMat<Scalar> &F_in) const
+        void GeneralizedTransform<Scalar>::inverseTransformForceSubspace(const DMat<Scalar> &F_in,
+                                                                          DMat<Scalar> &F_out) const
         {
             const int num_cols = F_in.cols();
-            DMat<Scalar> F_out = DMat<Scalar>::Zero(6 * num_parent_bodies_, num_cols);
+            F_out.setZero(6 * num_parent_bodies_, num_cols);
             int output_body = 0;
             for (const auto &transform_and_parent_subindex : transforms_and_parent_subindices_)
             {
@@ -468,14 +486,33 @@ namespace grbda
                     X.inverseTransformForceSubspace(F_in.template block(6 * output_body, 0, 6, num_cols));
                 output_body++;
             }
+        }
+
+        template <typename Scalar>
+        DMat<Scalar>
+        GeneralizedTransform<Scalar>::inverseTransformForceSubspace(const DMat<Scalar> &F_in) const
+        {
+            DMat<Scalar> F_out;
+            inverseTransformForceSubspace(F_in, F_out);
             return F_out;
+        }
+
+        template <typename Scalar>
+        void GeneralizedTransform<Scalar>::inverseTransformSpatialInertia(const DMat<Scalar> &I_in,
+                                                                           DMat<Scalar> &I_out) const
+        {
+            DMat<Scalar> tmp;
+            rightMultiplyMotionTransform(I_in, tmp);
+            leftMultiplyForceTransform(tmp, I_out);
         }
 
         template <typename Scalar>
         DMat<Scalar>
         GeneralizedTransform<Scalar>::inverseTransformSpatialInertia(const DMat<Scalar> &I_in) const
         {
-            return leftMultiplyForceTransform(rightMultiplyMotionTransform(I_in));
+            DMat<Scalar> I_out;
+            inverseTransformSpatialInertia(I_in, I_out);
+            return I_out;
         }
 
         template <typename Scalar>
@@ -529,66 +566,62 @@ namespace grbda
         }
 
         template <typename Scalar>
-        DMat<Scalar>
-        GeneralizedTransform<Scalar>::rightMultiplyMotionTransform(const DMat<Scalar> &M_in) const
+        void GeneralizedTransform<Scalar>::rightMultiplyMotionTransform(const DMat<Scalar> &M_in,
+                                                                         DMat<Scalar> &M_out) const
         {
 #ifdef DEBU_MODE
             if (M_in.rows() != 6 * num_output_bodies_ || M_in.cols() != 6 * num_output_bodies_)
-            {
                 throw std::runtime_error("ERROR: M_in must be 6num_output_bodies_ * 6num_output_bodies_");
-            }
 #endif
-
-            DMat<Scalar> M_out = DMat<Scalar>::Zero(6 * num_output_bodies_,
-                                                    6 * num_parent_bodies_);
-
+            M_out.setZero(6 * num_output_bodies_, 6 * num_parent_bodies_);
             int output_body = 0;
             for (const auto &transform_and_parent_subindex : transforms_and_parent_subindices_)
             {
                 const Transform<Scalar> &X = transform_and_parent_subindex.first;
                 const int &parent_subindex = transform_and_parent_subindex.second;
-
                 for (int i = 0; i < M_in.rows(); i += 6)
-                {
                     M_out.template block<6, 6>(i, 6 * parent_subindex) +=
                         X.rightMultiplyMotionTransform(M_in.template block<6, 6>(i, 6 * output_body));
-                }
-
                 output_body++;
             }
+        }
 
+        template <typename Scalar>
+        DMat<Scalar>
+        GeneralizedTransform<Scalar>::rightMultiplyMotionTransform(const DMat<Scalar> &M_in) const
+        {
+            DMat<Scalar> M_out;
+            rightMultiplyMotionTransform(M_in, M_out);
             return M_out;
+        }
+
+        template <typename Scalar>
+        void GeneralizedTransform<Scalar>::leftMultiplyForceTransform(const DMat<Scalar> &M_in,
+                                                                       DMat<Scalar> &M_out) const
+        {
+#ifdef DEBU_MODE
+            if (M_in.rows() != 6 * num_output_bodies_ || M_in.cols() != 6 * num_parent_bodies_)
+                throw std::runtime_error("ERROR: M_in must be 6num_output_bodies_ * 6num_parent_bodies_");
+#endif
+            M_out.setZero(6 * num_parent_bodies_, 6 * num_parent_bodies_);
+            int output_body = 0;
+            for (const auto &transform_and_parent_subindex : transforms_and_parent_subindices_)
+            {
+                const Transform<Scalar> &X = transform_and_parent_subindex.first;
+                const int &parent_subindex = transform_and_parent_subindex.second;
+                for (int i = 0; i < M_in.cols(); i += 6)
+                    M_out.template block<6, 6>(6 * parent_subindex, i) +=
+                        X.leftMultiplyForceTransform(M_in.template block<6, 6>(6 * output_body, i));
+                output_body++;
+            }
         }
 
         template <typename Scalar>
         DMat<Scalar>
         GeneralizedTransform<Scalar>::leftMultiplyForceTransform(const DMat<Scalar> &M_in) const
         {
-#ifdef DEBU_MODE
-            if (M_in.rows() != 6 * num_output_bodies_ || M_in.cols() != 6 * num_parent_bodies_)
-            {
-                throw std::runtime_error("ERROR: M_in must be 6num_output_bodies_ * 6num_parent_bodies_");
-            }
-#endif
-
-            DMat<Scalar> M_out = DMat<Scalar>::Zero(6 * num_parent_bodies_,
-                                                    6 * num_parent_bodies_);
-
-            int output_body = 0;
-            for (const auto &transform_and_parent_subindex : transforms_and_parent_subindices_)
-            {
-                const Transform<Scalar> &X = transform_and_parent_subindex.first;
-                const int &parent_subindex = transform_and_parent_subindex.second;
-
-                for (int i = 0; i < M_in.cols(); i += 6)
-                {
-                    M_out.template block<6, 6>(6 * parent_subindex, i) +=
-                        X.leftMultiplyForceTransform(M_in.template block<6, 6>(6 * output_body, i));
-                }
-
-                output_body++;
-            }
-
+            DMat<Scalar> M_out;
+            leftMultiplyForceTransform(M_in, M_out);
             return M_out;
         }
 
@@ -689,49 +722,47 @@ namespace grbda
         }
 
         template <typename Scalar>
-        DMat<Scalar> GeneralizedTransform<Scalar>::transformForceSubspaceToParent(
-            const DMat<Scalar> &F_in) const
+        void GeneralizedTransform<Scalar>::transformForceSubspaceToParent(
+            const DMat<Scalar> &F_in, DMat<Scalar> &F_out) const
         {
-            // This is essentially the same as inverseTransformForceSubspace
-            // but we're being explicit about its role in the CRBA
-            const int num_cols = F_in.cols();
-
-            // Fast path for single-body clusters (most common case)
-            // Single body connecting to single parent body - avoid loop and dynamic indexing
             if (num_output_bodies_ == 1 && num_parent_bodies_ == 1)
             {
                 const Transform<Scalar> &X = transforms_and_parent_subindices_[0].first;
-                return X.inverseTransformForceSubspace(F_in);
+                F_out = X.inverseTransformForceSubspace(F_in);
+                return;
             }
 
-            DMat<Scalar> F_out = DMat<Scalar>::Zero(6 * num_parent_bodies_, num_cols);
-
+            F_out.setZero(6 * num_parent_bodies_, F_in.cols());
             int output_body = 0;
             for (const auto &transform_and_parent_subindex : transforms_and_parent_subindices_)
             {
                 const Transform<Scalar> &X = transform_and_parent_subindex.first;
                 const int parent_subindex = transform_and_parent_subindex.second;
-
-                // Transform force from child body frame to parent body frame and accumulate
                 F_out.template middleRows<6>(6 * parent_subindex).noalias() +=
                     X.inverseTransformForceSubspace(F_in.template middleRows<6>(6 * output_body));
-
                 output_body++;
             }
+        }
 
+        template <typename Scalar>
+        DMat<Scalar> GeneralizedTransform<Scalar>::transformForceSubspaceToParent(
+            const DMat<Scalar> &F_in) const
+        {
+            DMat<Scalar> F_out;
+            transformForceSubspaceToParent(F_in, F_out);
             return F_out;
         }
 
         template <typename Scalar>
-        void GeneralizedTransform<Scalar>::inverseTransformForceSubspace4(
+        void GeneralizedTransform<Scalar>::inverseTransformForceSubspace(
             DMat<Scalar> &F1, DMat<Scalar> &F2, DMat<Scalar> &F3, DMat<Scalar> &F4) const
         {
             // Fast path for single-body to single-body (most common case)
-            // Delegates to Transform::inverseTransformForceSubspace4 which batches the computation
+            // Delegates to Transform::inverseTransformForceSubspace (4-arg) which batches the computation
             if (num_output_bodies_ == 1 && num_parent_bodies_ == 1)
             {
                 const Transform<Scalar> &X = transforms_and_parent_subindices_[0].first;
-                X.inverseTransformForceSubspace4(F1, F2, F3, F4);
+                X.inverseTransformForceSubspace(F1, F2, F3, F4);
                 return;
             }
 

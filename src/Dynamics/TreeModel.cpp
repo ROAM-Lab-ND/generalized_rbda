@@ -199,7 +199,7 @@ namespace grbda
                 node->Ic0_[body] = Xa_body.inverseTransformSpatialInertia(node->I_[body]);
 
                 const auto S_body_block = node->S().template middleRows<6>(6 * body);
-                node->S0_[body] = Xa_body.inverseTransformMotionSubspace(S_body_block);
+                Xa_body.inverseTransformMotionSubspace(S_body_block, node->S0_[body]);
             }
         }
 

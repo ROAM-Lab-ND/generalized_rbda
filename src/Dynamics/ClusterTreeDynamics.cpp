@@ -249,7 +249,7 @@ namespace grbda
             const int &mss_dim = cluster->motion_subspace_dimension_;
             const DMat<Scalar> L = DMat<Scalar>::Identity(mss_dim, mss_dim) -
                                    cluster->S() * cluster->D_inv_UT_;
-            cluster->ChiUp_ = cluster->Xup_.rightMultiplyMotionTransform(L);
+            cluster->Xup_.rightMultiplyMotionTransform(L, cluster->ChiUp_);
         }
 
         force_propagators_updated_ = true;
@@ -335,7 +335,7 @@ namespace grbda
 
             const int &mss_dim = cluster->motion_subspace_dimension_;
             cluster->L_ = DMat<Scalar>::Identity(mss_dim, mss_dim) - cluster->K_ * cluster->IA_;
-            cluster->ChiUp_ = cluster->Xup_.rightMultiplyMotionTransform(cluster->L_);
+            cluster->Xup_.rightMultiplyMotionTransform(cluster->L_, cluster->ChiUp_);
 
             const int &parent_index = cluster->parent_index_;
             if (parent_index >= 0)
@@ -591,7 +591,7 @@ namespace grbda
                     if (cluster_j->parent_index_ >= 0)
                     {
                         const auto &X = cluster_j->Xup_[0];
-                        X.inverseTransformForceSubspace4(t1, t2, t3, t4);
+                        X.inverseTransformForceSubspace(t1, t2, t3, t4);
                     }
                     j = cluster_j->parent_index_;
                 }
@@ -631,7 +631,7 @@ namespace grbda
                     // This shares E^T and r_hat*E^T computation across all 4 matrices per body
                     if (cluster_j->parent_index_ >= 0)
                     {
-                        cluster_j->Xup_.inverseTransformForceSubspace4(t1, t2, t3, t4);
+                        cluster_j->Xup_.inverseTransformForceSubspace(t1, t2, t3, t4);
                     }
                     j = cluster_j->parent_index_;
                 }
@@ -767,14 +767,14 @@ namespace grbda
                     spatial::swappedForceCrossMatrix(I0v0) -
                     cluster->Ic0_[body] * spatial::motionCrossMatrix(v0_body);
 
-                cluster->S0_[body] =
-                    Xa_body.inverseTransformMotionSubspace(S.template middleRows<6>(start));
-                cluster->Psid0_[body] =
-                    Xa_body.inverseTransformMotionSubspace(cluster->Psi_dot_.template middleRows<6>(start));
-                cluster->Psidd0_[body] =
-                    Xa_body.inverseTransformMotionSubspace(cluster->Psi_ddot_.template middleRows<6>(start));
-                cluster->Upsilond0_[body] =
-                    Xa_body.inverseTransformMotionSubspace(cluster->Upsilon_dot_.template middleRows<6>(start));
+                Xa_body.inverseTransformMotionSubspace(S.template middleRows<6>(start),
+                                                       cluster->S0_[body]);
+                Xa_body.inverseTransformMotionSubspace(cluster->Psi_dot_.template middleRows<6>(start),
+                                                       cluster->Psid0_[body]);
+                Xa_body.inverseTransformMotionSubspace(cluster->Psi_ddot_.template middleRows<6>(start),
+                                                       cluster->Psidd0_[body]);
+                Xa_body.inverseTransformMotionSubspace(cluster->Upsilon_dot_.template middleRows<6>(start),
+                                                       cluster->Upsilond0_[body]);
                 cluster->f0_[body] =
                     Xa_body.inverseTransformForceVector(cluster->F_.template segment<6>(start));
             }

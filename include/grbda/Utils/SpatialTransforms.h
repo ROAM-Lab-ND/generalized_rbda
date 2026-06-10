@@ -40,11 +40,16 @@ namespace grbda
             Mat6<Scalar> transformSpatialInertiaToWorld(const Mat6<Scalar> &I_in) const;
 
             D6Mat<Scalar> transformMotionSubspace(const D6Mat<Scalar> &S_in) const;
+            void transformMotionSubspace(const D6Mat<Scalar> &S_in, D6Mat<Scalar> &S_out) const;
+
             D6Mat<Scalar> inverseTransformMotionSubspace(const D6Mat<Scalar> &S_in) const;
+            void inverseTransformMotionSubspace(const D6Mat<Scalar> &S_in, D6Mat<Scalar> &S_out) const;
+
             D6Mat<Scalar> inverseTransformForceSubspace(const D6Mat<Scalar> &F_in) const;
+            void inverseTransformForceSubspace(const D6Mat<Scalar> &F_in, D6Mat<Scalar> &F_out) const;
 
             // Batched version: transforms 4 force subspaces with a single computation of E^T and r_hat*E^T
-            void inverseTransformForceSubspace4(
+            void inverseTransformForceSubspace(
                 DMat<Scalar> &F1, DMat<Scalar> &F2, DMat<Scalar> &F3, DMat<Scalar> &F4) const;
 
             Transform<Scalar> operator*(const Transform<Scalar> &X_in) const;
@@ -113,8 +118,10 @@ namespace grbda
             DVec<Scalar> inverseTransformForceVector(const DVec<Scalar> &f_in) const;
 
             DMat<Scalar> inverseTransformForceSubspace(const DMat<Scalar> &F_in) const;
+            void inverseTransformForceSubspace(const DMat<Scalar> &F_in, DMat<Scalar> &F_out) const;
 
             DMat<Scalar> inverseTransformSpatialInertia(const DMat<Scalar> &I_in) const;
+            void inverseTransformSpatialInertia(const DMat<Scalar> &I_in, DMat<Scalar> &I_out) const;
 
             Transform<Scalar> &operator[](int output_body_index);
             const Transform<Scalar> &operator[](int output_body_index) const;
@@ -123,7 +130,9 @@ namespace grbda
                 const GeneralizedAbsoluteTransform<Scalar> &X_in) const;
 
             DMat<Scalar> rightMultiplyMotionTransform(const DMat<Scalar> &M_in) const;
+            void rightMultiplyMotionTransform(const DMat<Scalar> &M_in, DMat<Scalar> &M_out) const;
             DMat<Scalar> leftMultiplyForceTransform(const DMat<Scalar> &M_in) const;
+            void leftMultiplyForceTransform(const DMat<Scalar> &M_in, DMat<Scalar> &M_out) const;
 
             // Accumulates child's composite inertia blocks to parent's composite inertia blocks.
             void accumulateBlockDiagonalInertia(
@@ -154,11 +163,12 @@ namespace grbda
             // This is similar to inverseTransformForceSubspace but optimized for the CRBA pattern
             // where we know the structure comes from block-diagonal Ic * S.
             DMat<Scalar> transformForceSubspaceToParent(const DMat<Scalar> &F_in) const;
+            void transformForceSubspaceToParent(const DMat<Scalar> &F_in, DMat<Scalar> &F_out) const;
 
             // Batched version: transforms 4 force subspaces in one call.
-            // For single-body to single-body, delegates to Transform::inverseTransformForceSubspace4.
+            // For single-body to single-body, delegates to Transform::inverseTransformForceSubspace (4-arg).
             // For multi-body clusters, shares rotation computation across bodies and matrices.
-            void inverseTransformForceSubspace4(
+            void inverseTransformForceSubspace(
                 DMat<Scalar> &F1, DMat<Scalar> &F2, DMat<Scalar> &F3, DMat<Scalar> &F4) const;
 
         private:
