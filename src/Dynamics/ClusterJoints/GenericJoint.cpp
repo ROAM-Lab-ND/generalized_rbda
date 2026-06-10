@@ -938,10 +938,12 @@ namespace grbda
             DMat<Scalar> S_ring_term1 = X_intra_ring_ * this->S_spanning_ * this->loop_constraint_->G();
             DMat<Scalar> S_ring_term2 = DMat<Scalar>::Zero(S_ring_term1.rows(), S_ring_term1.cols());
 
-            // Compute G_dot for both double and complex types
-            // For complex types, use the real part of q to evaluate dG/dq (valid for small imaginary parts)
+            // Compute G_dot for double and complex types (casadi::SX evaluates to zero, which is correct)
             if constexpr (std::is_same_v<Scalar, double> || std::is_same_v<Scalar, std::complex<double>>) {
-                if (generic_constraint_ && q_spanning_.size() > 0) {
+                if (generic_constraint_) {
+                    if (q_spanning_.size() == 0)
+                        throw std::runtime_error(
+                            "GenericJoint: updateKinematics must be called before S_ring_ is computed");
                     // Get the constraint's dG/dq function (initialized in constructor)
                     const casadi::Function& dG_dq_fcn = generic_constraint_->getdGdqFcn();
 
@@ -1261,21 +1263,24 @@ namespace grbda
             const int mss_dim = this->num_bodies_ * 6;
             const int nv = this->num_velocities_;
 
-            if (!generic_constraint_ || q_spanning_.size() == 0 || S_implicit_.size() == 0)
+            if (!generic_constraint_)
             {
                 out.setZero(mss_dim, nv);
                 return;
             }
+            if (q_spanning_.size() == 0 || S_implicit_.size() == 0)
+                throw std::runtime_error(
+                    "GenericJoint::getSdotqd_q: updateKinematics must be called first");
 
             if constexpr (std::is_same_v<Scalar, double>) {
                 initializeDerivativeFunctions();
 
-                if (qd_spanning_.size() == 0 ||
-                    !derivative_functions_initialized_ || dSdotqd_dq_fcn_.is_null())
-                {
-                    out.setZero(mss_dim, nv);
-                    return;
-                }
+                if (qd_spanning_.size() == 0)
+                    throw std::runtime_error(
+                        "GenericJoint::getSdotqd_q: updateKinematics must be called first");
+                if (!derivative_functions_initialized_ || dSdotqd_dq_fcn_.is_null())
+                    throw std::runtime_error(
+                        "GenericJoint::getSdotqd_q: derivative functions failed to initialize");
 
                 const DMat<double>& coord_map = generic_constraint_->getCoordMap();
                 const DVec<Scalar> ydot_independent =
@@ -1306,18 +1311,20 @@ namespace grbda
             const int mss_dim = this->num_bodies_ * 6;
             const int nv = this->num_velocities_;
 
-            if (!generic_constraint_ || q_spanning_.size() == 0) {
+            if (!generic_constraint_) {
                 out.setZero(mss_dim, nv);
                 return;
             }
+            if (q_spanning_.size() == 0)
+                throw std::runtime_error(
+                    "GenericJoint::evalSTimesVec_dq: updateKinematics must be called first");
 
             if constexpr (std::is_same_v<Scalar, double>) {
                 initializeDerivativeFunctions();
 
-                if (!derivative_functions_initialized_ || dSb_dy_fcn_.is_null()) {
-                    out.setZero(mss_dim, nv);
-                    return;
-                }
+                if (!derivative_functions_initialized_ || dSb_dy_fcn_.is_null())
+                    throw std::runtime_error(
+                        "GenericJoint::evalSTimesVec_dq: derivative functions failed to initialize");
 
                 const int n_span_pos = q_spanning_.size();
 
@@ -1343,18 +1350,20 @@ namespace grbda
             const int mss_dim = this->num_bodies_ * 6;
             const int nv = this->num_velocities_;
 
-            if (!generic_constraint_ || q_spanning_.size() == 0) {
+            if (!generic_constraint_) {
                 out.setZero(nv, nv);
                 return;
             }
+            if (q_spanning_.size() == 0)
+                throw std::runtime_error(
+                    "GenericJoint::evalSTTimesVec_dq: updateKinematics must be called first");
 
             if constexpr (std::is_same_v<Scalar, double>) {
                 initializeDerivativeFunctions();
 
-                if (!derivative_functions_initialized_ || dSTF_dy_fcn_.is_null()) {
-                    out.setZero(nv, nv);
-                    return;
-                }
+                if (!derivative_functions_initialized_ || dSTF_dy_fcn_.is_null())
+                    throw std::runtime_error(
+                        "GenericJoint::evalSTTimesVec_dq: derivative functions failed to initialize");
 
                 const int n_span_pos = q_spanning_.size();
 
