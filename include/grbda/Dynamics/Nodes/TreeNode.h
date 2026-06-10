@@ -72,10 +72,10 @@ namespace grbda
         DVec<Scalar> f_ext_; // net external spatial force acting on the cluster
         DVec<Scalar> avp_;   // acceleration velocity product
 
-        std::vector<Mat6<Scalar>, Eigen::aligned_allocator<Mat6<Scalar>>> I_;   // spatial inertia, one 6x6 block per body
-        std::vector<Mat6<Scalar>, Eigen::aligned_allocator<Mat6<Scalar>>> Ic_;  // composite rigid body inertia, one 6x6 block per body
+        aligned_mat6_vec<Scalar> I_;   // spatial inertia, one 6x6 block per body
+        aligned_mat6_vec<Scalar> Ic_;  // composite rigid body inertia, one 6x6 block per body
 
-        std::vector<Mat6<Scalar>, Eigen::aligned_allocator<Mat6<Scalar>>> Ic0_; // composite rigid body inertia in World frame, one 6x6 block per body
+        aligned_mat6_vec<Scalar> Ic0_; // composite rigid body inertia in World frame, one 6x6 block per body
         std::vector<D6Mat<Scalar>, Eigen::aligned_allocator<D6Mat<Scalar>>> S0_;   // motion subspace in World frame, one 6xNv block per body
         std::vector<D6Mat<Scalar>, Eigen::aligned_allocator<D6Mat<Scalar>>> Ftmp_; // temporary variable used in CRBA, one 6xNv block per body
 

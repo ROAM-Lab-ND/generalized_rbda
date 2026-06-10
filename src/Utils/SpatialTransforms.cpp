@@ -627,8 +627,8 @@ namespace grbda
 
         template <typename Scalar>
         void GeneralizedTransform<Scalar>::accumulateBlockDiagonalInertia(
-            const std::vector<Mat6<Scalar>, Eigen::aligned_allocator<Mat6<Scalar>>> &I_child,
-            std::vector<Mat6<Scalar>, Eigen::aligned_allocator<Mat6<Scalar>>> &I_parent) const
+            const aligned_mat6_vec<Scalar> &I_child,
+            aligned_mat6_vec<Scalar> &I_parent) const
         {
             for (int i = 0; i < num_output_bodies_; i++)
             {
@@ -640,7 +640,7 @@ namespace grbda
 
         template <typename Scalar>
         DMat<Scalar> GeneralizedTransform<Scalar>::blockDiagonalInertiaTimesMotionSubspace(
-            const std::vector<Mat6<Scalar>, Eigen::aligned_allocator<Mat6<Scalar>>> &Ic,
+            const aligned_mat6_vec<Scalar> &Ic,
             const DMat<Scalar> &S) const
         {
             DMat<Scalar> out;
@@ -650,7 +650,7 @@ namespace grbda
 
         template <typename Scalar>
         void GeneralizedTransform<Scalar>::blockDiagonalInertiaTimesMotionSubspace(
-            const std::vector<Mat6<Scalar>, Eigen::aligned_allocator<Mat6<Scalar>>> &Ic,
+            const aligned_mat6_vec<Scalar> &Ic,
             const DMat<Scalar> &S, DMat<Scalar> &out) const
         {
             const int num_cols = S.cols();

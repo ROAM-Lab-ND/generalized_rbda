@@ -951,7 +951,7 @@ namespace grbda
      */
     template <typename Scalar>
     DVec<Scalar> blockDiagonalTimesVector(
-        const std::vector<Mat6<Scalar>, Eigen::aligned_allocator<Mat6<Scalar>>> &I,
+        const aligned_mat6_vec<Scalar> &I,
         const DVec<Scalar> &v)
     {
       const int n = (int)I.size();
@@ -967,7 +967,7 @@ namespace grbda
      */
     template <typename Scalar>
     DMat<Scalar> blockDiagonalToMatrix(
-        const std::vector<Mat6<Scalar>, Eigen::aligned_allocator<Mat6<Scalar>>> &I)
+        const aligned_mat6_vec<Scalar> &I)
     {
       const int n = (int)I.size();
       DMat<Scalar> M = DMat<Scalar>::Zero(6 * n, 6 * n);
@@ -981,7 +981,7 @@ namespace grbda
      */
     template <typename Scalar>
     void spatialInertiaCrossTerms(
-        const std::vector<Mat6<Scalar>, Eigen::aligned_allocator<Mat6<Scalar>>> &I_blocks,
+        const aligned_mat6_vec<Scalar> &I_blocks,
         const DVec<Scalar> &v, DMat<Scalar> &out)
     {
       const int n = (int)I_blocks.size();

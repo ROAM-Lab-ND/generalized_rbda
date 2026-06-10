@@ -136,8 +136,8 @@ namespace grbda
 
             // Accumulates child's composite inertia blocks to parent's composite inertia blocks.
             void accumulateBlockDiagonalInertia(
-                const std::vector<Mat6<Scalar>, Eigen::aligned_allocator<Mat6<Scalar>>> &I_child,
-                std::vector<Mat6<Scalar>, Eigen::aligned_allocator<Mat6<Scalar>>> &I_parent) const;
+                const aligned_mat6_vec<Scalar> &I_child,
+                aligned_mat6_vec<Scalar> &I_parent) const;
 
             // Accumulates two block-diagonal child matrices to corresponding parent matrices.
             // Transforms and adds each 6x6 block; does not assume any structure within the blocks.
@@ -147,10 +147,10 @@ namespace grbda
 
             // Computes F = Ic * S exploiting block structure of Ic (vector<Mat6> form).
             DMat<Scalar> blockDiagonalInertiaTimesMotionSubspace(
-                const std::vector<Mat6<Scalar>, Eigen::aligned_allocator<Mat6<Scalar>>> &Ic,
+                const aligned_mat6_vec<Scalar> &Ic,
                 const DMat<Scalar> &S) const;
             void blockDiagonalInertiaTimesMotionSubspace(
-                const std::vector<Mat6<Scalar>, Eigen::aligned_allocator<Mat6<Scalar>>> &Ic,
+                const aligned_mat6_vec<Scalar> &Ic,
                 const DMat<Scalar> &S, DMat<Scalar> &out) const;
 
             // Computes F = Ic * S exploiting block-diagonal structure (DMat form, for M_cup/B_cup).
