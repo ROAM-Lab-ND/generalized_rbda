@@ -401,9 +401,7 @@ int main() {
     if (p6.num_clusters > 0)
         std::cout << "  RevPairWithRotor:  " << std::fixed << std::setprecision(2)
                   << p6.avg_time_us / p6.num_clusters << " us/cluster\n";
-    if (t6.num_clusters > 0)
-        std::cout << "  RevTripleWithRotor: " << std::fixed << std::setprecision(2)
-                  << t6.avg_time_us / t6.num_clusters << " us/cluster\n";
+    // RevTripleWithRotor per-cluster timing disabled
 
     std::cout << "\nObservations:\n";
     std::cout << "1. RevolutePair and RevoluteTriple mechanisms have higher per-cluster cost\n";
