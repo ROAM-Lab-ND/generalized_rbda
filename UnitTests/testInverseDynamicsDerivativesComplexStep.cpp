@@ -586,6 +586,94 @@ TEST(InverseDynamicsDerivativesComplexStep, CassieClosedChainDerivatives) {
 }
 
 
+// Direct complex-step validation of the world-frame algorithm, independent of
+// the body-frame algorithm. This is the ground-truth check.
+TEST(WorldFrameVsBodyFrameDerivatives, WorldFrameDirectComplexStep_MiniCheetah) {
+    MiniCheetah<double, ori_representation::Quaternion> robot_real;
+    MiniCheetah<std::complex<double>, ori_representation::Quaternion> robot_complex;
+    ClusterTreeModel<double>               model_real    = robot_real.buildClusterTreeModel();
+    ClusterTreeModel<std::complex<double>> model_complex = robot_complex.buildClusterTreeModel();
+
+    model_real.setState(randomModelState(model_real, true), true);
+    const int nDOF = model_real.getNumDegreesOfFreedom();
+    const DVec<double> qdd = DVec<double>::Random(nDOF);
+
+    auto [dtau_dq_world, dtau_dqdot_world] =
+        model_real.firstOrderInverseDynamicsDerivativesWorldFrame(qdd);
+
+    const auto [q0, qd0] = model_real.getState();
+    const ModelState<std::complex<double>> state0 =
+        makeModelState<std::complex<double>>(model_real, q0, qd0);
+    const DVec<std::complex<double>> qdd_c    = qdd.cast<std::complex<double>>();
+    const DVec<double>               zero_dqr = DVec<double>::Zero(nDOF);
+    const DVec<std::complex<double>> zero_dqc = DVec<std::complex<double>>::Zero(nDOF);
+    const double h = 1e-20;
+
+    auto ID_of_dq = [&](const DVec<double>& dq) -> DVec<double> {
+        const DVec<std::complex<double>> dq_c =
+            dq.cast<std::complex<double>>() * std::complex<double>(0, 1);
+        model_complex.setState(
+            applyMinimalPerturbation(model_real, state0, dq_c, zero_dqc), false);
+        return model_complex.inverseDynamics(qdd_c).imag();
+    };
+    auto ID_of_dqdot = [&](const DVec<double>& dqdot) -> DVec<double> {
+        const DVec<std::complex<double>> dqdot_c =
+            dqdot.cast<std::complex<double>>() * std::complex<double>(0, 1);
+        model_complex.setState(
+            applyMinimalPerturbation(model_real, state0, zero_dqc, dqdot_c), false);
+        return model_complex.inverseDynamics(qdd_c).imag();
+    };
+
+    DMat<double> dtau_dq_cs    = finiteDifferenceJacobian(ID_of_dq,    zero_dqr, h);
+    DMat<double> dtau_dqdot_cs = finiteDifferenceJacobian(ID_of_dqdot, zero_dqr, h);
+
+    const double err_dq    = (dtau_dq_world    - dtau_dq_cs).cwiseAbs().maxCoeff();
+    const double err_dqdot = (dtau_dqdot_world - dtau_dqdot_cs).cwiseAbs().maxCoeff();
+    std::cout << "World-frame direct CS error (dtau/dq):    " << err_dq    << "\n";
+    std::cout << "World-frame direct CS error (dtau/dqdot): " << err_dqdot << "\n";
+    EXPECT_LT(err_dq,    1e-10);
+    EXPECT_LT(err_dqdot, 1e-10);
+}
+
+// Verify that firstOrderInverseDynamicsDerivativesWorldFrame agrees with the
+// body-frame algorithm at random states with non-zero velocity and acceleration.
+// This specifically exercises the diagonal blocks of dtau_dq and dtau_dqdot,
+// which differ between the F1/F4 and S0^T*F3 / S0^T*F2 formulations.
+template <typename RobotType>
+void testWorldFrameVsBodyFrameDerivatives(const std::string &name, bool use_spanning = false)
+{
+    RobotType robot;
+    ClusterTreeModel<double> model = robot.buildClusterTreeModel();
+    const int nv = model.getNumDegreesOfFreedom();
+
+    for (int trial = 0; trial < 10; trial++)
+    {
+        model.setState(randomModelState(model, use_spanning), use_spanning);
+        const DVec<double> qdd = DVec<double>::Random(nv);
+
+        auto [dtau_dq_body, dtau_dqdot_body] =
+            model.firstOrderInverseDynamicsDerivatives(qdd);
+        auto [dtau_dq_world, dtau_dqdot_world] =
+            model.firstOrderInverseDynamicsDerivativesWorldFrame(qdd);
+
+        const double err_dq    = (dtau_dq_body    - dtau_dq_world).cwiseAbs().maxCoeff();
+        const double err_dqdot = (dtau_dqdot_body - dtau_dqdot_world).cwiseAbs().maxCoeff();
+
+        EXPECT_LT(err_dq,    1e-10) << name << " trial " << trial << ": dtau/dq mismatch";
+        EXPECT_LT(err_dqdot, 1e-10) << name << " trial " << trial << ": dtau/dqdot mismatch";
+    }
+}
+
+TEST(WorldFrameVsBodyFrameDerivatives, RevoluteChain) {
+    testWorldFrameVsBodyFrameDerivatives<RevoluteChainWithAndWithoutRotor<0, 4>>("4-link revolute chain");
+}
+TEST(WorldFrameVsBodyFrameDerivatives, MiniCheetah) {
+    testWorldFrameVsBodyFrameDerivatives<MiniCheetah<double, ori_representation::Quaternion>>("MiniCheetah", true);
+}
+TEST(WorldFrameVsBodyFrameDerivatives, MITHumanoid) {
+    testWorldFrameVsBodyFrameDerivatives<MIT_Humanoid<double, ori_representation::Quaternion>>("MITHumanoid", true);
+}
+
 int main(int argc, char** argv) {
     ::testing::InitGoogleTest(&argc, argv);
     ::testing::AddGlobalTestEnvironment(new CsvWriteEnvironment);
