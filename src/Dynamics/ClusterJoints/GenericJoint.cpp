@@ -1174,12 +1174,12 @@ namespace grbda
                 // Densify output for low-level API compatibility
                 SX dcJ_dy_dense = SX::densify(dcJ_dy_sx);
 
-                // Use JIT compilation for faster function evaluation (clang with march=native)
+                // Use JIT compilation for faster function evaluation (gcc with march=native)
                 casadi::Dict jit_opts_sdot;
                 jit_opts_sdot["cse"] = true;
                 jit_opts_sdot["jit"] = true;
                 jit_opts_sdot["compiler"] = "shell";
-                jit_opts_sdot["jit_options"] = casadi::Dict{{"compiler", "clang"}, {"flags", "-O3 -march=native"}};
+                jit_opts_sdot["jit_options"] = casadi::Dict{{"compiler", "gcc"}, {"flags", "-O3 -march=native"}};
 
                 dSdotqd_dq_fcn_ = casadi::Function("dSdotqd_dq",
                     {q_span_sx, ydot_sx}, {dcJ_dy_dense}, jit_opts_sdot);
@@ -1204,12 +1204,12 @@ namespace grbda
                 // Densify the output to ensure low-level API writes to contiguous memory
                 SX dSb_dy_dense = SX::densify(dSb_dy_sx);
 
-                // Use JIT compilation for faster function evaluation (clang with march=native)
+                // Use JIT compilation for faster function evaluation (gcc with march=native)
                 casadi::Dict jit_opts;
                 jit_opts["cse"] = true;
                 jit_opts["jit"] = true;
                 jit_opts["compiler"] = "shell";
-                jit_opts["jit_options"] = casadi::Dict{{"compiler", "clang"}, {"flags", "-O3 -march=native"}};
+                jit_opts["jit_options"] = casadi::Dict{{"compiler", "gcc"}, {"flags", "-O3 -march=native"}};
 
                 dSb_dy_fcn_ = casadi::Function("dSb_dy",
                     {q_span_sx, b_sx}, {dSb_dy_dense}, jit_opts);
