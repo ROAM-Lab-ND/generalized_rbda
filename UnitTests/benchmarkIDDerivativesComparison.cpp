@@ -293,9 +293,7 @@ int main() {
     // Other built-in robots
     std::cout << "\nBenchmarking other built-in robots...\n";
 
-    std::cout << "  TeleopArm..." << std::flush;
-    results.push_back(benchmarkRobot<TeleopArm>("TeleopArm", ITERATIONS));
-    std::cout << " done\n";
+    // TeleopArm disabled: uses RevoluteTripleWithRotor whose getSdotqd_q throws.
 
     std::cout << "  MiniCheetah (with rotors)..." << std::flush;
     results.push_back(benchmarkRobot<MiniCheetah<double>>("MiniCheetah (rotors)", ITERATIONS));
