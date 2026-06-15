@@ -138,14 +138,12 @@ int main() {
             (void)dtau_dqdot;
         }
 
-        // Enable profiling and run 1000 iterations
-        enableIDDerivativesProfiling();
+        // Profiling breakdown disabled (profiling API removed from library).
         for (int i = 0; i < 1000; ++i) {
             auto [dtau_dq, dtau_dqdot] = model.firstOrderInverseDynamicsDerivatives(ydd);
             (void)dtau_dq;
             (void)dtau_dqdot;
         }
-        printIDDerivativesProfiling();
     }
     std::cout << " done\n";
 

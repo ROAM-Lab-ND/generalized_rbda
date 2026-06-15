@@ -364,14 +364,7 @@ int main() {
         std::cout << "\n";
     }
 
-    std::cout << "  RevTripleWithRotor (6 links, 2 clusters): " << std::fixed << std::setprecision(2)
-              << t6.avg_time_us << " us";
-    if (s6.dof > 0 && t6.dof > 0 && s6.avg_time_us > 0) {
-        double ratio = t6.avg_time_us / s6.avg_time_us;
-        std::cout << " (" << std::fixed << std::setprecision(1) << ratio << "x baseline)\n";
-    } else {
-        std::cout << "\n";
-    }
+    std::cout << "  RevTripleWithRotor (6 links, 2 clusters): disabled\n";
 
     // 12 DOF comparison
     std::cout << "\n12 DOF Systems:\n";
@@ -392,14 +385,7 @@ int main() {
         std::cout << "\n";
     }
 
-    std::cout << "  RevTripleWithRotor (12 links, 4 clusters): " << std::fixed << std::setprecision(2)
-              << t12.avg_time_us << " us";
-    if (s12.dof > 0 && t12.dof > 0 && s12.avg_time_us > 0) {
-        double ratio = t12.avg_time_us / s12.avg_time_us;
-        std::cout << " (" << std::fixed << std::setprecision(1) << ratio << "x baseline)\n";
-    } else {
-        std::cout << "\n";
-    }
+    std::cout << "  RevTripleWithRotor (12 links, 4 clusters): disabled\n";
 
     // =========================================================================
     // Cluster Overhead Analysis

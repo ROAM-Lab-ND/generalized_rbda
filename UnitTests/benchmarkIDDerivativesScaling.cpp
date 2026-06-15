@@ -600,8 +600,7 @@ int main() {
               << r6.avg_time_us << " us\n";
     std::cout << "  RevPairWithRotor (6 links):    " << std::fixed << std::setprecision(2)
               << p6.avg_time_us << " us\n";
-    std::cout << "  RevTripleWithRotor (6 links):  " << std::fixed << std::setprecision(2)
-              << t6.avg_time_us << " us\n";
+    std::cout << "  RevTripleWithRotor (6 links):  disabled\n";
     std::cout << "  Binary Tree (7 links):         " << std::fixed << std::setprecision(2)
               << tree_results[1].avg_time_us << " us\n\n";
 
@@ -662,12 +661,7 @@ int main() {
                 << std::scientific << std::setprecision(2) << r.max_error_dq << ","
                 << r.max_error_dqdot << "\n";
         }
-        for (const auto& r : triple_results) {
-            csv << r.topology << "," << r.joint_type << "," << r.num_links << ","
-                << r.dof << "," << std::fixed << std::setprecision(2) << r.avg_time_us << ","
-                << std::scientific << std::setprecision(2) << r.max_error_dq << ","
-                << r.max_error_dqdot << "\n";
-        }
+        // RevoluteTriple results omitted (disabled above)
         std::cout << "Exported: " << output_dir << "complex_joint_scaling.csv\n";
     }
 

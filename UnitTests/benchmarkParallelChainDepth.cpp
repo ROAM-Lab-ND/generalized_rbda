@@ -398,23 +398,13 @@ BenchmarkResult benchmarkModel(const std::string& urdf_path,
         result.median_time_us = stats.median;
         result.std_time_us = stats.std_dev;
 
-        // Collect profiling breakdown over a separate fixed run (1000 calls, post-warmup)
-        enableIDDerivativesProfiling();
-        const int prof_iters = 1000;
-        for (int i = 0; i < prof_iters; ++i) {
-            auto [dtau_dq, dtau_dqdot] = model.firstOrderInverseDynamicsDerivatives(ydd);
-            (void)dtau_dq;
-            (void)dtau_dqdot;
-        }
-        auto prof_data = getIDDerivativesProfilingData();
-        resetIDDerivativesProfiling();
-        // prof_data: {fwd_kin, fwd_casadi, fwd_other, bwd_casadi, bwd_other, bwd_prop, total}
-        result.fwd_kin_us    = prof_data[0];
-        result.fwd_casadi_us = prof_data[1];
-        result.fwd_other_us  = prof_data[2];
-        result.bwd_casadi_us = prof_data[3];
-        result.bwd_other_us  = prof_data[4];
-        result.bwd_prop_us   = prof_data[5];
+        // Profiling breakdown disabled (profiling API removed from library).
+        result.fwd_kin_us    = 0;
+        result.fwd_casadi_us = 0;
+        result.fwd_other_us  = 0;
+        result.bwd_casadi_us = 0;
+        result.bwd_other_us  = 0;
+        result.bwd_prop_us   = 0;
 
         // Skipping numerical derivative validation; only timing results are recorded.
         result.max_error_dq = 0.0;
