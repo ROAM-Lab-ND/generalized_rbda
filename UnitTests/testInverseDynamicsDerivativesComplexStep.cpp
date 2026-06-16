@@ -274,17 +274,25 @@ ClusterTreeModel<std::complex<double>> cloneToComplex(const ClusterTreeModel<dou
         }
         else if (jtype == ClusterJointTypes::RevoluteTripleWithRotor)
         {
-            // 6-body cluster: [link1, link2, link3, rotor1, rotor2, rotor3].
-            // G is 6x3: top 3x3 = I, bottom 3x3 encodes gear*belt products.
-            // For module i (0-indexed), the bottom row i of G gives the cumulative
-            // gear*belt products for belts 0..i.  We set gear_ratio=1 and recover
-            // belt_ratios from the row: belt[0]=G(3+i,0), belt[k]=G(3+i,k)/G(3+i,k-1).
-            const auto& link1  = bodies[0];
-            const auto& link2  = bodies[1];
-            const auto& link3  = bodies[2];
-            const auto& rotor1 = bodies[3];
-            const auto& rotor2 = bodies[4];
-            const auto& rotor3 = bodies[5];
+            // Cast to access index and ratio accessors
+            auto* triple = dynamic_cast<ClusterJoints::RevoluteTripleWithRotor<double>*>(
+                cluster->joint_.get());
+            if (!triple) throw std::runtime_error("cloneToComplex: RevoluteTripleWithRotor cast failed");
+
+            const int l1i = triple->link1Index();
+            const int l2i = triple->link2Index();
+            const int l3i = triple->link3Index();
+            const int r1i = triple->rotor1Index();
+            const int r2i = triple->rotor2Index();
+            const int r3i = triple->rotor3Index();
+
+            // bodies are sorted by sub_index_within_cluster_, so index directly
+            const auto& link1  = bodies[l1i];
+            const auto& link2  = bodies[l2i];
+            const auto& link3  = bodies[l3i];
+            const auto& rotor1 = bodies[r1i];
+            const auto& rotor2 = bodies[r2i];
+            const auto& rotor3 = bodies[r3i];
 
             Body<CD> link1_c  = dst.registerBody(link1.name_,  castInertia(link1),  parentName(link1,  src), castXtree(link1));
             Body<CD> link2_c  = dst.registerBody(link2.name_,  castInertia(link2),  parentName(link2,  src), castXtree(link2));
@@ -293,38 +301,35 @@ ClusterTreeModel<std::complex<double>> cloneToComplex(const ClusterTreeModel<dou
             Body<CD> rotor2_c = dst.registerBody(rotor2.name_, castInertia(rotor2), parentName(rotor2, src), castXtree(rotor2));
             Body<CD> rotor3_c = dst.registerBody(rotor3.name_, castInertia(rotor3), parentName(rotor3, src), castXtree(rotor3));
 
-            // Axes from singleJoints(): [link1, link2, link3, rotor1, rotor2, rotor3]
             auto getRevAxis = [](const std::shared_ptr<Joints::Base<double>>& j) {
                 auto* rev = dynamic_cast<Joints::Revolute<double>*>(j.get());
                 if (!rev) throw std::runtime_error("cloneToComplex: expected revolute joint");
                 return rev->getAxis();
             };
             const auto sj = cluster->joint_->singleJoints();
-            const ori::CoordinateAxis ax1  = getRevAxis(sj[0]);
-            const ori::CoordinateAxis ax2  = getRevAxis(sj[1]);
-            const ori::CoordinateAxis ax3  = getRevAxis(sj[2]);
-            const ori::CoordinateAxis rax1 = getRevAxis(sj[3]);
-            const ori::CoordinateAxis rax2 = getRevAxis(sj[4]);
-            const ori::CoordinateAxis rax3 = getRevAxis(sj[5]);
+            const ori::CoordinateAxis ax1  = getRevAxis(sj[l1i]);
+            const ori::CoordinateAxis ax2  = getRevAxis(sj[l2i]);
+            const ori::CoordinateAxis ax3  = getRevAxis(sj[l3i]);
+            const ori::CoordinateAxis rax1 = getRevAxis(sj[r1i]);
+            const ori::CoordinateAxis rax2 = getRevAxis(sj[r2i]);
+            const ori::CoordinateAxis rax3 = getRevAxis(sj[r3i]);
 
-            // Extract belt products from G rows 3,4,5.
-            // Module 1 (1 belt):  G(3,0)         = g1*b1
-            // Module 2 (2 belts): G(4,0), G(4,1) = g2*b1, g2*b1*b2
-            // Module 3 (3 belts): G(5,0..2)      = g3*b1, g3*b1*b2, g3*b1*b2*b3
-            // We set gear_ratio=1 and reconstruct belt_ratios so that
-            // beltMatrixRowFromBeltRatios(belt_ratios) == G.row(3+i).head(i+1).
-            // belt[0]=G(3+i,0), belt[k]=G(3+i,k)/G(3+i,k-1) for k>0.
+            // Get ratio_product directly from the joint — row i gives link->rotor_i ratios.
+            // We set gear_ratio=1 and encode the full product into belt_ratios using
+            // beltMatrixRowFromBeltRatios convention: belt[k] = cumulative_product[k] / cumulative_product[k-1].
+            const auto& rp = triple->getRatioProduct();
+
             Eigen::Matrix<CD, 1, 1> br1;
-            br1(0) = CD(G(3, 0));
+            br1(0) = CD(rp(0, 0));
 
             Eigen::Matrix<CD, 2, 1> br2;
-            br2(0) = CD(G(4, 0));
-            br2(1) = CD(G(4, 1) / G(4, 0));
+            br2(0) = CD(rp(1, 0));
+            br2(1) = CD(rp(1, 1) / rp(1, 0));
 
             Eigen::Matrix<CD, 3, 1> br3;
-            br3(0) = CD(G(5, 0));
-            br3(1) = CD(G(5, 1) / G(5, 0));
-            br3(2) = CD(G(5, 2) / G(5, 1));
+            br3(0) = CD(rp(2, 0));
+            br3(1) = CD(rp(2, 1) / rp(2, 0));
+            br3(2) = CD(rp(2, 2) / rp(2, 1));
 
             ParallelBeltTransmissionModule<1, CD> mod1{link1_c, rotor1_c, ax1, rax1, CD(1.), br1};
             ParallelBeltTransmissionModule<2, CD> mod2{link2_c, rotor2_c, ax2, rax2, CD(1.), br2};
@@ -518,9 +523,19 @@ TEST(InverseDynamicsDerivativesComplexStep, KukaLWR) {
         model_real, model_complex, "KUKA LWR 4+");
 }
 
-// TeleopArm test removed: RevoluteTripleWithRotor S-derivative methods now throw.
-// TODO: restore once RevoluteTripleWithRotor is migrated to Generic<Scalar>
-// (see RevolutePairWithRotorJoint as the template).
+TEST(InverseDynamicsDerivativesComplexStep, TeleopArm) {
+    TeleopArm robot_real;
+    ClusterTreeModel<double> model_real = robot_real.buildClusterTreeModel();
+    ClusterTreeModel<std::complex<double>> model_complex = cloneToComplex(model_real);
+
+    ASSERT_EQ(model_real.getNumDegreesOfFreedom(), 7);
+
+    model_real.setState(randomModelState(model_real, true), true);
+
+    testInverseDynamicsDerivativesComplexStep(
+        model_real, model_complex, "TeleopArm");
+}
+
 TEST(InverseDynamicsDerivativesComplexStep, TelloImplicitConstraint) {
     Tello<double> robot_real;
     ClusterTreeModel<double> model_real = robot_real.buildClusterTreeModel();

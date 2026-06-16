@@ -6,173 +6,193 @@ namespace grbda
     namespace ClusterJoints
     {
 
+        namespace
+        {
+            template <typename Scalar>
+            std::vector<Body<Scalar>> makeRTWRBodies(
+                const ParallelBeltTransmissionModule<1, Scalar> &m1,
+                const ParallelBeltTransmissionModule<2, Scalar> &m2,
+                const ParallelBeltTransmissionModule<3, Scalar> &m3)
+            {
+                const Body<Scalar> *src[6] = {
+                    &m1.body_, &m1.rotor_,
+                    &m2.body_, &m2.rotor_,
+                    &m3.body_, &m3.rotor_,
+                };
+                int order[6] = {0, 1, 2, 3, 4, 5};
+                std::sort(std::begin(order), std::end(order), [&](int a, int b) {
+                    return src[a]->sub_index_within_cluster_ < src[b]->sub_index_within_cluster_;
+                });
+                std::vector<Body<Scalar>> bodies;
+                for (int i : order)
+                    bodies.push_back(*src[i]);
+                return bodies;
+            }
+
+            template <typename Scalar>
+            std::vector<JointPtr<Scalar>> makeRTWRJoints(
+                const ParallelBeltTransmissionModule<1, Scalar> &m1,
+                const ParallelBeltTransmissionModule<2, Scalar> &m2,
+                const ParallelBeltTransmissionModule<3, Scalar> &m3)
+            {
+                using Rev = Joints::Revolute<Scalar>;
+                int sub[6] = {
+                    m1.body_.sub_index_within_cluster_,
+                    m1.rotor_.sub_index_within_cluster_,
+                    m2.body_.sub_index_within_cluster_,
+                    m2.rotor_.sub_index_within_cluster_,
+                    m3.body_.sub_index_within_cluster_,
+                    m3.rotor_.sub_index_within_cluster_,
+                };
+                JointPtr<Scalar> src[6] = {
+                    std::make_shared<Rev>(m1.joint_axis_),
+                    std::make_shared<Rev>(m1.rotor_axis_),
+                    std::make_shared<Rev>(m2.joint_axis_),
+                    std::make_shared<Rev>(m2.rotor_axis_),
+                    std::make_shared<Rev>(m3.joint_axis_),
+                    std::make_shared<Rev>(m3.rotor_axis_),
+                };
+                int order[6] = {0, 1, 2, 3, 4, 5};
+                std::sort(std::begin(order), std::end(order),
+                          [&](int a, int b) { return sub[a] < sub[b]; });
+                std::vector<JointPtr<Scalar>> joints;
+                for (int i : order)
+                    joints.push_back(src[i]);
+                return joints;
+            }
+
+            template <typename Scalar>
+            std::shared_ptr<LoopConstraint::GenericImplicit<Scalar>> makeRTWRConstraint(
+                const ParallelBeltTransmissionModule<1, Scalar> &m1,
+                const ParallelBeltTransmissionModule<2, Scalar> &m2,
+                const ParallelBeltTransmissionModule<3, Scalar> &m3)
+            {
+                using SX = casadi::SX;
+
+                const int l1 = m1.body_.sub_index_within_cluster_;
+                const int l2 = m2.body_.sub_index_within_cluster_;
+                const int l3 = m3.body_.sub_index_within_cluster_;
+                const int r1 = m1.rotor_.sub_index_within_cluster_;
+                const int r2 = m2.rotor_.sub_index_within_cluster_;
+                const int r3 = m3.rotor_.sub_index_within_cluster_;
+
+                Vec3<Scalar> gear_ratios{m1.gear_ratio_, m2.gear_ratio_, m3.gear_ratio_};
+                Eigen::DiagonalMatrix<Scalar, 3> rotor_matrix(gear_ratios);
+
+                Mat3<Scalar> belt_matrix = Mat3<Scalar>::Zero();
+                belt_matrix.template block<1,1>(0,0) = beltMatrixRowFromBeltRatios(m1.belt_ratios_);
+                belt_matrix.template block<1,2>(1,0) = beltMatrixRowFromBeltRatios(m2.belt_ratios_);
+                belt_matrix.template block<1,3>(2,0) = beltMatrixRowFromBeltRatios(m3.belt_ratios_);
+
+                Mat3<Scalar> ratio_product = rotor_matrix * belt_matrix;
+
+                // K * q_span = 0: rotor i velocity is a linear combination of link velocities.
+                // Row ordering follows ascending rotor sub_index for determinism.
+                DMat<Scalar> K = DMat<Scalar>::Zero(3, 6);
+
+                // Collect (rotor_col, link contributions) for each rotor, then sort by rotor_col.
+                int rotor_cols[3]  = {r1, r2, r3};
+                int order[3] = {0, 1, 2};
+                std::sort(std::begin(order), std::end(order),
+                          [&](int a, int b) { return rotor_cols[a] < rotor_cols[b]; });
+
+                // rotor 0 (proximal):     depends on l1 only
+                // rotor 1 (intermediate): depends on l1, l2
+                // rotor 2 (distal):       depends on l1, l2, l3
+                int link_sets[3][3] = {{l1, -1, -1}, {l1, l2, -1}, {l1, l2, l3}};
+                // ratio_product row i gives the link->rotor_i gear*belt products
+                int ratio_cols[3][3] = {{0, -1, -1}, {0, 1, -1}, {0, 1, 2}};
+
+                for (int ci = 0; ci < 3; ci++) {
+                    int src = order[ci];
+                    K(ci, rotor_cols[src]) = Scalar(-1.);
+                    for (int j = 0; j < 3; j++)
+                        if (link_sets[src][j] >= 0)
+                            K(ci, link_sets[src][j]) = ratio_product(src, ratio_cols[src][j]);
+                }
+
+                DMat<double> K_double(3, 6);
+                for (int i = 0; i < 3; i++)
+                    for (int j = 0; j < 6; j++) {
+                        if constexpr (std::is_same_v<Scalar, std::complex<double>>)
+                            K_double(i, j) = std::real(K(i, j));
+                        else
+                            K_double(i, j) = static_cast<double>(K(i, j));
+                    }
+
+                std::vector<bool> is_ind(6, false);
+                is_ind[l1] = true;
+                is_ind[l2] = true;
+                is_ind[l3] = true;
+
+                auto sym_phi = [K_double](const JointCoordinate<SX> &jp) -> DVec<SX>
+                {
+                    DVec<SX> phi = DVec<SX>::Zero(3);
+                    for (int i = 0; i < 3; i++)
+                        for (int j = 0; j < 6; j++)
+                            phi(i) += SX(K_double(i, j)) * jp(j);
+                    return phi;
+                };
+
+                return std::make_shared<LoopConstraint::GenericImplicit<Scalar>>(
+                    is_ind, sym_phi);
+            }
+        } // anonymous namespace
+
         template <typename Scalar>
         RevoluteTripleWithRotor<Scalar>::RevoluteTripleWithRotor(
             const ProximalTransmission &module_1,
             const IntermediateTransmission &module_2,
             const DistalTransmission &module_3)
-            : Base<Scalar>(6, 3, 3), link_1_(module_1.body_), link_2_(module_2.body_),
-              link_3_(module_3.body_), rotor_1_(module_1.rotor_), rotor_2_(module_2.rotor_),
-              rotor_3_(module_3.rotor_),
-              X_tree_2_(module_2.body_.Xtree_), X_tree_3_(module_3.body_.Xtree_)
+            : Generic<Scalar>(
+                  makeRTWRBodies<Scalar>(module_1, module_2, module_3),
+                  makeRTWRJoints<Scalar>(module_1, module_2, module_3),
+                  makeRTWRConstraint<Scalar>(module_1, module_2, module_3)),
+              link1_(module_1.body_), link2_(module_2.body_), link3_(module_3.body_),
+              rotor1_(module_1.rotor_), rotor2_(module_2.rotor_), rotor3_(module_3.rotor_),
+              link1_index_(module_1.body_.sub_index_within_cluster_),
+              link2_index_(module_2.body_.sub_index_within_cluster_),
+              link3_index_(module_3.body_.sub_index_within_cluster_),
+              rotor1_index_(module_1.rotor_.sub_index_within_cluster_),
+              rotor2_index_(module_2.rotor_.sub_index_within_cluster_),
+              rotor3_index_(module_3.rotor_.sub_index_within_cluster_)
         {
-            using Rev = Joints::Revolute<Scalar>;
-
-            link_1_joint_ = this->single_joints_.emplace_back(new Rev(module_1.joint_axis_));
-            link_2_joint_ = this->single_joints_.emplace_back(new Rev(module_2.joint_axis_));
-            link_3_joint_ = this->single_joints_.emplace_back(new Rev(module_3.joint_axis_));
-
-            rotor_1_joint_ = this->single_joints_.emplace_back(new Rev(module_1.rotor_axis_));
-            rotor_2_joint_ = this->single_joints_.emplace_back(new Rev(module_2.rotor_axis_));
-            rotor_3_joint_ = this->single_joints_.emplace_back(new Rev(module_3.rotor_axis_));
-
-            this->spanning_tree_to_independent_coords_conversion_ = DMat<int>::Zero(3, 6);
-            this->spanning_tree_to_independent_coords_conversion_.template topLeftCorner<3, 3>().setIdentity();
-
             Vec3<Scalar> gear_ratios{module_1.gear_ratio_, module_2.gear_ratio_, module_3.gear_ratio_};
             Eigen::DiagonalMatrix<Scalar, 3> rotor_matrix(gear_ratios);
 
-            DMat<Scalar> belt_matrix = DMat<Scalar>::Zero(3, 3);
-            belt_matrix << beltMatrixRowFromBeltRatios(module_1.belt_ratios_), 0., 0.,
-                beltMatrixRowFromBeltRatios(module_2.belt_ratios_), 0.,
-                beltMatrixRowFromBeltRatios(module_3.belt_ratios_);
+            Mat3<Scalar> belt_matrix = Mat3<Scalar>::Zero();
+            belt_matrix.template block<1,1>(0,0) = beltMatrixRowFromBeltRatios(module_1.belt_ratios_);
+            belt_matrix.template block<1,2>(1,0) = beltMatrixRowFromBeltRatios(module_2.belt_ratios_);
+            belt_matrix.template block<1,3>(2,0) = beltMatrixRowFromBeltRatios(module_3.belt_ratios_);
 
-            DMat<Scalar> G = DMat<Scalar>::Zero(6, 3);
-            G.template topRows<3>().setIdentity();
-            G.template bottomRows<3>() = rotor_matrix * belt_matrix;
-
-            DMat<Scalar> K = DMat<Scalar>::Zero(3, 6);
-            K.template leftCols(3) = -G.bottomRows(3);
-            K.template rightCols(3).setIdentity();
-            this->loop_constraint_ = std::make_shared<LoopConstraint::Static<Scalar>>(G, K);
-
-            X_intra_S_span_ = DMat<Scalar>::Zero(36, 6);
-            X_intra_S_span_ring_ = DMat<Scalar>::Zero(36, 6);
-
-            X_intra_S_span_.template block<6, 1>(0, 0) = link_1_joint_->S();
-            X_intra_S_span_.template block<6, 1>(6, 1) = link_2_joint_->S();
-            X_intra_S_span_.template block<6, 1>(12, 2) = link_3_joint_->S();
-            X_intra_S_span_.template block<6, 1>(18, 3) = rotor_1_joint_->S();
-            X_intra_S_span_.template block<6, 1>(24, 4) = rotor_2_joint_->S();
-            X_intra_S_span_.template block<6, 1>(30, 5) = rotor_3_joint_->S();
-
-            this->S_ = X_intra_S_span_ * this->loop_constraint_->G();
-        }
-
-        template <typename Scalar>
-        void RevoluteTripleWithRotor<Scalar>::updateKinematics(const JointState<Scalar> &joint_state)
-        {
-            const JointState<Scalar> spanning_joint_state = this->toSpanningTreeState(joint_state);
-            const DVec<Scalar> &q = spanning_joint_state.position;
-            const DVec<Scalar> &qd = spanning_joint_state.velocity;
-
-            link_1_joint_->updateKinematics(q.template segment<1>(0), qd.template segment<1>(0));
-            link_2_joint_->updateKinematics(q.template segment<1>(1), qd.template segment<1>(1));
-            link_3_joint_->updateKinematics(q.template segment<1>(2), qd.template segment<1>(2));
-            rotor_1_joint_->updateKinematics(q.template segment<1>(3), qd.template segment<1>(3));
-            rotor_2_joint_->updateKinematics(q.template segment<1>(4), qd.template segment<1>(4));
-            rotor_3_joint_->updateKinematics(q.template segment<1>(5), qd.template segment<1>(5));
-
-            X21_ = link_2_joint_->XJ() * link_2_.Xtree_;
-            X32_ = link_3_joint_->XJ() * link_3_.Xtree_;
-            X31_ = X32_ * X21_;
-
-            const DVec<Scalar> v2_relative1 = link_2_joint_->S() * qd[1];
-            const DMat<Scalar> X21_S1 = X21_.transformMotionSubspace(link_1_joint_->S());
-            const DVec<Scalar> v3_relative1 = X32_.transformMotionVector(v2_relative1) +
-                                              link_3_joint_->S() * qd[2];
-            const DMat<Scalar> X31_S1 = X31_.transformMotionSubspace(link_1_joint_->S());
-            const DVec<Scalar> v3_relative2 = link_3_joint_->S() * qd[2];
-            const DMat<Scalar> X32_S2 = X32_.transformMotionSubspace(link_2_joint_->S());
-
-            X_intra_S_span_.template block<6, 1>(6, 0) = X21_S1;
-            X_intra_S_span_.template block<6, 1>(12, 0) = X31_S1;
-            X_intra_S_span_.template block<6, 1>(12, 1) = X32_S2;
-
-            this->S_.template topLeftCorner<18, 3>() =
-                X_intra_S_span_.template topLeftCorner<18, 3>();
-
-            X_intra_S_span_ring_.template block<6, 1>(6, 0) =
-                -spatial::generalMotionCrossMatrix(v2_relative1) * X21_S1;
-            X_intra_S_span_ring_.template block<6, 1>(12, 0) =
-                -spatial::generalMotionCrossMatrix(v3_relative1) * X31_S1;
-            X_intra_S_span_ring_.template block<6, 1>(12, 1) =
-                -spatial::generalMotionCrossMatrix(v3_relative2) * X32_S2;
-
-            this->vJ_ = X_intra_S_span_ * qd;
-            this->cJ_ = X_intra_S_span_ring_ * qd;
-            this->S_ring_ = X_intra_S_span_ring_ * this->loop_constraint_->G(); //+X_intra*S_span_*G_dot_;
-        }
-
-        template <typename Scalar>
-        void RevoluteTripleWithRotor<Scalar>::computeSpatialTransformFromParentToCurrentCluster(
-            spatial::GeneralizedTransform<Scalar> &Xup) const
-        {
-#ifdef DEBUG_MODE
-            if (Xup.getNumOutputBodies() != 6)
-                throw std::runtime_error("[RevoluteTripleWithRotor] Xup must have 36 rows");
-#endif
-
-            Xup[0] = link_1_joint_->XJ() * link_1_.Xtree_;
-            Xup[1] = X21_ * Xup[0];
-            Xup[2] = X31_ * Xup[0];
-            Xup[3] = rotor_1_joint_->XJ() * rotor_1_.Xtree_;
-            Xup[4] = rotor_2_joint_->XJ() * rotor_2_.Xtree_;
-            Xup[5] = rotor_3_joint_->XJ() * rotor_3_.Xtree_;
+            ratio_product_ = rotor_matrix * belt_matrix;
         }
 
         template <typename Scalar>
         std::vector<std::tuple<Body<Scalar>, JointPtr<Scalar>, DMat<Scalar>>>
         RevoluteTripleWithRotor<Scalar>::bodiesJointsAndReflectedInertias() const
         {
-            std::vector<std::tuple<Body<Scalar>, JointPtr<Scalar>, DMat<Scalar>>> bodies_joints_and_ref_inertias;
+            std::vector<std::tuple<Body<Scalar>, JointPtr<Scalar>, DMat<Scalar>>> result;
 
-            const DMat<Scalar> S_dependent_1 = this->S_.template middleRows<6>(18);
-            const Mat6<Scalar> Ir1 = rotor_1_.inertia_.getMatrix();
-            const DMat<Scalar> ref_inertia_1 = S_dependent_1.transpose() * Ir1 * S_dependent_1;
-            bodies_joints_and_ref_inertias.push_back(std::make_tuple(link_1_, link_1_joint_,
-                                                                     ref_inertia_1));
+            const DMat<Scalar> S_rotor1 = this->single_joints_[rotor1_index_]->S();
+            DMat<Scalar> S_dep_1 = S_rotor1 * ratio_product_.row(0);
+            Mat6<Scalar> Ir1 = rotor1_.inertia_.getMatrix();
+            result.push_back(std::make_tuple(link1_, this->single_joints_[link1_index_],
+                                             S_dep_1.transpose() * Ir1 * S_dep_1));
 
-            const DMat<Scalar> S_dependent_2 = this->S_.template middleRows<6>(24);
-            const Mat6<Scalar> Ir2 = rotor_2_.inertia_.getMatrix();
-            const DMat<Scalar> ref_inertia_2 = S_dependent_2.transpose() * Ir2 * S_dependent_2;
-            bodies_joints_and_ref_inertias.push_back(std::make_tuple(link_2_, link_2_joint_,
-                                                                     ref_inertia_2));
+            const DMat<Scalar> S_rotor2 = this->single_joints_[rotor2_index_]->S();
+            DMat<Scalar> S_dep_2 = S_rotor2 * ratio_product_.row(1);
+            Mat6<Scalar> Ir2 = rotor2_.inertia_.getMatrix();
+            result.push_back(std::make_tuple(link2_, this->single_joints_[link2_index_],
+                                             S_dep_2.transpose() * Ir2 * S_dep_2));
 
-            const DMat<Scalar> S_dependent_3 = this->S_.template middleRows<6>(30);
-            const Mat6<Scalar> Ir3 = rotor_3_.inertia_.getMatrix();
-            const DMat<Scalar> ref_inertia_3 = S_dependent_3.transpose() * Ir3 * S_dependent_3;
-            bodies_joints_and_ref_inertias.push_back(std::make_tuple(link_3_, link_3_joint_,
-                                                                     ref_inertia_3));
+            const DMat<Scalar> S_rotor3 = this->single_joints_[rotor3_index_]->S();
+            DMat<Scalar> S_dep_3 = S_rotor3 * ratio_product_.row(2);
+            Mat6<Scalar> Ir3 = rotor3_.inertia_.getMatrix();
+            result.push_back(std::make_tuple(link3_, this->single_joints_[link3_index_],
+                                             S_dep_3.transpose() * Ir3 * S_dep_3));
 
-            return bodies_joints_and_ref_inertias;
-        }
-
-        template <typename Scalar>
-        void RevoluteTripleWithRotor<Scalar>::evalSTimesVec_dq(const DVec<Scalar>&, DMat<Scalar>&) const
-        {
-            throw std::runtime_error(
-                "RevoluteTripleWithRotor::evalSTimesVec_dq is not implemented. "
-                "Migrate to Generic<Scalar> (see RevolutePairWithRotorJoint as the template) "
-                "to get correct S-derivative support via GenericJoint's CasADi machinery.");
-        }
-
-        template <typename Scalar>
-        void RevoluteTripleWithRotor<Scalar>::evalSTTimesVec_dq(const DVec<Scalar>&, DMat<Scalar>&) const
-        {
-            throw std::runtime_error(
-                "RevoluteTripleWithRotor::evalSTTimesVec_dq is not implemented. "
-                "Migrate to Generic<Scalar> (see RevolutePairWithRotorJoint as the template) "
-                "to get correct S-derivative support via GenericJoint's CasADi machinery.");
-        }
-
-        template <typename Scalar>
-        void RevoluteTripleWithRotor<Scalar>::getSdotqd_q(DMat<Scalar>&) const
-        {
-            throw std::runtime_error(
-                "RevoluteTripleWithRotor::getSdotqd_q is not implemented. "
-                "Migrate to Generic<Scalar> (see RevolutePairWithRotorJoint as the template) "
-                "to get correct S-derivative support via GenericJoint's CasADi machinery.");
+            return result;
         }
 
         template class RevoluteTripleWithRotor<double>;
