@@ -585,8 +585,104 @@ int main() {
     std::cout << std::string(86, '-') << "\n\n";
     analyzeScaling(pair_results, "RevolutePair Chain");
 
-    // Test 4 (RevoluteTripleChainWithRotor) disabled: getSdotqd_q throws until
-    // RevoluteTripleWithRotor is migrated to Generic<Scalar>.
+    // =========================================================================
+    // Test 4: Serial Chain with RevoluteTripleChainWithRotor (triple-coupled joints)
+    // =========================================================================
+    std::cout << "Test 4: Serial Chain Scaling - RevoluteTripleChainWithRotor\n";
+    printHeader();
+
+    std::vector<ScalingResult> triple_results;
+
+    auto t3 = testScaling<RevoluteTripleChainWithRotor<3, double>>("SerialChain", "RevTripleWithRotor", 3);
+    triple_results.push_back(t3);
+    printResult(t3);
+
+    auto t6 = testScaling<RevoluteTripleChainWithRotor<6, double>>("SerialChain", "RevTripleWithRotor", 6);
+    triple_results.push_back(t6);
+    printResult(t6);
+
+    auto t9 = testScaling<RevoluteTripleChainWithRotor<9, double>>("SerialChain", "RevTripleWithRotor", 9);
+    triple_results.push_back(t9);
+    printResult(t9);
+
+    auto t12 = testScaling<RevoluteTripleChainWithRotor<12, double>>("SerialChain", "RevTripleWithRotor", 12);
+    triple_results.push_back(t12);
+    printResult(t12);
+
+    auto t15 = testScaling<RevoluteTripleChainWithRotor<15, double>>("SerialChain", "RevTripleWithRotor", 15);
+    triple_results.push_back(t15);
+    printResult(t15);
+
+    auto t18 = testScaling<RevoluteTripleChainWithRotor<18, double>>("SerialChain", "RevTripleWithRotor", 18);
+    triple_results.push_back(t18);
+    printResult(t18);
+
+    auto t21 = testScaling<RevoluteTripleChainWithRotor<21, double>>("SerialChain", "RevTripleWithRotor", 21);
+    triple_results.push_back(t21);
+    printResult(t21);
+
+    auto t24 = testScaling<RevoluteTripleChainWithRotor<24, double>>("SerialChain", "RevTripleWithRotor", 24);
+    triple_results.push_back(t24);
+    printResult(t24);
+
+    auto t27 = testScaling<RevoluteTripleChainWithRotor<27, double>>("SerialChain", "RevTripleWithRotor", 27);
+    triple_results.push_back(t27);
+    printResult(t27);
+
+    auto t30 = testScaling<RevoluteTripleChainWithRotor<30, double>>("SerialChain", "RevTripleWithRotor", 30);
+    triple_results.push_back(t30);
+    printResult(t30);
+
+    auto t36 = testScaling<RevoluteTripleChainWithRotor<36, double>>("SerialChain", "RevTripleWithRotor", 36);
+    triple_results.push_back(t36);
+    printResult(t36);
+
+    auto t42 = testScaling<RevoluteTripleChainWithRotor<42, double>>("SerialChain", "RevTripleWithRotor", 42);
+    triple_results.push_back(t42);
+    printResult(t42);
+
+    auto t48 = testScaling<RevoluteTripleChainWithRotor<48, double>>("SerialChain", "RevTripleWithRotor", 48);
+    triple_results.push_back(t48);
+    printResult(t48);
+
+    auto t54 = testScaling<RevoluteTripleChainWithRotor<54, double>>("SerialChain", "RevTripleWithRotor", 54);
+    triple_results.push_back(t54);
+    printResult(t54);
+
+    auto t60 = testScaling<RevoluteTripleChainWithRotor<60, double>>("SerialChain", "RevTripleWithRotor", 60);
+    triple_results.push_back(t60);
+    printResult(t60);
+
+    auto t66 = testScaling<RevoluteTripleChainWithRotor<66, double>>("SerialChain", "RevTripleWithRotor", 66);
+    triple_results.push_back(t66);
+    printResult(t66);
+
+    auto t72 = testScaling<RevoluteTripleChainWithRotor<72, double>>("SerialChain", "RevTripleWithRotor", 72);
+    triple_results.push_back(t72);
+    printResult(t72);
+
+    auto t78 = testScaling<RevoluteTripleChainWithRotor<78, double>>("SerialChain", "RevTripleWithRotor", 78);
+    triple_results.push_back(t78);
+    printResult(t78);
+
+    auto t84 = testScaling<RevoluteTripleChainWithRotor<84, double>>("SerialChain", "RevTripleWithRotor", 84);
+    triple_results.push_back(t84);
+    printResult(t84);
+
+    auto t90 = testScaling<RevoluteTripleChainWithRotor<90, double>>("SerialChain", "RevTripleWithRotor", 90);
+    triple_results.push_back(t90);
+    printResult(t90);
+
+    auto t96 = testScaling<RevoluteTripleChainWithRotor<96, double>>("SerialChain", "RevTripleWithRotor", 96);
+    triple_results.push_back(t96);
+    printResult(t96);
+
+    auto t99 = testScaling<RevoluteTripleChainWithRotor<99, double>>("SerialChain", "RevTripleWithRotor", 99);
+    triple_results.push_back(t99);
+    printResult(t99);
+
+    std::cout << std::string(86, '-') << "\n\n";
+    analyzeScaling(triple_results, "RevoluteTriple Chain");
 
     // =========================================================================
     // Summary Comparison
@@ -600,7 +696,8 @@ int main() {
               << r6.avg_time_us << " us\n";
     std::cout << "  RevPairWithRotor (6 links):    " << std::fixed << std::setprecision(2)
               << p6.avg_time_us << " us\n";
-    std::cout << "  RevTripleWithRotor (6 links):  disabled\n";
+    std::cout << "  RevTripleWithRotor (6 links):  " << std::fixed << std::setprecision(2)
+              << t6.avg_time_us << " us\n";
     std::cout << "  Binary Tree (7 links):         " << std::fixed << std::setprecision(2)
               << tree_results[1].avg_time_us << " us\n\n";
 
@@ -661,7 +758,12 @@ int main() {
                 << std::scientific << std::setprecision(2) << r.max_error_dq << ","
                 << r.max_error_dqdot << "\n";
         }
-        // RevoluteTriple results omitted (disabled above)
+        for (const auto& r : triple_results) {
+            csv << r.topology << "," << r.joint_type << "," << r.num_links << ","
+                << r.dof << "," << std::fixed << std::setprecision(2) << r.avg_time_us << ","
+                << std::scientific << std::setprecision(2) << r.max_error_dq << ","
+                << r.max_error_dqdot << "\n";
+        }
         std::cout << "Exported: " << output_dir << "complex_joint_scaling.csv\n";
     }
 

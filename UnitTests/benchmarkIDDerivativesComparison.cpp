@@ -271,8 +271,20 @@ int main() {
     results.push_back(benchmarkRevolutePairChain<8>(ITERATIONS));
     std::cout << " done\n";
 
-    // RevoluteTriple chains disabled: getSdotqd_q throws until RevoluteTripleWithRotor
-    // is migrated to Generic<Scalar> (see RevolutePairWithRotorJoint as the template).
+    // RevoluteTriple chains (3-body clusters) - N must be divisible by 3
+    std::cout << "\nBenchmarking RevoluteTriple chains (3-body clusters)...\n";
+
+    std::cout << "  RevoluteTripleChain<3>..." << std::flush;
+    results.push_back(benchmarkRevoluteTripleChain<3>(ITERATIONS));
+    std::cout << " done\n";
+
+    std::cout << "  RevoluteTripleChain<6>..." << std::flush;
+    results.push_back(benchmarkRevoluteTripleChain<6>(ITERATIONS));
+    std::cout << " done\n";
+
+    std::cout << "  RevoluteTripleChain<9>..." << std::flush;
+    results.push_back(benchmarkRevoluteTripleChain<9>(ITERATIONS));
+    std::cout << " done\n";
 
     // Tello robot variations
     std::cout << "\nBenchmarking Tello robot variations...\n";
@@ -293,7 +305,9 @@ int main() {
     // Other built-in robots
     std::cout << "\nBenchmarking other built-in robots...\n";
 
-    // TeleopArm disabled: uses RevoluteTripleWithRotor whose getSdotqd_q throws.
+    std::cout << "  TeleopArm..." << std::flush;
+    results.push_back(benchmarkRobot<TeleopArm>("TeleopArm", ITERATIONS));
+    std::cout << " done\n";
 
     std::cout << "  MiniCheetah (with rotors)..." << std::flush;
     results.push_back(benchmarkRobot<MiniCheetah<double>>("MiniCheetah (rotors)", ITERATIONS));

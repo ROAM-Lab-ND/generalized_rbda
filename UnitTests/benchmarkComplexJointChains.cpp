@@ -335,8 +335,32 @@ int main() {
     std::cout << std::string(86, '-') << "\n\n";
     analyzeScaling(pair_results, "RevolutePairChainWithRotor");
 
-    // Test 3 (RevoluteTripleChainWithRotor) disabled: getSdotqd_q throws until
-    // RevoluteTripleWithRotor is migrated to Generic<Scalar>.
+    // =========================================================================
+    // Test 3: RevoluteTripleChainWithRotor (3 DOF per cluster)
+    // =========================================================================
+    std::cout << "Test 3: RevoluteTripleChainWithRotor - Triple Coupled (3 DOF per cluster)\n";
+    printHeader();
+
+    std::vector<ChainResult> triple_results;
+
+    auto t3 = testChain<RevoluteTripleChainWithRotor<3, double>>("RevTripleWithRotor", 3);
+    triple_results.push_back(t3);
+    printResult(t3);
+
+    auto t6 = testChain<RevoluteTripleChainWithRotor<6, double>>("RevTripleWithRotor", 6);
+    triple_results.push_back(t6);
+    printResult(t6);
+
+    auto t9 = testChain<RevoluteTripleChainWithRotor<9, double>>("RevTripleWithRotor", 9);
+    triple_results.push_back(t9);
+    printResult(t9);
+
+    auto t12 = testChain<RevoluteTripleChainWithRotor<12, double>>("RevTripleWithRotor", 12);
+    triple_results.push_back(t12);
+    printResult(t12);
+
+    std::cout << std::string(86, '-') << "\n\n";
+    analyzeScaling(triple_results, "RevoluteTripleChainWithRotor");
 
     // =========================================================================
     // Comparison at Same DOF
@@ -364,7 +388,14 @@ int main() {
         std::cout << "\n";
     }
 
-    std::cout << "  RevTripleWithRotor (6 links, 2 clusters): disabled\n";
+    std::cout << "  RevTripleWithRotor (6 links, 2 clusters): " << std::fixed << std::setprecision(2)
+              << t6.avg_time_us << " us";
+    if (s6.dof > 0 && t6.dof > 0 && s6.avg_time_us > 0) {
+        double ratio = t6.avg_time_us / s6.avg_time_us;
+        std::cout << " (" << std::fixed << std::setprecision(1) << ratio << "x baseline)\n";
+    } else {
+        std::cout << "\n";
+    }
 
     // 12 DOF comparison
     std::cout << "\n12 DOF Systems:\n";
@@ -385,7 +416,14 @@ int main() {
         std::cout << "\n";
     }
 
-    std::cout << "  RevTripleWithRotor (12 links, 4 clusters): disabled\n";
+    std::cout << "  RevTripleWithRotor (12 links, 4 clusters): " << std::fixed << std::setprecision(2)
+              << t12.avg_time_us << " us";
+    if (s12.dof > 0 && t12.dof > 0 && s12.avg_time_us > 0) {
+        double ratio = t12.avg_time_us / s12.avg_time_us;
+        std::cout << " (" << std::fixed << std::setprecision(1) << ratio << "x baseline)\n";
+    } else {
+        std::cout << "\n";
+    }
 
     // =========================================================================
     // Cluster Overhead Analysis
@@ -401,7 +439,9 @@ int main() {
     if (p6.num_clusters > 0)
         std::cout << "  RevPairWithRotor:  " << std::fixed << std::setprecision(2)
                   << p6.avg_time_us / p6.num_clusters << " us/cluster\n";
-    // RevTripleWithRotor per-cluster timing disabled
+    if (t6.num_clusters > 0)
+        std::cout << "  RevTripleWithRotor: " << std::fixed << std::setprecision(2)
+                  << t6.avg_time_us / t6.num_clusters << " us/cluster\n";
 
     std::cout << "\nObservations:\n";
     std::cout << "1. RevolutePair and RevoluteTriple mechanisms have higher per-cluster cost\n";
