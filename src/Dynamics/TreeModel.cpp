@@ -250,7 +250,7 @@ namespace grbda
                 H_.block(vel_idx_parent, subtree_start, num_vel_parent, subtree_size).noalias() =
                     Sblock.transpose() * F_.middleCols(subtree_start, subtree_size);
                 // Symmetry: H(vi, pp) = H(pp, vi)'
-                H_.block(subtree_start, vel_idx_parent, subtree_size, num_vel_parent).noalias() =
+                H_.block(subtree_start, vel_idx_parent, subtree_size, num_vel_parent) =
                     H_.block(vel_idx_parent, subtree_start, num_vel_parent, subtree_size).transpose();
 
                 // Accumulate composite inertia to parent: IC0{p(i)}(inds, inds) += blockDiagSum(IC0{i})
@@ -258,7 +258,7 @@ namespace grbda
                 auto &parent_IC0_block = nodes_[parent]->Ic0_[parent_subindex];
                 for (int body = 0; body < num_bodies; body++)
                 {
-                    parent_IC0_block.noalias() += node_i->Ic0_[body];
+                    parent_IC0_block += node_i->Ic0_[body];
                 }
             }
         }
