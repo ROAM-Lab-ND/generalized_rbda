@@ -168,6 +168,10 @@ namespace grbda
         DVec<Scalar> getBiasForceVector() override;
 
         std::pair<DMat<Scalar>, DMat<Scalar>> firstOrderInverseDynamicsDerivatives(const DVec<Scalar> &qdd);
+
+        // Additional function to compute the first-order inverse dynamics. Same output as firstOrderInverseDynamicsDerivatives,
+        // but with all internal quantities expressed in the world frame instead of the cluster frame. Faster method.
+        // Additional documentation provided at: Documentation/ID_Derivatives-WorldFrameSupplement.pdf
         std::pair<DMat<Scalar>, DMat<Scalar>> firstOrderInverseDynamicsDerivativesWorldFrame(const DVec<Scalar> &qdd);
 
     protected:

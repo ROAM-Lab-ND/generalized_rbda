@@ -661,7 +661,8 @@ namespace grbda
     template <typename Scalar, typename OriTpl>
     std::pair<DMat<Scalar>, DMat<Scalar>> ClusterTreeModel<Scalar, OriTpl>::firstOrderInverseDynamicsDerivativesWorldFrame(const DVec<Scalar> &qdd)
     {
-        // World-frame algorithm for ID derivatives following ID_derivatives_world.m.
+        // Additional documentation provided at: Documentation/ID_Derivatives-WorldFrameSupplement.pdf
+
         // Per-node world-frame quantities are stored on the nodes (Ic0_, S0_, BC0_, etc.)
         // to avoid per-call allocation. F1-F4 accumulators are class members.
 
