@@ -3,9 +3,80 @@
  */
 
 #include "grbda/Dynamics/ClusterTreeModel.h"
+#include <chrono>
 
 namespace grbda
 {
+    // Profiling buckets for firstOrderInverseDynamicsDerivatives:
+    //   fwd_kin    — forwardAccelerationKinematics
+    //   fwd_casadi — evalSTimesVec_dq (x2) + getSdotqd_q; config-dependent S joints only
+    //   fwd_other  — Psi_dot, Psi_ddot, Upsilon_dot, M_cup, B_cup, F computation
+    //   bwd_casadi — evalSTTimesVec_dq on diagonal; config-dependent S joints only
+    //   bwd_other  — t1-t4 setup + walk-to-root derivative block fills (combined)
+    //   bwd_prop   — accumulateBlockDiagonalPair + inverseTransformForceVector to parent
+    thread_local double prof_fwd_kin_us = 0;
+    thread_local double prof_fwd_casadi_us = 0;
+    thread_local double prof_fwd_other_us = 0;
+    thread_local double prof_bwd_casadi_us = 0;
+    thread_local double prof_bwd_other_us = 0;
+    thread_local double prof_bwd_prop_us = 0;
+    thread_local int    prof_count = 0;
+    thread_local int    prof_fwd_casadi_calls = 0;
+    thread_local int    prof_bwd_casadi_calls = 0;
+    thread_local bool   prof_enabled = false;
+
+    void enableIDDerivativesProfiling() {
+        prof_enabled = true;
+        prof_count = 0;
+        prof_fwd_casadi_calls = 0;
+        prof_bwd_casadi_calls = 0;
+    }
+
+    std::vector<double> getIDDerivativesProfilingData() {
+        if (prof_count == 0) return {0, 0, 0, 0, 0, 0, 0};
+        double total = prof_fwd_kin_us + prof_fwd_casadi_us + prof_fwd_other_us +
+                       prof_bwd_casadi_us + prof_bwd_other_us + prof_bwd_prop_us;
+        return {
+            prof_fwd_kin_us    / prof_count,
+            prof_fwd_casadi_us / prof_count,
+            prof_fwd_other_us  / prof_count,
+            prof_bwd_casadi_us / prof_count,
+            prof_bwd_other_us  / prof_count,
+            prof_bwd_prop_us   / prof_count,
+            total              / prof_count
+        };
+    }
+
+    void resetIDDerivativesProfiling() {
+        prof_fwd_kin_us = prof_fwd_casadi_us = prof_fwd_other_us = 0;
+        prof_bwd_casadi_us = prof_bwd_other_us = prof_bwd_prop_us = 0;
+        prof_fwd_casadi_calls = prof_bwd_casadi_calls = 0;
+        prof_count = 0;
+        prof_enabled = false;
+    }
+
+    void printIDDerivativesProfiling() {
+        if (prof_count > 0) {
+            double total = prof_fwd_kin_us + prof_fwd_casadi_us + prof_fwd_other_us +
+                           prof_bwd_casadi_us + prof_bwd_other_us + prof_bwd_prop_us;
+            int fwd_calls_per = prof_fwd_casadi_calls / prof_count;
+            int bwd_calls_per = prof_bwd_casadi_calls / prof_count;
+            std::cout << "\n=== ID Derivatives Profiling (" << prof_count << " calls) ===" << std::endl;
+            std::cout << "Forward kinematics:    " << (prof_fwd_kin_us    / prof_count) << " us/call ("
+                      << (100.0 * prof_fwd_kin_us    / total) << "%)" << std::endl;
+            std::cout << "Forward pass CasADi:   " << (prof_fwd_casadi_us / prof_count) << " us/call ("
+                      << (100.0 * prof_fwd_casadi_us / total) << "%) [" << fwd_calls_per << " fcn calls]" << std::endl;
+            std::cout << "Forward pass other:    " << (prof_fwd_other_us  / prof_count) << " us/call ("
+                      << (100.0 * prof_fwd_other_us  / total) << "%)" << std::endl;
+            std::cout << "Backward pass CasADi:  " << (prof_bwd_casadi_us / prof_count) << " us/call ("
+                      << (100.0 * prof_bwd_casadi_us / total) << "%) [" << bwd_calls_per << " fcn calls]" << std::endl;
+            std::cout << "Backward pass other:   " << (prof_bwd_other_us  / prof_count) << " us/call ("
+                      << (100.0 * prof_bwd_other_us  / total) << "%)" << std::endl;
+            std::cout << "Backward propagate:    " << (prof_bwd_prop_us   / prof_count) << " us/call ("
+                      << (100.0 * prof_bwd_prop_us   / total) << "%)" << std::endl;
+        }
+        resetIDDerivativesProfiling();
+    }
 
     template <typename Scalar, typename OriTpl>
     const D6Mat<Scalar> &
@@ -441,8 +512,13 @@ namespace grbda
     template <typename Scalar, typename OriTpl>
     std::pair<DMat<Scalar>, DMat<Scalar>> ClusterTreeModel<Scalar, OriTpl>::firstOrderInverseDynamicsDerivatives(const DVec<Scalar> &qdd)
     {
+        using clock = std::chrono::high_resolution_clock;
+        auto t0 = clock::now();
+
         const auto [q, qd] = this->getState();
         this->forwardAccelerationKinematics(qdd);
+
+        if (prof_enabled) prof_fwd_kin_us += std::chrono::duration<double, std::micro>(clock::now() - t0).count();
 
         const int nClusters = static_cast<int>(cluster_nodes_.size());
         DMat<Scalar> &dtau_dq = this->dtau_dq_;
@@ -451,8 +527,11 @@ namespace grbda
         dtau_dq_dot.setZero();
 
         // Forward Pass - compute Psi_dot, Psi_ddot, Upsilon_dot, M_cup, B_cup, F for each cluster
+        double fwd_casadi_local = 0, fwd_other_local = 0;
         for (auto &cluster : cluster_nodes_)
         {
+            auto tf0 = clock::now();
+
             const int mss_dim = cluster->motion_subspace_dimension_;
             const int num_vel = cluster->num_velocities_;
             const DMat<Scalar> &S = cluster->S();
@@ -485,10 +564,17 @@ namespace grbda
             DMat<Scalar> &beta = cluster->beta_workspace_;
             DMat<Scalar> &Sdotqd_q = cluster->Sdotqd_q_workspace_;
 
+            double iter_casadi_time = 0;
             if (has_config_dependent_S) {
+                auto tf1 = clock::now();
                 cluster->joint_->evalSTimesVec_dq(cluster_qd, alpha);
                 cluster->joint_->evalSTimesVec_dq(cluster_qdd, beta);
                 cluster->joint_->getSdotqd_q(Sdotqd_q);
+                iter_casadi_time = std::chrono::duration<double, std::micro>(clock::now() - tf1).count();
+                if (prof_enabled) {
+                    fwd_casadi_local += iter_casadi_time;
+                    prof_fwd_casadi_calls += 3;
+                }
             }
 
             // Psi_dot = crm(v_parent_up) * S + alpha
@@ -520,11 +606,22 @@ namespace grbda
             // F = I*a + crf(v)*I*v
             cluster->F_ = spatial::blockDiagonalTimesVector(I_blocks, cluster->a_);
             spatial::addGeneralForceCrossProduct(v, Iv, cluster->F_);
+
+            if (prof_enabled)
+                fwd_other_local += std::chrono::duration<double, std::micro>(clock::now() - tf0).count() - iter_casadi_time;
+        }
+
+        if (prof_enabled) {
+            prof_fwd_casadi_us += fwd_casadi_local;
+            prof_fwd_other_us  += fwd_other_local;
         }
 
         // Backward Pass - compute derivatives and propagate M_cup, B_cup, F to parents
+        double bwd_casadi_local = 0, bwd_other_local = 0, bwd_prop_local = 0;
         for (int i = nClusters - 1; i >= 0; i--)
         {
+            auto tb0 = clock::now();
+
             auto &cluster_i = cluster_nodes_[i];
             const int ii = cluster_i->velocity_index_;
             const int num_vel_i = cluster_i->num_velocities_;
@@ -552,8 +649,12 @@ namespace grbda
             spatial::addSwappedForceCrossTimesMatrix(F, S_i, t3);
             cluster_i->Xup_.blockDiagonalInertiaTransposeTimesMotionSubspace(B_cup, S_i, t4);
 
+            auto tb1 = clock::now();
+            if (prof_enabled) bwd_other_local += std::chrono::duration<double, std::micro>(tb1 - tb0).count();
+
             // Walk from cluster i to root
             // Use optimized path for single-body clusters (most common case)
+            double iter_bwd_casadi_us = 0;
             if (mss_dim_i == 6)
             {
                 // Single-body cluster: use Transform directly for efficiency
@@ -577,8 +678,11 @@ namespace grbda
                     {
                         // Only compute S^T derivative for joints with config-dependent S
                         if (cluster_i->joint_->hasConfigurationDependentS()) {
+                            auto tc0 = clock::now();
                             cluster_i->joint_->evalSTTimesVec_dq(F, cluster_i->st_dq_workspace_);
                             dtau_dq.block(ii, ii, num_vel_i, num_vel_i) += cluster_i->st_dq_workspace_;
+                            iter_bwd_casadi_us = std::chrono::duration<double, std::micro>(clock::now() - tc0).count();
+                            if (prof_enabled) prof_bwd_casadi_calls++;
                         }
                     }
 
@@ -621,8 +725,11 @@ namespace grbda
                     {
                         // Only compute S^T derivative for joints with config-dependent S
                         if (cluster_i->joint_->hasConfigurationDependentS()) {
+                            auto tc0 = clock::now();
                             cluster_i->joint_->evalSTTimesVec_dq(F, cluster_i->st_dq_workspace_);
                             dtau_dq.block(ii, ii, num_vel_i, num_vel_i) += cluster_i->st_dq_workspace_;
+                            iter_bwd_casadi_us = std::chrono::duration<double, std::micro>(clock::now() - tc0).count();
+                            if (prof_enabled) prof_bwd_casadi_calls++;
                         }
                     }
 
@@ -643,6 +750,12 @@ namespace grbda
                 }
             }
 
+            auto tb2 = clock::now();
+            if (prof_enabled) {
+                bwd_other_local  += std::chrono::duration<double, std::micro>(tb2 - tb1).count() - iter_bwd_casadi_us;
+                bwd_casadi_local += iter_bwd_casadi_us;
+            }
+
             // Propagate M_cup, B_cup, F to parent
             // Use batched inertia accumulation to share E^T and r_hat computation
             if (cluster_i->parent_index_ >= 0)
@@ -653,6 +766,16 @@ namespace grbda
                     B_cup, parent_cluster->B_cup_);
                 parent_cluster->F_ += cluster_i->Xup_.inverseTransformForceVector(F);
             }
+
+            if (prof_enabled)
+                bwd_prop_local += std::chrono::duration<double, std::micro>(clock::now() - tb2).count();
+        }
+
+        if (prof_enabled) {
+            prof_bwd_casadi_us += bwd_casadi_local;
+            prof_bwd_other_us  += bwd_other_local;
+            prof_bwd_prop_us   += bwd_prop_local;
+            prof_count++;
         }
 
         return {dtau_dq, dtau_dq_dot};
