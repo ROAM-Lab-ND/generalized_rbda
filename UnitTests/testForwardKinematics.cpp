@@ -242,14 +242,31 @@ GTEST_TEST(ForwardKinematics, HumanoidModelComparison)
     for (int i = 0; i < 20; i++)
     {
         // Initialize Random States
-        ModelState<> model_state;
+        ModelState<> rotor_model_state;
+        ModelState<> no_rotor_model_state;
+
         for (const auto &cluster : rotor_model.clusters())
         {
             JointState<> joint_state = cluster->joint_->randomJointState();
-            model_state.push_back(joint_state);
+            rotor_model_state.push_back(joint_state);
+            if( joint_state.position.size() == 4  ) // Revolute Pair with Rotor Joint
+            {
+                const DMat<double> conv = cluster->joint_->spanningTreeToIndependentCoordsConversion().cast<double>();
+                const DVec<double> ind_pos = conv * joint_state.position;
+                
+                // Revolute Pair State
+                JointState<> rp_state(JointCoordinate<double>(ind_pos, false),
+                                     JointCoordinate<double>(joint_state.velocity, false));
+                
+                no_rotor_model_state.push_back(rp_state);
+            }
+            else
+            {
+                no_rotor_model_state.push_back(joint_state);
+            }
         }
-        rotor_model.setState(model_state);
-        no_rotor_model.setState(model_state);
+        rotor_model.setState(rotor_model_state);
+        no_rotor_model.setState(no_rotor_model_state);
 
         // Forward Kinematics
         rotor_model.forwardKinematicsIncludingContactPoints();

@@ -25,7 +25,7 @@ namespace grbda
                 node->Xa_ = node->Xup_.toAbsolute();
             }
 
-            node->avp_ = spatial::generalMotionCrossProduct(node->v_, node->vJ());
+            spatial::generalMotionCrossProduct(node->v_, node->vJ(), node->avp_);
         }
 
         kinematics_updated_ = true;
@@ -120,9 +120,9 @@ namespace grbda
 
         forwardKinematics();
 
-        // Forward Pass
+        // Forward Pass: Initialize composite inertias to local inertias
         for (auto &node : nodes_)
-            node->Ic_ = node->I_;
+            node->Ic_ = node->I_;  // element-wise copy of vector<Mat6>
 
         // Backward Pass
         for (int i = (int)nodes_.size() - 1; i >= 0; i--)
@@ -131,28 +131,135 @@ namespace grbda
             const int vel_idx_i = node_i->velocity_index_;
             const int num_vel_i = node_i->num_velocities_;
 
+            // Accumulate composite inertia to parent using block-diagonal structure
+            // For cluster B connected to cluster A at body k, we add:
+            // I_A[k,k] += sum over all bodies j in B of: X_j^{-T} * I_B[j,j] * X_j^{-1}
+            // where X_j is the transform from body j in B to body k in A
             if (node_i->parent_index_ >= 0)
             {
-                auto parent_node = nodes_[node_i->parent_index_];
-                parent_node->Ic_ += node_i->Xup_.inverseTransformSpatialInertia(node_i->Ic_);
+                auto & parent_node = nodes_[node_i->parent_index_];
+                node_i->Xup_.accumulateBlockDiagonalInertia(node_i->Ic_, parent_node->Ic_);
             }
 
-            DMat<Scalar> F = node_i->Ic_ * node_i->S();
-            H_.block(vel_idx_i, vel_idx_i, num_vel_i, num_vel_i) = node_i->S().transpose() * F;
+            // Diagonal block: H_ii = S_i^T * Ic_i * S_i
+            // Compute F = Ic * S exploiting block-diagonal structure of Ic
+            DMat<Scalar> F = node_i->Xup_.blockDiagonalInertiaTimesMotionSubspace(
+                node_i->Ic_, node_i->S());
+            H_.block(vel_idx_i, vel_idx_i, num_vel_i, num_vel_i).noalias() = node_i->S().transpose() * F;
 
+            // Off-diagonal blocks: H_ij = S_j^T * X_ij^{-T} * Ic_i * S_i
+            // F is transformed through the chain from node i to ancestor j
             int j = i;
             while (nodes_[j]->parent_index_ > -1)
             {
-                F = nodes_[j]->Xup_.inverseTransformForceSubspace(F);
+                // Transform F from current frame to parent frame using block-wise transform
+                F = nodes_[j]->Xup_.transformForceSubspaceToParent(F);
 
                 j = nodes_[j]->parent_index_;
                 const int vel_idx_j = nodes_[j]->velocity_index_;
                 const int num_vel_j = nodes_[j]->num_velocities_;
 
-                H_.block(vel_idx_i, vel_idx_j, num_vel_i, num_vel_j) =
+                // H_ij = F^T * S_j
+                H_.block(vel_idx_i, vel_idx_j, num_vel_i, num_vel_j).noalias() =
                     F.transpose() * nodes_[j]->S();
-                H_.block(vel_idx_j, vel_idx_i, num_vel_j, num_vel_i) =
+                H_.block(vel_idx_j, vel_idx_i, num_vel_j, num_vel_i).noalias() =
                     H_.block(vel_idx_i, vel_idx_j, num_vel_i, num_vel_j).transpose();
+            }
+        }
+
+        mass_matrix_updated_ = true;
+    }
+
+    template <typename Scalar>
+    void TreeModel<Scalar>::compositeRigidBodyAlgorithmWorldFrame()
+    {
+        if (mass_matrix_updated_)
+            return;
+
+        forwardKinematics();
+
+        const int n = (int)nodes_.size();
+        H_.setZero();
+
+        // Forward Pass: Transform inertias and motion subspaces to world frame
+        // Following Hworld_v2.m: transform block-by-block to frame {0}
+        for (int i = 0; i < n; i++)
+        {
+            auto &node = nodes_[i];
+            const int num_bodies = node->Xa_.getNumOutputBodies();
+
+            // Initialize composite inertia (one 6x6 block per body) with each inertia in world frame
+            node->Ic0_.resize(num_bodies);
+            node->S0_.resize(num_bodies);
+
+            // Transform down to frame {0}, block by block
+            for (int body = 0; body < num_bodies; body++)
+            {
+                const auto &Xa_body = node->Xa_.getTransformForOutputBody(body);
+                node->Ic0_[body] = Xa_body.inverseTransformSpatialInertia(node->I_[body]);
+
+                const auto S_body_block = node->S().template middleRows<6>(6 * body);
+                Xa_body.inverseTransformMotionSubspace(S_body_block, node->S0_[body]);
+            }
+        }
+
+        // F is 6 x NV, summing over all blocks (the ancestors see the sum of forces)
+        F_.setZero(6, this->velocity_index_);
+
+        // Backward Pass: Accumulate composite inertias and compute H
+        // Following Hworld_v2.m structure
+        for (int i = n - 1; i >= 0; i--)
+        {
+            auto &node_i = nodes_[i];
+            const int & vel_idx_i = node_i->velocity_index_;
+            const int & num_vel_i = node_i->num_velocities_;
+            const int & num_bodies = node_i->Xa_.getNumOutputBodies();
+
+            // Compute Ftmp = IC0{i} * S0{i} (block-diagonal multiplication)
+            node_i->Ftmp_.resize(num_bodies);
+            H_.block(vel_idx_i, vel_idx_i, num_vel_i, num_vel_i).setZero();
+            for (int body = 0; body < num_bodies; body++)
+            {
+                node_i->Ftmp_[body].noalias() =
+                    node_i->Ic0_[body] * node_i->S0_[body];
+
+                H_.block(vel_idx_i, vel_idx_i, num_vel_i, num_vel_i).noalias() +=
+                    node_i->S0_[body].transpose() * node_i->Ftmp_[body];
+
+                F_.middleCols(vel_idx_i, num_vel_i).noalias() +=
+                    node_i->Ftmp_[body];
+            }
+
+            if (node_i->parent_index_ >= 0)
+            {
+                const int & parent = node_i->parent_index_;
+                const int & vel_idx_parent = nodes_[parent]->velocity_index_;
+                const int & num_vel_parent = nodes_[parent]->num_velocities_;
+
+                // Get subtree velocity indices (all velocities from node i and its descendants)
+                const int & subtree_start = vel_idx_i;
+                const int & subtree_size = node_i->subtree_num_velocities_;
+
+                // parent_body_subindex: which body in the parent cluster does this cluster attach to
+                const int & parent_subindex = node_i->Xup_.transform_and_parent_subindex(0).second;
+
+                // Sblock = S0{p(i)}(inds, :) - the parent's motion subspace for the connecting body
+                const auto &Sblock = nodes_[parent]->S0_[parent_subindex];
+
+                // H(pp, vi) = Sblock'*F(:, vi)
+                H_.block(vel_idx_parent, subtree_start, num_vel_parent, subtree_size).noalias() =
+                    Sblock.transpose() * F_.middleCols(subtree_start, subtree_size);
+                // Symmetry: H(vi, pp) = H(pp, vi)'
+                H_.block(subtree_start, vel_idx_parent, subtree_size, num_vel_parent) =
+                    H_.block(vel_idx_parent, subtree_start, num_vel_parent, subtree_size).transpose();
+
+                // Accumulate composite inertia to parent: IC0{p(i)}(inds, inds) += blockDiagSum(IC0{i})
+                // blockDiagSum sums all 6x6 diagonal blocks into one 6x6 matrix
+                auto &parent_IC0_block = nodes_[parent]->Ic0_[parent_subindex];
+                for (int body = 0; body < num_bodies; body++)
+                {
+                    parent_IC0_block += node_i->Ic0_[body];
+                }
             }
         }
 
@@ -180,9 +287,9 @@ namespace grbda
         // Forward Pass
         for (auto &node : nodes_)
         {
-            node->f_ = node->I_ * node->a_ +
-                       spatial::generalForceCrossProduct(node->v_,
-                                                         DVec<Scalar>(node->I_ * node->v_));
+            node->f_ = spatial::blockDiagonalTimesVector(node->I_, node->a_);
+            spatial::addGeneralForceCrossProduct(node->v_,
+                spatial::blockDiagonalTimesVector(node->I_, node->v_), node->f_);
         }
 
         // Account for external forces in bias force
@@ -263,6 +370,7 @@ namespace grbda
     }
 
     template class TreeModel<double>;
+    template class TreeModel<std::complex<double>>;
     template class TreeModel<float>;
     template class TreeModel<casadi::SX>;
 

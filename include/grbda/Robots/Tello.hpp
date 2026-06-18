@@ -10,6 +10,7 @@ namespace grbda
     class Tello : public Robot<Scalar>
     {
     public:
+
         Tello() {}
 
         ClusterTreeModel<Scalar> buildClusterTreeModel() const override;

@@ -180,10 +180,12 @@ namespace grbda
         const DMat<Scalar> H_inv = matrixInverse(H);
         const DMat<Scalar> inv_ops_inertia = J * H_inv * J.transpose();
         dstate_out = H_inv * (J.transpose() * force);
-        return force.dot(inv_ops_inertia * force);
+        // CRITICAL FIX: Use transpose()*vec instead of dot() to avoid complex conjugation
+        return (force.transpose() * (inv_ops_inertia * force))(0);
     }
 
     template class RigidBodyTreeModel<double>;
+    template class RigidBodyTreeModel<std::complex<double>>;
     template class RigidBodyTreeModel<casadi::SX>;
 
 } // namespace grbda

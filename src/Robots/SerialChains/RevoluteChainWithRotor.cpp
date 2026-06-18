@@ -261,16 +261,33 @@ namespace grbda
     template class RevoluteChainWithRotor<2ul>;
     template class RevoluteChainWithRotor<3ul>;
     template class RevoluteChainWithRotor<4ul>;
+    template class RevoluteChainWithRotor<5ul>;
     template class RevoluteChainWithRotor<6ul>;
+    template class RevoluteChainWithRotor<7ul>;
     template class RevoluteChainWithRotor<8ul>;
+    template class RevoluteChainWithRotor<9ul>;
     template class RevoluteChainWithRotor<10ul>;
     template class RevoluteChainWithRotor<12ul>;
+    template class RevoluteChainWithRotor<14ul>;
     template class RevoluteChainWithRotor<16ul>;
+    template class RevoluteChainWithRotor<18ul>;
     template class RevoluteChainWithRotor<20ul>;
     template class RevoluteChainWithRotor<24ul>;
+    template class RevoluteChainWithRotor<25ul>;
+    template class RevoluteChainWithRotor<30ul>;
+    template class RevoluteChainWithRotor<35ul>;
+    template class RevoluteChainWithRotor<40ul>;
+    template class RevoluteChainWithRotor<50ul>;
+    template class RevoluteChainWithRotor<60ul>;
+    template class RevoluteChainWithRotor<70ul>;
+    template class RevoluteChainWithRotor<80ul>;
+    template class RevoluteChainWithRotor<90ul>;
+    template class RevoluteChainWithRotor<100ul>;
 
     template class RevoluteChainWithRotor<2ul, casadi::SX>;
     template class RevoluteChainWithRotor<4ul, casadi::SX>;
     template class RevoluteChainWithRotor<8ul, casadi::SX>;
+
+    template class RevoluteChainWithRotor<30ul, std::complex<double>>;
 
 } // namespace grbda

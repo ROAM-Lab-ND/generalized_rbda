@@ -15,9 +15,10 @@ namespace grbda
                            velocity_index, joint->numVelocities()),
           link_(link), joint_(joint), Xtree_(link.Xtree_)
     {
-        this->I_ = link.inertia_.getMatrix();
+        this->I_[0] = link.inertia_.getMatrix();
         this->Xup_.appendTransformWithClusterAncestorSubIndex(spatial::Transform<Scalar>{}, 0);
         this->Xa_.appendTransform(spatial::Transform<Scalar>{});
+        S_ring_ = DMat<Scalar>::Zero(6, joint->numVelocities());
     }
 
     template <typename Scalar>
@@ -55,6 +56,7 @@ namespace grbda
     }
 
     template struct ReflectedInertiaTreeNode<double>;
+    template struct ReflectedInertiaTreeNode<std::complex<double>>;
     template struct ReflectedInertiaTreeNode<float>;
     template struct ReflectedInertiaTreeNode<casadi::SX>;
 

@@ -14,9 +14,10 @@ namespace grbda
                            velocity_index, joint->numVelocities()),
           body_(body), joint_(joint), Xtree_(body.Xtree_)
     {
-        this->I_ = body.inertia_.getMatrix();
+        this->I_[0] = body.inertia_.getMatrix();
         this->Xup_.appendTransformWithClusterAncestorSubIndex(spatial::Transform<Scalar>{}, 0);
         this->Xa_.appendTransform(spatial::Transform<Scalar>{});
+        S_ring_ = DMat<Scalar>::Zero(6, joint->numVelocities());
     }
 
     template <typename Scalar>
@@ -54,6 +55,7 @@ namespace grbda
     }
 
     template struct RigidBodyTreeNode<double>;
+     template struct RigidBodyTreeNode<std::complex<double>>;
     template struct RigidBodyTreeNode<float>;
     template struct RigidBodyTreeNode<casadi::SX>;
 

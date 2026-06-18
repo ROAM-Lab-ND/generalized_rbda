@@ -347,7 +347,8 @@ namespace grbda
         // Forward Pass - Articulated body bias force
         for (auto &link_node : reflected_inertia_nodes_)
         {
-            link_node->pA_ = spatial::generalForceCrossProduct(link_node->v_, DVec<Scalar>(link_node->I_ * link_node->v_));
+            link_node->pA_ = spatial::generalForceCrossProduct(link_node->v_,
+                DVec<Scalar>(link_node->I_[0] * link_node->v_));
         }
 
         // Account for external forces in bias force
@@ -421,7 +422,7 @@ namespace grbda
         // Forward pass
         for (auto &link_node : reflected_inertia_nodes_)
         {
-            link_node->IA_ = link_node->I_;
+            link_node->IA_ = link_node->I_[0];
         }
 
         // Backward pass (Gauss principal of least constraint)
@@ -499,7 +500,9 @@ namespace grbda
             const auto joint = node->joint_;
 
             DVec<Scalar> tmp = joint->S().transpose() * f;
-            lambda_inv += tmp.dot(node->D_inv_ * tmp);
+            // Use transpose()*vec instead of dot() to avoid complex conjugation
+            // Eigen's dot(a,b) computes conj(a)^T * b, but a^T * b needed for complex-step
+            lambda_inv += (tmp.transpose() * DVec<Scalar>(node->D_inv_ * tmp))(0);
 
             dstate_out +=
                 node->qdd_for_subtree_due_to_subtree_root_joint_qdd * node->D_inv_ * tmp;
@@ -522,7 +525,8 @@ namespace grbda
         const DMat<Scalar> H_inv = matrixInverse(H);
         const DMat<Scalar> inv_ops_inertia = J * H_inv * J.transpose();
         dstate_out = H_inv * (J.transpose() * force);
-        return force.dot(inv_ops_inertia * force);
+        // Use transpose()*vec instead of dot() to avoid complex conjugation
+        return (force.transpose() * (inv_ops_inertia * force))(0);
     }
 
     template <typename Scalar>
@@ -741,6 +745,7 @@ namespace grbda
     }
 
     template class ReflectedInertiaTreeModel<double>;
+    template class ReflectedInertiaTreeModel<std::complex<double>>;
     template class ReflectedInertiaTreeModel<casadi::SX>;
 
 } // namespace grbda

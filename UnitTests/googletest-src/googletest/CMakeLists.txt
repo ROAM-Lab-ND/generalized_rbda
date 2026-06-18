@@ -8,6 +8,10 @@
 # ctest.  You can select which tests to run using 'ctest -R regex'.
 # For more options, run 'ctest --help'.
 
+if(CMAKE_BUILD_TYPE MATCHES Debug)
+  add_compile_options(-Wno-maybe-uninitialized)
+endif()
+
 # When other libraries are using a shared version of runtime libraries,
 # Google Test also has to use one.
 option(

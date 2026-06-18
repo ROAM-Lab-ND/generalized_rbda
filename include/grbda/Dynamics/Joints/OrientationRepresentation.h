@@ -10,9 +10,9 @@ namespace grbda
     {
         struct Quaternion
         {
-            static const int num_ori_parameter = 4;
-            static const int numSpanningPos = 7;
-            static const int numIndependentPos = 7;
+            static constexpr int num_ori_parameter = 4;
+            static constexpr int numSpanningPos = 7;
+            static constexpr int numIndependentPos = 7;
 
             template <typename Derived>
             static const RotMat<typename Derived::Scalar>
@@ -30,9 +30,9 @@ namespace grbda
 
         struct RollPitchYaw
         {
-            static const int num_ori_parameter = 3;
-            static const int numSpanningPos = 6;
-            static const int numIndependentPos = 6;
+            static constexpr int num_ori_parameter = 3;
+            static constexpr int numSpanningPos = 6;
+            static constexpr int numIndependentPos = 6;
 
             template <typename Derived>
             static const RotMat<typename Derived::Scalar>

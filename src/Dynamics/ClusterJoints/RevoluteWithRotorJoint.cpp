@@ -73,7 +73,9 @@ namespace grbda
             return bodies_joints_and_reflected_inertias;
         }
 
+
         template class RevoluteWithRotor<double>;
+        template class RevoluteWithRotor<std::complex<double>>;
         template class RevoluteWithRotor<float>;
         template class RevoluteWithRotor<casadi::SX>;
     }

@@ -261,9 +261,9 @@ namespace grbda
 
       Mat3<typename T::Scalar> R;
 
-      R << 1 - 2 * (e2 * e2 + e3 * e3), 2 * (e1 * e2 - e0 * e3), 2 * (e1 * e3 + e0 * e2),
-          2 * (e1 * e2 + e0 * e3), 1 - 2 * (e1 * e1 + e3 * e3), 2 * (e2 * e3 - e0 * e1),
-          2 * (e1 * e3 - e0 * e2), 2 * (e2 * e3 + e0 * e1), 1 - 2 * (e1 * e1 + e2 * e2);
+      R << typename T::Scalar(1.) - typename T::Scalar(2) * (e2 * e2 + e3 * e3), typename T::Scalar(2.) * (e1 * e2 - e0 * e3), typename T::Scalar(2.) * (e1 * e3 + e0 * e2),
+          typename T::Scalar(2.) * (e1 * e2 + e0 * e3), typename T::Scalar(1.) - typename T::Scalar(2.) * (e1 * e1 + e3 * e3), typename T::Scalar(2.) * (e2 * e3 - e0 * e1),
+          typename T::Scalar(2.) * (e1 * e3 - e0 * e2), typename T::Scalar(2.) * (e2 * e3 + e0 * e1), typename T::Scalar(1.) - typename T::Scalar(2.) * (e1 * e1 + e2 * e2);
       R.transposeInPlace();
       return R;
     }
@@ -491,7 +491,7 @@ namespace grbda
 
       T theta = sqrt(so3[0] * so3[0] + so3[1] * so3[1] + so3[2] * so3[2]);
 
-      if (fabs(theta) < 1.e-6)
+      if (fabs(theta) < 1.e-20)
       {
         quat.setZero();
         quat[0] = 1.;

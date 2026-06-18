@@ -27,6 +27,7 @@ namespace grbda
             std::vector<std::tuple<Body<Scalar>, JointPtr<Scalar>, DMat<Scalar>>>
             bodiesJointsAndReflectedInertias() const override;
 
+
         private:
             JointPtr<Scalar> link_joint_;
             JointPtr<Scalar> rotor_joint_;

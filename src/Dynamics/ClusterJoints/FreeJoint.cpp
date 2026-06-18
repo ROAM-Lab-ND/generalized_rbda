@@ -8,7 +8,8 @@ namespace grbda
 
         template <typename Scalar, typename OrientationRepresentation>
         Free<Scalar, OrientationRepresentation>::Free(const Body<Scalar> &body, std::string name)
-            : Base<Scalar>(1, OrientationRepresentation::num_ori_parameter + 3, 6), body_(body)
+            : Base<Scalar>(1, OrientationRepresentation::num_ori_parameter + 3, 6),
+              body_(body)
         {
             if (body.parent_index_ >= 0)
                 throw std::runtime_error("Free joint is only valid as the first joint in a tree and thus cannot have a parent body");
@@ -46,7 +47,7 @@ namespace grbda
         }
 
         template <typename Scalar, typename OrientationRepresentation>
-        JointState<double> Free<Scalar, OrientationRepresentation>::randomJointState() const
+        JointState<double> Free<Scalar, OrientationRepresentation>::randomJointState(bool enforce_position_constraint) const
         {
             const int num_ori_param = OrientationRepresentation::num_ori_parameter;
 
@@ -69,8 +70,11 @@ namespace grbda
             return bodies_joints_and_ref_inertias;
         }
 
+
         template class Free<double, ori_representation::RollPitchYaw>;
         template class Free<double, ori_representation::Quaternion>;
+        template class Free<std::complex<double>, ori_representation::RollPitchYaw>;
+        template class Free<std::complex<double>, ori_representation::Quaternion>;
         template class Free<float, ori_representation::RollPitchYaw>;
         template class Free<float, ori_representation::Quaternion>;
         template class Free<casadi::SX, ori_representation::RollPitchYaw>;

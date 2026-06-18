@@ -136,22 +136,25 @@ namespace grbda
                 std::make_shared<RevJoint>(CoordAxis::X, gimbal_joint_name),
                 std::make_shared<RevJoint>(CoordAxis::Y, thigh_joint_name)};
 
+            // CasADi symbolic phi for automatic differentiation
             std::function<DVec<casadi::SX>(const JointCoordinate<casadi::SX> &)>
                 hip_diff_phi = [](const JointCoordinate<casadi::SX> &q)
             {
                 double N = 6.0;
                 DVec<casadi::SX> out = DVec<casadi::SX>(2);
-                casadi::SX ql_1 = q(0);
-                casadi::SX ql_2 = q(1);
-                casadi::SX y_1 = q(2) / N;
-                casadi::SX y_2 = q(3) / N;
+                // q(0), q(1) are independent (rotors), q(2), q(3) are dependent (links)
+                casadi::SX y_1 = q(0) / N;  // rotor 1 post-gearbox (independent)
+                casadi::SX y_2 = q(1) / N;  // rotor 2 post-gearbox (independent)
+                casadi::SX ql_1 = q(2);     // gimbal angle (dependent)
+                casadi::SX ql_2 = q(3);     // thigh angle (dependent)
 
-                out[0] = (57 * sin(y_1)) / 2500 - (49 * cos(ql_1)) / 5000 - (399 * sin(ql_1)) / 20000 - (8 * cos(y_1) * cos(ql_2)) / 625 - (57 * cos(ql_1) * sin(ql_2)) / 2500 - (7 * sin(y_1) * sin(ql_1)) / 625 + (7 * sin(ql_1) * sin(ql_2)) / 625 - (8 * cos(ql_1) * sin(y_1) * sin(ql_2)) / 625 + 3021 / 160000;
+                out[0] = (57 * sin(y_1)) / 2500 - (49 * cos(ql_1)) / 5000 - (399 * sin(ql_1)) / 20000 - (8 * cos(y_1) * cos(ql_2)) / 625 - (57 * cos(ql_1) * sin(ql_2)) / 2500 - (7 * sin(y_1) * sin(ql_1)) / 625 + (7 * sin(ql_1) * sin(ql_2)) / 625 - (8 * cos(ql_1) * sin(y_1) * sin(ql_2)) / 625 + 3021.0 / 160000;
 
-                out[1] = (57 * sin(y_2)) / 2500 - (49 * cos(ql_1)) / 5000 + (399 * sin(ql_1)) / 20000 - (8 * cos(y_2) * cos(ql_2)) / 625 - (57 * cos(ql_1) * sin(ql_2)) / 2500 + (7 * sin(y_2) * sin(ql_1)) / 625 - (7 * sin(ql_1) * sin(ql_2)) / 625 - (8 * cos(ql_1) * sin(y_2) * sin(ql_2)) / 625 + 3021 / 160000;
+                out[1] = (57 * sin(y_2)) / 2500 - (49 * cos(ql_1)) / 5000 + (399 * sin(ql_1)) / 20000 - (8 * cos(y_2) * cos(ql_2)) / 625 - (57 * cos(ql_1) * sin(ql_2)) / 2500 + (7 * sin(y_2) * sin(ql_1)) / 625 - (7 * sin(ql_1) * sin(ql_2)) / 625 - (8 * cos(ql_1) * sin(y_2) * sin(ql_2)) / 625 + 3021.0 / 160000;
 
                 return out;
             };
+
             std::vector<bool> hip_diff_independent_coordinates = {true, true, false, false};
 
             std::shared_ptr<LoopConstraintType> hip_diff_loop_constraint;
@@ -234,24 +237,27 @@ namespace grbda
                 std::make_shared<RevJoint>(CoordAxis::Y, shin_joint_name),
                 std::make_shared<RevJoint>(CoordAxis::Y, foot_joint_name)};
 
+            // CasADi symbolic phi for automatic differentiation
             std::function<DVec<casadi::SX>(const JointCoordinate<casadi::SX> &)>
                 knee_ankle_diff_phi = [](const JointCoordinate<casadi::SX> &q)
             {
                 double N = 6.0;
                 DVec<casadi::SX> out = DVec<casadi::SX>(2);
-                casadi::SX ql_1 = q(0);
-                casadi::SX ql_2 = q(1);
-                casadi::SX y_1 = q(2) / N;
-                casadi::SX y_2 = q(3) / N;
+                // q(0), q(1) are independent (rotors), q(2), q(3) are dependent (links)
+                casadi::SX y_1 = q(0) / N;  // rotor 1 post-gearbox (independent)
+                casadi::SX y_2 = q(1) / N;  // rotor 2 post-gearbox (independent)
+                casadi::SX ql_1 = q(2);     // shin angle (dependent)
+                casadi::SX ql_2 = q(3);     // foot angle (dependent)
 
-                out[0] = (21 * cos(y_1 / 2 - y_2 / 2 + (1979 * 3.1415) / 4500)) / 6250 - (13 * cos(y_1 / 2 - y_2 / 2 + (493 * 3.1415) / 1500)) / 625 - (273 * cos(3.1415 / 9)) / 12500 - (7 * sin(y_1 / 2 - y_2 / 2 + ql_2 + (231 * 3.1415) / 500)) / 2500 + (91 * sin(ql_2 + (2 * 3.1415) / 15)) / 5000 - (147 * sin(ql_2 + 3.1415 / 45)) / 50000 + 163349 / 6250000;
+                out[0] = (21 * cos(y_1 / 2 - y_2 / 2 + (1979 * 3.1415) / 4500)) / 6250 - (13 * cos(y_1 / 2 - y_2 / 2 + (493 * 3.1415) / 1500)) / 625 - (273 * cos(3.1415 / 9)) / 12500 - (7 * sin(y_1 / 2 - y_2 / 2 + ql_2 + (231 * 3.1415) / 500)) / 2500 + (91 * sin(ql_2 + (2 * 3.1415) / 15)) / 5000 - (147 * sin(ql_2 + 3.1415 / 45)) / 50000 + 163349.0 / 6250000;
 
                 out[1] = ql_1 - y_2 / 2 - y_1 / 2;
 
                 return out;
             };
+
             std::vector<bool> knee_ankle_diff_independent_coordinates = {true, true, false, false};
-            
+
             std::shared_ptr<LoopConstraintType> knee_ankle_diff_loop_constraint;
             knee_ankle_diff_loop_constraint = std::make_shared<LoopConstraintType>(
                 knee_ankle_diff_independent_coordinates, knee_ankle_diff_phi);
@@ -277,6 +283,7 @@ namespace grbda
     }
 
     template class Tello<double>;
+    template class Tello<std::complex<double>>;
     template class Tello<casadi::SX>;
 
 } // namespace grbda

@@ -3,6 +3,8 @@
 #include "testHelpers.hpp"
 #include "grbda/Dynamics/RigidBodyTreeModel.h"
 #include "grbda/Robots/RobotTypes.h"
+#include "grbda/Dynamics/ClusterJoints/ClusterJoint.h"
+#include "grbda/Dynamics/ClusterJoints/GenericJoint.h"
 
 using namespace grbda;
 
@@ -50,8 +52,10 @@ protected:
 
         for (const auto &cluster : cluster_models.at(robot_idx).clusters())
         {
+            JointState<> spanning_joint_state(true, true);
+            // Explicit constraint: fall back to existing random
             JointState<> joint_state = cluster->joint_->randomJointState();
-            JointState<> spanning_joint_state = cluster->joint_->toSpanningTreeState(joint_state);
+            spanning_joint_state = cluster->joint_->toSpanningTreeState(joint_state);
 
             spanning_joint_pos = appendEigenVector(spanning_joint_pos,
                                                    spanning_joint_state.position);
@@ -61,7 +65,10 @@ protected:
             if (use_spanning_state)
                 model_state.push_back(spanning_joint_state);
             else
-                model_state.push_back(joint_state);
+            {
+                // Use the robust spanning state for implicit clusters to avoid invalid random states
+                model_state.push_back(spanning_joint_state);
+            }
         }
 
         cluster_models[robot_idx].setState(model_state);

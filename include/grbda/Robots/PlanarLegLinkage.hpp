@@ -9,6 +9,7 @@ namespace grbda
     class PlanarLegLinkage : public Robot<Scalar>
     {
     public:
+
         PlanarLegLinkage();
         ClusterTreeModel<Scalar> buildClusterTreeModel() const override;
 

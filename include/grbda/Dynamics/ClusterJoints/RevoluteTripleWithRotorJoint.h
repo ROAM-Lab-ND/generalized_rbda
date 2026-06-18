@@ -1,7 +1,7 @@
 #ifndef GRBDA_GENERALIZED_JOINTS_REVOLUTE_TRIPLE_WITH_ROTOR_JOINT_H
 #define GRBDA_GENERALIZED_JOINTS_REVOLUTE_TRIPLE_WITH_ROTOR_JOINT_H
 
-#include "grbda/Dynamics/ClusterJoints/ClusterJoint.h"
+#include "grbda/Dynamics/ClusterJoints/GenericJoint.h"
 
 namespace grbda
 {
@@ -10,17 +10,16 @@ namespace grbda
     {
 
         template <typename Scalar = double>
-        class RevoluteTripleWithRotor : public Base<Scalar>
+        class RevoluteTripleWithRotor : public Generic<Scalar>
         {
         public:
             typedef ParallelBeltTransmissionModule<1, Scalar> ProximalTransmission;
             typedef ParallelBeltTransmissionModule<2, Scalar> IntermediateTransmission;
             typedef ParallelBeltTransmissionModule<3, Scalar> DistalTransmission;
 
-
-            RevoluteTripleWithRotor(const ProximalTransmission& module_1,
-                                    const IntermediateTransmission& module_2,
-                                    const DistalTransmission& module_3);
+            RevoluteTripleWithRotor(const ProximalTransmission &module_1,
+                                    const IntermediateTransmission &module_2,
+                                    const DistalTransmission &module_3);
             virtual ~RevoluteTripleWithRotor() {}
 
             ClusterJointTypes type() const override
@@ -28,35 +27,38 @@ namespace grbda
                 return ClusterJointTypes::RevoluteTripleWithRotor;
             }
 
-            void updateKinematics(const JointState<Scalar> &joint_state) override;
-
-            void computeSpatialTransformFromParentToCurrentCluster(
-                spatial::GeneralizedTransform<Scalar> &Xup) const override;
-
             std::vector<std::tuple<Body<Scalar>, JointPtr<Scalar>, DMat<Scalar>>>
             bodiesJointsAndReflectedInertias() const override;
 
+            // gear*belt ratio product: ratio_product_(i,j) = effective ratio from link j to rotor i
+            const Mat3<Scalar>& getRatioProduct() const { return ratio_product_; }
+
+            int link1Index() const { return link1_index_; }
+            int link2Index() const { return link2_index_; }
+            int link3Index() const { return link3_index_; }
+            int rotor1Index() const { return rotor1_index_; }
+            int rotor2Index() const { return rotor2_index_; }
+            int rotor3Index() const { return rotor3_index_; }
+
         private:
-            JointPtr<Scalar> link_1_joint_;
-            JointPtr<Scalar> link_2_joint_;
-            JointPtr<Scalar> link_3_joint_;
-            JointPtr<Scalar> rotor_1_joint_;
-            JointPtr<Scalar> rotor_2_joint_;
-            JointPtr<Scalar> rotor_3_joint_;
+            const Body<Scalar> link1_;
+            const Body<Scalar> link2_;
+            const Body<Scalar> link3_;
+            const Body<Scalar> rotor1_;
+            const Body<Scalar> rotor2_;
+            const Body<Scalar> rotor3_;
 
-            spatial::Transform<Scalar> X21_;
-            spatial::Transform<Scalar> X32_;
-            spatial::Transform<Scalar> X31_;
+            const int link1_index_;
+            const int link2_index_;
+            const int link3_index_;
+            const int rotor1_index_;
+            const int rotor2_index_;
+            const int rotor3_index_;
 
-            const Body<Scalar> link_1_;
-            const Body<Scalar> link_2_;
-            const Body<Scalar> link_3_;
-            const Body<Scalar> rotor_1_;
-            const Body<Scalar> rotor_2_;
-            const Body<Scalar> rotor_3_;
-
-            DMat<Scalar> X_intra_S_span_;
-            DMat<Scalar> X_intra_S_span_ring_;
+            // ratio_product_(i, j) is the effective ratio from link j to rotor i.
+            // Stored at construction so bodiesJointsAndReflectedInertias() works without
+            // a prior updateKinematics() call.
+            Mat3<Scalar> ratio_product_;
         };
 
     }

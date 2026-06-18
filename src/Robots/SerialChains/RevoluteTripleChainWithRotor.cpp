@@ -82,7 +82,90 @@ namespace grbda
     ClusterTreeModel<Scalar>
     RevoluteTripleChainWithRotor<N, Scalar>::buildUniformClusterTreeModel() const
     {
-        throw std::runtime_error("Not implemented");
+        ClusterTreeModel<Scalar> model{};
+
+        Mat3<Scalar> I3 = Mat3<Scalar>::Identity();
+        Vec3<Scalar> z3 = Vec3<Scalar>::Zero();
+
+        const Scalar grav = 9.81;
+        model.setGravity(Vec3<Scalar>{grav, 0., 0.});
+
+        // Inertia params
+        const Scalar I = 1.;
+        const Scalar Irot = 1e-4;
+        const Scalar m = 1.;
+        const Scalar l = 1.;
+        const Scalar c = 0.5;
+        const Scalar gr = 2.;
+        DVec<Scalar> br1(1), br2(2), br3(3);
+        br1 << 3.;
+        br2 << 3., 3.;
+        br3 << 3., 3., 3.;
+
+        // Uniform quantities
+        ori::CoordinateAxis axis = ori::CoordinateAxis::Z;
+
+        const spatial::Transform<Scalar> Xtree_link = spatial::Transform(I3, Vec3<Scalar>(l, 0, 0.));
+
+        Mat3<Scalar> link_inertia;
+        link_inertia << 0., 0., 0., 0., 0., 0., 0., 0., I;
+        const SpatialInertia<Scalar> link_spatial_inertia(m, Vec3<Scalar>(c, 0., 0.),
+                                                          link_inertia);
+
+        Mat3<Scalar> rotor_inertia;
+        rotor_inertia << 0., 0., 0., 0., 0., 0., 0., 0., Irot;
+        const SpatialInertia<Scalar> rotor_spatial_inertia(0., Vec3<Scalar>::Zero(),
+                                                           rotor_inertia);
+
+        std::string parent_name = "ground";
+        for (size_t i(0); i < N / 3; i++)
+        {
+            const spatial::Transform<Scalar> Xtree1 = i == 0 ? spatial::Transform<Scalar>(I3, z3)
+                                                             : Xtree_link;
+
+            // Link A
+            const std::string linkA_name = "link-A-" + std::to_string(i);
+            auto linkA = model.registerBody(linkA_name, link_spatial_inertia,
+                                           parent_name, Xtree1);
+
+            // Link B
+            const std::string linkB_name = "link-B-" + std::to_string(i);
+            auto linkB = model.registerBody(linkB_name, link_spatial_inertia,
+                                           linkA_name, Xtree_link);
+
+            // Link C
+            const std::string linkC_name = "link-C-" + std::to_string(i);
+            auto linkC = model.registerBody(linkC_name, link_spatial_inertia,
+                                           linkB_name, Xtree_link);
+
+            // Rotor A
+            const std::string rotorA_name = "rotor-A-" + std::to_string(i);
+            auto rotorA = model.registerBody(rotorA_name, rotor_spatial_inertia,
+                                            parent_name, Xtree1);
+
+            // Rotor B
+            const std::string rotorB_name = "rotor-B-" + std::to_string(i);
+            auto rotorB = model.registerBody(rotorB_name, rotor_spatial_inertia,
+                                            parent_name, Xtree1);
+
+            // Rotor C
+            const std::string rotorC_name = "rotor-C-" + std::to_string(i);
+            auto rotorC = model.registerBody(rotorC_name, rotor_spatial_inertia,
+                                            parent_name, Xtree1);
+
+            // Cluster
+            ProxTransModule moduleA{linkA, rotorA, axis, axis, gr, br1};
+            InterTransModule moduleB{linkB, rotorB, axis, axis, gr, br2};
+            DistTransModule moduleC{linkC, rotorC, axis, axis, gr, br3};
+
+            const std::string cluster_name = "cluster-" + std::to_string(i);
+            model.template appendRegisteredBodiesAsCluster<RevTripleWithRotor>(
+                cluster_name, moduleA, moduleB, moduleC);
+
+            parent_name = linkC_name;
+        }
+
+        return model;
     }
 
     template <size_t N, typename Scalar>
@@ -111,5 +194,25 @@ namespace grbda
     template class RevoluteTripleChainWithRotor<9ul>;
     template class RevoluteTripleChainWithRotor<12ul>;
     template class RevoluteTripleChainWithRotor<15ul>;
+    template class RevoluteTripleChainWithRotor<18ul>;
+    template class RevoluteTripleChainWithRotor<21ul>;
+    template class RevoluteTripleChainWithRotor<24ul>;
+    template class RevoluteTripleChainWithRotor<27ul>;
+    template class RevoluteTripleChainWithRotor<30ul>;
+    template class RevoluteTripleChainWithRotor<36ul>;
+    template class RevoluteTripleChainWithRotor<42ul>;
+    template class RevoluteTripleChainWithRotor<48ul>;
+    template class RevoluteTripleChainWithRotor<54ul>;
+    template class RevoluteTripleChainWithRotor<60ul>;
+    template class RevoluteTripleChainWithRotor<66ul>;
+    template class RevoluteTripleChainWithRotor<72ul>;
+    template class RevoluteTripleChainWithRotor<78ul>;
+    template class RevoluteTripleChainWithRotor<84ul>;
+    template class RevoluteTripleChainWithRotor<90ul>;
+    template class RevoluteTripleChainWithRotor<96ul>;
+    template class RevoluteTripleChainWithRotor<99ul>;
+
+    template class RevoluteTripleChainWithRotor<3ul, std::complex<double>>;
+    template class RevoluteTripleChainWithRotor<6ul, std::complex<double>>;
 
 } // namespace grbda

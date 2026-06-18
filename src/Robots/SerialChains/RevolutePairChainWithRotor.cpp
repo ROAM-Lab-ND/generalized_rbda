@@ -303,6 +303,13 @@ namespace grbda
     template class RevolutePairChainWithRotor<24ul>;
     template class RevolutePairChainWithRotor<28ul>;
     template class RevolutePairChainWithRotor<32ul>;
+    template class RevolutePairChainWithRotor<40ul>;
+    template class RevolutePairChainWithRotor<50ul>;
+    template class RevolutePairChainWithRotor<60ul>;
+    template class RevolutePairChainWithRotor<70ul>;
+    template class RevolutePairChainWithRotor<80ul>;
+    template class RevolutePairChainWithRotor<90ul>;
+    template class RevolutePairChainWithRotor<100ul>;
 
     template class RevolutePairChainWithRotor<2ul, casadi::SX>;
     template class RevolutePairChainWithRotor<6ul, casadi::SX>;

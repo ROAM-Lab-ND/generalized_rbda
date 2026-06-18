@@ -14,9 +14,13 @@ namespace grbda
                            velocity_index, joint->numVelocities()),
           bodies_(bodies), joint_(joint)
     {
+        const int mss_dim = 6 * (int)bodies.size();
+        this->v_parent_up_ = DVec<Scalar>::Zero(mss_dim);
+        this->a_parent_up_ = DVec<Scalar>::Zero(mss_dim);
+
         for (size_t i = 0; i < bodies.size(); i++)
         {
-            this->I_.template block<6, 6>(6 * i, 6 * i) = bodies[i].inertia_.getMatrix();
+            this->I_[i] = bodies[i].inertia_.getMatrix();
             this->Xup_.appendTransformWithClusterAncestorSubIndex(
                 spatial::Transform<Scalar>{}, bodies[i].cluster_ancestor_sub_index_within_cluster_);
             this->Xa_.appendTransform(spatial::Transform<Scalar>{});
@@ -97,6 +101,7 @@ namespace grbda
     }
 
     template struct ClusterTreeNode<double>;
+    template struct ClusterTreeNode<std::complex<double>>;
     template struct ClusterTreeNode<float>;
     template struct ClusterTreeNode<casadi::SX>;
 

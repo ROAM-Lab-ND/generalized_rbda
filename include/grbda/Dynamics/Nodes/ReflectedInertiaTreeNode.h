@@ -10,6 +10,7 @@ namespace grbda
     template <typename Scalar = double>
     struct ReflectedInertiaTreeNode : TreeNode<Scalar>
     {
+        EIGEN_MAKE_ALIGNED_OPERATOR_NEW
         ReflectedInertiaTreeNode(const int index, const Body<Scalar> &link,
                                  const std::shared_ptr<Joints::Base<Scalar>> &joint,
                                  const int parent_index,
@@ -20,6 +21,7 @@ namespace grbda
         const DVec<Scalar> &vJ() const override { return vJ_; }
         const DMat<Scalar> &S() const override { return joint_->S(); }
         const DVec<Scalar> &cJ() const override { return cJ_; }
+        const DMat<Scalar> &S_ring() const override { return S_ring_; }
 
         const spatial::Transform<Scalar> &getAbsoluteTransformForBody(const Body<Scalar> &body) override;
         DVec<Scalar> getVelocityForBody(const Body<Scalar> &body) override;
@@ -31,6 +33,7 @@ namespace grbda
 
         DVec<Scalar> vJ_;
         DVec<Scalar> cJ_ = DVec<Scalar>::Zero(6);
+        DMat<Scalar> S_ring_;
         const spatial::Transform<Scalar> Xtree_;
 
         Mat6<Scalar> IA_;    // articulated body inertia

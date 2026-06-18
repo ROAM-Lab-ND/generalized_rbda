@@ -169,12 +169,14 @@ namespace grbda
             const spatial::Transform<Scalar> xtreeAnkleRotor(I3, ankleRotorLocation);
 
             // Cluster
-            Body<Scalar> ankle_rotor = model.registerBody(ankle_rotor_name, ankle_rotor_inertia,
-                                                          knee_parent_name, xtreeAnkleRotor);
             Body<Scalar> knee_link = model.registerBody(knee_link_name, knee_link_inertia,
                                                         knee_parent_name, xtreeKnee);
             Body<Scalar> knee_rotor = model.registerBody(knee_rotor_name, knee_rotor_inertia,
                                                          knee_parent_name, xtreeKneeRotor);
+            
+            Body<Scalar> ankle_rotor = model.registerBody(ankle_rotor_name, ankle_rotor_inertia,
+                                                          knee_parent_name, xtreeAnkleRotor);
+            
             Body<Scalar> ankle_link = model.registerBody(ankle_link_name, ankle_link_inertia,
                                                          ankle_parent_name, xtreeAnkle);
 
@@ -359,6 +361,8 @@ namespace grbda
 
     template class MIT_Humanoid<double, ori_representation::RollPitchYaw>;
     template class MIT_Humanoid<double, ori_representation::Quaternion>;
+    template class MIT_Humanoid<std::complex<double>, ori_representation::RollPitchYaw>;
+    template class MIT_Humanoid<std::complex<double>, ori_representation::Quaternion>;
     template class MIT_Humanoid<casadi::SX, ori_representation::RollPitchYaw>;
     template class MIT_Humanoid<casadi::SX, ori_representation::Quaternion>;
 

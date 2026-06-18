@@ -1,7 +1,7 @@
 #ifndef GRBDA_GENERALIZED_JOINTS_REVOLUTE_PAIR_WITH_ROTOR_JOINT_H
 #define GRBDA_GENERALIZED_JOINTS_REVOLUTE_PAIR_WITH_ROTOR_JOINT_H
 
-#include "grbda/Dynamics/ClusterJoints/ClusterJoint.h"
+#include "grbda/Dynamics/ClusterJoints/GenericJoint.h"
 
 namespace grbda
 {
@@ -10,7 +10,7 @@ namespace grbda
     {
 
         template <typename Scalar = double>
-        class RevolutePairWithRotor : public Base<Scalar>
+        class RevolutePairWithRotor : public Generic<Scalar>
         {
         public:
             typedef ParallelBeltTransmissionModule<1, Scalar> ProximalTransmission;
@@ -24,22 +24,10 @@ namespace grbda
                 return ClusterJointTypes::RevolutePairWithRotor;
             }
 
-            void updateKinematics(const JointState<Scalar> &joint_state) override;
-
-            void computeSpatialTransformFromParentToCurrentCluster(
-                spatial::GeneralizedTransform<Scalar> &Xup) const override;
-
             std::vector<std::tuple<Body<Scalar>, JointPtr<Scalar>, DMat<Scalar>>>
             bodiesJointsAndReflectedInertias() const override;
 
         private:
-            JointPtr<Scalar> link1_joint_;
-            JointPtr<Scalar> rotor1_joint_;
-            JointPtr<Scalar> rotor2_joint_;
-            JointPtr<Scalar> link2_joint_;
-
-            spatial::Transform<Scalar> X21_;
-
             const Body<Scalar> link1_;
             const Body<Scalar> link2_;
             const Body<Scalar> rotor1_;
@@ -50,8 +38,10 @@ namespace grbda
             const int rotor1_index_;
             const int rotor2_index_;
 
-            DMat<Scalar> X_intra_S_span_;
-            DMat<Scalar> X_intra_S_span_ring_;
+            // Gear/belt ratio matrix: ratio_product_(i, j) is the effective ratio from link j
+            // to rotor i. Stored at construction so bodiesJointsAndReflectedInertias() can
+            // compute reflected inertia without needing a prior updateKinematics() call.
+            Mat2<Scalar> ratio_product_;
         };
 
     }

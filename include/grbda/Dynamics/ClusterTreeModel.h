@@ -89,8 +89,11 @@ namespace grbda
         void print() const;
 
         typedef std::pair<DVec<Scalar>, DVec<Scalar>> StatePair;
-        void setState(const ModelState<Scalar> &model_state);
+        void setState(const ModelState<Scalar> &model_state, bool enforce_constraints = true);
         void setState(const StatePair &q_qd_pair);
+
+        std::pair<DVec<Scalar>, DVec<Scalar>> getState();
+
         void setState(const DVec<Scalar>& q_qd_vec);
         ModelState<Scalar> stateVectorToModelState(const StatePair& q_qd_pair);
 
@@ -164,6 +167,13 @@ namespace grbda
         DMat<Scalar> getMassMatrix() override;
         DVec<Scalar> getBiasForceVector() override;
 
+        std::pair<DMat<Scalar>, DMat<Scalar>> firstOrderInverseDynamicsDerivatives(const DVec<Scalar> &qdd);
+
+        // Additional function to compute the first-order inverse dynamics. Same output as firstOrderInverseDynamicsDerivatives,
+        // but with all internal quantities expressed in the world frame instead of the cluster frame. Faster method.
+        // Additional documentation provided at: Documentation/ID_Derivatives-WorldFrameSupplement.pdf
+        std::pair<DMat<Scalar>, DMat<Scalar>> firstOrderInverseDynamicsDerivativesWorldFrame(const DVec<Scalar> &qdd);
+
     protected:
         using SX = casadi::SX;
 
@@ -219,6 +229,13 @@ namespace grbda
         bool articulated_bodies_updated_ = false;
         bool force_propagators_updated_ = false;
         bool qdd_effects_updated_ = false;
+
+        // 6 x nDOF accumulators for firstOrderInverseDynamicsDerivativesWorldFrame
+        D6Mat<Scalar> idDeriv_F1_, idDeriv_F2_, idDeriv_F3_, idDeriv_F4_;
+
+        // nDOF x nDOF output matrices for firstOrderInverseDynamicsDerivatives
+        // Pre-allocated to avoid heap allocation on each call
+        mutable DMat<Scalar> dtau_dq_, dtau_dqd_;
 
         template <typename Scalar2>
         friend class RigidBodyTreeModel;

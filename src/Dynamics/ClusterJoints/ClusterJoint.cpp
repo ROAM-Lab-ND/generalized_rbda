@@ -1,4 +1,5 @@
 #include "grbda/Dynamics/ClusterJoints/ClusterJoint.h"
+#include <iostream>
 
 namespace grbda
 {
@@ -17,10 +18,12 @@ namespace grbda
             Psi_ = DMat<Scalar>::Zero(motion_subspace_dimension, num_velocities_);
             vJ_ = DVec<Scalar>::Zero(motion_subspace_dimension);
             cJ_ = DVec<Scalar>::Zero(motion_subspace_dimension);
+            S_ring_ = DMat<Scalar>::Zero(motion_subspace_dimension, num_velocities_);
         }
 
         template <typename Scalar>
-        JointState<Scalar> Base<Scalar>::toSpanningTreeState(const JointState<Scalar> &joint_state)
+        JointState<Scalar> Base<Scalar>::toSpanningTreeState(const JointState<Scalar> &joint_state,
+                                                              bool enforce_constraints)
         {
             JointState<Scalar> spanning_joint_state(true, true);
 
@@ -40,8 +43,10 @@ namespace grbda
             }
             else if (joint_state.position.isSpanning() && loop_constraint_->isImplicit())
             {
-                if (!loop_constraint_->isValidSpanningPosition(joint_state.position))
+                if (enforce_constraints && !loop_constraint_->isValidSpanningPosition(joint_state.position))
                 {
+                    DVec<Scalar> phi_val = loop_constraint_->phi(joint_state.position);
+                    std::cerr << "Spanning position is not valid. phi = " << phi_val.transpose() << std::endl;
                     throw std::runtime_error("Spanning position is not valid");
                 }
                 spanning_joint_state.position = joint_state.position;
@@ -59,7 +64,7 @@ namespace grbda
             }
             else
             {
-                if (!loop_constraint_->isValidSpanningVelocity(joint_state.velocity))
+                if (enforce_constraints && !loop_constraint_->isValidSpanningVelocity(joint_state.velocity))
                 {
                     throw std::runtime_error("Spanning velocity is not valid");
                 }
@@ -71,7 +76,7 @@ namespace grbda
         }
 
         template <typename Scalar>
-        JointState<double> Base<Scalar>::randomJointState() const
+        JointState<double> Base<Scalar>::randomJointState(bool enforce_position_constraint) const
         {
             JointState<double> joint_state(false, false);
             joint_state.position = DVec<double>::Random(numPositions());
@@ -80,6 +85,7 @@ namespace grbda
         }
 
         template class Base<double>;
+        template class Base<std::complex<double>>;
         template class Base<float>;
         template class Base<casadi::SX>;
 

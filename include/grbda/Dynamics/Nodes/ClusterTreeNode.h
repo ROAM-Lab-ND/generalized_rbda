@@ -10,6 +10,7 @@ namespace grbda
     template <typename Scalar = double>
     struct ClusterTreeNode : TreeNode<Scalar>
     {
+        EIGEN_MAKE_ALIGNED_OPERATOR_NEW
         typedef typename CorrectMatrixInverseType<Scalar>::type InverseType;
         typedef std::shared_ptr<ClusterJoints::Base<Scalar>> ClusterJointPtr;
         typedef std::pair<Body<Scalar>, JointPtr<Scalar>> BodyJointPair;
@@ -24,6 +25,7 @@ namespace grbda
         const DVec<Scalar> &vJ() const override { return joint_->vJ(); }
         const DMat<Scalar> &S() const override { return joint_->S(); }
         const DVec<Scalar> &cJ() const override { return joint_->cJ(); }
+        const DMat<Scalar> &S_ring() const override { return joint_->S_ring(); }
 
         const spatial::Transform<Scalar> &getAbsoluteTransformForBody(const Body<Scalar> &body) override;
         DVec<Scalar> getVelocityForBody(const Body<Scalar> &body) override;
@@ -53,6 +55,37 @@ namespace grbda
         DMat<Scalar> qdd_for_subtree_due_to_subtree_root_joint_qdd;
         DMat<Scalar> K_;
         DMat<Scalar> L_;
+
+        DMat<Scalar> Psi_dot_;
+        DMat<Scalar> Psi_ddot_;
+        DMat<Scalar> Upsilon_dot_;
+        aligned_mat6_vec<Scalar> M_cup_;
+        aligned_mat6_vec<Scalar> B_cup_;
+        DVec<Scalar> F_;
+
+        // Workspace vectors for parent velocity/acceleration (sized by motion_subspace_dimension_)
+        DVec<Scalar> v_parent_up_;
+        DVec<Scalar> a_parent_up_;
+
+        // Workspace matrices for firstOrderInverseDynamicsDerivatives
+        // Pre-allocated to avoid dynamic allocation in hot loop
+        DMat<Scalar> t1_workspace_;
+        DMat<Scalar> t2_workspace_;
+        DMat<Scalar> t3_workspace_;
+        DMat<Scalar> t4_workspace_;
+        DMat<Scalar> t_tmp_workspace_;
+        DMat<Scalar> alpha_workspace_;
+        DMat<Scalar> beta_workspace_;
+        DMat<Scalar> Sdotqd_q_workspace_;
+        DMat<Scalar> st_dq_workspace_;
+
+        // World-frame quantities for firstOrderInverseDynamicsDerivativesWorldFrame.
+        // Ic0_ and S0_ (from TreeNode) are reused for IC0 and S0 respectively.
+        aligned_mat6_vec<Scalar> BC0_;
+        std::vector<D6Mat<Scalar>, Eigen::aligned_allocator<D6Mat<Scalar>>> Psid0_;
+        std::vector<D6Mat<Scalar>, Eigen::aligned_allocator<D6Mat<Scalar>>> Psidd0_;
+        std::vector<D6Mat<Scalar>, Eigen::aligned_allocator<D6Mat<Scalar>>> Upsilond0_;
+        std::vector<SVec<Scalar>, Eigen::aligned_allocator<SVec<Scalar>>> f0_;
     };
 
 } // namespace grbda

@@ -2,6 +2,12 @@ cmake_minimum_required(VERSION 3.13)
 
 project(grbda VERSION 2.1.0)
 
+if(CMAKE_BUILD_TYPE MATCHES Debug)
+    message(STATUS "Debug build")
+    add_compile_options(-O0 -g3)
+    # add_compile_definitions(EIGEN_INITIALIZE_MATRICES_BY_NAN)
+endif()
+
 message(STATUS "=============  !Generalized Rigid-Body Dynamics Algorithms!  =============")
 
 ################################################################################
@@ -18,13 +24,20 @@ option(ASAN "set compile options for Address Sanitizer" OFF)
 ################################################################################
 message(STATUS "======> Find Dependencies")
 
-find_package(Eigen3 REQUIRED)
-if(Eigen3_FOUND)
-  message(STATUS "Eigen3 found")
-  include_directories(${EIGEN3_INCLUDE_DIR})
-  include_directories(${EIGEN3_INCLUDE_DIR}/..)
+
+set(EIGEN_LOCAL_PATH "${PROJECT_SOURCE_DIR}/grbda-dependencies/eigen-3.4.0")
+if(EXISTS "${EIGEN_LOCAL_PATH}/Eigen/StdVector")
+  message(STATUS "Using local Eigen at ${EIGEN_LOCAL_PATH}")
+  include_directories(${EIGEN_LOCAL_PATH})
 else()
-  message(FATAL_ERROR "Eigen3 not found. Please install it or specify its location.")
+  find_package(Eigen3 REQUIRED)
+  if(Eigen3_FOUND)
+    message(STATUS "Eigen3 found via find_package")
+    include_directories(${EIGEN3_INCLUDE_DIR})
+    include_directories(${EIGEN3_INCLUDE_DIR}/..)
+  else()
+    message(FATAL_ERROR "Eigen3 not found. Please install it or specify its location.")
+  endif()
 endif()
 
 find_package(casadi REQUIRED)
@@ -72,7 +85,11 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 set(CMAKE_MODULE_PATH "${CMAKE_MODULE_PATH};${PROJECT_SOURCE_DIR}/cmake")
 set(CMAKE_PREFIX_PATH "${CMAKE_PREFIX_PATH};${PROJECT_SOURCE_DIR}/cmake")
 
-set(CMAKE_BUILD_TYPE Release)
+# Set default build type if not specified
+if(NOT CMAKE_BUILD_TYPE)
+  set(CMAKE_BUILD_TYPE Release)
+endif()
+
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")
   add_definitions(-DDEBUG_MODE)
 endif()
@@ -87,14 +104,23 @@ elseif(MARCH_NATIVE)
 endif()
 
 set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -ggdb -Wall \
+
+# Base warning flags for all builds
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ggdb -Wall \
   -Wextra -Wcast-align -Wdisabled-optimization -Wformat=2 \
   -Winit-self -Wmissing-include-dirs -Woverloaded-virtual \
   -Wshadow -Wsign-promo -Wno-sign-compare -Wno-unused-const-variable \
   -Wno-unused-parameter -Wno-unused-variable -Wno-uninitialized")
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O3  -ggdb -std=gnu99 -I.")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -ggdb -std=gnu99 -I.")
+
+# Optimization flags per build type (don't override Debug's -O0!)
+if(NOT CMAKE_BUILD_TYPE STREQUAL "Debug")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3")
+  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O3")
+endif()
 
 if(ASAN)
+  message(WARNING "ASAN option is deprecated. Use -DCMAKE_BUILD_TYPE=Debug instead.")
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address")
 endif()
 

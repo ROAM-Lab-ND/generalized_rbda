@@ -148,9 +148,42 @@ namespace grbda
         this->H_ = DMat<Scalar>::Zero(num_degrees_of_freedom, num_degrees_of_freedom);
         this->C_ = DVec<Scalar>::Zero(num_degrees_of_freedom);
 
+        this->idDeriv_F1_ = D6Mat<Scalar>::Zero(6, num_degrees_of_freedom);
+        this->idDeriv_F2_ = D6Mat<Scalar>::Zero(6, num_degrees_of_freedom);
+        this->idDeriv_F3_ = D6Mat<Scalar>::Zero(6, num_degrees_of_freedom);
+        this->idDeriv_F4_ = D6Mat<Scalar>::Zero(6, num_degrees_of_freedom);
+
+        this->dtau_dq_ = DMat<Scalar>::Zero(num_degrees_of_freedom, num_degrees_of_freedom);
+        this->dtau_dqd_ = DMat<Scalar>::Zero(num_degrees_of_freedom, num_degrees_of_freedom);
+
+        // Precompute subtree velocity counts for each node (used by world-frame CRBA).
+        for (auto &node : this->nodes_)
+            node->subtree_num_velocities_ = node->num_velocities_;
+        for (int i = (int)this->nodes_.size() - 1; i >= 0; i--)
+        {
+            const auto &node = this->nodes_[i];
+            if (node->parent_index_ >= 0)
+                this->nodes_[node->parent_index_]->subtree_num_velocities_ +=
+                    node->subtree_num_velocities_;
+        }
+
         for (auto &cluster : cluster_nodes_)
+        {
             cluster->qdd_for_subtree_due_to_subtree_root_joint_qdd
                 .setZero(num_degrees_of_freedom, cluster->num_velocities_);
+
+            const int mss_dim = cluster->motion_subspace_dimension_;
+            const int num_vel = cluster->num_velocities_;
+            cluster->t1_workspace_.resize(mss_dim, num_vel);
+            cluster->t2_workspace_.resize(mss_dim, num_vel);
+            cluster->t3_workspace_.resize(mss_dim, num_vel);
+            cluster->t4_workspace_.resize(mss_dim, num_vel);
+            cluster->t_tmp_workspace_.resize(mss_dim, num_vel);
+            cluster->alpha_workspace_.resize(mss_dim, num_vel);
+            cluster->beta_workspace_.resize(mss_dim, num_vel);
+            cluster->Sdotqd_q_workspace_.resize(mss_dim, num_vel);
+            cluster->st_dq_workspace_.resize(num_vel, num_vel);
+        }
 
         for (auto &contact_point : this->contact_points_)
         {
@@ -254,16 +287,80 @@ namespace grbda
     }
 
     template <typename Scalar, typename OriTpl>
-    void ClusterTreeModel<Scalar, OriTpl>::setState(const ModelState<Scalar> &model_state)
+    void ClusterTreeModel<Scalar, OriTpl>::setState(const ModelState<Scalar> &model_state,
+                                                    bool enforce_constraints)
     {
         size_t i = 0;
         for (auto &cluster : cluster_nodes_)
         {
-            cluster->joint_state_ = model_state.at(i);
+            cluster->joint_state_ = cluster->joint_->toSpanningTreeState(
+                model_state.at(i), enforce_constraints);
             i++;
         }
 
         this->setExternalForces();
+        // CRITICAL: Invalidate cached kinematics when state changes
+        // This ensures q_spanning_ in Generic joints is updated on next forwardKinematics() call
+        this->resetCache();
+    }
+
+    template <typename Scalar, typename OriTpl>
+    std::pair<DVec<Scalar>, DVec<Scalar>> ClusterTreeModel<Scalar, OriTpl>::getState()
+    {
+        const int nq = this->getNumPositions();
+        const int nv = this->getNumDegreesOfFreedom();
+
+        DVec<Scalar> q = DVec<Scalar>::Zero(nq);
+        DVec<Scalar> qd = DVec<Scalar>::Zero(nv);
+
+        for (const auto &cluster : cluster_nodes_)
+        {
+            const auto &pos = cluster->joint_state_.position;
+            const auto &vel = cluster->joint_state_.velocity;
+
+            if ((int)pos.size() != cluster->num_positions_)
+            {
+                const DMat<Scalar> conv =
+                    cluster->joint_->spanningTreeToIndependentCoordsConversion()
+                        .template cast<Scalar>();
+                q.segment(cluster->position_index_, cluster->num_positions_).noalias() =
+                    conv * pos;
+            }
+            else
+            {
+                q.segment(cluster->position_index_, cluster->num_positions_) = pos;
+            }
+
+            if ((int)vel.size() != cluster->num_velocities_)
+            {
+                const int nv_ind = cluster->num_velocities_;
+                const auto &conv_int =
+                    cluster->joint_->spanningTreeToIndependentCoordsConversion();
+                if (conv_int.rows() == nv_ind && conv_int.cols() == (int)vel.size())
+                {
+                    const DMat<Scalar> conv = conv_int.template cast<Scalar>();
+                    qd.segment(cluster->velocity_index_, nv_ind).noalias() = conv * vel;
+                }
+                else
+                {
+                    // Recover independent velocity via G pseudoinverse: v_ind = (G^T G)^{-1} G^T v_span
+                    // Not supported for casadi::SX (symbolic models don't use getState())
+                    if constexpr (!std::is_same_v<Scalar, casadi::SX>)
+                    {
+                        const DMat<Scalar> &G_mat = cluster->joint_->G();
+                        const DMat<Scalar> GtG = G_mat.transpose() * G_mat;
+                        qd.segment(cluster->velocity_index_, nv_ind) =
+                            GtG.inverse() * (G_mat.transpose() * vel);
+                    }
+                }
+            }
+            else
+            {
+                qd.segment(cluster->velocity_index_, cluster->num_velocities_) = vel;
+            }
+        }
+
+        return {q, qd};
     }
 
     template <typename Scalar, typename OriTpl>
@@ -285,7 +382,10 @@ namespace grbda
     }
 
     template <typename Scalar, typename OriTpl>
-    // NOTE: This function is only for non-spanning joint coordinates
+    // NOTE: This function converts state vectors to ModelState.
+    // For joints with implicit constraints, positions are treated as spanning (since they
+    // cannot be converted from independent to spanning). For explicit constraints, positions
+    // are treated as independent. Velocities are always treated as independent.
     ModelState<Scalar> ClusterTreeModel<Scalar, OriTpl>::stateVectorToModelState(const StatePair &q_qd_pair)
     {
 
@@ -299,7 +399,12 @@ namespace grbda
             const int &num_vel = cluster->num_velocities_;
             DVec<Scalar> qd_cluster = q_qd_pair.second.segment(vel_idx, num_vel);
 
-            JointState<Scalar> joint_state(JointCoordinate<Scalar>(q_cluster, false),
+            // For implicit constraints, positions must be spanning since we cannot
+            // convert independent positions to spanning. For explicit constraints,
+            // positions are independent and will be converted via gamma().
+            const bool pos_is_spanning = cluster->joint_->isImplicit();
+
+            JointState<Scalar> joint_state(JointCoordinate<Scalar>(q_cluster, pos_is_spanning),
                                            JointCoordinate<Scalar>(qd_cluster, false));
             state.push_back(joint_state);
         }
@@ -571,6 +676,7 @@ namespace grbda
     }
 
     template class ClusterTreeModel<double>;
+    template class ClusterTreeModel<std::complex<double>>;
     template class ClusterTreeModel<float>;
     template class ClusterTreeModel<casadi::SX>;
 

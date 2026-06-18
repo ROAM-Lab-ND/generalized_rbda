@@ -20,6 +20,11 @@ namespace grbda
 
             virtual std::shared_ptr<Base<Scalar>> clone() const = 0;
 
+            virtual std::shared_ptr<Base<casadi::SX>> cloneAsSymbolic() const
+            {
+                throw std::runtime_error("cloneAsSymbolic not implemented for joint: " + name_);
+            }
+
             virtual void updateKinematics(const DVec<Scalar> &q, const DVec<Scalar> &qd) = 0;
 
             const std::string& name() const { return name_; }
@@ -29,6 +34,15 @@ namespace grbda
             const DMat<Scalar> &S() const { return S_; }
             const DMat<Scalar> &Psi() const { return Psi_; }
             const spatial::Transform<Scalar> &XJ() const { return XJ_; }
+
+            // Derivative interface for configuration-dependent motion subspaces
+            // Returns zero by default for most joint types (Revolute, Free, etc.)
+            // Override for joints with absolute coordinates or configuration-dependent kinematics
+
+            // Returns ∂(Ṡ·q̇)/∂q as a (6 x nv) matrix
+            virtual DMat<Scalar> getSdotqd_q() const {
+                return DMat<Scalar>::Zero(6, num_velocities_);
+            }
 
         protected:
             const std::string name_;             
@@ -58,15 +72,19 @@ namespace grbda
                 return std::make_shared<Free<Scalar, OrientationRepresentation>>(*this);
             }
 
-            void updateKinematics(const DVec<Scalar> &q, const DVec<Scalar> &qd) override
-            {   
-                const int& num_ori_param = OrientationRepresentation::num_ori_parameter;
-                const RotMat<Scalar> R =
-                    OrientationRepresentation::getRotationMatrix(q.template tail<num_ori_param>());
-                const Vec3<Scalar> q_pos = q.template head<3>();
-                this->XJ_ = spatial::Transform<Scalar>(R, q_pos);
+            std::shared_ptr<Base<casadi::SX>> cloneAsSymbolic() const override
+            {
+                return std::make_shared<Free<casadi::SX, OrientationRepresentation>>(this->name_);
             }
-            
+
+            void updateKinematics(const DVec<Scalar> &q, const DVec<Scalar> &qd) override
+            {
+                const int& num_ori_param = OrientationRepresentation::num_ori_parameter;
+                const RotMat<Scalar> R = OrientationRepresentation::getRotationMatrix(
+                    q.template tail<num_ori_param>());
+                this->XJ_ = spatial::Transform<Scalar>(R, q.template head<3>());
+            }
+
             OrientationRepresentation orientation_representation_;
         };
 
@@ -92,10 +110,17 @@ namespace grbda
                 return std::make_shared<Revolute<Scalar>>(*this);
             }
 
+            std::shared_ptr<Base<casadi::SX>> cloneAsSymbolic() const override
+            {
+                return std::make_shared<Revolute<casadi::SX>>(axis_);
+            }
+
             void updateKinematics(const DVec<Scalar> &q, const DVec<Scalar> &qd) override
             {
                 this->XJ_ = spatial::rotation<Scalar>(axis_, q[0]);
             }
+
+            ori::CoordinateAxis getAxis() const { return axis_; }
 
         private:
             const ori::CoordinateAxis axis_;

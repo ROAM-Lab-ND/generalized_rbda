@@ -12,7 +12,8 @@ sudo apt install -y \
     mesa-common-dev freeglut3-dev libblas-dev \
     liblapack-dev gfortran gcc build-essential \
     libglib2.0-dev libusb-1.0-0-dev libsdl2-dev \
-    libboost-all-dev # for Pinocchio
+    libboost-all-dev \
+    clang # for Pinocchio and CasADi JIT
 
 # Eigen 3.4.0 Installation
 cd $DEP_PATH 

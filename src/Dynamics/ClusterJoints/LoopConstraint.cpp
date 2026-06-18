@@ -15,7 +15,8 @@ namespace grbda
         bool Base<Scalar>::isValidSpanningPosition(const JointCoordinate<Scalar> &joint_pos) const
         {
             DVec<Scalar> violation = phi_(joint_pos);
-            return nearZeroDefaultTrue(violation) && joint_pos.isSpanning();
+            const Scalar tol = static_cast<Scalar>(1e-6);
+            return nearZeroDefaultTrue(violation, tol) && joint_pos.isSpanning();
         }
 
         template <typename Scalar>
@@ -32,6 +33,7 @@ namespace grbda
         }
 
         template struct Base<double>;
+        template struct Base<std::complex<double>>;
         template struct Base<float>;
         template struct Base<casadi::SX>;
 
@@ -52,6 +54,7 @@ namespace grbda
         }
 
         template struct Static<double>;
+        template struct Static<std::complex<double>>;
         template struct Static<float>;
         template struct Static<casadi::SX>;
 
@@ -213,6 +216,7 @@ namespace grbda
         }
 
         template struct Collection<double>;
+        template struct Collection<std::complex<double>>;
         template struct Collection<float>;
         template struct Collection<casadi::SX>;
 

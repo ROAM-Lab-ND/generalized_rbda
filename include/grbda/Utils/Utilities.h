@@ -6,6 +6,7 @@
 #ifndef GRBDA_UTILITIES_H
 #define GRBDA_UTILITIES_H
 
+#include <iostream>
 #include <random>
 #include "cppTypes.h"
 
@@ -124,7 +125,7 @@ namespace grbda
   template <typename T>
   bool nearZero(const Eigen::MatrixBase<T> &vec, const typename T::Scalar &tol = 1e-8)
   {
-    if (vec.norm() < tol)
+    if (vec.norm() < std::abs(tol))
       return true;
     return false;
   }
@@ -192,7 +193,17 @@ namespace grbda
   template <typename T>
   DMat<typename T::Scalar> matrixLeftPseudoInverse(const Eigen::MatrixBase<T> &mat)
   {
-    return mat.completeOrthogonalDecomposition().pseudoInverse();
+    using Scalar = typename T::Scalar;
+
+    // For complex types, use algebraic formula which is complex-step safe
+    if constexpr (std::is_same_v<Scalar, std::complex<double>> ||
+                  std::is_same_v<Scalar, std::complex<float>> ||
+                  std::is_same_v<Scalar, std::complex<long double>>) {
+      const DMat<Scalar> tmp = mat.transpose() * mat;
+      return matrixInverse(tmp) * mat.transpose();
+    } else {
+      return mat.completeOrthogonalDecomposition().pseudoInverse();
+    }
   }
 
   template <>
@@ -210,7 +221,17 @@ namespace grbda
   template <typename T>
   DMat<typename T::Scalar> matrixRightPseudoInverse(const Eigen::MatrixBase<T> &mat)
   {
-    return mat.completeOrthogonalDecomposition().pseudoInverse();
+    using Scalar = typename T::Scalar;
+
+    // For complex types, use algebraic formula which is complex-step safe
+    if constexpr (std::is_same_v<Scalar, std::complex<double>> ||
+                  std::is_same_v<Scalar, std::complex<float>> ||
+                  std::is_same_v<Scalar, std::complex<long double>>) {
+      const DMat<Scalar> tmp = mat * mat.transpose();
+      return mat.transpose() * matrixInverse(tmp);
+    } else {
+      return mat.completeOrthogonalDecomposition().pseudoInverse();
+    }
   }
 
   template <>
@@ -322,17 +343,49 @@ namespace grbda
     DMat<casadi::SX> Ainv_;
   };
 
+  /*!
+   * Adapts Eigen's .inverse() to the solve() interface expected by CorrectMatrixInverseType.
+   * Used for scalar types where a decomposition-based solver is not available (e.g. complex, CasADi).
+   */
+  template <typename Scalar>
+  class ExplicitInverse
+  {
+  public:
+    ExplicitInverse() {}
+    ExplicitInverse(const DMat<Scalar> &mat) : Ainv_(mat.inverse()) {}
+
+    template <typename Derived>
+    DMat<Scalar> solve(const Eigen::MatrixBase<Derived> &b) const
+    {
+      return Ainv_ * b;
+    }
+
+  private:
+    DMat<Scalar> Ainv_;
+  };
+
   template <typename Scalar>
   struct CorrectMatrixInverseType
   {
     using type = Eigen::ColPivHouseholderQR<DMat<Scalar>>;
   };
 
-  // Specialization for casadi::SX
   template <>
   struct CorrectMatrixInverseType<casadi::SX>
   {
     using type = CasadiInverse;
+  };
+
+  template <>
+  struct CorrectMatrixInverseType<std::complex<double>>
+  {
+    using type = ExplicitInverse<std::complex<double>>;
+  };
+
+  template <>
+  struct CorrectMatrixInverseType<std::complex<float>>
+  {
+    using type = ExplicitInverse<std::complex<float>>;
   };
 
   /*!

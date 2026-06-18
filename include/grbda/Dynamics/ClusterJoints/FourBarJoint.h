@@ -10,21 +10,24 @@ namespace grbda
     namespace LoopConstraint
     {
         template <typename Scalar = double>
-        struct FourBar : Base<Scalar>
+        struct FourBar : GenericImplicit<Scalar>
         {
             typedef typename CorrectMatrixInverseType<Scalar>::type InverseType;
 
+            // A four-bar linkage is modeled as two open kinematic chains (path1 and path2)
+            // whose tips must coincide. The constraint phi(q) = tip1(q) - tip2(q) = 0 enforces
+            // this closure condition.
+            //
+            // path1_link_lengths: lengths of links along the first chain, in order from base to tip
+            // path2_link_lengths: lengths of links along the second chain, in order from base to tip
+            // offset:             2D position of path2's base relative to path1's base
+            // independent_coordinate: index (0, 1, or 2) of the actuated joint coordinate
             FourBar(std::vector<Scalar> path1_link_lengths, std::vector<Scalar> path2_link_lengths,
                     Vec2<Scalar> offset, int independent_coordinate);
 
             std::shared_ptr<Base<Scalar>> clone() const override
             {
                 return std::make_shared<FourBar<Scalar>>(*this);
-            }
-
-            DVec<Scalar> gamma(const JointCoordinate<Scalar> &joint_pos) const override
-            {
-                throw std::runtime_error("FourBar: Explicit constraint does not exist");
             }
 
             void updateJacobians(const JointCoordinate<Scalar> &joint_pos) override;
@@ -63,14 +66,15 @@ namespace grbda
             FourBar(const std::vector<Body<Scalar>> &bodies,
                     const std::vector<JointPtr<Scalar>> &joints,
                     std::shared_ptr<LoopConstraint::FourBar<Scalar>> loop_constraint)
-                : Generic<Scalar>(bodies, joints, loop_constraint),
+                : Generic<Scalar>(bodies, joints,
+                      std::static_pointer_cast<LoopConstraint::GenericImplicit<Scalar>>(loop_constraint)),
                   four_bar_constraint_(loop_constraint) {}
 
             virtual ~FourBar() {}
 
             ClusterJointTypes type() const override { return ClusterJointTypes::FourBar; }
 
-            JointState<double> randomJointState() const override;
+            JointState<double> randomJointState(bool enforce_position_constraint = true) const override;
 
         private:
             std::shared_ptr<LoopConstraint::FourBar<Scalar>> four_bar_constraint_;

@@ -82,6 +82,9 @@ namespace grbda
     template <typename T>
     using D3Mat = typename Eigen::Matrix<T, 3, Eigen::Dynamic>;
 
+    template <typename T>
+    using aligned_mat6_vec = std::vector<Mat6<T>, Eigen::aligned_allocator<Mat6<T>>>;
+
 } // namespace grbda
 
 #endif // PROJECT_CPPTYPES_H

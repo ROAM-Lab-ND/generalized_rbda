@@ -1,59 +1,152 @@
 #include "grbda/Dynamics/ClusterJoints/FourBarJoint.h"
+#include <iostream>
 
 namespace grbda
 {
     namespace LoopConstraint
     {
+        // ---------------------------------------------------------------------------
+        // Factory helpers for GenericImplicit constructor
+        // ---------------------------------------------------------------------------
+
+        namespace
+        {
+            // Build the is_coordinate_independent mask (3 coords, one independent)
+            std::vector<bool> makeFourBarIndMask(int ind_coord)
+            {
+                std::vector<bool> mask = {false, false, false};
+                mask[ind_coord] = true;
+                return mask;
+            }
+
+            // Build the symbolic phi (always SX; captures link lengths as SX constants)
+            // p1:  path1_link_lengths — lengths of links along the first chain, base to tip
+            // p2:  path2_link_lengths — lengths of links along the second chain, base to tip
+            // off: offset             — 2D position of path2's base relative to path1's base
+            // n1:  number of links in path1 (== p1.size())
+            // n2:  number of links in path2 (== p2.size())
+            template <typename Scalar>
+            std::function<DVec<casadi::SX>(const JointCoordinate<casadi::SX> &)>
+            makeFourBarSymPhi(const std::vector<Scalar> &p1, const std::vector<Scalar> &p2,
+                              const Vec2<Scalar> &off, size_t n1, size_t n2)
+            {
+                using SX = casadi::SX;
+
+                std::vector<SX> p1_sx, p2_sx;
+                Vec2<SX> off_sx;
+
+                if constexpr (std::is_same_v<Scalar, SX>)
+                {
+                    p1_sx = p1;
+                    p2_sx = p2;
+                    off_sx << off[0], off[1];
+                }
+                else
+                {
+                    using std::real;
+                    for (const auto &x : p1) p1_sx.push_back(SX(real(x)));
+                    for (const auto &x : p2) p2_sx.push_back(SX(real(x)));
+                    off_sx << SX(real(off[0])), SX(real(off[1]));
+                }
+
+                return [p1_sx, p2_sx, off_sx, n1, n2](const JointCoordinate<SX> &jp) -> DVec<SX>
+                {
+                    DVec<SX> pj1(2), pj2(1);
+                    pj1 << jp(0), jp(2);
+                    pj2 << jp(1);
+
+                    SX ca = SX(0.);
+                    DVec<SX> path1 = DVec<SX>::Zero(2);
+                    for (size_t i = 0; i < n1; i++)
+                    {
+                        ca = ca + pj1(i);
+                        path1(0) = path1(0) + p1_sx[i] * cos(ca);
+                        path1(1) = path1(1) + p1_sx[i] * sin(ca);
+                    }
+
+                    DVec<SX> path2(2);
+                    path2 << off_sx[0], off_sx[1];
+                    ca = SX(0.);
+                    for (size_t i = 0; i < n2; i++)
+                    {
+                        ca = ca + pj2(i);
+                        path2(0) = path2(0) + p2_sx[i] * cos(ca);
+                        path2(1) = path2(1) + p2_sx[i] * sin(ca);
+                    }
+
+                    DVec<SX> phi = path1 - path2;
+                    return phi;
+                };
+            }
+
+            // Build the four-bar constraint function (works with any Scalar, including complex and SX)
+            // phi(q) = tip_of_path1(q) - tip_of_path2(q), which must equal zero at all times
+            template <typename Scalar>
+            std::function<DVec<Scalar>(const JointCoordinate<Scalar> &)>
+            makeFourBarPhi(std::vector<Scalar> path1_lengths, std::vector<Scalar> path2_lengths,
+                           Vec2<Scalar> path2_origin, size_t num_path1_links, size_t num_path2_links)
+            {
+                return [path1_lengths, path2_lengths, path2_origin,
+                        num_path1_links, num_path2_links](const JointCoordinate<Scalar> &q) -> DVec<Scalar>
+                {
+                    using std::cos;
+                    using std::sin;
+
+                    // Joint angles for each path: path1 uses q(0),q(2); path2 uses q(1)
+                    DVec<Scalar> path1_angles(2), path2_angles(1);
+                    path1_angles << q(0), q(2);
+                    path2_angles << q(1);
+
+                    Scalar cumulative_angle = Scalar(0.);
+                    DVec<Scalar> tip1 = DVec<Scalar>::Zero(2);
+                    for (size_t i = 0; i < num_path1_links; i++)
+                    {
+                        cumulative_angle += path1_angles(i);
+                        tip1(0) += path1_lengths[i] * cos(cumulative_angle);
+                        tip1(1) += path1_lengths[i] * sin(cumulative_angle);
+                    }
+
+                    DVec<Scalar> tip2 = path2_origin;
+                    cumulative_angle = Scalar(0.);
+                    for (size_t i = 0; i < num_path2_links; i++)
+                    {
+                        cumulative_angle += path2_angles(i);
+                        tip2(0) += path2_lengths[i] * cos(cumulative_angle);
+                        tip2(1) += path2_lengths[i] * sin(cumulative_angle);
+                    }
+
+                    return tip1 - tip2;
+                };
+            }
+        } // anonymous namespace
+
+        // ---------------------------------------------------------------------------
+        // FourBar constructor
+        // ---------------------------------------------------------------------------
+
         template <typename Scalar>
         FourBar<Scalar>::FourBar(std::vector<Scalar> path1_link_lengths,
                                  std::vector<Scalar> path2_link_lengths,
                                  Vec2<Scalar> offset, int independent_coordinate)
-            : links_in_path1_(path1_link_lengths.size()),
+            : GenericImplicit<Scalar>(
+                  makeFourBarIndMask(independent_coordinate),
+                  makeFourBarSymPhi<Scalar>(path1_link_lengths, path2_link_lengths, offset,
+                                            path1_link_lengths.size(),
+                                            path2_link_lengths.size())),
+              links_in_path1_(path1_link_lengths.size()),
               links_in_path2_(path2_link_lengths.size()),
               path1_link_lengths_(path1_link_lengths),
               path2_link_lengths_(path2_link_lengths),
-              offset_(offset), independent_coordinate_(independent_coordinate)
+              offset_(offset),
+              independent_coordinate_(independent_coordinate)
         {
             if (links_in_path1_ + links_in_path2_ != 3)
             {
                 throw std::runtime_error("FourBar: Must contain 3 links");
             }
 
-            this->phi_ = [this, offset](const JointCoordinate<Scalar> &joint_pos)
-            {
-                DVec<Scalar> phi = DVec<Scalar>::Zero(2);
-
-                DVec<Scalar> path1_joints(2), path2_joints(1);
-                path1_joints << joint_pos(0), joint_pos(2);
-                path2_joints << joint_pos(1);
-
-                Scalar cumulative_angle = 0.;
-                DVec<Scalar> path1 = DVec<Scalar>::Zero(2);
-                for (size_t i = 0; i < links_in_path1_; i++)
-                {
-                    cumulative_angle += path1_joints(i);
-                    path1(0) += path1_link_lengths_[i] * cos(cumulative_angle);
-                    path1(1) += path1_link_lengths_[i] * sin(cumulative_angle);
-                }
-
-                cumulative_angle = 0.;
-                DVec<Scalar> path2 = offset;
-                for (size_t i = 0; i < links_in_path2_; i++)
-                {
-                    cumulative_angle += path2_joints(i);
-                    path2(0) += path2_link_lengths_[i] * cos(cumulative_angle);
-                    path2(1) += path2_link_lengths_[i] * sin(cumulative_angle);
-                }
-
-                phi = path1 - path2;
-                return phi;
-            };
-
-            this->G_ = DMat<Scalar>::Zero(3, 1);
-            this->g_ = DVec<Scalar>::Zero(3);
-
-            this->K_ = DMat<Scalar>::Zero(2, 3);
-            this->k_ = DVec<Scalar>::Zero(2);
+            this->phi_ = makeFourBarPhi<Scalar>(path1_link_lengths_, path2_link_lengths_,
+                                                offset_, links_in_path1_, links_in_path2_);
 
             switch (independent_coordinate_)
             {
@@ -90,7 +183,7 @@ namespace grbda
             DVec<Scalar> q1(2), q2(1);
             q1 << joint_pos(0), joint_pos(2);
             q2 << joint_pos(1);
-            
+
             Scalar cumulative_angle = 0.;
             DMat<Scalar> K1 = DMat<Scalar>::Zero(2, links_in_path1_);
             for (size_t i = 0; i < path1_link_lengths_.size(); i++)
@@ -198,7 +291,6 @@ namespace grbda
             this->g_ = indepenent_coordinate_map_ * this->g_;
         }
 
-        // TODO(@MatthewChignoli): This is the same as generic joint, so do we need it? Probably not. In fact, we can probably deprecate this entire class.
         template <typename Scalar>
         void FourBar<Scalar>::createRandomStateHelpers()
         {
@@ -210,20 +302,9 @@ namespace grbda
 
             using SX = casadi::SX;
 
-            // Create symbolic four bar loop constraint
-            std::vector<SX> path1_link_lengths_sym, path2_link_lengths_sym;
-            for (size_t i = 0; i < path1_link_lengths_.size(); i++)
-            {
-                path1_link_lengths_sym.push_back(path1_link_lengths_[i]);
-            }
-            for (size_t i = 0; i < path2_link_lengths_.size(); i++)
-            {
-                path2_link_lengths_sym.push_back(path2_link_lengths_[i]);
-            }
-            Vec2<SX> offset_sym{offset_[0], offset_[1]};
-            FourBar<SX> symbolic = FourBar<SX>(path1_link_lengths_sym,
-                                               path2_link_lengths_sym,
-                                               offset_sym, independent_coordinate_);
+            // Build a symbolic phi using the factory (avoids constructing a full FourBar<SX>)
+            auto sym_phi = makeFourBarSymPhi<Scalar>(path1_link_lengths_, path2_link_lengths_,
+                                                     offset_, links_in_path1_, links_in_path2_);
 
             // Root finding
             {
@@ -231,13 +312,11 @@ namespace grbda
                 DVec<SX> q_sym(this->numSpanningPos());
                 casadi::copy(cs_q_sym, q_sym);
 
-                // Compute constraint violation
                 JointCoordinate<SX> joint_pos(q_sym, true);
-                DVec<SX> phi_sx = symbolic.phi(joint_pos);
+                DVec<SX> phi_sx = sym_phi(joint_pos);
                 SX cs_phi_sym = casadi::SX(casadi::Sparsity::dense(phi_sx.rows(), 1));
                 casadi::copy(phi_sx, cs_phi_sym);
 
-                // Slice depending on independent coordinate
                 casadi::Slice ind_slice, dep_slice;
                 switch (independent_coordinate_)
                 {
@@ -257,7 +336,6 @@ namespace grbda
                     throw std::runtime_error("FourBar: Invalid independent coordinate");
                 }
 
-                // Create rootfinder problem
                 casadi::SXDict rootfinder_problem;
                 rootfinder_problem["x"] = cs_q_sym(dep_slice);
                 rootfinder_problem["p"] = cs_q_sym(ind_slice);
@@ -270,11 +348,30 @@ namespace grbda
                                                                                  options);
             }
 
-            // Explicit constraint jacobian
+            // Explicit constraint jacobian for random state generation
             {
                 SX cs_q_sym = SX::sym("q", this->numSpanningPos());
                 DVec<SX> q_sym(this->numSpanningPos());
                 casadi::copy(cs_q_sym, q_sym);
+
+                // Use a temporary FourBar<SX> only for G (updateJacobians is analytic)
+                std::vector<SX> path1_sx, path2_sx;
+                Vec2<SX> offset_sx;
+                if constexpr (std::is_same_v<Scalar, SX>)
+                {
+                    path1_sx = path1_link_lengths_;
+                    path2_sx = path2_link_lengths_;
+                    offset_sx << offset_[0], offset_[1];
+                }
+                else
+                {
+                    using std::real;
+                    for (const auto &l : path1_link_lengths_) path1_sx.push_back(SX(real(l)));
+                    for (const auto &l : path2_link_lengths_) path2_sx.push_back(SX(real(l)));
+                    offset_sx << SX(real(offset_[0])), SX(real(offset_[1]));
+                }
+                FourBar<SX> symbolic(path1_sx, path2_sx, offset_sx, independent_coordinate_);
+
                 JointCoordinate<SX> joint_pos(q_sym, false);
                 symbolic.updateJacobians(joint_pos);
                 DMat<SX> G = symbolic.G();
@@ -285,6 +382,7 @@ namespace grbda
         }
 
         template struct FourBar<double>;
+        template struct FourBar<std::complex<double>>;
         template struct FourBar<casadi::SX>;
 
     } // namespace LoopConstraint
@@ -292,8 +390,11 @@ namespace grbda
     namespace ClusterJoints
     {
         template <typename Scalar>
-        JointState<double> FourBar<Scalar>::randomJointState() const
+        JointState<double> FourBar<Scalar>::randomJointState(bool enforce_position_constraint) const
         {
+            if (!enforce_position_constraint)
+                return Base<Scalar>::randomJointState();
+
             using DM = casadi::DM;
 
             // Create Helper functions
@@ -303,7 +404,7 @@ namespace grbda
             const int n_ind = four_bar_constraint_->numIndependentPos();
             const int n_span = four_bar_constraint_->numSpanningPos();
             double ind_range = 1.0;
-            double dep_range = 0.1;
+            double dep_range = M_PI;
             DM q_ind, q_dep;
 
             // Call the rootfinder to get dependent position coordinates
@@ -359,6 +460,7 @@ namespace grbda
         }
 
         template class FourBar<double>;
+        template class FourBar<std::complex<double>>;
         template class FourBar<casadi::SX>;
     }
 }
