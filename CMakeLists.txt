@@ -197,3 +197,6 @@ if(BUILD_BENCHMARKS)
   message(STATUS "======>  Setup Benchmarks  ")
   add_subdirectory(Benchmarking)
 endif()
+
+message(STATUS "======>  Setup RAL 2026 Benchmarks  ")
+add_subdirectory(RAL_2026_Benchmarking)
