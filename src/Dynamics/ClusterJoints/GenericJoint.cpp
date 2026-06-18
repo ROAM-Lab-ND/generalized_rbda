@@ -1042,6 +1042,7 @@ namespace grbda
             throw std::runtime_error("Body is not in the current cluster");
 }
 
+        // Additional documentation provided at: Documentation/GenericJoint-DerivativesDetails.pdf
         template <typename Scalar>
         void Generic<Scalar>::initializeDerivativeFunctions() const
         {
@@ -1109,149 +1110,152 @@ namespace grbda
             // Guarded with if constexpr: bodies_[].Xtree_ and S_spanning_ are DMat<Scalar>,
             // so .cast<SX>() inside would fail to instantiate for Scalar=complex<double>.
             if constexpr (std::is_same_v<Scalar, double>) {
-            std::vector<std::shared_ptr<Joints::Base<SX>>> joints_sx;
-            for (int i = 0; i < this->num_bodies_; ++i)
-                joints_sx.push_back(this->single_joints_[i]->cloneAsSymbolic());
-
-            {
-                // Drive symbolic joints with q_span_vec / qd_span_vec (already Eigen<SX>)
-                int pos_idx2 = 0, vel_idx2 = 0;
-                for (int i = 0; i < this->num_bodies_; ++i) {
-                    const int npos = joints_sx[i]->numPositions();
-                    const int nvel = joints_sx[i]->numVelocities();
-                    joints_sx[i]->updateKinematics(
-                        q_span_vec.segment(pos_idx2, npos),
-                        qd_span_vec.segment(vel_idx2, nvel));
-                    pos_idx2 += npos;
-                    vel_idx2 += nvel;
+                std::vector<std::shared_ptr<Joints::Base<SX>>> joints_sx;
+                for (int i = 0; i < this->num_bodies_; ++i)
+                {
+                    joints_sx.push_back(this->single_joints_[i]->cloneAsSymbolic());
                 }
 
-                // Build X_intra_sx (same connectivity loop as updateKinematics_vJ)
-                DMat<SX> X_intra_sx = DMat<SX>::Identity(mss_dim, mss_dim);
-                for (int i = 0; i < this->num_bodies_; ++i) {
-                    int k = i;
-                    for (int j = i - 1; j >= 0; --j) {
-                        if (connectivity_(i, j)) {
-                            DMat<SX> Xup_prev = X_intra_sx.block(6 * i, 6 * k, 6, 6);
-                            Mat6<SX> XJ_k = joints_sx[k]->XJ().toMatrix();
-                            Mat6<SX> Xtree_k = bodies_[k].Xtree_.toMatrix().template cast<SX>();
-                            X_intra_sx.block(6 * i, 6 * j, 6, 6) = Xup_prev * XJ_k * Xtree_k;
-                            k = j;
+                // Additional documentation provided at: Documentation/GenericJoint-DerivativesDetails.pdf
+                {
+                    // Drive symbolic joints with q_span_vec / qd_span_vec (already Eigen<SX>)
+                    int pos_idx2 = 0, vel_idx2 = 0;
+                    for (int i = 0; i < this->num_bodies_; ++i) {
+                        const int npos = joints_sx[i]->numPositions();
+                        const int nvel = joints_sx[i]->numVelocities();
+                        joints_sx[i]->updateKinematics(
+                            q_span_vec.segment(pos_idx2, npos),
+                            qd_span_vec.segment(vel_idx2, nvel));
+                        pos_idx2 += npos;
+                        vel_idx2 += nvel;
+                    }
+
+                    // Build X_intra_sx (same connectivity loop as updateKinematics_vJ)
+                    DMat<SX> X_intra_sx = DMat<SX>::Identity(mss_dim, mss_dim);
+                    for (int i = 0; i < this->num_bodies_; ++i) {
+                        int k = i;
+                        for (int j = i - 1; j >= 0; --j) {
+                            if (connectivity_(i, j)) {
+                                DMat<SX> Xup_prev = X_intra_sx.block(6 * i, 6 * k, 6, 6);
+                                Mat6<SX> XJ_k = joints_sx[k]->XJ().toMatrix();
+                                Mat6<SX> Xtree_k = bodies_[k].Xtree_.toMatrix().template cast<SX>();
+                                X_intra_sx.block(6 * i, 6 * j, 6, 6) = Xup_prev * XJ_k * Xtree_k;
+                                k = j;
+                            }
                         }
                     }
-                }
 
-                DMat<SX> S_spanning_sx = S_spanning_.template cast<SX>();
-                DMat<SX> S_implicit_sx = X_intra_sx * S_spanning_sx;
-                DVec<SX> vJ_sx = S_implicit_sx * qd_span_vec;
+                    DMat<SX> S_spanning_sx = S_spanning_.template cast<SX>();
+                    DMat<SX> S_implicit_sx = X_intra_sx * S_spanning_sx;
+                    DVec<SX> vJ_sx = S_implicit_sx * qd_span_vec;
 
-                // Build X_intra_ring_sx
-                DMat<SX> X_intra_ring_sx = DMat<SX>::Zero(mss_dim, mss_dim);
-                for (int i = 0; i < this->num_bodies_; ++i) {
-                    for (int j = i - 1; j >= 0; --j) {
-                        if (connectivity_(i, j)) {
-                            DMat<SX> Xup = X_intra_sx.block(6 * i, 6 * j, 6, 6);
-                            SVec<SX> v_parent = Xup * vJ_sx.template segment<6>(6 * j);
-                            SVec<SX> v_child = vJ_sx.template segment<6>(6 * i);
-                            X_intra_ring_sx.block(6 * i, 6 * j, 6, 6) =
-                                -spatial::motionCrossMatrix(v_child - v_parent) * Xup;
+                    // Build X_intra_ring_sx
+                    DMat<SX> X_intra_ring_sx = DMat<SX>::Zero(mss_dim, mss_dim);
+                    for (int i = 0; i < this->num_bodies_; ++i) {
+                        for (int j = i - 1; j >= 0; --j) {
+                            if (connectivity_(i, j)) {
+                                DMat<SX> Xup = X_intra_sx.block(6 * i, 6 * j, 6, 6);
+                                SVec<SX> v_parent = Xup * vJ_sx.template segment<6>(6 * j);
+                                SVec<SX> v_child = vJ_sx.template segment<6>(6 * i);
+                                X_intra_ring_sx.block(6 * i, 6 * j, 6, 6) =
+                                    -spatial::motionCrossMatrix(v_child - v_parent) * Xup;
+                            }
                         }
                     }
+
+                    DVec<SX> g_sx_vec(g_casadi.size1());
+                    for (int r = 0; r < (int)g_casadi.size1(); ++r) g_sx_vec(r) = g_casadi(r, 0);
+
+                    DVec<SX> cJ_sx = X_intra_ring_sx * S_spanning_sx * qd_span_vec
+                                    + S_implicit_sx * g_sx_vec;
+
+                    // d(cJ)/dq_span, then contract with G to get d(cJ)/d(independent coords)
+                    SX cJ_casadi = SX::zeros(mss_dim, 1);
+                    casadi::copy(cJ_sx, cJ_casadi);
+                    SX dcJ_dq_sx = jacobian(cJ_casadi, q_span_sx);        // mss_dim x n_span_pos
+                    SX dcJ_dy_sx = SX::mtimes(dcJ_dq_sx, G_casadi);       // mss_dim x nv
+
+                    // Densify output for low-level API compatibility
+                    SX dcJ_dy_dense = SX::densify(dcJ_dy_sx);
+
+                    // Use JIT compilation for faster function evaluation (clang with march=native)
+                    casadi::Dict jit_opts_sdot;
+                    jit_opts_sdot["cse"] = true;
+                    jit_opts_sdot["jit"] = true;
+                    jit_opts_sdot["compiler"] = "shell";
+                    jit_opts_sdot["jit_options"] = casadi::Dict{{"compiler", "clang"}, {"flags", "-O3 -march=native"}};
+
+                    dSdotqd_dq_fcn_ = casadi::Function("dSdotqd_dq",
+                        {q_span_sx, ydot_sx}, {dcJ_dy_dense}, jit_opts_sdot);
+
+                    // Build contraction-based derivative functions for efficient ID derivatives
+                    // S = S_implicit * G = X_intra * S_spanning * G
+                    // Convert S_implicit_sx to CasADi SX matrix for multiplication with G_casadi
+                    SX S_implicit_casadi = SX::zeros(mss_dim, n_span_vel);
+                    casadi::copy(S_implicit_sx, S_implicit_casadi);
+                    SX S_casadi = SX::mtimes(S_implicit_casadi, G_casadi);  // mss_dim x nv
+
+                    // d(S*b)/dy: Jacobian of S*b w.r.t. independent coordinates
+                    // b is a symbolic input vector of size nv
+                    SX b_sx = SX::sym("b", nv);
+
+                    SX Sb_casadi = SX::mtimes(S_casadi, b_sx);  // mss_dim x 1
+
+                    // Differentiate S*b w.r.t. q_span, then contract with G to get w.r.t. y
+                    SX dSb_dq_sx = jacobian(Sb_casadi, q_span_sx);  // mss_dim x n_span_pos
+                    SX dSb_dy_sx = SX::mtimes(dSb_dq_sx, G_casadi); // mss_dim x nv
+
+                    // Densify the output to ensure low-level API writes to contiguous memory
+                    SX dSb_dy_dense = SX::densify(dSb_dy_sx);
+
+                    // Use JIT compilation for faster function evaluation (clang with march=native)
+                    casadi::Dict jit_opts;
+                    jit_opts["cse"] = true;
+                    jit_opts["jit"] = true;
+                    jit_opts["compiler"] = "shell";
+                    jit_opts["jit_options"] = casadi::Dict{{"compiler", "clang"}, {"flags", "-O3 -march=native"}};
+
+                    dSb_dy_fcn_ = casadi::Function("dSb_dy",
+                        {q_span_sx, b_sx}, {dSb_dy_dense}, jit_opts);
+
+                    // d(S^T*F)/dy: Jacobian of S^T*F w.r.t. independent coordinates
+                    // F is a symbolic input vector of size mss_dim
+                    SX F_sx = SX::sym("F", mss_dim);
+
+                    SX STF_casadi = SX::mtimes(S_casadi.T(), F_sx);  // nv x 1
+
+                    // Differentiate S^T*F w.r.t. q_span, then contract with G to get w.r.t. y
+                    SX dSTF_dq_sx = jacobian(STF_casadi, q_span_sx);  // nv x n_span_pos
+                    SX dSTF_dy_sx = SX::mtimes(dSTF_dq_sx, G_casadi); // nv x nv
+
+                    // Densify the output
+                    SX dSTF_dy_dense = SX::densify(dSTF_dy_sx);
+
+                    dSTF_dy_fcn_ = casadi::Function("dSTF_dy",
+                        {q_span_sx, F_sx}, {dSTF_dy_dense}, jit_opts);
+
+                    // Pre-allocate work vectors for low-level evaluation API
+                    // This avoids allocation overhead on each function call
+                    size_t sz_arg, sz_res, sz_iw, sz_w;
+
+                    dSb_dy_fcn_.sz_work(sz_arg, sz_res, sz_iw, sz_w);
+                    dSb_work_w_.resize(sz_w);
+                    dSb_work_iw_.resize(sz_iw);
+                    dSb_arg_buf_.resize(n_span_pos + nv);  // q_span + b
+                    dSb_res_buf_.resize(mss_dim * nv);     // output matrix
+
+                    dSTF_dy_fcn_.sz_work(sz_arg, sz_res, sz_iw, sz_w);
+                    dSTF_work_w_.resize(sz_w);
+                    dSTF_work_iw_.resize(sz_iw);
+                    dSTF_arg_buf_.resize(n_span_pos + mss_dim);  // q_span + F
+                    dSTF_res_buf_.resize(nv * nv);               // output matrix
+
+                    dSdotqd_dq_fcn_.sz_work(sz_arg, sz_res, sz_iw, sz_w);
+                    dSdotqd_work_w_.resize(sz_w);
+                    dSdotqd_work_iw_.resize(sz_iw);
+                    dSdotqd_arg_buf_.resize(n_span_pos + nv);  // q_span + ydot
+                    dSdotqd_res_buf_.resize(mss_dim * nv);     // output matrix
                 }
-
-                DVec<SX> g_sx_vec(g_casadi.size1());
-                for (int r = 0; r < (int)g_casadi.size1(); ++r) g_sx_vec(r) = g_casadi(r, 0);
-
-                DVec<SX> cJ_sx = X_intra_ring_sx * S_spanning_sx * qd_span_vec
-                                + S_implicit_sx * g_sx_vec;
-
-                // d(cJ)/dq_span, then contract with G to get d(cJ)/d(independent coords)
-                SX cJ_casadi = SX::zeros(mss_dim, 1);
-                casadi::copy(cJ_sx, cJ_casadi);
-                SX dcJ_dq_sx = jacobian(cJ_casadi, q_span_sx);        // mss_dim x n_span_pos
-                SX dcJ_dy_sx = SX::mtimes(dcJ_dq_sx, G_casadi);       // mss_dim x nv
-
-                // Densify output for low-level API compatibility
-                SX dcJ_dy_dense = SX::densify(dcJ_dy_sx);
-
-                // Use JIT compilation for faster function evaluation (gcc with march=native)
-                casadi::Dict jit_opts_sdot;
-                jit_opts_sdot["cse"] = true;
-                jit_opts_sdot["jit"] = true;
-                jit_opts_sdot["compiler"] = "shell";
-                jit_opts_sdot["jit_options"] = casadi::Dict{{"compiler", "gcc"}, {"flags", "-O3 -march=native"}};
-
-                dSdotqd_dq_fcn_ = casadi::Function("dSdotqd_dq",
-                    {q_span_sx, ydot_sx}, {dcJ_dy_dense}, jit_opts_sdot);
-
-                // Build contraction-based derivative functions for efficient ID derivatives
-                // S = S_implicit * G = X_intra * S_spanning * G
-                // Convert S_implicit_sx to CasADi SX matrix for multiplication with G_casadi
-                SX S_implicit_casadi = SX::zeros(mss_dim, n_span_vel);
-                casadi::copy(S_implicit_sx, S_implicit_casadi);
-                SX S_casadi = SX::mtimes(S_implicit_casadi, G_casadi);  // mss_dim x nv
-
-                // d(S*b)/dy: Jacobian of S*b w.r.t. independent coordinates
-                // b is a symbolic input vector of size nv
-                SX b_sx = SX::sym("b", nv);
-
-                SX Sb_casadi = SX::mtimes(S_casadi, b_sx);  // mss_dim x 1
-
-                // Differentiate S*b w.r.t. q_span, then contract with G to get w.r.t. y
-                SX dSb_dq_sx = jacobian(Sb_casadi, q_span_sx);  // mss_dim x n_span_pos
-                SX dSb_dy_sx = SX::mtimes(dSb_dq_sx, G_casadi); // mss_dim x nv
-
-                // Densify the output to ensure low-level API writes to contiguous memory
-                SX dSb_dy_dense = SX::densify(dSb_dy_sx);
-
-                // Use JIT compilation for faster function evaluation (gcc with march=native)
-                casadi::Dict jit_opts;
-                jit_opts["cse"] = true;
-                jit_opts["jit"] = true;
-                jit_opts["compiler"] = "shell";
-                jit_opts["jit_options"] = casadi::Dict{{"compiler", "gcc"}, {"flags", "-O3 -march=native"}};
-
-                dSb_dy_fcn_ = casadi::Function("dSb_dy",
-                    {q_span_sx, b_sx}, {dSb_dy_dense}, jit_opts);
-
-                // d(S^T*F)/dy: Jacobian of S^T*F w.r.t. independent coordinates
-                // F is a symbolic input vector of size mss_dim
-                SX F_sx = SX::sym("F", mss_dim);
-
-                SX STF_casadi = SX::mtimes(S_casadi.T(), F_sx);  // nv x 1
-
-                // Differentiate S^T*F w.r.t. q_span, then contract with G to get w.r.t. y
-                SX dSTF_dq_sx = jacobian(STF_casadi, q_span_sx);  // nv x n_span_pos
-                SX dSTF_dy_sx = SX::mtimes(dSTF_dq_sx, G_casadi); // nv x nv
-
-                // Densify the output
-                SX dSTF_dy_dense = SX::densify(dSTF_dy_sx);
-
-                dSTF_dy_fcn_ = casadi::Function("dSTF_dy",
-                    {q_span_sx, F_sx}, {dSTF_dy_dense}, jit_opts);
-
-                // Pre-allocate work vectors for low-level evaluation API
-                // This avoids allocation overhead on each function call
-                size_t sz_arg, sz_res, sz_iw, sz_w;
-
-                dSb_dy_fcn_.sz_work(sz_arg, sz_res, sz_iw, sz_w);
-                dSb_work_w_.resize(sz_w);
-                dSb_work_iw_.resize(sz_iw);
-                dSb_arg_buf_.resize(n_span_pos + nv);  // q_span + b
-                dSb_res_buf_.resize(mss_dim * nv);     // output matrix
-
-                dSTF_dy_fcn_.sz_work(sz_arg, sz_res, sz_iw, sz_w);
-                dSTF_work_w_.resize(sz_w);
-                dSTF_work_iw_.resize(sz_iw);
-                dSTF_arg_buf_.resize(n_span_pos + mss_dim);  // q_span + F
-                dSTF_res_buf_.resize(nv * nv);               // output matrix
-
-                dSdotqd_dq_fcn_.sz_work(sz_arg, sz_res, sz_iw, sz_w);
-                dSdotqd_work_w_.resize(sz_w);
-                dSdotqd_work_iw_.resize(sz_iw);
-                dSdotqd_arg_buf_.resize(n_span_pos + nv);  // q_span + ydot
-                dSdotqd_res_buf_.resize(mss_dim * nv);     // output matrix
-            }
 
             } // if constexpr (std::is_same_v<Scalar, double>)
         }
