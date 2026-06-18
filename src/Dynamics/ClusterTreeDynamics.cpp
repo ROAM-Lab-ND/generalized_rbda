@@ -510,7 +510,7 @@ namespace grbda
             }
 
             // M_cup = I (will accumulate children's contributions)
-            cluster->M_cup_ = spatial::blockDiagonalToMatrix(I_blocks);
+            cluster->M_cup_ = I_blocks;
 
             // B_cup = crf(v)*I - I*crm(v) + icrf(I*v)
             const DVec<Scalar> Iv = spatial::blockDiagonalTimesVector(I_blocks, v);
@@ -531,8 +531,8 @@ namespace grbda
             const int mss_dim_i = cluster_i->motion_subspace_dimension_;
 
             // Cache references
-            const DMat<Scalar> &M_cup = cluster_i->M_cup_;
-            const DMat<Scalar> &B_cup = cluster_i->B_cup_;
+            const aligned_mat6_vec<Scalar> &M_cup = cluster_i->M_cup_;
+            const aligned_mat6_vec<Scalar> &B_cup = cluster_i->B_cup_;
             const DVec<Scalar> &F = cluster_i->F_;
             const DMat<Scalar> &S_i = cluster_i->S();
 
@@ -550,7 +550,7 @@ namespace grbda
             cluster_i->Xup_.blockDiagonalInertiaTimesMotionSubspace(M_cup, cluster_i->Psi_ddot_, tmp);
             t3+= tmp;
             spatial::addSwappedForceCrossTimesMatrix(F, S_i, t3);
-            cluster_i->Xup_.blockDiagonalInertiaTimesMotionSubspace(B_cup.transpose(), S_i, t4);
+            cluster_i->Xup_.blockDiagonalInertiaTransposeTimesMotionSubspace(B_cup, S_i, t4);
 
             // Walk from cluster i to root
             // Use optimized path for single-body clusters (most common case)
@@ -583,8 +583,11 @@ namespace grbda
                     }
 
                     dtau_dq_dot.block(jj, ii, num_vel_j, num_vel_i).noalias() = S_j.transpose() * t2;
-                    dtau_dq_dot.block(ii, jj, num_vel_i, num_vel_j).noalias() =
-                        t1.transpose() * cluster_j->Upsilon_dot_ + t4.transpose() * S_j;
+                    if (j < i)
+                    {
+                        dtau_dq_dot.block(ii, jj, num_vel_i, num_vel_j).noalias() =
+                            t1.transpose() * cluster_j->Upsilon_dot_ + t4.transpose() * S_j;
+                    }
 
                     // Transform t1, t2, t3, t4 to parent frame using batched transform
                     // This computes E^T and r_hat*E^T only once for all 4 matrices
@@ -624,8 +627,11 @@ namespace grbda
                     }
 
                     dtau_dq_dot.block(jj, ii, num_vel_j, num_vel_i).noalias() = S_j.transpose() * t2;
-                    dtau_dq_dot.block(ii, jj, num_vel_i, num_vel_j).noalias() =
-                        t1.transpose() * cluster_j->Upsilon_dot_ + t4.transpose() * S_j;
+                    if (j < i)
+                    {
+                        dtau_dq_dot.block(ii, jj, num_vel_i, num_vel_j).noalias() =
+                            t1.transpose() * cluster_j->Upsilon_dot_ + t4.transpose() * S_j;
+                    }
 
                     // Transform t1, t2, t3, t4 to parent frame using batched transform
                     // This shares E^T and r_hat*E^T computation across all 4 matrices per body
@@ -808,8 +814,9 @@ namespace grbda
                 const D6Mat<Scalar> F4_b = BC0_b.transpose() * S0_b;
 
                 // Diagonal blocks: accumulate over all bodies
+                // dtau/dqdot: S0^T * F2 = F1^T * Upd0 + F4^T * S0 (one product vs two)
                 dtau_dq_dot.block(ii, ii, num_vel_i, num_vel_i).noalias() +=
-                    F1_b.transpose() * Upd0_b + F4_b.transpose() * S0_b;
+                    S0_b.transpose() * F2_b;
                 dtau_dq.block(ii, ii, num_vel_i, num_vel_i).noalias() +=
                     F1_b.transpose() * Psidd0_b + F4_b.transpose() * Psid0_b;
 

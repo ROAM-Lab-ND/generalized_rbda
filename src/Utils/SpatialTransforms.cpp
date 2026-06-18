@@ -701,6 +701,55 @@ namespace grbda
         }
 
         template <typename Scalar>
+        void GeneralizedTransform<Scalar>::accumulateBlockDiagonalPair(
+            const aligned_mat6_vec<Scalar> &M1_child, aligned_mat6_vec<Scalar> &M1_parent,
+            const aligned_mat6_vec<Scalar> &M2_child, aligned_mat6_vec<Scalar> &M2_parent) const
+        {
+            for (int i = 0; i < num_output_bodies_; i++)
+            {
+                const Transform<Scalar> &X = transforms_and_parent_subindices_[i].first;
+                const int parent_subindex = transforms_and_parent_subindices_[i].second;
+
+                const Mat3<Scalar> &E = X.getRotation();
+                const Mat3<Scalar> E_trans = E.transpose();
+                const Mat3<Scalar> r_hat = ori::vectorToSkewMat(X.getTranslation());
+
+                auto transformBlock = [&](const Mat6<Scalar> &M_in) -> Mat6<Scalar> {
+                    Mat6<Scalar> M_out;
+                    const Mat3<Scalar> &TL = M_in.template topLeftCorner<3, 3>();
+                    const Mat3<Scalar> &TR = M_in.template topRightCorner<3, 3>();
+                    const Mat3<Scalar> &BL = M_in.template bottomLeftCorner<3, 3>();
+                    const Mat3<Scalar> &BR = M_in.template bottomRightCorner<3, 3>();
+                    M_out.template topLeftCorner<3, 3>() = E_trans * TL * E +
+                                                           r_hat * E_trans * BL * E -
+                                                           E_trans * TR * E * r_hat -
+                                                           r_hat * E_trans * BR * E * r_hat;
+                    M_out.template topRightCorner<3, 3>() = E_trans * TR * E +
+                                                            r_hat * E_trans * BR * E;
+                    M_out.template bottomLeftCorner<3, 3>() = E_trans * BL * E -
+                                                              E_trans * BR * E * r_hat;
+                    M_out.template bottomRightCorner<3, 3>() = E_trans * BR * E;
+                    return M_out;
+                };
+
+                M1_parent[parent_subindex] += transformBlock(M1_child[i]);
+                M2_parent[parent_subindex] += transformBlock(M2_child[i]);
+            }
+        }
+
+        template <typename Scalar>
+        void GeneralizedTransform<Scalar>::blockDiagonalInertiaTransposeTimesMotionSubspace(
+            const aligned_mat6_vec<Scalar> &Ic,
+            const DMat<Scalar> &S, DMat<Scalar> &out) const
+        {
+            const int num_cols = S.cols();
+            out.resize(6 * num_output_bodies_, num_cols);
+            for (int body = 0; body < num_output_bodies_; body++)
+                out.template middleRows<6>(6 * body).noalias() =
+                    Ic[body].transpose() * S.template middleRows<6>(6 * body);
+        }
+
+        template <typename Scalar>
         DMat<Scalar> GeneralizedTransform<Scalar>::blockDiagonalInertiaTimesMotionSubspace(
             const DMat<Scalar> &Ic_block_diag, const DMat<Scalar> &S) const
         {

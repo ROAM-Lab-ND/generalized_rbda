@@ -59,8 +59,8 @@ namespace grbda
         DMat<Scalar> Psi_dot_;
         DMat<Scalar> Psi_ddot_;
         DMat<Scalar> Upsilon_dot_;
-        DMat<Scalar> M_cup_;
-        DMat<Scalar> B_cup_;
+        aligned_mat6_vec<Scalar> M_cup_;
+        aligned_mat6_vec<Scalar> B_cup_;
         DVec<Scalar> F_;
 
         // Workspace vectors for parent velocity/acceleration (sized by motion_subspace_dimension_)

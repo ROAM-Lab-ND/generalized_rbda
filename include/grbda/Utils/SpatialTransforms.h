@@ -145,11 +145,20 @@ namespace grbda
                 const DMat<Scalar> &M1_child, DMat<Scalar> &M1_parent,
                 const DMat<Scalar> &M2_child, DMat<Scalar> &M2_parent) const;
 
+            void accumulateBlockDiagonalPair(
+                const aligned_mat6_vec<Scalar> &M1_child, aligned_mat6_vec<Scalar> &M1_parent,
+                const aligned_mat6_vec<Scalar> &M2_child, aligned_mat6_vec<Scalar> &M2_parent) const;
+
             // Computes F = Ic * S exploiting block structure of Ic (vector<Mat6> form).
             DMat<Scalar> blockDiagonalInertiaTimesMotionSubspace(
                 const aligned_mat6_vec<Scalar> &Ic,
                 const DMat<Scalar> &S) const;
             void blockDiagonalInertiaTimesMotionSubspace(
+                const aligned_mat6_vec<Scalar> &Ic,
+                const DMat<Scalar> &S, DMat<Scalar> &out) const;
+
+            // Computes F = Ic^T * S exploiting block structure (each block transposed).
+            void blockDiagonalInertiaTransposeTimesMotionSubspace(
                 const aligned_mat6_vec<Scalar> &Ic,
                 const DMat<Scalar> &S, DMat<Scalar> &out) const;
 

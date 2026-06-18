@@ -582,6 +582,23 @@ namespace grbda
      * This avoids allocating a temporary matrix for multi-body clusters.
      */
     template <typename Scalar>
+    void addSwappedForceCrossMatrixInPlace(aligned_mat6_vec<Scalar> &M_blocks, const DVec<Scalar> &v)
+    {
+      const int n = (int)M_blocks.size();
+      for (int b = 0; b < n; b++)
+      {
+        const int o = 6 * b;
+        Mat6<Scalar> &M = M_blocks[b];
+        M(0, 1) += v(o+2);  M(0, 2) -= v(o+1);  M(0, 4) += v(o+5);  M(0, 5) -= v(o+4);
+        M(1, 0) -= v(o+2);  M(1, 2) += v(o+0);  M(1, 3) -= v(o+5);  M(1, 5) += v(o+3);
+        M(2, 0) += v(o+1);  M(2, 1) -= v(o+0);  M(2, 3) += v(o+4);  M(2, 4) -= v(o+3);
+        M(3, 1) += v(o+5);  M(3, 2) -= v(o+4);
+        M(4, 0) -= v(o+5);  M(4, 2) += v(o+3);
+        M(5, 0) += v(o+4);  M(5, 1) -= v(o+3);
+      }
+    }
+
+    template <typename Scalar>
     void addSwappedForceCrossMatrixInPlace(DMat<Scalar> &M, const DVec<Scalar> &v)
     {
       const int n = v.rows();
@@ -1015,6 +1032,49 @@ namespace grbda
               default: crm_part = Scalar(0); break;
             }
             out(o+r, o+c) = crf_part - crm_part;
+          }
+        }
+      }
+    }
+
+    // Outputs to aligned_mat6_vec: each block is the 6x6 B_cup block for that body.
+    template <typename Scalar>
+    void spatialInertiaCrossTerms(
+        const aligned_mat6_vec<Scalar> &I_blocks,
+        const DVec<Scalar> &v, aligned_mat6_vec<Scalar> &out)
+    {
+      const int n = (int)I_blocks.size();
+      out.resize(n);
+      for (int b = 0; b < n; b++)
+      {
+        const int o = 6 * b;
+        const Mat6<Scalar> &I = I_blocks[b];
+        Mat6<Scalar> &B = out[b];
+        for (int r = 0; r < 6; ++r)
+        {
+          for (int c = 0; c < 6; ++c)
+          {
+            Scalar crf_part;
+            switch (r) {
+              case 0: crf_part = -v(o+2)*I(1,c) + v(o+1)*I(2,c) - v(o+5)*I(4,c) + v(o+4)*I(5,c); break;
+              case 1: crf_part =  v(o+2)*I(0,c) - v(o+0)*I(2,c) + v(o+5)*I(3,c) - v(o+3)*I(5,c); break;
+              case 2: crf_part = -v(o+1)*I(0,c) + v(o+0)*I(1,c) - v(o+4)*I(3,c) + v(o+3)*I(4,c); break;
+              case 3: crf_part = -v(o+2)*I(4,c) + v(o+1)*I(5,c); break;
+              case 4: crf_part =  v(o+2)*I(3,c) - v(o+0)*I(5,c); break;
+              case 5: crf_part = -v(o+1)*I(3,c) + v(o+0)*I(4,c); break;
+              default: crf_part = Scalar(0); break;
+            }
+            Scalar crm_part;
+            switch (c) {
+              case 0: crm_part =  v(o+2)*I(r,1) - v(o+1)*I(r,2) + v(o+5)*I(r,4) - v(o+4)*I(r,5); break;
+              case 1: crm_part = -v(o+2)*I(r,0) + v(o+0)*I(r,2) - v(o+5)*I(r,3) + v(o+3)*I(r,5); break;
+              case 2: crm_part =  v(o+1)*I(r,0) - v(o+0)*I(r,1) + v(o+4)*I(r,3) - v(o+3)*I(r,4); break;
+              case 3: crm_part =  v(o+2)*I(r,4) - v(o+1)*I(r,5); break;
+              case 4: crm_part = -v(o+2)*I(r,3) + v(o+0)*I(r,5); break;
+              case 5: crm_part =  v(o+1)*I(r,3) - v(o+0)*I(r,4); break;
+              default: crm_part = Scalar(0); break;
+            }
+            B(r, c) = crf_part - crm_part;
           }
         }
       }
