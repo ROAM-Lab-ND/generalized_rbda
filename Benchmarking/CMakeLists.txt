@@ -28,7 +28,11 @@ endif()
 file(GLOB_RECURSE HELPER_SRCS "src/*Helpers.cpp")
 add_library(benchmarkHelpers ${HELPER_SRCS})
 target_link_libraries(benchmarkHelpers ${PROJECT_NAME} ${PINOCCHIO_LIBRARIES} console_bridge gtest)
+target_compile_definitions(benchmarkHelpers PRIVATE
+    BOOST_MPL_CFG_NO_PREPROCESSED_HEADERS
+    BOOST_MPL_LIMIT_LIST_SIZE=30)
 
 add_executable(pinocchio_benchmark src/pinocchioBenchmark.cpp)
 target_link_libraries(pinocchio_benchmark benchmarkHelpers)
 target_link_libraries(pinocchio_benchmark gtest gmock_main)
+
