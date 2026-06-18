@@ -175,6 +175,8 @@ namespace grbda
             // Cached intermediates for derivative evaluation
             mutable DMat<Scalar> S_implicit_;
 
+            // Creates CasADi functions for computing derivatives of generalized joint quanitites
+            // Additional documentation provided at: Documentation/GenericJoint-DerivativesDetails.pdf
             void initializeDerivativeFunctions() const;
 
             // CasADi functions for computing dG/dq and Sdotqd derivatives
