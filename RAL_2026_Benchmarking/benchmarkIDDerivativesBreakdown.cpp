@@ -17,6 +17,19 @@
 
 using namespace grbda;
 
+// Profiling bucket definitions (see firstOrderInverseDynamicsDerivatives in ClusterTreeDynamics.cpp):
+//
+// Forward pass:
+//   fwd_kin    — forwardAccelerationKinematics only
+//   fwd_casadi — evalSTimesVec_dq (x2) + getSdotqd_q per cluster; only for config-dependent S joints
+//   fwd_other  — remaining forward pass: Psi_dot, Psi_ddot, Upsilon_dot, M_cup, B_cup, F computation
+//
+// Backward pass:
+//   bwd_casadi — evalSTTimesVec_dq on the diagonal; only for config-dependent S joints
+//   bwd_other  — t1-t4 setup (blockDiagonalInertiaTimesMotionSubspace) + walk-to-root block fills
+//                (these two sub-costs are combined into one bucket)
+//   bwd_prop   — accumulateBlockDiagonalPair + inverseTransformForceVector to propagate M_cup/B_cup/F
+//                to parent cluster
 struct ProfilingResult {
     std::string robot_name;     // Internal name for CSV
     std::string label;          // Display label
