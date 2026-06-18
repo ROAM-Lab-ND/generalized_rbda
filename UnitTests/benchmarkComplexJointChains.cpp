@@ -16,7 +16,6 @@ using namespace grbda;
 // This benchmark compares scaling behavior across different joint types:
 // 1. RevoluteChainWithRotor - simple revolute joints with rotors (baseline)
 // 2. RevolutePairChainWithRotor - coupled pairs of revolute joints
-// 3. RevoluteTripleChainWithRotor - triple-coupled revolute joints
 //
 // For each joint type, we test chains of increasing length to understand
 // how the joint complexity affects computational scaling.
@@ -163,8 +162,8 @@ ChainResult testChain(const std::string& joint_type, int num_links) {
         auto [q, qd] = model.getState();
         DVec<double> ydd = DVec<double>::Random(nDOF);
 
-        // Warmup
-        for (int i = 0; i < 100; ++i) {
+        // Single warmup call to trigger CasADi JIT compilation for any config-dependent S joints
+        {
             auto [dtau_dq, dtau_dqdot] =
                 model.firstOrderInverseDynamicsDerivatives(ydd);
             (void)dtau_dq;
@@ -336,33 +335,6 @@ int main() {
     analyzeScaling(pair_results, "RevolutePairChainWithRotor");
 
     // =========================================================================
-    // Test 3: RevoluteTripleChainWithRotor (3 DOF per cluster)
-    // =========================================================================
-    std::cout << "Test 3: RevoluteTripleChainWithRotor - Triple Coupled (3 DOF per cluster)\n";
-    printHeader();
-
-    std::vector<ChainResult> triple_results;
-
-    auto t3 = testChain<RevoluteTripleChainWithRotor<3, double>>("RevTripleWithRotor", 3);
-    triple_results.push_back(t3);
-    printResult(t3);
-
-    auto t6 = testChain<RevoluteTripleChainWithRotor<6, double>>("RevTripleWithRotor", 6);
-    triple_results.push_back(t6);
-    printResult(t6);
-
-    auto t9 = testChain<RevoluteTripleChainWithRotor<9, double>>("RevTripleWithRotor", 9);
-    triple_results.push_back(t9);
-    printResult(t9);
-
-    auto t12 = testChain<RevoluteTripleChainWithRotor<12, double>>("RevTripleWithRotor", 12);
-    triple_results.push_back(t12);
-    printResult(t12);
-
-    std::cout << std::string(86, '-') << "\n\n";
-    analyzeScaling(triple_results, "RevoluteTripleChainWithRotor");
-
-    // =========================================================================
     // Comparison at Same DOF
     // =========================================================================
     std::cout << "===========================================================================\n";
@@ -388,15 +360,6 @@ int main() {
         std::cout << "\n";
     }
 
-    std::cout << "  RevTripleWithRotor (6 links, 2 clusters): " << std::fixed << std::setprecision(2)
-              << t6.avg_time_us << " us";
-    if (s6.dof > 0 && t6.dof > 0 && s6.avg_time_us > 0) {
-        double ratio = t6.avg_time_us / s6.avg_time_us;
-        std::cout << " (" << std::fixed << std::setprecision(1) << ratio << "x baseline)\n";
-    } else {
-        std::cout << "\n";
-    }
-
     // 12 DOF comparison
     std::cout << "\n12 DOF Systems:\n";
     std::cout << "  RevWithRotor (12 links, 12 clusters):     " << std::fixed << std::setprecision(2)
@@ -416,15 +379,6 @@ int main() {
         std::cout << "\n";
     }
 
-    std::cout << "  RevTripleWithRotor (12 links, 4 clusters): " << std::fixed << std::setprecision(2)
-              << t12.avg_time_us << " us";
-    if (s12.dof > 0 && t12.dof > 0 && s12.avg_time_us > 0) {
-        double ratio = t12.avg_time_us / s12.avg_time_us;
-        std::cout << " (" << std::fixed << std::setprecision(1) << ratio << "x baseline)\n";
-    } else {
-        std::cout << "\n";
-    }
-
     // =========================================================================
     // Cluster Overhead Analysis
     // =========================================================================
@@ -439,12 +393,8 @@ int main() {
     if (p6.num_clusters > 0)
         std::cout << "  RevPairWithRotor:  " << std::fixed << std::setprecision(2)
                   << p6.avg_time_us / p6.num_clusters << " us/cluster\n";
-    if (t6.num_clusters > 0)
-        std::cout << "  RevTripleWithRotor: " << std::fixed << std::setprecision(2)
-                  << t6.avg_time_us / t6.num_clusters << " us/cluster\n";
-
     std::cout << "\nObservations:\n";
-    std::cout << "1. RevolutePair and RevoluteTriple mechanisms have higher per-cluster cost\n";
+    std::cout << "1. RevolutePair mechanisms have higher per-cluster cost\n";
     std::cout << "   due to transmission modules and constraint Jacobian computations.\n";
     std::cout << "2. Fewer clusters (more DOF per cluster) may reduce algorithm overhead\n";
     std::cout << "   but increases per-cluster complexity.\n";

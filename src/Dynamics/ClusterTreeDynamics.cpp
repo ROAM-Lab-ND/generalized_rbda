@@ -7,6 +7,13 @@
 
 namespace grbda
 {
+    // Profiling buckets for firstOrderInverseDynamicsDerivatives:
+    //   fwd_kin    — forwardAccelerationKinematics
+    //   fwd_casadi — evalSTimesVec_dq (x2) + getSdotqd_q; config-dependent S joints only
+    //   fwd_other  — Psi_dot, Psi_ddot, Upsilon_dot, M_cup, B_cup, F computation
+    //   bwd_casadi — evalSTTimesVec_dq on diagonal; config-dependent S joints only
+    //   bwd_other  — t1-t4 setup + walk-to-root derivative block fills (combined)
+    //   bwd_prop   — accumulateBlockDiagonalPair + inverseTransformForceVector to parent
     thread_local double prof_fwd_kin_us = 0;
     thread_local double prof_fwd_casadi_us = 0;
     thread_local double prof_fwd_other_us = 0;

@@ -29,8 +29,8 @@ BenchmarkResult benchmarkModel(ClusterTreeModel<double>& model, const std::strin
 
     DVec<double> ydd = DVec<double>::Random(nDOF);
 
-    // Warmup
-    for (int i = 0; i < 100; ++i) {
+    // Single warmup call to trigger CasADi JIT compilation for any config-dependent S joints
+    {
         auto [dtau_dq, dtau_dqdot] = model.firstOrderInverseDynamicsDerivatives(ydd);
         (void)dtau_dq;
         (void)dtau_dqdot;
@@ -114,37 +114,6 @@ int main() {
     // Full model: rotors + CasADi constraints (realistic robot)
     std::cout << "  Benchmarking Tello (+R,+M) [FULL MODEL]..." << std::flush;
     results.push_back(benchmarkRobot<Tello<double>>("Tello (+R,+M) [full]", ITERATIONS));
-    std::cout << " done\n";
-
-    // Profiling breakdown for Tello (full model)
-    std::cout << "\n  Running Tello profiling breakdown..." << std::flush;
-    {
-        Tello<double> robot;
-        ClusterTreeModel<double> model = robot.buildClusterTreeModel();
-        const int nDOF = model.getNumDegreesOfFreedom();
-
-        ModelState<double> model_state;
-        for (const auto& cluster : model.clusters()) {
-            model_state.push_back(cluster->joint_->randomJointState());
-        }
-        model.setState(model_state);
-
-        DVec<double> ydd = DVec<double>::Random(nDOF);
-
-        // Warmup (100 calls)
-        for (int i = 0; i < 100; ++i) {
-            auto [dtau_dq, dtau_dqdot] = model.firstOrderInverseDynamicsDerivatives(ydd);
-            (void)dtau_dq;
-            (void)dtau_dqdot;
-        }
-
-        // Profiling breakdown disabled (profiling API removed from library).
-        for (int i = 0; i < 1000; ++i) {
-            auto [dtau_dq, dtau_dqdot] = model.firstOrderInverseDynamicsDerivatives(ydd);
-            (void)dtau_dq;
-            (void)dtau_dqdot;
-        }
-    }
     std::cout << " done\n";
 
     // Tello with Arms
